@@ -86,6 +86,24 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .menu .btn.alt { min-height: 44px; }
 .badge { font-style: normal; background: var(--core); color: #062018; font-family: var(--f-term); font-size: 17px; padding: 0 5px; line-height: 1.15; letter-spacing: 0; text-transform: none; }
 .menu .btn.glow { box-shadow: inset 0 0 0 2px var(--core); }
+.menu .btn.nova { min-height: 44px; color: #ffe9b0; background: linear-gradient(90deg, #2a1440, #3a1a2a); box-shadow: inset 0 0 0 1px #b86cff; }
+.menu .btn.nova small { font-size: 15px; color: #c9a6ff; }
+.menu .btn.nova.ready { color: #1a0a24; background: linear-gradient(90deg, #ffe9b0, #ff9adf, #b86cff); box-shadow: none; animation: pulse 1.6s infinite; }
+.menu .btn.nova.ready small { color: #3a1450; }
+#hNovaBox b { color: #ff9adf; }
+.nova-card .ncards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
+.ncard { text-align: left; border: 0; padding: 10px 11px; background: rgba(21, 25, 51, 0.92); color: var(--ink); box-shadow: inset 0 0 0 1px var(--c, #444a7a); clip-path: var(--cut); display: flex; flex-direction: column; gap: 4px; font-family: var(--f-term); font-size: 16px; line-height: 1.1; }
+.ncard b { font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c, #fff); }
+.ncard .good { color: #59f0b4; } .ncard .bad { color: #ff8a9c; } .ncard small { color: #a9a7c4; font-size: 14px; }
+.ncard.on { box-shadow: inset 0 0 0 2px var(--c, #fff); background: rgba(40, 34, 70, 0.96); }
+.nkeep { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; font-family: var(--f-term); font-size: 16px; margin: 8px 0; }
+.nkeep b { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 3px; }
+.nkeep .lose b { color: #ff8a9c; } .nkeep .keep b { color: #59f0b4; }
+#novafx { position: fixed; inset: 0; z-index: 200; pointer-events: none; background: radial-gradient(circle at 50% 50%, #ffffff 0%, #ffe9b0 18%, #ff9adf 38%, rgba(184, 108, 255, 0.6) 60%, rgba(7, 8, 15, 0) 75%); animation: novaburst 1.6s ease-out forwards; }
+@keyframes novaburst { 0% { opacity: 0; transform: scale(0.05); } 25% { opacity: 1; transform: scale(1.4); } 60% { opacity: 1; transform: scale(3); } 100% { opacity: 0; transform: scale(4); } }
+.rgn em { font-style: normal; margin-left: 6px; color: #ffe9b0; }
+.tstar .srow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.tstar .big { font-family: var(--f-term); font-size: 30px; color: var(--c); line-height: 1; }
 .cloud { font-family: var(--f-pix); font-size: 9px; color: var(--dim); }
 .cloud.on { color: var(--core); }
 
@@ -449,9 +467,11 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
         <div class="hmeta">
           <div class="lv"><span class="lbl">Level</span><b id="hLevel">0</b><div class="xpbar"><i id="hXpFill"></i></div></div>
           <div><span class="lbl">Best Wave</span><b id="hBest">—</b></div>
+          <div id="hNovaBox" hidden><span class="lbl">Supernova</span><b id="hNova">0</b></div>
         </div>
       </div>
       <nav class="menu">
+        <button class="btn nova" id="bNova" hidden>Supernova<small id="hNovaSub"></small></button>
         <button class="btn" id="bWebH">Passive Web<em class="badge" id="hPts" hidden></em></button>
         <button class="btn alt" id="bLaunch2" hidden>New Run</button>
         <button class="btn primary play" id="bLaunch">Play<small id="hPlaySub"></small></button>
@@ -517,7 +537,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.7.0';
+const VERSION = '1.8.0';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -1101,6 +1121,34 @@ const ANOMALIES = [
   { id: 'inversion', name: 'Gravity Inversion', up: '−15% ground enemy speed', down: '3× as many Skimmers', af: { groundSlow: 0.15, flyers: 2 } },
 ];
 
+// ---------- Supernova: cosmic laws (one chosen per Supernova, permanent, stacking) ----------
+const LAWS = [
+  { id: 'gravity', name: 'Heavy Gravity', up: 'Ground enemies move 12% slower', down: 'Bosses have double HP', af: { groundSlow: 0.12, bossHP: 1 } },
+  { id: 'redshift', name: 'Red Shift', up: '+20% tower Range', down: '+20% enemy HP', m: { range: 20 }, af: { hpx: 0.2 } },
+  { id: 'catneb', name: 'Cat Nebula', up: 'Oddball bosses drop 3× credits', down: 'Every boss wave brings an oddball', af: { oddAll: 1 } },
+  { id: 'bloom', name: 'Dark Bloom', up: 'Elites drop 2× credits', down: 'Elites are far more common', af: { elite: 0.18, eliteCr: 1 } },
+  { id: 'lean', name: 'Lean Times', up: '+30% Damage', down: '−25% Credits', m: { dmg: 30, credits: -25 } },
+  { id: 'swarm', name: 'Swarm Law', up: 'Enemies have 20% less HP', down: '35% more enemies per wave', af: { hpx: -0.2, countX: 0.35 } },
+  { id: 'tide', name: 'Entropic Tide', up: 'Entropy fills 2× faster', down: 'Enemies move 8% faster', af: { fill: 1, haste: 0.08 } },
+  { id: 'storms', name: 'Stormfront', up: 'Storms hit 40% harder', down: 'Storms arrive twice as often', m: { stormPow: 40, stormFreq: 100 } },
+  { id: 'brittle', name: 'Brittle Star', up: '+60% core Damage, +1 core Range', down: '−25% core max HP', m: { coreDmg: 60, coreRange: 1 }, af: { coreHPx: 0.75 } },
+];
+const LAW_SCORE = 0.15, NOVA_SCORE = 0.1, NOVA_XP = 0.25;
+const novaLevelReq = n => Math.min(150, 60 + 10 * n);
+// Star Ranks: unlimited points into a finished constellation, with gentle diminishing returns
+const STARS = {
+  s0: { key: 'dmgK', a: 1.5 }, s1: { key: 'dmgT', a: 1.5 }, s2: { key: 'dmgA', a: 1.5 }, s3: { key: 'dmgC', a: 1.5 }, s4: { key: 'dmgV', a: 1.5 },
+  s5: { key: 'coreHP', a: 3 }, zen: { key: 'dmg', a: 0.8 }, nad: { key: 'rate', a: 0.6 },
+};
+const starTotal = (rid, n) => n > 0 ? STARS[rid].a * 20 * Math.log(1 + n / 20) : 0;
+const REGION_IDS = ['s0', 's1', 's2', 's3', 's4', 's5', 'zen', 'nad'];
+const REGION_NAME = { s0: 'The Archer', s1: 'The Phoenix', s2: 'The Thunderbolt', s3: 'The Crystal', s4: 'The Maw', s5: 'The Bulwark', zen: 'The Crown', nad: 'The Serpent' };
+function regionOf(n) { if (n.sector >= 0) return 's' + n.sector; if (n.sector === -2) return n.z > 0 ? 'zen' : 'nad'; return null; }
+const REGION_NODES = {};
+for (const n of TREE.list) { const r = regionOf(n); if (r) (REGION_NODES[r] = REGION_NODES[r] || []).push(n.id); }
+// a remnant keeps a sector's notables (clusters + arm) active forever
+const remnantNodes = rid => REGION_NODES[rid].filter(id => TREE.nodes[id].kind === 'notable' && !TREE.nodes[id].hybrid);
+
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',
   'Last Light', 'Gravedigger', 'Little Sun', 'Night Shift', 'Paper Moon', 'Iron Psalm', 'Red Tide', 'Cold Comfort', 'Dead Reckoning',
@@ -1144,12 +1192,38 @@ function defaultProfile() {
     seenHelp: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
     mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
+    nova: 0, remnants: [], laws: [], stars: {},
   };
 }
 let PROF = defaultProfile();
 
 const profLevel = () => levelFromXP(PROF.xp);
-const pointsSpent = () => PROF.alloc.length - 1;
+const starSpent = () => { let t = 0; for (const k in PROF.stars || {}) t += PROF.stars[k] || 0; return t; };
+const pointsSpent = () => PROF.alloc.length - 1 + starSpent();
+function regionDone(rid, A) { A = A || allocSet(); return REGION_NODES[rid].every(id => A.has(id)); }
+const regionsDone = () => { const A = allocSet(); return REGION_IDS.filter(r => regionDone(r, A)); };
+function starBuy(rid, n) {
+  if (!regionDone(rid)) return 0;
+  n = Math.max(0, Math.min(n, pointsFree())); if (!n) return 0;
+  PROF.stars = PROF.stars || {}; PROF.stars[rid] = (PROF.stars[rid] || 0) + n;
+  if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return n;
+}
+function starRefund(rid, n) {
+  if (G && !G.over) return 0;
+  const have = (PROF.stars && PROF.stars[rid]) || 0; n = Math.min(n, have); if (!n) return 0;
+  PROF.stars[rid] = have - n; if (!PROF.stars[rid]) delete PROF.stars[rid];
+  Hooks.onChange('tree'); return n;
+}
+const novaReady = () => !PROF.runSnap && profLevel().level >= novaLevelReq(PROF.nova || 0) && regionsDone().length >= 3;
+function supernova(remnant, law) {
+  if (!novaReady()) return false;
+  if (remnant && !PROF.remnants.includes(remnant) && remnant[0] === 's' && regionDone(remnant)) PROF.remnants.push(remnant);
+  if (law && LAWS.some(L => L.id === law) && !PROF.laws.includes(law)) PROF.laws.push(law);
+  PROF.nova = (PROF.nova || 0) + 1;
+  PROF.xp = 0; PROF.alloc = ['start']; PROF.stars = {};
+  Hooks.onChange('tree');
+  return true;
+}
 const pointsFree = () => profLevel().level - pointsSpent();
 const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave);
 
@@ -1182,8 +1256,10 @@ function treeOrphans(id) {
 function treeAllocate(id) {
   const path = treePathTo(id);
   if (!path || !path.length || path.length > pointsFree()) return false;
+  const before = new Set(regionsDone());
   PROF.alloc.push(...path);
   if (G && !G.over) recomputeAll();
+  for (const r of regionsDone()) if (!before.has(r)) { Hooks.toast('CONSTELLATION COMPLETE', `${REGION_NAME[r]} · Star Ranks unlocked`, '#ffe9b0', 1); Hooks.sfx('levelup'); }
   Hooks.onChange('tree');
   return true;
 }
@@ -1230,7 +1306,10 @@ const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
   const m = {}, ks = {};
   const orb = { dmg: {}, rate: {}, status: {}, range: {}, reson: {}, vxp: {}, flux: {}, storm: {}, vol: {}, ent: {}, rift: {}, combo: {} };
-  for (const id of alloc) {
+  const all = new Set(alloc);
+  for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) all.add(id);
+  for (const r in PROF.stars || {}) if (STARS[r] && regionDone(r, new Set(alloc))) { const S = STARS[r]; m[S.key] = (m[S.key] || 0) + starTotal(r, PROF.stars[r]); }
+  for (const id of all) {
     const n = TREE.nodes[id]; if (!n) continue;
     if (n.sat !== undefined) {
       const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)];
@@ -1474,9 +1553,11 @@ function newRun(opts) {
     stats: { dmgByEl: { K: 0, T: 0, C: 0, A: 0, V: 0 }, combos: {}, elites: 0, leaks: 0, bossKills: 0, peakDps: 0 },
   };
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
-  G.mods = computeMods(PROF.alloc, G.runMods);
+  G.laws = opts.daily ? [] : (PROF.laws || []).slice(); G.novaN = opts.daily ? 0 : PROF.nova || 0;
+  G.af = computeAf([]); G.scoreMult = 1 + G.af.score;
+  G.mods = computeMods(PROF.alloc, anomMods());
   const M = G.mods, sw = G.startWave;
-  G.core = { x: G.map.core.x + 0.5, y: G.map.core.y + 0.5, hp: M.coreHP, max: M.coreHP, shield: M.shield, smax: M.shield,
+  G.core = { x: G.map.core.x + 0.5, y: G.map.core.y + 0.5, hp: M.coreHP * G.af.coreHPx, max: M.coreHP * G.af.coreHPx, shield: M.shield, smax: M.shield,
     sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0 };
   G.credits = Math.round(260 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
@@ -1497,7 +1578,8 @@ function newRun(opts) {
 }
 
 function computeAf(ids) {
-  const af = { coreHPx: 1, score: 0 };
+  const af = { coreHPx: 1, score: (G && G.laws ? G.laws.length * LAW_SCORE : 0) + (G && G.novaN ? G.novaN * NOVA_SCORE : 0) };
+  for (const id of (G && G.laws) || []) { const L = LAWS.find(l => l.id === id); if (L) for (const k in L.af || {}) { if (k === 'coreHPx') af.coreHPx *= L.af[k]; else af[k] = (af[k] || 0) + L.af[k]; } }
   for (const id of ids) {
     const A = ANOMALIES.find(a => a.id === id); if (!A) continue;
     af.score += G.mods && G.mods.ks.singular ? 0.1 : 0.05;
@@ -1508,6 +1590,7 @@ function computeAf(ids) {
 function anomMods() {
   const m = {};
   for (const id of G.anoms) { const A = ANOMALIES.find(a => a.id === id); if (A && A.m) for (const k in A.m) m[k] = (m[k] || 0) + A.m[k]; }
+  for (const id of G.laws || []) { const L = LAWS.find(l => l.id === id); if (L && L.m) for (const k in L.m) m[k] = (m[k] || 0) + L.m[k]; }
   for (const k in G.runMods) m[k] = (m[k] || 0) + G.runMods[k];
   return m;
 }
@@ -1904,7 +1987,7 @@ function prepareWave(w) {
 }
 function genWave(w, ev) {
   const r = G.r, isBoss = w % 10 === 0, af = G.af || {};
-  let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1));
+  let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)));
   let hpm = hpMult(w) * (1 + (af.hpx || 0)) * (G.CH.hp || 1);
   if (ev.swarm) { count *= 2; hpm *= 0.55; }
   const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w);
@@ -1938,7 +2021,7 @@ function genWave(w, ev) {
     n += grp > 1 ? 2 : 1;
     if (isBoss && n >= Math.floor(count / 2) && !q.some(e => e.boss)) {
       const core = BOSSES.filter(b => !b.odd), odd = BOSSES.filter(b => b.odd);
-      const B = w >= 20 && r() < 0.4 ? odd[Math.floor(r() * odd.length)] : core[(Math.floor(w / 10) - 1) % core.length];
+      const B = (w >= 20 && r() < 0.4) || (af.oddAll && w >= 10) ? odd[Math.floor(r() * odd.length)] : core[(Math.floor(w / 10) - 1) % core.length];
       t += 1.5;
       let bl = laneFor(); if (bl === rift || B.fly) bl = lanes[0];
       q.push({ t, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0 });
@@ -2180,12 +2263,13 @@ function spawnBoss(q) {
   const B = BOSSES.find(b => b.id === q.boss), w = G.wave;
   const lane = q.lane, gen = q.gen || 0;
   const L = q.L || (B.fly ? lane.fly : lane);
-  const hp = q.hpAbs || 30 * B.hp * q.hpm * (1 + Math.floor((w - 1) / 50) * 0.5);
+  const hp = q.hpAbs || 30 * B.hp * q.hpm * (1 + Math.floor((w - 1) / 50) * 0.5) * (1 + ((G.af && G.af.bossHP) || 0));
   const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
     armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 0.8, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2 };
+  if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
   if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.6 : 0.45; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
   if (B.id === 'cat') e.timer2 = 9;
   if (q.elite) {
@@ -2486,7 +2570,7 @@ function applyStatuses(e, dmg, el, src, o) {
 function addScore(v) {
   v = v * G.CH.score * (G.scoreMult || 1);
   G.score += v;
-  const xp = v * 0.1 * G.mods.xp;
+  const xp = v * 0.1 * G.mods.xp * (1 + NOVA_XP * (G.novaN || 0));
   G.xpEarned += xp;
   const before = profLevel().level;
   PROF.xp += xp;
@@ -2509,7 +2593,7 @@ function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
   const M = G.mods;
-  let cm = M.credits * (G.ev.gold ? 2 : 1);
+  let cm = M.credits * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
   if (src && src.s && src.s.bounty) cm *= 1 + src.s.bounty;
   for (const f of G.forges || []) {
     if (f.s.fbounty) cm *= 1 + f.s.fbounty;
@@ -4419,6 +4503,10 @@ const UI = (() => {
     $('#hBest').textContent = PROF.bestWave || '—';
     const hp = $('#hPts'); hp.hidden = free <= 0; hp.textContent = free + ' pt' + (free === 1 ? '' : 's');
     $('#bWebH').classList.toggle('glow', free > 0);
+    const nv = PROF.nova || 0, done = regionsDone().length, req = novaLevelReq(nv), ready = novaReady();
+    $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv;
+    const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
+    $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 3 && L.level >= req ? 'Finish your run' : `${Math.min(done, 3)}/3 constellations · Lv ${req}`;
     const snap = PROF.runSnap;
     $('#bLaunch2').hidden = !snap;
     $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
@@ -5006,6 +5094,11 @@ const UI = (() => {
       ['Keystones', 'Powerful nodes with a drawback, on the outer rim and at the ends of the Z-axis.'],
       ['Orbits', 'Rings above and below the galaxy. Each satellite boosts the sector it faces. Rotate to retarget.'],
       ['Respec', 'Free between runs and at checkpoints. Otherwise costs Recalibration tokens.'],
+      ['Constellation', 'Each region of the web. Light every node in a region to finish it.'],
+      ['Star Ranks', 'Spend unlimited points in a finished constellation. Each rank adds a little less than the last.'],
+      ['Supernova', 'Finish 3 constellations and reach the required level to collapse your galaxy. You lose your level and web. You keep a Remnant, gain a Cosmic Law, and earn more score and XP from then on.'],
+      ['Remnant', "A finished sector you kept through a Supernova. Its notables stay active forever."],
+      ['Cosmic Law', 'A permanent rule change picked at each Supernova. Every law adds score.'],
       ['Builds', 'Save up to 5 web layouts and swap between them.'],
       ['Daily', 'One shared map and set of anomalies each day.'],
     ] },
@@ -5032,7 +5125,7 @@ const UI = (() => {
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. Forming wormholes show their future route and open 2 waves later. Lanes open at Waves 12, 24, 38, 55 and 75.'],
         ['Checkpoint', `Pause before a wormhole's first wave. Full sell refunds and free respec. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
-        ['Score multiplier', 'Raised by chaos level, Anomalies and Stabilize.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path.'] ] },
+        ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
         ['Common', 'Base value.', RARITY[0].col], ['Magic', '×1.7 value.', RARITY[1].col], ['Rare', '×2.6 value.', RARITY[2].col], ['Legendary', 'Unique effect. See Legendaries.', RARITY[3].col], ['Curse', 'Negative affix. See Curses.', RARITY[4].col],
         ...AFFIXES.map(A => [A.t(affRange(A)), `Common range · ${P[A.pool]}`]) ] },
@@ -5045,6 +5138,7 @@ const UI = (() => {
         ...Object.entries(COMBO_STORMS).map(([k, n]) => [n, 'Merged storm: ' + k.split('+').map(x => STORMS[x].name).join(' + ') + '. Both effects.']),
         ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
       { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
+      { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
       { id: 'anom', name: 'Anomalies', rows: ANOMALIES.map(A => [A.name, `${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff']) },
       { id: 'notable', name: 'Notables', rows: TREE.list.filter(n => n.kind === 'notable').map(n => [n.name, nodeLines(n).join('. ') + '.', n.sector >= 0 ? SECTORS[n.sector].col : '']) },
       { id: 'mastery', name: 'Masteries', rows: TREE.list.filter(n => n.opts).flatMap(n => n.opts.map(o => [o.name, `${Object.keys(o.fx).map(k => STAT_TXT[k] ? STAT_TXT[k](o.fx[k]) : '').filter(Boolean).join('. ')}. <em>${esc(n.name)}</em>`, SECTORS[n.sector].col])) },
@@ -5085,6 +5179,52 @@ const UI = (() => {
       ds.onkeydown = e => e.stopPropagation();
     }
   }
+
+  // ---------- Supernova ----------
+  let novaFlow = null;
+  function novaOffers() {
+    PROF.novaOffer = PROF.novaOffer && PROF.novaOffer.n === (PROF.nova || 0) ? PROF.novaOffer : null;
+    if (!PROF.novaOffer) {
+      const pool = LAWS.filter(L => !PROF.laws.includes(L.id)).map(L => L.id), out = [];
+      while (pool.length && out.length < 3) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      PROF.novaOffer = { n: PROF.nova || 0, laws: out }; Save.save();
+    }
+    return PROF.novaOffer.laws;
+  }
+  function openNova() {
+    const F = novaFlow, nv = PROF.nova || 0, ready = novaReady(), done = regionsDone();
+    const rems = done.filter(r => r[0] === 's' && !PROF.remnants.includes(r));
+    const head = `<div class="ch"><h2>Supernova${nv ? ' ' + roman(nv + 1) : ''}</h2><button class="x" data-act="close">✕</button></div>`;
+    let body = '';
+    if (F.step === 0) {
+      const lawsHave = PROF.laws.map(id => LAWS.find(L => L.id === id)).filter(Boolean);
+      body = `<p class="note">Collapse your galaxy and start a new one. It's harder, it's stranger, and it's worth more.</p>
+        <div class="nkeep"><div class="lose"><b>Reset</b>Level and XP<br>Passive web and Star Ranks</div>
+        <div class="keep"><b>Keep and gain</b>One Remnant: a finished constellation's notables, active forever<br>One Cosmic Law: +${Math.round(LAW_SCORE * 100)}% score, changes the rules<br>+${Math.round(NOVA_SCORE * 100)}% score and +${Math.round(NOVA_XP * 100)}% XP per Supernova</div></div>
+        ${PROF.remnants.length ? `<div class="lbl">Your Remnants</div><p class="note">${PROF.remnants.map(r => esc(REGION_NAME[r])).join(' · ')}</p>` : ''}
+        ${lawsHave.length ? `<div class="lbl">Your Laws</div><p class="note">${lawsHave.map(L => esc(L.name)).join(' · ')}</p>` : ''}
+        <div class="lbl">Requirements</div><p class="note">${done.length >= 3 ? '✓' : '✗'} 3 finished constellations (${done.length}) · ${profLevel().level >= novaLevelReq(nv) ? '✓' : '✗'} Level ${novaLevelReq(nv)} · ${PROF.runSnap ? '✗ Finish or abandon your saved run' : '✓ No run in progress'}</p>
+        <div class="ta"><button class="btn primary" data-act="novaNext" ${ready ? '' : 'disabled'}>${ready ? 'Begin' : 'Not ready yet'}</button></div>`;
+    } else if (F.step === 1) {
+      body = `<div class="lbl">Choose a Remnant</div><p class="note">Its notables stay active in every galaxy from now on, without spending points.</p>
+        <div class="ncards">${rems.length ? rems.map(r => { const S = SECTORS[+r.slice(1)]; return `<button class="ncard ${F.remnant === r ? 'on' : ''}" style="--c:${S.col}" data-act="novaR" data-v="${r}"><b>${esc(REGION_NAME[r])}</b><small>${esc(S.name)}</small>${remnantNodes(r).map(id => `<span>${esc(TREE.nodes[id].name)}</span>`).join('')}</button>`; }).join('') : '<p class="note">No new constellation to keep. Finish another sector to earn a Remnant.</p>'}</div>
+        <div class="ta"><button class="btn" data-act="novaBack">Back</button><button class="btn primary" data-act="novaNext" ${F.remnant || !rems.length ? '' : 'disabled'}>Next</button></div>`;
+    } else if (F.step === 2) {
+      const offers = novaOffers();
+      body = `<div class="lbl">Choose a Cosmic Law</div><p class="note">It applies to every run in your new galaxy, and all future ones.</p>
+        <div class="ncards">${offers.length ? offers.map(id => { const L = LAWS.find(x => x.id === id); return `<button class="ncard ${F.law === id ? 'on' : ''}" style="--c:#ff9adf" data-act="novaL" data-v="${id}"><b>${esc(L.name)}</b><span class="good">${esc(L.up)}</span><span class="bad">${esc(L.down)}</span><small>+${Math.round(LAW_SCORE * 100)}% score</small></button>`; }).join('') : '<p class="note">You already live under every law.</p>'}</div>
+        <div class="ta"><button class="btn" data-act="novaBack">Back</button><button class="btn primary" data-act="novaGo" ${F.law || !offers.length ? '' : 'disabled'}>Collapse the galaxy</button></div>`;
+    }
+    modal(`<div class="card nova-card">${head}${body}</div>`, 'nova');
+  }
+  function doNova() {
+    const F = novaFlow;
+    if (!supernova(F.remnant, F.law)) return;
+    PROF.novaOffer = null; Save.save(); closeModal();
+    const fx = document.createElement('div'); fx.id = 'novafx'; document.body.appendChild(fx); setTimeout(() => fx.remove(), 1700);
+    SFX.play('maelstrom');
+    setTimeout(() => { renderHangar(); toast('GALAXY REBORN', `Supernova ${PROF.nova}. Score ×${(1 + PROF.nova * NOVA_SCORE + PROF.laws.length * LAW_SCORE).toFixed(2)}, XP +${Math.round(PROF.nova * NOVA_XP * 100)}%.`, '#ff9adf', 1); }, 900);
+  }
   function openArchive() {
     const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k); return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? '' : 'Wave ' + D.unlock}</em></div>`; }).join('');
     const ks = TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name);
@@ -5112,6 +5252,11 @@ const UI = (() => {
     SFX.play('ui');
     switch (act) {
       case 'close': closeModal(); break;
+      case 'novaNext': novaFlow.step++; openNova(); break;
+      case 'novaBack': novaFlow.step = Math.max(0, novaFlow.step - 1); openNova(); break;
+      case 'novaR': novaFlow.remnant = b.dataset.v; openNova(); break;
+      case 'novaL': novaFlow.law = b.dataset.v; openNova(); break;
+      case 'novaGo': doNova(); break;
       case 'close2': closeModal(); if (G && !G.over && screen === 'game') G.paused = false; if (screen === 'game' && G && !G.over && act === 'close2') {} break;
       case 'sw': setup.startWave = +b.dataset.v; renderSetup(); break;
       case 'ch': setup.chaos = +b.dataset.v; renderSetup(); break;
@@ -5184,6 +5329,7 @@ const UI = (() => {
     $('#bLaunch').onclick = () => { SFX.init(); SFX.play('ui'); if (PROF.runSnap) launch(PROF.runSnap); else openSetup(); };
     $('#bLaunch2').onclick = () => { SFX.init(); SFX.play('ui'); openSetup(); };
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
+    $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
     $('#bSettings').onclick = () => { SFX.init(); SFX.play('ui'); openSettings(); };
     $('#bHelp').onclick = () => { SFX.init(); SFX.play('ui'); openHelp(); };
@@ -5353,6 +5499,7 @@ const Tree = (() => {
     const r = cv.getBoundingClientRect(), px = sx - r.left, py = sy - r.top, o = {};
     camPrep();
     if (cA > 0.5) { let hb = null, hd = 1e9; for (const h of cHits) { const d = Math.hypot(h.x - px, h.y - py); if (d < h.r && d < hd) { hd = d; hb = h; } } if (hb) { SFX.play('ui'); flyTo(hb.rid); return; } }
+    selStar = null;
     let best = null, bd = 1e9;
     for (const n of TREE.list) {
       const [x, y, z] = npos(n); proj(x, y, z, o);
@@ -5385,7 +5532,10 @@ const Tree = (() => {
       case 'profile': profOn = !profOn; renderProfile(); break;
       case 'rgn': flyTo(b.dataset.v); break;
       case 'here': flyHere(); break;
-      case 'center': sel = null; path = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
+      case 'star': { const v = b.dataset.v, n = v === 'max' ? pointsFree() : +v; if (starBuy(selStar, n)) { SFX.play('upgrade', {}); Save.save(); } refresh(); break; }
+      case 'starR': if (starRefund(selStar, +b.dataset.v)) Save.save(); refresh(); break;
+      case 'starX': selStar = null; refresh(); break;
+      case 'center': sel = null; path = null; selStar = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
       case 'rotL': case 'rotR': rotateOrbit(act === 'rotR' ? 1 : -1); break;
       case 'mopt': {
         const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
@@ -5401,7 +5551,9 @@ const Tree = (() => {
   }
   function refresh() {
     if (!open_) return;
-    document.body.classList.toggle('tsel', !!sel);
+    if (sel) selStar = null;
+    renderRegions();
+    document.body.classList.toggle('tsel', !!sel || !!selStar);
     if (profOn) renderProfile();
     const free = pointsFree(), M = computeMods(PROF.alloc, null), a = M.attrs;
     $('#tPts').textContent = free;
@@ -5411,8 +5563,18 @@ const Tree = (() => {
 
     // info card
     const info = $('#tinfo');
-    info.classList.toggle('hint', !sel);
-    if (!sel) { info.innerHTML = `<p class="note">Drag to rotate · pinch to zoom · two fingers to pan · tap a node twice to allocate</p>`; }
+    info.classList.toggle('hint', !sel && !selStar);
+    if (!sel && selStar) {
+      const rid = selStar, S = STARS[rid], rk = (PROF.stars && PROF.stars[rid]) || 0, col = rid[0] === 's' ? SECTORS[+rid.slice(1)].col : rid === 'zen' ? '#9fd8ff' : '#ff5fa8';
+      const tot = starTotal(rid, rk), nxt = starTotal(rid, rk + 1) - tot, t = STAT_TXT[S.key], f2 = v => Math.round(v * 10) / 10;
+      const rem = (PROF.remnants || []).includes(rid), canR = !inRun();
+      info.innerHTML = `<div class="ti tstar" style="--c:${col}"><div><i style="color:${col}">Star Rank</i><b>${esc(REGION_NAME[rid])}</b></div>
+        <div class="big">${rk}</div>
+        <ul><li>${rk ? esc(t(f2(tot))) : 'No ranks yet'}</li><li>Next rank: ${esc(t(f2(nxt)))}</li>${rem ? '<li>Remnant: its notables carry through every Supernova</li>' : ''}</ul>
+        <div class="srow"><button class="btn primary" data-tact="star" data-v="1" ${free ? '' : 'disabled'}>+1</button><button class="btn" data-tact="star" data-v="5" ${free >= 5 ? '' : 'disabled'}>+5</button><button class="btn" data-tact="star" data-v="max" ${free ? '' : 'disabled'}>All ${free}</button>${canR && rk ? `<button class="btn danger" data-tact="starR" data-v="1">−1</button>` : ''}</div>
+        <span class="note">${free ? '' : 'No free points. '}${canR ? 'Refunds are free between runs.' : 'Refund ranks between runs.'}</span>
+        <div class="ta"><button class="btn" data-tact="starX">Close</button></div></div>`;
+    } else if (!sel) { info.innerHTML = `<p class="note">Drag to rotate · pinch to zoom · two fingers to pan · tap a node twice to allocate</p>`; }
     else {
       const n = TREE.nodes[sel], allocd = PROF.alloc.includes(sel);
       const kindName = { start: 'Galactic Core', small: n.sector === -2 ? (n.z > 0 ? 'Zenith' : 'Nadir') : 'Passive', notable: n.hybrid ? 'Hybrid Notable' : n.arm ? 'Arm Notable' : 'Notable', mastery: 'Mastery', keystone: n.sector === -2 ? (n.z > 0 ? 'Zenith Keystone' : 'Nadir Keystone') : 'Keystone', orbit: 'Orbit', sat: 'Satellite' }[n.kind];
@@ -5438,6 +5600,7 @@ const Tree = (() => {
         const O = ORBITS[n.id], paid = inRun() && !G.checkpoint;
         extra = `<div class="mopts"><div class="lbl">${allocd ? 'Rotate to retarget' + (paid ? ' · 1 token per turn' : ' · free right now') : 'Allocate to power the ring'}</div>${O.sats.map((S2, k) => { const sn = TREE.nodes[n.id + '_' + k]; return `<div class="mopt ${PROF.alloc.includes(sn.id) ? 'on' : ''}"><b>${esc(S2.name)}</b><span>${esc(satLines(sn)[0])}</span></div>`; }).join('')}${allocd ? `<div class="rots"><button class="btn" data-tact="rotL" ${paid && G.tokens < 1 ? 'disabled' : ''}>⟲ Rotate</button><button class="btn" data-tact="rotR" ${paid && G.tokens < 1 ? 'disabled' : ''}>Rotate ⟳</button></div>` : ''}</div>`;
       }
+      if (REM_SET().has(n.id)) extra += `<div class="mopts"><span class="note">Kept by your Remnant. Always active, even unallocated.</span></div>`;
       if (n.sat !== undefined) extra = `<div class="mopts"><span class="note">Rotate ${esc(ORBITS[n.orbit].name)} to change which sector this faces.</span></div>`;
       if (n.fx.loadout && allocd) {
         const L = loadoutList();
@@ -5529,14 +5692,16 @@ const Tree = (() => {
     const top = keys.slice().sort((a, b) => P[b] - P[a])[0];
     $('#tpbar').innerHTML = `<div class="obl"><span>Offense</span><span>Defense</span></div><div class="ob"><i style="left:calc(${Math.round((bal + 1) * 50)}% - 1px)"></i></div><span><b>${lean}</b>${P[top] > 5 ? ` · strongest in ${PCAT[top].name}` : ''}</span>`;
   }
+  const REM_SET = () => { const o = new Set(); for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) o.add(id); return o; };
   const REGIONS = () => [{ id: 'core', name: 'Core', col: '#ffb03a' }, ...SECTORS.map((S, i) => ({ id: 's' + i, name: S.name, col: S.col })), { id: 'zen', name: 'Zenith', col: '#9fd8ff' }, { id: 'nad', name: 'Nadir', col: '#ff5fa8' }];
   function renderRegions() {
     $('#tView').textContent = flatMode() ? '3D' : 'Flat';
-    $('#tregions').innerHTML = REGIONS().map(r => `<button class="rgn" data-tact="rgn" data-v="${r.id}" style="--c:${r.col}">${esc(r.name)}</button>`).join('');
+    const D = new Set(regionsDone());
+    $('#tregions').innerHTML = REGIONS().map(r => `<button class="rgn" data-tact="rgn" data-v="${r.id}" style="--c:${r.col}">${esc(r.name)}${D.has(r.id) ? `<em>${(PROF.stars && PROF.stars[r.id]) || 0}</em>` : ''}</button>`).join('');
   }
   function flyTo(id) {
     const flat = flatMode(), z0 = DEF().zoom;
-    sel = null; path = null; refresh();
+    sel = null; path = null; selStar = REGION_IDS.includes(id) && regionDone(id) ? id : null; refresh();
     if (id === 'core') { goal = Object.assign(DEF()); return; }
     if (id === 'zen' || id === 'nad') {
       const side = id === 'zen' ? 1 : -1;
@@ -5593,7 +5758,7 @@ const Tree = (() => {
       nad: { name: 'The Serpent', pts: [...snake, [0.12, 1.0], [-0.12, 1.0]], ln: [...snake.slice(1).map((_, k) => [k, k + 1]), [0, 9], [0, 10]] },
     };
   })();
-  let cgeo = null, cA = 1, cHits = [], hereT = 0;
+  let cgeo = null, cA = 1, cHits = [], hereT = 0, selStar = null;
   function constGeo() {
     if (cgeo) return cgeo;
     cgeo = [];
@@ -5616,7 +5781,7 @@ const Tree = (() => {
     if (cA < 0.02) return out;
     for (const g of constGeo()) {
       const tot = g.ids.length, have = g.ids.filter(id => A.has(id)).length, full = g.ids.some(id => A.has(id) && TREE.nodes[id].kind === 'keystone');
-      const F = g.F, lit = full ? F.pts.length : Math.round(have / tot * F.pts.length);
+      const F = g.F, lit = full || have === tot ? F.pts.length : Math.round(have / tot * F.pts.length);
       // world position of figure point (x across, y outward/up)
       let W3;
       if (g.plane) W3 = viewT > 0.5 ? (x, y) => [g.c[0] + x * g.sr, g.c[1] - y * g.sr, 0] : (x, y) => [g.c[0] + cy_ * x * g.sr * 0.8, g.c[1] - sy_ * x * g.sr * 0.8, 60 + (y + 1) * g.sr * 0.8];
@@ -5638,7 +5803,8 @@ const Tree = (() => {
       const ctr = W3(0, 0); proj(ctr[0], ctr[1], ctr[2], o);
       cHits.push({ rid: g.rid, x: o.x, y: o.y, r: Math.max(40, Math.hypot(sp[0].x * 2 - o.x, sp[0].y * 2 - o.y)) });
       const top = W3(0, -1.2); proj(top[0], top[1], top[2], o);
-      out.push({ x: o.x, y: o.y, name: F.name, txt: `${F.name.toUpperCase()}  ${have}/${tot}`, col: g.col, on: have > 0, full });
+      const done = have === tot, rk = (PROF.stars && PROF.stars[g.rid]) || 0, rem = (PROF.remnants || []).includes(g.rid);
+      out.push({ x: o.x, y: o.y, name: F.name, txt: `${F.name.toUpperCase()}  ${done ? 'STAR ' + rk : have + '/' + tot}${rem ? '  · REMNANT' : ''}`, col: g.col, on: have > 0 || rem, full: full || done });
     }
     return out;
   }
@@ -5657,6 +5823,7 @@ const Tree = (() => {
     for (const k in ORBITS) { if (orbView[k + '_t'] !== undefined) { orbView[k] += (orbView[k + '_t'] - orbView[k]) * 0.15; if (Math.abs(orbView[k + '_t'] - orbView[k]) < 0.005) { orbView[k] = orbView[k + '_t']; } } }
     camOX += ((sel ? -Math.min(330, W * 0.44) / 2 - 6 : 0) - camOX) * 0.15;
     camPrep();
+    const RS = REM_SET();
     const LW = lb.width, LH = lb.height, A = new Set(PROF.alloc), Pth = new Set(path || []), o = {}, o2 = {};
     const allocatable = n => !A.has(n.id) && n.adj.some(x => A.has(x));
     const pulse = (Math.sin(frame / 10) + 1) / 2;
@@ -5726,7 +5893,7 @@ const Tree = (() => {
     for (const n of order) {
       const p = pos[n.id]; if (p.x < -10 || p.x > LW + 10 || p.y < -10 || p.y > LH + 10) continue;
       const col = profOn ? (PCAT[nodeCat(n)] || {}).col || '#6a6f9a' : n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
-      const on = A.has(n.id), can = allocatable(n), onP = Pth.has(n.id);
+      const on = A.has(n.id) || RS.has(n.id), can = allocatable(n), onP = Pth.has(n.id);
       const r = Math.max(1, Math.round(R[n.kind] * p.s / 2));
       lc.globalAlpha = (viewT < 0.5 ? clamp(1.25 - Math.hypot(p.wx - cam.tx, p.wy - cam.ty, p.wz - cam.tz) / 1400, 0.35, 1) : 1) * (on || onP ? 1 : nodeDim);
       const fill = on ? col : '#0b0d1c', edge = on ? '#ffffff' : onP ? '#ffb03a' : can ? (pulse > 0.5 ? '#ffb03a' : '#7a5418') : sh2(col);
