@@ -331,6 +331,20 @@ h2.void { color: #d6a6ff; }
 .arow em { margin-left: auto; font-style: normal; color: var(--dim); font-size: 15px; }
 .arow.dim { opacity: 0.45; }
 
+/* ---------- bevels: chunky retro buttons with a lit top edge and a shaded base ---------- */
+.rb, .hbtn, .ib, .entg { box-shadow: inset 0 0 0 1px var(--line2), inset 0 2px 0 rgba(255, 255, 255, 0.07), inset 0 -3px 0 rgba(0, 0, 0, 0.38); }
+.btn:not(.primary):not(.danger) { box-shadow: inset 0 0 0 2px var(--line2), inset 0 3px 0 rgba(255, 255, 255, 0.06), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
+.btn.primary { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.38), inset 0 -3px 0 rgba(110, 55, 0, 0.5); }
+.btn.danger { box-shadow: inset 0 0 0 2px #6a2234, inset 0 2px 0 rgba(255, 255, 255, 0.05), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
+.rb:active:not(:disabled), .btn:active:not(:disabled), .ib:active { box-shadow: inset 0 0 0 1px var(--line2), inset 0 3px 0 rgba(0, 0, 0, 0.4); }
+.rb.on { box-shadow: inset 0 0 0 1px var(--cryo), inset 0 2px 0 rgba(255, 255, 255, 0.07), inset 0 -3px 0 rgba(0, 0, 0, 0.38); }
+#bCall:not(:disabled) { box-shadow: inset 0 0 0 2px var(--amber), inset 0 -3px 0 rgba(0, 0, 0, 0.38); }
+#bCall.cp { box-shadow: inset 0 0 0 2px var(--core), inset 0 -3px 0 rgba(0, 0, 0, 0.38); }
+.entg { box-shadow: inset 0 0 0 1px #4a2f74, inset 0 2px 0 rgba(255, 255, 255, 0.06), inset 0 -3px 0 rgba(0, 0, 0, 0.38); }
+.entg.ready { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), inset 0 -3px 0 rgba(40, 0, 80, 0.5); }
+.bt { box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 rgba(0, 0, 0, 0.35); }
+.bt.on { box-shadow: inset 0 0 0 2px var(--amber), inset 0 -2px 0 rgba(0, 0, 0, 0.35); }
+
 /* ---------- passive web ---------- */
 .hbtn { font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; background: var(--panel2); border: 0; height: 36px; min-width: 44px; padding: 0 11px; clip-path: var(--cut); box-shadow: inset 0 0 0 1px var(--line2); display: flex; align-items: center; justify-content: center; gap: 5px; position: relative; }
 .hbtn:active { filter: brightness(1.3); }
@@ -363,10 +377,14 @@ h2.void { color: #d6a6ff; }
 .mopt.on { box-shadow: inset 0 0 0 2px var(--amber); background: #1f1a14; }
 .mopt:disabled { opacity: 0.5; }
 .louts { display: flex; gap: 6px; }
+.rots { display: flex; gap: 6px; } .rots .btn { flex: 1; min-height: 40px; justify-content: center; }
 .lout { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--panel2); border: 0; padding: 6px 0; min-height: 48px; box-shadow: inset 0 0 0 1px var(--line2); color: #5f5d7a; }
 .lout span { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
 .lout.on { color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }
 #tinfo { max-height: calc(100% - 64px); overflow-y: auto; }
+#tinfo:not(.hint) { left: auto; transform: none; right: max(12px, var(--sar)); top: 56px; bottom: max(8px, var(--sab)); width: min(330px, 44%); max-height: none; }
+#tinfo:not(.hint) .ti { grid-template-columns: minmax(0, 1fr); align-content: start; }
+#tinfo:not(.hint) .ti ul { padding-left: 14px; }
 .ta { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ta .note { margin: 0; text-align: left; }
 #tdrawer { position: absolute; z-index: 3; top: 52px; right: max(16px, var(--sar)); bottom: 8px; width: min(300px, 60%); background: rgba(12, 14, 28, 0.97); box-shadow: inset 0 0 0 1px var(--line2); padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; }
@@ -472,7 +490,7 @@ h2.void { color: #d6a6ff; }
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -760,6 +778,9 @@ const STAT_TXT = {
   interest: v => `Earn ${v}% interest on banked credits each wave (max 300)`, fieldRepair: v => `Waves with no leaks repair ${v}% core HP`,
   burnCrit: () => 'Kinetic hits on Burning enemies always crit', ovlBurn: () => 'Overload applies Burn to every enemy it hits',
   superChill: () => 'Superconduct also Chills',
+  napalmKill: () => 'Thermal kills leave burning ground for 2s', multiA: v => `Arc towers hit +${v} target`,
+  freezeImmRed: v => `Enemies can be Frozen again ${v}% sooner`, markVoid: v => `Each Mark adds +${v}% Void damage taken`,
+  salvage: () => 'Kills grant +1 credit for every 10 waves reached',
   kBurn: v => `Kinetic hits: ${v}% chance to Burn`, chillVoid: v => `Hits on Chilled enemies: ${v}% chance to Mark`,
 };
 const SMALL_NAME = {
@@ -836,6 +857,42 @@ const ARC_KEYSTONES = {
   5: { name: 'Unbreakable', ks: 'unbreakable', lines: ['Survive a lethal hit at 50% HP, once per 10 waves', '−10% tower Damage'], smalls: [{ coreHP: 10 }, { shield: 8 }] },
 };
 
+// Outer spiral arms: one per sector, each ends in a new notable
+const ARMS = [
+  { name: 'Railgun Doctrine', fx: { pierceK: 1, dmgK: 10 } },
+  { name: 'Napalm Rain', fx: { napalmKill: 1, burnDmg: 10 } },
+  { name: 'Ion Lattice', fx: { multiA: 1, dmgA: 5 } },
+  { name: 'Hoarfrost', fx: { freezeImmRed: 60, chillPot: 10 } },
+  { name: 'Dark Matter', fx: { markVoid: 5, dmgV: 5 } },
+  { name: 'Salvage Drones', fx: { salvage: 1, credits: 4 } },
+];
+// Z-axis Orbits: rings of 3 satellites around the vertical axis. Each satellite affects the sector it faces; rotate the ring to retarget.
+const SECTOR_EL = ['K', 'T', 'A', 'C', 'V', 'E'];
+const ORBITS = {
+  zo1: { name: 'Zenith Orbit I', z: 150, col: '#9fd8ff', sats: [
+    { name: 'Amplifier', d: '+30% Damage for the faced element', k: 'dmg', v: 30, t: el => `+30% ${EL[el].name} Damage`, E: { coreDmg: 40 } },
+    { name: 'Accelerator', d: '+20% Attack Speed for the faced element', k: 'rate', v: 20, t: el => `+20% ${EL[el].name} Attack Speed`, E: { credits: 12 } },
+    { name: 'Catalyst', d: '+12% status chance for the faced element (Kinetic: Crit Chance)', k: 'status', v: 12, t: el => el === 'K' ? '+12% Kinetic Crit Chance' : `+12% chance to ${{ T: 'Burn', C: 'Chill', A: 'Shock', V: 'Mark' }[el]} for ${EL[el].name} towers`, E: { shield: 30 } }] },
+  zo2: { name: 'Zenith Orbit II', z: 330, col: '#9fd8ff', sats: [
+    { name: 'Focusing Lens', d: '+15% Range for the faced element', k: 'range', v: 15, t: el => `+15% ${EL[el].name} Range`, E: { coreRange: 1 } },
+    { name: 'Harmonic', d: 'Faced element towers count +1 Resonance', k: 'reson', v: 1, t: el => `${EL[el].name} towers count +1 Resonance`, E: { costRed: 6 } },
+    { name: 'Veteran Beacon', d: 'Faced element towers rank up 2× faster', k: 'vxp', v: 100, t: el => `${EL[el].name} towers rank up 2× faster`, E: { xp: 10 } }] },
+  no1: { name: 'Nadir Orbit I', z: -150, col: '#ff5fa8', sats: [
+    { name: 'Flux Anchor', d: '+40% Damage for the faced element, −8% all other damage', k: 'flux', v: 40, t: el => `+40% ${EL[el].name} Damage, −8% all other damage`, E: { credits: 20, dmg: -5 } },
+    { name: 'Storm Beacon', d: 'Storms of the faced element appear 3× as often', k: 'storm', v: 1, t: el => `${STORMS[{ K: 'static', T: 'solar', C: 'cryo', A: 'ion', V: 'void' }[el]].name}s appear 3× as often`, E: { stormPow: 25 } },
+    { name: 'Volatile Core', d: 'Faced element hits: 10% chance to deal ×4 damage', k: 'vol', v: 10, t: el => `${EL[el].name} hits: 10% chance to deal ×4 damage`, E: { coreDmg: 80 } }] },
+  no2: { name: 'Nadir Orbit II', z: -330, col: '#ff5fa8', sats: [
+    { name: 'Entropy Well', d: 'Kills by the faced element fill the Entropy gauge', k: 'ent', v: 1, t: el => `${EL[el].name} kills fill the Entropy gauge`, E: { abilCharge: 15 } },
+    { name: 'Rift Tap', d: 'Faced element: +6% Damage per active Anomaly', k: 'rift', v: 6, t: el => `+6% ${EL[el].name} Damage per active Anomaly`, E: { credits: 15 } },
+    { name: 'Event Lens', d: 'Combos triggered by the faced element deal +60%', k: 'combo', v: 60, t: el => `Combos triggered by ${EL[el].name} hits deal +60%`, E: { shieldRegen: 50 } }] },
+};
+const orbitRot = id => (typeof PROF !== 'undefined' && PROF && PROF.orbit && PROF.orbit[id]) || 0;
+const satSector = n => ((n.sat * 2 + orbitRot(n.orbit)) % 6 + 6) % 6;
+function satLines(n) {
+  const O = ORBITS[n.orbit], S = O.sats[n.sat], si = satSector(n), el = SECTOR_EL[si];
+  if (el === 'E') return [`Facing ${SECTORS[si].name}: ` + Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')];
+  return [`Facing ${SECTORS[si].name}: ${S.t(el)}`];
+}
 function buildTree() {
   const nodes = {}, edges = [];
   const add = (id, x, y, kind, sector, name, fx, extra) => {
@@ -918,12 +975,51 @@ function buildTree() {
       link(prev, `e${i}`);
     }
   });
+  // outer spiral arms
+  SECTORS.forEach((S, i) => {
+    const a = -90 + i * 60;
+    let prev = `x${i}`;
+    for (let q = 0; q < 4; q++) {
+      const [x, y] = pol(645 + q * 50, a + 17 + q * 7);
+      const fx = q % 2 ? Object.assign({}, S.spine[(q >> 1) % 3]) : { [S.attr]: 8 };
+      add(`w${i}_${q}`, x, y, 'small', i, smallName(fx), fx);
+      link(prev, `w${i}_${q}`); prev = `w${i}_${q}`;
+    }
+    const [x, y] = pol(860, a + 47);
+    add(`w${i}`, x, y, 'notable', i, ARMS[i].name, ARMS[i].fx, { arm: 1 });
+    link(prev, `w${i}`);
+  });
+  // the Z-axis: Zenith above the galactic plane, Nadir below
+  const col = (sign, tag, orbs, ks, smallFx) => {
+    let prev = 'start', zi = 0;
+    const axis = (z, fx) => { const id = `${tag}${zi++}`; add(id, 0, 0, 'small', -2, smallName(fx), fx, { z, col: ORBITS[orbs[0]].col }); link(prev, id); prev = id; };
+    axis(sign * 70, smallFx[0]);
+    orbs.forEach((oid, oi) => {
+      const O = ORBITS[oid];
+      add(oid, 0, 0, 'orbit', -2, O.name, {}, { z: O.z, col: O.col, orbitHub: oid });
+      link(prev, oid); prev = oid;
+      O.sats.forEach((S, k) => { add(`${oid}_${k}`, 0, 0, 'sat', -2, S.name, {}, { z: O.z, col: O.col, orbit: oid, sat: k }); link(oid, `${oid}_${k}`); });
+      axis(sign * (O.z + (oi ? 70 : 60)), smallFx[1 + oi * 2]);
+      if (!oi) axis(sign * (O.z + 120), smallFx[2]);
+    });
+    add(`${tag}k`, 0, 0, 'keystone', -2, ks.name, {}, { z: sign * 480, col: ORBITS[orbs[0]].col, ks: ks.ks, lines: ks.lines });
+    link(prev, `${tag}k`);
+  };
+  col(1, 'za', ['zo1', 'zo2'], { name: 'Celestial Order', ks: 'celestial', lines: ['Towers roll 2 affixes per build and upgrade', 'Legendary affixes can no longer roll'] },
+    [{ F: 6, I: 4 }, { F: 8 }, { I: 8 }, { F: 6, Tm: 4 }]);
+  col(-1, 'na', ['no1', 'no2'], { name: 'Event Singularity', ks: 'singular', lines: ['Entropy fills 2× faster', 'Each Anomaly grants +10% score instead of +5%', 'You cannot Stabilize'] },
+    [{ P: 6, Tm: 4 }, { Tm: 8 }, { P: 8 }, { P: 6, F: 4 }]);
+  // slight thickness so the disk reads as 3D when tilted
+  for (const id in nodes) { const n = nodes[id]; if (n.z === undefined) { const h = Math.sin(n.x * 12.9898 + n.y * 78.233) * 43758.5453; n.z = ((h - Math.floor(h)) - 0.5) * (n.kind === 'small' ? 26 : 16) * Math.min(1, Math.hypot(n.x, n.y) / 300); } }
+  nodes.start.z = 0;
   return { nodes, edges, list: Object.values(nodes) };
 }
 const TREE = buildTree();
 
 function nodeLines(n) {
   const out = [];
+  if (n.sat !== undefined) return satLines(n);
+  if (n.orbitHub) return ['Unlocks 3 satellites. Each boosts the sector it faces.', 'Rotate the ring to change what they affect.'];
   if (n.lines) out.push(...n.lines);
   for (const k in n.fx) { const f = STAT_TXT[k]; if (f) out.push(f(n.fx[k])); }
   return out;
@@ -1017,7 +1113,7 @@ function defaultProfile() {
     settings: { sfx: 0.8, music: 0.45, soundtrack: 'ec', hud: 'lean', dmgNums: true, shake: true },
     seenHelp: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
-    mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'],
+    mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
   };
 }
 let PROF = defaultProfile();
@@ -1091,8 +1187,15 @@ function loadoutList() { const L = (PROF.loadout || []).filter(k => ABIL_ORDER.i
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
   const m = {}, ks = {};
+  const orb = { dmg: {}, rate: {}, status: {}, range: {}, reson: {}, vxp: {}, flux: {}, storm: {}, vol: {}, ent: {}, rift: {}, combo: {} };
   for (const id of alloc) {
     const n = TREE.nodes[id]; if (!n) continue;
+    if (n.sat !== undefined) {
+      const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)];
+      if (el === 'E') for (const k in S.E) m[k] = (m[k] || 0) + S.E[k];
+      else orb[S.k][el] = (orb[S.k][el] || 0) + S.v;
+      continue;
+    }
     for (const k in n.fx) m[k] = (m[k] || 0) + n.fx[k];
     if (n.ks) ks[n.ks] = 1;
     if (n.opts) { const o = n.opts[masteryPick(id)]; if (o) for (const k in o.fx) m[k] = (m[k] || 0) + o.fx[k]; }
@@ -1124,7 +1227,7 @@ function computeMods(alloc, runMods) {
     knock: g('knock') / 100, xp: 1 + g('xp') / 100, chainIgnite: g('chainIgnite') > 0, loneWolf: g('loneWolf') / 100,
     kBurn: g('kBurn'), chillVoid: g('chillVoid'),
   };
-  M.fx = m;
+  M.fx = m; M.orb = orb;
   if (m.infernoCore) { M.burnDmg *= 2; M.burnDur *= 0.6; }
   if (m.loadout) M.abilPower += 0.25 * (ABIL_ORDER.length - loadoutList().length);
   if (ks.glass) { M.dmg *= 1.6; M.coreHP *= 0.6; M.shield *= 0.6; }
@@ -1355,7 +1458,7 @@ function computeAf(ids) {
   const af = { coreHPx: 1, score: 0 };
   for (const id of ids) {
     const A = ANOMALIES.find(a => a.id === id); if (!A) continue;
-    af.score += 0.05;
+    af.score += G.mods && G.mods.ks.singular ? 0.1 : 0.05;
     for (const k in A.af || {}) { if (k === 'coreHPx') af.coreHPx *= A.af[k]; else af[k] = (af[k] || 0) + A.af[k]; }
   }
   return af;
@@ -1398,12 +1501,14 @@ const towerPool = type => TOWERS[type].kind === 'support' ? 'pylon' : TOWERS[typ
 function rollAffix(t, forceTier, luckBonus, minTier, exclude) {
   const r = G.r, luck = G.mods.affixLuck + (luckBonus || 0);
   let tier = forceTier;
+  if (tier === 3 && G.mods.ks.celestial) tier = 2;
   if (tier === undefined) {
     const p = [0.6, 0.28 * (1 + luck * 0.4), 0.10 * (1 + luck * 0.7), 0.02 * (1 + luck)];
     for (let i = 0; i < (minTier || 0); i++) p[i] = 0;
     const tot = p[0] + p[1] + p[2] + p[3];
     let x = r() * tot; tier = minTier || 0;
     for (let i = 0; i < 4; i++) { if (!p[i]) continue; x -= p[i]; if (x <= 0) { tier = i; break; } }
+    if (tier === 3 && G.mods.ks.celestial) tier = 2;
   }
   const pool = towerPool(t.type), ban = AFFIX_BAN[TOWERS[t.type].kind] || [];
   if (tier === 3) {
@@ -1443,6 +1548,7 @@ function buildTower(type, x, y) {
     olT: 0, buff: { dmg: 0, rate: 0, crit: 0 }, isolated: false, flash: 0, vxp: 0, rank: 0, pending: 0, offer: null, name: null, asc: 0, reson: 0, resonWith: [] };
   if (G.legendQueue > 0 && towerPool(type) !== 'eco') { G.legendQueue--; t.affixes.push(rollAffix(t, 3)); }
   else t.affixes.push(rollAffix(t));
+  if (G.mods.ks.celestial && towerPool(type) !== 'eco') t.affixes.push(rollAffix(t));
   if (G.mods.ks.chaos) t.affixes.push(rollCurse(t));
   G.towers.push(t); G.towerAt[tIdx(x, y)] = t;
   t.s = towerStats(t);
@@ -1462,6 +1568,7 @@ function upgradeTower(t, specIdx) {
   } else t.lvl++;
   if (t.lvl === 4 && !t.spec) t.spec = specIdx;
   t.affixes.push(rollAffix(t));
+  if (G.mods.ks.celestial && towerPool(t.type) !== 'eco') t.affixes.push(rollAffix(t));
   t.s = towerStats(t);
   recomputeAuras();
   Hooks.sfx('upgrade', t);
@@ -1504,30 +1611,34 @@ function towerStats(t) {
     else A[a.id] = (A[a.id] || 0) + a.v;
   }
   s.leg = leg; s.cur = cur;
-  s.dmg = D.dmg * LV_DMG[lv] * Math.pow(1.3, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el];
+  const O = M.orb || {}, oe = k => (O[k] && O[k][s.el]) || 0;
+  const fluxAny = O.flux && Object.keys(O.flux).length;
+  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(1.3, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el];
   let rate = D.rate * (sp.rateX || 1) * (1 + (A.rate || 0) / 100) * (cur.crate ? 0.85 : 1) * M.rate;
   if (s.el === 'K') rate *= 1 + M.rateK;
   if (s.el === 'A') rate *= 1 + M.rateA;
-  s.rate = rate;
+  s.rate = rate * (1 + oe('rate') / 100);
   let range = (D.range + (sp.rangeAdd || 0)) * (1 + 0.05 * (lv - 1) + 0.03 * (t.asc || 0));
   if (D.kind === 'support') range *= (1 + (A.prange || 0) / 100) * M.range;
   else {
     range *= (1 + (A.range || 0) / 100) * (cur.crange ? 0.85 : 1) * M.range;
     if (t.type === 'pulse' || t.type === 'rail') range *= 1 + M.rangeKR;
   }
-  s.range = range;
+  s.range = range * (D.kind === 'support' ? 1 : 1 + oe('range') / 100);
   s.critC = (D.crit || 0) + (sp.critC || 0) + (A.critC || 0) + M.critC;
   s.critM = 1.5 + (A.critM || 0) / 100 + M.critM;
   if (s.el === 'K') { s.critC += FX('critCK'); s.critM += FX('critMK') / 100; }
   s.pierce = (D.pierce || 0) + (sp.pierce || 0) + (A.pierce || 0) + (s.el === 'K' ? M.pierceK : 0);
   s.chain = D.chain ? D.chain + (sp.chain || 0) + (A.chain || 0) + M.chain : (A.chain || 0);
   s.splash = D.splash ? D.splash + (sp.splash || 0) + (A.splash || 0) + M.splash : (A.splash || 0);
-  s.multi = (sp.multi || 0) + (A.multi || 0);
+  s.multi = (sp.multi || 0) + (A.multi || 0) + (s.el === 'A' ? FX('multiA') : 0);
   const st = D.st || {}, sm = M.stMult;
-  s.burn = clamp(((st.burn || 0) + ((A.burn || 0) + M.burnChance + (s.el === 'K' ? M.kBurn : 0)) / 100 + (M.ks.conflag ? 0.35 : 0)) * sm, 0, 1);
-  s.chill = M.ks.conflag ? 0 : clamp(((st.chill || 0) + ((A.chill || 0) + M.chillChance) / 100) * sm, 0, 1);
-  s.shock = clamp(((st.shock || 0) + (sp.addShock || 0) + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
-  s.mark = clamp(((st.mark || 0) + (sp.addMark || 0) + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
+  const ost = oe('status') / 100;
+  if (s.el === 'K') s.critC += oe('status');
+  s.burn = clamp(((st.burn || 0) + (s.el === 'T' ? ost : 0) + ((A.burn || 0) + M.burnChance + (s.el === 'K' ? M.kBurn : 0)) / 100 + (M.ks.conflag ? 0.35 : 0)) * sm, 0, 1);
+  s.chill = M.ks.conflag ? 0 : clamp(((st.chill || 0) + (s.el === 'C' ? ost : 0) + ((A.chill || 0) + M.chillChance) / 100) * sm, 0, 1);
+  s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
+  s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
   s.chillPot = (sp.chillPot || 1) * M.chillPot;
   s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur;
   s.shockX = sp.shockX || 1; s.burnX = sp.burnX || 1;
@@ -1566,7 +1677,7 @@ function recomputeAuras() {
         t.buff.dmg = Math.max(t.buff.dmg, o.s.buffDmg); t.buff.rate = Math.max(t.buff.rate, o.s.buffRate); t.buff.crit = Math.max(t.buff.crit, o.s.buffCrit);
       }
     }
-    t.reson = Math.min(4, els.size);
+    t.reson = Math.min(4, els.size + ((G.mods.orb && G.mods.orb.reson[t.s.el]) || 0));
     t.buff.dmg += RESON_DMG * t.reson;
   }
   G.pylons = G.towers.filter(t => t.s.kind === 'support');
@@ -1618,7 +1729,10 @@ function updateStorms(dt) {
     if (G.stormT <= 0 && G.wave >= 6 && G.storms.length >= 3 + (G.af.magnet ? 1 : 0)) G.stormT = 5;
     if (G.stormT <= 0 && G.wave >= 6) {
       G.stormT = (32 + G.r() * 28) / (M.stormFreq * G.CH.storm * (1 + Math.min(G.wave, 60) / 40) * (G.af.magnet ? 3 : 1));
-      const ty = pick(G.r, STORM_KEYS);
+      const ob = G.mods.orb ? G.mods.orb.storm : {}, SK = { K: 'static', T: 'solar', C: 'cryo', A: 'ion', V: 'void' };
+      const wts = STORM_KEYS.map(k => Object.keys(ob).some(el => SK[el] === k) ? 3 : 1);
+      let rr = G.r() * wts.reduce((a, b) => a + b, 0), ty = STORM_KEYS[0];
+      for (let i = 0; i < STORM_KEYS.length; i++) { rr -= wts[i]; if (rr <= 0) { ty = STORM_KEYS[i]; break; } }
       const edge = G.r() < 0.5;
       const x = edge ? -2 : rngInt(G.r, 4, COLS - 8), y = edge ? rngInt(G.r, 2, ROWS - 3) : (G.r() < 0.5 ? -2 : ROWS + 2);
       const tx = rngInt(G.r, 6, COLS - 6), ty2 = rngInt(G.r, 3, ROWS - 4);
@@ -1908,7 +2022,7 @@ const entropyNeed = () => 100 * (1 + 0.3 * (G.anoms.length + G.stabilized));
 function addEntropy(v) {
   if (!G || G.over || G.anomOffers) return;
   // the gauge shows percent of the current threshold; each draw raises the threshold
-  G.entropy = Math.min(100, G.entropy + 100 * v / entropyNeed() * (G.af.fill ? 2 : 1) * Math.sqrt(G.CH.ev));
+  G.entropy = Math.min(100, G.entropy + 100 * v / entropyNeed() * (G.af.fill ? 2 : 1) * (G.mods.ks.singular ? 2 : 1) * Math.sqrt(G.CH.ev));
   if (G.entropy >= 100) {
     const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id));
     const offers = [];
@@ -1932,7 +2046,7 @@ function takeAnomaly(id) {
   return true;
 }
 function stabilize() {
-  if (!G.anomOffers) return false;
+  if (!G.anomOffers || G.mods.ks.singular) return false;
   G.anomOffers = null; G.entropy = 0; G.stabilized++; G.tokens++;
   recomputeAll();
   Hooks.log(`Stabilized · Score ×${G.scoreMult.toFixed(2)}`, '#59f0b4');
@@ -1943,6 +2057,7 @@ function stabilize() {
 // ---------- veterans ----------
 function grantVxp(t, v) {
   if (!t || t.vxp === undefined) return;
+  const vb = G.mods.orb && G.mods.orb.vxp[t.s.el]; if (vb) v *= 1 + vb / 100;
   t.vxp += v;
   const had = t.pending, r0 = t.rank;
   while (t.vxp >= vetThreshold(t.rank + 1)) {
@@ -2188,6 +2303,8 @@ function hit(e, dmg, el, src, o) {
   if (e.stormVuln) mult *= 1 + e.stormVuln;
   if (el === 'K' && e.shatterT > 0) mult *= 1 + e.shatterV;
   if (st.burn && FX('burnVuln')) mult *= 1 + FX('burnVuln') / 100;
+  if (el === 'V' && st.mark > 0 && FX('markVoid')) mult *= 1 + FX('markVoid') * st.mark / 100;
+  if (src && src.s && !o.dot && G.mods.orb && G.mods.orb.vol[src.s.el] && G.r() < G.mods.orb.vol[src.s.el] / 100) { mult *= 4; o.crit = true; }
   if (el === 'K' && FX('shredStack') && (e.boss || e.elite.length) && !o.dot) { mult *= 1 + (e.shredV || 0); e.shredV = Math.min(0.3, (e.shredV || 0) + FX('shredStack') / 100); }
   if (el === 'K' && st.burn && FX('burnCrit') && !o.crit && !o.dot && src && src.s) { mult *= src.s.critM; o.crit = true; }
   if (src && src.s) {
@@ -2228,15 +2345,16 @@ function applyStatuses(e, dmg, el, src, o) {
   const M = G.mods, s = src.s, st = e.st, r = G.r;
   const jugg = e.elite.includes('jugg');
   // combos first
+  const cmb = 1 + ((M.orb && M.orb.combo[el]) || 0) / 100;
   if (el === 'K' && st.frozen > 0) {
     combo(e, 'SHATTER', '#6ae2ff');
     if (FX('coldSnap')) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.boss && o2.st.frozen <= 0 && dist2(o2.x, o2.y, e.x, e.y) <= 1) { o2.st.frozen = 0.8; Hooks.fx('freeze', { x: o2.x, y: o2.y }); }
-    hit(e, dmg * 1.0 * M.shatter, 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return;
+    hit(e, dmg * 1.0 * M.shatter * cmb, 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return;
   }
-  if (el === 'T' && st.chill >= 3) { st.chill = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * 1.5, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; }
+  if (el === 'T' && st.chill >= 3) { st.chill = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * 1.5 * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; }
   if (((el === 'T' && st.shock > 0) || (el === 'A' && st.burn)) && e.ovlCD <= 0) {
     e.ovlCD = FX('ovlFree') ? 0 : 1; st.shock = 0;
-    const rad = 1 * M.overloadRad, d = (dmg * 0.6 + 10 * Math.sqrt(hpMult(G.wave))) * M.overload;
+    const rad = 1 * M.overloadRad, d = (dmg * 0.6 + 10 * Math.sqrt(hpMult(G.wave))) * M.overload * cmb;
     combo(e, 'OVERLOAD', '#ffb03a');
     Hooks.fx('boom', { x: e.x, y: e.y, r: rad, col: '#ffb03a' });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { hit(o2, d, 'A', src, { noStatus: 1 }); if (FX('ovlBurn') && !o2.dead && !o2.st.burn) o2.st.burn = { dps: d * 0.25 * M.burnDmg, t: 3 * M.burnDur, src }; }
@@ -2256,7 +2374,7 @@ function applyStatuses(e, dmg, el, src, o) {
     combo(e, 'COLLAPSE', '#b86cff');
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
-      hit(o2, dmg * 2 * M.collapse + o2.maxHp * 0.03, 'V', src, { noStatus: 1 });
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * 0.03) * cmb, 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
     }
     if (e.dead) return;
@@ -2275,7 +2393,7 @@ function applyStatuses(e, dmg, el, src, o) {
     if (el === 'C' && FX('chillSplash') && !o.splashed) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.elite.includes('jugg') && dist2(o2.x, o2.y, e.x, e.y) <= 1) { o2.st.chill = Math.min(5, o2.st.chill + 1); o2.st.chillT = 2.5; o2.st.chillPot = Math.max(o2.st.chillPot, s.chillPot); }
     if (s.shatterField) { e.shatterT = 2; e.shatterV = s.shatterField; }
     if (st.chill >= (FX('freezeAt') ? 4 : 5) && st.freezeImm <= 0) {
-      st.frozen = (1 + s.freezeBonus) * (e.boss ? 0.4 : 1); st.freezeImm = st.frozen + 2.5; st.chill = 0;
+      st.frozen = (1 + s.freezeBonus) * (e.boss ? 0.4 : 1); st.freezeImm = st.frozen + 2.5 * (1 - FX('freezeImmRed') / 100); st.chill = 0;
       Hooks.fx('freeze', { x: e.x, y: e.y }); Hooks.sfx('freeze');
     }
   }
@@ -2320,7 +2438,7 @@ function kill(e, src, o) {
     if (f.s.fbounty) cm *= 1 + f.s.fbounty;
     if (f.s.bountyAura && dist2(f.cx, f.cy, e.x, e.y) <= 9) cm *= 1 + f.s.bountyAura;
   }
-  const cr = Math.max(1, Math.round(e.cr * cm));
+  const cr = Math.max(1, Math.round(e.cr * cm)) + (FX('salvage') ? Math.floor(G.wave / 10) : 0);
   G.credits += cr;
   G.kills++; PROF.kills++;
   addScore(e.score);
@@ -2342,6 +2460,8 @@ function kill(e, src, o) {
     if (e.st.shock > 0 && FX('shockBurst')) { Hooks.fx('arcs', { x: e.x, y: e.y, r: 1 }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * FX('shockBurst') / 100 * (o2.boss ? 0.3 : 1), 'A', null, { noStatus: 1, depth: depth + 1 }); }
     if (e.st.frozen > 0 && FX('iceShards')) { Hooks.fx('freeze', { x: e.x, y: e.y }); for (const o2 of G.enemies) if (!o2.dead && !o2.elite.includes('jugg') && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) { o2.st.chill = Math.min(5, o2.st.chill + 2); o2.st.chillT = 2.5; } }
   }
+  if (src && src.s && M.orb && M.orb.ent[src.s.el]) addEntropy(0.08);
+  if (src && src.s && src.s.el === 'T' && FX('napalmKill') && G.zones.length < 40) G.zones.push({ k: 'napalm', x: e.x, y: e.y, r: 0.7, t: 2, dps: Math.max(4, e.maxHp * 0.06), src, el: 'T' });
   if (M.chainIgnite && e.st.burn) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) {
       if (!o2.st.burn || o2.st.burn.dps < e.st.burn.dps) o2.st.burn = { dps: e.st.burn.dps, t: 3 * M.burnDur, src: e.st.burn.src };
@@ -2413,6 +2533,7 @@ function towerDmg(t, sw) {
   if (t.s.leg.entropic) d *= 0.4 + G.r() * 2.6;
   if (G.flux) d *= t.s.el === G.flux.el ? 2 : 0.85;
   if (G.af.lastStand && G.core.hp < G.core.max * 0.5) d *= 1.6;
+  const rt = G.mods.orb && G.mods.orb.rift[t.s.el]; if (rt && G.anoms.length) d *= 1 + rt * G.anoms.length / 100;
   return d;
 }
 function atkDmg(t, sw, crit) { return towerDmg(t, sw) * (crit ? t.s.critM : 1 - (G.af.noncrit || 0)) * (t.capMult || 1); }
@@ -3264,6 +3385,20 @@ const Render = (() => {
   function tinted(key, src, col) {
     return spr(key, src.width, src.height, g => { g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, src.width, src.height); });
   }
+  // 1px dark outline around a sprite's silhouette (adds a 1px margin) for crisp separation from the ground
+  function outlined(key, src, col) {
+    return spr(key, src.width + 2, src.height + 2, g => {
+      g.drawImage(src, 1, 1);
+      const W2 = src.width + 2, H2 = src.height + 2, d = g.getImageData(0, 0, W2, H2), a = d.data, out = [];
+      for (let y = 0; y < H2; y++) for (let x = 0; x < W2; x++) {
+        if (a[(y * W2 + x) * 4 + 3] > 40) continue;
+        const n = (xx, yy) => xx >= 0 && yy >= 0 && xx < W2 && yy < H2 && a[(yy * W2 + xx) * 4 + 3] > 40;
+        if (n(x - 1, y) || n(x + 1, y) || n(x, y - 1) || n(x, y + 1)) out.push(x, y);
+      }
+      g.fillStyle = col || '#05060c';
+      for (let i = 0; i < out.length; i += 2) g.fillRect(out[i], out[i + 1], 1, 1);
+    });
+  }
   const STEEL = { o: '#090b16', d: '#141830', m: '#232948', l: '#343d6a', h: '#4c568c' };
 
   // ---------- tower sprites ----------
@@ -3356,7 +3491,7 @@ const Render = (() => {
   const ROTATES = { pulse: 1, rail: 1, missile: 1, flame: 1, emp: 1 };
   function topSprite(type, el, spec) {
     const v = spec || 0;
-    return spr(`top:${type}:${el}:${v}`, 24, 24, g => TOPS[type](g, EL[el].col, v));
+    return outlined(`otop:${type}:${el}:${v}`, spr(`top:${type}:${el}:${v}`, 24, 24, g => TOPS[type](g, EL[el].col, v)), 'rgba(3,4,10,0.85)');
   }
 
   // ---------- enemy sprites ----------
@@ -3391,7 +3526,7 @@ const Render = (() => {
   const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11 };
   function enemySprite(type) {
     const s = EN_SIZE[type] || 14, c = ENEMY_COL[type] || '#ff5470';
-    return spr('en:' + type, s, s, g => (EN[type] || EN.drone)(g, c));
+    return outlined('oen:' + type, spr('en:' + type, s, s, g => (EN[type] || EN.drone)(g, c)));
   }
   const BOSS = {
     behemoth(g, c) {
@@ -3425,7 +3560,7 @@ const Render = (() => {
       for (const [x, y] of [[9, 9], [36, 9], [9, 36], [36, 36]]) R(g, x, y, 3, 3, '#3a0a18');
     },
   };
-  function bossSprite(id) { return spr('boss:' + id, 48, 48, g => BOSS[id](g, ENEMY_COL.boss)); }
+  function bossSprite(id) { return outlined('oboss:' + id, spr('boss:' + id, 48, 48, g => BOSS[id](g, ENEMY_COL.boss))); }
 
   // ---------- map layer ----------
   function drawMap() {
@@ -3476,6 +3611,8 @@ const Render = (() => {
         if (!isP(p.x, p.y + 1)) { R(m, X, Y + TILE - 2, TILE, 2, '#0d0a18'); R(m, X, Y + TILE - 3, TILE, 1, '#3a2d5e'); }
         if (!isP(p.x - 1, p.y)) { R(m, X, Y, 2, TILE, '#4a3a78'); R(m, X + 2, Y, 1, TILE, '#5d4a92'); }
         if (!isP(p.x + 1, p.y)) { R(m, X + TILE - 2, Y, 2, TILE, '#0d0a18'); R(m, X + TILE - 3, Y, 1, TILE, '#3a2d5e'); }
+        if (!isP(p.x, p.y - 1)) R(m, X, Y + 3, TILE, 3, 'rgba(6,4,14,0.28)');
+        if (!isP(p.x - 1, p.y)) R(m, X + 3, Y, 3, TILE, 'rgba(6,4,14,0.22)');
         const nx = L.tiles[k + 1];
         if (nx && k % 2 === 0) {
           const dx = nx.x - p.x, dy = nx.y - p.y, cx = X + 12, cy = Y + 12;
@@ -3544,9 +3681,10 @@ const Render = (() => {
     b.drawImage(baseSprite(el), X, Y);
     const top = topSprite(t.type, el, t.spec);
     if (ROTATES[t.type]) {
-      b.save(); b.translate(X + 12, Y + 12); b.rotate(t.angle || -1.57); b.drawImage(top, -12, -12); b.restore();
+      const rc = t.flash > 0 ? 1.5 : 0;
+      b.save(); b.translate(X + 12, Y + 12); b.rotate(t.angle || -1.57); b.drawImage(top, -13 - rc, -13); b.restore();
       if (t.flash > 0) { const a = t.angle || 0; D(b, X + 12 + Math.cos(a) * 11, Y + 12 + Math.sin(a) * 11, 2, '#ffffff'); }
-    } else b.drawImage(top, X, Y);
+    } else b.drawImage(top, X - 1, Y - (t.flash > 0 ? 0 : 1) + (t.type === 'pylon' && (frame >> 4) % 2 ? -1 : 0));
     // live details
     switch (t.type) {
       case 'cryo': if (t.flash > 0) { D(b, X + 12, Y + 12, 3, '#ffffff'); } break;
@@ -3610,7 +3748,7 @@ const Render = (() => {
   function drawEnemy(e) {
     const X = e.x * TILE, Y = e.y * TILE, st = e.st;
     const cloaked = e.cloaked && !(e.revealed > 0);
-    const bob = e.fly ? Math.round(Math.sin(frame / 6 + e.wob) * 1.5) : 0;
+    const bob = e.fly ? Math.round(Math.sin(frame / 6 + e.wob) * 1.5) : (e.boss ? 0 : (((frame >> 3) + ((e.wob * 10) | 0)) & 1) && !(e.st.frozen > 0) && !(e.st.stun > 0) ? -1 : 0);
     const y = Y - (e.fly ? 7 : 0) + bob;
     let s;
     if (e.boss) s = bossSprite(e.boss); else s = enemySprite(e.type);
@@ -4713,7 +4851,8 @@ const UI = (() => {
       ['Passive Web', 'Spend points on permanent bonuses. Open it anytime.'],
       ['Notables', 'Larger nodes with a signature effect that changes how a build plays.'],
       ['Masteries', 'Choose 1 of 3 effects. Swap freely between runs and at checkpoints.'],
-      ['Keystones', 'Powerful nodes with a drawback, on the outer rim.'],
+      ['Keystones', 'Powerful nodes with a drawback, on the outer rim and at the ends of the Z-axis.'],
+      ['Orbits', 'Rings above and below the galaxy. Each satellite boosts the sector it faces. Rotate to retarget.'],
       ['Respec', 'Free between runs and at checkpoints. Otherwise costs Recalibration tokens.'],
       ['Builds', 'Save up to 5 web layouts and swap between them.'],
       ['Daily', 'One shared map and set of anomalies each day.'],
@@ -4757,6 +4896,7 @@ const UI = (() => {
       { id: 'anom', name: 'Anomalies', rows: ANOMALIES.map(A => [A.name, `${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff']) },
       { id: 'notable', name: 'Notables', rows: TREE.list.filter(n => n.kind === 'notable').map(n => [n.name, nodeLines(n).join('. ') + '.', n.sector >= 0 ? SECTORS[n.sector].col : '']) },
       { id: 'mastery', name: 'Masteries', rows: TREE.list.filter(n => n.opts).flatMap(n => n.opts.map(o => [o.name, `${Object.keys(o.fx).map(k => STAT_TXT[k] ? STAT_TXT[k](o.fx[k]) : '').filter(Boolean).join('. ')}. <em>${esc(n.name)}</em>`, SECTORS[n.sector].col])) },
+      { id: 'orbit', name: 'Orbits', rows: Object.values(ORBITS).flatMap(O => O.sats.map(S => [S.name, `${S.d}. Facing Bastion instead: ${Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')}. <em>${esc(O.name)}</em>`, O.col])) },
       { id: 'ks', name: 'Keystones', rows: TREE.list.filter(n => n.kind === 'keystone').map(n => [n.name, n.lines.join('. ') + '.']) },
       { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
       { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · Unlocks at Wave ${D.unlock}</em>`, EL[D.el].col]; }) },
@@ -4943,24 +5083,60 @@ const UI = (() => {
 
 // ---------------- Passive web view ----------------
 const Tree = (() => {
-  let cv, c, W = 0, H = 0, dpr = 1, open_ = false, cam = { x: 0, y: 0, z: 0.5 }, sel = null, path = null;
-  const ptrs = new Map(); let pinch = null, dragMoved = 0, drawer = null, confirmWipe = false, frame = 0;
-  const R = { start: 15, small: 7, notable: 12, mastery: 14, keystone: 17 };
+  let cv, c, lb, lc, W = 0, H = 0, dpr = 1, open_ = false, cam = null, goal = null, sel = null, path = null;
+  const ptrs = new Map(); let pinch = null, dragMoved = 0, drawer = null, confirmWipe = false, frame = 0, shiftPan = false;
+  const R = { start: 15, small: 7, notable: 12, mastery: 14, keystone: 17, orbit: 13, sat: 11 };
+  const PD = 1800, ORB_R = 120;
+  const DEF = () => ({ tx: 0, ty: 0, tz: 0, yaw: 0.35, pitch: 0.98, zoom: clamp(Math.min(W, H) / 1300, 0.2, 1) });
+  let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, camOX = 0;
+  const orbView = {};
+  function camPrep() { cy_ = Math.cos(cam.yaw); sy_ = Math.sin(cam.yaw); cp_ = Math.cos(cam.pitch); sp_ = Math.sin(cam.pitch); }
+  // world (x right, y down the plane, z up) -> screen css px
+  function proj(x, y, z, o) {
+    x -= cam.tx; y -= cam.ty; z -= cam.tz;
+    const x1 = x * cy_ - y * sy_, y1 = x * sy_ + y * cy_;
+    const y2 = y1 * cp_ - z * sp_, z2 = y1 * sp_ + z * cp_;
+    const k = cam.zoom * PD / Math.max(300, PD - z2);
+    o.x = W / 2 + camOX + x1 * k; o.y = H / 2 + y2 * k; o.s = k; o.d = z2;
+    return o;
+  }
+  function satAngle(n) { const v = orbView[n.orbit] !== undefined ? orbView[n.orbit] : orbitRot(n.orbit); return (-90 + (n.sat * 2 + v) * 60) * Math.PI / 180; }
+  function npos(n) { if (n.sat !== undefined) { const a = satAngle(n); return [Math.cos(a) * ORB_R, Math.sin(a) * ORB_R, n.z]; } return [n.x, n.y, n.z || 0]; }
+  // galaxy dust, generated once
+  let dust = null, bg = null;
+  function makeDust() {
+    let sd = 1337; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5;
+    dust = [];
+    SECTORS.forEach((S, i) => {
+      const a0 = (-90 + i * 60) * Math.PI / 180;
+      for (let k = 0; k < 360; k++) {
+        const r = 70 + Math.pow(rnd(), 0.75) * 860, th = a0 + gauss() * 0.42 + 0.28 * Math.log(r / 70);
+        dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 26 * (1.1 - r / 1000), col: S.col, a: 0.18 + rnd() * 0.5, s: rnd() < 0.06 ? 2 : 1 });
+      }
+    });
+    for (let k = 0; k < 560; k++) { const r = Math.abs(gauss()) * 150, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 45, col: ['#fff2c8', '#ffb03a', '#ffffff', '#ffd27a'][k % 4], a: 0.25 + rnd() * 0.6, s: rnd() < 0.15 ? 2 : 1 }); }
+    for (let k = 0; k < 260; k++) { const r = 950 + rnd() * 700, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 380, col: '#c9c6ff', a: 0.15 + rnd() * 0.35, s: 1 }); }
+    bg = []; for (let k = 0; k < 220; k++) bg.push({ x: rnd(), y: rnd(), p: 0.2 + rnd() * 0.8, a: 0.15 + rnd() * 0.5 });
+  }
   function init() {
     cv = $('#tcv'); c = cv.getContext('2d');
-    cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); dragMoved = 0; if (ptrs.size === 2) startPinch(); });
+    lb = document.createElement('canvas'); lc = lb.getContext('2d');
+    cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); dragMoved = 0; shiftPan = e.shiftKey || e.button === 2; goal = null; if (ptrs.size === 2) startPinch(); });
+    cv.addEventListener('contextmenu', e => e.preventDefault());
     cv.addEventListener('pointermove', e => {
-      if (!ptrs.has(e.pointerId)) return;
+      if (!ptrs.has(e.pointerId) || !cam) return;
       const p = ptrs.get(e.pointerId), dx = e.clientX - p.x, dy = e.clientY - p.y;
       p.x = e.clientX; p.y = e.clientY;
-      if (ptrs.size === 1) { cam.x -= dx / cam.z; cam.y -= dy / cam.z; dragMoved += Math.abs(dx) + Math.abs(dy); }
-      else if (ptrs.size === 2 && pinch) {
+      if (ptrs.size === 1) {
+        dragMoved += Math.abs(dx) + Math.abs(dy);
+        if (shiftPan) panBy(dx, dy);
+        else { cam.yaw -= dx * 0.0065; cam.pitch = clamp(cam.pitch - dy * 0.005, 0.22, 1.38); }
+      } else if (ptrs.size === 2 && pinch) {
         const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-        const wBefore = toWorld(mid.x, mid.y);
-        cam.z = clamp(pinch.z * d / pinch.d, 0.25, 2.5);
-        const wAfter = toWorld(mid.x, mid.y);
-        cam.x += wBefore.x - wAfter.x; cam.y += wBefore.y - wAfter.y;
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        cam.zoom = clamp(pinch.z * d / pinch.d, 0.12, 3);
+        panBy(mx - pinch.mx, my - pinch.my); pinch.mx = mx; pinch.my = my;
         dragMoved += 20;
       }
     });
@@ -4971,25 +5147,31 @@ const Tree = (() => {
       if (ptrs.size === 0 && dragMoved < 10) tap(e.clientX, e.clientY);
     };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); pinch = null; });
-    cv.addEventListener('wheel', e => { e.preventDefault(); const w0 = toWorld(e.clientX, e.clientY); cam.z = clamp(cam.z * (e.deltaY < 0 ? 1.12 : 0.89), 0.25, 2.5); const w1 = toWorld(e.clientX, e.clientY); cam.x += w0.x - w1.x; cam.y += w0.y - w1.y; }, { passive: false });
+    cv.addEventListener('wheel', e => { e.preventDefault(); if (cam) cam.zoom = clamp(cam.zoom * (e.deltaY < 0 ? 1.12 : 0.89), 0.12, 3); }, { passive: false });
     $('#tree').addEventListener('click', e => { const b = e.target.closest('[data-tact]'); if (b && !b.disabled) action(b.dataset.tact, b); });
+    makeDust();
   }
-  function startPinch() { const [a, b] = [...ptrs.values()]; pinch = { d: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z: cam.z }; }
+  function startPinch() { const [a, b] = [...ptrs.values()]; pinch = { d: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z: cam.zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
+  function panBy(dx, dy) {
+    camPrep();
+    const x1 = dx / cam.zoom, y1 = dy / cam.zoom / Math.max(0.35, cp_);
+    cam.tx = clamp(cam.tx - (x1 * cy_ + y1 * sy_), -1100, 1100); cam.ty = clamp(cam.ty - (-x1 * sy_ + y1 * cy_), -1100, 1100);
+  }
   function resize() {
     if (!cv) return;
     const r = cv.getBoundingClientRect();
     dpr = Math.min(3, window.devicePixelRatio || 1);
     W = r.width; H = r.height;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    lb.width = Math.max(1, Math.ceil(W / 2)); lb.height = Math.max(1, Math.ceil(H / 2));
   }
-  const toWorld = (sx, sy) => { const r = cv.getBoundingClientRect(); return { x: (sx - r.left - W / 2) / cam.z + cam.x, y: (sy - r.top - H / 2) / cam.z + cam.y }; };
-  const toScreen = (wx, wy) => ({ x: (wx - cam.x) * cam.z + W / 2, y: (wy - cam.y) * cam.z + H / 2 });
   function open() {
     if (G && !G.over) G.wasPaused = G.paused;
     UI.closePanel();
     $('#tree').hidden = false; open_ = true;
     resize();
-    if (!sel) { cam = { x: 0, y: 0, z: clamp(Math.min(W, H) / 900, 0.3, 1) }; }
+    if (!sel || !cam) cam = DEF();
+    for (const k in ORBITS) { orbView[k] = orbitRot(k); delete orbView[k + '_t']; }
     drawer = null;
     refresh();
   }
@@ -5000,20 +5182,21 @@ const Tree = (() => {
     Save.save();
   }
   function tap(sx, sy) {
-    const w = toWorld(sx, sy);
+    const r = cv.getBoundingClientRect(), px = sx - r.left, py = sy - r.top, o = {};
+    camPrep();
     let best = null, bd = 1e9;
     for (const n of TREE.list) {
-      const d = Math.hypot(n.x - w.x, n.y - w.y), hitR = R[n.kind] + 10 / cam.z;
-      if (d < hitR && d < bd) { bd = d; best = n; }
+      const [x, y, z] = npos(n); proj(x, y, z, o);
+      const d = Math.hypot(o.x - px, o.y - py), hitR = Math.max(16, R[n.kind] * o.s + 8);
+      if (d < hitR && d - o.d * 0.002 < bd) { bd = d - o.d * 0.002; best = n; }
     }
     if (best && sel === best.id) {
-      // double tap allocates when possible
       const p = treePathTo(best.id);
       if (p && p.length && p.length <= pointsFree()) { treeAllocate(best.id); SFX.play('upgrade', {}); }
     }
     sel = best ? best.id : null;
     path = sel ? treePathTo(sel) : null;
-    if (best) SFX.play('ui');
+    if (best) { SFX.play('ui'); const [x, y, z] = npos(best); goal = { tx: x, ty: y, tz: z * 0.85 }; }
     refresh();
   }
   function inRun() { return !!(G && !G.over); }
@@ -5028,7 +5211,8 @@ const Tree = (() => {
       case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('BUILD SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
       case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
       case 'wipe': if (inRun()) return; if (!confirmWipe) { confirmWipe = true; refresh(); return; } PROF.alloc = ['start']; confirmWipe = false; sel = null; path = null; Save.save(); refresh(); break;
-      case 'center': cam = { x: 0, y: 0, z: clamp(Math.min(W, H) / 900, 0.3, 1) }; break;
+      case 'center': cam = DEF(); goal = null; break;
+      case 'rotL': case 'rotR': rotateOrbit(act === 'rotR' ? 1 : -1); break;
       case 'mopt': {
         const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
         if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); break; } G.tokens--; }
@@ -5052,11 +5236,11 @@ const Tree = (() => {
     // info card
     const info = $('#tinfo');
     info.classList.toggle('hint', !sel);
-    if (!sel) { info.innerHTML = `<p class="note">Tap a node to inspect. Tap again to allocate.</p>`; }
+    if (!sel) { info.innerHTML = `<p class="note">Drag to rotate · pinch to zoom · two fingers to pan · tap a node twice to allocate</p>`; }
     else {
       const n = TREE.nodes[sel], allocd = PROF.alloc.includes(sel);
-      const kindName = { start: 'Origin', small: 'Passive', notable: n.hybrid ? 'Hybrid Notable' : 'Notable', mastery: 'Mastery', keystone: 'Keystone' }[n.kind];
-      const col = n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a';
+      const kindName = { start: 'Galactic Core', small: n.sector === -2 ? (n.z > 0 ? 'Zenith' : 'Nadir') : 'Passive', notable: n.hybrid ? 'Hybrid Notable' : n.arm ? 'Arm Notable' : 'Notable', mastery: 'Mastery', keystone: n.sector === -2 ? (n.z > 0 ? 'Zenith Keystone' : 'Nadir Keystone') : 'Keystone', orbit: 'Orbit', sat: 'Satellite' }[n.kind];
+      const col = n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
       let act = '';
       if (n.kind === 'start') act = '<span class="note">Starting node</span>';
       else if (!allocd) {
@@ -5074,6 +5258,11 @@ const Tree = (() => {
         const cur = masteryPick(n.id), paid = inRun() && !G.checkpoint;
         extra = `<div class="mopts"><div class="lbl">${allocd ? 'Choose one' + (paid ? ' · changing costs 1 token' : '') : 'Allocate to choose one'}</div>${n.opts.map((o, i) => `<button class="mopt ${i === cur ? 'on' : ''}" data-tact="mopt" data-v="${i}" ${allocd && i !== cur && !(paid && G.tokens < 1) ? '' : i === cur ? '' : 'disabled'}><b>${esc(o.name)}</b><span>${Object.keys(o.fx).map(k => STAT_TXT[k] ? esc(STAT_TXT[k](o.fx[k])) : '').filter(Boolean).join('. ')}</span></button>`).join('')}</div>`;
       }
+      if (n.orbitHub) {
+        const O = ORBITS[n.id], paid = inRun() && !G.checkpoint;
+        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Rotate to retarget' + (paid ? ' · 1 token per turn' : ' · free right now') : 'Allocate to power the ring'}</div>${O.sats.map((S2, k) => { const sn = TREE.nodes[n.id + '_' + k]; return `<div class="mopt ${PROF.alloc.includes(sn.id) ? 'on' : ''}"><b>${esc(S2.name)}</b><span>${esc(satLines(sn)[0])}</span></div>`; }).join('')}${allocd ? `<div class="rots"><button class="btn" data-tact="rotL" ${paid && G.tokens < 1 ? 'disabled' : ''}>⟲ Rotate</button><button class="btn" data-tact="rotR" ${paid && G.tokens < 1 ? 'disabled' : ''}>Rotate ⟳</button></div>` : ''}</div>`;
+      }
+      if (n.sat !== undefined) extra = `<div class="mopts"><span class="note">Rotate ${esc(ORBITS[n.orbit].name)} to change which sector this faces.</span></div>`;
       if (n.fx.loadout && allocd) {
         const L = loadoutList();
         extra = `<div class="mopts"><div class="lbl">Milestone loadout · ${L.length} of ${ABIL_ORDER.length} · +${(ABIL_ORDER.length - L.length) * 25}% ability power</div><div class="louts">${ABIL_ORDER.map(k => `<button class="lout ${L.includes(k) ? 'on' : ''}" data-tact="lout" data-v="${k}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span></button>`).join('')}</div></div>`;
@@ -5103,62 +5292,107 @@ const Tree = (() => {
         <div class="lbl">Stats</div><ul class="tot">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`;
     }
   }
+  function rotateOrbit(dir) {
+    const n = TREE.nodes[sel]; if (!n || !n.orbitHub || !PROF.alloc.includes(sel)) return;
+    if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); UI.toast('CAN\'T ROTATE', 'Requires 1 Recalibration token', '#ff4d6a', 1); return; } G.tokens--; }
+    PROF.orbit = PROF.orbit || {};
+    PROF.orbit[sel] = ((orbitRot(sel) + dir) % 6 + 6) % 6;
+    orbView[sel + '_t'] = (orbView[sel + '_t'] !== undefined ? orbView[sel + '_t'] : orbView[sel]) + dir;
+    if (inRun()) recomputeAll();
+    SFX.play('reroll'); Save.save(); refresh();
+  }
+  // pixel helpers on the low-res buffer
+  const pxR = (x, y, w, h, col) => { lc.fillStyle = col; lc.fillRect(Math.round(x), Math.round(y), w, h); };
+  function pxDia(x, y, r, col) { lc.fillStyle = col; x = Math.round(x); y = Math.round(y); for (let dy = -r; dy <= r; dy++) { const hw = r - Math.abs(dy); lc.fillRect(x - hw, y + dy, hw * 2 + 1, 1); } }
+  function pxRing(x, y, r, col) { lc.fillStyle = col; x = Math.round(x); y = Math.round(y); const n = Math.max(8, Math.round(r * 6)); for (let k = 0; k < n; k++) { const a = k / n * 6.283; lc.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r), 1, 1); } }
+  function line(ax, ay, bx, by, col, w) { lc.strokeStyle = col; lc.lineWidth = w || 1; lc.beginPath(); lc.moveTo(Math.round(ax) + 0.5, Math.round(ay) + 0.5); lc.lineTo(Math.round(bx) + 0.5, Math.round(by) + 0.5); lc.stroke(); }
   function draw() {
-    if (!open_) return;
+    if (!open_ || !cam) return;
     frame++;
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    c.fillStyle = '#06070d'; c.fillRect(0, 0, W, H);
-    const A = new Set(PROF.alloc), P = new Set(path || []);
+    // smooth camera glide to a tapped node, smooth orbit rotation
+    if (goal && !ptrs.size) { cam.tx += (goal.tx - cam.tx) * 0.12; cam.ty += (goal.ty - cam.ty) * 0.12; cam.tz += (goal.tz - cam.tz) * 0.12; if (Math.abs(goal.tx - cam.tx) + Math.abs(goal.ty - cam.ty) + Math.abs(goal.tz - cam.tz) < 0.5) goal = null; }
+    for (const k in ORBITS) { if (orbView[k + '_t'] !== undefined) { orbView[k] += (orbView[k + '_t'] - orbView[k]) * 0.15; if (Math.abs(orbView[k + '_t'] - orbView[k]) < 0.005) { orbView[k] = orbView[k + '_t']; } } }
+    camOX += ((sel ? -Math.min(330, W * 0.44) / 2 - 6 : 0) - camOX) * 0.15;
+    camPrep();
+    const LW = lb.width, LH = lb.height, A = new Set(PROF.alloc), Pth = new Set(path || []), o = {}, o2 = {};
     const allocatable = n => !A.has(n.id) && n.adj.some(x => A.has(x));
-    // sector glows
-    SECTORS.forEach((S, i) => {
-      const a = (-90 + i * 60) * Math.PI / 180, p = toScreen(Math.cos(a) * 360, Math.sin(a) * 360);
-      const g = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, 300 * cam.z);
-      g.addColorStop(0, S.col + '14'); g.addColorStop(1, S.col + '00');
-      c.fillStyle = g; c.fillRect(0, 0, W, H);
-      const lp = toScreen(Math.cos(a) * 690, Math.sin(a) * 690);
-      c.font = `${Math.max(10, 22 * cam.z)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillStyle = S.col + '55'; c.fillText(S.name.toUpperCase(), lp.x, lp.y);
-    });
-    // edges
-    for (const [ai, bi] of TREE.edges) {
-      const a = TREE.nodes[ai], b = TREE.nodes[bi];
-      const pa = toScreen(a.x, a.y), pb = toScreen(b.x, b.y);
-      if ((pa.x < -50 && pb.x < -50) || (pa.x > W + 50 && pb.x > W + 50) || (pa.y < -50 && pb.y < -50) || (pa.y > H + 50 && pb.y > H + 50)) continue;
-      const both = A.has(ai) && A.has(bi);
-      const onPath = (P.has(ai) || A.has(ai)) && (P.has(bi) || A.has(bi)) && (P.has(ai) || P.has(bi));
-      const sc = (a.sector >= 0 ? SECTORS[a.sector] : SECTORS[Math.max(0, b.sector)]).col;
-      c.strokeStyle = both ? sc : onPath ? '#ffb03a' : '#232846';
-      c.lineWidth = Math.max(1.5, (both ? 4 : 2.5) * cam.z);
-      c.beginPath(); c.moveTo(pa.x, pa.y); c.lineTo(pb.x, pb.y); c.stroke();
-    }
-    // nodes
     const pulse = (Math.sin(frame / 10) + 1) / 2;
+    lc.setTransform(1, 0, 0, 1, 0, 0);
+    lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
+    lc.fillStyle = '#04050a'; lc.fillRect(0, 0, LW, LH);
+    // far starfield with yaw parallax
+    for (const st of bg) { const x = ((st.x * LW + cam.yaw * 60 * st.p) % LW + LW) % LW, y = ((st.y * LH + cam.pitch * 30 * st.p) % LH + LH) % LH; lc.globalAlpha = st.a * (0.7 + 0.3 * Math.sin(frame / 30 + st.x * 50)); pxR(x, y, 1, 1, '#d8d6ff'); }
+    // galactic dust (additive)
+    lc.globalCompositeOperation = 'lighter';
+    for (const d of dust) {
+      proj(d.x, d.y, d.z, o);
+      const x = o.x / 2, y = o.y / 2; if (x < -2 || y < -2 || x > LW + 2 || y > LH + 2) continue;
+      lc.globalAlpha = d.a * Math.min(1, 0.55 + o.s * 0.8); lc.fillStyle = d.col; lc.fillRect(Math.round(x), Math.round(y), d.s, d.s);
+    }
+    lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
+    // plane grid rings and the Z axis
+    for (const rr of [250, 500, 750]) { lc.globalAlpha = 0.16; let prev = null; for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.283; proj(Math.cos(a) * rr, Math.sin(a) * rr, 0, o); if (prev && k % 2) line(prev[0], prev[1], o.x / 2, o.y / 2, '#6a6fa8'); prev = [o.x / 2, o.y / 2]; } }
+    lc.globalAlpha = 0.35; proj(0, 0, -520, o); proj(0, 0, 520, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, '#8a8fd0');
+    for (let z = -500; z <= 500; z += 50) { if (!z) continue; proj(0, 0, z, o); pxR(o.x / 2 - 1, o.y / 2, 3, 1, z > 0 ? '#9fd8ff' : '#ff5fa8'); }
+    lc.globalAlpha = 1;
+    // orbit rings with sector ticks
+    for (const k in ORBITS) {
+      const O = ORBITS[k], on = A.has(k);
+      lc.globalAlpha = on ? 0.6 : 0.25; let prev = null;
+      for (let q = 0; q <= 48; q++) { const a = q / 48 * 6.283; proj(Math.cos(a) * ORB_R, Math.sin(a) * ORB_R, O.z, o); if (prev) line(prev[0], prev[1], o.x / 2, o.y / 2, O.col); prev = [o.x / 2, o.y / 2]; }
+      lc.globalAlpha = 0.9;
+      SECTORS.forEach((S, i) => { const a = (-90 + i * 60) * Math.PI / 180; proj(Math.cos(a) * (ORB_R + 14), Math.sin(a) * (ORB_R + 14), O.z, o); pxR(o.x / 2 - 1, o.y / 2 - 1, 2, 2, S.col); });
+      lc.globalAlpha = 1;
+    }
+    // edges
+    const pos = {}; for (const n of TREE.list) { const [x, y, z] = npos(n); proj(x, y, z, o); pos[n.id] = { x: o.x / 2, y: o.y / 2, s: o.s, d: o.d, wz: z, wx: x, wy: y }; }
+    for (const [ai, bi] of TREE.edges) {
+      const a = TREE.nodes[ai], b = TREE.nodes[bi], pa = pos[ai], pb = pos[bi];
+      if ((pa.x < -20 && pb.x < -20) || (pa.x > LW + 20 && pb.x > LW + 20) || (pa.y < -20 && pb.y < -20) || (pa.y > LH + 20 && pb.y > LH + 20)) continue;
+      const both = A.has(ai) && A.has(bi);
+      const onPath = (Pth.has(ai) || A.has(ai)) && (Pth.has(bi) || A.has(bi)) && (Pth.has(ai) || Pth.has(bi));
+      const sc = b.col || a.col || (a.sector >= 0 ? SECTORS[a.sector] : SECTORS[Math.max(0, b.sector)]).col;
+      lc.globalAlpha = both ? 1 : onPath ? 0.95 : 0.45;
+      line(pa.x, pa.y, pb.x, pb.y, both ? sc : onPath ? '#ffb03a' : '#2c3160', both && (pa.s + pb.s) / 2 > 0.6 ? 2 : 1);
+    }
+    lc.globalAlpha = 1;
+    // drop lines from off-plane nodes to the disk (Elite map style)
+    for (const n of TREE.list) {
+      const p = pos[n.id]; if (Math.abs(p.wz) < 10 || (n.sector === -2 && n.sat === undefined)) continue;
+      proj(p.wx, p.wy, 0, o);
+      lc.globalAlpha = 0.35; line(p.x, p.y, o.x / 2, o.y / 2, n.col || '#5a5f9a');
+      lc.globalAlpha = 0.6; pxR(o.x / 2 - 1, o.y / 2, 3, 1, n.col || '#5a5f9a');
+    }
+    lc.globalAlpha = 1;
+    // nodes, far to near
+    const order = TREE.list.slice().sort((a, b) => pos[a.id].d - pos[b.id].d);
+    for (const n of order) {
+      const p = pos[n.id]; if (p.x < -10 || p.x > LW + 10 || p.y < -10 || p.y > LH + 10) continue;
+      const col = n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
+      const on = A.has(n.id), can = allocatable(n), onP = Pth.has(n.id);
+      const r = Math.max(1, Math.round(R[n.kind] * p.s / 2));
+      const fill = on ? col : '#0b0d1c', edge = on ? '#ffffff' : onP ? '#ffb03a' : can ? (pulse > 0.5 ? '#ffb03a' : '#7a5418') : sh2(col);
+      if (n.kind === 'small') { pxR(p.x - r, p.y - r, r * 2 + 1, r * 2 + 1, edge); if (r > 1) pxR(p.x - r + 1, p.y - r + 1, r * 2 - 1, r * 2 - 1, fill); }
+      else if (n.kind === 'keystone') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); if (on) pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
+      else if (n.kind === 'mastery') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, Math.max(0, r - 1), fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); }
+      else if (n.kind === 'start') { pxDia(p.x, p.y, r + 2, '#ffe9b0'); pxDia(p.x, p.y, r, '#ffb03a'); pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
+      else if (n.kind === 'orbit') { pxRing(p.x, p.y, r + 1, edge); pxRing(p.x, p.y, r, edge); pxDia(p.x, p.y, Math.max(1, r - 3), on ? col : '#151933'); }
+      else { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); if (n.kind === 'sat' || n.kind === 'notable') pxRing(p.x, p.y, r + 2, on ? col : sh2(col)); }
+      if (on && r >= 2) { lc.globalCompositeOperation = 'lighter'; lc.globalAlpha = 0.25; pxDia(p.x, p.y, r + 3, col); lc.globalAlpha = 1; lc.globalCompositeOperation = 'source-over'; }
+    }
+    // blit pixel buffer
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.imageSmoothingEnabled = false;
+    c.drawImage(lb, 0, 0, LW * 2, LH * 2);
+    // hi-res overlay: selection + labels
+    if (sel && pos[sel]) { const p = pos[sel], r = R[TREE.nodes[sel].kind] * p.s + 7; c.beginPath(); c.arc(p.x * 2, p.y * 2, r, 0, 6.283); c.strokeStyle = '#ffffff'; c.lineWidth = 1.5; c.setLineDash([4, 4]); c.lineDashOffset = -frame / 3; c.stroke(); c.setLineDash([]); }
     const labels = [];
     for (const n of TREE.list) {
-      const p = toScreen(n.x, n.y), r = R[n.kind] * cam.z;
-      if (p.x < -40 || p.x > W + 40 || p.y < -40 || p.y > H + 40) continue;
-      const col = n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a';
-      const on = A.has(n.id), can = allocatable(n), onP = P.has(n.id);
-      c.beginPath();
-      if (n.kind === 'keystone') { for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283 + 0.39; c.lineTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r); } c.closePath(); }
-      else if (n.kind === 'mastery') { c.moveTo(p.x, p.y - r); c.lineTo(p.x + r, p.y); c.lineTo(p.x, p.y + r); c.lineTo(p.x - r, p.y); c.closePath(); }
-      else if (n.kind === 'start') { for (let k = 0; k < 6; k++) { const a = k / 6 * 6.283; c.lineTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r); } c.closePath(); }
-      else c.arc(p.x, p.y, r, 0, 6.283);
-      c.fillStyle = on ? col : '#0d1020'; c.fill();
-      c.lineWidth = Math.max(1.5, (n.kind === 'small' ? 2 : 3) * cam.z);
-      c.strokeStyle = on ? '#ffffff' : onP ? '#ffb03a' : can ? `rgba(255,176,58,${0.4 + pulse * 0.6})` : col + '66';
-      c.stroke();
-      if (n.kind === 'notable' || n.kind === 'keystone' || n.kind === 'mastery') {
-        c.beginPath(); c.arc(p.x, p.y, r + 4 * cam.z, 0, 6.283); c.strokeStyle = on ? col : col + '44'; c.lineWidth = Math.max(1, 1.5 * cam.z); c.stroke();
-      }
-      if (sel === n.id) { c.beginPath(); c.arc(p.x, p.y, r + 9 * cam.z + 2, 0, 6.283); c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.setLineDash([4, 4]); c.stroke(); c.setLineDash([]); }
-      if ((n.kind !== 'small' || cam.z > 1.4) && cam.z > 0.32) {
-        const pri = (sel === n.id ? 100 : 0) + (on ? 20 : 0) + ({ keystone: 50, mastery: 30, notable: 25, start: 60, small: 0 }[n.kind]) + (onP ? 10 : 0);
-        labels.push({ n, x: p.x, y: p.y + r + 6 * cam.z + 3, pri, on });
-      }
+      const p = pos[n.id], rr = R[n.kind] * p.s;
+      if (n.kind === 'small' ? rr < 9 : rr < 3.2) continue;
+      const on = A.has(n.id), pri = (sel === n.id ? 100 : 0) + (on ? 20 : 0) + ({ keystone: 50, mastery: 30, notable: 25, orbit: 35, sat: 22, start: 60, small: 0 }[n.kind]) + (Pth.has(n.id) ? 10 : 0) + p.d * 0.01;
+      labels.push({ n, x: p.x * 2, y: p.y * 2 + rr + 5, pri, on });
     }
-    // labels: highest priority first, skip any that would collide with one already placed
     labels.sort((a, b) => b.pri - a.pri);
     const placed = [];
     c.textAlign = 'center'; c.textBaseline = 'top';
@@ -5167,15 +5401,17 @@ const Tree = (() => {
       c.font = `${fs}px Silkscreen, monospace`;
       const txt = n.name.toUpperCase(), w = c.measureText(txt).width + 6, h = fs + 4;
       const box = { x0: L.x - w / 2, x1: L.x + w / 2, y0: L.y - 2, y1: L.y + h };
-      if (box.y0 < 50) continue;
+      if (box.y0 < 52 || box.y1 > H || box.x1 < 0 || box.x0 > W) continue;
       if (placed.some(q => q.x0 < box.x1 && q.x1 > box.x0 && q.y0 < box.y1 && q.y1 > box.y0)) continue;
       placed.push(box);
-      c.fillStyle = 'rgba(6,7,13,0.72)'; c.fillRect(box.x0, box.y0, w, h);
-      c.fillStyle = L.on ? '#ffffff' : n.kind === 'keystone' ? '#ffb03a' : '#a9a7c4';
+      c.fillStyle = 'rgba(4,5,10,0.72)'; c.fillRect(box.x0, box.y0, w, h);
+      c.fillStyle = L.on ? '#ffffff' : n.kind === 'keystone' ? '#ffb03a' : n.col && (n.kind === 'orbit' || n.kind === 'sat') ? n.col : '#a9a7c4';
       c.fillText(txt, L.x, L.y);
     }
   }
-  function select(id) { const n = TREE.nodes[id]; if (!n) return; sel = id; path = treePathTo(id); cam.x = n.x; cam.y = n.y - 60; refresh(); }
+  const sh2Cache = {};
+  function sh2(col) { if (sh2Cache[col]) return sh2Cache[col]; const v = parseInt(col.slice(1), 16), r = (v >> 16 & 255) * 0.42, g = (v >> 8 & 255) * 0.42, b = (v & 255) * 0.5; return (sh2Cache[col] = `rgb(${r | 0},${g | 0},${b | 0})`); }
+  function select(id) { const n = TREE.nodes[id]; if (!n) return; if (!cam) cam = DEF(); sel = id; path = treePathTo(id); const [x, y, z] = npos(n); cam.tx = x; cam.ty = y; cam.tz = z * 0.85; goal = null; refresh(); }
   return { init, open, close, resize, draw, refresh, select, get isOpen() { return open_; } };
 })();
 
