@@ -385,6 +385,11 @@ h2.void { color: #d6a6ff; }
 #tinfo.hint { display: none; }
 #tregions { position: absolute; z-index: 2; left: max(12px, var(--sal)); right: max(12px, var(--sar)); bottom: max(8px, var(--sab)); display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
 #tregions::-webkit-scrollbar { display: none; }
+#tnav { position: absolute; z-index: 2; right: max(12px, var(--sar)); bottom: calc(max(8px, var(--sab)) + 46px); display: flex; flex-direction: column; gap: 6px; }
+body.tsel #tnav { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px); }
+.tnb { width: 48px; height: 46px; border: 0; padding: 4px 0 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: rgba(21, 25, 51, 0.92); color: #ffb03a; box-shadow: inset 0 0 0 1px #7a5418, inset 0 -3px 0 rgba(0, 0, 0, 0.35); clip-path: var(--cut); font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.tnb svg { width: 18px; height: 18px; }
+.tnb:active { filter: brightness(1.4); }
 body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px); }
 .rgn { flex: 0 0 auto; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; min-height: 36px; padding: 0 11px; border: 0; background: rgba(21, 25, 51, 0.92); color: var(--c); box-shadow: inset 0 0 0 1px var(--c), inset 0 -3px 0 rgba(0, 0, 0, 0.35); clip-path: var(--cut); }
 .rgn:active { filter: brightness(1.4); }
@@ -498,6 +503,10 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
     <div id="tinfo"></div>
     <div id="tprof" hidden><canvas id="tpcv"></canvas><div id="tpbar"></div></div>
     <div id="tregions"></div>
+    <div id="tnav">
+      <button class="tnb" data-tact="here" aria-label="Jump to your latest node"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="currentColor" d="M7 0h2v3H7zM7 13h2v3H7zM0 7h3v2H0zM13 7h3v2h-3zM5 3h6v1H5zM5 12h6v1H5zM3 5h1v6H3zM12 5h1v6h-1zM4 4h1v1H4zM11 4h1v1h-1zM4 11h1v1H4zM11 11h1v1h-1zM6 6h4v4H6z"/></svg><span>Here</span></button>
+      <button class="tnb" data-tact="center" aria-label="Recenter the web"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h5v2H2v3H0zM11 0h5v5h-2V2h-3zM0 11h2v3h3v2H0zM14 11h2v5h-5v-2h3zM7 7h2v2H7z"/></svg><span>Center</span></button>
+    </div>
     <div id="tdrawer" hidden></div>
   </section>
 
@@ -508,7 +517,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.6.1';
+const VERSION = '1.6.2';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -5369,6 +5378,8 @@ const Tree = (() => {
       case 'view': PROF.settings.webView = flatMode() ? '3d' : 'flat'; Save.save(); goal = Object.assign(DEF(), { yaw: flatMode() ? 0 : 0.35 }); renderRegions(); break;
       case 'profile': profOn = !profOn; renderProfile(); break;
       case 'rgn': flyTo(b.dataset.v); break;
+      case 'here': flyHere(); break;
+      case 'center': sel = null; path = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
       case 'rotL': case 'rotR': rotateOrbit(act === 'rotR' ? 1 : -1); break;
       case 'mopt': {
         const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
@@ -5530,6 +5541,14 @@ const Tree = (() => {
     goal = { tx: Math.cos(a) * 430, ty: Math.sin(a) * 430, tz: 0, zoom: z0 * (flat ? 2.4 : 1.9) };
     if (!flat) { goal.yaw = Math.PI / 2 - a; goal.pitch = 0.9; }
   }
+  const lastNode = () => { const a = PROF.alloc || []; for (let i = a.length - 1; i >= 0; i--) if (TREE.nodes[a[i]] && TREE.nodes[a[i]].kind !== 'start') return a[i]; return null; };
+  function flyHere() {
+    const id = lastNode();
+    if (!id) { flyTo('core'); return; }
+    const [x, y, z] = npos(TREE.nodes[id]), z0 = DEF().zoom;
+    hereT = 90;
+    goal = { tx: x, ty: y, tz: z * 0.85, zoom: Math.max(cam.zoom, z0 * 2.4) };
+  }
   function rotateOrbit(dir) {
     const n = TREE.nodes[sel]; if (!n || !n.orbitHub || !PROF.alloc.includes(sel)) return;
     if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); UI.toast('CAN\'T ROTATE', 'Requires 1 Recalibration token', '#ff4d6a', 1); return; } G.tokens--; }
@@ -5568,7 +5587,7 @@ const Tree = (() => {
       nad: { name: 'The Serpent', pts: [...snake, [0.12, 1.0], [-0.12, 1.0]], ln: [...snake.slice(1).map((_, k) => [k, k + 1]), [0, 9], [0, 10]] },
     };
   })();
-  let cgeo = null, cA = 1, cHits = [];
+  let cgeo = null, cA = 1, cHits = [], hereT = 0;
   function constGeo() {
     if (cgeo) return cgeo;
     cgeo = [];
@@ -5720,6 +5739,9 @@ const Tree = (() => {
     c.drawImage(lb, 0, 0, LW * 2, LH * 2);
     // hi-res overlay: selection + labels
     if (sel && pos[sel]) { const p = pos[sel], r = R[TREE.nodes[sel].kind] * p.s + 7; c.beginPath(); c.arc(p.x * 2, p.y * 2, r, 0, 6.283); c.strokeStyle = '#ffffff'; c.lineWidth = 1.5; c.setLineDash([4, 4]); c.lineDashOffset = -frame / 3; c.stroke(); c.setLineDash([]); }
+    { const hid = lastNode(); if (hid && pos[hid]) { const p = pos[hid], r = R[TREE.nodes[hid].kind] * p.s + 5 + (Math.sin(frame / 8) + 1) * 2; c.beginPath(); c.arc(p.x * 2, p.y * 2, r, 0, 6.283); c.strokeStyle = '#ffb03a'; c.globalAlpha = 0.85; c.lineWidth = 1.5; c.stroke();
+      if (hereT > 0) { hereT--; const k = 1 - hereT / 90; c.beginPath(); c.arc(p.x * 2, p.y * 2, r + k * 60, 0, 6.283); c.globalAlpha = 1 - k; c.lineWidth = 2; c.stroke(); }
+      c.globalAlpha = 1; } }
     const labels = [];
     for (const n of TREE.list) {
       const p = pos[n.id], rr = R[n.kind] * p.s;
