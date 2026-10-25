@@ -108,6 +108,33 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .coin { display: inline-block; width: 8px; height: 8px; background: var(--amber); box-shadow: 1px 1px 0 #7a4a08; margin-right: 2px; align-self: center; }
 .spacer { flex: 1; }
 .hs.sc { margin-left: auto; }
+.cashbtn { border: 0; background: var(--panel2); clip-path: var(--cut); box-shadow: inset 0 0 0 1px #6a4a18; padding: 0 10px; height: 30px; align-items: center; color: inherit; }
+.cashbtn:active { filter: brightness(1.3); }
+.cashtag { font-style: normal; font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; color: var(--amber); letter-spacing: 0.06em; margin-left: 4px; }
+.cashbtn.on { box-shadow: inset 0 0 0 2px var(--amber); }
+.cashrate { display: flex; align-items: baseline; gap: 8px; background: var(--panel); padding: 8px 10px; box-shadow: inset 0 0 0 1px var(--line); }
+.cashrate b { font-weight: 400; font-size: 26px; color: var(--amber); line-height: 1; }
+.cashrate span { font-size: 16px; color: var(--dim); }
+.cashopts { display: flex; flex-direction: column; gap: 5px; }
+.cashopts .btn { flex-direction: row; justify-content: space-between; min-height: 46px; padding: 0 12px; }
+.cashopts .btn small { font-size: 17px; }
+#bCall.cp { color: var(--core); box-shadow: inset 0 0 0 2px var(--core); animation: pulse 1.4s infinite; }
+#bCall.cp span { color: var(--core); }
+@keyframes pulse { 50% { filter: brightness(1.35); } }
+.cpbanner { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 5; pointer-events: none; background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 1px var(--core); padding: 6px 12px; text-align: center; white-space: nowrap; }
+.cpbanner b { display: block; font-family: var(--f-pix); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--core); }
+.cpbanner span { font-size: 16px; color: var(--ink); }
+body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
+.dict-cats { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; margin: 0 0 8px; padding-bottom: 2px; touch-action: pan-x; }
+.dict-cats::-webkit-scrollbar { display: none; }
+.dict-cats .chip { flex: 0 0 auto; }
+.dsearch { width: 100%; font: inherit; font-size: 18px; background: var(--panel2); color: var(--ink); border: 0; box-shadow: inset 0 0 0 1px var(--line2); padding: 7px 10px; margin-bottom: 8px; -webkit-user-select: text; user-select: text; }
+.dict { display: grid; grid-template-columns: minmax(110px, max-content) minmax(0, 1fr); gap: 6px 16px; align-items: baseline; }
+.dict b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; color: var(--c, var(--amber)); }
+.dict span { font-size: 17px; }
+.dict span em { font-style: normal; color: var(--dim); }
+.dict span .bad { color: #ff8a9c; }
+.dict .dh2 { grid-column: 1 / -1; font-family: var(--f-pix); font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; }
 #stage { grid-column: 2; grid-row: 2; position: relative; min-height: 0; min-width: 0; }
 #cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; image-rendering: pixelated; }
 #stage::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(ellipse at center, transparent 55%, rgba(4, 5, 12, 0.5) 100%); }
@@ -386,7 +413,7 @@ h2.void { color: #d6a6ff; }
       <div class="hs cr"><span class="coin"></span><b id="cr">0</b></div>
       <div class="hs"><span class="lbl">Wave</span><b id="wave">0</b><small id="nextw"></small></div>
       <div id="chips"></div>
-      <div class="hs sc"><span class="lbl">Score</span><b id="score">0</b></div>
+      <button class="hs sc cashbtn" id="bCash" aria-label="Cash in credits for score"><span class="lbl">Score</span><b id="score">0</b><i class="cashtag">Cash In</i></button>
     </header>
     <div class="rail" id="railL"><div id="abils" style="display:contents"></div></div>
     <div id="stage">
@@ -395,6 +422,7 @@ h2.void { color: #d6a6ff; }
       <div id="log"></div>
       <div id="dps"></div>
       <div id="panel" class="panel" hidden></div>
+      <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint</b><span>Sell for a full refund · Respec for free</span></div>
     </div>
     <div class="rail" id="railR">
       <button class="rb" id="bPause" aria-label="Pause" data-svg="pause"></button>
@@ -430,7 +458,7 @@ h2.void { color: #d6a6ff; }
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -574,15 +602,15 @@ const CURSES = [
 
 // ---------- Enemies ----------
 const ENEMIES = {
-  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10 },
-  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4 },
-  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.4, res: { T: 0.15 } },
-  flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 } },
-  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4 },
-  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 } },
-  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3 },
-  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 } },
-  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1 },
+  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit' },
+  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups' },
+  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.4, res: { T: 0.15 }, desc: 'Slow and heavily armored. Resists Thermal' },
+  flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc' },
+  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death' },
+  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically. Weak to Void' },
+  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies' },
+  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies. Resists Kinetic' },
+  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'Flies. Spawned by a Maelstrom' },
 };
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
@@ -592,14 +620,14 @@ const BOSSES = [
   { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
 ];
 const ELITE_AFFIXES = [
-  { id: 'shielded', name: 'Shielded', col: '#7fd4ff' },
-  { id: 'hasted', name: 'Hasted', col: '#ffe14d' },
-  { id: 'regen', name: 'Regenerating', col: '#59f0b4' },
-  { id: 'blink', name: 'Teleporting', col: '#b86cff' },
-  { id: 'split', name: 'Splitting', col: '#ff9ad5' },
-  { id: 'jugg', name: 'Unstoppable', col: '#ff7b39' },
-  { id: 'volatile', name: 'Volatile', col: '#ff4d6a' },
-  { id: 'resist', name: 'Resistant', col: '#efe6cf' },
+  { id: 'shielded', name: 'Shielded', col: '#7fd4ff' , desc: 'Starts with a shield worth 40% of max HP' },
+  { id: 'hasted', name: 'Hasted', col: '#ffe14d' , desc: '+40% speed' },
+  { id: 'regen', name: 'Regenerating', col: '#59f0b4' , desc: 'Regenerates 2% HP per second' },
+  { id: 'blink', name: 'Teleporting', col: '#b86cff' , desc: 'Teleports forward every 5s' },
+  { id: 'split', name: 'Splitting', col: '#ff9ad5' , desc: 'Splits into 2 copies with 30% HP on death' },
+  { id: 'jugg', name: 'Unstoppable', col: '#ff7b39' , desc: '+30% HP. Slows and Stuns are 70% weaker' },
+  { id: 'volatile', name: 'Volatile', col: '#ff4d6a' , desc: 'Disables nearby towers for 2s on death' },
+  { id: 'resist', name: 'Resistant', col: '#efe6cf' , desc: '+50% resistance to one element' },
 ];
 
 // ---------- Storms (weather) ----------
@@ -936,7 +964,7 @@ function dailySpec(key) {
 // ===================== ENTROPY — SIMULATION =====================
 const Hooks = {
   sfx() {}, fx() {}, log() {}, toast() {}, onWave() {}, onDraft() {}, onGameOver() {},
-  onLevel() {}, onUnlock() {}, onChange() {}, onSave() {},
+  onLevel() {}, onUnlock() {}, onChange() {}, onSave() {}, onCheckpoint() {},
 };
 
 // ---------------- Profile (meta progression) ----------------
@@ -993,7 +1021,7 @@ function treeAllocate(id) {
 function treeRefund(id) {
   const orph = treeOrphans(id);
   if (!orph) return false;
-  if (G && !G.over) {
+  if (G && !G.over && !G.checkpoint) {
     if (G.tokens < orph.length) return false;
     G.tokens -= orph.length;
   }
@@ -1008,7 +1036,7 @@ function treeLoadBuild(slot) {
   if (!b) return 'empty';
   const valid = b.alloc.filter(id => TREE.nodes[id]);
   if (valid.length - 1 > profLevel().level) return 'points';
-  if (G && !G.over) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
+  if (G && !G.over && !G.checkpoint) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   PROF.alloc = valid.includes('start') ? valid.slice() : ['start', ...valid];
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
@@ -1224,7 +1252,7 @@ function newRun(opts) {
     stormT: 50, lanesOpened: 0, laneWaves: [12, 24, 38, 55, 75], laneWarn: null,
     rift: null, eid: 1, tid: 1, dmgLog: { combos: 0 }, unbreakUsed: -99, boonsTaken: [],
     core: null, dpsClock: 0, coreAngle: 0,
-    entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
+    checkpoint: 0, cpWave: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
     stats: { dmgByEl: { K: 0, T: 0, C: 0, A: 0, V: 0 }, combos: {}, elites: 0, leaks: 0, bossKills: 0, peakDps: 0 },
   };
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
@@ -1381,8 +1409,9 @@ function rerollTower(t) {
   Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: '#ff8a2a' });
   return true;
 }
+function sellRefund(t) { return Math.round(t.invested * (G.checkpoint ? 1 : G.af.scav ? 0.9 : 0.7)); }
 function sellTower(t) {
-  G.credits += Math.round(t.invested * (G.af.scav ? 0.9 : 0.7));
+  G.credits += sellRefund(t);
   G.towers = G.towers.filter(o => o !== t);
   delete G.towerAt[tIdx(t.x, t.y)];
   recomputeAuras();
@@ -1719,7 +1748,26 @@ function startWave() {
   Hooks.sfx('wave', w);
   Hooks.onWave(w);
 }
+function resumeCheckpoint() {
+  if (!G.checkpoint) return false;
+  G.checkpoint = 0; G.next = Math.max(G.next, 3);
+  Hooks.sfx('call');
+  return true;
+}
+// Cash-in: convert credits straight into score. The rate climbs with the wave, so late cash-ins pay more and cost more.
+const cashRate = () => 3 * (1 + 0.1 * G.wave);
+function cashIn(amount) {
+  amount = Math.floor(Math.min(amount, G.credits));
+  if (amount <= 0 || G.over) return 0;
+  G.credits -= amount;
+  const before = G.score;
+  addScore(amount * cashRate());
+  G.stats.cashed = (G.stats.cashed || 0) + amount;
+  Hooks.sfx('cash'); Hooks.fx('cash', {}); Hooks.log(`Cashed in ${fmt(amount)} credits`, '#ffb03a');
+  return G.score - before;
+}
 function callEarly() {
+  if (G.checkpoint) return 0;
   if (!G.spawningDone || G.next <= 0.5) return 0;
   const secs = Math.ceil(G.next);
   const bonus = Math.round(secs * (2 + G.wave * 0.6) * G.mods.credits);
@@ -1729,8 +1777,18 @@ function callEarly() {
   Hooks.sfx('call');
   return bonus;
 }
+const CHECKPOINT_EVERY = 10;
 function updateWaves(dt) {
   if (G.spawningDone) {
+    if (G.checkpoint) return;
+    if (G.wave > 0 && G.wave % CHECKPOINT_EVERY === 0 && G.cpWave !== G.wave) {
+      // hold the countdown until the field is clear, then stop for a checkpoint
+      if (G.enemies.length) return;
+      G.cpWave = G.wave; G.checkpoint = G.wave;
+      Hooks.log(`Checkpoint · Wave ${G.wave}`, '#59f0b4');
+      Hooks.sfx('milestone'); Hooks.onCheckpoint(G.wave);
+      return;
+    }
     G.next -= dt;
     if (G.next <= 0) startWave();
     return;
@@ -2853,6 +2911,7 @@ const SFX = (() => {
       case 'upgrade': { if (!gate(name, 0.05)) return; const r = shared(); [523, 659, 784].forEach((f, i) => fm(f, 2, 0.35, 0.12 - i * 0.02, 0.22, r.input, { delay: i * 0.06 })); break; }
       case 'reroll': { if (!gate(name, 0.05)) return; for (let i = 0; i < 5; i++) osc('square', 300 + Math.random() * 900, 0.05, 0.04, null, { delay: i * 0.04 }); break; }
       case 'sell': if (!gate(name, 0.05)) return; fm(660, 2, 0.6, 0.1, 0.18, null, { carrierFreqEnd: 330 }); break;
+      case 'cash': { if (!gate(name, 0.08)) return; const r = shared(); [988, 1319, 1568, 1976].forEach((f, i) => { osc('square', f, 0.06, 0.05, r.input, { delay: i * 0.045 }); fm(f, 3, 0.4, 0.05, 0.12, r.input, { delay: i * 0.045 }); }); break; }
       case 'shot': if (!gate('shot' + el, 0.07)) return; (ELSHOT[el] || ELSHOT.K)(); break;
       case 'coreshot': if (!gate(name, 0.12)) return; fm(330, 2, 0.8, 0.04, 0.08, null, { carrierFreqEnd: 660 }); break;
       case 'rail': { if (!gate(name, 0.08)) return; const r = shared(); fm(1200, 10, 8, 0.07, 0.12, r.input, { carrierFreqEnd: 60, modIndexEnd: 0.2 }); noise(0.06, 0.08, null, { filterType: 'highpass', freq: 6000 }); break; }
@@ -3696,6 +3755,7 @@ const Render = (() => {
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
       case 'coin': text(d.x, d.y - 0.6, '+' + d.v, PAL.amber, 15, 1, -0.6); break;
       case 'shake': shakeAt(d.v, 0.3); break;
+      case 'cash': flashes.push({ col: '#ffb03a', life: 0.25, max: 0.25, a: 0.18 }); break;
     }
   }
   function shakeAt(v, t) { shake = Math.max(shakeT > 0 ? shake : 0, v); shakeT = Math.max(shakeT, t); }
@@ -3976,12 +4036,16 @@ const UI = (() => {
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
     $('#cr').textContent = fmt(G.credits);
     $('#wave').textContent = G.wave;
-    $('#nextw').textContent = G.spawningDone ? `in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`;
+    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : G.spawningDone ? (G.wave % CHECKPOINT_EVERY === 0 && G.cpWave !== G.wave && G.enemies.length ? `${G.enemies.length} left` : `in ${Math.max(0, Math.ceil(G.next))}s`) : `${G.queue.length + G.enemies.length} left`;
     $('#score').textContent = fmt(G.score);
-    const canCall = G.spawningDone && G.next > 0.5;
+    const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint;
     const cb = $('#bCall');
-    cb.disabled = !canCall;
-    cb.querySelector('b').textContent = canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '';
+    cb.disabled = !canCall && !G.checkpoint;
+    cb.classList.toggle('cp', !!G.checkpoint);
+    cb.querySelector('span').textContent = G.checkpoint ? 'Resume' : 'Next';
+    cb.querySelector('b').textContent = G.checkpoint ? '' : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '';
+    $('#cpBanner').hidden = !G.checkpoint;
+    $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash'));
     const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
     for (const k of ABIL_ORDER) {
       const n = G.charges[k], btn = document.querySelector(`[data-abil="${k}"]`);
@@ -4071,6 +4135,7 @@ const UI = (() => {
     if (panel.kind === 'build') el.innerHTML = buildPanelHTML();
     else if (panel.kind === 'tower') el.innerHTML = towerPanelHTML(panel.t);
     else if (panel.kind === 'core') el.innerHTML = corePanelHTML();
+    else if (panel.kind === 'cash') el.innerHTML = cashPanelHTML();
     for (const cv of el.querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
     liveRefreshPanel();
   }
@@ -4136,7 +4201,7 @@ const UI = (() => {
       <div class="affs">${t.affixes.map(affixHTML).join('')}</div>
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(Math.round(t.invested * (G.af.scav ? 0.9 : 0.7)))}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}</button></div></div>`;
   }
   function corePanelHTML() {
     const c = G.core, s = coreStats();
@@ -4148,6 +4213,14 @@ const UI = (() => {
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       <div class="pfoot"><button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>Upgrade Weapon · ${fmt(wc)}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}</div></div>`;
+  }
+  function cashPanelHTML() {
+    const r = cashRate() * G.CH.score * (G.scoreMult || 1), cr = Math.floor(G.credits);
+    const opt = (f, label) => { const amt = Math.floor(cr * f); return `<button class="btn ${f === 1 ? 'primary' : ''}" data-act="cash" data-v="${f}" ${amt > 0 ? '' : 'disabled'}>${label} · ${fmt(amt)}<small>+${fmt(amt * r)} score</small></button>`; };
+    return `<div class="ph"><div class="pt"><b>Cash In</b><small>Rate rises every wave</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
+      <div class="cashrate"><b>${num1(r)}</b><span>score per credit</span></div>
+      <div class="cashopts">${opt(0.25, '25%')}${opt(0.5, '50%')}${opt(1, 'All')}</div>
+      ${G.stats.cashed ? `<div class="sts">Cashed in this run: ${fmt(G.stats.cashed)} credits</div>` : ''}`;
   }
   function liveRefreshPanel() {
     if (!panel || !G) return;
@@ -4164,6 +4237,7 @@ const UI = (() => {
       const d = el.querySelector('[data-live="dps"]'); if (d) d.textContent = fmt(t.dps);
       const k = el.querySelector('[data-live="kills"]'); if (k) k.textContent = t.kills;
     }
+    if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; el.innerHTML = cashPanelHTML(); } return; }
     if (panel.kind === 'core') {
       const c = G.core;
       const a = el.querySelector('[data-live="chp"]'); if (a) a.textContent = `${Math.ceil(c.hp)}/${Math.round(c.max)}`;
@@ -4197,6 +4271,10 @@ const UI = (() => {
       else if (act === 'reroll') { if (!rerollTower(t)) SFX.play('deny'); renderPanel(); }
       else if (act === 'sell') { sellTower(t); closePanel(); }
       else if (act === 'vet') { if (!claimVet(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
+      return;
+    }
+    if (panel.kind === 'cash') {
+      if (act === 'cash') { const got = cashIn(Math.floor(G.credits * +b.dataset.v)); if (got) toast('CASHED IN', `+${fmt(got)} score`, '#ffb03a'); else SFX.play('deny'); updateHud(); panel.sig = null; liveRefreshPanel(); }
       return;
     }
     if (panel.kind === 'core') {
@@ -4328,7 +4406,7 @@ const UI = (() => {
       <div class="elbar">${ELS.filter(e => els[e] / tot > 0.005).map(e => `<i style="flex:${Math.max(0.001, els[e] / tot)};background:${EL[e].col}" title="${EL[e].name}"></i>`).join('')}</div>
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? 'Combos: ' + combos : 'No combos this run.'}</p>
-      <p class="note">Elites ${G.stats.elites} · Bosses ${G.stats.bossKills} · Leaks ${G.stats.leaks}${G.stats.lastLeak ? ' · Final hit: ' + esc(G.stats.lastLeak) : ''}${G.anoms.length ? ' · Anomalies: ' + G.anoms.map(id => esc(ANOMALIES.find(a => a.id === id).name)).join(', ') : ''}</p>
+      <p class="note">Elites ${G.stats.elites} · Bosses ${G.stats.bossKills} · Leaks ${G.stats.leaks}${G.stats.cashed ? ' · Cashed in ' + fmt(G.stats.cashed) + ' credits' : ''}${G.stats.lastLeak ? ' · Final hit: ' + esc(G.stats.lastLeak) : ''}${G.anoms.length ? ' · Anomalies: ' + G.anoms.map(id => esc(ANOMALIES.find(a => a.id === id).name)).join(', ') : ''}</p>
     </div>`;
   }
   function openDraft(opts) {
@@ -4395,6 +4473,7 @@ const UI = (() => {
       ['Specialize', 'At LV 3, choose one of two specializations.'],
       ['Core', 'Tap the core to upgrade its weapon and shield, or repair it.'],
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
+      ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan. Tap Fit to reset the view.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
@@ -4413,17 +4492,70 @@ const UI = (() => {
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
       ['Abilities', 'Earned from score milestones. Shown on the left.'],
       ['Bosses', 'Every 10 waves. Drop a boon and a Recalibration token.'],
+      ['Checkpoint', 'After each boss wave the game holds. Sell for a full refund and respec for free.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
       ['Passive Web', 'Spend points on permanent bonuses. Open it anytime.'],
       ['Keystones', 'Powerful nodes with a drawback, on the outer rim.'],
-      ['Respec', 'Free between runs. Costs Recalibration tokens during a run.'],
+      ['Respec', 'Free between runs and at checkpoints. Otherwise costs Recalibration tokens.'],
       ['Builds', 'Save up to 5 web layouts and swap between them.'],
       ['Daily', 'One shared map and set of anomalies each day.'],
     ] },
+    { id: 'dict', name: 'Dictionary' },
   ];
-  let helpTab = 'basics';
+  let helpTab = 'basics', dictCat = 'status', dictQ = '';
+  const rng = (lo, hi, div) => div ? `${lo / div}–${hi / div}` : `${lo}–${hi}`;
+  function dictData() {
+    const P = { atk: 'Attack towers', pylon: 'Relay Pylon', forge: 'Credit Forge' };
+    const affRange = A => A.fixed ? (() => { const f = A.fixed.filter(x => x > 0); return f.length > 1 ? `${Math.min(...f)}–${Math.max(...f)}` : `${f[0]}`; })() : rng(A.lo, A.hi, A.div);
+    return [
+      { id: 'status', name: 'Statuses', rows: [
+        ['Burn', 'Deals damage over time.', EL.T.col], ['Chill', 'Slows. Stacks up to 5.', EL.C.col], ['Freeze', 'At 5 Chill stacks the enemy is frozen in place.', EL.C.col],
+        ['Shock', 'Enemy takes +15% damage while Shocked.', EL.A.col], ['Mark', 'Each stack adds +5% damage taken.', EL.V.col], ['Stun', 'Enemy cannot move.', EL.A.col],
+        ['Cloaked', 'Cannot be targeted. Relay Pylons reveal cloaked enemies.'], ['Armor', 'Reduces Kinetic damage taken. Pierce and Armor penetration bypass it.'],
+        ['Shield', 'Absorbs damage before HP.'] ] },
+      { id: 'combos', name: 'Combos', rows: COMBO_NAMES.map(n => [n[0] + n.slice(1).toLowerCase(), COMBO_DESC[n] + '.']) },
+      { id: 'terms', name: 'Terms', rows: [
+        ['Pierce', 'Hits pass through additional enemies.'], ['Chain', 'Attacks jump to additional nearby enemies.'], ['Splash', 'Damages enemies around the impact. Radius in tiles.'],
+        ['Crit', 'Critical hit. Deals bonus Crit Damage.'], ['Ramp', 'Beam damage that grows while it holds one target.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
+        ['Specialization', 'A permanent fork chosen at LV 3.'], ['Veteran', 'Rank earned from kills. Each rank offers a mutation.'], ['Mutation', 'An affix you choose when a tower ranks up.'],
+        ['Ascend', 'Upgrade past max level for ×1.3 Damage and a new affix.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
+        ['Milestone', 'Score threshold. Grants an ability charge and a small bonus.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
+        ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
+        ['Checkpoint', 'Pause after each boss wave. Full sell refunds and free respec.'], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
+        ['Score multiplier', 'Raised by chaos level, Anomalies and Stabilize.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path.'] ] },
+      { id: 'affix', name: 'Affixes', rows: [
+        ['Common', 'Base value.', RARITY[0].col], ['Magic', '×1.7 value.', RARITY[1].col], ['Rare', '×2.6 value.', RARITY[2].col], ['Legendary', 'Unique effect. See Legendaries.', RARITY[3].col], ['Curse', 'Negative affix. See Curses.', RARITY[4].col],
+        ...AFFIXES.map(A => [A.t(affRange(A)), `Common range · ${P[A.pool]}`]) ] },
+      { id: 'legend', name: 'Legendaries', rows: LEGENDARIES.map(L => [L.name, `${L.t()}. ${P[L.pool]}.`, RARITY[3].col]) },
+      { id: 'curse', name: 'Curses', rows: CURSES.map(C => [C.t(), 'Curse', RARITY[4].col]) },
+      { id: 'enemy', name: 'Enemies', rows: Object.values(ENEMIES).map(E => [E.name, E.desc + '.', '#ff8a9c']) },
+      { id: 'elite', name: 'Elite Affixes', rows: ELITE_AFFIXES.map(E => [E.name, E.desc + '.', E.col]) },
+      { id: 'boss', name: 'Bosses', rows: BOSSES.map(B => [B.name, B.desc + '.', '#ff4d6a']) },
+      { id: 'storm', name: 'Storms', rows: [...Object.values(STORMS).map(S => [S.name, S.desc + '.', S.col]),
+        ...Object.entries(COMBO_STORMS).map(([k, n]) => [n, 'Merged storm: ' + k.split('+').map(x => STORMS[x].name).join(' + ') + '. Both effects.']),
+        ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
+      { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
+      { id: 'anom', name: 'Anomalies', rows: ANOMALIES.map(A => [A.name, `${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff']) },
+      { id: 'ks', name: 'Keystones', rows: TREE.list.filter(n => n.kind === 'keystone').map(n => [n.name, n.lines.join('. ') + '.']) },
+      { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
+      { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · Unlocks at Wave ${D.unlock}</em>`, EL[D.el].col]; }) },
+    ];
+  }
+  function dictHTML() {
+    const cats = dictData(), q = dictQ.trim().toLowerCase();
+    const strip = h => h.replace(/<[^>]+>/g, '');
+    const row = r => `<b style="--c:${r[2] || ''}">${esc(r[0])}</b><span>${r[1].includes('<') ? r[1] : esc(r[1])}</span>`;
+    let body;
+    if (q) {
+      const hits = cats.map(c => ({ c, rows: c.rows.filter(r => (r[0] + ' ' + strip(r[1])).toLowerCase().includes(q)) })).filter(x => x.rows.length);
+      body = hits.length ? hits.map(x => `<div class="dh2">${x.c.name}</div>` + x.rows.map(row).join('')).join('') : '<span class="dim" style="grid-column:1/-1">No matches.</span>';
+    } else body = (cats.find(c => c.id === dictCat) || cats[0]).rows.map(row).join('');
+    return `<input class="dsearch" id="dSearch" type="search" placeholder="Search terms" value="${esc(dictQ)}" autocomplete="off">
+      ${q ? '' : `<div class="dict-cats">${cats.map(c => `<button class="chip ${c.id === dictCat ? 'on' : ''}" data-act="dcat" data-v="${c.id}">${c.name}</button>`).join('')}</div>`}
+      <div class="dict" id="dictBody">${body}</div>`;
+  }
   function openHelp(tab) {
     if (G && !G.over) G.paused = true;
     if (tab) helpTab = tab;
@@ -4434,8 +4566,13 @@ const UI = (() => {
     ].map(([a, b, c]) => `<span>${a} <i>on</i> ${b}</span><b>${c}</b>`).join('')}</div>` : '';
     modal(`<div class="card help"><div class="ch"><h2>How to Play</h2><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       <div class="chips gtabs">${GUIDE.map(g => `<button class="chip ${g.id === T.id ? 'on' : ''}" data-act="htab" data-v="${g.id}">${g.name}</button>`).join('')}</div>
-      <div class="gd">${T.rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join('')}</div>
+      ${T.id === 'dict' ? dictHTML() : `<div class="gd">${T.rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join('')}</div>`}
       ${combos}</div>`, 'help');
+    const ds = $('#dSearch');
+    if (ds) {
+      ds.oninput = () => { dictQ = ds.value; const pos = ds.selectionStart; openHelp(); const n = $('#dSearch'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} };
+      ds.onkeydown = e => e.stopPropagation();
+    }
   }
   function openArchive() {
     const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k); return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? '' : 'Wave ' + D.unlock}</em></div>`; }).join('');
@@ -4474,6 +4611,7 @@ const UI = (() => {
       case 'resume': closeModal(); G.paused = false; break;
       case 'help': openHelp(); break;
       case 'htab': openHelp(b.dataset.v); break;
+      case 'dcat': dictCat = b.dataset.v; openHelp(); break;
       case 'settings': openSettings(); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); abandonRun(); break;
@@ -4516,7 +4654,8 @@ const UI = (() => {
     cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); if (!ptrs.size) gesture = null; });
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
-    $('#bCall').onclick = () => { SFX.init(); const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
+    $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { resumeCheckpoint(); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
+    $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
     $('#bWeb').onclick = () => { SFX.play('ui'); Tree.open(); };
@@ -4567,6 +4706,7 @@ const UI = (() => {
     Hooks.onChange = () => { if (G && panel) renderPanel(); Save.save(); };
     Hooks.onSave = () => Save.save();
     Hooks.onWave = () => {};
+    Hooks.onCheckpoint = w => { toast('CHECKPOINT', 'Full sell refunds and free respec. Tap Resume when ready.', '#59f0b4'); if (panel && panel.kind === 'tower') renderPanel(); Save.save(); };
     Hooks.onEntropy = () => {};
   }
   function tick(dt) {
@@ -4694,8 +4834,9 @@ const Tree = (() => {
         else act = `<button class="btn primary" data-tact="alloc" ${p.length > free ? 'disabled' : ''}>Allocate · ${p.length} point${p.length > 1 ? 's' : ''}</button>${p.length > free ? `<span class="note">${free} available</span>` : ''}`;
       } else {
         const o = treeOrphans(sel) || [];
-        const cost = inRun() ? ` · ${o.length} token${o.length > 1 ? 's' : ''}` : '';
-        act = `<button class="btn danger" data-tact="refund" ${inRun() && G.tokens < o.length ? 'disabled' : ''}>Refund${o.length > 1 ? ` ${o.length} nodes` : ''}${cost}</button>${inRun() ? `<span class="note">Costs Recalibration tokens during a run</span>` : '<span class="note">Free between runs</span>'}`;
+        const paid = inRun() && !G.checkpoint;
+        const cost = paid ? ` · ${o.length} token${o.length > 1 ? 's' : ''}` : '';
+        act = `<button class="btn danger" data-tact="refund" ${paid && G.tokens < o.length ? 'disabled' : ''}>Refund${o.length > 1 ? ` ${o.length} nodes` : ''}${cost}</button>${paid ? `<span class="note">Costs Recalibration tokens. Free at checkpoints.</span>` : `<span class="note">${inRun() ? 'Free at this checkpoint' : 'Free between runs'}</span>`}`;
       }
       info.innerHTML = `<div class="ti"><div><i style="color:${col}">${kindName}</i><b>${esc(n.name)}</b></div><ul>${nodeLines(n).map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ta">${act}</div></div>`;
     }
@@ -4705,7 +4846,7 @@ const Tree = (() => {
     if (drawer === 'builds') {
       dr.innerHTML = `<div class="ph"><b>Saved Builds</b><button class="x" data-tact="builds">✕</button></div>
         ${PROF.builds.map((bd, i) => `<div class="slot"><input id="bn${i}" type="text" maxlength="20" placeholder="Build ${i + 1}" value="${bd ? esc(bd.name) : ''}"><small>${bd ? (bd.alloc.length - 1) + ' nodes' : 'Empty'}</small><button class="btn small" data-tact="save" data-v="${i}">Save</button><button class="btn small" data-tact="load" data-v="${i}" ${bd ? '' : 'disabled'}>Load</button></div>`).join('')}
-        <p class="note">${inRun() ? 'Loading during a run costs 2 Recalibration tokens.' : 'Loading is free between runs.'}</p>
+        <p class="note">${inRun() && !G.checkpoint ? 'Loading during a run costs 2 Recalibration tokens. Free at checkpoints.' : 'Loading is free right now.'}</p>
         ${inRun() ? '' : `<button class="btn danger wide" data-tact="wipe">${confirmWipe ? 'Tap again to refund all nodes' : 'Reset Web'}</button>`}`;
     } else if (drawer === 'totals') {
       const raw = M.raw, lines = [];
