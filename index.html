@@ -2927,31 +2927,34 @@ const SFX = (() => {
   }
   // ---------------- soundtrack: Elemental Clash tracks (default) or the procedural synth ----------------
   let soundtrack = 'ec', synthBus = null, track = 'menu';
+  // Plain media elements (no Web Audio routing): the most reliable playback path on iOS and inside iframes.
   const BGM = (() => {
-    const els = {}, nodes = {};
-    let failed = false;
+    const els = {};
+    let failed = false, unlocked = false;
     function el(id) {
       if (els[id]) return els[id];
-      const a = new Audio(); a.loop = true; a.preload = 'auto'; a.src = 'audio/bgm-' + id + '.mp3';
-      a.setAttribute('playsinline', ''); a.onerror = () => { failed = true; fallback(); };
+      const a = document.createElement('audio');
+      a.loop = true; a.preload = id === track ? 'auto' : 'metadata'; a.setAttribute('playsinline', ''); a.setAttribute('webkit-playsinline', '');
+      a.src = new URL('audio/bgm-' + id + '.mp3', document.baseURI).href;
+      a.addEventListener('error', () => { if (!a.src) return; failed = true; fallback(); });
+      a.style.display = 'none'; document.body.appendChild(a);
       els[id] = a; return a;
     }
-    function attach() {
-      // route the tracks through Web Audio so the Music slider works on iOS (element volume is ignored there)
-      for (const id of ['menu', 'battle']) {
-        const a = el(id);
-        if (!nodes[id] && ctx) { try { nodes[id] = ctx.createMediaElementSource(a); nodes[id].connect(musBus); } catch (e) {} }
-      }
-      apply();
-    }
+    function attach() { unlocked = true; el('menu'); el('battle'); apply(); }
     function apply() {
-      for (const id in els) if (id !== track || soundtrack !== 'ec' || document.hidden) { if (!els[id].paused) els[id].pause(); }
-      if (soundtrack !== 'ec' || failed || !ctx || document.hidden) return;
+      const on = soundtrack === 'ec' && !failed && unlocked && !document.hidden && musVol > 0.001;
+      for (const id in els) { els[id].volume = Math.min(1, musVol * 1.4); if ((!on || id !== track) && !els[id].paused) els[id].pause(); }
+      if (!on) return;
       const a = el(track);
-      if (a.paused) a.play().catch(() => {});
+      if (a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => {}); }
     }
     function fallback() { if (soundtrack === 'ec') { soundtrack = 'synth-fallback'; if (synthBus) synthBus.gain.value = 1; if (ctx) Music.start(); } }
-    document.addEventListener('visibilitychange', apply);
+    document.addEventListener('visibilitychange', () => apply());
+    // iOS only grants playback inside a user gesture: retry on every tap until a track is actually playing
+    for (const ev of ['touchend', 'click', 'pointerup', 'keydown']) document.addEventListener(ev, () => {
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+      if (unlocked && soundtrack === 'ec' && els[track] && els[track].paused) apply();
+    }, { passive: true });
     return { attach, apply, get failed() { return failed; } };
   })();
   function setTrack(t) { track = t === 'game' ? 'battle' : 'menu'; BGM.apply(); }
@@ -2965,6 +2968,7 @@ const SFX = (() => {
     sfxVol = s; musVol = m;
     if (sfxBus) sfxBus.gain.setTargetAtTime(s, now(), 0.05);
     if (musBus) musBus.gain.setTargetAtTime(m, now(), 0.05);
+    BGM.apply();
   }
   function impulse(decay) {
     const k = decay.toFixed(1);
@@ -4661,7 +4665,7 @@ const UI = (() => {
     const S = PROF.settings;
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
       <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
-      <div class="set"><span>Soundtrack</span><div class="chips"><button class="chip ${S.soundtrack !== 'synth' ? 'on' : ''}" data-act="strack" data-v="ec">Elemental Clash</button><button class="chip ${S.soundtrack === 'synth' ? 'on' : ''}" data-act="strack" data-v="synth">Synth</button></div></div>
+      <div class="set"><span>Soundtrack</span><div class="chips"><button class="chip ${S.soundtrack !== 'synth' ? 'on' : ''}" data-act="strack" data-v="ec">Composed</button><button class="chip ${S.soundtrack === 'synth' ? 'on' : ''}" data-act="strack" data-v="synth">Generative</button></div></div>
       <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
       ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
       <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
