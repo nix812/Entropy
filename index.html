@@ -517,7 +517,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.6.2';
+const VERSION = '1.7.0';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -931,6 +931,7 @@ function satLines(n) {
   if (el === 'E') return [`Facing ${SECTORS[si].name}: ` + Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')];
   return [`Facing ${SECTORS[si].name}: ${S.t(el)}`];
 }
+const WEB_SCALE = 1.3, WEB_VER = 2;
 function buildTree() {
   const nodes = {}, edges = [];
   const add = (id, x, y, kind, sector, name, fx, extra) => {
@@ -941,91 +942,80 @@ function buildTree() {
   const pol = (r, deg) => { const a = deg * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; };
   const smallName = fx => SMALL_NAME[Object.keys(fx)[0]] || 'Node';
 
+  // merged travel nodes: two old smalls folded into one, at 90% of their sum
+  const mf = (...fs) => { const o = {}; for (const f of fs) for (const k in f) o[k] = (o[k] || 0) + f[k]; for (const k in o) { const v = o[k] * (fs.length > 1 ? 0.9 : 1); o[k] = Math.abs(v) < 1 ? Math.round(v * 100) / 100 : Math.round(v); } return o; };
   add('start', 0, 0, 'start', -1, 'Entropy Core', { P: 5, Tm: 5, F: 5, I: 5 });
   SECTORS.forEach((S, i) => {
-    const a = -90 + i * 60, N = SECTORS[(i + 1) % 6];
+    const a = -90 + i * 60, N = SECTORS[(i + 1) % 6], A8 = { [S.attr]: 8 };
     let [x, y] = pol(80, a);
     add(`g${i}`, x, y, 'small', i, `${S.name} Gate`, { [S.attr]: 6, xp: 2 });
     link('start', `g${i}`);
     [x, y] = pol(88, a + 30);
     const mfx = {}; mfx[S.attr] = 5; mfx[N.attr] = (mfx[N.attr] || 0) + 5;
     add(`m${i}`, x, y, 'small', i, 'Conduit', mfx);
-    // spine
-    for (let j = 0; j < 6; j++) {
-      [x, y] = pol(140 + j * 58, a);
-      const fx = j % 2 === 0 ? { [S.attr]: 8 } : Object.assign({}, S.spine[(j - 1) / 2]);
-      add(`s${i}_${j}`, x, y, 'small', i, smallName(fx), fx);
+    // spine: four steps out from the gate
+    const spineFx = [A8, mf(S.spine[0], A8), Object.assign({}, S.spine[1]), mf(S.spine[2], A8)];
+    for (let j = 0; j < 4; j++) {
+      [x, y] = pol(140 + j * 80, a);
+      add(`s${i}_${j}`, x, y, 'small', i, smallName(spineFx[j]), spineFx[j]);
       link(j === 0 ? `g${i}` : `s${i}_${j - 1}`, `s${i}_${j}`);
     }
-    // clusters (notable wheels)
-    const cl = [[1, -1], [2, 1], [4, -1]];
-    cl.forEach(([j, side], ci) => {
+    // clusters: spine -> two smalls -> notable, alternating sides so neighbours never meet
+    [[1, -1], [2, 1], [3, -1]].forEach(([j, side], ci) => {
       const C = S.clusters[ci];
-      const [sx, sy] = pol(140 + j * 58, a);
-      const ar = a * Math.PI / 180;
-      const tx = -Math.sin(ar) * side, ty = Math.cos(ar) * side; // tangent
-      const rx = Math.cos(ar), ry = Math.sin(ar); // radial
-      const cx = sx + tx * 68, cy = sy + ty * 68;
-      const p = `c${i}_${ci}`;
-      add(`${p}a`, cx - tx * 30, cy - ty * 30, 'small', i, smallName(C.smalls[0]), C.smalls[0]);
-      add(`${p}b`, cx + rx * 28, cy + ry * 28, 'small', i, smallName(C.smalls[1]), C.smalls[1]);
-      add(`${p}c`, cx - rx * 28, cy - ry * 28, 'small', i, smallName(C.smalls[2]), C.smalls[2]);
-      add(`${p}n`, cx + tx * 32, cy + ty * 32, 'notable', i, C.name, C.fx);
-      link(`s${i}_${j}`, `${p}a`); link(`${p}a`, `${p}b`); link(`${p}a`, `${p}c`);
-      link(`${p}b`, `${p}n`); link(`${p}c`, `${p}n`);
+      const [sx, sy] = pol(140 + j * 80, a), ar = a * Math.PI / 180;
+      const tx = -Math.sin(ar) * side, ty = Math.cos(ar) * side, rx = Math.cos(ar), ry = Math.sin(ar);
+      const p = `c${i}_${ci}`, fa = mf(C.smalls[0], C.smalls[2]), fb = C.smalls[1];
+      add(`${p}a`, sx + tx * 40, sy + ty * 40, 'small', i, smallName(fa), fa);
+      add(`${p}b`, sx + tx * 80 + rx * 14, sy + ty * 80 + ry * 14, 'small', i, smallName(fb), fb);
+      add(`${p}n`, sx + tx * 120, sy + ty * 120, 'notable', i, C.name, C.fx);
+      link(`s${i}_${j}`, `${p}a`); link(`${p}a`, `${p}b`); link(`${p}b`, `${p}n`);
     });
     // keystone & mastery branches
     const K = S.keystone, M = S.mastery;
-    [[K, -1, 'k', 'keystone'], [M, 1, 'x', 'mastery']].forEach(([D, s, tag, kind]) => {
-      let prev = `s${i}_5`;
-      [[485, 6], [535, 10]].forEach(([r, da], q) => {
-        [x, y] = pol(r, a + s * da);
-        const fx = D.smalls[q];
-        add(`${tag}${i}_${q}`, x, y, 'small', i, smallName(fx), fx);
-        link(prev, `${tag}${i}_${q}`); prev = `${tag}${i}_${q}`;
-      });
-      [x, y] = pol(590, a + s * 13);
+    [[K, -1, 'k', 'keystone'], [M, 1, 'x', 'mastery']].forEach(([D, sd, tag, kind]) => {
+      const fx = mf(D.smalls[0], D.smalls[1]);
+      [x, y] = pol(495, a + sd * 6);
+      add(`${tag}${i}_0`, x, y, 'small', i, smallName(fx), fx);
+      link(`s${i}_3`, `${tag}${i}_0`);
+      [x, y] = pol(580, a + sd * 11);
       add(`${tag}${i}`, x, y, kind, i, D.name, D.fx || {}, D.ks ? { ks: D.ks, lines: D.lines } : D.opts ? { opts: D.opts } : null);
-      link(prev, `${tag}${i}`);
+      link(`${tag}${i}_0`, `${tag}${i}`);
     });
   });
-  // ring + arcs
+  // ring of hybrids between sectors, plus three arc keystones
   SECTORS.forEach((S, i) => {
     const a = -90 + i * 60, n = (i + 1) % 6, N = SECTORS[n];
     link(`g${i}`, `m${i}`); link(`m${i}`, `g${n}`);
-    let [x, y] = pol(314, a + 15);
+    let [x, y] = pol(455, a + 14);
     add(`r${i}_0`, x, y, 'small', i, smallName(S.spine[0]), Object.assign({}, S.spine[0]));
-    [x, y] = pol(314, a + 45);
+    [x, y] = pol(455, a + 46);
     add(`r${i}_1`, x, y, 'small', n, smallName(N.spine[0]), Object.assign({}, N.spine[0]));
-    [x, y] = pol(318, a + 30);
+    [x, y] = pol(470, a + 30);
     add(`h${i}`, x, y, 'notable', i, HYBRIDS[i].name, HYBRIDS[i].fx, { hybrid: 1 });
     link(`s${i}_3`, `r${i}_0`); link(`r${i}_0`, `h${i}`); link(`h${i}`, `r${i}_1`); link(`r${i}_1`, `s${n}_3`);
     const AK = ARC_KEYSTONES[i];
     if (AK) {
-      let prev = `h${i}`;
-      [372, 426].forEach((r, q) => {
-        [x, y] = pol(r, a + 30);
-        add(`e${i}_${q}`, x, y, 'small', i, smallName(AK.smalls[q]), AK.smalls[q]);
-        link(prev, `e${i}_${q}`); prev = `e${i}_${q}`;
-      });
-      [x, y] = pol(482, a + 30);
+      const fx = mf(AK.smalls[0], AK.smalls[1]);
+      [x, y] = pol(540, a + 30);
+      add(`e${i}_0`, x, y, 'small', i, smallName(fx), fx);
+      link(`h${i}`, `e${i}_0`);
+      [x, y] = pol(605, a + 30);
       add(`e${i}`, x, y, 'keystone', i, AK.name, {}, { ks: AK.ks, lines: AK.lines });
-      link(prev, `e${i}`);
+      link(`e${i}_0`, `e${i}`);
     }
   });
   // outer spiral arms
   SECTORS.forEach((S, i) => {
-    const a = -90 + i * 60;
-    let prev = `x${i}`;
-    for (let q = 0; q < 4; q++) {
-      const [x, y] = pol(645 + q * 50, a + 17 + q * 7);
-      const fx = q % 2 ? Object.assign({}, S.spine[(q >> 1) % 3]) : { [S.attr]: 8 };
-      add(`w${i}_${q}`, x, y, 'small', i, smallName(fx), fx);
-      link(prev, `w${i}_${q}`); prev = `w${i}_${q}`;
-    }
-    const [x, y] = pol(860, a + 47);
+    const a = -90 + i * 60, A8 = { [S.attr]: 8 };
+    const f0 = mf(S.spine[0], A8), f1 = mf(S.spine[1], A8);
+    let [x, y] = pol(670, a + 21);
+    add(`w${i}_0`, x, y, 'small', i, smallName(f0), f0); link(`x${i}`, `w${i}_0`);
+    [x, y] = pol(765, a + 34);
+    add(`w${i}_1`, x, y, 'small', i, smallName(f1), f1); link(`w${i}_0`, `w${i}_1`);
+    [x, y] = pol(850, a + 47);
     add(`w${i}`, x, y, 'notable', i, ARMS[i].name, ARMS[i].fx, { arm: 1 });
-    link(prev, `w${i}`);
+    link(`w${i}_1`, `w${i}`);
   });
   // the Z-axis: Zenith above the galactic plane, Nadir below
   const col = (sign, tag, orbs, ks, smallFx) => {
@@ -1047,6 +1037,8 @@ function buildTree() {
     [{ F: 6, I: 4 }, { F: 8 }, { I: 8 }, { F: 6, Tm: 4 }]);
   col(-1, 'na', ['no1', 'no2'], { name: 'Event Singularity', ks: 'singular', lines: ['Entropy fills 2× faster', 'Each Anomaly grants +10% score instead of +5%', 'You cannot Stabilize'] },
     [{ P: 6, Tm: 4 }, { Tm: 8 }, { P: 8 }, { P: 6, F: 4 }]);
+  // spread the disk out for phone-sized tap targets
+  for (const id in nodes) { const n = nodes[id]; if (n.sector !== -2) { n.x *= WEB_SCALE; n.y *= WEB_SCALE; } }
   // slight thickness so the disk reads as 3D when tilted
   for (const id in nodes) { const n = nodes[id]; if (n.z === undefined) { const h = Math.sin(n.x * 12.9898 + n.y * 78.233) * 43758.5453; n.z = ((h - Math.floor(h)) - 0.5) * (n.kind === 'small' ? 26 : 16) * Math.min(1, Math.hypot(n.x, n.y) / 300); } }
   nodes.start.z = 0;
@@ -1146,7 +1138,7 @@ const Hooks = {
 // ---------------- Profile (meta progression) ----------------
 function defaultProfile() {
   return {
-    v: 1, xp: 0, alloc: ['start'], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
+    v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, soundtrack: 'ec', hud: 'lean', dmgNums: true, shake: true },
     seenHelp: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
@@ -1208,10 +1200,22 @@ function treeRefund(id) {
   Hooks.onChange('tree');
   return true;
 }
+function pruneAlloc(list) {
+  const want = new Set(list.filter(id => TREE.nodes[id])), seen = new Set(['start']), q = ['start'];
+  while (q.length) { const c = q.shift(); for (const nb of TREE.nodes[c].adj) if (want.has(nb) && !seen.has(nb)) { seen.add(nb); q.push(nb); } }
+  return ['start', ...list.filter(id => id !== 'start' && seen.has(id))];
+}
+// returns true when an older web layout was reset (points refunded)
+function migrateWeb() {
+  if (PROF.webV === WEB_VER) return false;
+  const had = (PROF.alloc || []).length > 1;
+  PROF.alloc = ['start']; PROF.webV = WEB_VER;
+  return had;
+}
 function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
   if (!b) return 'empty';
-  const valid = b.alloc.filter(id => TREE.nodes[id]);
+  const valid = pruneAlloc(b.alloc);
   if (valid.length - 1 > profLevel().level) return 'points';
   if (G && !G.over && !G.checkpoint) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   PROF.alloc = valid.includes('start') ? valid.slice() : ['start', ...valid];
@@ -4347,6 +4351,7 @@ const Save = (() => {
     if (!p || typeof p !== 'object') return d;
     const out = Object.assign(d, p);
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
+    out.webV = p.webV || 1;
     out.alloc = Array.isArray(p.alloc) ? p.alloc.filter(id => TREE.nodes[id]) : ['start'];
     if (!out.alloc.includes('start')) out.alloc.unshift('start');
     if (!Array.isArray(out.builds) || out.builds.length !== 5) out.builds = [null, null, null, null, null];
@@ -4381,6 +4386,7 @@ const Save = (() => {
         try { remote = merge(JSON.parse(snap.data().json)); } catch (e) {}
         if (remote && (remote.updatedAt || 0) > (PROF.updatedAt || 0) && !(G && !G.over)) {
           PROF = remote;
+          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('PASSIVE WEB REBUILT', 'Fewer, stronger nodes. All your points are refunded.', '#ffb03a'); queue(); }
           try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
           UI.refreshAll();
         } else queue();
@@ -4589,7 +4595,7 @@ const UI = (() => {
   const toastHeld = [], toastSeen = {};
   function toast(title, body, col, force) {
     const key = title + '|' + body, now = performance.now();
-    if (now - (toastSeen[key] || 0) < 4000) return;
+    if (toastSeen[key] !== undefined && now - toastSeen[key] < 4000) return;
     toastSeen[key] = now;
     if (!force && screen === 'game' && (modalOpen || Tree.isOpen)) { toastHeld.push([title, body, col]); if (toastHeld.length > 3) toastHeld.shift(); return; }
     const box = $('#toasts');
@@ -4598,7 +4604,7 @@ const UI = (() => {
     d.innerHTML = `<b>${esc(title)}</b><span>${esc(body)}</span>`;
     box.appendChild(d);
     while (box.children.length > 2) box.removeChild(box.firstChild);
-    setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 400); }, 2200);
+    setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 400); }, (body || '').length > 44 ? 4500 : 2200);
   }
   function log(text, col) {
     logLines.push({ text, col });
@@ -5232,8 +5238,8 @@ const Tree = (() => {
   let cv, c, lb, lc, W = 0, H = 0, dpr = 1, open_ = false, cam = null, goal = null, sel = null, path = null;
   const ptrs = new Map(); let pinch = null, dragMoved = 0, drawer = null, confirmWipe = false, frame = 0, shiftPan = false;
   const R = { start: 15, small: 7, notable: 12, mastery: 14, keystone: 17, orbit: 13, sat: 11 };
-  const PD = 1800, ORB_R = 120;
-  const DEF = () => flatMode() ? { tx: 0, ty: 40, tz: 0, yaw: 0, pitch: 0.001, zoom: clamp(Math.min(W / 2500, H / 1700), 0.12, 1) } : { tx: 0, ty: 0, tz: 0, yaw: 0.35, pitch: 0.98, zoom: clamp(Math.min(W, H) / 1300, 0.2, 1) };
+  const PD = 1800, ORB_R = 120, WS = WEB_SCALE, PILX = 1420;
+  const DEF = () => flatMode() ? { tx: 0, ty: 40, tz: 0, yaw: 0, pitch: 0.001, zoom: clamp(Math.min(W / 3200, H / 2300), 0.1, 1) } : { tx: 0, ty: 0, tz: 0, yaw: 0.35, pitch: 0.98, zoom: clamp(Math.min(W, H) / 1650, 0.16, 1) };
   let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, camOX = 0, viewT = 1, profOn = false;
   const flatMode = () => !PROF.settings || PROF.settings.webView !== '3d';
   const orbView = {};
@@ -5252,7 +5258,7 @@ const Tree = (() => {
   // flat planning layout: the disk top-down, Zenith as a pillar on the right, Nadir on the left
   function posFlat(n) {
     if (n.sector !== -2) return [n.x, n.y, 0];
-    const side = n.z > 0 ? 1 : -1, px = side * 1120, py = 330 - Math.abs(n.z) * 1.45;
+    const side = n.z > 0 ? 1 : -1, px = side * PILX, py = 330 - Math.abs(n.z) * 1.45;
     if (n.sat !== undefined) { const a = satAngle(n); return [px + Math.cos(a) * ORB_R * 0.9, py + Math.sin(a) * ORB_R * 0.55, 0]; }
     return [px, py, 0];
   }
@@ -5271,12 +5277,12 @@ const Tree = (() => {
     SECTORS.forEach((S, i) => {
       const a0 = (-90 + i * 60) * Math.PI / 180;
       for (let k = 0; k < 360; k++) {
-        const r = 70 + Math.pow(rnd(), 0.75) * 860, th = a0 + gauss() * 0.42 + 0.28 * Math.log(r / 70);
+        const r = 90 + Math.pow(rnd(), 0.75) * 860 * WS, th = a0 + gauss() * 0.42 + 0.28 * Math.log(r / 90);
         dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 26 * (1.1 - r / 1000), col: S.col, a: 0.18 + rnd() * 0.5, s: rnd() < 0.06 ? 2 : 1 });
       }
     });
     for (let k = 0; k < 560; k++) { const r = Math.abs(gauss()) * 150, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 45, col: ['#fff2c8', '#ffb03a', '#ffffff', '#ffd27a'][k % 4], a: 0.25 + rnd() * 0.6, s: rnd() < 0.15 ? 2 : 1 }); }
-    for (let k = 0; k < 260; k++) { const r = 950 + rnd() * 700, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 380, col: '#c9c6ff', a: 0.15 + rnd() * 0.35, s: 1 }); }
+    for (let k = 0; k < 260; k++) { const r = 1250 + rnd() * 800, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 380, col: '#c9c6ff', a: 0.15 + rnd() * 0.35, s: 1 }); }
     bg = []; for (let k = 0; k < 220; k++) bg.push({ x: rnd(), y: rnd(), p: 0.2 + rnd() * 0.8, a: 0.15 + rnd() * 0.5 });
   }
   function init() {
@@ -5315,7 +5321,7 @@ const Tree = (() => {
   function panBy(dx, dy) {
     camPrep();
     const x1 = dx / cam.zoom, y1 = dy / cam.zoom / Math.max(0.35, cp_);
-    cam.tx = clamp(cam.tx - (x1 * cy_ + y1 * sy_), -1300, 1300); cam.ty = clamp(cam.ty - (-x1 * sy_ + y1 * cy_), -1100, 1100);
+    cam.tx = clamp(cam.tx - (x1 * cy_ + y1 * sy_), -1700, 1700); cam.ty = clamp(cam.ty - (-x1 * sy_ + y1 * cy_), -1400, 1400);
   }
   function resize() {
     if (!cv) return;
@@ -5350,7 +5356,7 @@ const Tree = (() => {
     let best = null, bd = 1e9;
     for (const n of TREE.list) {
       const [x, y, z] = npos(n); proj(x, y, z, o);
-      const d = Math.hypot(o.x - px, o.y - py), hitR = Math.max(16, R[n.kind] * o.s + 8);
+      const d = Math.hypot(o.x - px, o.y - py), hitR = Math.max(22, R[n.kind] * o.s + 10);
       if (d < hitR && d - o.d * 0.002 < bd) { bd = d - o.d * 0.002; best = n; }
     }
     if (best && sel === best.id) {
@@ -5534,11 +5540,11 @@ const Tree = (() => {
     if (id === 'core') { goal = Object.assign(DEF()); return; }
     if (id === 'zen' || id === 'nad') {
       const side = id === 'zen' ? 1 : -1;
-      goal = flat ? { tx: side * 1120, ty: 330 - 240 * 1.45, tz: 0, zoom: z0 * 2.6 } : { tx: 0, ty: 0, tz: side * 260, zoom: z0 * 1.7, pitch: 0.55 };
+      goal = flat ? { tx: side * PILX, ty: 330 - 240 * 1.45, tz: 0, zoom: z0 * 3.4 } : { tx: 0, ty: 0, tz: side * 260, zoom: z0 * 1.7, pitch: 0.55 };
       return;
     }
     const i = +id.slice(1), a = (-90 + i * 60) * Math.PI / 180;
-    goal = { tx: Math.cos(a) * 430, ty: Math.sin(a) * 430, tz: 0, zoom: z0 * (flat ? 2.4 : 1.9) };
+    goal = { tx: Math.cos(a) * 430 * WS, ty: Math.sin(a) * 430 * WS, tz: 0, zoom: z0 * (flat ? 3.2 : 2.3) };
     if (!flat) { goal.yaw = Math.PI / 2 - a; goal.pitch = 0.9; }
   }
   const lastNode = () => { const a = PROF.alloc || []; for (let i = a.length - 1; i >= 0; i--) if (TREE.nodes[a[i]] && TREE.nodes[a[i]].kind !== 'start') return a[i]; return null; };
@@ -5547,7 +5553,7 @@ const Tree = (() => {
     if (!id) { flyTo('core'); return; }
     const [x, y, z] = npos(TREE.nodes[id]), z0 = DEF().zoom;
     hereT = 90;
-    goal = { tx: x, ty: y, tz: z * 0.85, zoom: Math.max(cam.zoom, z0 * 2.4) };
+    goal = { tx: x, ty: y, tz: z * 0.85, zoom: Math.max(cam.zoom, z0 * 3.2) };
   }
   function rotateOrbit(dir) {
     const n = TREE.nodes[sel]; if (!n || !n.orbitHub || !PROF.alloc.includes(sel)) return;
@@ -5597,7 +5603,7 @@ const Tree = (() => {
       let cx = 0, cy = 0; for (const n of ns) { cx += n.x; cy += n.y; } cx /= ns.length; cy /= ns.length;
       const L = Math.hypot(cx, cy) || 1, ur = [cx / L, cy / L], ut = [-ur[1], ur[0]];
       let er = 0, et = 0; for (const n of ns) { const dx = n.x - cx, dy = n.y - cy; er = Math.max(er, Math.abs(dx * ur[0] + dy * ur[1])); et = Math.max(et, Math.abs(dx * ut[0] + dy * ut[1])); }
-      cgeo.push({ rid: 's' + i, F: CONST[S.id], col: S.col, ids: ns.map(n => n.id), c: [ur[0] * 560, ur[1] * 560], sr: 190, plane: 1 });
+      cgeo.push({ rid: 's' + i, F: CONST[S.id], col: S.col, ids: ns.map(n => n.id), c: [ur[0] * 560 * WS, ur[1] * 560 * WS], sr: 235, plane: 1 });
     });
     for (const [key, side, col] of [['zen', 1, '#9fd8ff'], ['nad', -1, '#ff5fa8']]) {
       const ns = TREE.list.filter(n => n.sector === -2 && Math.sign(n.z) === side);
@@ -5614,7 +5620,7 @@ const Tree = (() => {
       // world position of figure point (x across, y outward/up)
       let W3;
       if (g.plane) W3 = viewT > 0.5 ? (x, y) => [g.c[0] + x * g.sr, g.c[1] - y * g.sr, 0] : (x, y) => [g.c[0] + cy_ * x * g.sr * 0.8, g.c[1] - sy_ * x * g.sr * 0.8, 60 + (y + 1) * g.sr * 0.8];
-      else if (viewT > 0.5) { const px = g.side * 1120, py = 330 - 260 * 1.45; W3 = (x, y) => [px + x * 170, py - y * 240, 0]; }
+      else if (viewT > 0.5) { const px = g.side * PILX, py = 330 - 260 * 1.45; W3 = (x, y) => [px + x * 170, py - y * 240, 0]; }
       else W3 = (x, y) => [cy_ * x * 150, -sy_ * x * 150, g.side * 600 + y * 150];
       const sp = F.pts.map(([x, y]) => { const w = W3(x, y); proj(w[0], w[1], w[2], o); return { x: o.x / 2, y: o.y / 2, s: o.s }; });
       lc.globalCompositeOperation = 'lighter';
@@ -5668,7 +5674,7 @@ const Tree = (() => {
     }
     lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
     // plane grid rings and the Z axis
-    for (const rr of [250, 500, 750]) { lc.globalAlpha = 0.16; let prev = null; for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.283; proj(Math.cos(a) * rr, Math.sin(a) * rr, 0, o); if (prev && k % 2) line(prev[0], prev[1], o.x / 2, o.y / 2, '#6a6fa8'); prev = [o.x / 2, o.y / 2]; } }
+    for (const rr of [250 * WS, 500 * WS, 750 * WS]) { lc.globalAlpha = 0.16; let prev = null; for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.283; proj(Math.cos(a) * rr, Math.sin(a) * rr, 0, o); if (prev && k % 2) line(prev[0], prev[1], o.x / 2, o.y / 2, '#6a6fa8'); prev = [o.x / 2, o.y / 2]; } }
     if (viewT < 0.5) {
       lc.globalAlpha = 0.35 * (1 - viewT * 2); proj(0, 0, -520, o); proj(0, 0, 520, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, '#8a8fd0');
       for (let z = -500; z <= 500; z += 50) { if (!z) continue; proj(0, 0, z, o); pxR(o.x / 2 - 1, o.y / 2, 3, 1, z > 0 ? '#9fd8ff' : '#ff5fa8'); }
@@ -5676,8 +5682,8 @@ const Tree = (() => {
       // flat pillars for Zenith and Nadir
       for (const side of [1, -1]) {
         const colr = side > 0 ? '#9fd8ff' : '#ff5fa8';
-        lc.globalAlpha = 0.3 * (viewT * 2 - 1); proj(side * 1120, 330, 0, o); proj(side * 1120, 330 - 500 * 1.45, 0, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, colr);
-        proj(side * 1120, 330 - 520 * 1.45 - 30, 0, o);
+        lc.globalAlpha = 0.3 * (viewT * 2 - 1); proj(side * PILX, 330, 0, o); proj(side * PILX, 330 - 500 * 1.45, 0, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, colr);
+        proj(side * PILX, 330 - 520 * 1.45 - 30, 0, o);
         lc.globalAlpha = 1;
       }
     }
@@ -5745,7 +5751,7 @@ const Tree = (() => {
     const labels = [];
     for (const n of TREE.list) {
       const p = pos[n.id], rr = R[n.kind] * p.s;
-      if (n.kind === 'small' ? rr < 9 : rr < 3.2) continue;
+      if (n.kind === 'small' ? rr < 7.5 : rr < 3) continue;
       if (cA > 0.5 && sel !== n.id && n.kind !== 'start') continue;
       const on = A.has(n.id), pri = (sel === n.id ? 100 : 0) + (on ? 20 : 0) + ({ keystone: 50, mastery: 30, notable: 25, orbit: 35, sat: 22, start: 60, small: 0 }[n.kind]) + (Pth.has(n.id) ? 10 : 0) + p.d * 0.01;
       labels.push({ n, x: p.x * 2, y: p.y * 2 + rr + 5, pri, on });
@@ -5787,6 +5793,8 @@ const Tree = (() => {
 (function boot() {
   const loaded = Save.loadLocal();
   if (loaded) PROF = loaded;
+  const webReset = migrateWeb();
+  if (webReset) { Save.save(); setTimeout(() => UI.toast('PASSIVE WEB REBUILT', 'Fewer, stronger nodes. All your points are refunded.', '#ffb03a'), 900); }
   Render.init($('#cv'));
   Tree.init();
   hydrateIcons();
