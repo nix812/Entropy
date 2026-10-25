@@ -101,6 +101,10 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .nkeep .lose b { color: #ff8a9c; } .nkeep .keep b { color: #59f0b4; }
 #novafx { position: fixed; inset: 0; z-index: 200; pointer-events: none; background: radial-gradient(circle at 50% 50%, #ffffff 0%, #ffe9b0 18%, #ff9adf 38%, rgba(184, 108, 255, 0.6) 60%, rgba(7, 8, 15, 0) 75%); animation: novaburst 1.6s ease-out forwards; }
 @keyframes novaburst { 0% { opacity: 0; transform: scale(0.05); } 25% { opacity: 1; transform: scale(1.4); } 60% { opacity: 1; transform: scale(3); } 100% { opacity: 0; transform: scale(4); } }
+.tip { text-decoration: underline dashed rgba(255, 255, 255, 0.55); text-underline-offset: 3px; text-decoration-thickness: 1px; cursor: help; }
+#tipbox { position: fixed; z-index: 300; background: rgba(8, 9, 20, 0.97); box-shadow: inset 0 0 0 1px var(--amber), 0 6px 18px rgba(0, 0, 0, 0.6); padding: 8px 10px 9px; font-family: var(--f-term); font-size: 16px; line-height: 1.15; color: var(--ink); display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+#tipbox[hidden] { display: none; }
+#tipbox b { font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); font-weight: 400; }
 .rgn em { font-style: normal; margin-left: 6px; color: #ffe9b0; }
 .tstar .srow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .tstar .big { font-family: var(--f-term); font-size: 30px; color: var(--c); line-height: 1; }
@@ -537,7 +541,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.8.0';
+const VERSION = '1.8.1';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -4573,7 +4577,7 @@ const UI = (() => {
           <div class="col">
             <div class="lbl">Daily Challenge · ${spec.date}</div>
             <p class="note">Same map and anomalies for everyone today. Unstable chaos. Resets at midnight.</p>
-            <div class="anlist">${spec.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${esc(A.up)}</span><span class="bad">${esc(A.down)}</span></div>`; }).join('')}</div>
+            <div class="anlist">${spec.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>
             <p class="note">${d ? `Today's best: Wave ${d.best} · ${fmt(d.score)} · ${d.tries} ${d.tries === 1 ? 'attempt' : 'attempts'}` : 'No attempts yet today.'}</p>
           </div>
           <div class="col">
@@ -4752,7 +4756,56 @@ const UI = (() => {
     }
     return `<div class="ph"><b>Build</b><button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
   }
-  function affixHTML(a) { return `<div class="aff" style="--c:${RARITY[a.tier].col}"><i>${RARITY[a.tier].name}</i>${esc(affixText(a))}</div>`; }
+
+  // ---------- tappable glossary terms ----------
+  let GLOSS = null, glossRe = null;
+  function buildGloss() {
+    GLOSS = {};
+    const D = dictData();
+    for (const cat of D) if (['status', 'combos', 'terms'].includes(cat.id)) for (const [k, v] of cat.rows) GLOSS[k.toLowerCase()] = [k, v];
+    const extra = [
+      ['Power', 'Attribute. Each point adds +0.5% Damage.'], ['Tempo', 'Attribute. Each point adds +0.4% Attack Speed.'],
+      ['Focus', 'Attribute. Each point adds +0.35% Range and +0.5% status chance.'], ['Integrity', 'Attribute. Each point adds +1.5 core HP and +0.4 shield.'],
+      ['Kinetic', 'Physical element. Armor reduces it. Pairs with Frozen enemies for Shatter.'], ['Thermal', 'Fire element. Can Burn.'],
+      ['Cryo', 'Cold element. Can Chill, and Freeze at 5 Chill stacks.'], ['Arc', 'Electric element. Can Shock.'], ['Void', 'Gravity element. Can Mark.'],
+      ['Crit Chance', 'Chance for a hit to be a critical hit.'], ['Crit Damage', 'Extra damage dealt by critical hits.'],
+      ['Armor penetration', 'Ignores this share of enemy Armor.'], ['Frozen', 'Held in place by Freeze. Kinetic hits on Frozen enemies Shatter.'],
+      ['Chilled', 'Has Chill stacks, which slow it. At 5 stacks it Freezes.'], ['Shocked', 'Takes +15% damage while Shocked.'], ['Burning', 'On fire: takes Burn damage over time.'], ['Marked', 'Has Mark stacks. Each stack adds +5% damage taken.'],
+      ['Elites', 'Enemies with 1 or more elite affixes.'], ['Storm', 'Drifting field on the map with an elemental effect. See Storms in the Dictionary.'],
+      ['Remnant', 'A finished sector kept through a Supernova. Its notables stay active forever.'],
+      ['Star Ranks', 'Unlimited points spent in a finished constellation. Each rank adds a little less than the last.'],
+      ['Supernova', 'Prestige. Reset your level and web for a Remnant, a Cosmic Law, and permanent score and XP bonuses.'],
+      ['Cosmic Law', 'Permanent rule change chosen at a Supernova. Adds score.'],
+      ['Recalibration', 'Recalibration tokens pay for respecs during a run.'], ['Legendary', 'Highest affix rarity with a unique effect.'], ['Curse', 'A negative affix.'],
+      ['Boss', 'Arrives every 10 waves.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
+    ];
+    for (const [k, v] of extra) GLOSS[k.toLowerCase()] = [k, v];
+    const keys = Object.keys(GLOSS).sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    glossRe = new RegExp(`\\b(${keys.join('|')})(s|es)?\\b`, 'gi');
+  }
+  function tipify(str) {
+    if (!GLOSS) buildGloss();
+    return esc(String(str)).replace(glossRe, (m, a) => { const g = GLOSS[a.toLowerCase()]; return g ? `<span class="tip" data-tip="${esc(g[0])}">${m}</span>` : m; });
+  }
+  globalThis.tipify = tipify;
+  function showTip(el) {
+    const g = GLOSS[el.dataset.tip.toLowerCase()]; if (!g) return;
+    let box = $('#tipbox'); if (!box) { box = document.createElement('div'); box.id = 'tipbox'; document.body.appendChild(box); }
+    box.innerHTML = `<b>${esc(g[0])}</b><span>${g[1]}</span>`;
+    box.hidden = false;
+    const r = el.getBoundingClientRect(), bw = Math.min(260, window.innerWidth - 24);
+    box.style.width = bw + 'px';
+    box.style.left = Math.max(12, Math.min(window.innerWidth - bw - 12, r.left + r.width / 2 - bw / 2)) + 'px';
+    const below = r.bottom + 8, h = box.offsetHeight;
+    box.style.top = (below + h < window.innerHeight - 8 ? below : Math.max(8, r.top - h - 8)) + 'px';
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('.tip');
+    const box = $('#tipbox');
+    if (t) { e.stopPropagation(); e.preventDefault(); if (box && !box.hidden && box.dataset.for === t.dataset.tip) { box.hidden = true; box.dataset.for = ''; return; } showTip(t); $('#tipbox').dataset.for = t.dataset.tip; return; }
+    if (box && !box.hidden) box.hidden = true;
+  }, true);
+  function affixHTML(a) { return `<div class="aff" style="--c:${RARITY[a.tier].col}"><i>${RARITY[a.tier].name}</i>${tipify(affixText(a))}</div>`; }
   function towerPanelHTML(t) {
     const D = TOWERS[t.type], s = t.s;
     const spec = t.spec ? D.specs[t.spec - 1].name : '';
@@ -4776,7 +4829,7 @@ const UI = (() => {
     let vet = '';
     if (t.pending > 0) {
       const o = vetOffer(t);
-      vet = `<div class="vet"><div class="lbl">Choose a mutation${t.pending > 1 ? ` · ${t.pending} ready` : ''}</div>${o.map((a, i) => `<button class="aff pickable" data-act="vet" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${RARITY[a.tier].name}</i>${esc(affixText(a))}</button>`).join('')}</div>`;
+      vet = `<div class="vet"><div class="lbl">Choose a mutation${t.pending > 1 ? ` · ${t.pending} ready` : ''}</div>${o.map((a, i) => `<button class="aff pickable" data-act="vet" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${RARITY[a.tier].name}</i>${tipify(affixText(a))}</button>`).join('')}</div>`;
     }
     const nextVet = vetThreshold(t.rank + 1), prevVet = t.rank ? vetThreshold(t.rank) : 0;
     const rc = rerollCost(t);
@@ -4973,7 +5026,7 @@ const UI = (() => {
     G.paused = true;
     modal(`<div class="card narrow"><div class="ch"><h2>Paused</h2></div>
       <p class="note">Wave ${G.wave} · Score ${fmt(G.score)} · Multiplier ×${G.scoreMult.toFixed(2)}</p>
-      ${G.anoms.length ? `<div class="lbl">Anomalies</div><div class="anlist">${G.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${esc(A.up)}</span><span class="bad">${esc(A.down)}</span></div>`; }).join('')}</div>` : ''}
+      ${G.anoms.length ? `<div class="lbl">Anomalies</div><div class="anlist">${G.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>` : ''}
       <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
       <button class="btn" data-act="help">How to Play</button>
       <button class="btn" data-act="settings">Settings</button>
@@ -4984,7 +5037,7 @@ const UI = (() => {
     if (!G || !G.anomOffers) return;
     G.paused = true;
     modal(`<div class="card anom"><div class="ch"><h2 class="void">Anomaly</h2><span class="note">Choose one. Each Anomaly also grants +5% score.</span></div>
-      <div class="boons four">${G.anomOffers.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<button class="boon anomaly" data-act="anom" data-v="${id}"><b>${esc(A.name)}</b><span class="good">${esc(A.up)}</span><i class="lbl cost">Cost</i><span class="bad">${esc(A.down)}</span></button>`; }).join('')}
+      <div class="boons four">${G.anomOffers.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<button class="boon anomaly" data-act="anom" data-v="${id}"><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><i class="lbl cost">Cost</i><span class="bad">${tipify(A.down)}</span></button>`; }).join('')}
       <button class="boon stab" data-act="stab"><b>Stabilize</b><span class="good">+10% score</span><span class="good">+1 Recalibration token</span><span class="dim">No other changes</span></button></div></div>`, 'anomaly');
   }
   function recapHTML() {
@@ -5001,7 +5054,7 @@ const UI = (() => {
   }
   function openDraft(opts) {
     modal(`<div class="card"><div class="ch"><h2>Boss Defeated</h2><span class="note">Choose a boon. Lasts until the run ends. +1 Recalibration token.</span></div>
-      <div class="boons">${opts.map((b, i) => `<button class="boon" data-act="boon" data-v="${i}"><b>${esc(b.name)}</b><span>${esc(b.desc)}</span></button>`).join('')}</div></div>`, 'draft');
+      <div class="boons">${opts.map((b, i) => `<button class="boon" data-act="boon" data-v="${i}"><b>${esc(b.name)}</b><span>${tipify(b.desc)}</span></button>`).join('')}</div></div>`, 'draft');
     SFX.play('milestone');
   }
   function openGameOver() {
@@ -5212,7 +5265,7 @@ const UI = (() => {
     } else if (F.step === 2) {
       const offers = novaOffers();
       body = `<div class="lbl">Choose a Cosmic Law</div><p class="note">It applies to every run in your new galaxy, and all future ones.</p>
-        <div class="ncards">${offers.length ? offers.map(id => { const L = LAWS.find(x => x.id === id); return `<button class="ncard ${F.law === id ? 'on' : ''}" style="--c:#ff9adf" data-act="novaL" data-v="${id}"><b>${esc(L.name)}</b><span class="good">${esc(L.up)}</span><span class="bad">${esc(L.down)}</span><small>+${Math.round(LAW_SCORE * 100)}% score</small></button>`; }).join('') : '<p class="note">You already live under every law.</p>'}</div>
+        <div class="ncards">${offers.length ? offers.map(id => { const L = LAWS.find(x => x.id === id); return `<button class="ncard ${F.law === id ? 'on' : ''}" style="--c:#ff9adf" data-act="novaL" data-v="${id}"><b>${esc(L.name)}</b><span class="good">${tipify(L.up)}</span><span class="bad">${tipify(L.down)}</span><small>+${Math.round(LAW_SCORE * 100)}% score</small></button>`; }).join('') : '<p class="note">You already live under every law.</p>'}</div>
         <div class="ta"><button class="btn" data-act="novaBack">Back</button><button class="btn primary" data-act="novaGo" ${F.law || !offers.length ? '' : 'disabled'}>Collapse the galaxy</button></div>`;
     }
     modal(`<div class="card nova-card">${head}${body}</div>`, 'nova');
@@ -5594,11 +5647,11 @@ const Tree = (() => {
       let extra = '';
       if (n.opts) {
         const cur = masteryPick(n.id), paid = inRun() && !G.checkpoint;
-        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Choose one' + (paid ? ' · changing costs 1 token' : '') : 'Allocate to choose one'}</div>${n.opts.map((o, i) => `<button class="mopt ${i === cur ? 'on' : ''}" data-tact="mopt" data-v="${i}" ${allocd && i !== cur && !(paid && G.tokens < 1) ? '' : i === cur ? '' : 'disabled'}><b>${esc(o.name)}</b><span>${Object.keys(o.fx).map(k => STAT_TXT[k] ? esc(STAT_TXT[k](o.fx[k])) : '').filter(Boolean).join('. ')}</span></button>`).join('')}</div>`;
+        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Choose one' + (paid ? ' · changing costs 1 token' : '') : 'Allocate to choose one'}</div>${n.opts.map((o, i) => `<button class="mopt ${i === cur ? 'on' : ''}" data-tact="mopt" data-v="${i}" ${allocd && i !== cur && !(paid && G.tokens < 1) ? '' : i === cur ? '' : 'disabled'}><b>${esc(o.name)}</b><span>${Object.keys(o.fx).map(k => STAT_TXT[k] ? tipify(STAT_TXT[k](o.fx[k])) : '').filter(Boolean).join('. ')}</span></button>`).join('')}</div>`;
       }
       if (n.orbitHub) {
         const O = ORBITS[n.id], paid = inRun() && !G.checkpoint;
-        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Rotate to retarget' + (paid ? ' · 1 token per turn' : ' · free right now') : 'Allocate to power the ring'}</div>${O.sats.map((S2, k) => { const sn = TREE.nodes[n.id + '_' + k]; return `<div class="mopt ${PROF.alloc.includes(sn.id) ? 'on' : ''}"><b>${esc(S2.name)}</b><span>${esc(satLines(sn)[0])}</span></div>`; }).join('')}${allocd ? `<div class="rots"><button class="btn" data-tact="rotL" ${paid && G.tokens < 1 ? 'disabled' : ''}>⟲ Rotate</button><button class="btn" data-tact="rotR" ${paid && G.tokens < 1 ? 'disabled' : ''}>Rotate ⟳</button></div>` : ''}</div>`;
+        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Rotate to retarget' + (paid ? ' · 1 token per turn' : ' · free right now') : 'Allocate to power the ring'}</div>${O.sats.map((S2, k) => { const sn = TREE.nodes[n.id + '_' + k]; return `<div class="mopt ${PROF.alloc.includes(sn.id) ? 'on' : ''}"><b>${esc(S2.name)}</b><span>${tipify(satLines(sn)[0])}</span></div>`; }).join('')}${allocd ? `<div class="rots"><button class="btn" data-tact="rotL" ${paid && G.tokens < 1 ? 'disabled' : ''}>⟲ Rotate</button><button class="btn" data-tact="rotR" ${paid && G.tokens < 1 ? 'disabled' : ''}>Rotate ⟳</button></div>` : ''}</div>`;
       }
       if (REM_SET().has(n.id)) extra += `<div class="mopts"><span class="note">Kept by your Remnant. Always active, even unallocated.</span></div>`;
       if (n.sat !== undefined) extra = `<div class="mopts"><span class="note">Rotate ${esc(ORBITS[n.orbit].name)} to change which sector this faces.</span></div>`;
@@ -5606,7 +5659,7 @@ const Tree = (() => {
         const L = loadoutList();
         extra = `<div class="mopts"><div class="lbl">Milestone loadout · ${L.length} of ${ABIL_ORDER.length} · +${(ABIL_ORDER.length - L.length) * 25}% ability power</div><div class="louts">${ABIL_ORDER.map(k => `<button class="lout ${L.includes(k) ? 'on' : ''}" data-tact="lout" data-v="${k}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span></button>`).join('')}</div></div>`;
       }
-      info.innerHTML = `<div class="ti"><div><i style="color:${col}">${kindName}</i><b>${esc(n.name)}</b></div><ul>${nodeLines(n).map(l => `<li>${esc(l)}</li>`).join('')}</ul>${extra}<div class="ta">${act}</div></div>`;
+      info.innerHTML = `<div class="ti"><div><i style="color:${col}">${kindName}</i><b>${esc(n.name)}</b></div><ul>${nodeLines(n).map(l => `<li>${tipify(l)}</li>`).join('')}</ul>${extra}<div class="ta">${act}</div></div>`;
     }
     // drawer
     const dr = $('#tdrawer');
