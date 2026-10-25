@@ -124,6 +124,8 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .cpbanner { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 5; pointer-events: none; background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 1px var(--core); padding: 6px 12px; text-align: center; white-space: nowrap; }
 .cpbanner b { display: block; font-family: var(--f-pix); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--core); }
 .cpbanner span { font-size: 16px; color: var(--ink); }
+.cpbar { display: block; height: 3px; margin-top: 4px; background: #0f2a22; position: relative; }
+.cpbar i { position: absolute; inset: 0 auto 0 0; background: var(--core); }
 body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .dict-cats { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; margin: 0 0 8px; padding-bottom: 2px; touch-action: pan-x; }
 .dict-cats::-webkit-scrollbar { display: none; }
@@ -423,7 +425,7 @@ h2.void { color: #d6a6ff; }
       <div id="log"></div>
       <div id="dps"></div>
       <div id="panel" class="panel" hidden></div>
-      <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint</b><span>Sell for a full refund · Respec for free</span></div>
+      <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">
       <button class="rb" id="bPause" aria-label="Pause" data-svg="pause"></button>
@@ -1276,7 +1278,7 @@ function newRun(opts) {
     stormT: 50, lanesOpened: 0, laneWaves: [12, 24, 38, 55, 75], laneWarn: null,
     rift: null, eid: 1, tid: 1, dmgLog: { combos: 0 }, unbreakUsed: -99, boonsTaken: [],
     core: null, dpsClock: 0, coreAngle: 0,
-    checkpoint: 0, cpWave: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
+    checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
     stats: { dmgByEl: { K: 0, T: 0, C: 0, A: 0, V: 0 }, combos: {}, elites: 0, leaks: 0, bossKills: 0, peakDps: 0 },
   };
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
@@ -1679,6 +1681,7 @@ function prepareWave(w) {
   }
   for (const L of G.map.lanes) if (L.openWave && L.openWave === w) {
     openLane(L);
+    G.cpDue = w;
     Hooks.toast('WORMHOLE OPEN', `Enemies arrive through it in Wave ${w}`, '#ff4d6a');
     Hooks.log('Wormhole open · new lane active', '#ff4d6a');
     Hooks.fx('lane', { lane: L });
@@ -1782,11 +1785,19 @@ function startWave() {
   Hooks.sfx('wave', w);
   Hooks.onWave(w);
 }
+// Resuming fast pays: the bonus drains over 45 real seconds spent at the checkpoint.
+const CP_WINDOW = 45;
+function cpBonus() {
+  const w = G.checkpoint || G.wave + 1, f = Math.max(0, 1 - (G.cpT || 0) / CP_WINDOW);
+  return { f, cr: Math.round((40 + w * 10) * G.mods.credits * f), sc: Math.round(w * 150 * f) };
+}
 function resumeCheckpoint() {
-  if (!G.checkpoint) return false;
-  G.checkpoint = 0; G.next = Math.max(G.next, 3);
+  if (!G.checkpoint) return null;
+  const B = cpBonus();
+  G.credits += B.cr; if (B.sc) addScore(B.sc);
+  G.checkpoint = 0; G.cpT = 0; G.next = Math.max(G.next, 3);
   Hooks.sfx('call');
-  return true;
+  return B;
 }
 // Cash-in: convert credits straight into score. The rate climbs with the wave, so late cash-ins pay more and cost more.
 const cashRate = () => 3 * (1 + 0.1 * G.wave);
@@ -1811,18 +1822,13 @@ function callEarly() {
   Hooks.sfx('call');
   return bonus;
 }
-const CHECKPOINT_EVERY = 10;
 function updateWaves(dt) {
   if (G.spawningDone) {
     if (G.checkpoint) return;
-    if (G.wave > 0 && G.wave % CHECKPOINT_EVERY === 0 && G.cpWave !== G.wave) {
-      // hold the countdown until the field is clear (max 20s), then stop for a checkpoint
-      G.cpWaitT = (G.cpWaitT || 0) + dt;
-      if (G.enemies.length && G.cpWaitT < 20) return;
-      G.cpWaitT = 0;
-      G.cpWave = G.wave; G.checkpoint = G.wave;
-      Hooks.log(`Checkpoint · Wave ${G.wave}`, '#59f0b4');
-      Hooks.sfx('milestone'); Hooks.onCheckpoint(G.wave);
+    if (G.cpDue && G.cpDue === G.wave + 1) {
+      G.checkpoint = G.cpDue; G.cpDue = 0; G.cpT = 0;
+      Hooks.log(`Checkpoint · Wormhole opens in Wave ${G.checkpoint}`, '#59f0b4');
+      Hooks.sfx('milestone'); Hooks.onCheckpoint(G.checkpoint);
       return;
     }
     G.next -= dt;
@@ -2760,7 +2766,7 @@ function snapshotRun(waveNum) {
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0 }, towers: tw,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
-    rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, boonsTaken: G.boonsTaken,
+    rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
   Hooks.onSave();
@@ -2784,7 +2790,7 @@ function resumeRun(S) {
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
     charges: Object.assign({}, S.charges), tokens: S.tokens, legendQueue: S.legendQueue, rerollDisc: S.rerollDisc, nextMs: S.nextMs,
-    lanesOpened: S.lanesOpened, unbreakUsed: S.unbreakUsed, boonsTaken: S.boonsTaken || [], next: 12,
+    lanesOpened: S.lanesOpened, cpDue: S.cpDue || 0, unbreakUsed: S.unbreakUsed, boonsTaken: S.boonsTaken || [], next: 12,
     entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
   if (S.stats) G.stats = S.stats;
   G.daily = S.daily || null;
@@ -3730,6 +3736,7 @@ const Render = (() => {
 
     if (G.stasisT > 0) { c.fillStyle = 'rgba(106,226,255,0.08)'; c.fillRect(ox, oy, BW * scale, BH * scale); }
     if (G.overclockT > 0 && frame % 10 < 5) { c.fillStyle = 'rgba(255,225,77,0.04)'; c.fillRect(ox, oy, BW * scale, BH * scale); }
+    if (dt <= 0) flashes = [];
     for (const f of flashes) { f.life -= dt; c.fillStyle = hexA(f.col, Math.max(0, f.life / f.max) * f.a); c.fillRect(0, 0, W, H); }
     flashes = flashes.filter(f => f.life > 0);
     c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -4105,15 +4112,17 @@ const UI = (() => {
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
     $('#cr').textContent = fmt(G.credits);
     $('#wave').textContent = G.wave;
-    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : G.spawningDone ? (G.wave % CHECKPOINT_EVERY === 0 && G.cpWave !== G.wave && G.enemies.length ? `${G.enemies.length} left` : `in ${Math.max(0, Math.ceil(G.next))}s`) : `${G.queue.length + G.enemies.length} left`;
+    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : G.spawningDone ? (false ? '' : `in ${Math.max(0, Math.ceil(G.next))}s`) : `${G.queue.length + G.enemies.length} left`;
     $('#score').textContent = fmt(G.score);
     const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint;
     const cb = $('#bCall');
     cb.disabled = !canCall && !G.checkpoint;
     cb.classList.toggle('cp', !!G.checkpoint);
     cb.querySelector('span').textContent = G.checkpoint ? 'Resume' : 'Next';
-    cb.querySelector('b').textContent = G.checkpoint ? '' : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '';
+    const cpb = G.checkpoint ? cpBonus() : null;
+    cb.querySelector('b').textContent = G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '';
     $('#cpBanner').hidden = !G.checkpoint;
+    if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); $('#cpBanner').querySelector('span').textContent = cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'; $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash'));
     const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
     for (const k of ABIL_ORDER) {
@@ -4563,7 +4572,7 @@ const UI = (() => {
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
       ['Abilities', 'Earned from score milestones. Shown on the left.'],
       ['Bosses', 'Every 10 waves. Drop a boon and a Recalibration token.'],
-      ['Checkpoint', 'After each boss wave the game holds. Sell for a full refund and respec for free.'],
+      ['Checkpoint', 'The game holds when a wormhole opens. Full refunds, free respec. Resume fast for a bonus.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
@@ -4595,7 +4604,7 @@ const UI = (() => {
         ['Milestone', 'Score threshold. Grants an ability charge and a small bonus.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. Forming wormholes show their future route and open 2 waves later. Lanes open at Waves 12, 24, 38, 55 and 75.'],
-        ['Checkpoint', 'Pause after each boss wave. Full sell refunds and free respec.'], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
+        ['Checkpoint', `Pause before a wormhole's first wave. Full sell refunds and free respec. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies and Stabilize.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
         ['Common', 'Base value.', RARITY[0].col], ['Magic', '×1.7 value.', RARITY[1].col], ['Rare', '×2.6 value.', RARITY[2].col], ['Legendary', 'Unique effect. See Legendaries.', RARITY[3].col], ['Curse', 'Negative affix. See Curses.', RARITY[4].col],
@@ -4726,7 +4735,7 @@ const UI = (() => {
     cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); if (!ptrs.size) gesture = null; });
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
-    $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { resumeCheckpoint(); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
+    $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
@@ -4778,7 +4787,7 @@ const UI = (() => {
     Hooks.onChange = () => { if (G && panel) renderPanel(); Save.save(); };
     Hooks.onSave = () => Save.save();
     Hooks.onWave = () => {};
-    Hooks.onCheckpoint = w => { toast('CHECKPOINT', 'Full sell refunds and free respec. Tap Resume when ready.', '#59f0b4'); if (panel && panel.kind === 'tower') renderPanel(); Save.save(); };
+    Hooks.onCheckpoint = w => { toast('CHECKPOINT', 'A wormhole opens next wave. Rebuild, then Resume fast for a bonus.', '#59f0b4'); if (panel && panel.kind === 'tower') renderPanel(); Save.save(); };
     Hooks.onEntropy = () => {};
   }
   function tick(dt) {
@@ -5045,7 +5054,8 @@ const Tree = (() => {
     requestAnimationFrame(frame);
     const dt = Math.min(0.1, Math.max(0, (ts - last) / 1000)); last = ts;
     if (UI.screen === 'game' && G) {
-      const halted = G.over || G.paused || G.draft || G.checkpoint || Tree.isOpen || UI.modalOpen;
+      if (G.checkpoint && !G.paused && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt;
+      const halted = G.over || G.paused || G.draft || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen;
       if (!halted) {
         acc += dt * G.speed;
         let n = 0;
