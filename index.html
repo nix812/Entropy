@@ -541,7 +541,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.8.1';
+const VERSION = '1.9.0';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -601,6 +601,10 @@ const TOWERS = {
     blurb: 'Boosts nearby towers. Reveals cloaked.',
     specs: [{ name: 'Amplifier', desc: '+20% Damage boost', m: { buffDmg: 20 } },
             { name: 'Uplink', desc: '+1 Range. Also boosts Crit Chance by 12%', m: { rangeAdd: 1, buffCrit: 12 } }] },
+  snare: { name: 'Snare Beacon', el: 'N', cost: 90, dmg: 0, rate: 0, range: 3.5, kind: 'snare', net: 1.3, netSlow: 0.5, hold: 0.8, catches: 8, unlock: 4,
+    blurb: 'Lures fliers off course into a slowing net.',
+    specs: [{ name: 'Tangle Web', desc: 'Caught fliers are held 2s. Net slows 70%', m: { hold: 2, netSlow: 0.7 } },
+            { name: 'Long Lure', desc: '+2 lure range, +6 catches per wave', m: { rangeAdd: 2, catches: 6 } }] },
   coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 17, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
     blurb: 'Chain lightning. Applies Shock.',
     specs: [{ name: 'Tesla Crown', desc: '+3 Chain', m: { chain: 3 } },
@@ -626,7 +630,7 @@ const TOWERS = {
     specs: [{ name: 'Singularity', desc: '×3 Damage. Pulses apply Mark', m: { dmgX: 3, addMark: 1 } },
             { name: 'Tidal Lock', desc: '×2 pull distance', m: { pullX: 2 } }] },
 };
-const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav'];
+const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav'];
 const LV_DMG = [0, 1, 1.65, 2.6, 4.1, 6.4];
 const LV_COST = [0, 1, 0.8, 1.2, 2.0, 3.0];
 const MAX_LV = 5;
@@ -1626,7 +1630,7 @@ function upgradeCost(t) {
 function rerollCost(t) {
   return Math.round(TOWERS[t.type].cost * 0.35 * (1 + t.rerolls * 0.5) * (G.rerollDisc ? 0.5 : 1));
 }
-const towerPool = type => TOWERS[type].kind === 'support' ? 'pylon' : TOWERS[type].kind === 'eco' ? 'forge' : 'atk';
+const towerPool = type => TOWERS[type].kind === 'support' || TOWERS[type].kind === 'snare' ? 'pylon' : TOWERS[type].kind === 'eco' ? 'forge' : 'atk';
 function rollAffix(t, forceTier, luckBonus, minTier, exclude) {
   const r = G.r, luck = G.mods.affixLuck + (luckBonus || 0);
   let tier = forceTier;
@@ -1667,6 +1671,25 @@ function canBuildAt(x, y) {
   const i = tIdx(x, y);
   return G.map.tiles[i] === 0 && !G.towerAt[i];
 }
+// ---------- Snare Beacons: lure fliers off their straight line into a net ----------
+function lure(e) {
+  if (!e.fly || e.lured || e.dead || !G.snares || !G.snares.length) return;
+  const cx = G.core.x, cy = G.core.y, dx = cx - e.x, dy = cy - e.y, L2 = dx * dx + dy * dy || 1;
+  let best = null, bd = 1e9;
+  for (const t of G.snares) {
+    if ((t.caught || 0) >= t.s.catches || t.disabled > 0) continue;
+    const u = ((t.cx - e.x) * dx + (t.cy - e.y) * dy) / L2;
+    if (u < 0.02 || u > 0.98) continue;
+    const px = e.x + dx * u, py = e.y + dy * u, d = Math.hypot(t.cx - px, t.cy - py);
+    if (d <= t.s.range && d < bd) { bd = d; best = t; }
+  }
+  if (!best) return;
+  best.caught = (best.caught || 0) + 1;
+  e.L = prepLane([{ x: e.x, y: e.y }, { x: best.cx, y: best.cy }, { x: cx, y: cy }]); e.d = 0;
+  e.lured = best.id; e.lureT = best;
+  Hooks.fx('lure', { x1: best.cx, y1: best.cy, x2: e.x, y2: e.y });
+}
+function lureAll() { for (const e of G.enemies) lure(e); }
 function buildTower(type, x, y) {
   if (!canBuildAt(x, y) || !towerUnlocked(type)) return null;
   const cost = towerCost(type);
@@ -1682,6 +1705,7 @@ function buildTower(type, x, y) {
   G.towers.push(t); G.towerAt[tIdx(x, y)] = t;
   t.s = towerStats(t);
   recomputeAuras();
+  if (t.s.kind === 'snare') lureAll();
   Hooks.sfx('build', t);
   Hooks.fx('build', { x: t.cx, y: t.cy, col: EL[TOWERS[type].el].col });
   return t;
@@ -1748,12 +1772,12 @@ function towerStats(t) {
   if (s.el === 'A') rate *= 1 + M.rateA;
   s.rate = rate * (1 + oe('rate') / 100);
   let range = (D.range + (sp.rangeAdd || 0)) * (1 + 0.05 * (lv - 1) + 0.03 * (t.asc || 0));
-  if (D.kind === 'support') range *= (1 + (A.prange || 0) / 100) * M.range;
+  if (D.kind === 'support' || D.kind === 'snare') range *= (1 + (A.prange || 0) / 100) * M.range;
   else {
     range *= (1 + (A.range || 0) / 100) * (cur.crange ? 0.85 : 1) * M.range;
     if (t.type === 'pulse' || t.type === 'rail') range *= 1 + M.rangeKR;
   }
-  s.range = range * (D.kind === 'support' ? 1 : 1 + oe('range') / 100);
+  s.range = range * (D.kind === 'support' || D.kind === 'snare' ? 1 : 1 + oe('range') / 100);
   s.critC = (D.crit || 0) + (sp.critC || 0) + (A.critC || 0) + M.critC;
   s.critM = 1.5 + (A.critM || 0) / 100 + M.critM;
   if (s.el === 'K') { s.critC += FX('critCK'); s.critM += FX('critMK') / 100; }
@@ -1784,6 +1808,14 @@ function towerStats(t) {
     s.buffCrit = Math.min(30, (sp.buffCrit || 0) * aura);
     if (leg.nexus) s.range += 1;
   }
+  if (D.kind === 'snare') {
+    const aura = (1 + (A.aura || 0) / 100) * (leg.nexus ? 1.5 : 1);
+    s.catches = Math.round((D.catches + (sp.catches || 0)) * (1 + 0.5 * (lv - 1) + 0.25 * (t.asc || 0)) * aura);
+    s.netR = D.net * (1 + 0.1 * (lv - 1));
+    s.netSlow = Math.min(0.85, (sp.netSlow || D.netSlow) * Math.sqrt(aura));
+    s.hold = (sp.hold || D.hold) * (1 + 0.15 * (lv - 1));
+    if (leg.nexus) s.range += 1;
+  }
   if (D.kind === 'eco') {
     s.income = D.income * (1 + 0.5 * (lv - 1)) * (sp.incomeX || 1) * (1 + (A.yield || 0) / 100) * (leg.midas ? 2 : 1);
     s.fbounty = (A.fbounty || 0) / 100; s.bountyAura = sp.bounty || 0; s.interest = leg.midas ? 0.01 : 0;
@@ -1811,6 +1843,7 @@ function recomputeAuras() {
   }
   G.pylons = G.towers.filter(t => t.s.kind === 'support');
   G.forges = G.towers.filter(t => t.s.kind === 'eco');
+  G.snares = G.towers.filter(t => t.s.kind === 'snare');
 }
 
 // ---------- storms ----------
@@ -2049,6 +2082,8 @@ function startWave() {
   G.queue = P.queue;
   G.spawnClock = 0; G.spawningDone = false;
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
+  for (const t of G.snares || []) t.caught = 0;
+  lureAll();
   if (FX('shieldWave')) G.core.shield = G.core.smax;
   // anomaly upkeep
   if (G.af.coreDrain) G.core.hp = Math.max(1, G.core.hp - G.core.max * G.af.coreDrain);
@@ -2260,6 +2295,7 @@ function spawnEnemy(type, q) {
   }
   lanePos(e.L, e.d, e);
   G.enemies.push(e);
+  if (fly) lure(e);
   if (e.elite.length) Hooks.fx('elite', { x: e.x, y: e.y });
   return e;
 }
@@ -2285,6 +2321,7 @@ function spawnBoss(q) {
   lanePos(e.L, e.d, e);
   G.enemies.push(e);
   if (!G.bossAlive || G.bossAlive.dead) G.bossAlive = e;
+  if (e.fly) lure(e);
   if (gen) return e;
   const ttl = B.titles ? B.titles[Math.floor(G.r() * B.titles.length)] : null;
   if (ttl) { e.bossTitle = ttl; Hooks.fx('say', { x: e.x, y: e.y, t: B.id === 'cat' ? 'mrrp.' : B.id === 'duck' ? 'QUACK' : B.id === 'whale' ? 'HELLOOOO' : B.id === 'fsm' ? 'ramen.' : 'blorp' }); }
@@ -2365,12 +2402,23 @@ function updateEnemies(dt) {
     // movement
     const sw = stormAt(e.x, e.y);
     e.stormVuln = sw.vuln;
-    if (st.stun > 0 || st.frozen > 0 || G.stasisT > 0 || e.napT > 0) { /* held */ }
+    let netK = 1;
+    if (e.lureT) {
+      const t = e.lureT;
+      if (G.towerAt[tIdx(t.x, t.y)] !== t) e.lureT = null;
+      else if (dist2(e.x, e.y, t.cx, t.cy) <= t.s.netR * t.s.netR) {
+        if (!e.netted) { e.netted = 1; e.netHold = t.s.hold * (e.boss ? 0.3 : 1); Hooks.fx('net', { x: e.x, y: e.y }); }
+        netK = 1 - t.s.netSlow * (e.boss ? 0.4 : 1);
+      }
+    }
+    if (e.netHold > 0) e.netHold -= dt;
+    if (st.stun > 0 || st.frozen > 0 || G.stasisT > 0 || e.napT > 0 || e.netHold > 0) { /* held */ }
     else {
       let spd = e.spd * (1 - Math.max(enemySlow(e), Math.min(0.75, sw.slow)));
       if (ev.surge) spd *= 1.35;
       spd *= 1 + sw.haste + (G.af.haste || 0) + (sw.inStorm ? 0.12 + (G.af.magnet ? 0.2 : 0) : 0);
       if (G.af.groundSlow && !e.fly) spd *= 1 - G.af.groundSlow;
+      spd *= netK;
       e.slow = 1 - spd / e.spd;
       e.d += spd * dt;
     }
@@ -2741,7 +2789,7 @@ function updateTowers(dt) {
     if (dpsTick) { t.dps = t.dps * 0.6 + t.dpsAcc * 0.4; t.dpsAcc = 0; }
     t.flash = Math.max(0, t.flash - dt);
     const s = t.s;
-    if (s.kind === 'support' || s.kind === 'eco') continue;
+    if (s.kind === 'support' || s.kind === 'eco' || s.kind === 'snare') continue;
     if (t.disabled > 0) { t.disabled -= dt; t.ramp = 0; t.beamTargets = null; continue; }
     const sw = stormAt(t.cx, t.cy);
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
@@ -3656,6 +3704,13 @@ const Render = (() => {
       R(g, 7, 11, 10, 6, '#120d04'); R(g, 8, 12, 8, 4, '#ffb03a'); R(g, 8, 12, 8, 1, '#ffe14d'); R(g, 8, 15, 8, 1, '#c86a10');
       R(g, 6, 18, 12, 1, '#2a2414');
     },
+    snare(g, c) {
+      R(g, 7, 17, 10, 4, STEEL.o); R(g, 8, 17, 8, 3, '#2f375f'); R(g, 8, 17, 8, 1, '#4c568c');
+      R(g, 11, 9, 3, 9, STEEL.o); R(g, 12, 9, 1, 9, '#6a76b0');
+      for (let dx = -7; dx <= 7; dx++) { const y = 9 - Math.round(Math.sqrt(Math.max(0, 49 - dx * dx)) * 0.55); R(g, 12 + dx, y, 1, 10 - y - 0 > 0 ? 2 : 1, STEEL.o); P(g, 12 + dx, y, dx % 2 ? '#8fe8ff' : '#c9f4ff'); }
+      R(g, 5, 8, 15, 1, STEEL.o); for (let x = 6; x < 19; x += 2) P(g, x, 8, '#59f0b4');
+      D(g, 12, 4, 2, STEEL.o); P(g, 12, 4, '#59f0b4');
+    },
     grav(g, c) {
       O(g, 12, 12, 10, 1, sh(c, -0.35)); D(g, 12, 12, 7, STEEL.o); D(g, 12, 12, 6, '#140a26'); D(g, 11, 11, 3, '#24123f'); P(g, 9, 9, '#5a3a8a');
       P(g, 12, 12, sh(c, 0.3));
@@ -3922,6 +3977,7 @@ const Render = (() => {
       case 'cryo': if (t.flash > 0) { D(b, X + 12, Y + 12, 3, '#ffffff'); } break;
       case 'coil': if (frame % 7 < 3) for (let k = 0; k < 3; k++) { const a = Math.random() * 6.283; P(b, X + 12 + Math.cos(a) * 9, Y + 12 + Math.sin(a) * 9, '#fff6c0'); } break;
       case 'pylon': D(b, X + 12, Y + 4, 2, (frame >> 4) % 2 ? c : sh(c, -0.5)); break;
+      case 'snare': if (t.s) { const left = Math.max(0, t.s.catches - (t.caught || 0)); P(b, X + 12, Y + 3, left ? ((frame >> 3) % 2 ? '#59f0b4' : '#c9fff0') : '#ff4d6a'); } break;
       case 'forge': if ((frame >> 3) % 8 === 0) { R(b, X + 10, Y + 13, 3, 2, '#fff6c0'); } break;
       case 'grav': { const a = frame / 10; R(b, X + 11 + Math.cos(a) * 9, Y + 11 + Math.sin(a) * 9, 2, 2, '#e0c8ff'); break; }
       case 'lens': { const a = t.angle || 0; D(b, X + 12 + Math.cos(a) * 2, Y + 12 + Math.sin(a) * 2, 2, t.ramp > 3 ? '#ffffff' : sh(c, 0.5)); break; }
@@ -4099,6 +4155,18 @@ const Render = (() => {
     }
     for (const z of G.zones) ditherDisc(z.x * TILE, z.y * TILE, z.r * TILE, hexA('#ff7b39', 0.4), 2, frame % 2);
     for (const L of G.map.lanes) drawWormhole(L);
+    // snare nets and tethers
+    for (const t of G.snares || []) {
+      if (!t.s) continue;
+      const cx = t.cx * TILE, cy = t.cy * TILE, rr = t.s.netR * TILE, spent = (t.caught || 0) >= t.s.catches;
+      b.strokeStyle = spent ? 'rgba(255,77,106,0.25)' : 'rgba(89,240,180,0.32)'; b.lineWidth = 1;
+      b.setLineDash([3, 3]); b.lineDashOffset = -frame / 6; b.beginPath(); b.arc(cx, cy, rr, 0, 6.283); b.stroke();
+      b.setLineDash([]);
+      if (!spent) { b.globalAlpha = 0.12; for (let k = 0; k < 6; k++) { const a = k / 6 * 3.1416 + frame / 200; b.beginPath(); b.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); b.lineTo(cx - Math.cos(a) * rr, cy - Math.sin(a) * rr); b.stroke(); } b.globalAlpha = 1; }
+    }
+    b.strokeStyle = 'rgba(89,240,180,0.45)'; b.lineWidth = 1; b.setLineDash([2, 4]);
+    for (const e of G.enemies) if (e.lureT && !e.netted) { b.beginPath(); b.moveTo(e.x * TILE, e.y * TILE - 7); b.lineTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.stroke(); }
+    b.setLineDash([]);
     for (const t of G.towers) drawTower(t);
     // resonance links
     for (const t of G.towers) for (const o of t.resonWith || []) {
@@ -4319,6 +4387,8 @@ const Render = (() => {
       case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' }); break;
       case 'shieldpulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.5, max: 0.5, col: '#8ab6ff' }); break;
       case 'blink': burst(T2P(d.x), T2P(d.y), 14, '#b86cff', 40 * K, 0.3); break;
+      case 'lure': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.35, max: 0.35, col: '#59f0b4', core: 0, w: 1 }); break;
+      case 'net': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 3, life: 0.35, max: 0.35, col: '#59f0b4', w: 2 }); burst(T2P(d.x), T2P(d.y), 8, '#c9fff0', 20 * K, 0.3); break;
       case 'say': if (texts.filter(T => T.bub).length >= 4) break; text(d.x, d.y - 1.5, d.t, '#ffffff', 13, 1.6, -0.35, 'Silkscreen, monospace'); texts[texts.length - 1].bub = 1; break;
       case 'song': for (let i = 0; i < 3; i++) rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6 + i * 10, r1: d.r * TILE, life: 0.6 + i * 0.25, max: 0.6 + i * 0.25, col: '#9fe7ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 12, '#7dffb0', 30 * K, 0.6, -20 * K); break;
       case 'noodle': { const out = []; for (let k = 0; k <= 10; k++) { const t = k / 10, w = Math.sin(t * Math.PI * 3) * 8 * Math.sin(t * Math.PI); const dx = d.x2 - d.x1, dy = d.y2 - d.y1, L = Math.hypot(dx, dy) || 1; out.push({ x: T2P(lerp(d.x1, d.x2, t)) - dy / L * w, y: T2P(lerp(d.y1, d.y2, t)) + dx / L * w }); } lines.push({ pts: out, life: 0.7, max: 0.7, col: '#f2d27a', core: 0, w: 4 }); break; }
@@ -4745,7 +4815,7 @@ const UI = (() => {
     let info, foot;
     if (pick) {
       const D = TOWERS[pick], cost = towerCost(pick);
-      const stat = D.kind === 'support' ? `+${D.buffDmg}% Damage, +${D.buffRate}% Attack Speed · Range ${D.range}`
+      const stat = D.kind === 'snare' ? `Catches ${D.catches} fliers per wave · Lure range ${D.range}` : D.kind === 'support' ? `+${D.buffDmg}% Damage, +${D.buffRate}% Attack Speed · Range ${D.range}`
         : D.kind === 'eco' ? `+${D.income} credits per wave`
         : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
       info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
@@ -4777,7 +4847,7 @@ const UI = (() => {
       ['Supernova', 'Prestige. Reset your level and web for a Remnant, a Cosmic Law, and permanent score and XP bonuses.'],
       ['Cosmic Law', 'Permanent rule change chosen at a Supernova. Adds score.'],
       ['Recalibration', 'Recalibration tokens pay for respecs during a run.'], ['Legendary', 'Highest affix rarity with a unique effect.'], ['Curse', 'A negative affix.'],
-      ['Boss', 'Arrives every 10 waves.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
+      ['Boss', 'Arrives every 10 waves.'], ['Snare Beacon', 'Pulls passing fliers off their straight line, through its net, then on to the core. Catches a set number per wave.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
     ];
     for (const [k, v] of extra) GLOSS[k.toLowerCase()] = [k, v];
     const keys = Object.keys(GLOSS).sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -4810,7 +4880,8 @@ const UI = (() => {
     const D = TOWERS[t.type], s = t.s;
     const spec = t.spec ? D.specs[t.spec - 1].name : '';
     let stats;
-    if (s.kind === 'support') stats = `<div class="sg"><span>Dmg buff<b>+${pct(s.buffDmg)}</b></span><span>Speed buff<b>+${pct(s.buffRate)}</b></span><span>Range<b>${num1(s.range)}</b></span>${s.buffCrit ? `<span>Crit buff<b>+${num1(s.buffCrit)}%</b></span>` : ''}</div>`;
+    if (s.kind === 'snare') stats = `<div class="sg"><span>Catches left<b>${Math.max(0, s.catches - (t.caught || 0))}/${s.catches}</b></span><span>Lure range<b>${num1(s.range)}</b></span><span>Net slow<b>${pct(s.netSlow)}</b></span><span>Hold<b>${num1(s.hold)}s</b></span></div>`;
+    else if (s.kind === 'support') stats = `<div class="sg"><span>Dmg buff<b>+${pct(s.buffDmg)}</b></span><span>Speed buff<b>+${pct(s.buffRate)}</b></span><span>Range<b>${num1(s.range)}</b></span>${s.buffCrit ? `<span>Crit buff<b>+${num1(s.buffCrit)}%</b></span>` : ''}</div>`;
     else if (s.kind === 'eco') stats = `<div class="sg"><span>Income<b>${fmt(s.income * G.mods.credits)}/wave</b></span>${s.bountyAura ? `<span>Bounty aura<b>+${pct(s.bountyAura)}</b></span>` : ''}${s.fbounty ? `<span>All kills<b>+${pct(s.fbounty)}</b></span>` : ''}</div>`;
     else {
       const sts = [];
@@ -4820,10 +4891,10 @@ const UI = (() => {
       if (s.multi) sts.push(`+${s.multi} target`);
       stats = `<div class="sg"><span>Damage<b>${fmt(s.dmg * (1 + t.buff.dmg))}</b></span><span>Rate<b>${num1(s.rate * (1 + t.buff.rate))}/s</b></span><span>Range<b>${num1(t.effRange || s.range)}</b></span><span>Crit<b>${Math.round(s.critC + t.buff.crit)}%</b></span><span>DPS<b data-live="dps">${fmt(t.dps)}</b></span><span>Kills<b data-live="kills">${t.kills}</b></span></div>${sts.length ? `<div class="sts">${sts.join(' · ')}</div>` : ''}${t.isolated && G.mods.loneWolf ? '<div class="sts amber">Lone Wolf: active</div>' : ''}${t.reson ? `<div class="sts reson">Resonance: +${Math.round(t.reson * RESON_DMG * 100)}% Damage (${t.resonWith.map(o => EL[o.s.el].name).join(', ')})</div>` : ''}`;
     }
-    const modes = s.kind === 'support' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' ? '' :
+    const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' ? '' :
       `<div class="lbl">Target</div><div class="modes">${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${{ first: 'First', last: 'Last', strong: 'Strong', close: 'Near' }[m]}</button>`).join('')}</div>`;
     let up = '';
-    if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide" data-act="up" ${costBtn(c)}>Upgrade · ${fmt(c)}<small>LV ${t.lvl + 1}: more Damage, new affix</small></button>`; }
+    if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide" data-act="up" ${costBtn(c)}>Upgrade · ${fmt(c)}<small>LV ${t.lvl + 1}: ${s.kind === 'snare' ? 'more catches, longer hold, wider net' : s.kind === 'support' ? 'stronger boost' : s.kind === 'eco' ? 'more income' : 'more Damage'}, new affix</small></button>`; }
     else if (t.lvl === 3) { const c = upgradeCost(t); up = `<div class="lbl">Specialize · ${fmt(c)}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${costBtn(c)}><b>${esc(sp.name)}</b><span>${esc(sp.desc)}</span></button>`).join('')}</div>`; }
     else { const c = upgradeCost(t); up = `<button class="btn primary wide asc" data-act="up" ${costBtn(c)}>Ascend · ${fmt(c)}<small>A${(t.asc || 0) + 1}: ×1.3 Damage, new affix</small></button>`; }
     let vet = '';
@@ -4834,14 +4905,14 @@ const UI = (() => {
     const nextVet = vetThreshold(t.rank + 1), prevVet = t.rank ? vetThreshold(t.rank) : 0;
     const rc = rerollCost(t);
     const title = esc(D.name);
-    const combat = !(s.kind === 'eco' || s.kind === 'support');
+    const combat = !(s.kind === 'eco' || s.kind === 'support' || s.kind === 'snare');
     const vbar = combat ? `<div class="vrow"><span class="lbl">${t.rank ? 'Veteran ' + roman(t.rank) : 'Rookie'}</span><div class="xpbar"><i style="width:${pct(clamp((t.vxp - prevVet) / Math.max(1, nextVet - prevVet), 0, 1))}"></i></div></div>` : '';
     return `<div class="ph"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}LV ${t.lvl}${t.asc ? ' · A' + t.asc : ''}${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       ${vbar}
       ${t.lvl === 3 ? up : ''}
       ${vet}
       ${stats}
-      <div class="affs">${t.affixes.map(affixHTML).join('')}</div>
+      <div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
       <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}</button></div></div>`;
@@ -5178,7 +5249,7 @@ const UI = (() => {
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. Forming wormholes show their future route and open 2 waves later. Lanes open at Waves 12, 24, 38, 55 and 75.'],
         ['Checkpoint', `Pause before a wormhole's first wave. Full sell refunds and free respec. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
-        ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path.'] ] },
+        ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
         ['Common', 'Base value.', RARITY[0].col], ['Magic', '×1.7 value.', RARITY[1].col], ['Rare', '×2.6 value.', RARITY[2].col], ['Legendary', 'Unique effect. See Legendaries.', RARITY[3].col], ['Curse', 'Negative affix. See Curses.', RARITY[4].col],
         ...AFFIXES.map(A => [A.t(affRange(A)), `Common range · ${P[A.pool]}`]) ] },
