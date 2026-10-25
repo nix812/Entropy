@@ -175,9 +175,9 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .panel { position: absolute; top: 4px; bottom: 4px; width: min(270px, 46%); background: rgba(12, 14, 28, 0.96); box-shadow: inset 0 0 0 1px var(--line2), 0 0 30px rgba(0, 0, 0, 0.6);
   overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 10px 0; z-index: 6; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; animation: pin 0.15s; }
 .pfoot { position: sticky; bottom: 0; margin: auto -10px 0; padding: 8px 10px 10px; background: linear-gradient(rgba(12, 14, 28, 0.85), rgb(12, 14, 28) 10px); display: flex; flex-direction: column; gap: 6px; z-index: 2; }
-.bgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-.bt { background: var(--panel); border: 0; padding: 5px 2px 3px; display: flex; flex-direction: column; align-items: center; gap: 3px; box-shadow: inset 0 0 0 1px var(--line); min-height: 46px; position: relative; }
-.bt canvas { width: 28px; height: 28px; }
+.bgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+.bt { background: var(--panel); border: 0; padding: 5px 2px 3px; display: flex; flex-direction: column; align-items: center; gap: 3px; box-shadow: inset 0 0 0 1px var(--line); min-height: 44px; position: relative; }
+.bt canvas { width: 26px; height: 26px; }
 .bt b { font-family: var(--f-term); font-weight: 400; font-size: 16px; line-height: 1; color: var(--amber); font-variant-numeric: tabular-nums; }
 .bt b.poor { color: #6a5a40; }
 .bt.on { box-shadow: inset 0 0 0 2px var(--amber); background: #1c1a24; }
@@ -186,7 +186,8 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .bt i { position: absolute; left: 0; right: 0; top: 0; height: 2px; }
 .binfo { display: flex; flex-direction: column; gap: 2px; min-height: 0; }
 .binfo b { font-family: var(--f-pix); font-size: 11px; text-transform: uppercase; }
-.binfo p { margin: 0; font-size: 16px; }
+.binfo p { margin: 0; font-size: 16px; line-height: 1.05; }
+.binfo p.bst { font-size: 15px; color: var(--dim); margin-top: 2px; }
 .panel.right { right: 0; } .panel.left { left: 0; }
 .panel .x { width: 36px; height: 36px; margin: -4px -6px -4px auto; font-size: 20px; }
 @keyframes pin { from { opacity: 0; } }
@@ -257,6 +258,7 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .boon.anomaly { box-shadow: inset 0 0 0 2px var(--void); }
 .boon.anomaly b { color: #d6a6ff; }
 .boon span { font-size: 16px; }
+.boon .cost { font-style: normal; margin: 4px 0 -4px; padding-top: 6px; border-top: 1px solid var(--line); color: #a8607a; }
 .boon.stab { box-shadow: inset 0 0 0 2px var(--line2); }
 .boon.stab b { color: var(--ink); }
 h2.void { color: #d6a6ff; }
@@ -284,6 +286,15 @@ h2.void { color: #d6a6ff; }
 .set { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .set input[type=range] { width: 50%; accent-color: var(--amber); }
 .xcode { width: 100%; height: 110px; margin-top: 8px; font: 13px/1.2 ui-monospace, monospace; background: var(--panel2); color: var(--ink); border: 0; box-shadow: inset 0 0 0 1px var(--line2); padding: 8px; resize: none; word-break: break-all; -webkit-user-select: text; user-select: text; }
+.gtabs { margin: -2px 0 10px; }
+.gd { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 16px; align-items: baseline; }
+.gd b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); }
+.gd span { font-size: 18px; color: var(--ink); }
+.gsub { margin: 12px 0 4px; }
+.gcombo { display: grid; grid-template-columns: repeat(2, max-content minmax(0, 1fr)); gap: 3px 14px; align-items: baseline; font-size: 17px; }
+.gcombo span { color: var(--dim); } .gcombo span i { font-style: normal; color: #5f5d7a; }
+.gcombo b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--ink); }
+@media (max-width: 700px) { .gcombo { grid-template-columns: max-content minmax(0, 1fr); } }
 .help ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 17px; max-width: 70ch; }
 .arow { display: flex; align-items: center; gap: 8px; font-size: 17px; padding: 2px 0; }
 .arow small { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
@@ -344,7 +355,7 @@ h2.void { color: #d6a6ff; }
 </head>
 <body>
 <div id="app">
-  <div id="rotate"><div class="ph-icon"></div><h2>Turn your phone sideways</h2><p class="note">Entropy plays in landscape.</p><button class="btn small" id="bRotate">Play anyway</button></div>
+  <div id="rotate"><div class="ph-icon"></div><h2>Rotate Your Device</h2><p class="note">Entropy is played in landscape.</p><button class="btn small" id="bRotate">Continue Anyway</button></div>
 
   <section id="hangar" class="screen">
     <canvas id="bgfx"></canvas>
@@ -358,13 +369,13 @@ h2.void { color: #d6a6ff; }
         <h1>ENTROPY</h1>
         <div class="hmeta">
           <div class="lv"><span class="lbl">Level</span><b id="hLevel">0</b><div class="xpbar"><i id="hXpFill"></i></div></div>
-          <div><span class="lbl">Best wave</span><b id="hBest">—</b></div>
+          <div><span class="lbl">Best Wave</span><b id="hBest">—</b></div>
         </div>
       </div>
       <nav class="menu">
-        <button class="btn" id="bWebH">Passive web<em class="badge" id="hPts" hidden></em></button>
-        <button class="btn alt" id="bLaunch2" hidden>New run<small>Pick wave, chaos, map</small></button>
-        <button class="btn primary play" id="bLaunch">Play<small id="hPlaySub">Pick wave, chaos, map ›</small></button>
+        <button class="btn" id="bWebH">Passive Web<em class="badge" id="hPts" hidden></em></button>
+        <button class="btn alt" id="bLaunch2" hidden>New Run</button>
+        <button class="btn primary play" id="bLaunch">Play<small id="hPlaySub"></small></button>
       </nav>
     </div>
   </section>
@@ -399,7 +410,7 @@ h2.void { color: #d6a6ff; }
   <section id="tree" class="screen" hidden>
     <canvas id="tcv"></canvas>
     <div id="tbar">
-      <h2>Passive web</h2>
+      <h2>Passive Web</h2>
       <span class="tpts"><b id="tPts">0</b> points</span>
       <span class="tpts" id="tTok"><b>0</b> tokens</span>
       <div class="spacer"></div>
@@ -460,49 +471,49 @@ const ELS = ['K', 'T', 'C', 'A', 'V'];
 // rate = attacks/sec, range in tiles, dmg per hit at L1
 const TOWERS = {
   pulse: { name: 'Pulse Blaster', el: 'K', cost: 60, dmg: 10, rate: 2.4, range: 2.6, kind: 'bullet', pspd: 16, unlock: 1,
-    blurb: 'Fast single-target blaster.',
-    specs: [{ name: 'Gatling Array', desc: 'Attack speed ×2.2, damage ×0.85', m: { rateX: 2.2, dmgX: 0.85 } },
-            { name: 'Twin Cannons', desc: 'Fires at 2 targets, damage ×1.25', m: { multi: 1, dmgX: 1.25 } }] },
+    blurb: 'Rapid single-target fire.',
+    specs: [{ name: 'Gatling Array', desc: '×2.2 Attack Speed, ×0.85 Damage', m: { rateX: 2.2, dmgX: 0.85 } },
+            { name: 'Twin Cannons', desc: 'Fires at 2 targets. ×1.25 Damage', m: { multi: 1, dmgX: 1.25 } }] },
   rail: { name: 'Rail Lance', el: 'K', cost: 110, dmg: 50, rate: 0.5, range: 4.6, kind: 'rail', pierce: 2, crit: 10, unlock: 1,
-    blurb: 'Long-range railgun. Pierces in a line.',
-    specs: [{ name: 'Gauss Spire', desc: 'Damage ×1.8, +15% crit chance', m: { dmgX: 1.8, critC: 15 } },
-            { name: 'Splinter Rail', desc: '+4 pierce, ignores armor, damage ×1.25', m: { pierce: 4, shred: 1, dmgX: 1.25 } }] },
+    blurb: 'Long-range piercing shot.',
+    specs: [{ name: 'Gauss Spire', desc: '×1.8 Damage, +15% Crit Chance', m: { dmgX: 1.8, critC: 15 } },
+            { name: 'Splinter Rail', desc: '+4 Pierce, ignores Armor, ×1.25 Damage', m: { pierce: 4, shred: 1, dmgX: 1.25 } }] },
   cryo: { name: 'Cryo Emitter', el: 'C', cost: 75, dmg: 5, rate: 1.0, range: 2.1, kind: 'pulse', st: { chill: 1 }, unlock: 1,
-    blurb: 'Freezing pulse around itself. Chills everything nearby.',
-    specs: [{ name: 'Glacier Core', desc: 'Chill potency ×1.5, freeze lasts +0.6s', m: { chillPot: 1.5, freezeBonus: 0.6 } },
-            { name: 'Shatter Field', desc: 'Chilled enemies in range take +60% Kinetic damage', m: { shatterField: 0.6 } }] },
+    blurb: 'Pulse that Chills nearby enemies.',
+    specs: [{ name: 'Glacier Core', desc: '×1.5 Chill strength. Freeze lasts 0.6s longer', m: { chillPot: 1.5, freezeBonus: 0.6 } },
+            { name: 'Shatter Field', desc: 'Chilled enemies in range take +60% Kinetic Damage', m: { shatterField: 0.6 } }] },
   missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 26, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
-    blurb: 'Homing missiles with splash. Burns.',
-    specs: [{ name: 'Cluster Pods', desc: 'Each missile bursts into 3 bomblets', m: { cluster: 3 } },
+    blurb: 'Homing missiles. Splash and Burn.',
+    specs: [{ name: 'Cluster Pods', desc: 'Missiles split into 3 bomblets', m: { cluster: 3 } },
             { name: 'Napalm Payload', desc: 'Impacts leave burning ground', m: { napalm: 1 } }] },
   pylon: { name: 'Relay Pylon', el: 'N', cost: 100, dmg: 0, rate: 0, range: 2.0, kind: 'support', buffDmg: 15, buffRate: 10, unlock: 8,
-    blurb: 'Buffs towers in range. Reveals cloaked enemies.',
-    specs: [{ name: 'Amplifier', desc: '+20% more damage buff', m: { buffDmg: 20 } },
-            { name: 'Uplink', desc: '+1 range, +12% crit chance buff', m: { rangeAdd: 1, buffCrit: 12 } }] },
+    blurb: 'Boosts nearby towers. Reveals cloaked.',
+    specs: [{ name: 'Amplifier', desc: '+20% Damage boost', m: { buffDmg: 20 } },
+            { name: 'Uplink', desc: '+1 Range. Also boosts Crit Chance by 12%', m: { rangeAdd: 1, buffCrit: 12 } }] },
   coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 17, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
-    blurb: 'Lightning that chains between enemies. Shocks.',
-    specs: [{ name: 'Tesla Crown', desc: '+3 chain jumps', m: { chain: 3 } },
-            { name: 'Overvolt', desc: 'Shock effect ×2, 12% chance to stun', m: { shockX: 2, stun: 0.12 } }] },
+    blurb: 'Chain lightning. Applies Shock.',
+    specs: [{ name: 'Tesla Crown', desc: '+3 Chain', m: { chain: 3 } },
+            { name: 'Overvolt', desc: '×2 Shock effect, 12% chance to Stun', m: { shockX: 2, stun: 0.12 } }] },
   forge: { name: 'Credit Forge', el: 'N', cost: 150, dmg: 0, rate: 0, range: 0, kind: 'eco', income: 30, unlock: 12,
-    blurb: 'Generates credits every wave.',
-    specs: [{ name: 'Refinery', desc: 'Income ×2.2', m: { incomeX: 2.2 } },
+    blurb: 'Produces credits each wave.',
+    specs: [{ name: 'Refinery', desc: '×2.2 Income', m: { incomeX: 2.2 } },
             { name: 'Bounty Net', desc: '+30% kill credits within 3 tiles', m: { bounty: 0.3 } }] },
   flame: { name: 'Flame Projector', el: 'T', cost: 90, dmg: 4.2, rate: 8, range: 1.9, kind: 'cone', st: { burn: 1 }, unlock: 15,
-    blurb: 'Short-range cone that hits everything. Burns.',
-    specs: [{ name: 'Inferno', desc: 'Burn damage ×2', m: { burnX: 2 } },
-            { name: 'Plasma Torch', desc: '+0.5 range, also Shocks', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
+    blurb: 'Short-range cone. Applies Burn.',
+    specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
+            { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
   lens: { name: 'Void Lens', el: 'V', cost: 140, dmg: 2.8, rate: 10, range: 3.2, kind: 'beam', rampMax: 4.5, st: { mark: 0.15 }, unlock: 20,
-    blurb: 'Beam that ramps up to ×4.5 on one target. Marks.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramp cap ×8', m: { rampMax: 8 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams, ramp cap ×3.5', m: { beams: 3, rampMax: 3.5 } }] },
+    blurb: 'Ramping beam. Applies Mark.',
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×8 damage', m: { rampMax: 8 } },
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×3.5', m: { beams: 3, rampMax: 3.5 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 26, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
-    blurb: 'Lobbed shells that stun an area.',
-    specs: [{ name: 'Blackout Shell', desc: 'Stun 1.2s, +0.3 splash', m: { stunDur: 1.2, splash: 0.3 } },
-            { name: 'Ion Barrage', desc: 'Fires 3 shells', m: { shells: 3 } }] },
+    blurb: 'Lobbed shells that Stun an area.',
+    specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash', m: { stunDur: 1.2, splash: 0.3 } },
+            { name: 'Ion Barrage', desc: 'Fires 3 shells per volley', m: { shells: 3 } }] },
   grav: { name: 'Gravity Well', el: 'V', cost: 150, dmg: 8, rate: 0.35, range: 2.6, kind: 'grav', pull: 0.7, unlock: 30,
-    blurb: 'Pulses that drag enemies backward. Slows its area.',
-    specs: [{ name: 'Singularity', desc: 'Pulses deal ×3 Void damage and Mark', m: { dmgX: 3, addMark: 1 } },
-            { name: 'Tidal Lock', desc: 'Pull distance ×2', m: { pullX: 2 } }] },
+    blurb: 'Pulls enemies back along the path.',
+    specs: [{ name: 'Singularity', desc: '×3 Damage. Pulses apply Mark', m: { dmgX: 3, addMark: 1 } },
+            { name: 'Tidal Lock', desc: '×2 pull distance', m: { pullX: 2 } }] },
 };
 const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav'];
 const LV_DMG = [0, 1, 1.65, 2.6, 4.1, 6.4];
@@ -520,45 +531,45 @@ const RARITY = [
 const RAR_MULT = [1, 1.7, 2.6];
 // pool: 'atk' attacking towers, 'pylon', 'forge'
 const AFFIXES = [
-  { id: 'dmg', pool: 'atk', lo: 10, hi: 15, t: v => `+${v}% damage` },
-  { id: 'rate', pool: 'atk', lo: 8, hi: 12, t: v => `+${v}% attack speed` },
-  { id: 'range', pool: 'atk', lo: 6, hi: 10, t: v => `+${v}% range` },
-  { id: 'critC', pool: 'atk', lo: 4, hi: 6, t: v => `+${v}% crit chance` },
-  { id: 'critM', pool: 'atk', lo: 20, hi: 30, t: v => `+${v}% crit damage` },
+  { id: 'dmg', pool: 'atk', lo: 10, hi: 15, t: v => `+${v}% Damage` },
+  { id: 'rate', pool: 'atk', lo: 8, hi: 12, t: v => `+${v}% Attack Speed` },
+  { id: 'range', pool: 'atk', lo: 6, hi: 10, t: v => `+${v}% Range` },
+  { id: 'critC', pool: 'atk', lo: 4, hi: 6, t: v => `+${v}% Crit Chance` },
+  { id: 'critM', pool: 'atk', lo: 20, hi: 30, t: v => `+${v}% Crit Damage` },
   { id: 'burn', pool: 'atk', lo: 15, hi: 20, t: v => `${v}% chance to Burn` },
   { id: 'chill', pool: 'atk', lo: 15, hi: 20, t: v => `${v}% chance to Chill` },
   { id: 'shock', pool: 'atk', lo: 15, hi: 20, t: v => `${v}% chance to Shock` },
-  { id: 'mark', pool: 'atk', lo: 15, hi: 20, t: v => `${v}% chance to Void Mark` },
+  { id: 'mark', pool: 'atk', lo: 15, hi: 20, t: v => `${v}% chance to Mark` },
   { id: 'bounty', pool: 'atk', lo: 10, hi: 15, t: v => `+${v}% kill credits` },
-  { id: 'boss', pool: 'atk', lo: 15, hi: 25, t: v => `+${v}% damage vs elites & bosses` },
-  { id: 'slowd', pool: 'atk', lo: 20, hi: 30, t: v => `+${v}% damage vs slowed` },
-  { id: 'pierce', pool: 'atk', min: 1, fixed: [0, 1, 2], t: v => `+${v} pierce` },
-  { id: 'chain', pool: 'atk', min: 1, fixed: [0, 1, 2], t: v => `+${v} chain` },
-  { id: 'splash', pool: 'atk', min: 1, lo: 3, hi: 4, div: 10, t: v => `+${v} tiles splash` },
-  { id: 'exec', pool: 'atk', min: 1, lo: 5, hi: 8, t: v => `Executes non-bosses below ${v}% HP` },
-  { id: 'multi', pool: 'atk', min: 2, fixed: [0, 0, 1], t: v => `Hits +${v} extra target` },
-  { id: 'aura', pool: 'pylon', lo: 8, hi: 12, t: v => `+${v}% buff strength` },
-  { id: 'prange', pool: 'pylon', lo: 10, hi: 15, t: v => `+${v}% range` },
-  { id: 'yield', pool: 'forge', lo: 15, hi: 25, t: v => `+${v}% income` },
+  { id: 'boss', pool: 'atk', lo: 15, hi: 25, t: v => `+${v}% Damage to Elites and Bosses` },
+  { id: 'slowd', pool: 'atk', lo: 20, hi: 30, t: v => `+${v}% Damage to slowed enemies` },
+  { id: 'pierce', pool: 'atk', min: 1, fixed: [0, 1, 2], t: v => `+${v} Pierce` },
+  { id: 'chain', pool: 'atk', min: 1, fixed: [0, 1, 2], t: v => `+${v} Chain` },
+  { id: 'splash', pool: 'atk', min: 1, lo: 3, hi: 4, div: 10, t: v => `+${v} Splash radius` },
+  { id: 'exec', pool: 'atk', min: 1, lo: 5, hi: 8, t: v => `Executes enemies below ${v}% HP (not Bosses)` },
+  { id: 'multi', pool: 'atk', min: 2, fixed: [0, 0, 1], t: v => `+${v} target` },
+  { id: 'aura', pool: 'pylon', lo: 8, hi: 12, t: v => `+${v}% Boost strength` },
+  { id: 'prange', pool: 'pylon', lo: 10, hi: 15, t: v => `+${v}% Range` },
+  { id: 'yield', pool: 'forge', lo: 15, hi: 25, t: v => `+${v}% Income` },
   { id: 'fbounty', pool: 'forge', lo: 5, hi: 10, t: v => `+${v}% credits from all kills` },
 ];
 const LEGENDARIES = [
-  { id: 'detonator', pool: 'atk', name: 'Detonator', t: () => 'Kills explode for 40% of the victim\'s max HP' },
-  { id: 'ricochet', pool: 'atk', name: 'Ricochet Matrix', t: () => 'Hits bounce to 3 more enemies at 60%' },
-  { id: 'overloop', pool: 'atk', name: 'Overclock Loop', t: () => 'Every 8s, +150% attack speed for 3s' },
-  { id: 'prism', pool: 'atk', name: 'Prism Core', t: () => 'Every hit applies a random status' },
+  { id: 'detonator', pool: 'atk', name: 'Detonator', t: () => 'Kills explode for 40% of the enemy\'s max HP' },
+  { id: 'ricochet', pool: 'atk', name: 'Ricochet Matrix', t: () => 'Hits bounce to 3 more enemies for 60% damage' },
+  { id: 'overloop', pool: 'atk', name: 'Overclock Loop', t: () => 'Every 8s: +150% Attack Speed for 3s' },
+  { id: 'prism', pool: 'atk', name: 'Prism Core', t: () => 'Hits apply a random status' },
   { id: 'echo', pool: 'atk', name: 'Echo Chamber', t: () => '30% chance to attack twice' },
   { id: 'siphon', pool: 'atk', name: 'Siphon', t: () => 'Kills restore 0.5% core HP' },
-  { id: 'entropic', pool: 'atk', name: 'Entropic Rounds', t: () => 'Each hit deals ×0.4 to ×3 damage at random' },
-  { id: 'nexus', pool: 'pylon', name: 'Nexus', t: () => 'Buffs ×1.5 and reach +1 tile' },
-  { id: 'midas', pool: 'forge', name: 'Midas Press', t: () => 'Income ×2, +1% interest on banked credits' },
+  { id: 'entropic', pool: 'atk', name: 'Entropic Rounds', t: () => 'Hits deal a random ×0.4 to ×3 damage' },
+  { id: 'nexus', pool: 'pylon', name: 'Nexus', t: () => '×1.5 Boost strength, +1 Range' },
+  { id: 'midas', pool: 'forge', name: 'Midas Press', t: () => '×2 Income. Earns 1% interest on banked credits' },
 ];
 const CURSES = [
-  { id: 'cdmg', t: () => '−15% damage' },
-  { id: 'crate', t: () => '−15% attack speed' },
-  { id: 'crange', t: () => '−15% range' },
+  { id: 'cdmg', t: () => '−15% Damage' },
+  { id: 'crate', t: () => '−15% Attack Speed' },
+  { id: 'crange', t: () => '−15% Range' },
   { id: 'jam', t: () => '5% chance to jam for 1s' },
-  { id: 'unstable', t: () => '10% of attacks fizzle' },
+  { id: 'unstable', t: () => '10% of attacks misfire' },
 ];
 
 // ---------- Enemies ----------
@@ -574,11 +585,11 @@ const ENEMIES = {
   voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1 },
 };
 const BOSSES = [
-  { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns swarmers' },
-  { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns skimmers' },
-  { id: 'wraith', name: 'Phase Wraith', hp: 30, spd: 0.7, size: 2, desc: 'Blinks forward and cloaks' },
-  { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'EMPs nearby towers' },
-  { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor plates shatter at 66% and 33%' },
+  { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
+  { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
+  { id: 'wraith', name: 'Phase Wraith', hp: 30, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks' },
+  { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'Disables nearby towers' },
+  { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
 ];
 const ELITE_AFFIXES = [
   { id: 'shielded', name: 'Shielded', col: '#7fd4ff' },
@@ -593,11 +604,11 @@ const ELITE_AFFIXES = [
 
 // ---------- Storms (weather) ----------
 const STORMS = {
-  ion:    { name: 'Ion Storm', el: 'A', col: '#ffe14d', desc: 'Arc +40%' },
-  solar:  { name: 'Solar Flare', el: 'T', col: '#ff7b39', desc: 'Thermal +40%' },
-  cryo:   { name: 'Cryo Front', el: 'C', col: '#6ae2ff', desc: 'Cryo +40%, enemies slowed' },
-  void:   { name: 'Void Tide', el: 'V', col: '#b86cff', desc: 'Void +40%, enemies take +10%' },
-  static: { name: 'Static Haze', el: 'K', col: '#a59f92', desc: 'Kinetic +40%, range −15%' },
+  ion:    { name: 'Ion Storm', el: 'A', col: '#ffe14d', desc: '+40% Arc Damage' },
+  solar:  { name: 'Solar Flare', el: 'T', col: '#ff7b39', desc: '+40% Thermal Damage' },
+  cryo:   { name: 'Cryo Front', el: 'C', col: '#6ae2ff', desc: '+40% Cryo Damage. Slows enemies' },
+  void:   { name: 'Void Tide', el: 'V', col: '#b86cff', desc: '+40% Void Damage. Enemies take +10% damage' },
+  static: { name: 'Static Haze', el: 'K', col: '#a59f92', desc: '+40% Kinetic Damage, −15% Range' },
 };
 const STORM_KEYS = Object.keys(STORMS);
 const COMBO_STORMS = {
@@ -608,47 +619,47 @@ const COMBO_STORMS = {
 
 // ---------- Chaos events ----------
 const EVENTS = [
-  { id: 'surge', name: 'Surge', good: 0, w: 10, from: 5, desc: 'Enemies +35% speed' },
-  { id: 'emp', name: 'EMP Storm', good: 0, w: 8, from: 8, desc: 'Towers randomly short out' },
-  { id: 'breach', name: 'Rift Breach', good: 0, w: 8, from: 6, desc: 'A rift spawns enemies mid-path' },
-  { id: 'swarm', name: 'Swarm Tide', good: 0, w: 8, from: 5, desc: 'Double count, half health' },
-  { id: 'elite', name: 'Elite Tide', good: 0, w: 6, from: 10, desc: 'Far more elites' },
-  { id: 'blackout', name: 'Blackout', good: 0, w: 6, from: 12, desc: 'Tower range −20%' },
-  { id: 'regen', name: 'Nanite Bloom', good: 0, w: 6, from: 14, desc: 'Enemies regenerate' },
-  { id: 'phase', name: 'Phase Shift', good: 0, w: 6, from: 16, desc: 'Enemies blink forward' },
-  { id: 'gold', name: 'Gold Rush', good: 1, w: 7, from: 5, desc: 'Credits ×2' },
-  { id: 'overcharge', name: 'Overcharge', good: 1, w: 6, from: 5, desc: 'Towers +30% attack speed' },
-  { id: 'meteor', name: 'Meteor Shower', good: 1, w: 6, from: 7, desc: 'Meteors pound the path' },
+  { id: 'surge', name: 'Surge', good: 0, w: 10, from: 5, desc: '+35% enemy speed' },
+  { id: 'emp', name: 'EMP Storm', good: 0, w: 8, from: 8, desc: 'Towers randomly shut down' },
+  { id: 'breach', name: 'Rift Breach', good: 0, w: 8, from: 6, desc: 'Enemies spawn mid-path' },
+  { id: 'swarm', name: 'Swarm Tide', good: 0, w: 8, from: 5, desc: 'Twice the enemies at half HP' },
+  { id: 'elite', name: 'Elite Tide', good: 0, w: 6, from: 10, desc: 'Many more Elites' },
+  { id: 'blackout', name: 'Blackout', good: 0, w: 6, from: 12, desc: '−20% tower Range' },
+  { id: 'regen', name: 'Nanite Bloom', good: 0, w: 6, from: 14, desc: 'Enemies regenerate HP' },
+  { id: 'phase', name: 'Phase Shift', good: 0, w: 6, from: 16, desc: 'Enemies teleport forward' },
+  { id: 'gold', name: 'Gold Rush', good: 1, w: 7, from: 5, desc: '×2 Credits' },
+  { id: 'overcharge', name: 'Overcharge', good: 1, w: 6, from: 5, desc: '+30% Attack Speed' },
+  { id: 'meteor', name: 'Meteor Shower', good: 1, w: 6, from: 7, desc: 'Meteors strike the path' },
 ];
 
 // ---------- Abilities ----------
 const ABILITIES = {
-  strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap the map. Heavy damage in an area.', target: 1 },
-  nova: { name: 'Entropy Nova', key: 'NOV', short: 'Nova', desc: 'Every enemy loses 35% HP (bosses 10%).' },
+  strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap a target. Heavy area damage.', target: 1 },
+  nova: { name: 'Entropy Nova', key: 'NOV', short: 'Nova', desc: 'All enemies lose 35% HP (Bosses 10%).' },
   stasis: { name: 'Stasis Field', key: 'STS', short: 'Stasis', desc: 'Freezes all enemies for 4s.' },
-  overclock: { name: 'Overclock', key: 'OVC', short: 'Boost', desc: 'Towers +100% attack speed for 8s.' },
+  overclock: { name: 'Frenzy', key: 'FRZ', short: 'Frenzy', desc: '+100% Attack Speed for 8s.' },
 };
 const ABIL_ORDER = ['strike', 'nova', 'stasis', 'overclock'];
 const MILESTONE_BUFFS = [
-  { k: 'dmg', v: 4, t: '+4% damage' }, { k: 'rate', v: 4, t: '+4% attack speed' },
-  { k: 'range', v: 3, t: '+3% range' }, { k: 'critC', v: 2, t: '+2% crit chance' },
-  { k: 'credits', v: 4, t: '+4% credits' }, { k: 'coreHP', v: 8, t: '+8 core HP' },
+  { k: 'dmg', v: 4, t: '+4% Damage' }, { k: 'rate', v: 4, t: '+4% Attack Speed' },
+  { k: 'range', v: 3, t: '+3% Range' }, { k: 'critC', v: 2, t: '+2% Crit Chance' },
+  { k: 'credits', v: 4, t: '+4% Credits' }, { k: 'coreHP', v: 8, t: '+8 core HP' },
 ];
 
 // ---------- Boss draft boons ----------
 const BOONS = [
-  { id: 'b_dmg', name: 'Amplified Grid', desc: '+12% damage this run', m: { dmg: 12 } },
-  { id: 'b_rate', name: 'Hyperthreading', desc: '+10% attack speed this run', m: { rate: 10 } },
-  { id: 'b_cred', name: 'Salvage Rights', desc: '+20% credits this run', m: { credits: 20 } },
-  { id: 'b_crit', name: 'Targeting Suite', desc: '+10% crit chance this run', m: { critC: 10 } },
-  { id: 'b_chain', name: 'Arc Lattice', desc: '+1 chain on every chaining hit', m: { chain: 1 } },
-  { id: 'b_storm', name: 'Weather Control', desc: 'Storm effects +40% this run', m: { stormPow: 40 } },
-  { id: 'b_core', name: 'Core Rebuild', desc: '+25% core max HP and full repair', special: 'core' },
-  { id: 'b_tokens', name: 'Recalibration Cache', desc: '+2 Recalibration tokens and a random charge', special: 'tokens' },
+  { id: 'b_dmg', name: 'Amplified Grid', desc: '+12% Damage', m: { dmg: 12 } },
+  { id: 'b_rate', name: 'Hyperthreading', desc: '+10% Attack Speed', m: { rate: 10 } },
+  { id: 'b_cred', name: 'Salvage Rights', desc: '+20% Credits', m: { credits: 20 } },
+  { id: 'b_crit', name: 'Targeting Suite', desc: '+10% Crit Chance', m: { critC: 10 } },
+  { id: 'b_chain', name: 'Arc Lattice', desc: '+1 Chain for all chaining attacks', m: { chain: 1 } },
+  { id: 'b_storm', name: 'Weather Control', desc: '+40% storm effects', m: { stormPow: 40 } },
+  { id: 'b_core', name: 'Core Rebuild', desc: '+25% core max HP. Fully repairs the core', special: 'core' },
+  { id: 'b_tokens', name: 'Recalibration Cache', desc: '+2 Recalibration tokens and 1 random ability charge', special: 'tokens' },
   { id: 'b_legend', name: 'Forbidden Schematic', desc: 'Your next 3 towers roll a Legendary affix', special: 'legend' },
-  { id: 'b_affix', name: 'Mutation Pulse', desc: 'Every tower gains a random affix', special: 'mutate' },
-  { id: 'b_reroll', name: 'Cheap Dice', desc: 'Affix rerolls cost 50% less', special: 'reroll' },
-  { id: 'b_cash', name: 'War Chest', desc: 'Gain credits equal to 25 × wave', special: 'cash' },
+  { id: 'b_affix', name: 'Mutation Pulse', desc: 'All towers gain a random affix', special: 'mutate' },
+  { id: 'b_reroll', name: 'Cheap Dice', desc: 'Rerolls cost 50% less', special: 'reroll' },
+  { id: 'b_cash', name: 'War Chest', desc: 'Gain 25 credits per wave reached', special: 'cash' },
 ];
 
 const CHAOS_LEVELS = [
@@ -661,31 +672,31 @@ const CHAOS_LEVELS = [
 // ---------- Passive web ----------
 const ATTR = { P: 'Power', Tm: 'Tempo', F: 'Focus', I: 'Integrity' };
 const STAT_TXT = {
-  dmg: v => `+${v}% damage`, dmgK: v => `+${v}% Kinetic damage`, dmgT: v => `+${v}% Thermal damage`,
-  dmgC: v => `+${v}% Cryo damage`, dmgA: v => `+${v}% Arc damage`, dmgV: v => `+${v}% Void damage`,
-  rate: v => `+${v}% attack speed`, rateK: v => `+${v}% Kinetic attack speed`, rateA: v => `+${v}% Arc attack speed`,
-  range: v => `+${v}% range`, rangeKR: v => `+${v}% range for Pulse and Rail`,
-  critC: v => `+${v}% crit chance`, critM: v => `+${v}% crit damage`,
+  dmg: v => `+${v}% Damage`, dmgK: v => `+${v}% Kinetic Damage`, dmgT: v => `+${v}% Thermal Damage`,
+  dmgC: v => `+${v}% Cryo Damage`, dmgA: v => `+${v}% Arc Damage`, dmgV: v => `+${v}% Void Damage`,
+  rate: v => `+${v}% Attack Speed`, rateK: v => `+${v}% Kinetic Attack Speed`, rateA: v => `+${v}% Arc Attack Speed`,
+  range: v => `+${v}% Range`, rangeKR: v => `+${v}% Range for Pulse Blaster and Rail Lance`,
+  critC: v => `+${v}% Crit Chance`, critM: v => `+${v}% Crit Damage`,
   P: v => `+${v} Power`, Tm: v => `+${v} Tempo`, F: v => `+${v} Focus`, I: v => `+${v} Integrity`,
-  burnDmg: v => `+${v}% burn damage`, burnChance: v => `+${v}% chance to Burn on hit`,
-  chillChance: v => `+${v}% chance to Chill on hit`, shockChance: v => `+${v}% chance to Shock on hit`,
-  markChance: v => `+${v}% chance to Void Mark on hit`, burnDur: v => `+${v}% burn duration`,
-  chillPot: v => `+${v}% chill potency`, freezeDur: v => `+${v}s freeze duration`,
-  shockEff: v => `+${v}% shock effect`, markMax: v => `+${v} max Void Mark stacks`,
-  splash: v => `+${v} tiles splash radius`, chain: v => `+${v} chain on chaining hits`,
-  pierceK: v => `+${v} pierce on Kinetic towers`, costRed: v => `${v}% cheaper towers`,
-  upgRed: v => `${v}% cheaper upgrades`, credits: v => `+${v}% credits`, startCredits: v => `+${v} starting credits`,
+  burnDmg: v => `+${v}% Burn damage`, burnChance: v => `+${v}% chance to Burn`,
+  chillChance: v => `+${v}% chance to Chill`, shockChance: v => `+${v}% chance to Shock`,
+  markChance: v => `+${v}% chance to Mark`, burnDur: v => `+${v}% Burn duration`,
+  chillPot: v => `+${v}% Chill strength`, freezeDur: v => `+${v}s Freeze duration`,
+  shockEff: v => `+${v}% Shock effect`, markMax: v => `+${v} max Mark stacks`,
+  splash: v => `+${v} Splash radius`, chain: v => `+${v} Chain`,
+  pierceK: v => `+${v} Pierce for Kinetic towers`, costRed: v => `−${v}% tower cost`,
+  upgRed: v => `−${v}% upgrade cost`, credits: v => `+${v}% Credits`, startCredits: v => `+${v} starting credits`,
   coreHP: v => `+${v} core HP`, shield: v => `+${v} core shield`, shieldRegen: v => `+${v}% shield regen`,
-  coreDmg: v => `+${v}% core weapon damage`, coreRate: v => `+${v}% core attack speed`, coreRange: v => `+${v} core range`,
-  abilCharge: v => `Ability charges need ${v}% less score`, abilPower: v => `+${v}% ability power`,
+  coreDmg: v => `+${v}% core Damage`, coreRate: v => `+${v}% core Attack Speed`, coreRange: v => `+${v} core Range`,
+  abilCharge: v => `−${v}% score needed per ability charge`, abilPower: v => `+${v}% ability power`,
   stasisDur: v => `+${v}s Stasis duration`, stormFreq: v => `+${v}% storm frequency`, stormPow: v => `+${v}% storm effects`,
   affixLuck: v => `+${v}% affix rarity`, shatter: v => `+${v}% Shatter damage`, overload: v => `+${v}% Overload damage`,
-  overloadRad: v => `+${v}% Overload radius`, superRad: v => `+${v}% Superconduct reach`, collapse: v => `+${v}% Collapse damage`,
-  armorPen: v => `Ignore ${v}% of armor`, eliteDmg: v => `+${v}% damage vs elites & bosses`,
-  frozenVuln: v => `Frozen enemies take +${v}% damage`, knock: v => `${v}% chance to knock enemies back`,
-  xp: v => `+${v}% XP`, chainIgnite: () => 'Burning enemies spread Burn when they die',
-  loneWolf: v => `Towers with no neighbor within 1.5 tiles deal +${v}% damage`,
-  kBurn: v => `Kinetic hits have ${v}% chance to Burn`, chillVoid: v => `Hits on Chilled enemies have ${v}% chance to Void Mark`,
+  overloadRad: v => `+${v}% Overload radius`, superRad: v => `+${v}% Superconduct radius`, collapse: v => `+${v}% Collapse damage`,
+  armorPen: v => `Ignores ${v}% of Armor`, eliteDmg: v => `+${v}% Damage to Elites and Bosses`,
+  frozenVuln: v => `Frozen enemies take +${v}% damage`, knock: v => `${v}% chance to knock back`,
+  xp: v => `+${v}% XP`, chainIgnite: () => 'Burning enemies spread Burn on death',
+  loneWolf: v => `+${v}% Damage for towers with no neighbors`,
+  kBurn: v => `Kinetic hits: ${v}% chance to Burn`, chillVoid: v => `Hits on Chilled enemies: ${v}% chance to Mark`,
 };
 const SMALL_NAME = {
   dmg: 'Damage', dmgK: 'Kinetic Damage', dmgT: 'Thermal Damage', dmgC: 'Cryo Damage', dmgA: 'Arc Damage', dmgV: 'Void Damage',
@@ -704,42 +715,42 @@ const SECTORS = [
       { name: 'Rifling', fx: { rateK: 15, rangeKR: 10 }, smalls: [{ rateK: 5 }, { range: 4 }, { rateK: 5 }] },
       { name: 'Armor Piercer', fx: { armorPen: 50, eliteDmg: 10 }, smalls: [{ armorPen: 10 }, { eliteDmg: 6 }, { armorPen: 10 }] }],
     mastery: { name: 'Ballistic Mastery', fx: { pierceK: 1, dmgK: 25 }, smalls: [{ dmgK: 8 }, { critC: 3 }] },
-    keystone: { name: 'Glass Cannon Array', ks: 'glass', lines: ['+60% damage', 'Core max HP and shield −40%'], smalls: [{ dmg: 5 }, { dmg: 5 }] } },
+    keystone: { name: 'Glass Cannon Array', ks: 'glass', lines: ['+60% Damage', '−40% core max HP and shield'], smalls: [{ dmg: 5 }, { dmg: 5 }] } },
   { id: 'T', name: 'Combustion', col: '#ff7b39', attr: 'P', spine: [{ dmgT: 8 }, { burnDmg: 10 }, { burnChance: 3 }],
     clusters: [
       { name: 'Accelerant', fx: { burnDmg: 25, burnChance: 10 }, smalls: [{ burnDmg: 8 }, { burnChance: 3 }, { burnDmg: 8 }] },
       { name: 'Thermal Lance', fx: { dmgT: 20, splash: 0.3 }, smalls: [{ dmgT: 6 }, { splash: 0.1 }, { dmgT: 6 }] },
       { name: 'Chain Ignition', fx: { chainIgnite: 1, burnDur: 20 }, smalls: [{ burnDur: 10 }, { burnDmg: 8 }, { burnDur: 10 }] }],
     mastery: { name: 'Pyre Mastery', fx: { burnDur: 50, dmgT: 25 }, smalls: [{ dmgT: 8 }, { burnDmg: 10 }] },
-    keystone: { name: 'Conflagration', ks: 'conflag', lines: ['All damage is converted to Thermal', 'Thermal damage +25% and Burns deal +150%', 'You cannot Chill or Freeze'], smalls: [{ dmgT: 6 }, { burnDmg: 8 }] } },
+    keystone: { name: 'Conflagration', ks: 'conflag', lines: ['All damage becomes Thermal', '+25% Thermal Damage, +150% Burn damage', 'Cannot Chill or Freeze'], smalls: [{ dmgT: 6 }, { burnDmg: 8 }] } },
   { id: 'A', name: 'Voltaic', col: '#ffe14d', attr: 'Tm', spine: [{ dmgA: 8 }, { rate: 4 }, { shockChance: 3 }],
     clusters: [
       { name: 'Capacitors', fx: { dmgA: 20, rateA: 10 }, smalls: [{ dmgA: 6 }, { rateA: 4 }, { dmgA: 6 }] },
       { name: 'Forked Lightning', fx: { chain: 1, shockChance: 15 }, smalls: [{ shockChance: 4 }, { dmgA: 6 }, { shockChance: 4 }] },
       { name: 'Overvolt', fx: { shockEff: 50 }, smalls: [{ shockEff: 12 }, { rate: 3 }, { shockEff: 12 }] }],
     mastery: { name: 'Voltaic Mastery', fx: { overload: 100, dmgA: 25 }, smalls: [{ dmgA: 8 }, { rate: 4 }] },
-    keystone: { name: 'Overclocked Grid', ks: 'overgrid', lines: ['+40% attack speed', 'Each attack has a 3% chance to jam the tower for 1.5s'], smalls: [{ rate: 4 }, { rate: 4 }] } },
+    keystone: { name: 'Overclocked Grid', ks: 'overgrid', lines: ['+40% Attack Speed', 'Attacks have a 3% chance to jam the tower for 1.5s'], smalls: [{ rate: 4 }, { rate: 4 }] } },
   { id: 'C', name: 'Cryogenics', col: '#6ae2ff', attr: 'F', spine: [{ dmgC: 8 }, { chillPot: 8 }, { chillChance: 3 }],
     clusters: [
       { name: 'Deep Freeze', fx: { chillPot: 30, freezeDur: 0.5 }, smalls: [{ chillPot: 8 }, { freezeDur: 0.15 }, { chillPot: 8 }] },
       { name: 'Brittle', fx: { frozenVuln: 25 }, smalls: [{ frozenVuln: 8 }, { dmgC: 6 }, { frozenVuln: 8 }] },
       { name: 'Frost Lattice', fx: { dmgC: 20, chillChance: 15 }, smalls: [{ chillChance: 4 }, { range: 4 }, { chillChance: 4 }] }],
     mastery: { name: 'Cryo Mastery', fx: { shatter: 100, dmgC: 25 }, smalls: [{ dmgC: 8 }, { chillPot: 8 }] },
-    keystone: { name: 'Absolute Zero', ks: 'abszero', lines: ['Chilled enemies take +50% damage', 'Thermal damage −50%'], smalls: [{ chillChance: 4 }, { dmgC: 6 }] } },
+    keystone: { name: 'Absolute Zero', ks: 'abszero', lines: ['Chilled enemies take +50% damage', '−50% Thermal Damage'], smalls: [{ chillChance: 4 }, { dmgC: 6 }] } },
   { id: 'V', name: 'Singularity', col: '#b86cff', attr: 'F', spine: [{ dmgV: 8 }, { markChance: 3 }, { eliteDmg: 6 }],
     clusters: [
       { name: 'Event Horizon', fx: { markMax: 3, dmgV: 10 }, smalls: [{ markChance: 3 }, { dmgV: 6 }, { markChance: 3 }] },
       { name: 'Null Lens', fx: { dmgV: 25, markChance: 15 }, smalls: [{ dmgV: 6 }, { markChance: 4 }, { dmgV: 6 }] },
       { name: 'Gravitic Pull', fx: { knock: 5, dmg: 6 }, smalls: [{ knock: 1 }, { dmg: 3 }, { knock: 1 }] }],
     mastery: { name: 'Void Mastery', fx: { collapse: 100, dmgV: 25 }, smalls: [{ dmgV: 8 }, { markChance: 3 }] },
-    keystone: { name: 'Singularity', ks: 'singularity', lines: ['Void damage +100%', 'All other damage −30%'], smalls: [{ dmgV: 6 }, { dmgV: 6 }] } },
+    keystone: { name: 'Singularity', ks: 'singularity', lines: ['+100% Void Damage', '−30% all other damage'], smalls: [{ dmgV: 6 }, { dmgV: 6 }] } },
   { id: 'E', name: 'Bastion', col: '#59f0b4', attr: 'I', spine: [{ coreHP: 12 }, { credits: 4 }, { shield: 6 }],
     clusters: [
       { name: 'Reinforced Core', fx: { coreHP: 40, shield: 20, shieldRegen: 50 }, smalls: [{ coreHP: 10 }, { shieldRegen: 15 }, { coreHP: 10 }] },
       { name: 'Logistics', fx: { costRed: 12, upgRed: 10 }, smalls: [{ costRed: 3 }, { credits: 4 }, { upgRed: 3 }] },
       { name: 'Orbital Uplink', fx: { abilCharge: 20, abilPower: 30 }, smalls: [{ abilPower: 8 }, { abilCharge: 5 }, { abilPower: 8 }] }],
     mastery: { name: 'Bastion Mastery', fx: { coreDmg: 60, coreRate: 30, coreRange: 1 }, smalls: [{ coreHP: 10 }, { shield: 6 }] },
-    keystone: { name: 'Diminishing Returns', ks: 'dimret', lines: ['+50% credits from all sources', 'Each copy of a tower type costs +12% more'], smalls: [{ credits: 4 }, { credits: 4 }] } },
+    keystone: { name: 'Diminishing Returns', ks: 'dimret', lines: ['+50% Credits from all sources', 'Each copy of a tower costs 12% more'], smalls: [{ credits: 4 }, { credits: 4 }] } },
 ];
 const HYBRIDS = [
   { name: 'Incendiary Rounds', fx: { kBurn: 15, dmgK: 10, dmgT: 10 } },
@@ -750,9 +761,9 @@ const HYBRIDS = [
   { name: 'Lone Wolf', fx: { loneWolf: 35 } },
 ];
 const ARC_KEYSTONES = {
-  2: { name: 'Prismatic Array', ks: 'prismatic', lines: ['Every hit applies a random status', 'All damage −10%'], smalls: [{ shockChance: 3 }, { chillChance: 3 }] },
-  4: { name: 'Chaos Engine', ks: 'chaos', lines: ['+150% affix rarity', 'Every tower also rolls a Curse when built'], smalls: [{ affixLuck: 10 }, { affixLuck: 10 }] },
-  5: { name: 'Unbreakable', ks: 'unbreakable', lines: ['Once every 10 waves, a lethal hit leaves the core at 50% HP', 'Tower damage −10%'], smalls: [{ coreHP: 10 }, { shield: 8 }] },
+  2: { name: 'Prismatic Array', ks: 'prismatic', lines: ['Hits apply a random status', '−10% Damage'], smalls: [{ shockChance: 3 }, { chillChance: 3 }] },
+  4: { name: 'Chaos Engine', ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'], smalls: [{ affixLuck: 10 }, { affixLuck: 10 }] },
+  5: { name: 'Unbreakable', ks: 'unbreakable', lines: ['Survive a lethal hit at 50% HP, once per 10 waves', '−10% tower Damage'], smalls: [{ coreHP: 10 }, { shield: 8 }] },
 };
 
 function buildTree() {
@@ -871,27 +882,27 @@ const AFFIX_BAN = {
 
 // ---------- Anomalies: double-edged run mutators drawn from the Entropy meter ----------
 const ANOMALIES = [
-  { id: 'twinsuns', name: 'Twin Suns', up: 'Thermal damage +60%', down: 'Enemies regenerate 1% HP per second', m: { dmgT: 60 }, af: { regen: 0.01 } },
-  { id: 'glasssky', name: 'Glass Sky', up: 'All damage +35%', down: 'The core shield is gone', m: { dmg: 35 }, af: { noShield: 1 } },
-  { id: 'overpressure', name: 'Overpressure', up: 'Attack speed +30%', down: 'Each attack has a 2% chance to jam the tower', m: { rate: 30 }, af: { jam: 0.02 } },
-  { id: 'bloodprice', name: 'Blood Price', up: 'Every tower gains a Legendary affix now', down: 'Core max HP −30%', special: 'legendAll', af: { coreHPx: 0.7 } },
-  { id: 'hungrycore', name: 'Hungry Core', up: 'Core weapon ×3 damage and +1 range', down: 'The core loses 4% HP every wave', m: { coreDmg: 200, coreRange: 1 }, af: { coreDrain: 0.04 } },
-  { id: 'fractal', name: 'Fractal Rounds', up: 'Bullets and missiles split into 2 shards on hit', down: 'Range −10%', m: { range: -10 }, af: { fractal: 1 } },
-  { id: 'flux', name: 'Elemental Flux', up: 'Every 20s one element turns Ascendant and deals ×2', down: 'The other elements deal −15%', af: { flux: 1 } },
-  { id: 'magnet', name: 'Storm Magnet', up: 'Storms arrive 3× as often and seek your towers', down: 'Enemies inside storms move 20% faster', af: { magnet: 1 } },
-  { id: 'timedebt', name: 'Time Debt', up: 'Score ×1.4', down: 'The countdown between waves is halved', af: { timeDebt: 1, score: 0.4 } },
-  { id: 'volatile', name: 'Volatile Matter', up: 'Every enemy explodes on death for 15% of its max HP', down: 'Enemies move 15% faster', af: { boom: 0.15, haste: 0.15 } },
-  { id: 'echo', name: 'Echo Chamber', up: 'Every tower has a 15% chance to attack twice', down: 'Upgrades cost 25% more', af: { echo: 0.15, upgX: 0.25 } },
-  { id: 'scavenger', name: 'Scavenger', up: 'Selling refunds 90%', down: 'Towers cost 15% more', af: { scav: 1, costX: 0.15 } },
-  { id: 'critmass', name: 'Critical Mass', up: '+20% crit chance and +50% crit damage', down: 'Non-critical hits deal −25%', m: { critC: 20, critM: 50 }, af: { noncrit: 0.25 } },
-  { id: 'longnight', name: 'Long Night', up: 'All damage +45%', down: 'Range −20%', m: { dmg: 45, range: -20 } },
-  { id: 'permafrost', name: 'Permafrost', up: 'Chill potency ×2 and +15% Chill chance on every hit', down: 'Thermal damage −40%', m: { chillPot: 100, chillChance: 15, dmgT: -40 } },
-  { id: 'prismrain', name: 'Prism Rain', up: 'Every hit applies a random status', down: 'All damage −10%', m: { dmg: -10 }, af: { prism: 1 } },
-  { id: 'engine', name: 'Entropy Engine', up: 'Entropy fills twice as fast', down: 'Elites are far more common', af: { fill: 1, elite: 0.2 } },
-  { id: 'goldfever', name: 'Gold Fever', up: 'Credits +50%', down: 'Enemies have 25% more HP', m: { credits: 50 }, af: { hpx: 0.25 } },
-  { id: 'laststand', name: 'Last Stand', up: 'Below half core HP, towers deal +60%', down: 'Core repairs are disabled', af: { lastStand: 1 } },
-  { id: 'mutagen', name: 'Mutagen', up: 'Every wave a random tower gains an affix', down: 'Every third wave it gains a Curse instead', af: { mutagen: 1 } },
-  { id: 'inversion', name: 'Gravity Inversion', up: 'Ground enemies move 15% slower', down: 'Skimmers are 3× as common', af: { groundSlow: 0.15, flyers: 2 } },
+  { id: 'twinsuns', name: 'Twin Suns', up: '+60% Thermal Damage', down: 'Enemies regenerate 1% HP per second', m: { dmgT: 60 }, af: { regen: 0.01 } },
+  { id: 'glasssky', name: 'Glass Sky', up: '+35% Damage', down: 'No core shield', m: { dmg: 35 }, af: { noShield: 1 } },
+  { id: 'overpressure', name: 'Overpressure', up: '+30% Attack Speed', down: 'Attacks have a 2% chance to jam', m: { rate: 30 }, af: { jam: 0.02 } },
+  { id: 'bloodprice', name: 'Blood Price', up: 'All towers gain a Legendary affix', down: '−30% core max HP', special: 'legendAll', af: { coreHPx: 0.7 } },
+  { id: 'hungrycore', name: 'Hungry Core', up: '×3 core Damage, +1 core Range', down: 'Core loses 4% HP each wave', m: { coreDmg: 200, coreRange: 1 }, af: { coreDrain: 0.04 } },
+  { id: 'fractal', name: 'Fractal Rounds', up: 'Bullets and missiles split into 2 shards', down: '−10% Range', m: { range: -10 }, af: { fractal: 1 } },
+  { id: 'flux', name: 'Elemental Flux', up: 'Every 20s, one element deals ×2 damage', down: 'Other elements deal −15%', af: { flux: 1 } },
+  { id: 'magnet', name: 'Storm Magnet', up: 'Storms are 3× as frequent and drift toward towers', down: 'Enemies in storms move 20% faster', af: { magnet: 1 } },
+  { id: 'timedebt', name: 'Time Debt', up: '×1.4 score', down: 'Wave countdown halved', af: { timeDebt: 1, score: 0.4 } },
+  { id: 'volatile', name: 'Volatile Matter', up: 'Enemies explode on death for 15% of max HP', down: '+15% enemy speed', af: { boom: 0.15, haste: 0.15 } },
+  { id: 'echo', name: 'Echo Chamber', up: 'Towers have a 15% chance to attack twice', down: '+25% upgrade cost', af: { echo: 0.15, upgX: 0.25 } },
+  { id: 'scavenger', name: 'Scavenger', up: 'Selling refunds 90%', down: '+15% tower cost', af: { scav: 1, costX: 0.15 } },
+  { id: 'critmass', name: 'Critical Mass', up: '+20% Crit Chance, +50% Crit Damage', down: '−25% damage on non-crits', m: { critC: 20, critM: 50 }, af: { noncrit: 0.25 } },
+  { id: 'longnight', name: 'Long Night', up: '+45% Damage', down: '−20% Range', m: { dmg: 45, range: -20 } },
+  { id: 'permafrost', name: 'Permafrost', up: '×2 Chill strength, +15% chance to Chill', down: '−40% Thermal Damage', m: { chillPot: 100, chillChance: 15, dmgT: -40 } },
+  { id: 'prismrain', name: 'Prism Rain', up: 'Hits apply a random status', down: '−10% Damage', m: { dmg: -10 }, af: { prism: 1 } },
+  { id: 'engine', name: 'Entropy Engine', up: 'Entropy fills 2× faster', down: 'Many more Elites', af: { fill: 1, elite: 0.2 } },
+  { id: 'goldfever', name: 'Gold Fever', up: '+50% Credits', down: '+25% enemy HP', m: { credits: 50 }, af: { hpx: 0.25 } },
+  { id: 'laststand', name: 'Last Stand', up: '+60% Damage while the core is below 50% HP', down: 'Core repairs disabled', af: { lastStand: 1 } },
+  { id: 'mutagen', name: 'Mutagen', up: 'Each wave, a random tower gains an affix', down: 'Every 3rd wave, it gains a Curse instead', af: { mutagen: 1 } },
+  { id: 'inversion', name: 'Gravity Inversion', up: '−15% ground enemy speed', down: '3× as many Skimmers', af: { groundSlow: 0.15, flyers: 2 } },
 ];
 
 // ---------- Veteran towers ----------
@@ -908,11 +919,11 @@ const roman = n => ROMAN[n] || String(n);
 const COMBO_NAMES = ['SHATTER', 'THERMAL SHOCK', 'OVERLOAD', 'SUPERCONDUCT', 'COLLAPSE'];
 
 const COMBO_DESC = {
-  'SHATTER': 'Kinetic hits on Frozen enemies deal a bonus burst',
-  'THERMAL SHOCK': 'Thermal hits on heavily Chilled enemies explode the frost',
-  'OVERLOAD': 'Thermal on Shocked, or Arc on Burning, detonates an area',
-  'SUPERCONDUCT': 'Arc hits on Chilled enemies spread Shock to the crowd',
-  'COLLAPSE': 'Void hits at max Marks implode on a statused enemy',
+  'SHATTER': 'Kinetic hit on a Frozen enemy deals burst damage',
+  'THERMAL SHOCK': 'Thermal hit on a heavily Chilled enemy shatters the frost',
+  'OVERLOAD': 'Thermal on Shocked or Arc on Burning causes an explosion',
+  'SUPERCONDUCT': 'Arc hit on a Chilled enemy spreads Shock nearby',
+  'COLLAPSE': 'Void hit at max Marks implodes the target',
 };
 function dailyKey(d) { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dailySpec(key) {
@@ -1235,7 +1246,7 @@ function newRun(opts) {
     recomputeAll(); G.core.hp = G.core.max; G.core.shield = G.core.smax;
   }
   prepareWave(G.wave + 1);
-  Hooks.log(`Run start · wave ${sw} · ${G.CH.name}`, '#59f0b4');
+  Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
   return G;
 }
 
@@ -1346,7 +1357,7 @@ function upgradeTower(t, specIdx) {
   G.credits -= cost; t.invested += cost;
   if (t.lvl >= MAX_LV) {
     t.asc = (t.asc || 0) + 1;
-    Hooks.log(`${towerLabel(t)} ascends to A${t.asc}`, '#ff8a2a');
+    Hooks.log(`${towerLabel(t)} Ascended to A${t.asc}`, '#ff8a2a');
   } else t.lvl++;
   if (t.lvl === 4 && !t.spec) t.spec = specIdx;
   t.affixes.push(rollAffix(t));
@@ -1487,12 +1498,12 @@ function spawnStorm(types, x, y, vx, vy) {
   const s = { id: G.eid++, types, x, y, vx, vy, r: 3 + G.r() * 1.2, life: 30 + G.r() * 15, age: 0, mael: false, spawnT: 0, rot: 0 };
   G.storms.push(s);
   const nm = stormName(s);
-  Hooks.log(`${nm} rolls in`, STORMS[types[0]].col);
+  Hooks.log(`${nm} incoming`, STORMS[types[0]].col);
   Hooks.sfx('storm', s);
   return s;
 }
 function stormName(s) {
-  if (s.mael) return 'MAELSTROM';
+  if (s.mael) return 'Maelstrom';
   if (s.types.length === 1) return STORMS[s.types[0]].name;
   if (s.types.length === 2) return COMBO_STORMS[s.types.slice().sort().join('+')] || 'Convergence';
   return 'Convergence';
@@ -1552,14 +1563,14 @@ function updateStorms(dt) {
       if (!hasMael && G.time - (G.lastMael || -999) > 90 && (types.length >= 3 || (G.wave >= 25 && G.r() < 0.4))) {
         G.lastMael = G.time;
         n.mael = true; n.r = 5.2; n.life = 30; n.types = STORM_KEYS.slice();
-        Hooks.log('MAELSTROM FORMS — everything inside is amplified', '#ff4d6a');
+        Hooks.log('Maelstrom formed', '#ff4d6a');
         addEntropy(8); PROF.codex.maelstroms = (PROF.codex.maelstroms || 0) + 1;
-        Hooks.toast('MAELSTROM', 'Towers inside +75% · implodes in 30s', '#ff4d6a');
+        Hooks.toast('MAELSTROM', '+75% Damage inside · Collapses in 30s', '#ff4d6a');
         Hooks.sfx('maelstrom');
       } else {
-        Hooks.log(`CONVERGENCE: ${stormName(n)}`, '#ffe14d');
+        Hooks.log(`Storms merged: ${stormName(n)}`, '#ffe14d');
         addEntropy(4);
-        Hooks.toast('CONVERGENCE', stormName(n), '#ffe14d');
+        Hooks.toast('STORMS MERGED', stormName(n), '#ffe14d');
         Hooks.sfx('converge');
       }
       G.storms.push(n);
@@ -1572,7 +1583,7 @@ function updateStorms(dt) {
       s.dead = true;
       if (s.mael) {
         Hooks.sfx('implode'); Hooks.fx('implode', { x: s.x, y: s.y, r: s.r });
-        Hooks.log('The Maelstrom implodes', '#ff4d6a');
+        Hooks.log('Maelstrom collapsed', '#ff4d6a');
         for (const e of G.enemies) {
           if (e.dead || dist2(e.x, e.y, s.x, s.y) > s.r * s.r) continue;
           hit(e, e.maxHp * (e.boss ? 0.08 : 0.25), 'V', null, { noStatus: 1, abil: 1 });
@@ -1605,8 +1616,8 @@ function prepareWave(w) {
     const L = genExtraLane(G.r);
     G.lanesOpened++;
     if (L) {
-      Hooks.toast('NEW BREACH', 'A new lane opens next wave', '#ff4d6a');
-      Hooks.log('A new lane breaches the perimeter', '#ff4d6a');
+      Hooks.toast('NEW LANE', 'Opens next wave', '#ff4d6a');
+      Hooks.log('New lane opened', '#ff4d6a');
       Hooks.fx('lane', { lane: L });
       Hooks.sfx('lane');
     }
@@ -1673,7 +1684,7 @@ function startWave() {
   if (!G.prep || G.prep.w !== w) prepareWave(w);
   const P = G.prep; G.prep = null;
   G.ev = P.ev; G.evList = P.list; G.evT = { emp: 5, meteor: 1.2, phase: 4 };
-  for (const E of G.evList) Hooks.log(`Chaos event: ${E.name} — ${E.desc}`, E.good ? '#59f0b4' : '#ff4d6a');
+  for (const E of G.evList) Hooks.log(`${E.name}: ${E.desc}`, E.good ? '#59f0b4' : '#ff4d6a');
   G.rift = P.rift;
   if (G.rift) Hooks.fx('rift', { x: G.rift.pts[0].x, y: G.rift.pts[0].y });
   G.laneWarn = G.laneWaves[G.lanesOpened] === w + 1 ? 1 : null;
@@ -1684,8 +1695,8 @@ function startWave() {
   if (G.af.coreDrain) G.core.hp = Math.max(1, G.core.hp - G.core.max * G.af.coreDrain);
   if (G.af.mutagen && G.towers.length) {
     const t = pick(G.r, G.towers);
-    if (w % 3 === 0) { t.affixes.push(rollCurse(t)); Hooks.log(`Mutagen curses ${towerLabel(t)}`, '#ff4d6a'); }
-    else { t.affixes.push(rollAffix(t)); Hooks.log(`Mutagen mutates ${towerLabel(t)}`, '#59f0b4'); }
+    if (w % 3 === 0) { t.affixes.push(rollCurse(t)); Hooks.log(`Mutagen: Curse on ${towerLabel(t)}`, '#ff4d6a'); }
+    else { t.affixes.push(rollAffix(t)); Hooks.log(`Mutagen: new affix on ${towerLabel(t)}`, '#59f0b4'); }
     t.s = towerStats(t); recomputeAuras();
     Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: w % 3 === 0 ? '#ff4d6a' : '#59f0b4' });
   }
@@ -1693,7 +1704,7 @@ function startWave() {
     const before = PROF.bestWave;
     PROF.bestWave = w;
     for (const k of TOWER_ORDER) if (TOWERS[k].unlock > Math.max(1, before) && TOWERS[k].unlock <= w) {
-      Hooks.toast('UNLOCKED', `${TOWERS[k].name} is now available`, '#59f0b4');
+      Hooks.toast('UNLOCKED', TOWERS[k].name, '#59f0b4');
       Hooks.onUnlock(k);
     }
   }
@@ -1752,7 +1763,7 @@ function addEntropy(v) {
     const offers = [];
     while (offers.length < 3 && pool.length) offers.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
     G.anomOffers = offers;
-    Hooks.toast('ENTROPY FULL', 'Tap the gauge to draw', '#b86cff');
+    Hooks.toast('ENTROPY FULL', 'Tap the gauge to draw an Anomaly', '#b86cff');
     Hooks.sfx('converge');
     Hooks.onEntropy && Hooks.onEntropy();
   }
@@ -1773,7 +1784,7 @@ function stabilize() {
   if (!G.anomOffers) return false;
   G.anomOffers = null; G.entropy = 0; G.stabilized++; G.tokens++;
   recomputeAll();
-  Hooks.log(`Entropy stabilized · score ×${G.scoreMult.toFixed(2)}`, '#59f0b4');
+  Hooks.log(`Stabilized · Score ×${G.scoreMult.toFixed(2)}`, '#59f0b4');
   Hooks.sfx('unbreak');
   return true;
 }
@@ -1794,7 +1805,7 @@ function grantVxp(t, v) {
     if (t.rank > (PROF.codex.bestRank || 0)) { PROF.codex.bestRank = t.rank; PROF.codex.bestName = towerLabel(t); }
   }
   if (t.rank > r0) {
-    if (!had) Hooks.toast(`VETERAN ${roman(t.rank)}`, `"${t.name}" · tap the ! to mutate`, '#ffe14d');
+    if (!had) Hooks.toast(`VETERAN ${roman(t.rank)}`, `${t.name} · Tap to choose a mutation`, '#ffe14d');
     Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: '#ffe14d' });
     Hooks.sfx('milestone');
   }
@@ -1875,8 +1886,8 @@ function spawnBoss(q) {
   lanePos(e.L, 0, e);
   G.enemies.push(e);
   G.bossAlive = e;
-  Hooks.toast('BOSS', `${B.name} — ${B.desc}`, '#ff4d6a');
-  Hooks.log(`${B.name} approaches`, '#ff4d6a');
+  Hooks.toast('BOSS', `${B.name} · ${B.desc}`, '#ff4d6a');
+  Hooks.log(`${B.name} incoming`, '#ff4d6a');
   Hooks.sfx('boss');
   return e;
 }
@@ -1976,8 +1987,8 @@ function bossBehavior(e, dt) {
       for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 2.5 * 2.5) t.disabled = Math.max(t.disabled, 2.5);
       Hooks.fx('emp', { x: e.x, y: e.y, r: 2.5 }); Hooks.sfx('emp'); break;
     case 'titan': e.timer = 1;
-      if (e.plates === 2 && e.hp < e.maxHp * 0.66) { e.plates = 1; e.armorAll = 0.25; Hooks.fx('plates', { x: e.x, y: e.y }); Hooks.log('Titan armor cracks', '#ff7b39'); Hooks.sfx('crack'); }
-      if (e.plates === 1 && e.hp < e.maxHp * 0.33) { e.plates = 0; e.armorAll = 0; Hooks.fx('plates', { x: e.x, y: e.y }); Hooks.log('Titan armor shatters', '#ff7b39'); Hooks.sfx('crack'); }
+      if (e.plates === 2 && e.hp < e.maxHp * 0.66) { e.plates = 1; e.armorAll = 0.25; Hooks.fx('plates', { x: e.x, y: e.y }); Hooks.log('Titan armor cracked', '#ff7b39'); Hooks.sfx('crack'); }
+      if (e.plates === 1 && e.hp < e.maxHp * 0.33) { e.plates = 0; e.armorAll = 0; Hooks.fx('plates', { x: e.x, y: e.y }); Hooks.log('Titan armor broken', '#ff7b39'); Hooks.sfx('crack'); }
       break;
   }
   // swarmers spawned from behemoth should follow its lane: fix lane positions
@@ -1994,11 +2005,11 @@ function leak(e) {
   c.hp -= dmg;
   Hooks.fx('leak', { x: c.x, y: c.y, boss: !!e.boss });
   Hooks.sfx(e.boss ? 'bigleak' : 'leak');
-  if (e.boss) Hooks.log(`${e.bossName} breached the core`, '#ff4d6a');
+  if (e.boss) Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
   if (c.hp <= 0) {
     if (G.mods.ks.unbreakable && G.wave - G.unbreakUsed >= 10) {
       G.unbreakUsed = G.wave; c.hp = c.max * 0.5;
-      Hooks.toast('UNBREAKABLE', 'The core refuses to fall', '#59f0b4');
+      Hooks.toast('UNBREAKABLE', 'Lethal hit prevented', '#59f0b4');
       Hooks.sfx('unbreak');
     } else gameOver();
   }
@@ -2044,7 +2055,7 @@ function hit(e, dmg, el, src, o) {
 function combo(e, name, col) {
   G.dmgLog.combos++;
   G.stats.combos[name] = (G.stats.combos[name] || 0) + 1;
-  if (!PROF.codex.combos[name]) Hooks.toast('DISCOVERY · ' + name, COMBO_DESC[name] || '', col);
+  if (!PROF.codex.combos[name]) Hooks.toast('NEW COMBO · ' + name, COMBO_DESC[name] || '', col);
   PROF.codex.combos[name] = (PROF.codex.combos[name] || 0) + 1;
   if (G.entWaveCombo < 4) { G.entWaveCombo += 0.05; addEntropy(0.05); }
   Hooks.fx('combo', { x: e.x, y: e.y, name, col });
@@ -2127,7 +2138,7 @@ function milestone() {
   G.msIdx++;
   G.nextMs = Math.round(G.nextMs * 1.5 + 600 * G.mods.abilCharge);
   recomputeAll();
-  Hooks.toast('SCORE MILESTONE', `+1 ${ABILITIES[k].name} charge · ${B.t}`, '#ffe14d');
+  Hooks.toast('MILESTONE', `+1 ${ABILITIES[k].name} · ${B.t}`, '#ffe14d');
   Hooks.sfx('milestone');
 }
 function kill(e, src, o) {
@@ -2174,7 +2185,7 @@ function kill(e, src, o) {
   if (e.boss) {
     G.tokens++; G.stats.bossKills++; addEntropy(15);
     PROF.codex.bosses[e.boss] = (PROF.codex.bosses[e.boss] || 0) + 1;
-    Hooks.log(`${e.bossName} destroyed · +1 Recalibration token`, '#59f0b4');
+    Hooks.log(`${e.bossName} defeated · +1 Recalibration token`, '#59f0b4');
     const opts = []; const pool = BOONS.slice();
     for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
     G.draft = opts;
@@ -2250,7 +2261,7 @@ function updateTowers(dt) {
   // EMP storm event
   if (ev.emp) { G.evT.emp -= dt; if (G.evT.emp <= 0) { G.evT.emp = 5; const att = G.towers.filter(t => t.s.kind !== 'eco'); for (let i = 0; i < 2 && att.length; i++) { const t = att.splice(Math.floor(G.r() * att.length), 1)[0]; t.disabled = 3; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.8 }); } Hooks.sfx('emp'); } }
   if (G.overclockT > 0) G.overclockT -= dt;
-  if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} is Ascendant`, EL[G.flux.el].col); } }
+  if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} deals ×2`, EL[G.flux.el].col); } }
   for (const t of G.towers) {
     if (dpsTick) { t.dps = t.dps * 0.6 + t.dpsAcc * 0.4; t.dpsAcc = 0; }
     t.flash = Math.max(0, t.flash - dt);
@@ -2607,7 +2618,7 @@ function useAbility(k, x, y) {
       Hooks.fx('overclock', {}); Hooks.sfx('overclock');
       break;
   }
-  Hooks.log(`${ABILITIES[k].name} deployed`, '#ffe14d');
+  Hooks.log(`${ABILITIES[k].name} activated`, '#ffe14d');
   return true;
 }
 
@@ -2687,7 +2698,7 @@ function resumeRun(S) {
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
   prepareWave(S.wave);
-  Hooks.log(`Run resumed at wave ${S.wave}`, '#59f0b4');
+  Hooks.log(`Run resumed · Wave ${S.wave}`, '#59f0b4');
   return G;
 }
 
@@ -3839,7 +3850,7 @@ const UI = (() => {
     for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== id;
     screen = id;
   }
-  function cloud(ok) { cloudOk = ok; const c = $('#cloud'); if (c) { c.textContent = ok ? 'SYNCED' : 'LOCAL'; c.className = 'cloud ' + (ok ? 'on' : ''); } }
+  function cloud(ok) { cloudOk = ok; const c = $('#cloud'); if (c) { c.textContent = ok ? 'Synced' : 'This device'; c.className = 'cloud ' + (ok ? 'on' : ''); } }
 
   // ---------- Hangar ----------
   function renderHangar() {
@@ -3853,7 +3864,7 @@ const UI = (() => {
     $('#bLaunch2').hidden = !snap;
     $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
     const dk = dailyKey(), dd = PROF.daily && PROF.daily.date === dk ? PROF.daily : null;
-    $('#hPlaySub').textContent = snap ? `Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name} ›` : (PROF.runs ? (dd ? `Daily best: wave ${dd.best} ›` : 'Standard or Daily ›') : 'Start your first run ›');
+    $('#hPlaySub').textContent = snap ? `Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}` : (dd ? `Daily best: Wave ${dd.best}` : '');
   }
 
   // ---------- Setup ----------
@@ -3880,28 +3891,28 @@ const UI = (() => {
     const CH = CHAOS_LEVELS[setup.chaos];
     modal(`
       <div class="card setup">
-        <div class="ch"><h2>Launch run</h2>${modeChips()}<button class="x" data-act="close">✕</button></div>
+        <div class="ch"><h2>New Run</h2>${modeChips()}<button class="x" data-act="close">✕</button></div>
         <div class="setup-grid">
           <div class="col">
-            <div class="lbl">Starting wave</div>
+            <div class="lbl">Starting Wave</div>
             <div class="chips wrap">${starts.map(w => `<button class="chip ${w === sw ? 'on' : ''}" data-act="sw" data-v="${w}">${w}</button>`).join('')}</div>
-            <p class="note">${starts.length === 1 ? 'Reach wave 10 to unlock later starting waves.' : sw === 1 ? 'Later starts skip the early waves with extra credits.' : `Start at wave ${sw} with ${fmt(credits)} credits. Enemies hit harder and are worth more.`}</p>
-            <div class="lbl">Chaos level</div>
+            <p class="note">${starts.length === 1 ? 'Reach Wave 10 to unlock later starts.' : sw === 1 ? 'Later starts skip early waves and grant bonus credits.' : `${fmt(credits)} starting credits. Tougher enemies, bigger rewards.`}</p>
+            <div class="lbl">Chaos</div>
             <div class="chips">${CHAOS_LEVELS.map((c, i) => `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>`).join('')}</div>
-            <p class="note">Enemy health ×${CH.hp} · events ×${CH.ev} · storms ×${CH.storm} · elites ×${CH.elite} · <b class="amber">score ×${CH.score}</b></p>
+            <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite} · <b class="amber">Score ×${CH.score}</b></p>
           </div>
           <div class="col">
             <div class="lbl">Map</div>
             <canvas id="mapPrev" width="320" height="150"></canvas>
-            <div class="row"><button class="btn small" data-act="reroll">New map</button><span class="note">Lanes grow as waves climb.</span></div>
+            <div class="row"><button class="btn small" data-act="reroll">Reroll Map</button><span class="note">More lanes open in later waves.</span></div>
           </div>
         </div>
-        <div class="foot"><button class="btn primary" data-act="launch">Launch · wave ${sw}</button></div>
+        <div class="foot"><button class="btn primary" data-act="launch">Start · Wave ${sw}</button></div>
       </div>`, 'setup');
     Render.preview_map($('#mapPrev'), setup.map);
   }
   function modeChips() {
-    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily anomaly</button></div>`;
+    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily</button></div>`;
   }
   function renderDaily() {
     const spec = dailySpec(dailyKey());
@@ -3910,20 +3921,20 @@ const UI = (() => {
     const d = PROF.daily && PROF.daily.date === spec.date ? PROF.daily : null;
     modal(`
       <div class="card setup">
-        <div class="ch"><h2>Launch run</h2>${modeChips()}<button class="x" data-act="close">✕</button></div>
+        <div class="ch"><h2>New Run</h2>${modeChips()}<button class="x" data-act="close">✕</button></div>
         <div class="setup-grid">
           <div class="col">
-            <div class="lbl">Today · ${spec.date}</div>
-            <p class="note">A fixed map and two fixed anomalies for today. Unstable chaos, wave 1, your own passive web. Beat your best before midnight.</p>
+            <div class="lbl">Daily Challenge · ${spec.date}</div>
+            <p class="note">Same map and anomalies for everyone today. Unstable chaos. Resets at midnight.</p>
             <div class="anlist">${spec.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${esc(A.up)}</span><span class="bad">${esc(A.down)}</span></div>`; }).join('')}</div>
-            <p class="note">${d ? `Your best today: wave ${d.best} · ${fmt(d.score)} score · ${d.tries} ${d.tries === 1 ? 'try' : 'tries'}` : 'No attempt yet today.'}</p>
+            <p class="note">${d ? `Today's best: Wave ${d.best} · ${fmt(d.score)} · ${d.tries} ${d.tries === 1 ? 'attempt' : 'attempts'}` : 'No attempts yet today.'}</p>
           </div>
           <div class="col">
-            <div class="lbl">Today's map</div>
+            <div class="lbl">Map</div>
             <canvas id="mapPrev" width="320" height="150"></canvas>
           </div>
         </div>
-        <div class="foot"><button class="btn primary" data-act="launchDaily">Launch daily</button></div>
+        <div class="foot"><button class="btn primary" data-act="launchDaily">Start Daily</button></div>
       </div>`, 'setup');
     Render.preview_map($('#mapPrev'), setup.map);
   }
@@ -3992,15 +4003,15 @@ const UI = (() => {
     const chips = [];
     if (G.spawningDone && G.prep) {
       const P = G.prep;
-      chips.push(`<span class="evchip next">Next: ${P.total} enemies${P.fly ? ' · ' + P.fly + ' flying' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
+      chips.push(`<span class="evchip next">Next: ${P.total} enemies${P.fly ? ' · ' + P.fly + ' flying' : ''}${P.elites ? ' · ' + P.elites + (P.elites === 1 ? ' Elite' : ' Elites') : ''}</span>`);
       if (P.boss) chips.push(`<span class="evchip next bad">Boss ${esc(P.boss.name)}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
-    if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ascendant</span>`);
+    if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) chips.push(`<span class="evchip storm" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}</span>`);
-    if (G.laneWarn) chips.push('<span class="evchip bad">Breach next wave</span>');
-    if (G.overclockT > 0) chips.push('<span class="evchip good">Overclock</span>');
+    if (G.laneWarn) chips.push('<span class="evchip bad">New lane next wave</span>');
+    if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
     const html = chips.join('');
     const ch = $('#chips');
@@ -4075,13 +4086,13 @@ const UI = (() => {
     let info, foot;
     if (pick) {
       const D = TOWERS[pick], cost = towerCost(pick);
-      const stat = D.kind === 'support' ? `+${D.buffDmg}% damage, +${D.buffRate}% speed to towers in range ${D.range}`
-        : D.kind === 'eco' ? `+${D.income} credits every wave`
-        : `${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} damage · ${num1(D.rate)}/s · range ${num1(D.range * G.mods.range)}`;
-      info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p>${esc(D.blurb)} <span class="dim">${stat}</span></p></div>`;
+      const stat = D.kind === 'support' ? `+${D.buffDmg}% Damage, +${D.buffRate}% Attack Speed · Range ${D.range}`
+        : D.kind === 'eco' ? `+${D.income} credits per wave`
+        : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
+      info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
       foot = `<button class="btn primary wide" data-act="build" ${costBtn(cost)}>Build · ${fmt(cost)}</button>`;
     } else {
-      info = `<div class="binfo"><p class="dim">Tap a tower to preview it. Tap again to build.</p></div>`;
+      info = `<div class="binfo"><p class="dim">Select a tower to see its range. Tap it again to build.</p></div>`;
       foot = '';
     }
     return `<div class="ph"><b>Build</b><button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
@@ -4099,18 +4110,18 @@ const UI = (() => {
       if (s.shock > 0) sts.push(`Shock ${pct(s.shock)}`); if (s.mark > 0) sts.push(`Mark ${pct(s.mark)}`);
       if (s.pierce) sts.push(`Pierce ${s.pierce}`); if (s.chain) sts.push(`Chain ${s.chain}`); if (s.splash) sts.push(`Splash ${num1(s.splash)}`);
       if (s.multi) sts.push(`+${s.multi} target`);
-      stats = `<div class="sg"><span>Damage<b>${fmt(s.dmg * (1 + t.buff.dmg))}</b></span><span>Rate<b>${num1(s.rate * (1 + t.buff.rate))}/s</b></span><span>Range<b>${num1(t.effRange || s.range)}</b></span><span>Crit<b>${Math.round(s.critC + t.buff.crit)}%</b></span><span>DPS<b data-live="dps">${fmt(t.dps)}</b></span><span>Kills<b data-live="kills">${t.kills}</b></span></div>${sts.length ? `<div class="sts">${sts.join(' · ')}</div>` : ''}${t.isolated && G.mods.loneWolf ? '<div class="sts amber">Lone Wolf active</div>' : ''}${t.reson ? `<div class="sts reson">Resonance ×${t.reson} · +${Math.round(t.reson * RESON_DMG * 100)}% damage from ${t.resonWith.map(o => EL[o.s.el].name).join(', ')} neighbors</div>` : ''}`;
+      stats = `<div class="sg"><span>Damage<b>${fmt(s.dmg * (1 + t.buff.dmg))}</b></span><span>Rate<b>${num1(s.rate * (1 + t.buff.rate))}/s</b></span><span>Range<b>${num1(t.effRange || s.range)}</b></span><span>Crit<b>${Math.round(s.critC + t.buff.crit)}%</b></span><span>DPS<b data-live="dps">${fmt(t.dps)}</b></span><span>Kills<b data-live="kills">${t.kills}</b></span></div>${sts.length ? `<div class="sts">${sts.join(' · ')}</div>` : ''}${t.isolated && G.mods.loneWolf ? '<div class="sts amber">Lone Wolf: active</div>' : ''}${t.reson ? `<div class="sts reson">Resonance: +${Math.round(t.reson * RESON_DMG * 100)}% Damage (${t.resonWith.map(o => EL[o.s.el].name).join(', ')})</div>` : ''}`;
     }
     const modes = s.kind === 'support' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' ? '' :
-      `<div class="lbl">Target</div><div class="modes">${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${m}</button>`).join('')}</div>`;
+      `<div class="lbl">Target</div><div class="modes">${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${{ first: 'First', last: 'Last', strong: 'Strong', close: 'Near' }[m]}</button>`).join('')}</div>`;
     let up = '';
-    if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide" data-act="up" ${costBtn(c)}>Upgrade to LV ${t.lvl + 1} · ${fmt(c)}<small>+damage and a new affix</small></button>`; }
+    if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide" data-act="up" ${costBtn(c)}>Upgrade · ${fmt(c)}<small>LV ${t.lvl + 1}: more Damage, new affix</small></button>`; }
     else if (t.lvl === 3) { const c = upgradeCost(t); up = `<div class="lbl">Specialize · ${fmt(c)}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${costBtn(c)}><b>${esc(sp.name)}</b><span>${esc(sp.desc)}</span></button>`).join('')}</div>`; }
-    else { const c = upgradeCost(t); up = `<button class="btn primary wide asc" data-act="up" ${costBtn(c)}>Ascend to A${(t.asc || 0) + 1} · ${fmt(c)}<small>damage ×1.3 and a new affix</small></button>`; }
+    else { const c = upgradeCost(t); up = `<button class="btn primary wide asc" data-act="up" ${costBtn(c)}>Ascend · ${fmt(c)}<small>A${(t.asc || 0) + 1}: ×1.3 Damage, new affix</small></button>`; }
     let vet = '';
     if (t.pending > 0) {
       const o = vetOffer(t);
-      vet = `<div class="vet"><div class="lbl">Pick a mutation${t.pending > 1 ? ` · ${t.pending} waiting` : ''}</div>${o.map((a, i) => `<button class="aff pickable" data-act="vet" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${RARITY[a.tier].name}</i>${esc(affixText(a))}</button>`).join('')}</div>`;
+      vet = `<div class="vet"><div class="lbl">Choose a mutation${t.pending > 1 ? ` · ${t.pending} ready` : ''}</div>${o.map((a, i) => `<button class="aff pickable" data-act="vet" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${RARITY[a.tier].name}</i>${esc(affixText(a))}</button>`).join('')}</div>`;
     }
     const nextVet = vetThreshold(t.rank + 1), prevVet = t.rank ? vetThreshold(t.rank) : 0;
     const rc = rerollCost(t);
@@ -4130,13 +4141,13 @@ const UI = (() => {
   function corePanelHTML() {
     const c = G.core, s = coreStats();
     const wc = coreWeaponCost(), sc = coreShieldCost(), rc = coreRepairCost();
-    return `<div class="ph"><div class="pt"><b>Entropy Core</b><small>It fights back. Arm it.</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
+    return `<div class="ph"><div class="pt"><b>Core</b><small>Weapon LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
-      <div class="lbl">Weapon element</div>
+      <div class="lbl">Weapon Element</div>
       <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
-      <div class="pfoot"><button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>Weapon LV ${c.wLvl + 1} · ${fmt(wc)}</button>
-      <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield LV ${c.sLvl + 1} · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}</div></div>`;
+      <div class="pfoot"><button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>Upgrade Weapon · ${fmt(wc)}</button>
+      <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}</div></div>`;
   }
   function liveRefreshPanel() {
     if (!panel || !G) return;
@@ -4293,35 +4304,35 @@ const UI = (() => {
     if (!G || G.over) return;
     G.paused = true;
     modal(`<div class="card narrow"><div class="ch"><h2>Paused</h2></div>
-      <p class="note">Wave ${G.wave} · ${fmt(G.score)} score · ${G.towers.length} towers · score ×${G.scoreMult.toFixed(2)}. Progress saves at the start of every wave.</p>
+      <p class="note">Wave ${G.wave} · Score ${fmt(G.score)} · Multiplier ×${G.scoreMult.toFixed(2)}</p>
       ${G.anoms.length ? `<div class="lbl">Anomalies</div><div class="anlist">${G.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${esc(A.up)}</span><span class="bad">${esc(A.down)}</span></div>`; }).join('')}</div>` : ''}
       <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
-      <button class="btn" data-act="help">How to play</button>
+      <button class="btn" data-act="help">How to Play</button>
       <button class="btn" data-act="settings">Settings</button>
-      <button class="btn" data-act="exit">Save and exit to hangar</button>
-      <button class="btn danger" data-act="abandon">${confirmAbandon ? 'Tap again to end this run' : 'End run'}</button></div></div>`, 'pause');
+      <button class="btn" data-act="exit">Save &amp; Quit</button>
+      <button class="btn danger" data-act="abandon">${confirmAbandon ? 'Tap again to confirm' : 'End Run'}</button></div></div>`, 'pause');
   }
   function openAnomaly() {
     if (!G || !G.anomOffers) return;
     G.paused = true;
-    modal(`<div class="card anom"><div class="ch"><h2 class="void">Anomaly</h2><span class="note">Entropy is full. Bend the run, or hold it steady. Each anomaly adds +5% score.</span></div>
-      <div class="boons four">${G.anomOffers.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<button class="boon anomaly" data-act="anom" data-v="${id}"><b>${esc(A.name)}</b><span class="good">+ ${esc(A.up)}</span><span class="bad">− ${esc(A.down)}</span></button>`; }).join('')}
-      <button class="boon stab" data-act="stab"><b>Stabilize</b><span class="good">+10% score for the run and +1 Recalibration token</span><span class="dim">Nothing changes</span></button></div></div>`, 'anomaly');
+    modal(`<div class="card anom"><div class="ch"><h2 class="void">Anomaly</h2><span class="note">Choose one. Each Anomaly also grants +5% score.</span></div>
+      <div class="boons four">${G.anomOffers.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<button class="boon anomaly" data-act="anom" data-v="${id}"><b>${esc(A.name)}</b><span class="good">${esc(A.up)}</span><i class="lbl cost">Cost</i><span class="bad">${esc(A.down)}</span></button>`; }).join('')}
+      <button class="boon stab" data-act="stab"><b>Stabilize</b><span class="good">+10% score</span><span class="good">+1 Recalibration token</span><span class="dim">No other changes</span></button></div></div>`, 'anomaly');
   }
   function recapHTML() {
     const els = G.stats.dmgByEl, tot = Object.values(els).reduce((a, b) => a + b, 0) || 1;
     const mvp = G.towers.slice().sort((a, b) => b.dmgDone - a.dmgDone)[0];
-    const combos = COMBO_NAMES.filter(n => G.stats.combos[n]).map(n => `${n.toLowerCase()} ${fmt(G.stats.combos[n])}`).join(' · ');
+    const combos = COMBO_NAMES.filter(n => G.stats.combos[n]).map(n => `${n[0] + n.slice(1).toLowerCase()} ×${fmt(G.stats.combos[n])}`).join(' · ');
     return `<div class="recap">
-      ${mvp ? `<div class="mvp"><canvas class="ico" width="24" height="24" data-ico="${mvp.type}"></canvas><div><span class="lbl">MVP</span><b>${esc(towerLabel(mvp))}</b><small>${fmt(mvp.dmgDone)} damage · ${mvp.kills} kills${mvp.rank ? ' · Veteran ' + roman(mvp.rank) : ''}</small></div></div>` : ''}
+      ${mvp ? `<div class="mvp"><canvas class="ico" width="24" height="24" data-ico="${mvp.type}"></canvas><div><span class="lbl">Top Tower</span><b>${esc(towerLabel(mvp))}</b><small>${fmt(mvp.dmgDone)} damage · ${mvp.kills} kills${mvp.rank ? ' · Veteran ' + roman(mvp.rank) : ''}</small></div></div>` : ''}
       <div class="elbar">${ELS.filter(e => els[e] / tot > 0.005).map(e => `<i style="flex:${Math.max(0.001, els[e] / tot)};background:${EL[e].col}" title="${EL[e].name}"></i>`).join('')}</div>
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
-      <p class="note">${combos ? 'Combos: ' + combos : 'No elemental combos this run. Mix elements next to each other.'}</p>
-      <p class="note">${G.stats.elites} elites · ${G.stats.bossKills} bosses · ${G.stats.leaks} leaks${G.stats.lastLeak ? ' · killed by ' + esc(G.stats.lastLeak) : ''}${G.anoms.length ? ' · anomalies: ' + G.anoms.map(id => esc(ANOMALIES.find(a => a.id === id).name)).join(', ') : ''}</p>
+      <p class="note">${combos ? 'Combos: ' + combos : 'No combos this run.'}</p>
+      <p class="note">Elites ${G.stats.elites} · Bosses ${G.stats.bossKills} · Leaks ${G.stats.leaks}${G.stats.lastLeak ? ' · Final hit: ' + esc(G.stats.lastLeak) : ''}${G.anoms.length ? ' · Anomalies: ' + G.anoms.map(id => esc(ANOMALIES.find(a => a.id === id).name)).join(', ') : ''}</p>
     </div>`;
   }
   function openDraft(opts) {
-    modal(`<div class="card"><div class="ch"><h2>Boss destroyed</h2><span class="note">Pick one boon. +1 Recalibration token.</span></div>
+    modal(`<div class="card"><div class="ch"><h2>Boss Defeated</h2><span class="note">Choose a boon. Lasts until the run ends. +1 Recalibration token.</span></div>
       <div class="boons">${opts.map((b, i) => `<button class="boon" data-act="boon" data-v="${i}"><b>${esc(b.name)}</b><span>${esc(b.desc)}</span></button>`).join('')}</div></div>`, 'draft');
     SFX.play('milestone');
   }
@@ -4329,13 +4340,13 @@ const UI = (() => {
     const L = profLevel(), gained = L.level - G.lvlStart;
     const best = G.wave > (G.bestAtStart || 0);
     Save.save();
-    modal(`<div class="card over"><div class="ch"><h2 class="bad">Core lost</h2><span class="note">${G.daily ? 'Daily anomaly' : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name + ' chaos' : ''}</span></div>
+    modal(`<div class="card over"><div class="ch"><h2 class="bad">Core Destroyed</h2><span class="note">${G.daily ? 'Daily Challenge' : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>Levels<b>+${gained}</b></span></div>
-      ${G.daily ? `<p class="void">Daily anomaly ${esc(G.daily)} · best today: wave ${PROF.daily ? PROF.daily.best : G.wave}</p>` : best ? '<p class="amber">New best wave.</p>' : `<p class="note">Best wave: ${PROF.bestWave}</p>`}
+      ${G.daily ? `<p class="void">Today's best: Wave ${PROF.daily ? PROF.daily.best : G.wave}</p>` : best ? '<p class="amber">New best wave!</p>' : `<p class="note">Best: Wave ${PROF.bestWave}</p>`}
       ${recapHTML()}
-      ${G.unlocks && G.unlocks.length ? `<p class="good">Unlocked: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
-      <p class="note">${pointsFree() > 0 ? `You have ${pointsFree()} passive point${pointsFree() === 1 ? '' : 's'} to spend.` : 'Every run banks XP into your passive web.'}</p>
-      <div class="foot"><button class="btn" data-act="hangar">Hangar</button><button class="btn" data-act="web">Open web</button><button class="btn primary" data-act="again">Run again</button></div></div>`, 'over');
+      ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
+      ${pointsFree() > 0 ? `<p class="good">${pointsFree()} passive point${pointsFree() === 1 ? '' : 's'} available</p>` : ''}
+      <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Passive Web</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
   const fsOK = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
@@ -4344,8 +4355,8 @@ const UI = (() => {
     const d = document, el = d.documentElement;
     try {
       if (fsOn()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
-      else { const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (r && r.then) r.then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => toast('FULL SCREEN', 'Not allowed here', '#ff4d6a', 1)); }
-    } catch (e) { toast('FULL SCREEN', 'Not available here', '#ff4d6a', 1); }
+      else { const r = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (r && r.then) r.then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => toast('FULL SCREEN', 'Not supported here', '#ff4d6a', 1)); }
+    } catch (e) { toast('FULL SCREEN', 'Not supported here', '#ff4d6a', 1); }
     setTimeout(openSettings, 300);
   }
   function saveCode() {
@@ -4354,70 +4365,100 @@ const UI = (() => {
   }
   function openTransfer(mode) {
     const code = mode === 'copy' ? saveCode() : '';
-    modal(`<div class="card narrow"><div class="ch"><h2>${mode === 'copy' ? 'Your save code' : 'Load a save code'}</h2><button class="x" data-act="settings" aria-label="Back">✕</button></div>
-      <p class="note">${mode === 'copy' ? 'Copy this whole code, then open Entropy on your other copy and choose Settings → Load code. A run in progress is not included.' : 'Paste a code from Copy save code. It replaces the progress on this copy.'}</p>
+    modal(`<div class="card narrow"><div class="ch"><h2>${mode === 'copy' ? 'Export Save' : 'Import Save'}</h2><button class="x" data-act="settings" aria-label="Back">✕</button></div>
+      <p class="note">${mode === 'copy' ? 'Copy this code, then paste it into Import Save on your other device. Runs in progress are not included.' : 'Paste an exported save code. This replaces your current progress.'}</p>
       <textarea id="xcode" class="xcode" ${mode === 'copy' ? 'readonly' : 'placeholder="ENT1:…"'}>${code}</textarea>
-      <div class="foot">${mode === 'copy' ? '<button class="btn primary" data-act="xclip">Copy</button>' : '<button class="btn primary" data-act="xload">Load save</button>'}</div></div>`, 'settings');
+      <div class="foot">${mode === 'copy' ? '<button class="btn primary" data-act="xclip">Copy</button>' : '<button class="btn primary" data-act="xload">Import</button>'}</div></div>`, 'settings');
     const ta = $('#xcode'); if (mode === 'copy') { ta.focus(); ta.select(); }
   }
   function openSettings() {
     const S = PROF.settings;
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
-      <label class="set"><span>Sound effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
+      <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
       <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
-      ${fsOK() ? `<div class="set"><span>Full screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
-      <div class="set"><span>Default HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Lean</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Full stats</button></div></div>
-      <div class="set"><span>Damage numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Screen shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Save</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'SYNCED' : 'LOCAL'}</span></div>
-      ${G && !G.over ? '' : `<div class="set"><span>Move progress</span><div class="chips"><button class="chip" data-act="xcopy">Copy save code</button><button class="chip" data-act="xpaste">Load code</button></div></div>`}
-      ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase everything' : 'Erase all progress'}</button>`}
-      <p class="note">Entropy v${VERSION}</p></div>`, 'settings');
+      ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
+      <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
+      <div class="set"><span>Damage Numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
+      <div class="set"><span>Screen Shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
+      <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
+      ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
+      ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
+      <p class="note">Version ${VERSION}</p></div>`, 'settings');
     $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
   }
-  function openHelp() {
+  const GUIDE = [
+    { id: 'basics', name: 'Basics', rows: [
+      ['Build', 'Tap an empty tile, choose a tower, then tap it again to build.'],
+      ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
+      ['Specialize', 'At LV 3, choose one of two specializations.'],
+      ['Core', 'Tap the core to upgrade its weapon and shield, or repair it.'],
+      ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
+      ['Zoom', 'Pinch to zoom, drag to pan. Tap Fit to reset the view.'],
+    ] },
+    { id: 'elements', name: 'Elements', rows: [
+      ['Burn', 'Deals damage over time.'],
+      ['Chill', 'Slows. 5 stacks Freeze the enemy.'],
+      ['Shock', 'Enemy takes +15% damage.'],
+      ['Mark', 'Each stack adds +5% damage taken.'],
+      ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
+    ], combos: true },
+    { id: 'run', name: 'In a Run', rows: [
+      ['Affixes', 'Random bonuses: Common, Magic, Rare, Legendary. Curses are negative.'],
+      ['Veterans', 'Towers rank up from kills. A ! means a mutation is ready.'],
+      ['Ascend', 'Max-level towers can Ascend for ×1.3 Damage.'],
+      ['Entropy', 'Fills as you fight. When full, draw an Anomaly or Stabilize.'],
+      ['Storms', 'Boost one element. Storms merge; 3 types form a Maelstrom.'],
+      ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
+      ['Abilities', 'Earned from score milestones. Shown on the left.'],
+      ['Bosses', 'Every 10 waves. Drop a boon and a Recalibration token.'],
+    ] },
+    { id: 'progress', name: 'Progression', rows: [
+      ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
+      ['Passive Web', 'Spend points on permanent bonuses. Open it anytime.'],
+      ['Keystones', 'Powerful nodes with a drawback, on the outer rim.'],
+      ['Respec', 'Free between runs. Costs Recalibration tokens during a run.'],
+      ['Builds', 'Save up to 5 web layouts and swap between them.'],
+      ['Daily', 'One shared map and set of anomalies each day.'],
+    ] },
+  ];
+  let helpTab = 'basics';
+  function openHelp(tab) {
     if (G && !G.over) G.paused = true;
-    modal(`<div class="card help"><div class="ch"><h2>How to play</h2><button class="x" data-act="close2">✕</button></div>
-      <ul>
-        <li><b>Pinch to zoom</b> the battlefield and drag to pan while zoomed. Tap <b>Fit</b> to see the whole map again.</li>
-        <li><b>Tap an empty tile</b> to build. <b>Tap a tower</b> to upgrade, retarget, reroll or sell. <b>Tap the core</b> to arm it.</li>
-        <li>Every build and upgrade <b>rolls a random affix</b>: Common, Magic, Rare or Legendary. At LV 3 each tower forks into one of two specializations.</li>
-        <li>Elements combine. Kinetic on Frozen = <b>Shatter</b>. Thermal on Shocked = <b>Overload</b>. Thermal on Chilled = <b>Thermal Shock</b>. Arc on Chilled = <b>Superconduct</b>. Void at max Marks = <b>Collapse</b>.</li>
-        <li>Towers of <b>different elements</b> standing next to each other <b>resonate</b>: +8% damage for each distinct neighboring element.</li>
-        <li>Kills turn towers into <b>Veterans</b>. A yellow <b>!</b> above a tower means it has a mutation to choose: tap the tower. Maxed towers can <b>Ascend</b>.</li>
-        <li>Storms drift across the map and boost an element. Storms pull toward each other and <b>converge</b>. Enough convergence births a <b>Maelstrom</b>.</li>
-        <li>Kills, combos and waves fill the violet <b>Entropy</b> gauge on the right rail. When it is full, draw an <b>Anomaly</b>: a run-changing mutation with an upside and a cost. Or stabilize for score.</li>
-        <li>During the countdown the top bar previews the next wave: count, fliers, elites, boss and chaos events. Tap <b>Next</b> (bottom right) to call it early for bonus credits. <b>Skimmers fly straight at the core</b>, ignoring the path; pink dotted lines show their route.</li>
-        <li>Score milestones grant ability charges. They appear on the left rail: <b>Strike</b> (tap the map to aim), <b>Nova</b>, <b>Stasis</b> and <b>Boost</b> (overclock). Bosses every 10 waves drop a boon and a <b>Recalibration token</b>.</li>
-        <li>Score becomes XP. Each level is a point in the <b>Passive Web</b>. Open it any time, even mid-run. Refunding mid-run costs tokens.</li>
-        <li>Waves never stop. You will lose eventually. Then you come back stronger.</li>
-      </ul>
-      <div class="foot"><button class="btn primary" data-act="close2">Got it</button></div></div>`, 'help');
+    if (tab) helpTab = tab;
+    const T = GUIDE.find(g => g.id === helpTab) || GUIDE[0];
+    const combos = T.combos ? `<div class="lbl gsub">Combos</div><div class="gcombo">${[
+      ['Kinetic', 'Frozen', 'Shatter'], ['Thermal', 'Chilled', 'Thermal Shock'], ['Thermal', 'Shocked', 'Overload'],
+      ['Arc', 'Burning', 'Overload'], ['Arc', 'Chilled', 'Superconduct'], ['Void', 'max Marks', 'Collapse'],
+    ].map(([a, b, c]) => `<span>${a} <i>on</i> ${b}</span><b>${c}</b>`).join('')}</div>` : '';
+    modal(`<div class="card help"><div class="ch"><h2>How to Play</h2><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      <div class="chips gtabs">${GUIDE.map(g => `<button class="chip ${g.id === T.id ? 'on' : ''}" data-act="htab" data-v="${g.id}">${g.name}</button>`).join('')}</div>
+      <div class="gd">${T.rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join('')}</div>
+      ${combos}</div>`, 'help');
   }
   function openArchive() {
-    const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k); return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? '' : 'Unlocks at wave ' + D.unlock}</em></div>`; }).join('');
+    const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k); return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? '' : 'Wave ' + D.unlock}</em></div>`; }).join('');
     const ks = TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name);
     const hrs = Math.floor(PROF.playTime / 3600), mins = Math.floor(PROF.playTime / 60) % 60;
     modal(`<div class="card"><div class="ch"><h2>Archive</h2><button class="x" data-act="close2">✕</button></div>
       <div class="setup-grid"><div class="col"><div class="lbl">Arsenal</div>${rows}</div>
       <div class="col"><div class="lbl">Record</div>
-        <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best wave<b>${PROF.bestWave || '—'}</b></span><span>Best score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
-        <div class="lbl">Active keystones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None yet. They sit at the outer rim of the web.'}</p>
+        <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best Wave<b>${PROF.bestWave || '—'}</b></span><span>Best Score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Time Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
+        <div class="lbl">Keystones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None allocated'}</p>
         ${codexHTML()}</div></div></div>`, 'archive');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
   function codexHTML() {
     const C = PROF.codex || {};
-    const cb = COMBO_NAMES.map(n => `<span class="${C.combos && C.combos[n] ? 'on' : ''}">${C.combos && C.combos[n] ? n.toLowerCase() : '???'}</span>`).join('');
+    const cb = COMBO_NAMES.map(n => `<span class="${C.combos && C.combos[n] ? 'on' : ''}">${C.combos && C.combos[n] ? n[0] + n.slice(1).toLowerCase() : '???'}</span>`).join('');
     const bs = BOSSES.map(b => `<span class="${C.bosses && C.bosses[b.id] ? 'on' : ''}">${C.bosses && C.bosses[b.id] ? esc(b.name) : '???'}</span>`).join('');
     const an = ANOMALIES.filter(a => C.anomalies && C.anomalies[a.id]).length;
     const lg = LEGENDARIES.filter(a => C.legendaries && C.legendaries[a.id]).length;
     return `<div class="lbl">Codex</div>
       <div class="codex"><em>Combos</em>${cb}</div>
-      <div class="codex"><em>Bosses felled</em>${bs}</div>
-      <p class="note">Anomalies drawn ${an}/${ANOMALIES.length} · legendaries chosen ${lg}/${LEGENDARIES.length} · maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · best veteran: ${esc(C.bestName)}, rank ${roman(C.bestRank)}` : ''}</p>`;
+      <div class="codex"><em>Bosses</em>${bs}</div>
+      <p class="note">Anomalies ${an}/${ANOMALIES.length} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
   }
   function modalAction(act, b) {
     SFX.play('ui');
@@ -4432,19 +4473,20 @@ const UI = (() => {
       case 'mode': setup.mode = b.dataset.v; if (setup.mode === 'std') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
       case 'help': openHelp(); break;
+      case 'htab': openHelp(b.dataset.v); break;
       case 'settings': openSettings(); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); abandonRun(); break;
       case 'boon': { const o = G.draft[+b.dataset.v]; takeBoon(o); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
       case 'anom': { takeAnomaly(b.dataset.v); closeModal(); G.paused = false; const A = ANOMALIES.find(a => a.id === b.dataset.v); toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
-      case 'stab': { stabilize(); closeModal(); G.paused = false; toast('STABILIZED', `Score ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
+      case 'stab': { stabilize(); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
       case 'hangar': closeModal(); G = null; show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'again': closeModal(); G = null; show('hangar'); renderHangar(); openSetup(); break;
       case 'web': closeModal(); G = null; show('hangar'); renderHangar(); Tree.open(); break;
       case 'fs': toggleFs(); break;
       case 'xcopy': openTransfer('copy'); break;
       case 'xpaste': openTransfer('paste'); break;
-      case 'xclip': { const ta = $('#xcode'); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => toast('COPIED', 'Save code on your clipboard', '#59f0b4', 1)).catch(() => { if (!ok) toast('COPY', 'Select the code and copy it by hand', '#ffb03a', 1); }); else if (ok) toast('COPIED', 'Save code on your clipboard', '#59f0b4', 1); break; }
+      case 'xclip': { const ta = $('#xcode'); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => toast('COPIED', 'Save code copied', '#59f0b4', 1)).catch(() => { if (!ok) toast('COPY FAILED', 'Select the code and copy it manually', '#ffb03a', 1); }); else if (ok) toast('COPIED', 'Save code copied', '#59f0b4', 1); break; }
       case 'xload': {
         const raw = ($('#xcode').value || '').trim();
         try {
@@ -4452,14 +4494,14 @@ const UI = (() => {
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
           P.runSnap = null; PROF = P; Save.save(); closeModal(); renderHangar(); Tree.refresh();
           SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
-          toast('LOADED', `Level ${profLevel().level} · best wave ${PROF.bestWave || 0}`, '#59f0b4');
-        } catch (e) { toast('BAD CODE', 'That save code did not read. Copy it again in full.', '#ff4d6a', 1); }
+          toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');
+        } catch (e) { toast('INVALID CODE', 'Make sure the full code was pasted', '#ff4d6a', 1); }
         break;
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'nums': PROF.settings.dmgNums = !PROF.settings.dmgNums; Render.nums = PROF.settings.dmgNums; Save.save(); openSettings(); break;
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;
-      case 'wipe': if (!confirmReset) { confirmReset = true; openSettings(); return; } PROF = defaultProfile(); Save.save(); closeModal(); renderHangar(); toast('ERASED', 'Fresh start', '#ff4d6a'); break;
+      case 'wipe': if (!confirmReset) { confirmReset = true; openSettings(); return; } PROF = defaultProfile(); Save.save(); closeModal(); renderHangar(); toast('PROGRESS RESET', 'All progress erased', '#ff4d6a'); break;
     }
   }
 
@@ -4474,16 +4516,16 @@ const UI = (() => {
     cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); if (!ptrs.size) gesture = null; });
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
-    $('#bCall').onclick = () => { SFX.init(); const v = callEarly(); if (v) toast('CALLED EARLY', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
+    $('#bCall').onclick = () => { SFX.init(); const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
     $('#bWeb').onclick = () => { SFX.play('ui'); Tree.open(); };
     $('#bPause').onclick = () => { SFX.play('ui'); openPause(); };
-    $('#bEnt').onclick = () => { SFX.play('ui'); if (G && G.anomOffers) openAnomaly(); else toast('ENTROPY', 'Fills from waves, kills, combos and storms. Full = draw an Anomaly.', '#b86cff'); };
+    $('#bEnt').onclick = () => { SFX.play('ui'); if (G && G.anomOffers) openAnomaly(); else toast('ENTROPY', 'Fills from kills, combos and waves. Draw an Anomaly when full.', '#b86cff'); };
     $('#abils').addEventListener('click', e => {
       const b = e.target.closest('[data-abil]'); if (!b || b.disabled || !G) return;
       const k = b.dataset.abil;
-      if (ABILITIES[k].target) { G.aimAbility = G.aimAbility === k ? null : k; if (G.aimAbility) { toast('TARGET', 'Tap the map to fire the Orbital Strike', '#ffb03a'); closePanel(); } }
+      if (ABILITIES[k].target) { G.aimAbility = G.aimAbility === k ? null : k; if (G.aimAbility) { toast('ORBITAL STRIKE', 'Tap a target', '#ffb03a'); closePanel(); } }
       else useAbility(k);
       updateHud();
     });
@@ -4520,7 +4562,7 @@ const UI = (() => {
     Hooks.toast = toast;
     Hooks.onDraft = opts => { closePanel(); openDraft(opts); };
     Hooks.onGameOver = () => { closePanel(); setTimeout(openGameOver, 900); };
-    Hooks.onLevel = (L, n) => { toast('LEVEL ' + L, `+${n} passive point${n > 1 ? 's' : ''} · open the Web to spend`, '#59f0b4'); Save.save(); };
+    Hooks.onLevel = (L, n) => { toast('LEVEL UP · ' + L, `+${n} passive point${n > 1 ? 's' : ''}`, '#59f0b4'); Save.save(); };
     Hooks.onUnlock = k => { if (G) (G.unlocks || (G.unlocks = [])).push(k); if (panel && panel.kind === 'build') renderPanel(); };
     Hooks.onChange = () => { if (G && panel) renderPanel(); Save.save(); };
     Hooks.onSave = () => Save.save();
@@ -4622,8 +4664,8 @@ const Tree = (() => {
       case 'refund': if (treeRefund(sel)) { SFX.play('sell', {}); path = treePathTo(sel); } else SFX.play('deny'); refresh(); break;
       case 'builds': drawer = drawer === 'builds' ? null : 'builds'; refresh(); break;
       case 'totals': drawer = drawer === 'totals' ? null : 'totals'; refresh(); break;
-      case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
-      case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: 'Build loaded', points: 'Not enough points for that build yet', tokens: 'Loading mid-run costs 2 tokens', empty: 'Empty slot' }[r]; UI.toast(r === 'ok' ? 'LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
+      case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('BUILD SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
+      case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
       case 'wipe': if (inRun()) return; if (!confirmWipe) { confirmWipe = true; refresh(); return; } PROF.alloc = ['start']; confirmWipe = false; sel = null; path = null; Save.save(); refresh(); break;
       case 'center': cam = { x: 0, y: 0, z: clamp(Math.min(W, H) / 900, 0.3, 1) }; break;
     }
@@ -4639,21 +4681,21 @@ const Tree = (() => {
     // info card
     const info = $('#tinfo');
     info.classList.toggle('hint', !sel);
-    if (!sel) { info.innerHTML = `<p class="note">Tap a node to inspect · tap again to allocate · pinch to zoom</p>`; }
+    if (!sel) { info.innerHTML = `<p class="note">Tap a node to inspect. Tap again to allocate.</p>`; }
     else {
       const n = TREE.nodes[sel], allocd = PROF.alloc.includes(sel);
-      const kindName = { start: 'Origin', small: 'Passive', notable: n.hybrid ? 'Hybrid notable' : 'Notable', mastery: 'Mastery', keystone: 'Keystone' }[n.kind];
+      const kindName = { start: 'Origin', small: 'Passive', notable: n.hybrid ? 'Hybrid Notable' : 'Notable', mastery: 'Mastery', keystone: 'Keystone' }[n.kind];
       const col = n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a';
       let act = '';
-      if (n.kind === 'start') act = '<span class="note">Every build grows from here.</span>';
+      if (n.kind === 'start') act = '<span class="note">Starting node</span>';
       else if (!allocd) {
         const p = treePathTo(sel);
-        if (!p) act = '<span class="note">Unreachable.</span>';
-        else act = `<button class="btn primary" data-tact="alloc" ${p.length > free ? 'disabled' : ''}>Allocate · ${p.length} point${p.length > 1 ? 's' : ''}</button>${p.length > free ? `<span class="note">You have ${free}.</span>` : ''}`;
+        if (!p) act = '<span class="note">Not connected</span>';
+        else act = `<button class="btn primary" data-tact="alloc" ${p.length > free ? 'disabled' : ''}>Allocate · ${p.length} point${p.length > 1 ? 's' : ''}</button>${p.length > free ? `<span class="note">${free} available</span>` : ''}`;
       } else {
         const o = treeOrphans(sel) || [];
         const cost = inRun() ? ` · ${o.length} token${o.length > 1 ? 's' : ''}` : '';
-        act = `<button class="btn danger" data-tact="refund" ${inRun() && G.tokens < o.length ? 'disabled' : ''}>Refund${o.length > 1 ? ` ${o.length} nodes` : ''}${cost}</button>${inRun() ? `<span class="note">Mid-run refunds cost Recalibration tokens.</span>` : '<span class="note">Free between runs.</span>'}`;
+        act = `<button class="btn danger" data-tact="refund" ${inRun() && G.tokens < o.length ? 'disabled' : ''}>Refund${o.length > 1 ? ` ${o.length} nodes` : ''}${cost}</button>${inRun() ? `<span class="note">Costs Recalibration tokens during a run</span>` : '<span class="note">Free between runs</span>'}`;
       }
       info.innerHTML = `<div class="ti"><div><i style="color:${col}">${kindName}</i><b>${esc(n.name)}</b></div><ul>${nodeLines(n).map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ta">${act}</div></div>`;
     }
@@ -4661,17 +4703,17 @@ const Tree = (() => {
     const dr = $('#tdrawer');
     dr.hidden = !drawer;
     if (drawer === 'builds') {
-      dr.innerHTML = `<div class="ph"><b>Saved builds</b><button class="x" data-tact="builds">✕</button></div>
+      dr.innerHTML = `<div class="ph"><b>Saved Builds</b><button class="x" data-tact="builds">✕</button></div>
         ${PROF.builds.map((bd, i) => `<div class="slot"><input id="bn${i}" type="text" maxlength="20" placeholder="Build ${i + 1}" value="${bd ? esc(bd.name) : ''}"><small>${bd ? (bd.alloc.length - 1) + ' nodes' : 'Empty'}</small><button class="btn small" data-tact="save" data-v="${i}">Save</button><button class="btn small" data-tact="load" data-v="${i}" ${bd ? '' : 'disabled'}>Load</button></div>`).join('')}
-        <p class="note">${inRun() ? 'Loading a build mid-run costs 2 tokens.' : 'Loading is free between runs.'}</p>
-        ${inRun() ? '' : `<button class="btn danger wide" data-tact="wipe">${confirmWipe ? 'Tap again to refund every node' : 'Refund entire web'}</button>`}`;
+        <p class="note">${inRun() ? 'Loading during a run costs 2 Recalibration tokens.' : 'Loading is free between runs.'}</p>
+        ${inRun() ? '' : `<button class="btn danger wide" data-tact="wipe">${confirmWipe ? 'Tap again to refund all nodes' : 'Reset Web'}</button>`}`;
     } else if (drawer === 'totals') {
       const raw = M.raw, lines = [];
-      lines.push(`Damage +${Math.round((M.dmg - 1) * 100)}% (incl. Power)`);
-      lines.push(`Attack speed +${Math.round((M.rate - 1) * 100)}% (incl. Tempo)`);
-      lines.push(`Range +${Math.round((M.range - 1) * 100)}% (incl. Focus)`);
-      lines.push(`Status chance ×${num1(M.stMult)} (Focus)`);
-      lines.push(`Core ${Math.round(M.coreHP)} HP, ${Math.round(M.shield)} shield (incl. Integrity)`);
+      lines.push(`+${Math.round((M.dmg - 1) * 100)}% Damage (incl. Power)`);
+      lines.push(`+${Math.round((M.rate - 1) * 100)}% Attack Speed (incl. Tempo)`);
+      lines.push(`+${Math.round((M.range - 1) * 100)}% Range (incl. Focus)`);
+      lines.push(`×${num1(M.stMult)} status chance (Focus)`);
+      lines.push(`Core: ${Math.round(M.coreHP)} HP, ${Math.round(M.shield)} shield (incl. Integrity)`);
       for (const k in raw) if (!['P', 'Tm', 'F', 'I', 'dmg', 'rate', 'range', 'coreHP', 'shield'].includes(k) && STAT_TXT[k] && raw[k]) lines.push(STAT_TXT[k](Math.round(raw[k] * 100) / 100));
       const ks = TREE.list.filter(n => n.ks && PROF.alloc.includes(n.id));
       dr.innerHTML = `<div class="ph"><b>Totals</b><button class="x" data-tact="totals">✕</button></div>
