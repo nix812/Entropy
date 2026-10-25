@@ -356,6 +356,17 @@ h2.void { color: #d6a6ff; }
 .ti i { font-style: normal; font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
 .ti b { font-family: var(--f-pix); font-size: 12px; text-transform: uppercase; }
 .ti ul { margin: 0; padding-left: 16px; font-size: 16px; }
+.mopts { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+.mopt { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; background: var(--panel2); border: 0; padding: 6px 9px; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); min-height: 40px; }
+.mopt b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--amber); }
+.mopt span { font-size: 16px; line-height: 1.05; }
+.mopt.on { box-shadow: inset 0 0 0 2px var(--amber); background: #1f1a14; }
+.mopt:disabled { opacity: 0.5; }
+.louts { display: flex; gap: 6px; }
+.lout { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--panel2); border: 0; padding: 6px 0; min-height: 48px; box-shadow: inset 0 0 0 1px var(--line2); color: #5f5d7a; }
+.lout span { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
+.lout.on { color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }
+#tinfo { max-height: calc(100% - 64px); overflow-y: auto; }
 .ta { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ta .note { margin: 0; text-align: left; }
 #tdrawer { position: absolute; z-index: 3; top: 52px; right: max(16px, var(--sar)); bottom: 8px; width: min(300px, 60%); background: rgba(12, 14, 28, 0.97); box-shadow: inset 0 0 0 1px var(--line2); padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; }
@@ -461,7 +472,7 @@ h2.void { color: #d6a6ff; }
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -727,6 +738,28 @@ const STAT_TXT = {
   frozenVuln: v => `Frozen enemies take +${v}% damage`, knock: v => `${v}% chance to knock back`,
   xp: v => `+${v}% XP`, chainIgnite: () => 'Burning enemies spread Burn on death',
   loneWolf: v => `+${v}% Damage for towers with no neighbors`,
+  critSplash: v => `Kinetic crits deal ${v}% of their damage to enemies within 1 tile`,
+  fifthCrit: () => 'Every 5th Kinetic attack is a guaranteed crit',
+  shredStack: v => `Kinetic hits make Elites and Bosses take +${v}% damage, stacking to +30%`,
+  pierceKeep: () => 'Kinetic pierce and bounces lose no damage', critCK: v => `+${v}% Crit Chance for Kinetic towers`, critMK: v => `+${v}% Crit Damage for Kinetic towers`,
+  kSlow: v => `Kinetic hits slow enemies by ${v}% for 1s`,
+  burnVuln: v => `Burning enemies take +${v}% damage`, burnBoom: v => `Burning enemies explode on death for ${v}% of their max HP`,
+  burnSpread: () => 'Every second, Burn spreads to the nearest enemy within 1 tile', infernoCore: () => '×2 Burn damage, −40% Burn duration',
+  heatSink: () => 'Thermal towers: +2% Attack Speed per Burning enemy, up to +40%',
+  capacitor: () => 'Arc towers charge for 4s; their next attack deals ×3 damage', chainKeep: () => 'Chain jumps lose no damage',
+  shockBurst: v => `Shocked enemies discharge on death for ${v}% of their max HP as Arc damage`,
+  shockLong: () => 'Shock lasts 6s instead of 3s', thunder: () => 'Every 6s, lightning strikes the toughest enemy on the map', ovlFree: () => 'Overload has no cooldown',
+  freezeAt: () => 'Freeze triggers at 4 Chill stacks instead of 5', iceShards: () => 'Frozen enemies shatter on death and Chill nearby enemies twice',
+  chillSplash: () => 'Cryo hits also Chill enemies within 1 tile', chillSlowDecay: () => 'Chill fades 3× slower',
+  coldSnap: () => 'Shatter also Freezes enemies within 1 tile', glacial: v => `Chilled enemies move an extra ${v}% slower`,
+  markSlow: v => `Enemies at max Marks move ${v}% slower`, rampKeep: () => 'Void beams keep their ramp when switching targets',
+  knockMark: () => 'Knockbacks also apply 2 Marks', blackHole: () => 'Collapse radius ×2 and pulls enemies back further',
+  markPerma: () => 'Marks never fade', voidSiphon: () => 'Each Collapse fills the Entropy gauge',
+  shieldWave: () => 'Core shield fully recharges at the start of each wave', sellPct: v => `Selling refunds ${v}%`,
+  loadout: () => 'Choose which abilities milestones can grant. +25% ability power for each one left out',
+  interest: v => `Earn ${v}% interest on banked credits each wave (max 300)`, fieldRepair: v => `Waves with no leaks repair ${v}% core HP`,
+  burnCrit: () => 'Kinetic hits on Burning enemies always crit', ovlBurn: () => 'Overload applies Burn to every enemy it hits',
+  superChill: () => 'Superconduct also Chills',
   kBurn: v => `Kinetic hits: ${v}% chance to Burn`, chillVoid: v => `Hits on Chilled enemies: ${v}% chance to Mark`,
 };
 const SMALL_NAME = {
@@ -742,51 +775,57 @@ const SMALL_NAME = {
 const SECTORS = [
   { id: 'K', name: 'Ballistics', col: '#efe6cf', attr: 'P', spine: [{ dmgK: 8 }, { critC: 3 }, { rateK: 6 }],
     clusters: [
-      { name: 'Hollow Points', fx: { dmgK: 20, critM: 15 }, smalls: [{ critM: 10 }, { dmgK: 6 }, { critM: 10 }] },
-      { name: 'Rifling', fx: { rateK: 15, rangeKR: 10 }, smalls: [{ rateK: 5 }, { range: 4 }, { rateK: 5 }] },
-      { name: 'Armor Piercer', fx: { armorPen: 50, eliteDmg: 10 }, smalls: [{ armorPen: 10 }, { eliteDmg: 6 }, { armorPen: 10 }] }],
-    mastery: { name: 'Ballistic Mastery', fx: { pierceK: 1, dmgK: 25 }, smalls: [{ dmgK: 8 }, { critC: 3 }] },
+      { name: 'Hollow Points', fx: { critSplash: 40, critM: 15 }, smalls: [{ critM: 10 }, { dmgK: 6 }, { critM: 10 }] },
+      { name: 'Rifling', fx: { fifthCrit: 1, rateK: 10 }, smalls: [{ rateK: 5 }, { range: 4 }, { rateK: 5 }] },
+      { name: 'Armor Piercer', fx: { shredStack: 3, armorPen: 30 }, smalls: [{ armorPen: 10 }, { eliteDmg: 6 }, { armorPen: 10 }] }],
+    mastery: { name: 'Ballistic Mastery', fx: { dmgK: 15 }, opts: [
+      { name: 'Overpenetration', fx: { pierceK: 1, pierceKeep: 1 } }, { name: 'Deadeye', fx: { critCK: 15, critMK: 50 } }, { name: 'Suppression', fx: { kSlow: 15 } }], smalls: [{ dmgK: 8 }, { critC: 3 }] },
     keystone: { name: 'Glass Cannon Array', ks: 'glass', lines: ['+60% Damage', '−40% core max HP and shield'], smalls: [{ dmg: 5 }, { dmg: 5 }] } },
   { id: 'T', name: 'Combustion', col: '#ff7b39', attr: 'P', spine: [{ dmgT: 8 }, { burnDmg: 10 }, { burnChance: 3 }],
     clusters: [
-      { name: 'Accelerant', fx: { burnDmg: 25, burnChance: 10 }, smalls: [{ burnDmg: 8 }, { burnChance: 3 }, { burnDmg: 8 }] },
-      { name: 'Thermal Lance', fx: { dmgT: 20, splash: 0.3 }, smalls: [{ dmgT: 6 }, { splash: 0.1 }, { dmgT: 6 }] },
+      { name: 'Accelerant', fx: { burnVuln: 20, burnDmg: 10 }, smalls: [{ burnDmg: 8 }, { burnChance: 3 }, { burnDmg: 8 }] },
+      { name: 'Flashpoint', fx: { burnBoom: 25, dmgT: 10 }, smalls: [{ dmgT: 6 }, { splash: 0.1 }, { dmgT: 6 }] },
       { name: 'Chain Ignition', fx: { chainIgnite: 1, burnDur: 20 }, smalls: [{ burnDur: 10 }, { burnDmg: 8 }, { burnDur: 10 }] }],
-    mastery: { name: 'Pyre Mastery', fx: { burnDur: 50, dmgT: 25 }, smalls: [{ dmgT: 8 }, { burnDmg: 10 }] },
+    mastery: { name: 'Pyre Mastery', fx: { dmgT: 15 }, opts: [
+      { name: 'Wildfire', fx: { burnSpread: 1 } }, { name: 'Inferno Core', fx: { infernoCore: 1 } }, { name: 'Heat Sink', fx: { heatSink: 1 } }], smalls: [{ dmgT: 8 }, { burnDmg: 10 }] },
     keystone: { name: 'Conflagration', ks: 'conflag', lines: ['All damage becomes Thermal', '+25% Thermal Damage, +150% Burn damage', 'Cannot Chill or Freeze'], smalls: [{ dmgT: 6 }, { burnDmg: 8 }] } },
   { id: 'A', name: 'Voltaic', col: '#ffe14d', attr: 'Tm', spine: [{ dmgA: 8 }, { rate: 4 }, { shockChance: 3 }],
     clusters: [
-      { name: 'Capacitors', fx: { dmgA: 20, rateA: 10 }, smalls: [{ dmgA: 6 }, { rateA: 4 }, { dmgA: 6 }] },
-      { name: 'Forked Lightning', fx: { chain: 1, shockChance: 15 }, smalls: [{ shockChance: 4 }, { dmgA: 6 }, { shockChance: 4 }] },
-      { name: 'Overvolt', fx: { shockEff: 50 }, smalls: [{ shockEff: 12 }, { rate: 3 }, { shockEff: 12 }] }],
-    mastery: { name: 'Voltaic Mastery', fx: { overload: 100, dmgA: 25 }, smalls: [{ dmgA: 8 }, { rate: 4 }] },
+      { name: 'Capacitors', fx: { capacitor: 1, dmgA: 10 }, smalls: [{ dmgA: 6 }, { rateA: 4 }, { dmgA: 6 }] },
+      { name: 'Forked Lightning', fx: { chain: 1, chainKeep: 1 }, smalls: [{ shockChance: 4 }, { dmgA: 6 }, { shockChance: 4 }] },
+      { name: 'Overvolt', fx: { shockBurst: 15, shockEff: 25 }, smalls: [{ shockEff: 12 }, { rate: 3 }, { shockEff: 12 }] }],
+    mastery: { name: 'Voltaic Mastery', fx: { dmgA: 15 }, opts: [
+      { name: 'Static Field', fx: { shockLong: 1 } }, { name: 'Thunderstrike', fx: { thunder: 1 } }, { name: 'Overcharged', fx: { ovlFree: 1, overloadRad: 50 } }], smalls: [{ dmgA: 8 }, { rate: 4 }] },
     keystone: { name: 'Overclocked Grid', ks: 'overgrid', lines: ['+40% Attack Speed', 'Attacks have a 3% chance to jam the tower for 1.5s'], smalls: [{ rate: 4 }, { rate: 4 }] } },
   { id: 'C', name: 'Cryogenics', col: '#6ae2ff', attr: 'F', spine: [{ dmgC: 8 }, { chillPot: 8 }, { chillChance: 3 }],
     clusters: [
-      { name: 'Deep Freeze', fx: { chillPot: 30, freezeDur: 0.5 }, smalls: [{ chillPot: 8 }, { freezeDur: 0.15 }, { chillPot: 8 }] },
-      { name: 'Brittle', fx: { frozenVuln: 25 }, smalls: [{ frozenVuln: 8 }, { dmgC: 6 }, { frozenVuln: 8 }] },
-      { name: 'Frost Lattice', fx: { dmgC: 20, chillChance: 15 }, smalls: [{ chillChance: 4 }, { range: 4 }, { chillChance: 4 }] }],
-    mastery: { name: 'Cryo Mastery', fx: { shatter: 100, dmgC: 25 }, smalls: [{ dmgC: 8 }, { chillPot: 8 }] },
+      { name: 'Deep Freeze', fx: { freezeAt: 1, freezeDur: 0.3 }, smalls: [{ chillPot: 8 }, { freezeDur: 0.15 }, { chillPot: 8 }] },
+      { name: 'Brittle', fx: { iceShards: 1, frozenVuln: 15 }, smalls: [{ frozenVuln: 8 }, { dmgC: 6 }, { frozenVuln: 8 }] },
+      { name: 'Frost Lattice', fx: { chillSplash: 1, dmgC: 10 }, smalls: [{ chillChance: 4 }, { range: 4 }, { chillChance: 4 }] }],
+    mastery: { name: 'Cryo Mastery', fx: { dmgC: 15 }, opts: [
+      { name: 'Long Winter', fx: { chillSlowDecay: 1 } }, { name: 'Cold Snap', fx: { coldSnap: 1 } }, { name: 'Glacial', fx: { glacial: 15 } }], smalls: [{ dmgC: 8 }, { chillPot: 8 }] },
     keystone: { name: 'Absolute Zero', ks: 'abszero', lines: ['Chilled enemies take +50% damage', '−50% Thermal Damage'], smalls: [{ chillChance: 4 }, { dmgC: 6 }] } },
   { id: 'V', name: 'Singularity', col: '#b86cff', attr: 'F', spine: [{ dmgV: 8 }, { markChance: 3 }, { eliteDmg: 6 }],
     clusters: [
-      { name: 'Event Horizon', fx: { markMax: 3, dmgV: 10 }, smalls: [{ markChance: 3 }, { dmgV: 6 }, { markChance: 3 }] },
-      { name: 'Null Lens', fx: { dmgV: 25, markChance: 15 }, smalls: [{ dmgV: 6 }, { markChance: 4 }, { dmgV: 6 }] },
-      { name: 'Gravitic Pull', fx: { knock: 5, dmg: 6 }, smalls: [{ knock: 1 }, { dmg: 3 }, { knock: 1 }] }],
-    mastery: { name: 'Void Mastery', fx: { collapse: 100, dmgV: 25 }, smalls: [{ dmgV: 8 }, { markChance: 3 }] },
+      { name: 'Event Horizon', fx: { markSlow: 30, markMax: 3 }, smalls: [{ markChance: 3 }, { dmgV: 6 }, { markChance: 3 }] },
+      { name: 'Null Lens', fx: { rampKeep: 1, dmgV: 10 }, smalls: [{ dmgV: 6 }, { markChance: 4 }, { dmgV: 6 }] },
+      { name: 'Gravitic Pull', fx: { knock: 6, knockMark: 1 }, smalls: [{ knock: 1 }, { dmg: 3 }, { knock: 1 }] }],
+    mastery: { name: 'Void Mastery', fx: { dmgV: 15 }, opts: [
+      { name: 'Black Hole', fx: { blackHole: 1 } }, { name: 'Entropic Decay', fx: { markPerma: 1 } }, { name: 'Void Siphon', fx: { voidSiphon: 1 } }], smalls: [{ dmgV: 8 }, { markChance: 3 }] },
     keystone: { name: 'Singularity', ks: 'singularity', lines: ['+100% Void Damage', '−30% all other damage'], smalls: [{ dmgV: 6 }, { dmgV: 6 }] } },
   { id: 'E', name: 'Bastion', col: '#59f0b4', attr: 'I', spine: [{ coreHP: 12 }, { credits: 4 }, { shield: 6 }],
     clusters: [
-      { name: 'Reinforced Core', fx: { coreHP: 40, shield: 20, shieldRegen: 50 }, smalls: [{ coreHP: 10 }, { shieldRegen: 15 }, { coreHP: 10 }] },
-      { name: 'Logistics', fx: { costRed: 12, upgRed: 10 }, smalls: [{ costRed: 3 }, { credits: 4 }, { upgRed: 3 }] },
-      { name: 'Orbital Uplink', fx: { abilCharge: 20, abilPower: 30 }, smalls: [{ abilPower: 8 }, { abilCharge: 5 }, { abilPower: 8 }] }],
-    mastery: { name: 'Bastion Mastery', fx: { coreDmg: 60, coreRate: 30, coreRange: 1 }, smalls: [{ coreHP: 10 }, { shield: 6 }] },
+      { name: 'Reinforced Core', fx: { shieldWave: 1, coreHP: 30, shieldRegen: 30 }, smalls: [{ coreHP: 10 }, { shieldRegen: 15 }, { coreHP: 10 }] },
+      { name: 'Logistics', fx: { sellPct: 85, costRed: 8 }, smalls: [{ costRed: 3 }, { credits: 4 }, { upgRed: 3 }] },
+      { name: 'Command Uplink', fx: { loadout: 1, abilCharge: 10 }, smalls: [{ abilPower: 8 }, { abilCharge: 5 }, { abilPower: 8 }] }],
+    mastery: { name: 'Bastion Mastery', fx: { coreHP: 20 }, opts: [
+      { name: 'Retaliation', fx: { coreDmg: 60, coreRate: 30, coreRange: 1 } }, { name: 'Compound Interest', fx: { interest: 2 } }, { name: 'Field Repairs', fx: { fieldRepair: 5 } }], smalls: [{ coreHP: 10 }, { shield: 6 }] },
     keystone: { name: 'Diminishing Returns', ks: 'dimret', lines: ['+50% Credits from all sources', 'Each copy of a tower costs 12% more'], smalls: [{ credits: 4 }, { credits: 4 }] } },
 ];
 const HYBRIDS = [
-  { name: 'Incendiary Rounds', fx: { kBurn: 15, dmgK: 10, dmgT: 10 } },
-  { name: 'Plasma Coupling', fx: { overloadRad: 50, dmgT: 10, dmgA: 10 } },
-  { name: 'Superconductors', fx: { superRad: 100, dmgA: 10, dmgC: 10 } },
+  { name: 'Incendiary Rounds', fx: { burnCrit: 1, dmgK: 6, dmgT: 6 } },
+  { name: 'Plasma Coupling', fx: { ovlBurn: 1, overloadRad: 30 } },
+  { name: 'Superconductors', fx: { superChill: 1, superRad: 60 } },
   { name: 'Stasis Theory', fx: { stasisDur: 3, chillVoid: 15 } },
   { name: 'Storm Caller', fx: { stormFreq: 50, stormPow: 50 } },
   { name: 'Lone Wolf', fx: { loneWolf: 35 } },
@@ -851,7 +890,7 @@ function buildTree() {
         link(prev, `${tag}${i}_${q}`); prev = `${tag}${i}_${q}`;
       });
       [x, y] = pol(590, a + s * 13);
-      add(`${tag}${i}`, x, y, kind, i, D.name, D.fx || {}, D.ks ? { ks: D.ks, lines: D.lines } : null);
+      add(`${tag}${i}`, x, y, kind, i, D.name, D.fx || {}, D.ks ? { ks: D.ks, lines: D.lines } : D.opts ? { opts: D.opts } : null);
       link(prev, `${tag}${i}`);
     });
   });
@@ -978,6 +1017,7 @@ function defaultProfile() {
     settings: { sfx: 0.8, music: 0.45, soundtrack: 'ec', hud: 'lean', dmgNums: true, shake: true },
     seenHelp: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
+    mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'],
   };
 }
 let PROF = defaultProfile();
@@ -1046,12 +1086,16 @@ function treeLoadBuild(slot) {
   return 'ok';
 }
 
+function masteryPick(id) { const v = PROF.mastery && PROF.mastery[id]; return v === undefined ? 0 : v; }
+function loadoutList() { const L = (PROF.loadout || []).filter(k => ABIL_ORDER.includes(k)); return L.length ? L : ABIL_ORDER.slice(); }
+const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
   const m = {}, ks = {};
   for (const id of alloc) {
     const n = TREE.nodes[id]; if (!n) continue;
     for (const k in n.fx) m[k] = (m[k] || 0) + n.fx[k];
     if (n.ks) ks[n.ks] = 1;
+    if (n.opts) { const o = n.opts[masteryPick(id)]; if (o) for (const k in o.fx) m[k] = (m[k] || 0) + o.fx[k]; }
   }
   if (runMods) for (const k in runMods) m[k] = (m[k] || 0) + runMods[k];
   const g = k => m[k] || 0;
@@ -1080,6 +1124,9 @@ function computeMods(alloc, runMods) {
     knock: g('knock') / 100, xp: 1 + g('xp') / 100, chainIgnite: g('chainIgnite') > 0, loneWolf: g('loneWolf') / 100,
     kBurn: g('kBurn'), chillVoid: g('chillVoid'),
   };
+  M.fx = m;
+  if (m.infernoCore) { M.burnDmg *= 2; M.burnDur *= 0.6; }
+  if (m.loadout) M.abilPower += 0.25 * (ABIL_ORDER.length - loadoutList().length);
   if (ks.glass) { M.dmg *= 1.6; M.coreHP *= 0.6; M.shield *= 0.6; }
   if (ks.conflag) { M.burnDmg *= 2.5; M.el.T *= 1.25; }
   if (ks.overgrid) M.rate *= 1.4;
@@ -1435,7 +1482,7 @@ function rerollTower(t) {
   Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: '#ff8a2a' });
   return true;
 }
-function sellRefund(t) { return Math.round(t.invested * (G.checkpoint ? 1 : G.af.scav ? 0.9 : 0.7)); }
+function sellRefund(t) { return Math.round(t.invested * (G.checkpoint ? 1 : Math.max(G.af.scav ? 0.9 : 0.7, FX('sellPct') / 100))); }
 function sellTower(t) {
   G.credits += sellRefund(t);
   G.towers = G.towers.filter(o => o !== t);
@@ -1471,6 +1518,7 @@ function towerStats(t) {
   s.range = range;
   s.critC = (D.crit || 0) + (sp.critC || 0) + (A.critC || 0) + M.critC;
   s.critM = 1.5 + (A.critM || 0) / 100 + M.critM;
+  if (s.el === 'K') { s.critC += FX('critCK'); s.critM += FX('critMK') / 100; }
   s.pierce = (D.pierce || 0) + (sp.pierce || 0) + (A.pierce || 0) + (s.el === 'K' ? M.pierceK : 0);
   s.chain = D.chain ? D.chain + (sp.chain || 0) + (A.chain || 0) + M.chain : (A.chain || 0);
   s.splash = D.splash ? D.splash + (sp.splash || 0) + (A.splash || 0) + M.splash : (A.splash || 0);
@@ -1756,7 +1804,8 @@ function startWave() {
   for (const L of G.map.lanes) if (L.openWave) { const d = L.openWave - w; if (d >= 1 && (!G.laneWarn || d < G.laneWarn)) G.laneWarn = d; }
   G.queue = P.queue;
   G.spawnClock = 0; G.spawningDone = false;
-  G.next = 0; G.entWaveCombo = 0;
+  G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
+  if (FX('shieldWave')) G.core.shield = G.core.smax;
   // anomaly upkeep
   if (G.af.coreDrain) G.core.hp = Math.max(1, G.core.hp - G.core.max * G.af.coreDrain);
   if (G.af.mutagen && G.towers.length) {
@@ -1846,6 +1895,8 @@ function updateWaves(dt) {
     G.next = G.af.timeDebt ? 5 : 10;
     const bonus = Math.round((20 + G.wave * 4) * G.mods.credits * (G.ev.gold ? 2 : 1));
     G.credits += bonus;
+    if (FX('interest')) { const it = Math.min(300, Math.floor(G.credits * FX('interest') / 100)); if (it > 0) { G.credits += it; Hooks.log(`Interest +${it} credits`, '#ffb03a'); } }
+    if (FX('fieldRepair') && G.stats.leaks === (G.leaksAtStart || 0) && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * FX('fieldRepair') / 100);
     addScore(G.wave * 50);
     addEntropy(12);
     prepareWave(G.wave + 1);
@@ -1995,6 +2046,9 @@ function enemySlow(e) {
   let s = 0;
   if (e.st.chill > 0) s += e.st.chill * 0.08 * e.st.chillPot;
   s += e.fieldSlow || 0;
+  if (e.st.chill > 0) s += FX('glacial') / 100;
+  if (e.kSlowT > 0) s += FX('kSlow') / 100;
+  if (FX('markSlow') && e.st.mark >= G.mods.markMax) s += FX('markSlow') / 100;
   if (e.elite.includes('jugg')) s *= 0.3;
   if (e.boss) s *= 0.5;
   return Math.min(0.75, s);
@@ -2020,11 +2074,13 @@ function updateEnemies(dt) {
       if (st.burn.t <= 0) st.burn = null;
       if (e.dead) continue;
     }
-    if (st.chill > 0) { st.chillT -= dt; if (st.chillT <= 0) { st.chill = Math.max(0, st.chill - 1); st.chillT = 1; } }
+    if (st.chill > 0) { st.chillT -= dt; if (st.chillT <= 0) { st.chill = Math.max(0, st.chill - 1); st.chillT = FX('chillSlowDecay') ? 3 : 1; } }
+    if (e.kSlowT > 0) e.kSlowT -= dt;
+    if (st.burn && FX('burnSpread')) { e.spreadT = (e.spreadT || 1) - dt; if (e.spreadT <= 0) { e.spreadT = 1; let best = null, bd = 1; for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.st.burn) { const d = dist2(o2.x, o2.y, e.x, e.y); if (d < bd) { bd = d; best = o2; } } if (best) best.st.burn = { dps: st.burn.dps * 0.8, t: 3 * M.burnDur, src: st.burn.src }; } }
     if (st.frozen > 0) st.frozen -= dt;
     if (st.freezeImm > 0) st.freezeImm -= dt;
     if (st.shock > 0) st.shock -= dt;
-    if (st.mark > 0) { st.markT -= dt; if (st.markT <= 0) { st.mark = Math.max(0, st.mark - 1); st.markT = 1.2; } }
+    if (st.mark > 0 && !FX('markPerma')) { st.markT -= dt; if (st.markT <= 0) { st.mark = Math.max(0, st.mark - 1); st.markT = 1.2; } }
     if (st.stun > 0) st.stun -= dt;
     if (e.shatterT > 0) e.shatterT -= dt;
     // regen
@@ -2131,6 +2187,9 @@ function hit(e, dmg, el, src, o) {
   if (M.ks.abszero && st.chill > 0) mult *= 1.5;
   if (e.stormVuln) mult *= 1 + e.stormVuln;
   if (el === 'K' && e.shatterT > 0) mult *= 1 + e.shatterV;
+  if (st.burn && FX('burnVuln')) mult *= 1 + FX('burnVuln') / 100;
+  if (el === 'K' && FX('shredStack') && (e.boss || e.elite.length) && !o.dot) { mult *= 1 + (e.shredV || 0); e.shredV = Math.min(0.3, (e.shredV || 0) + FX('shredStack') / 100); }
+  if (el === 'K' && st.burn && FX('burnCrit') && !o.crit && !o.dot && src && src.s) { mult *= src.s.critM; o.crit = true; }
   if (src && src.s) {
     if ((e.boss || e.elite.length) && src.s.boss) mult *= 1 + src.s.boss;
     if (src.s.slowd && e.slow > 0.05) mult *= 1 + src.s.slowd;
@@ -2148,8 +2207,12 @@ function hit(e, dmg, el, src, o) {
   if (!o.dot) e.hitFlash = 0.08;
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
   if (e.hp <= 0) { kill(e, src, o); return dealt; }
+  if (el === 'K' && src && src.s && FX('kSlow')) e.kSlowT = 1;
   if (src && src.s && src.s.exec && !e.boss && e.hp / e.maxHp < src.s.exec / 100) { Hooks.fx('num', { x: e.x, y: e.y, v: e.hp, combo: 'EXECUTE', col: '#ff4d6a' }); e.hp = 0; kill(e, src, o); return dealt; }
-  if (!o.noStatus && src && src.s) applyStatuses(e, dmg, el, src, o);
+  if (!o.noStatus && src && src.s) {
+    if (el === 'K' && o.crit && FX('critSplash')) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, dmg * FX('critSplash') / 100, 'K', src, { noStatus: 1 });
+    applyStatuses(e, dmg, el, src, o);
+  }
   return dealt;
 }
 function combo(e, name, col) {
@@ -2165,31 +2228,36 @@ function applyStatuses(e, dmg, el, src, o) {
   const M = G.mods, s = src.s, st = e.st, r = G.r;
   const jugg = e.elite.includes('jugg');
   // combos first
-  if (el === 'K' && st.frozen > 0) { combo(e, 'SHATTER', '#6ae2ff'); hit(e, dmg * 1.0 * M.shatter, 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return; }
+  if (el === 'K' && st.frozen > 0) {
+    combo(e, 'SHATTER', '#6ae2ff');
+    if (FX('coldSnap')) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.boss && o2.st.frozen <= 0 && dist2(o2.x, o2.y, e.x, e.y) <= 1) { o2.st.frozen = 0.8; Hooks.fx('freeze', { x: o2.x, y: o2.y }); }
+    hit(e, dmg * 1.0 * M.shatter, 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return;
+  }
   if (el === 'T' && st.chill >= 3) { st.chill = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * 1.5, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; }
   if (((el === 'T' && st.shock > 0) || (el === 'A' && st.burn)) && e.ovlCD <= 0) {
-    e.ovlCD = 1; st.shock = 0;
+    e.ovlCD = FX('ovlFree') ? 0 : 1; st.shock = 0;
     const rad = 1 * M.overloadRad, d = (dmg * 0.6 + 10 * Math.sqrt(hpMult(G.wave))) * M.overload;
     combo(e, 'OVERLOAD', '#ffb03a');
     Hooks.fx('boom', { x: e.x, y: e.y, r: rad, col: '#ffb03a' });
-    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) hit(o2, d, 'A', src, { noStatus: 1 });
+    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { hit(o2, d, 'A', src, { noStatus: 1 }); if (FX('ovlBurn') && !o2.dead && !o2.st.burn) o2.st.burn = { dps: d * 0.25 * M.burnDmg, t: 3 * M.burnDur, src }; }
     if (e.dead) return;
   }
   if (el === 'A' && st.chill > 0 && e.supCD <= 0) {
     e.supCD = 1;
     const rad = 1.2 * M.superRad;
     let n = 0;
-    for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { o2.st.shock = 3; o2.st.shockEff = Math.max(o2.st.shockEff, M.shockEff); n++; }
+    for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { o2.st.shock = FX('shockLong') ? 6 : 3; o2.st.shockEff = Math.max(o2.st.shockEff, M.shockEff); if (FX('superChill') && !o2.elite.includes('jugg')) { o2.st.chill = Math.min(5, o2.st.chill + 1); o2.st.chillT = 2.5; } n++; }
     if (n) { combo(e, 'SUPERCONDUCT', '#9ff2ff'); Hooks.fx('arcs', { x: e.x, y: e.y, r: rad }); }
   }
   if (el === 'V' && st.mark >= M.markMax && (st.burn || st.chill > 0 || st.shock > 0)) {
     st.mark = 0;
-    const rad = 1.5;
+    const rad = FX('blackHole') ? 3 : 1.5;
+    if (FX('voidSiphon')) addEntropy(1);
     combo(e, 'COLLAPSE', '#b86cff');
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
       hit(o2, dmg * 2 * M.collapse + o2.maxHp * 0.03, 'V', src, { noStatus: 1 });
-      if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - 0.5);
+      if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
     }
     if (e.dead) return;
   }
@@ -2204,19 +2272,20 @@ function applyStatuses(e, dmg, el, src, o) {
   }
   if (chillP > 0 && r() < chillP && !jugg) {
     st.chill = Math.min(5, st.chill + (s.kind === 'pulse' ? 2 : 1)); st.chillT = 2.5; st.chillPot = Math.max(st.chillPot, s.chillPot);
+    if (el === 'C' && FX('chillSplash') && !o.splashed) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.elite.includes('jugg') && dist2(o2.x, o2.y, e.x, e.y) <= 1) { o2.st.chill = Math.min(5, o2.st.chill + 1); o2.st.chillT = 2.5; o2.st.chillPot = Math.max(o2.st.chillPot, s.chillPot); }
     if (s.shatterField) { e.shatterT = 2; e.shatterV = s.shatterField; }
-    if (st.chill >= 5 && st.freezeImm <= 0) {
+    if (st.chill >= (FX('freezeAt') ? 4 : 5) && st.freezeImm <= 0) {
       st.frozen = (1 + s.freezeBonus) * (e.boss ? 0.4 : 1); st.freezeImm = st.frozen + 2.5; st.chill = 0;
       Hooks.fx('freeze', { x: e.x, y: e.y }); Hooks.sfx('freeze');
     }
   }
   if (shockP > 0 && r() < shockP) {
-    st.shock = 3; st.shockEff = Math.max(st.shockEff, s.shockX * M.shockEff);
+    st.shock = FX('shockLong') ? 6 : 3; st.shockEff = Math.max(st.shockEff, s.shockX * M.shockEff);
     if (s.stun && r() < s.stun && !jugg) st.stun = Math.max(st.stun, e.boss ? 0.2 : 0.6);
   }
   if (markP > 0 && r() < markP) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
   if (M.chillVoid && st.chill > 0 && r() < M.chillVoid / 100) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
-  if (M.knock && r() < M.knock && !jugg) e.d = Math.max(0, e.d - (e.boss ? 0.15 : 0.5));
+  if (M.knock && r() < M.knock && !jugg) { e.d = Math.max(0, e.d - (e.boss ? 0.15 : 0.5)); if (FX('knockMark')) { st.mark = Math.min(M.markMax, st.mark + 2); st.markT = 4; } }
   if (s.stunDur && s.kind === 'mortar' && !jugg) st.stun = Math.max(st.stun, s.stunDur * (e.boss ? 0.3 : 1));
 }
 function addScore(v) {
@@ -2231,7 +2300,7 @@ function addScore(v) {
   if (G.score >= G.nextMs) milestone();
 }
 function milestone() {
-  const k = pick(G.r, ABIL_ORDER);
+  const k = pick(G.r, FX('loadout') ? loadoutList() : ABIL_ORDER);
   G.charges[k]++;
   const B = pick(G.r, MILESTONE_BUFFS);
   G.runMods[B.k] = (G.runMods[B.k] || 0) + B.v;
@@ -2267,6 +2336,11 @@ function kill(e, src, o) {
   if (src && src.s && src.s.leg.detonator && depth < 2) {
     Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff8a2a' });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * 0.4, src.s.el, src, { noStatus: 1, depth: depth + 1 });
+  }
+  if (depth < 2) {
+    if (e.st.burn && FX('burnBoom')) { Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * FX('burnBoom') / 100 * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth + 1 }); }
+    if (e.st.shock > 0 && FX('shockBurst')) { Hooks.fx('arcs', { x: e.x, y: e.y, r: 1 }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * FX('shockBurst') / 100 * (o2.boss ? 0.3 : 1), 'A', null, { noStatus: 1, depth: depth + 1 }); }
+    if (e.st.frozen > 0 && FX('iceShards')) { Hooks.fx('freeze', { x: e.x, y: e.y }); for (const o2 of G.enemies) if (!o2.dead && !o2.elite.includes('jugg') && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) { o2.st.chill = Math.min(5, o2.st.chill + 2); o2.st.chillT = 2.5; } }
   }
   if (M.chainIgnite && e.st.burn) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) {
@@ -2330,6 +2404,7 @@ function findTargets(t, range, n, exclude) {
   return out;
 }
 function rollCrit(t) {
+  if (t.s.el === 'K' && FX('fifthCrit')) { t.shotN = (t.shotN || 0) + 1; if (t.shotN % 5 === 0) return true; }
   const c = t.s.critC + t.buff.crit;
   return G.r() * 100 < c;
 }
@@ -2340,7 +2415,7 @@ function towerDmg(t, sw) {
   if (G.af.lastStand && G.core.hp < G.core.max * 0.5) d *= 1.6;
   return d;
 }
-function atkDmg(t, sw, crit) { return towerDmg(t, sw) * (crit ? t.s.critM : 1 - (G.af.noncrit || 0)); }
+function atkDmg(t, sw, crit) { return towerDmg(t, sw) * (crit ? t.s.critM : 1 - (G.af.noncrit || 0)) * (t.capMult || 1); }
 function ricochet(t, from, dmg, el) {
   if (!t.s.leg.ricochet) return;
   const hitSet = new Set([from]);
@@ -2362,6 +2437,16 @@ function updateTowers(dt) {
   if (ev.emp) { G.evT.emp -= dt; if (G.evT.emp <= 0) { G.evT.emp = 5; const att = G.towers.filter(t => t.s.kind !== 'eco'); for (let i = 0; i < 2 && att.length; i++) { const t = att.splice(Math.floor(G.r() * att.length), 1)[0]; t.disabled = 3; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.8 }); } Hooks.sfx('emp'); } }
   if (G.overclockT > 0) G.overclockT -= dt;
   if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} deals ×2`, EL[G.flux.el].col); } }
+  let burning = 0;
+  if (FX('heatSink')) for (const e of G.enemies) if (!e.dead && e.st.burn) burning++;
+  if (FX('thunder') && G.enemies.length) {
+    G.thunderT = (G.thunderT === undefined ? 6 : G.thunderT) - dt;
+    if (G.thunderT <= 0) {
+      G.thunderT = 6;
+      let best = null; for (const e of G.enemies) if (enemyTargetable(e) && (!best || e.hp > best.hp)) best = e;
+      if (best) { Hooks.fx('rail', { x1: best.x, y1: -1, x2: best.x, y2: best.y, col: '#ffe14d', crit: 1 }); Hooks.sfx('zap'); hit(best, 14 * hpMult(Math.max(1, G.wave)) * M.dmg * M.el.A, 'A', null, { abil: 1 }); if (!best.dead) { best.st.shock = FX('shockLong') ? 6 : 3; best.st.shockEff = Math.max(best.st.shockEff, M.shockEff); } }
+    }
+  }
   for (const t of G.towers) {
     if (dpsTick) { t.dps = t.dps * 0.6 + t.dpsAcc * 0.4; t.dpsAcc = 0; }
     t.flash = Math.max(0, t.flash - dt);
@@ -2372,11 +2457,16 @@ function updateTowers(dt) {
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
     if (s.leg.overloop) { t.olT = (t.olT + dt) % 8; if (t.olT < 3) rate *= 2.5; }
+    if (burning && s.el === 'T') rate *= 1 + Math.min(0.4, 0.02 * burning);
+    if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
     t.effRange = range;
     t.cd -= dt * rate;
     if (s.kind === 'beam') { beamUpdate(t, dt, range, sw); continue; }
     if (t.cd > 0) continue;
+    t.capMult = s.el === 'A' && FX('capacitor') && t.capT >= 4 ? 3 : 1;
     const fired = towerAttack(t, range, sw);
+    if (fired && t.capMult > 1) { t.capT = 0; Hooks.fx('arcs', { x: t.cx, y: t.cy, r: 0.8 }); }
+    t.capMult = 1;
     if (fired) {
       t.cd += 1;
       if (t.cd < -1) t.cd = 0;
@@ -2467,7 +2557,7 @@ function towerAttack(t, range, sw) {
           let best = null, bd = 1.7 * 1.7;
           for (const e of G.enemies) if (enemyTargetable(e) && !hitSet.has(e)) { const d = dist2(e.x, e.y, cur.x, cur.y); if (d < bd) { bd = d; best = e; } }
           if (!best) break;
-          dmg *= 0.85; hitSet.add(best); pts.push({ x: best.x, y: best.y });
+          if (!FX('chainKeep')) dmg *= 0.85; hitSet.add(best); pts.push({ x: best.x, y: best.y });
           hit(best, dmg, s.el, t); cur = best;
         }
         ricochet(t, e0, dmg, s.el);
@@ -2534,7 +2624,7 @@ function beamUpdate(t, dt, range, sw) {
     for (const e of extra) if (tg.length < s.beams) tg.push(e);
   }
   if (!tg.length) { t.beamTargets = null; t.ramp = 0; t.cd = Math.max(t.cd, 0); return; }
-  if (!t.beamTargets || t.beamTargets[0] !== tg[0]) t.ramp = 0;
+  if (!t.beamTargets || t.beamTargets[0] !== tg[0]) { if (!(t.s.el === 'V' && FX('rampKeep'))) t.ramp = 0; }
   t.beamTargets = tg;
   t.ramp = Math.min(4, t.ramp + dt);
   t.angle = Math.atan2(tg[0].y - t.cy, tg[0].x - t.cx);
@@ -2568,7 +2658,7 @@ function updateProjs(dt) {
         if (G.af.fractal && !p.shard) shards(p, e);
         Hooks.fx('spark', { x: p.x, y: p.y, col: EL[p.el].col });
         if (p.bounces > 0) {
-          p.bounces--; p.dmg *= 0.7;
+          p.bounces--; if (!(p.el === 'K' && FX('pierceKeep'))) p.dmg *= 0.7;
           let best = null, bd = 2.6;
           for (const o of G.enemies) if (enemyTargetable(o) && !p.hitSet.has(o)) { const dd = dist2(o.x, o.y, p.x, p.y); if (dd < bd) { bd = dd; best = o; } }
           if (best) { p.e = best; continue; }
@@ -4617,6 +4707,8 @@ const UI = (() => {
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
       ['Passive Web', 'Spend points on permanent bonuses. Open it anytime.'],
+      ['Notables', 'Larger nodes with a signature effect that changes how a build plays.'],
+      ['Masteries', 'Choose 1 of 3 effects. Swap freely between runs and at checkpoints.'],
       ['Keystones', 'Powerful nodes with a drawback, on the outer rim.'],
       ['Respec', 'Free between runs and at checkpoints. Otherwise costs Recalibration tokens.'],
       ['Builds', 'Save up to 5 web layouts and swap between them.'],
@@ -4659,6 +4751,8 @@ const UI = (() => {
         ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
       { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
       { id: 'anom', name: 'Anomalies', rows: ANOMALIES.map(A => [A.name, `${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff']) },
+      { id: 'notable', name: 'Notables', rows: TREE.list.filter(n => n.kind === 'notable').map(n => [n.name, nodeLines(n).join('. ') + '.', n.sector >= 0 ? SECTORS[n.sector].col : '']) },
+      { id: 'mastery', name: 'Masteries', rows: TREE.list.filter(n => n.opts).flatMap(n => n.opts.map(o => [o.name, `${Object.keys(o.fx).map(k => STAT_TXT[k] ? STAT_TXT[k](o.fx[k]) : '').filter(Boolean).join('. ')}. <em>${esc(n.name)}</em>`, SECTORS[n.sector].col])) },
       { id: 'ks', name: 'Keystones', rows: TREE.list.filter(n => n.kind === 'keystone').map(n => [n.name, n.lines.join('. ') + '.']) },
       { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
       { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · Unlocks at Wave ${D.unlock}</em>`, EL[D.el].col]; }) },
@@ -4931,6 +5025,16 @@ const Tree = (() => {
       case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
       case 'wipe': if (inRun()) return; if (!confirmWipe) { confirmWipe = true; refresh(); return; } PROF.alloc = ['start']; confirmWipe = false; sel = null; path = null; Save.save(); refresh(); break;
       case 'center': cam = { x: 0, y: 0, z: clamp(Math.min(W, H) / 900, 0.3, 1) }; break;
+      case 'mopt': {
+        const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
+        if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); break; } G.tokens--; }
+        PROF.mastery[sel] = v; if (inRun()) recomputeAll(); SFX.play('upgrade', {}); Save.save(); refresh(); break;
+      }
+      case 'lout': {
+        const k = b.dataset.v; let L = loadoutList().slice();
+        if (L.includes(k)) { if (L.length > 1) L = L.filter(x => x !== k); else { SFX.play('deny'); break; } } else L.push(k);
+        PROF.loadout = ABIL_ORDER.filter(x => L.includes(x)); if (inRun()) recomputeAll(); Save.save(); refresh(); break;
+      }
     }
   }
   function refresh() {
@@ -4961,7 +5065,16 @@ const Tree = (() => {
         const cost = paid ? ` · ${o.length} token${o.length > 1 ? 's' : ''}` : '';
         act = `<button class="btn danger" data-tact="refund" ${paid && G.tokens < o.length ? 'disabled' : ''}>Refund${o.length > 1 ? ` ${o.length} nodes` : ''}${cost}</button>${paid ? `<span class="note">Costs Recalibration tokens. Free at checkpoints.</span>` : `<span class="note">${inRun() ? 'Free at this checkpoint' : 'Free between runs'}</span>`}`;
       }
-      info.innerHTML = `<div class="ti"><div><i style="color:${col}">${kindName}</i><b>${esc(n.name)}</b></div><ul>${nodeLines(n).map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ta">${act}</div></div>`;
+      let extra = '';
+      if (n.opts) {
+        const cur = masteryPick(n.id), paid = inRun() && !G.checkpoint;
+        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Choose one' + (paid ? ' · changing costs 1 token' : '') : 'Allocate to choose one'}</div>${n.opts.map((o, i) => `<button class="mopt ${i === cur ? 'on' : ''}" data-tact="mopt" data-v="${i}" ${allocd && i !== cur && !(paid && G.tokens < 1) ? '' : i === cur ? '' : 'disabled'}><b>${esc(o.name)}</b><span>${Object.keys(o.fx).map(k => STAT_TXT[k] ? esc(STAT_TXT[k](o.fx[k])) : '').filter(Boolean).join('. ')}</span></button>`).join('')}</div>`;
+      }
+      if (n.fx.loadout && allocd) {
+        const L = loadoutList();
+        extra = `<div class="mopts"><div class="lbl">Milestone loadout · ${L.length} of ${ABIL_ORDER.length} · +${(ABIL_ORDER.length - L.length) * 25}% ability power</div><div class="louts">${ABIL_ORDER.map(k => `<button class="lout ${L.includes(k) ? 'on' : ''}" data-tact="lout" data-v="${k}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span></button>`).join('')}</div></div>`;
+      }
+      info.innerHTML = `<div class="ti"><div><i style="color:${col}">${kindName}</i><b>${esc(n.name)}</b></div><ul>${nodeLines(n).map(l => `<li>${esc(l)}</li>`).join('')}</ul>${extra}<div class="ta">${act}</div></div>`;
     }
     // drawer
     const dr = $('#tdrawer');
@@ -5058,7 +5171,8 @@ const Tree = (() => {
       c.fillText(txt, L.x, L.y);
     }
   }
-  return { init, open, close, resize, draw, refresh, get isOpen() { return open_; } };
+  function select(id) { const n = TREE.nodes[id]; if (!n) return; sel = id; path = treePathTo(id); cam.x = n.x; cam.y = n.y - 60; refresh(); }
+  return { init, open, close, resize, draw, refresh, select, get isOpen() { return open_; } };
 })();
 
 // ---------------- Main loop ----------------
