@@ -382,6 +382,21 @@ h2.void { color: #d6a6ff; }
 .lout span { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
 .lout.on { color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }
 #tinfo { max-height: calc(100% - 64px); overflow-y: auto; }
+#tinfo.hint { display: none; }
+#tregions { position: absolute; z-index: 2; left: max(12px, var(--sal)); right: max(12px, var(--sar)); bottom: max(8px, var(--sab)); display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
+#tregions::-webkit-scrollbar { display: none; }
+body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px); }
+.rgn { flex: 0 0 auto; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; min-height: 36px; padding: 0 11px; border: 0; background: rgba(21, 25, 51, 0.92); color: var(--c); box-shadow: inset 0 0 0 1px var(--c), inset 0 -3px 0 rgba(0, 0, 0, 0.35); clip-path: var(--cut); }
+.rgn:active { filter: brightness(1.4); }
+#tprof { position: absolute; z-index: 2; left: max(12px, var(--sal)); top: 56px; width: 196px; background: rgba(10, 12, 24, 0.9); box-shadow: inset 0 0 0 1px var(--line2); padding: 6px 8px 8px; }
+#tpcv { display: block; width: 180px; height: 150px; }
+#tpbar { font-size: 15px; }
+#tpbar .ob { position: relative; height: 8px; margin: 4px 0 2px; background: linear-gradient(90deg, #ff6a5a, #3a3f6a 50%, #59f0b4); }
+#tpbar .ob i { position: absolute; top: -3px; width: 3px; height: 14px; background: #fff; box-shadow: 0 0 0 1px #000; }
+#tpbar .obl { display: flex; justify-content: space-between; font-family: var(--f-pix); font-size: 8px; color: var(--dim); text-transform: uppercase; }
+#tpbar b { font-weight: 400; color: var(--ink); }
+#tbar .hbtn { padding: 0 9px; }
+#tView.on, #tProf.on { color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
 #tinfo:not(.hint) { left: auto; transform: none; right: max(12px, var(--sar)); top: 56px; bottom: max(8px, var(--sab)); width: min(330px, 44%); max-height: none; }
 #tinfo:not(.hint) .ti { grid-template-columns: minmax(0, 1fr); align-content: start; }
 #tinfo:not(.hint) .ti ul { padding-left: 14px; }
@@ -474,12 +489,15 @@ h2.void { color: #d6a6ff; }
       <span class="tpts"><b id="tPts">0</b> points</span>
       <span class="tpts" id="tTok"><b>0</b> tokens</span>
       <div class="spacer"></div>
-      <button class="hbtn" data-tact="center">Center</button>
+      <button class="hbtn" data-tact="view" id="tView">3D</button>
+      <button class="hbtn" data-tact="profile" id="tProf">Profile</button>
       <button class="hbtn" data-tact="totals">Totals</button>
       <button class="hbtn" data-tact="builds">Builds</button>
       <button class="hbtn" data-tact="close" style="box-shadow: inset 0 0 0 1px var(--amber)">Done</button>
     </div>
     <div id="tinfo"></div>
+    <div id="tprof" hidden><canvas id="tpcv"></canvas><div id="tpbar"></div></div>
+    <div id="tregions"></div>
     <div id="tdrawer" hidden></div>
   </section>
 
@@ -490,7 +508,7 @@ h2.void { color: #d6a6ff; }
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 const ROWS = 15, TILE = 24;
@@ -650,6 +668,17 @@ const BOSSES = [
   { id: 'wraith', name: 'Phase Wraith', hp: 30, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks' },
   { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'Disables nearby towers' },
   { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
+  // oddballs: random stand-ins on boss waves
+  { id: 'cat', odd: 1, tip: 'Swats towers, naps', name: 'Mr. Whiskers', hp: 38, spd: 0.55, size: 2, desc: 'Swats nearby towers offline. Naps mid-lane, and takes far less damage while asleep',
+    titles: ['Devourer of Moons', 'Knocker of Things Off Tables', 'Destroyer of Couches', 'Who Is A Good Boy (No)'] },
+  { id: 'gloop', odd: 1, tip: 'Splits when popped', name: 'Gloop', hp: 30, spd: 0.5, size: 2, desc: 'Splits into two smaller Gloops on death. Twice',
+    titles: ['The Unbothered', 'Lord of the Leftovers', 'It Came From The Fridge', 'Mostly Water'] },
+  { id: 'whale', odd: 1, tip: 'Flies, heals allies', name: 'Space Whale', hp: 58, spd: 0.32, fly: 1, size: 2, desc: 'Flies. Its song heals every enemy nearby',
+    titles: ['Singer of the Deep Void', 'Big Blue', 'Krill Enthusiast', 'Just Passing Through'] },
+  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'Quackzilla', hp: 24, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
+    titles: ['Bath Time Is Over', 'The Rubber Reckoning', 'Squeaks When Hit', 'Unsinkable'] },
+  { id: 'fsm', odd: 1, tip: 'Flies, seizes towers', name: 'Flying Spaghetti Monster', hp: 40, spd: 0.5, fly: 1, size: 2, desc: 'Flies. Noodly appendages seize towers. Drops meatballs',
+    titles: ['His Noodly Appendage', 'Al Dente', 'Touched By Marinara', 'Pastafarian Prophecy'] },
 ];
 const ELITE_AFFIXES = [
   { id: 'shielded', name: 'Shielded', col: '#7fd4ff' , desc: 'Starts with a shield worth 40% of max HP' },
@@ -1895,7 +1924,8 @@ function genWave(w, ev) {
     }
     n += grp > 1 ? 2 : 1;
     if (isBoss && n >= Math.floor(count / 2) && !q.some(e => e.boss)) {
-      const B = BOSSES[(Math.floor(w / 10) - 1) % BOSSES.length];
+      const core = BOSSES.filter(b => !b.odd), odd = BOSSES.filter(b => b.odd);
+      const B = w >= 20 && r() < 0.4 ? odd[Math.floor(r() * odd.length)] : core[(Math.floor(w / 10) - 1) % core.length];
       t += 1.5;
       let bl = laneFor(); if (bl === rift || B.fly) bl = lanes[0];
       q.push({ t, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0 });
@@ -2135,24 +2165,30 @@ function spawnEnemy(type, q) {
 }
 function spawnBoss(q) {
   const B = BOSSES.find(b => b.id === q.boss), w = G.wave;
-  const lane = q.lane;
-  const L = B.fly ? lane.fly : lane;
-  const hp = 30 * B.hp * q.hpm * (1 + Math.floor((w - 1) / 50) * 0.5);
-  const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: B.name, L, d: 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
+  const lane = q.lane, gen = q.gen || 0;
+  const L = q.L || (B.fly ? lane.fly : lane);
+  const hp = q.hpAbs || 30 * B.hp * q.hpm * (1 + Math.floor((w - 1) / 50) * 0.5);
+  const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
     armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 0.8, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2 };
+  if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.6 : 0.45; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
+  if (B.id === 'cat') e.timer2 = 9;
   if (q.elite) {
     const pool = ELITE_AFFIXES.filter(a => a.id !== 'split');
     for (let i = 0; i < q.elite; i++) e.elite.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
     if (e.elite.includes('shielded')) e.shield = e.maxHp * 0.3;
     if (e.elite.includes('hasted')) e.spd *= 1.3;
   }
-  lanePos(e.L, 0, e);
+  lanePos(e.L, e.d, e);
   G.enemies.push(e);
-  G.bossAlive = e;
-  Hooks.toast('BOSS', `${B.name} · ${B.desc}`, '#ff4d6a');
+  if (!G.bossAlive || G.bossAlive.dead) G.bossAlive = e;
+  if (gen) return e;
+  const ttl = B.titles ? B.titles[Math.floor(G.r() * B.titles.length)] : null;
+  if (ttl) { e.bossTitle = ttl; Hooks.fx('say', { x: e.x, y: e.y, t: B.id === 'cat' ? 'mrrp.' : B.id === 'duck' ? 'QUACK' : B.id === 'whale' ? 'HELLOOOO' : B.id === 'fsm' ? 'ramen.' : 'blorp' }); }
+  Hooks.toast(B.odd ? 'BOSS?!' : 'BOSS', `${B.name} · ${B.tip || B.desc}`, '#ff4d6a');
+  if (ttl) Hooks.log(`${B.name}, ${ttl}: ${B.desc}`, '#ff4d6a');
   Hooks.log(`${B.name} incoming`, '#ff4d6a');
   Hooks.sfx('boss');
   return e;
@@ -2228,7 +2264,7 @@ function updateEnemies(dt) {
     // movement
     const sw = stormAt(e.x, e.y);
     e.stormVuln = sw.vuln;
-    if (st.stun > 0 || st.frozen > 0 || G.stasisT > 0) { /* held */ }
+    if (st.stun > 0 || st.frozen > 0 || G.stasisT > 0 || e.napT > 0) { /* held */ }
     else {
       let spd = e.spd * (1 - Math.max(enemySlow(e), Math.min(0.75, sw.slow)));
       if (ev.surge) spd *= 1.35;
@@ -2261,6 +2297,34 @@ function bossBehavior(e, dt) {
       if (e.plates === 2 && e.hp < e.maxHp * 0.66) { e.plates = 1; e.armorAll = 0.25; Hooks.fx('plates', { x: e.x, y: e.y }); Hooks.log('Titan armor cracked', '#ff7b39'); Hooks.sfx('crack'); }
       if (e.plates === 1 && e.hp < e.maxHp * 0.33) { e.plates = 0; e.armorAll = 0; Hooks.fx('plates', { x: e.x, y: e.y }); Hooks.log('Titan armor broken', '#ff7b39'); Hooks.sfx('crack'); }
       break;
+    case 'cat': {
+      e.timer = 1;
+      if (e.napT > 0) { e.napT -= 1; if (e.napT <= 0) { e.armorAll = 0; Hooks.fx('say', { x: e.x, y: e.y, t: '*stretch*' }); } else Hooks.fx('say', { x: e.x, y: e.y, t: 'z' + 'z'.repeat(3 - Math.ceil(e.napT)) + 'Z' }); break; }
+      e.timer2 -= 1;
+      if (e.timer2 <= 0) { e.timer2 = 12; e.napT = 3; e.armorAll = 0.6; Hooks.fx('say', { x: e.x, y: e.y, t: 'zzz' }); Hooks.log('Mr. Whiskers is napping. Do not disturb.', '#ff9a3c'); break; }
+      if (e.timer2 % 5 === 0) {
+        let best = null, bd = 2.5 * 2.5;
+        for (const t of G.towers) { const d = dist2(t.cx, t.cy, e.x, e.y); if (d <= bd) { bd = d; best = t; } }
+        if (best) { best.disabled = Math.max(best.disabled, 3); Hooks.fx('emp', { x: best.cx, y: best.cy, r: 0.7 }); Hooks.fx('say', { x: e.x, y: e.y, t: '*swat*' }); Hooks.log('Mr. Whiskers knocked a tower off the table', '#ff9a3c'); Hooks.sfx('meow'); }
+      }
+      break;
+    }
+    case 'gloop': e.timer = 4 + G.r() * 3; if (!e.gen || G.r() < 0.3) Hooks.fx('say', { x: e.x, y: e.y, t: ['blorp', 'glorp', 'bloop', '*squelch*'][Math.floor(G.r() * 4)] }); Hooks.sfx('blorp'); break;
+    case 'whale': e.timer = 6;
+      for (const o of G.enemies) if (!o.dead && dist2(o.x, o.y, e.x, e.y) < 9) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * (o.boss ? 0.02 : 0.1));
+      Hooks.fx('song', { x: e.x, y: e.y, r: 3 }); Hooks.sfx('whale'); Hooks.fx('say', { x: e.x, y: e.y, t: ['OOOooOOO', 'MMMmmMMM', 'WOOOooo'][Math.floor(G.r() * 3)] }); break;
+    case 'duck': e.timer = 4;
+      e.d += 0.8;
+      for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 4) t.disabled = Math.max(t.disabled, 1.2);
+      Hooks.fx('emp', { x: e.x, y: e.y, r: 2 }); Hooks.fx('say', { x: e.x, y: e.y, t: 'QUACK' }); Hooks.sfx('quack'); break;
+    case 'fsm': {
+      e.timer = 6; e.timer2 = (e.timer2 || 0) + 1;
+      const near = G.towers.filter(t => dist2(t.cx, t.cy, e.x, e.y) <= 9).sort((a, b) => dist2(a.cx, a.cy, e.x, e.y) - dist2(b.cx, b.cy, e.x, e.y)).slice(0, 3);
+      for (const t of near) { t.disabled = Math.max(t.disabled, 2.5); Hooks.fx('noodle', { x1: e.x, y1: e.y, x2: t.cx, y2: t.cy }); }
+      if (near.length) { Hooks.fx('say', { x: e.x, y: e.y, t: "R'AMEN" }); Hooks.log('Touched by His Noodly Appendage', '#f2d27a'); }
+      if (e.timer2 % 2 === 0) { for (let i = 0; i < 3; i++) { const m = spawnEnemy('flyer', { fromPt: { x: e.x + (i - 1) * 0.4, y: e.y } }); m.meat = 1; } Hooks.fx('say', { x: e.x, y: e.y + 0.6, t: 'meatballs!' }); }
+      break;
+    }
   }
   // swarmers spawned from behemoth should follow its lane: fix lane positions
 }
@@ -2448,8 +2512,8 @@ function kill(e, src, o) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * G.af.boom * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth0(o) + 1 });
     Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' });
   }
-  Hooks.fx('death', { x: e.x, y: e.y, type: e.type, boss: !!e.boss, elite: e.elite.length > 0, cr });
-  Hooks.sfx(e.boss ? 'bossdie' : 'die', e);
+  Hooks.fx('death', { x: e.x, y: e.y, type: e.type, boss: e.boss || false, gen: e.gen || 0, elite: e.elite.length > 0, cr });
+  Hooks.sfx(e.boss && !e.gen ? (e.boss === 'gloop' ? 'blorp' : 'bossdie') : e.gen ? 'blorp' : 'die', e);
   const depth = (o && o.depth) || 0;
   if (src && src.s && src.s.leg.detonator && depth < 2) {
     Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff8a2a' });
@@ -2468,6 +2532,10 @@ function kill(e, src, o) {
     }
   }
   if (src && src.s && src.s.leg.siphon) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * 0.005);
+  if (e.boss === 'gloop' && (e.gen || 0) < 2) {
+    for (let i = 0; i < 2; i++) spawnBoss({ boss: 'gloop', L: e.L, d: Math.max(0, e.d - i * 0.5), gen: (e.gen || 0) + 1, hpAbs: e.maxHp * 0.35, hpm: 1 });
+    Hooks.fx('say', { x: e.x, y: e.y, t: e.gen ? 'bloop!' : 'ow. but also: two of me' });
+  }
   if (e.type === 'splitter') for (let i = 0; i < 3; i++) spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - i * 0.25) });
   if (e.elite.includes('split') && !e.boss) for (let i = 0; i < 2; i++) {
     const c = spawnEnemy(e.type, { L: e.L, d: Math.max(0, e.d - i * 0.3) }); c.maxHp = c.hp = e.maxHp * 0.3;
@@ -3249,6 +3317,10 @@ const SFX = (() => {
       case 'overclock': { const r = shared(); const ds = distort(60); ds.connect(r.input); fm(110, 7, 4, 0.18, 0.6, ds, { carrierFreqEnd: 440, modIndexEnd: 0.5, modType: 'sawtooth' }); break; }
       case 'emp': if (!gate(name, 0.2)) return; noise(0.3, 0.12, null, { filterType: 'bandpass', freq: 3000, Q: 3, freqEnd: 400 }); fm(110, 7, 4, 0.08, 0.3, null, { carrierFreqEnd: 55 }); break;
       case 'blink': if (!gate(name, 0.15)) return; fm(880, 3, 2.5, 0.08, 0.22, shared().input, { carrierFreqEnd: 220, modIndexEnd: 0.05 }); break;
+      case 'quack': { if (!gate(name, 0.3)) return; const r = shared(); fm(520, 1.01, 3, 0.12, 0.13, r.input, { carrierFreqEnd: 340, modType: 'sawtooth' }); fm(500, 1.01, 3, 0.1, 0.16, r.input, { carrierFreqEnd: 300, modType: 'sawtooth', delay: 0.16 }); break; }
+      case 'meow': { if (!gate(name, 0.4)) return; const r = shared(); fm(600, 2, 1.2, 0.1, 0.18, r.input, { carrierFreqEnd: 950 }); fm(950, 2, 1.2, 0.09, 0.3, r.input, { carrierFreqEnd: 480, delay: 0.16 }); break; }
+      case 'whale': { if (!gate(name, 1)) return; const r = makeReverb(0.7, 0, 4); osc('sine', 180, 1.4, 0.12, r.input, { freqEnd: 260, attack: 0.3 }); osc('sine', 260, 1.2, 0.09, r.input, { freqEnd: 140, delay: 1.1, attack: 0.2 }); break; }
+      case 'blorp': { if (!gate(name, 0.2)) return; osc('sine', 420, 0.18, 0.14, shared().input, { freqEnd: 70 }); break; }
       case 'crack': { const c = makeComp(-12, 6, 5); kick(42, 0.3, 0.5, c); noise(0.5, 0.5, c, { filterType: 'lowpass', freq: 700 }); break; }
       case 'unbreak': { const r = makeReverb(0.5, 0, 3); [262, 330, 392, 523].forEach((f, i) => fm(f, 2, 0.5, 0.18, 0.8, r.input, { delay: i * 0.05 })); break; }
       case 'gameover': { const r = makeReverb(0.7, 0, 5); fm(400, 5, 6, 0.35, 1.6, r.input, { carrierFreqEnd: 20, modIndexEnd: 0.8, modType: 'sawtooth' }); osc('sine', 55, 1.8, 0.5, r.input, { freqEnd: 18 }); break; }
@@ -3559,7 +3631,66 @@ const Render = (() => {
       R(g, 16, 16, 16, 16, '#2a0a12'); R(g, 18, 18, 12, 12, '#ffe14d'); R(g, 20, 20, 8, 8, '#fff2a0');
       for (const [x, y] of [[9, 9], [36, 9], [9, 36], [36, 36]]) R(g, x, y, 3, 3, '#3a0a18');
     },
+    cat(g) {
+      const c = '#ff9a3c', dk = '#3a1606', st = '#c2611c', lt = '#ffd29a';
+      for (let y = 30; y < 44; y++) R(g, 39 + Math.round(Math.sin(y / 3) * 2), y, 4, 1, y % 4 < 2 ? c : st);
+      D(g, 24, 33, 14, dk); D(g, 24, 33, 13, c); D(g, 24, 37, 7, lt);
+      for (const x of [14, 34]) for (let k = 0; k < 3; k++) R(g, x - 1 + k, 26 + k * 4, 3, 1, st);
+      D(g, 24, 19, 12, dk); D(g, 24, 19, 11, c);
+      for (let r = 0; r < 9; r++) { const w = 1 + r; R(g, 13, 4 + r, w, 1, dk); R(g, 14, 5 + r, Math.max(0, w - 2), 1, c); R(g, 36 - w, 4 + r, w, 1, dk); R(g, 36 - w + 2, 5 + r, Math.max(0, w - 2), 1, c); }
+      R(g, 15, 8, 2, 4, '#ff8fb0'); R(g, 32, 8, 2, 4, '#ff8fb0');
+      R(g, 20, 9, 1, 4, st); R(g, 24, 8, 1, 5, st); R(g, 28, 9, 1, 4, st);
+      R(g, 16, 15, 6, 6, '#1a2a10'); R(g, 17, 16, 4, 4, '#8dff4a'); R(g, 19, 16, 1, 4, '#0a0a0a'); P(g, 17, 16, '#ffffff');
+      R(g, 27, 15, 6, 6, '#1a2a10'); R(g, 28, 16, 4, 4, '#8dff4a'); R(g, 30, 16, 1, 4, '#0a0a0a'); P(g, 28, 16, '#ffffff');
+      R(g, 23, 22, 3, 2, '#ff6f9a'); P(g, 22, 25, dk); P(g, 23, 26, dk); P(g, 24, 25, dk); P(g, 25, 26, dk); P(g, 26, 25, dk);
+      for (const [y, dy] of [[22, -1], [24, 0], [26, 1]]) for (let k = 0; k < 7; k++) { P(g, 15 - k, y + Math.round(dy * k / 3), '#fff4e0'); P(g, 33 + k, y + Math.round(dy * k / 3), '#fff4e0'); }
+      D(g, 17, 44, 4, dk); D(g, 17, 44, 3, lt); D(g, 31, 44, 4, dk); D(g, 31, 44, 3, lt);
+    },
+    gloop(g) {
+      const c = '#5cff7a', dk = '#0c3a18', sd = '#2fb84e';
+      for (let y = 8; y < 44; y++) { const t = (y - 8) / 36, hw = Math.round(Math.sqrt(Math.max(0, 1 - (1 - t) * (1 - t))) * 20); R(g, 24 - hw - 1, y, hw * 2 + 2, 1, dk); R(g, 24 - hw, y, hw * 2, 1, y > 36 ? sd : c); }
+      R(g, 4, 43, 40, 2, dk);
+      for (const [x, l] of [[9, 3], [17, 5], [30, 2], [38, 4]]) { R(g, x, 44, 3, l, dk); R(g, x + 1, 44, 1, l - 1, sd); }
+      R(g, 13, 13, 5, 2, '#c8ffd2'); R(g, 11, 15, 2, 4, '#c8ffd2');
+      for (const [x, y, r] of [[34, 34, 2], [14, 33, 1], [28, 38, 1]]) D(g, x, y, r, '#a6ffb6');
+      D(g, 17, 22, 6, dk); D(g, 17, 22, 5, '#ffffff'); D(g, 19, 24, 2, '#0a0a0a');
+      D(g, 31, 19, 7, dk); D(g, 31, 19, 6, '#ffffff'); D(g, 29, 22, 3, '#0a0a0a');
+      for (let x = 18; x < 32; x++) P(g, x, 31 + Math.round(Math.sin(x * 1.3)), dk);
+    },
+    whale(g) {
+      const c = '#4f8dff', dk = '#0a1a40', lt = '#cfe2ff', sd = '#2c5bc4';
+      for (let x = 4; x < 46; x++) { const t = (x - 4) / 42, hh = Math.round(Math.sin(Math.min(1, t * 1.15) * Math.PI) * 11 + (t > 0.5 ? 3 : 0)); const cy = 25; R(g, x, cy - hh - 1, 1, hh * 2 + 2, dk); R(g, x, cy - hh, 1, hh * 2, c); R(g, x, cy + Math.round(hh * 0.3), 1, Math.round(hh * 0.7), lt); }
+      for (let x = 14; x < 44; x += 3) R(g, x, 31, 1, 4, sd);
+      for (let r = 0; r < 8; r++) { R(g, 1, 13 + r, 5 - Math.round(r / 2), 1, dk); R(g, 1, 36 - r, 5 - Math.round(r / 2), 1, dk); R(g, 2, 14 + r, 3 - Math.round(r / 3), 1, c); R(g, 2, 35 - r, 3 - Math.round(r / 3), 1, c); }
+      R(g, 22, 33, 8, 3, dk); R(g, 23, 33, 6, 2, sd);
+      D(g, 37, 22, 2, '#0a0a0a'); P(g, 37, 21, '#ffffff');
+      R(g, 32, 8, 2, 6, '#9fe7ff'); R(g, 29, 6, 2, 3, '#9fe7ff'); R(g, 35, 6, 2, 3, '#9fe7ff');
+      for (let x = 18; x < 40; x += 6) P(g, x, 17, lt);
+    },
+    duck(g) {
+      const c = '#ffd83a', dk = '#3a2a00', sd = '#e0a812';
+      D(g, 21, 33, 14, dk); D(g, 21, 33, 13, c); R(g, 6, 33, 30, 13, dk); R(g, 7, 33, 28, 12, c); R(g, 7, 43, 28, 2, sd);
+      R(g, 3, 27, 6, 6, dk); R(g, 4, 28, 4, 4, c);
+      for (let k = 0; k < 4; k++) R(g, 13 + k, 30 + k * 2, 14 - k * 2, 2, sd);
+      D(g, 31, 16, 10, dk); D(g, 31, 16, 9, c); D(g, 28, 12, 3, '#fff2a8');
+      R(g, 38, 15, 9, 5, '#5a2200'); R(g, 39, 16, 8, 3, '#ff8a1f'); R(g, 39, 19, 6, 2, '#d45a00');
+      D(g, 33, 13, 2, '#0a0a0a'); P(g, 33, 12, '#ffffff');
+      R(g, 28, 4, 2, 3, sd);
+    },
+    fsm(g) {
+      const n = '#f2d27a', ns = '#c69a3a', dk = '#3a2a08';
+      const strand = (x0, y0, len, ph, amp) => { for (let i = 0; i < len; i++) { const x = x0 + Math.round(Math.sin(i * 0.35 + ph) * amp), y = y0 + i; P(g, x - 1, y, dk); P(g, x + 1, y, dk); P(g, x, y, i % 5 === 0 ? ns : n); } };
+      for (let k = 0; k < 9; k++) strand(8 + k * 4, 24, 20 - (k % 3) * 3, k * 1.7, 2 + (k % 2));
+      for (let y = 18; y < 34; y++) for (let x = 6; x < 42; x++) { const v = Math.sin(x * 0.9 + y * 0.4) + Math.sin(x * 0.3 - y * 1.1); const dx = (x - 24) / 18, dy = (y - 26) / 8; if (dx * dx + dy * dy < 1) P(g, x, y, v > 0.6 ? ns : v < -1.2 ? dk : n); }
+      for (const [x, y] of [[15, 22], [33, 22]]) { D(g, x, y, 7, '#2a0a02'); D(g, x, y, 6, '#8a3a1a'); D(g, x - 2, y - 2, 2, '#c06a3a'); P(g, x + 2, y + 2, '#5a1a0a'); }
+      for (const [x0, x1] of [[13, 9], [35, 39]]) { for (let y = 3; y < 17; y++) { const x = Math.round(x0 + (x1 - x0) * (1 - (y - 3) / 14)); P(g, x, y, ns); P(g, x + 1, y, n); } }
+      for (const x of [9, 39]) { D(g, x, 4, 4, dk); D(g, x, 4, 3, '#ffffff'); D(g, x + (x < 24 ? 1 : -1), 5, 1, '#0a0a0a'); }
+    },
   };
+  const BOSS_COL = { cat: '#ff9a3c', gloop: '#5cff7a', whale: '#4f8dff', duck: '#ffd83a', fsm: '#f2d27a' };
+  const meatSprite = () => outlined('omeat', spr('meat', 12, 12, g => { D(g, 6, 6, 5, '#2a0a02'); D(g, 6, 6, 4, '#8a3a1a'); D(g, 5, 5, 1, '#c06a3a'); R(g, 6, 2, 3, 2, '#d8281a'); P(g, 8, 8, '#5a1a0a'); }));
+  const scCache = {};
+  function scaledSpr(k, s, f) { if (scCache[k]) return scCache[k]; const c = document.createElement('canvas'); c.width = Math.round(s.width * f); c.height = Math.round(s.height * f); const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, c.width, c.height); return scCache[k] = c; }
   function bossSprite(id) { return outlined('oboss:' + id, spr('boss:' + id, 48, 48, g => BOSS[id](g, ENEMY_COL.boss))); }
 
   // ---------- map layer ----------
@@ -3751,7 +3882,8 @@ const Render = (() => {
     const bob = e.fly ? Math.round(Math.sin(frame / 6 + e.wob) * 1.5) : (e.boss ? 0 : (((frame >> 3) + ((e.wob * 10) | 0)) & 1) && !(e.st.frozen > 0) && !(e.st.stun > 0) ? -1 : 0);
     const y = Y - (e.fly ? 7 : 0) + bob;
     let s;
-    if (e.boss) s = bossSprite(e.boss); else s = enemySprite(e.type);
+    if (e.boss) s = bossSprite(e.boss); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
+    if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
     const hw = s.width >> 1, hh = s.height >> 1;
     if (e.fly) { b.fillStyle = 'rgba(0,0,0,0.35)'; b.fillRect(X - hw + 2, Y + 4, s.width - 4, 3); }
     else { b.fillStyle = 'rgba(0,0,0,0.38)'; b.fillRect(Math.round(X - hw + 1), Math.round(Y + hh - 1), s.width - 2, 2); }
@@ -3761,6 +3893,7 @@ const Render = (() => {
     else if (st.frozen > 0) { b.globalAlpha = 0.6; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#bff4ff'), Math.round(X - hw), Math.round(y - hh)); }
     else if (st.chill > 0) { b.globalAlpha = 0.12 + st.chill * 0.06; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#9ad8ff'), Math.round(X - hw), Math.round(y - hh)); }
     b.globalAlpha = 1;
+    if (e.boss === 'cat' && e.napT > 0) { const ox = Math.round(X - hw), oy = Math.round(y - hh); R(b, ox + 16, oy + 15, 6, 6, '#ff9a3c'); R(b, ox + 27, oy + 15, 6, 6, '#ff9a3c'); R(b, ox + 16, oy + 18, 6, 1, '#3a1606'); R(b, ox + 27, oy + 18, 6, 1, '#3a1606'); }
     if (e.boss === 'titan' && e.plates > 0) { R(b, X - 22, y - 22, 44, 5, '#8a8fa8'); R(b, X - 22, y + 17, 44, 5, '#8a8fa8'); if (e.plates > 1) { R(b, X - 22, y - 22, 5, 44, '#a4aac4'); R(b, X + 17, y - 22, 5, 44, '#a4aac4'); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
@@ -3936,7 +4069,7 @@ const Render = (() => {
     let np = 0;
     for (const p of G.projs) { if (np++ > 160) break; light(p.x * TILE, p.y * TILE, TILE * (p.k === 'bullet' ? 0.45 : 0.75), EL[p.el] ? EL[p.el].col : '#ffffff', p.k === 'bullet' ? 0.3 : 0.4); }
     for (const e of G.enemies) {
-      if (e.boss) light(e.x * TILE, e.y * TILE, TILE * 2.4, '#ff3355', 0.22);
+      if (e.boss) light(e.x * TILE, e.y * TILE, TILE * (e.gen ? 1.4 : 2.4), BOSS_COL[e.boss] || '#ff3355', 0.22);
       else if (e.elite.length) light(e.x * TILE, e.y * TILE, TILE * 1.1, ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, 0.18);
       if (e.st.burn) light(e.x * TILE, e.y * TILE, TILE * 0.7, EL.T.col, 0.16);
     }
@@ -4017,6 +4150,7 @@ const Render = (() => {
       const a = Math.min(1, T.life / T.max * 2), p = tileToScreen(T.x, T.y);
       const f = `${Math.round(T.size * tz)}px ${T.font || 'VT323, monospace'}`;
       if (f !== lastFont) { c.font = f; lastFont = f; }
+      if (T.bub) { const tw = c.measureText(T.txt).width + 10, th = Math.round(T.size * tz) + 6; c.fillStyle = `rgba(8,8,20,${a * 0.85})`; c.fillRect(Math.round(p.x - tw / 2), Math.round(p.y - th / 2), Math.round(tw), th); c.fillRect(Math.round(p.x - 2), Math.round(p.y + th / 2), 4, 3); c.strokeStyle = `rgba(255,255,255,${a * 0.5})`; c.lineWidth = 1; c.strokeRect(Math.round(p.x - tw / 2) + 0.5, Math.round(p.y - th / 2) + 0.5, Math.round(tw) - 1, th - 1); }
       c.fillStyle = `rgba(0,0,0,${a * 0.8})`; c.fillText(T.txt, p.x + 1, p.y + 1);
       c.fillStyle = hexA(T.col, a); c.fillText(T.txt, p.x, p.y);
     }
@@ -4026,7 +4160,7 @@ const Render = (() => {
       const e = G.bossAlive, bw = Math.min(260, W * 0.4), bx = (W - bw) / 2, by = 6;
       c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(bx - 4, by - 2, bw + 8, 22);
       c.font = '10px Silkscreen, monospace'; c.fillStyle = '#ff9aac'; c.textAlign = 'left';
-      c.fillText(e.bossName.toUpperCase() + (e.elite.length ? ' · ' + e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).name).join(' · ') : ''), bx, by + 5);
+      c.fillText(e.bossName.toUpperCase() + (e.bossTitle ? ' · ' + e.bossTitle.toUpperCase() : '') + (e.elite.length ? ' · ' + e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).name).join(' · ') : ''), bx, by + 5);
       c.fillStyle = '#3a0a18'; c.fillRect(bx, by + 12, bw, 5);
       c.fillStyle = '#ff3355'; c.fillRect(bx, by + 12, bw * Math.max(0, e.hp / e.maxHp), 5);
       if (e.shield > 0) { c.fillStyle = '#8ab6ff'; c.fillRect(bx, by + 12, bw * Math.min(1, e.shield / e.maxHp), 2); }
@@ -4079,11 +4213,14 @@ const Render = (() => {
       case 'flame': for (let i = 0; i < 6; i++) { const a = d.ang + (Math.random() - 0.5) * 1.0, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x) + Math.cos(d.ang) * 10, y: T2P(d.y) + Math.sin(d.ang) * 10, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.3, max: 0.3, col: Math.random() < 0.5 ? d.col : '#ffe14d', s: 3 }); } break;
       case 'pulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.r * TILE, life: 0.35, max: 0.35, col: d.col, fill: 1 }); break;
       case 'grav': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE, r1: 2, life: 0.5, max: 0.5, col: '#b86cff', w: 3 }); break;
-      case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? 100 : d.elite ? 22 : 9, d.boss ? '#ff3355' : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;
+      case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;
       case 'arcs': for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x) + Math.cos(a) * rr * 0.5 + (Math.random() - 0.5) * 10, y: T2P(d.y) + Math.sin(a) * rr * 0.5 }, { x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr }], life: 0.18, max: 0.18, col: '#9ff2ff', core: 1, w: 2 }); } break;
       case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' }); break;
       case 'shieldpulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.5, max: 0.5, col: '#8ab6ff' }); break;
       case 'blink': burst(T2P(d.x), T2P(d.y), 14, '#b86cff', 40 * K, 0.3); break;
+      case 'say': if (texts.filter(T => T.bub).length >= 4) break; text(d.x, d.y - 1.5, d.t, '#ffffff', 13, 1.6, -0.35, 'Silkscreen, monospace'); texts[texts.length - 1].bub = 1; break;
+      case 'song': for (let i = 0; i < 3; i++) rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6 + i * 10, r1: d.r * TILE, life: 0.6 + i * 0.25, max: 0.6 + i * 0.25, col: '#9fe7ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 12, '#7dffb0', 30 * K, 0.6, -20 * K); break;
+      case 'noodle': { const out = []; for (let k = 0; k <= 10; k++) { const t = k / 10, w = Math.sin(t * Math.PI * 3) * 8 * Math.sin(t * Math.PI); const dx = d.x2 - d.x1, dy = d.y2 - d.y1, L = Math.hypot(dx, dy) || 1; out.push({ x: T2P(lerp(d.x1, d.x2, t)) - dy / L * w, y: T2P(lerp(d.y1, d.y2, t)) + dx / L * w }); } lines.push({ pts: out, life: 0.7, max: 0.7, col: '#f2d27a', core: 0, w: 4 }); break; }
       case 'emp': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: d.r * TILE, life: 0.4, max: 0.4, col: '#ffe14d', w: 3 }); burst(T2P(d.x), T2P(d.y), 10, '#ffffff', 40 * K, 0.25); break;
       case 'freeze': burst(T2P(d.x), T2P(d.y), 12, '#d8f8ff', 25 * K, 0.4); break;
       case 'implode': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE, r1: 0, life: 0.6, max: 0.6, col: '#b86cff', fill: 1, w: 3 }); for (let i = 0; i < 40; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; parts.push({ x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr, vx: -Math.cos(a) * rr * 2, vy: -Math.sin(a) * rr * 2, life: 0.45, max: 0.45, col: '#d6a6ff', s: 2 }); } break;
@@ -4417,7 +4554,7 @@ const UI = (() => {
     if (G.spawningDone && G.prep) {
       const P = G.prep;
       chips.push(`<span class="evchip next">Next: ${P.total} enemies${P.fly ? ' · ' + P.fly + ' flying' : ''}${P.elites ? ' · ' + P.elites + (P.elites === 1 ? ' Elite' : ' Elites') : ''}</span>`);
-      if (P.boss) chips.push(`<span class="evchip next bad">Boss ${esc(P.boss.name)}</span>`);
+      if (P.boss) chips.push(`<span class="evchip next bad">Boss ${P.boss.odd ? "???" : esc(P.boss.name)}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
@@ -5087,8 +5224,9 @@ const Tree = (() => {
   const ptrs = new Map(); let pinch = null, dragMoved = 0, drawer = null, confirmWipe = false, frame = 0, shiftPan = false;
   const R = { start: 15, small: 7, notable: 12, mastery: 14, keystone: 17, orbit: 13, sat: 11 };
   const PD = 1800, ORB_R = 120;
-  const DEF = () => ({ tx: 0, ty: 0, tz: 0, yaw: 0.35, pitch: 0.98, zoom: clamp(Math.min(W, H) / 1300, 0.2, 1) });
-  let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, camOX = 0;
+  const DEF = () => flatMode() ? { tx: 0, ty: 40, tz: 0, yaw: 0, pitch: 0.001, zoom: clamp(Math.min(W / 2500, H / 1700), 0.12, 1) } : { tx: 0, ty: 0, tz: 0, yaw: 0.35, pitch: 0.98, zoom: clamp(Math.min(W, H) / 1300, 0.2, 1) };
+  let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, camOX = 0, viewT = 1, profOn = false;
+  const flatMode = () => !PROF.settings || PROF.settings.webView !== '3d';
   const orbView = {};
   function camPrep() { cy_ = Math.cos(cam.yaw); sy_ = Math.sin(cam.yaw); cp_ = Math.cos(cam.pitch); sp_ = Math.sin(cam.pitch); }
   // world (x right, y down the plane, z up) -> screen css px
@@ -5101,7 +5239,20 @@ const Tree = (() => {
     return o;
   }
   function satAngle(n) { const v = orbView[n.orbit] !== undefined ? orbView[n.orbit] : orbitRot(n.orbit); return (-90 + (n.sat * 2 + v) * 60) * Math.PI / 180; }
-  function npos(n) { if (n.sat !== undefined) { const a = satAngle(n); return [Math.cos(a) * ORB_R, Math.sin(a) * ORB_R, n.z]; } return [n.x, n.y, n.z || 0]; }
+  function pos3(n) { if (n.sat !== undefined) { const a = satAngle(n); return [Math.cos(a) * ORB_R, Math.sin(a) * ORB_R, n.z]; } return [n.x, n.y, n.z || 0]; }
+  // flat planning layout: the disk top-down, Zenith as a pillar on the right, Nadir on the left
+  function posFlat(n) {
+    if (n.sector !== -2) return [n.x, n.y, 0];
+    const side = n.z > 0 ? 1 : -1, px = side * 1120, py = 330 - Math.abs(n.z) * 1.45;
+    if (n.sat !== undefined) { const a = satAngle(n); return [px + Math.cos(a) * ORB_R * 0.9, py + Math.sin(a) * ORB_R * 0.55, 0]; }
+    return [px, py, 0];
+  }
+  function npos(n) {
+    if (viewT >= 0.999) return posFlat(n);
+    if (viewT <= 0.001) return pos3(n);
+    const a = pos3(n), b = posFlat(n), t = viewT * viewT * (3 - 2 * viewT);
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  }
   // galaxy dust, generated once
   let dust = null, bg = null;
   function makeDust() {
@@ -5130,7 +5281,7 @@ const Tree = (() => {
       p.x = e.clientX; p.y = e.clientY;
       if (ptrs.size === 1) {
         dragMoved += Math.abs(dx) + Math.abs(dy);
-        if (shiftPan) panBy(dx, dy);
+        if (shiftPan || viewT > 0.5) panBy(dx, dy);
         else { cam.yaw -= dx * 0.0065; cam.pitch = clamp(cam.pitch - dy * 0.005, 0.22, 1.38); }
       } else if (ptrs.size === 2 && pinch) {
         const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
@@ -5155,7 +5306,7 @@ const Tree = (() => {
   function panBy(dx, dy) {
     camPrep();
     const x1 = dx / cam.zoom, y1 = dy / cam.zoom / Math.max(0.35, cp_);
-    cam.tx = clamp(cam.tx - (x1 * cy_ + y1 * sy_), -1100, 1100); cam.ty = clamp(cam.ty - (-x1 * sy_ + y1 * cy_), -1100, 1100);
+    cam.tx = clamp(cam.tx - (x1 * cy_ + y1 * sy_), -1300, 1300); cam.ty = clamp(cam.ty - (-x1 * sy_ + y1 * cy_), -1100, 1100);
   }
   function resize() {
     if (!cv) return;
@@ -5170,13 +5321,15 @@ const Tree = (() => {
     UI.closePanel();
     $('#tree').hidden = false; open_ = true;
     resize();
+    viewT = flatMode() ? 1 : 0;
     if (!sel || !cam) cam = DEF();
+    renderRegions();
     for (const k in ORBITS) { orbView[k] = orbitRot(k); delete orbView[k + '_t']; }
     drawer = null;
     refresh();
   }
   function close() {
-    $('#tree').hidden = true; open_ = false; sel = null; path = null; drawer = null;
+    $('#tree').hidden = true; open_ = false; sel = null; path = null; drawer = null; document.body.classList.remove('tsel');
     UI.flushToasts();
     if (UI.screen === 'hangar') UI.renderHangar();
     Save.save();
@@ -5196,7 +5349,7 @@ const Tree = (() => {
     }
     sel = best ? best.id : null;
     path = sel ? treePathTo(sel) : null;
-    if (best) { SFX.play('ui'); const [x, y, z] = npos(best); goal = { tx: x, ty: y, tz: z * 0.85 }; }
+    if (best) { SFX.play('ui'); const [x, y, z] = flatMode() ? posFlat(best) : pos3(best); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85 }; }
     refresh();
   }
   function inRun() { return !!(G && !G.over); }
@@ -5212,6 +5365,9 @@ const Tree = (() => {
       case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
       case 'wipe': if (inRun()) return; if (!confirmWipe) { confirmWipe = true; refresh(); return; } PROF.alloc = ['start']; confirmWipe = false; sel = null; path = null; Save.save(); refresh(); break;
       case 'center': cam = DEF(); goal = null; break;
+      case 'view': PROF.settings.webView = flatMode() ? '3d' : 'flat'; Save.save(); goal = Object.assign(DEF(), { yaw: flatMode() ? 0 : 0.35 }); renderRegions(); break;
+      case 'profile': profOn = !profOn; renderProfile(); break;
+      case 'rgn': flyTo(b.dataset.v); break;
       case 'rotL': case 'rotR': rotateOrbit(act === 'rotR' ? 1 : -1); break;
       case 'mopt': {
         const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
@@ -5227,6 +5383,8 @@ const Tree = (() => {
   }
   function refresh() {
     if (!open_) return;
+    document.body.classList.toggle('tsel', !!sel);
+    if (profOn) renderProfile();
     const free = pointsFree(), M = computeMods(PROF.alloc, null), a = M.attrs;
     $('#tPts').textContent = free;
     $('#tPts').parentElement.classList.toggle('glow', free > 0);
@@ -5292,6 +5450,85 @@ const Tree = (() => {
         <div class="lbl">Stats</div><ul class="tot">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`;
     }
   }
+  const PCAT = {
+    off: { name: 'Offense', col: '#ff6a5a' }, spd: { name: 'Speed', col: '#ffe14d' }, ctl: { name: 'Control', col: '#6ae2ff' },
+    def: { name: 'Defense', col: '#59f0b4' }, eco: { name: 'Economy', col: '#ffb03a' }, chs: { name: 'Chaos', col: '#d06cff' },
+  };
+  const CATW = {
+    dmg: ['off', 1], dmgK: ['off', 0.5], dmgT: ['off', 0.5], dmgC: ['off', 0.5], dmgA: ['off', 0.5], dmgV: ['off', 0.5], critC: ['off', 2], critM: ['off', 0.5], P: ['off', 1],
+    eliteDmg: ['off', 0.6], armorPen: ['off', 0.3], critSplash: ['off', 0.4], fifthCrit: ['off', 14], shredStack: ['off', 4], burnVuln: ['off', 1], burnBoom: ['off', 0.6],
+    capacitor: ['off', 14], chainKeep: ['off', 12], shockBurst: ['off', 1], markVoid: ['off', 3], rampKeep: ['off', 12], napalmKill: ['off', 12], burnCrit: ['off', 14],
+    pierceK: ['off', 10], pierceKeep: ['off', 10], critCK: ['off', 1], critMK: ['off', 0.3], burnDmg: ['off', 0.5], overload: ['off', 0.2], shatter: ['off', 0.2], collapse: ['off', 0.2],
+    coreDmg: ['off', 0.15], multiA: ['off', 14], loneWolf: ['off', 0.6], splash: ['off', 30], chain: ['off', 10], infernoCore: ['off', 14], ovlBurn: ['off', 10], ovlFree: ['off', 10],
+    rate: ['spd', 1], rateK: ['spd', 0.5], rateA: ['spd', 0.5], Tm: ['spd', 1], heatSink: ['spd', 14], coreRate: ['spd', 0.2], thunder: ['off', 14],
+    chillChance: ['ctl', 1], shockChance: ['ctl', 1], markChance: ['ctl', 1], burnChance: ['ctl', 0.6], chillPot: ['ctl', 0.4], freezeDur: ['ctl', 25], freezeAt: ['ctl', 15],
+    knock: ['ctl', 2], kSlow: ['ctl', 1], glacial: ['ctl', 1], markSlow: ['ctl', 0.5], coldSnap: ['ctl', 15], chillSplash: ['ctl', 12], stasisDur: ['ctl', 4], iceShards: ['ctl', 12],
+    range: ['ctl', 0.6], rangeKR: ['ctl', 0.4], F: ['ctl', 0.8], frozenVuln: ['ctl', 0.5], shockEff: ['ctl', 0.3], markMax: ['ctl', 3], chillSlowDecay: ['ctl', 12], shockLong: ['ctl', 12],
+    burnDur: ['ctl', 0.3], chainIgnite: ['ctl', 10], burnSpread: ['ctl', 12], knockMark: ['ctl', 8], freezeImmRed: ['ctl', 0.2], superChill: ['ctl', 10], superRad: ['ctl', 0.1], chillVoid: ['ctl', 0.6], blackHole: ['ctl', 12],
+    coreHP: ['def', 0.3], shield: ['def', 0.4], shieldRegen: ['def', 0.15], I: ['def', 1], shieldWave: ['def', 12], fieldRepair: ['def', 3], coreRange: ['def', 6],
+    credits: ['eco', 1], costRed: ['eco', 1.2], upgRed: ['eco', 1], startCredits: ['eco', 0.05], sellPct: ['eco', 0.12], interest: ['eco', 7], salvage: ['eco', 12], xp: ['eco', 0.6],
+    abilCharge: ['eco', 0.6], abilPower: ['eco', 0.4], loadout: ['eco', 10],
+    stormFreq: ['chs', 0.3], stormPow: ['chs', 0.3], affixLuck: ['chs', 0.3], voidSiphon: ['chs', 14], markPerma: ['ctl', 12], overloadRad: ['off', 0.1],
+  };
+  const KSW = { glass: { off: 40, def: -30 }, conflag: { off: 25, ctl: -10 }, overgrid: { spd: 30, chs: 10 }, abszero: { ctl: 30 }, singularity: { off: 30 }, dimret: { eco: 30 },
+    prismatic: { ctl: 20, chs: 10 }, chaos: { chs: 35 }, unbreakable: { def: 35 }, celestial: { off: 15, chs: -15 }, singular: { chs: 40 } };
+  const SATW = { dmg: 'off', rate: 'spd', status: 'ctl', range: 'ctl', reson: 'off', vxp: 'off', flux: 'off', storm: 'chs', vol: 'chs', ent: 'chs', rift: 'chs', combo: 'off' };
+  function nodeFx(n) {
+    if (n.sat !== undefined) { const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)]; return el === 'E' ? S.E : null; }
+    const fx = Object.assign({}, n.fx);
+    if (n.opts) { const o = n.opts[masteryPick(n.id)]; if (o) for (const k in o.fx) fx[k] = (fx[k] || 0) + o.fx[k]; }
+    return fx;
+  }
+  function nodeWeights(n) {
+    const w = { off: 0, spd: 0, ctl: 0, def: 0, eco: 0, chs: 0 };
+    if (n.ks && KSW[n.ks]) for (const k in KSW[n.ks]) w[k] += KSW[n.ks][k];
+    if (n.sat !== undefined && SECTOR_EL[satSector(n)] !== 'E') { w[SATW[ORBITS[n.orbit].sats[n.sat].k]] += 18; return w; }
+    const fx = nodeFx(n) || {};
+    for (const k in fx) { const c = CATW[k]; if (c) w[c[0]] += fx[k] * c[1]; }
+    return w;
+  }
+  function nodeCat(n) { const w = nodeWeights(n); let best = null, bv = 0.01; for (const k in w) if (w[k] > bv) { bv = w[k]; best = k; } return best; }
+  function profileOf(alloc) {
+    const t = { off: 0, spd: 0, ctl: 0, def: 0, eco: 0, chs: 0 };
+    for (const id of alloc) { const n = TREE.nodes[id]; if (!n) continue; const w = nodeWeights(n); for (const k in t) t[k] += w[k]; }
+    return t;
+  }
+  function renderProfile() {
+    $('#tProf').classList.toggle('on', profOn);
+    const box = $('#tprof'); box.hidden = !profOn; if (!profOn) return;
+    const cvs = $('#tpcv'), d = Math.min(3, window.devicePixelRatio || 1); cvs.width = 180 * d; cvs.height = 150 * d;
+    const g = cvs.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, 180, 150);
+    const P = profileOf(PROF.alloc), keys = ['off', 'spd', 'ctl', 'def', 'eco', 'chs'], cx = 90, cy = 76, R0 = 50;
+    const val = k => Math.max(0, P[k]) / (Math.max(0, P[k]) + 70);
+    g.strokeStyle = '#2c3160'; g.lineWidth = 1;
+    for (const f of [0.33, 0.66, 1]) { g.beginPath(); keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; const x = cx + Math.cos(a) * R0 * f, y = cy + Math.sin(a) * R0 * f; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke(); }
+    g.beginPath(); keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3, r = R0 * Math.max(0.04, val(k)); const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
+    g.fillStyle = 'rgba(255,176,58,0.28)'; g.fill(); g.strokeStyle = '#ffb03a'; g.lineWidth = 1.5; g.stroke();
+    g.font = '8px Silkscreen, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; g.fillStyle = PCAT[k].col; g.fillText(PCAT[k].name.toUpperCase(), cx + Math.cos(a) * (R0 + 16), cy + Math.sin(a) * (R0 + 12)); });
+    const off = P.off + P.spd * 0.7, def = P.def + P.ctl * 0.7, bal = (def - off) / Math.max(30, off + def);
+    const lean = Math.abs(bal) < 0.15 ? 'Balanced' : bal < 0 ? (bal < -0.5 ? 'All-in offense' : 'Leans offensive') : (bal > 0.5 ? 'Fortress' : 'Leans defensive');
+    const top = keys.slice().sort((a, b) => P[b] - P[a])[0];
+    $('#tpbar').innerHTML = `<div class="obl"><span>Offense</span><span>Defense</span></div><div class="ob"><i style="left:calc(${Math.round((bal + 1) * 50)}% - 1px)"></i></div><span><b>${lean}</b>${P[top] > 5 ? ` · strongest in ${PCAT[top].name}` : ''}</span>`;
+  }
+  const REGIONS = () => [{ id: 'core', name: 'Core', col: '#ffb03a' }, ...SECTORS.map((S, i) => ({ id: 's' + i, name: S.name, col: S.col })), { id: 'zen', name: 'Zenith', col: '#9fd8ff' }, { id: 'nad', name: 'Nadir', col: '#ff5fa8' }];
+  function renderRegions() {
+    $('#tView').textContent = flatMode() ? '3D' : 'Flat';
+    $('#tregions').innerHTML = REGIONS().map(r => `<button class="rgn" data-tact="rgn" data-v="${r.id}" style="--c:${r.col}">${esc(r.name)}</button>`).join('');
+  }
+  function flyTo(id) {
+    const flat = flatMode(), z0 = DEF().zoom;
+    sel = null; path = null; refresh();
+    if (id === 'core') { goal = Object.assign(DEF()); return; }
+    if (id === 'zen' || id === 'nad') {
+      const side = id === 'zen' ? 1 : -1;
+      goal = flat ? { tx: side * 1120, ty: 330 - 240 * 1.45, tz: 0, zoom: z0 * 2.6 } : { tx: 0, ty: 0, tz: side * 260, zoom: z0 * 1.7, pitch: 0.55 };
+      return;
+    }
+    const i = +id.slice(1), a = (-90 + i * 60) * Math.PI / 180;
+    goal = { tx: Math.cos(a) * 430, ty: Math.sin(a) * 430, tz: 0, zoom: z0 * (flat ? 2.4 : 1.9) };
+    if (!flat) { goal.yaw = Math.PI / 2 - a; goal.pitch = 0.9; }
+  }
   function rotateOrbit(dir) {
     const n = TREE.nodes[sel]; if (!n || !n.orbitHub || !PROF.alloc.includes(sel)) return;
     if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); UI.toast('CAN\'T ROTATE', 'Requires 1 Recalibration token', '#ff4d6a', 1); return; } G.tokens--; }
@@ -5310,7 +5547,14 @@ const Tree = (() => {
     if (!open_ || !cam) return;
     frame++;
     // smooth camera glide to a tapped node, smooth orbit rotation
-    if (goal && !ptrs.size) { cam.tx += (goal.tx - cam.tx) * 0.12; cam.ty += (goal.ty - cam.ty) * 0.12; cam.tz += (goal.tz - cam.tz) * 0.12; if (Math.abs(goal.tx - cam.tx) + Math.abs(goal.ty - cam.ty) + Math.abs(goal.tz - cam.tz) < 0.5) goal = null; }
+    if (goal && !ptrs.size) {
+      const k = 0.12;
+      for (const f of ['tx', 'ty', 'tz', 'pitch', 'zoom']) if (goal[f] !== undefined) cam[f] += (goal[f] - cam[f]) * k;
+      if (goal.yaw !== undefined) { let d = goal.yaw - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); cam.yaw += d * k; }
+      const err = Math.abs((goal.tx ?? cam.tx) - cam.tx) + Math.abs((goal.ty ?? cam.ty) - cam.ty) + Math.abs((goal.tz ?? cam.tz) - cam.tz) + Math.abs((goal.zoom ?? cam.zoom) - cam.zoom) * 500 + Math.abs((goal.pitch ?? cam.pitch) - cam.pitch) * 300;
+      if (err < 0.5) goal = null;
+    }
+    const vt = flatMode() ? 1 : 0; viewT += (vt - viewT) * 0.12; if (Math.abs(vt - viewT) < 0.002) viewT = vt;
     for (const k in ORBITS) { if (orbView[k + '_t'] !== undefined) { orbView[k] += (orbView[k + '_t'] - orbView[k]) * 0.15; if (Math.abs(orbView[k + '_t'] - orbView[k]) < 0.005) { orbView[k] = orbView[k + '_t']; } } }
     camOX += ((sel ? -Math.min(330, W * 0.44) / 2 - 6 : 0) - camOX) * 0.15;
     camPrep();
@@ -5332,16 +5576,27 @@ const Tree = (() => {
     lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
     // plane grid rings and the Z axis
     for (const rr of [250, 500, 750]) { lc.globalAlpha = 0.16; let prev = null; for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.283; proj(Math.cos(a) * rr, Math.sin(a) * rr, 0, o); if (prev && k % 2) line(prev[0], prev[1], o.x / 2, o.y / 2, '#6a6fa8'); prev = [o.x / 2, o.y / 2]; } }
-    lc.globalAlpha = 0.35; proj(0, 0, -520, o); proj(0, 0, 520, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, '#8a8fd0');
-    for (let z = -500; z <= 500; z += 50) { if (!z) continue; proj(0, 0, z, o); pxR(o.x / 2 - 1, o.y / 2, 3, 1, z > 0 ? '#9fd8ff' : '#ff5fa8'); }
+    if (viewT < 0.5) {
+      lc.globalAlpha = 0.35 * (1 - viewT * 2); proj(0, 0, -520, o); proj(0, 0, 520, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, '#8a8fd0');
+      for (let z = -500; z <= 500; z += 50) { if (!z) continue; proj(0, 0, z, o); pxR(o.x / 2 - 1, o.y / 2, 3, 1, z > 0 ? '#9fd8ff' : '#ff5fa8'); }
+    } else {
+      // flat pillars for Zenith and Nadir
+      for (const side of [1, -1]) {
+        const colr = side > 0 ? '#9fd8ff' : '#ff5fa8';
+        lc.globalAlpha = 0.3 * (viewT * 2 - 1); proj(side * 1120, 330, 0, o); proj(side * 1120, 330 - 500 * 1.45, 0, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, colr);
+        proj(side * 1120, 330 - 520 * 1.45 - 30, 0, o);
+        lc.globalAlpha = 1;
+      }
+    }
     lc.globalAlpha = 1;
     // orbit rings with sector ticks
     for (const k in ORBITS) {
-      const O = ORBITS[k], on = A.has(k);
+      const O = ORBITS[k], on = A.has(k), hub = npos(TREE.nodes[k]);
+      const fx = viewT > 0.5 ? 0.9 : 1, fy = viewT > 0.5 ? 0.55 : 1, rz = viewT > 0.5 ? 0 : O.z, cx0 = viewT > 0.5 ? hub[0] : 0, cy0 = viewT > 0.5 ? hub[1] : 0;
       lc.globalAlpha = on ? 0.6 : 0.25; let prev = null;
-      for (let q = 0; q <= 48; q++) { const a = q / 48 * 6.283; proj(Math.cos(a) * ORB_R, Math.sin(a) * ORB_R, O.z, o); if (prev) line(prev[0], prev[1], o.x / 2, o.y / 2, O.col); prev = [o.x / 2, o.y / 2]; }
+      for (let q = 0; q <= 48; q++) { const a = q / 48 * 6.283; proj(cx0 + Math.cos(a) * ORB_R * fx, cy0 + Math.sin(a) * ORB_R * fy, rz, o); if (prev) line(prev[0], prev[1], o.x / 2, o.y / 2, O.col); prev = [o.x / 2, o.y / 2]; }
       lc.globalAlpha = 0.9;
-      SECTORS.forEach((S, i) => { const a = (-90 + i * 60) * Math.PI / 180; proj(Math.cos(a) * (ORB_R + 14), Math.sin(a) * (ORB_R + 14), O.z, o); pxR(o.x / 2 - 1, o.y / 2 - 1, 2, 2, S.col); });
+      SECTORS.forEach((S, i) => { const a = (-90 + i * 60) * Math.PI / 180; proj(cx0 + Math.cos(a) * (ORB_R + 14) * fx, cy0 + Math.sin(a) * (ORB_R + 14) * fy, rz, o); pxR(o.x / 2 - 1, o.y / 2 - 1, 2, 2, S.col); });
       lc.globalAlpha = 1;
     }
     // edges
@@ -5358,7 +5613,7 @@ const Tree = (() => {
     lc.globalAlpha = 1;
     // drop lines from off-plane nodes to the disk (Elite map style)
     for (const n of TREE.list) {
-      const p = pos[n.id]; if (Math.abs(p.wz) < 10 || (n.sector === -2 && n.sat === undefined)) continue;
+      const p = pos[n.id]; if (viewT > 0.5 || Math.abs(p.wz) < 10 || (n.sector === -2 && n.sat === undefined)) continue;
       proj(p.wx, p.wy, 0, o);
       lc.globalAlpha = 0.35; line(p.x, p.y, o.x / 2, o.y / 2, n.col || '#5a5f9a');
       lc.globalAlpha = 0.6; pxR(o.x / 2 - 1, o.y / 2, 3, 1, n.col || '#5a5f9a');
@@ -5368,9 +5623,10 @@ const Tree = (() => {
     const order = TREE.list.slice().sort((a, b) => pos[a.id].d - pos[b.id].d);
     for (const n of order) {
       const p = pos[n.id]; if (p.x < -10 || p.x > LW + 10 || p.y < -10 || p.y > LH + 10) continue;
-      const col = n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
+      const col = profOn ? (PCAT[nodeCat(n)] || {}).col || '#6a6f9a' : n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
       const on = A.has(n.id), can = allocatable(n), onP = Pth.has(n.id);
       const r = Math.max(1, Math.round(R[n.kind] * p.s / 2));
+      lc.globalAlpha = viewT < 0.5 ? clamp(1.25 - Math.hypot(p.wx - cam.tx, p.wy - cam.ty, p.wz - cam.tz) / 1400, 0.35, 1) : 1;
       const fill = on ? col : '#0b0d1c', edge = on ? '#ffffff' : onP ? '#ffb03a' : can ? (pulse > 0.5 ? '#ffb03a' : '#7a5418') : sh2(col);
       if (n.kind === 'small') { pxR(p.x - r, p.y - r, r * 2 + 1, r * 2 + 1, edge); if (r > 1) pxR(p.x - r + 1, p.y - r + 1, r * 2 - 1, r * 2 - 1, fill); }
       else if (n.kind === 'keystone') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); if (on) pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
@@ -5378,6 +5634,7 @@ const Tree = (() => {
       else if (n.kind === 'start') { pxDia(p.x, p.y, r + 2, '#ffe9b0'); pxDia(p.x, p.y, r, '#ffb03a'); pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
       else if (n.kind === 'orbit') { pxRing(p.x, p.y, r + 1, edge); pxRing(p.x, p.y, r, edge); pxDia(p.x, p.y, Math.max(1, r - 3), on ? col : '#151933'); }
       else { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); if (n.kind === 'sat' || n.kind === 'notable') pxRing(p.x, p.y, r + 2, on ? col : sh2(col)); }
+      lc.globalAlpha = 1;
       if (on && r >= 2) { lc.globalCompositeOperation = 'lighter'; lc.globalAlpha = 0.25; pxDia(p.x, p.y, r + 3, col); lc.globalAlpha = 1; lc.globalCompositeOperation = 'source-over'; }
     }
     // blit pixel buffer
