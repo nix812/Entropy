@@ -551,7 +551,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.11.0';
+const VERSION = '1.12.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
@@ -1431,7 +1431,8 @@ function genMap(r) {
   let fallback = null;
   for (let attempt = 0; attempt < 80; attempt++) {
     const tiles = new Array(COLS * ROWS).fill(0);
-    const core = { x: COLS - 3, y: rngInt(r, 3, ROWS - 4) };
+    // core sits inward so wormholes can open on every side of it, even behind
+    const core = { x: COLS - rngInt(r, 6, 8), y: rngInt(r, 3, ROWS - 4) };
     let x = 0, y = rngInt(r, 2, ROWS - 3);
     const pts = [{ x, y }];
     const put = () => { pts.push({ x, y }); };
@@ -1453,7 +1454,7 @@ function genMap(r) {
     while (y !== core.y) { y += Math.sign(core.y - y); put(); }
     while (x < core.x) { x++; put(); }
     let minY = 99, maxY = -1; for (const p of pts) { minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
-    const okLen = pts.length >= COLS * 1.7 && pts.length <= COLS * 2.5;
+    const okLen = pts.length >= COLS * 1.55 && pts.length <= COLS * 2.5;
     const okSpan = minY <= 3 && maxY >= ROWS - 4;
     if (!okLen || !okSpan) { if (!fallback && pts.length >= COLS * 1.4) fallback = 1; if (attempt < 79 || !fallback) continue; }
     for (const p of pts) tiles[tIdx(p.x, p.y)] = 1;
@@ -1480,18 +1481,27 @@ function genExtraLane(r, openWave) {
   const map = G.map, core = map.core;
   const starts = map.lanes.map(L => L.tiles[0]);
   const open = map.lanes.filter(L => !L.openWave);
+  // favour directions around the core that no wormhole has used yet
+  const used = map.lanes.map(L => Math.atan2(L.tiles[0].y - core.y, L.tiles[0].x - core.x));
+  const angDiff = (p, q) => Math.abs(Math.atan2(Math.sin(p - q), Math.cos(p - q)));
+  const cands = [];
+  for (let k = 0; k < 36; k++) { const ang = (k / 36) * Math.PI * 2 + r() * 0.15; cands.push({ ang, sc: Math.min(...used.map(u => angDiff(ang, u)), Math.PI) + r() * 0.9 }); }
+  cands.sort((p, q) => q.sc - p.sc);
   for (let attempt = 0; attempt < 120; attempt++) {
-    const ang = r() * Math.PI * 2, rad = 6 + r() * Math.max(COLS, ROWS);
-    const sx = Math.round(core.x + Math.cos(ang) * rad), sy = Math.round(core.y + Math.sin(ang) * rad * 0.6);
+    const ang = cands[attempt % cands.length].ang;
+    let maxR = 0; for (let d = 1; d < COLS + ROWS; d++) { const x = Math.round(core.x + Math.cos(ang) * d), y = Math.round(core.y + Math.sin(ang) * d); if (x < 0 || y < 0 || x >= COLS || y >= ROWS) break; maxR = d; }
+    if (maxR < 4) continue;
+    const rad = Math.max(4, Math.round(maxR * (0.7 + r() * 0.3)));
+    const sx = Math.round(core.x + Math.cos(ang) * rad), sy = Math.round(core.y + Math.sin(ang) * rad);
     if (sx < 0 || sy < 0 || sx >= COLS || sy >= ROWS) continue;
     if (map.tiles[tIdx(sx, sy)] !== 0 || G.towerAt[tIdx(sx, sy)]) continue;
-    if (Math.abs(sx - core.x) + Math.abs(sy - core.y) < 7) continue;
-    if (starts.some(p => Math.abs(p.x - sx) + Math.abs(p.y - sy) < 5)) continue;
+    if (Math.abs(sx - core.x) + Math.abs(sy - core.y) < 5) continue;
+    if (starts.some(p => Math.abs(p.x - sx) + Math.abs(p.y - sy) < (attempt > 60 ? 3 : 5))) continue;
     // wormholes need a little clear space around them
     let crowd = 0;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const x = sx + dx, y = sy + dy; if (x >= 0 && y >= 0 && x < COLS && y < ROWS && map.tiles[tIdx(x, y)] !== 0) crowd++; }
-    if (crowd > 2) continue;
-    const direct = r() < 0.35;
+    if (crowd > 3) continue;
+    const direct = r() < 0.6;
     let target, host = null, ti = 0;
     if (direct) target = core;
     else {
@@ -1515,8 +1525,9 @@ function genExtraLane(r, openWave) {
         const vx = ux + dx, vy = uy + dy;
         if (vx < 0 || vy < 0 || vx >= COLS || vy >= ROWS) continue;
         const v = tIdx(vx, vy);
-        if (v !== goal && (map.tiles[v] !== 0 || G.towerAt[v])) continue;
-        let c = 1 + noise[v];
+        const tv = map.tiles[v], crossing = tv === 1 || tv === 5;
+        if (v !== goal && ((tv !== 0 && !crossing) || G.towerAt[v])) continue;
+        let c = 1 + noise[v] + (crossing && v !== goal ? 4 : 0);
         if (v !== goal) {
           let adjPath = 0;
           for (const [ex, ey] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -1531,9 +1542,9 @@ function genExtraLane(r, openWave) {
     if (prev[goal] < 0) continue;
     const route = []; let c = goal;
     while (c !== -1) { route.unshift({ x: c % COLS, y: (c / COLS) | 0 }); c = prev[c]; }
-    if (route.length < (direct ? 9 : 5)) continue;
+    if (route.length < (direct ? (attempt > 90 ? 7 : 11) : 5)) continue;
     const mark = openWave ? 5 : 1;
-    for (let i = 0; i < route.length - 1; i++) map.tiles[tIdx(route[i].x, route[i].y)] = mark;
+    for (let i = 0; i < route.length - 1; i++) { const k = tIdx(route[i].x, route[i].y); if (map.tiles[k] === 0) map.tiles[k] = mark; }
     const full = direct ? route : route.concat(host.tiles.slice(ti + 1));
     const lane = makeLane(full, core);
     lane.branch = route.length - (direct ? 1 : 0);
@@ -5304,7 +5315,7 @@ const UI = (() => {
         ['Ascend', 'Upgrade past max level for ×1.3 Damage and a new affix.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
         ['Milestone', 'Score threshold. Grants an ability charge and a small bonus.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
-        ['Wormhole', 'Origin of a lane. Forming wormholes show their future route and open 2 waves later. Lanes open at Waves 12, 24, 38, 55 and 75.'],
+        ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. Lanes open at Waves 12, 24, 38, 55 and 75.'],
         ['Checkpoint', `Pause before a wormhole's first wave. Full sell refunds and free respec. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
