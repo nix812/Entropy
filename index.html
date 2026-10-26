@@ -105,6 +105,16 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 #tipbox { position: fixed; z-index: 300; background: rgba(8, 9, 20, 0.97); box-shadow: inset 0 0 0 1px var(--amber), 0 6px 18px rgba(0, 0, 0, 0.6); padding: calc(8px * var(--ui, 1)) calc(10px * var(--ui, 1)); font-family: var(--f-term); font-size: calc(16px * var(--ui, 1)); line-height: 1.15; color: var(--ink); display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
 #tipbox[hidden] { display: none; }
 #tipbox b { font-family: var(--f-pix); font-size: calc(9px * var(--ui, 1)); letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); font-weight: 400; }
+.hall { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.hrow { display: flex; align-items: center; gap: 10px; border: 0; text-align: left; padding: 7px 10px; background: rgba(21, 25, 51, 0.92); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); clip-path: var(--cut); }
+.hrow:active { filter: brightness(1.3); }
+.hrow em { font-style: normal; font-family: var(--f-pix); font-size: 12px; color: var(--amber); width: 24px; }
+.hrow:first-child em { color: #ffe14d; }
+.hrow span { flex: 1; display: flex; flex-direction: column; font-family: var(--f-term); }
+.hrow b { font-weight: 400; font-size: 20px; line-height: 1; color: var(--amber); }
+.hrow small { font-size: 14px; color: #a9a7c4; }
+.hcast { display: flex; flex-wrap: wrap; gap: 6px 14px; font-family: var(--f-term); font-size: 16px; margin-bottom: 6px; }
+.hcast span { display: inline-flex; align-items: center; gap: 5px; } .hcast small { color: #a9a7c4; }
 .rgn em { font-style: normal; margin-left: 6px; color: #ffe9b0; }
 .tstar .srow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .tstar .big { font-family: var(--f-term); font-size: 30px; color: var(--c); line-height: 1; }
@@ -541,7 +551,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.10.1';
+const VERSION = '1.11.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
@@ -1202,7 +1212,7 @@ function defaultProfile() {
     seenHelp: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
     mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
-    nova: 0, remnants: [], laws: [], stars: {},
+    nova: 0, remnants: [], laws: [], stars: {}, hall: [],
   };
 }
 let PROF = defaultProfile();
@@ -5128,31 +5138,60 @@ const UI = (() => {
       <div class="boons four">${G.anomOffers.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<button class="boon anomaly" data-act="anom" data-v="${id}"><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><i class="lbl cost">Cost</i><span class="bad">${tipify(A.down)}</span></button>`; }).join('')}
       <button class="boon stab" data-act="stab"><b>Stabilize</b><span class="good">+10% score</span><span class="good">+1 Recalibration token</span><span class="dim">No other changes</span></button></div></div>`, 'anomaly');
   }
-  function recapHTML() {
-    const els = G.stats.dmgByEl, tot = Object.values(els).reduce((a, b) => a + b, 0) || 1;
-    const mvp = G.towers.slice().sort((a, b) => b.dmgDone - a.dmgDone)[0];
-    const combos = COMBO_NAMES.filter(n => G.stats.combos[n]).map(n => `${n[0] + n.slice(1).toLowerCase()} ×${fmt(G.stats.combos[n])}`).join(' · ');
+  function runRecord() {
+    const byDmg = G.towers.slice().sort((a, b) => b.dmgDone - a.dmgDone), mvp = byDmg[0];
+    const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
+    return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
+      nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
+      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '',
+      mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
+      keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
+  }
+  function recapHTML(R) {
+    const els = R.els, tot = Object.values(els).reduce((a, b) => a + b, 0) || 1, mvp = R.mvp;
+    const combos = COMBO_NAMES.filter(n => R.combos[n]).map(n => `${n[0] + n.slice(1).toLowerCase()} ×${fmt(R.combos[n])}`).join(' · ');
     return `<div class="recap">
-      ${mvp ? `<div class="mvp"><canvas class="ico" width="24" height="24" data-ico="${mvp.type}"></canvas><div><span class="lbl">Top Tower</span><b>${esc(towerLabel(mvp))}</b><small>${fmt(mvp.dmgDone)} damage · ${mvp.kills} kills${mvp.rank ? ' · ' + tipify('Veteran') + ' ' + roman(mvp.rank) : ''}</small></div></div>` : ''}
+      ${mvp ? `<div class="mvp"><canvas class="ico" width="24" height="24" data-ico="${mvp.type}"></canvas><div><span class="lbl">Top Tower</span><b>${esc(mvp.label)}</b><small>${fmt(mvp.dmg)} damage · ${mvp.kills} kills${mvp.rank ? ' · ' + tipify('Veteran') + ' ' + roman(mvp.rank) : ''}</small></div></div>` : ''}
       <div class="elbar">${ELS.filter(e => els[e] / tot > 0.005).map(e => `<i style="flex:${Math.max(0.001, els[e] / tot)};background:${EL[e].col}" title="${EL[e].name}"></i>`).join('')}</div>
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
-      <p class="note">${tipify(`Elites ${G.stats.elites} · Bosses ${G.stats.bossKills} · Leaks ${G.stats.leaks}${G.stats.cashed ? ' · Cashed in ' + fmt(G.stats.cashed) + ' credits' : ''}${G.stats.lastLeak ? ' · Final hit: ' + G.stats.lastLeak : ''}${G.anoms.length ? ' · Anomalies: ' + G.anoms.map(id => ANOMALIES.find(a => a.id === id).name).join(', ') : ''}`)}</p>
+      <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
   }
-  function openDraft(opts) {
-    modal(`<div class="card"><div class="ch"><h2>Boss Defeated</h2><span class="note">Choose a boon. Lasts until the run ends. +1 Recalibration token.</span></div>
-      <div class="boons">${opts.map((b, i) => `<button class="boon" data-act="boon" data-v="${i}"><b>${esc(b.name)}</b><span>${tipify(b.desc)}</span></button>`).join('')}</div></div>`, 'draft');
-    SFX.play('milestone');
+  // ---------- Hall of Fame: best three runs by score, with their summaries ----------
+  function hallAdd(R) {
+    if (!(R.score > 0)) return -1;
+    PROF.hall = (PROF.hall || []).concat([R]).sort((a, b) => b.score - a.score).slice(0, 3);
+    const i = PROF.hall.indexOf(R); return i;
+  }
+  const runMode = R => R.daily ? 'Daily' : (CHAOS_LEVELS[R.chaos] || {}).name || '';
+  const runDate = R => { try { return new Date(R.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) { return ''; } };
+  function hallHTML() {
+    const H = PROF.hall || [];
+    if (!H.length) return `<div class="lbl">Hall of Fame</div><p class="note">Finish a run to claim a spot.</p>`;
+    return `<div class="lbl">Hall of Fame</div><div class="hall">${H.map((R, i) => `<button class="hrow" data-act="hall" data-v="${i}"><em>#${i + 1}</em><span><b>${fmt(R.score)}</b><small>Wave ${R.wave} · ${esc(runMode(R))}${R.nova ? ' · Supernova ' + R.nova : ''} · ${esc(runDate(R))}</small></span>${R.mvp ? `<canvas class="ico" width="20" height="20" data-ico="${R.mvp.type}"></canvas>` : ''}</button>`).join('')}</div>`;
+  }
+  function openHall(i) {
+    const R = (PROF.hall || [])[i]; if (!R) return openArchive();
+    const laws = (R.laws || []).map(id => (LAWS.find(L => L.id === id) || { name: id }).name);
+    modal(`<div class="card over"><div class="ch"><h2 class="amber">Hall of Fame #${i + 1}</h2><span class="note">${esc(runMode(R))} · ${esc(runDate(R))}</span><button class="x" data-act="hallBack" aria-label="Back">✕</button></div>
+      <div class="bigstats"><span>Wave<b>${R.wave}</b></span><span>Score<b>${fmt(R.score)}</b></span><span>XP<b>+${fmt(R.xp)}</b></span><span>Towers<b>${R.towers}</b></span></div>
+      ${recapHTML(R)}
+      ${R.top && R.top.length ? `<div class="lbl">Supporting Cast</div><div class="hcast">${R.top.map(t => `<span><canvas class="ico" width="16" height="16" data-ico="${t.type}"></canvas>${esc(t.label)} <small>${fmt(t.dmg)}</small></span>`).join('')}</div>` : ''}
+      <p class="note">${tipify([R.startWave > 1 ? 'Started at wave ' + R.startWave : '', R.nova ? 'Supernova ' + R.nova : '', laws.length ? 'Cosmic Laws: ' + laws.join(', ') : '', R.keystones && R.keystones.length ? 'Keystones: ' + R.keystones.join(', ') : ''].filter(Boolean).join(' · ') || 'No keystones or laws.')}</p>
+      <div class="foot"><button class="btn" data-act="hallBack">Back</button></div></div>`, 'hall');
+    for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
   function openGameOver() {
     const L = profLevel(), gained = L.level - G.lvlStart;
     const best = G.wave > (G.bestAtStart || 0);
+    if (!G.rec) { G.rec = runRecord(); G.hallRank = hallAdd(G.rec); }
     Save.save();
     modal(`<div class="card over"><div class="ch"><h2 class="bad">Core Destroyed</h2><span class="note">${G.daily ? 'Daily Challenge' : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>Levels<b>+${gained}</b></span></div>
       ${G.daily ? `<p class="void">Today's best: Wave ${PROF.daily ? PROF.daily.best : G.wave}</p>` : best ? '<p class="amber">New best wave!</p>' : `<p class="note">Best: Wave ${PROF.bestWave}</p>`}
-      ${recapHTML()}
+      ${G.hallRank >= 0 ? `<p class="amber">Hall of Fame #${G.hallRank + 1}!</p>` : ''}
+      ${recapHTML(G.rec)}
       ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
       ${pointsFree() > 0 ? `<p class="good">${pointsFree()} passive point${pointsFree() === 1 ? '' : 's'} available</p>` : ''}
       <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Passive Web</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
@@ -5373,7 +5412,7 @@ const UI = (() => {
     const hrs = Math.floor(PROF.playTime / 3600), mins = Math.floor(PROF.playTime / 60) % 60;
     modal(`<div class="card"><div class="ch"><h2>Archive</h2><button class="x" data-act="close2">✕</button></div>
       <div class="setup-grid"><div class="col"><div class="lbl">Arsenal</div>${rows}</div>
-      <div class="col"><div class="lbl">Record</div>
+      <div class="col">${hallHTML()}<div class="lbl">Record</div>
         <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best Wave<b>${PROF.bestWave || '—'}</b></span><span>Best Score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Time Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
         <div class="lbl">Keystones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None allocated'}</p>
         ${codexHTML()}</div></div></div>`, 'archive');
@@ -5394,6 +5433,8 @@ const UI = (() => {
     SFX.play('ui');
     switch (act) {
       case 'close': closeModal(); break;
+      case 'hall': openHall(+b.dataset.v); break;
+      case 'hallBack': openArchive(); break;
       case 'novaNext': novaFlow.step++; openNova(); break;
       case 'novaBack': novaFlow.step = Math.max(0, novaFlow.step - 1); openNova(); break;
       case 'novaR': novaFlow.remnant = b.dataset.v; openNova(); break;
