@@ -1,14 +1,25 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.14.0';
+const VERSION = '1.15.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
-// The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
+// Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
 let COLS = 36;
 let ROWS = 26; const TILE = 24;
 let BW = COLS * TILE, BH = ROWS * TILE;
 function setRows(n) { ROWS = n; BH = ROWS * TILE; }
 function setCols(n) { COLS = Math.max(38, Math.min(76, Math.round(n))); BW = COLS * TILE; }
+// Expanding sector: a run starts on this fraction of the full map (around the core) and grows
+// one step each time a wormhole is detected, reaching the full map with the last scheduled wormhole.
+const REGION0 = 0.6;
+const stageFrac = (stage, n) => n ? REGION0 + (1 - REGION0) * Math.max(0, Math.min(1, stage / n)) : 1;
+function mapRegion(core, f) {
+  if (f >= 0.999) return { x0: 0, y0: 0, x1: COLS, y1: ROWS };
+  const cx = core.x + 0.5, cy = core.y + 0.5;
+  return { x0: Math.max(0, Math.round(cx * (1 - f))), y0: Math.max(0, Math.round(cy * (1 - f))),
+    x1: Math.min(COLS, Math.round(cx + (COLS - cx) * f)), y1: Math.min(ROWS, Math.round(cy + (ROWS - cy) * f)) };
+}
+const inRegion = (x, y, R) => x >= R.x0 && y >= R.y0 && x < R.x1 && y < R.y1;
 
 function mulberry32(a) {
   return function () {
@@ -253,7 +264,7 @@ const BOONS = [
 const CHAOS_LEVELS = [
   { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64] },
   { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78] },
-  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [14, 26, 38, 52, 68, 86] },
+  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [12, 24, 36, 50, 66, 84] },
   { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.35, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100] },
 ];
 

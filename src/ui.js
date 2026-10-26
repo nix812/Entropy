@@ -145,6 +145,8 @@ const UI = (() => {
     const sw = setup.startWave;
     const credits = Math.round(320 + computeMods(PROF.alloc, null).startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
     const CH = CHAOS_LEVELS[setup.chaos];
+    const f0 = stageFrac(CH.lanes.filter(w => w <= sw).length, CH.lanes.length), R0 = mapRegion(setup.map.core, f0);
+    setup.frac = f0;
     modal(`
       <div class="card setup">
         <div class="ch"><h2>New Run</h2>${modeChips()}<button class="x" data-act="close">✕</button></div>
@@ -156,17 +158,17 @@ const UI = (() => {
             <div class="lbl">Chaos</div>
             <div class="chips">${CHAOS_LEVELS.map((c, i) => `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>`).join('')}</div>
             <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite} · <b class="amber">Score ×${CH.score}</b></p>
-            <p class="note">Map ${COLS}×${ROWS} · ${CH.lanes.length} extra wormholes${CH.lanes[0] <= 1 ? ', one open from the start' : ''}</p>
+            <p class="note">Sector ${R0.x1 - R0.x0}×${R0.y1 - R0.y0} → ${COLS}×${ROWS} · ${CH.lanes.length} wormholes${CH.lanes[0] <= 1 ? ', one at start' : ''}</p>
           </div>
           <div class="col">
             <div class="lbl">Map</div>
             <canvas id="mapPrev" width="320" height="150"></canvas>
-            <div class="row"><button class="btn small" data-act="reroll">Reroll Map</button><span class="note">Harder chaos means bigger maps and more wormholes.</span></div>
+            <div class="row"><button class="btn small" data-act="reroll">Reroll Map</button><span class="note">Each wormhole expands the sector.</span></div>
           </div>
         </div>
         <div class="foot"><button class="btn primary" data-act="launch">Start · Wave ${sw}</button></div>
       </div>`, 'setup');
-    Render.preview_map($('#mapPrev'), setup.map);
+    Render.preview_map($('#mapPrev'), setup.map, setup.frac);
   }
   function modeChips() {
     return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily</button></div>`;
@@ -323,7 +325,7 @@ const UI = (() => {
   }
   function openPanel(p) {
     panel = p;
-    const left = p.x > COLS / 2;
+    const left = Render.tileToScreen(p.x + 0.5, p.y).x > Render.layout.W / 2;
     const el = $('#panel');
     el.hidden = false;
     el.className = 'panel ' + (left ? 'left' : 'right');
@@ -612,13 +614,13 @@ const UI = (() => {
   let lastTap = null;
   function tapTile(p) {
     if (G.aimAbility) {
-      if (p.x < 0 || p.y < 0 || p.x > COLS || p.y > ROWS) return;
+      const Rg = G.region; if (p.x < Rg.x0 || p.y < Rg.y0 || p.x > Rg.x1 || p.y > Rg.y1) return;
       useAbility(G.aimAbility, p.x, p.y);
       G.aimAbility = null; Render.aim = null; updateHud();
       return;
     }
     const tx = Math.floor(p.x), ty = Math.floor(p.y);
-    if (tx < 0 || ty < 0 || tx >= COLS || ty >= ROWS) { closePanel(); return; }
+    if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
     SFX.play('ui');
     if (tx === G.map.core.x && ty === G.map.core.y) return openCore();
     const t = G.towerAt[tIdx(tx, ty)];
@@ -979,7 +981,7 @@ const UI = (() => {
       case 'close2': closeModal(); if (G && !G.over && screen === 'game') G.paused = false; if (screen === 'game' && G && !G.over && act === 'close2') {} break;
       case 'sw': setup.startWave = +b.dataset.v; renderSetup(); break;
       case 'ch': setup.chaos = +b.dataset.v; rerollMap(); renderSetup(); break;
-      case 'reroll': rerollMap(); Render.preview_map($('#mapPrev'), setup.map); break;
+      case 'reroll': rerollMap(); renderSetup(); break;
       case 'launch': launch(); break;
       case 'launchDaily': launch(); break;
       case 'mode': setup.mode = b.dataset.v; if (setup.mode === 'std') rerollMap(); renderSetup(); break;
@@ -1102,7 +1104,7 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel,
+    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(),
     get screen() { return screen; }, get modalOpen() { return modalOpen; },
   };
 })();
@@ -1691,6 +1693,7 @@ const Tree = (() => {
   const webReset = migrateWeb();
   if (webReset) { Save.save(); setTimeout(() => UI.toast('PASSIVE WEB REBUILT', 'Fewer, stronger nodes. All your points are refunded.', '#ffb03a'), 900); }
   Render.init($('#cv'));
+  Render.onCam = () => UI.zoomChanged && UI.zoomChanged();
   Tree.init();
   hydrateIcons();
   UI.wire();

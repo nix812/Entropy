@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.14.0 · October 25, 2026**
+**Version at handoff: 1.15.0 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.14.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.15.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -105,9 +105,16 @@ Publish `dist/entropy.html` to the existing URL above.
 |---|---|---|---|
 | Calm | 22 | 16, 30, 46, 64 | HP ×0.7, score ×0.8 |
 | Normal | 26 | 15, 28, 42, 58, 78 | ×1 |
-| Unstable | 30 | 14, 26, 38, 52, 68, 86 | HP ×1.15, score ×1.35 |
+| Unstable | 30 | 12, 24, 36, 50, 66, 84 | HP ×1.15, score ×1.35 |
 | Pandemonium | 34 | **1**, 10, 20, 32, 46, 62, 80, 100 | HP ×1.35, score ×1.8 |
 
+- **Expanding sector (v1.15):** a run starts on `REGION0` = 60% of the full map (rows and columns), placed so the core keeps the same relative position. Each time a wormhole is *detected*, `growRegion()` widens the sector one step (`stageFrac(stage, N)`, linear), so the last scheduled wormhole brings the full map.
+  - `G.region = {x0, y0, x1, y1}` (tiles, x1/y1 exclusive) is derived, never stored: `regionAt(G.lanesOpened)`. Snapshots carry `grow: 1`; snapshots without it (v1.14 and older) resume with `G.fullMap = true`.
+  - `genMap` builds the main path inside the starting sector. `genExtraLane` searches and pathfinds only inside the current (already grown) sector, placing wormholes at 75–100% of the in-bounds distance.
+  - `extendMain(R)` lengthens the main path from its old start to the new left edge, with a 3–7 row jog. It replaces `map.lanes[0]` with a new lane object; enemies already walking keep the old object, so nobody jumps. The main path grows from about 55 to about 100 tiles on Normal.
+  - `canBuildAt`, taps, ability aim and storms (spawn, drift bounds, Maelstrom centre) all respect `G.region`.
+  - **Camera:** `Render` frames `reg` (buffer px), not the whole buffer. `updateRegion()` snaps on a new run and otherwise eases over 2.6 s (wall clock, so it runs while paused), resets zoom to 1, and draws the old border as a fading dashed outline. The minimap shows the sector. `Render.onCam` lets the UI refresh the Fit button.
+  - **Setup screen:** the preview dims the full map and outlines the starting sector; the note reads "Sector 28×16 → 47×26".
 - **Columns** are fitted to the playfield aspect: `fitCols()` = `ROWS × w / h`, clamped to 38–76. A phone on Normal gets about 44×26.
 - **Core position:** the core sits 6–8 tiles in from the right edge, so wormholes can open on every side, including behind it.
 - **`genExtraLane`:**
@@ -268,18 +275,19 @@ Publish `dist/entropy.html` to the existing URL above.
 | `par.sh` | `COLS=48 bash test/par.sh N points chaos startWave bestWave`: N seeds in parallel, printing a summary row each. Column 3 is the wave reached; column 6 is what killed the run. |
 | `mkpage.py` | Wraps `dist/entropy.html` with local fonts into `test/out/page.html` for Playwright. **Ad-hoc Playwright scripts must call `mkpage.mk()` after a rebuild**, or they test a stale page. |
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
+| `expandshot.py [W H chaos]` | Triggers a wormhole detection and screenshots the zoom-out (`x03_expand_*.png`), then jumps to the full map (`x04_full.png`). |
 | `bossshot.py`, `constshot.py`, `navshot.py`, `novashot.py`, `snareshot.py`, `tipshot.py`, `webshot.py` | Focused screenshot scripts for each feature. |
 
-**Balance baseline at v1.14.0** (fresh profile, 0 points, bots, COLS=48):
+**Balance baseline at v1.15.0** (fresh profile, 0 points, bots, COLS=48, the same 12 seeds; v1.14 in brackets):
 
 | Chaos | Average wave |
 |---|---|
-| Calm | about 52 |
-| Normal | about 47 (12 seeds) |
-| Unstable | about 31 (measured before its first lane moved from 12 to 14) |
-| Pandemonium | about 37 |
+| Calm | about 51 (44) |
+| Normal | about 45 (42) |
+| Unstable | about 39 (32), after moving its first lane back to wave 12 (at wave 14 it measured 45, level with Normal) |
+| Pandemonium | about 36 (34) |
 
-At 50 points on Normal, the bot reaches about wave 63 at COLS=40 on the previous 21-row map; it hasn't been re-measured on the current 26-row map. The bot is weak at defending several directions, so real play is somewhat easier than these numbers.
+The expanding sector made every level a little easier, because the compact early map lets towers near the core cover several lanes. The bot is weak at defending several directions, so real play is somewhat easier than these numbers.
 
 ---
 
@@ -294,6 +302,8 @@ At 50 points on Normal, the bot reaches about wave 63 at COLS=40 on the previous
 8. **Snapshots** must stay compatible across versions. The resume path passes `rows: S.rows || 15`. If snapshot fields change, migrate them; don't discard runs.
 9. **`tipify` is global** (`globalThis.tipify`) because the `Tree` module lives outside the `UI` closure.
 10. **Commits** must be authored as Claude with the attribution trailer.
+11. **`G.region` bounds everything placeable.** New code that picks random tiles or spawn points must use `G.region`, not `0..COLS/ROWS`, or things land in unrevealed ground.
+12. **Never mutate `map.lanes[0]` in place** when its shape changes; build a new lane with `makeLane` so walking enemies keep valid geometry.
 
 ---
 
@@ -309,7 +319,7 @@ At 50 points on Normal, the bot reaches about wave 63 at COLS=40 on the previous
 
 ## 9. Backlog and ideas discussed
 - **Keystones costing 2 points**, to slow web completion for veterans. Proposed, not built.
-- **Watch Unstable versus Pandemonium difficulty.** Unstable tested harder for new players because Pandemonium's longer paths compensate. Unstable's first lane was moved to wave 14 but not re-measured.
+- **Watch the expanding sector's balance.** Bots say v1.15 is slightly easier at every level; check Nic's feel before touching HP. Possible knobs: `REGION0` (start size), the main-path extension jog (3–7 rows), wormhole radius (75–100%).
 - **If multi-direction wormholes feel too punishing:** lengthen the warning, or make the first lane longer.
 - **Smarter test bot** that defends multiple lanes, for more trustworthy balance numbers.
 - **Possible extras:** more oddball bosses, more Laws after all 9 are owned, cosmetic galaxy colours per Supernova (the menu background and web dust), and an animated build-card idle.
@@ -332,3 +342,4 @@ At 50 points on Normal, the bot reaches about wave 63 at COLS=40 on the previous
 | 1.12 | 360° wormholes with an inset core |
 | 1.13 | Larger maps, double-tap zoom, 4× zoom, economy rebalance |
 | 1.14 | Map size and wormhole count scale with Chaos; build-menu card art |
+| 1.15 | Expanding sector: runs start on 60% of the map, each wormhole grows it, the camera pulls back and the main path extends |

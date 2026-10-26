@@ -11,6 +11,9 @@ const Render = (() => {
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
   const cam = { z: 1, x: 0, y: 0 };
+  // the framed sector (buffer px). It eases outward when the run's sector grows.
+  const reg = { x: 0, y: 0, w: 0, h: 0 };
+  let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0;
   let scan = null, scanPat = null;
   let selTile = null, selTower = null, preview = null, aimPos = null;
@@ -555,15 +558,38 @@ const Render = (() => {
 
   // ---------- camera ----------
   function fit() {
-    scale = Math.min(W / BW, H / BH);
-    ox = Math.round((W - BW * scale) / 2); oy = Math.round((H - BH * scale) / 2);
+    const rw = reg.w || BW, rh = reg.h || BH;
+    scale = Math.min(W / rw, H / rh);
+    ox = Math.round((W - rw * scale) / 2); oy = Math.round((H - rh * scale) / 2);
   }
   function view() {
-    const vw = BW / cam.z, vh = BH / cam.z;
-    const vx = clamp(cam.x - vw / 2, 0, BW - vw), vy = clamp(cam.y - vh / 2, 0, BH - vh);
+    const vw = reg.w / cam.z, vh = reg.h / cam.z;
+    const vx = clamp(cam.x - vw / 2, reg.x, reg.x + reg.w - vw), vy = clamp(cam.y - vh / 2, reg.y, reg.y + reg.h - vh);
     return { vx, vy, vw, vh };
   }
-  function resetCam() { cam.z = 1; cam.x = BW / 2; cam.y = BH / 2; }
+  function resetCam() { cam.z = 1; cam.x = reg.x + reg.w / 2; cam.y = reg.y + reg.h / 2; }
+  // follow G.region: snap on a new run, otherwise pull the camera back over a few seconds
+  const easeIO = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  function updateRegion() {
+    const R = G.region || { x0: 0, y0: 0, x1: COLS, y1: ROWS };
+    const T = { x: R.x0 * TILE, y: R.y0 * TILE, w: (R.x1 - R.x0) * TILE, h: (R.y1 - R.y0) * TILE };
+    const key = T.x + ',' + T.y + ',' + T.w + ',' + T.h, now = performance.now();
+    if (G !== regG || !reg.w) { regG = G; regKey = key; Object.assign(reg, T); regAnim = null; frontier = null; resetCam(); }
+    else if (key !== regKey) {
+      regKey = key;
+      frontier = { x: reg.x, y: reg.y, w: reg.w, h: reg.h, t0: now };
+      regAnim = { from: { x: reg.x, y: reg.y, w: reg.w, h: reg.h }, to: T, t0: now, dur: 2600 };
+      const was = cam.z; cam.z = 1;
+      if (was > 1.01 && onCam) onCam();
+    }
+    if (regAnim) {
+      const k = Math.min(1, (now - regAnim.t0) / regAnim.dur), e = easeIO(k), A = regAnim.from, B = regAnim.to;
+      reg.x = A.x + (B.x - A.x) * e; reg.y = A.y + (B.y - A.y) * e; reg.w = A.w + (B.w - A.w) * e; reg.h = A.h + (B.h - A.h) * e;
+      if (k >= 1) { Object.assign(reg, B); regAnim = null; }
+      if (cam.z <= 1.001) resetCam();
+    }
+    fit();
+  }
   function clampCam() { const v = view(); cam.x = v.vx + v.vw / 2; cam.y = v.vy + v.vh / 2; }
   function screenToBuf(sx, sy) { const v = view(); return { x: v.vx + (sx - ox) / (scale * cam.z), y: v.vy + (sy - oy) / (scale * cam.z) }; }
   function screenToTile(sx, sy) { const p = screenToBuf(sx, sy); return { x: p.x / TILE, y: p.y / TILE }; }
@@ -585,6 +611,7 @@ const Render = (() => {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.fillStyle = PAL.bg; c.fillRect(0, 0, cv.width, cv.height);
     if (!G) return;
+    updateRegion();
     ensureBuffers();
     const key = G.seed + ':' + G.map.lanes.length + ':' + COLS + ':' + (G.mapRev || 0);
     if (key !== mapKey) { mapKey = key; mapDirty = true; }
@@ -719,7 +746,7 @@ const Render = (() => {
     mctx.imageSmoothingEnabled = false;
     mctx.drawImage(buf, vxI, vyI, vwI, vhI, 0, 0, vwI * k, vhI * k);
     c.imageSmoothingEnabled = true;
-    const DW = BW * scale, DH = BH * scale, X0 = ox + sx, Y0 = oy + sy;
+    const DW = reg.w * scale, DH = reg.h * scale, X0 = ox + sx, Y0 = oy + sy;
     c.drawImage(mid, (v.vx - vxI) * k, (v.vy - vyI) * k, v.vw * k, v.vh * k, X0, Y0, DW, DH);
     // lighting pass: additive soft lights in screen space
     const ws = scale * cam.z, bx2s = x => X0 + (x - v.vx) * ws, by2s = y => Y0 + (y - v.vy) * ws;
@@ -752,6 +779,19 @@ const Render = (() => {
       for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const px = x + dx * w, py = y + dy * w, sx2 = dx ? -1 : 1, sy2 = dy ? -1 : 1; c.moveTo(px, py + sy2 * L); c.lineTo(px, py); c.lineTo(px + sx2 * L, py); }
       c.stroke();
     }
+    // the old sector border fades out as the camera pulls back
+    if (frontier) {
+      const age = (performance.now() - frontier.t0) / 1000, a = age < 0.4 ? age / 0.4 : Math.max(0, 1 - (age - 0.4) / 3.2);
+      if (a <= 0) frontier = null;
+      else {
+        const x = bx2s(frontier.x), y = by2s(frontier.y), w = frontier.w * ws, h = frontier.h * ws;
+        c.setLineDash([6, 6]); c.lineDashOffset = -frame / 2; c.lineWidth = 2; c.strokeStyle = hexA('#b86cff', 0.75 * a);
+        c.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w), Math.round(h)); c.setLineDash([]);
+        c.fillStyle = hexA('#07080f', 0.35 * a);
+        const X1 = x + w, Y1 = y + h;
+        c.fillRect(ox, oy, DW, y - oy); c.fillRect(ox, Y1, DW, oy + DH - Y1); c.fillRect(ox, y, x - ox, h); c.fillRect(X1, y, ox + DW - X1, h);
+      }
+    }
     // veterans waiting for a mutation: a bobbing badge above the tower
     c.font = '10px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
     for (const t of G.towers) if (t.pending > 0) {
@@ -762,8 +802,8 @@ const Render = (() => {
     }
     c.restore();
 
-    if (G.stasisT > 0) { c.fillStyle = 'rgba(106,226,255,0.08)'; c.fillRect(ox, oy, BW * scale, BH * scale); }
-    if (G.overclockT > 0 && frame % 10 < 5) { c.fillStyle = 'rgba(255,225,77,0.04)'; c.fillRect(ox, oy, BW * scale, BH * scale); }
+    if (G.stasisT > 0) { c.fillStyle = 'rgba(106,226,255,0.08)'; c.fillRect(ox, oy, DW, DH); }
+    if (G.overclockT > 0 && frame % 10 < 5) { c.fillStyle = 'rgba(255,225,77,0.04)'; c.fillRect(ox, oy, DW, DH); }
     if (dt <= 0) flashes = [];
     for (const f of flashes) { f.life -= dt; c.fillStyle = hexA(f.col, Math.max(0, f.life / f.max) * f.a); c.fillRect(0, 0, W, H); }
     flashes = flashes.filter(f => f.life > 0);
@@ -793,10 +833,10 @@ const Render = (() => {
     }
     // zoom minimap hint
     if (cam.z > 1.01) {
-      const mw = 64, mh = mw * BH / BW, mx = W - mw - 8, my = H - mh - 8;
+      const mw = 64, mh = mw * reg.h / reg.w, mx = W - mw - 8, my = H - mh - 8;
       c.fillStyle = 'rgba(7,8,15,0.7)'; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
-      c.drawImage(mapLayer, mx, my, mw, mh);
-      c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + v.vx / BW * mw, my + v.vy / BH * mh, v.vw / BW * mw, v.vh / BH * mh);
+      c.drawImage(mapLayer, reg.x, reg.y, reg.w, reg.h, mx, my, mw, mh);
+      c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
     if (!scanPat) scanPat = c.createPattern(scan, 'repeat');
     c.fillStyle = scanPat; c.fillRect(0, 0, W, H);
@@ -924,23 +964,29 @@ const Render = (() => {
     if (ROTATES[type]) { tg.save(); tg.translate(12, 12); tg.rotate(-0.6); tg.imageSmoothingEnabled = false; tg.drawImage(top, -12, -12); tg.restore(); } else tg.drawImage(top, 0, 0);
     g.drawImage(tmp, 0, 0, 24, 24, 0, 0, canvas.width, canvas.height);
   }
-  function preview_map(canvas, map) {
+  // setup preview: the whole map dimmed, with the starting sector lit and outlined
+  function preview_map(canvas, map, frac) {
     const g = canvas.getContext('2d'), cols = map.tiles.length / ROWS, s = canvas.width / cols;
     canvas.height = Math.round(canvas.width * ROWS / cols);
     g.fillStyle = PAL.bg; g.fillRect(0, 0, canvas.width, canvas.height);
+    const Rg = mapRegion(map.core, frac || REGION0);
     for (let y = 0; y < ROWS; y++) for (let x = 0; x < cols; x++) {
-      const t = map.tiles[y * cols + x];
-      g.fillStyle = t === 1 ? '#3a2f58' : t === 5 ? '#2a1d44' : t === 2 ? '#3c4470' : t === 4 ? PAL.core : '#141831';
+      const t = map.tiles[y * cols + x], inR = inRegion(x, y, Rg);
+      g.fillStyle = t === 1 ? '#3a2f58' : t === 5 ? '#2a1d44' : t === 2 ? (inR ? '#3c4470' : '#1c2038') : t === 4 ? PAL.core : inR ? '#141831' : '#0c0e1d';
       g.fillRect(Math.floor(x * s), Math.floor(y * s), Math.ceil(s) - (t === 0 ? 1 : 0), Math.ceil(s) - (t === 0 ? 1 : 0));
     }
     const p = map.lanes[0].tiles[0];
     g.fillStyle = PAL.bad; g.fillRect(Math.floor(p.x * s), Math.floor(p.y * s), Math.ceil(s), Math.ceil(s));
+    g.strokeStyle = 'rgba(184,108,255,0.8)'; g.lineWidth = 1; g.setLineDash([3, 3]);
+    g.strokeRect(Math.round(Rg.x0 * s) + 0.5, Math.round(Rg.y0 * s) + 0.5, Math.round((Rg.x1 - Rg.x0) * s) - 1, Math.round((Rg.y1 - Rg.y0) * s) - 1);
+    g.setLineDash([]);
   }
   return {
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
     get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, markMap() { mapDirty = true; },
+    set onCam(f) { onCam = f; },
     tileToScreen,
   };
 })();
