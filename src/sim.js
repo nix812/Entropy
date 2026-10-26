@@ -1564,14 +1564,18 @@ function kill(e, src, o) {
     for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 1.44) t.disabled = Math.max(t.disabled, 2);
     Hooks.fx('emp', { x: e.x, y: e.y, r: 1.2 });
   }
-  if (e.boss) {
+  // Gloop's offspring are part of one boss: the reward comes when the last of the family dies
+  const bossDown = e.boss && (e.boss !== 'gloop' || ((e.gen || 0) >= 2 && !G.enemies.some(o => o !== e && !o.dead && o.boss === 'gloop')));
+  if (bossDown) {
     G.tokens++; G.stats.bossKills++; addEntropy(15);
     PROF.codex.bosses[e.boss] = (PROF.codex.bosses[e.boss] || 0) + 1;
-    Hooks.log(`${e.bossName} defeated · +1 Recalibration token`, '#59f0b4');
-    const opts = []; const pool = BOONS.slice();
-    for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
-    G.draft = opts;
-    Hooks.onDraft(opts);
+    Hooks.log(`${e.gen ? 'Gloop' : e.bossName} defeated · +1 Recalibration token`, '#59f0b4');
+    if (!G.draft) { // one boon pick at a time
+      const opts = []; const pool = BOONS.slice();
+      for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
+      G.draft = opts;
+      Hooks.onDraft(opts);
+    }
   }
 }
 const depth0 = o => (o && o.depth) || 0;
