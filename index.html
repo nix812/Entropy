@@ -555,7 +555,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.15.0';
+const VERSION = '1.15.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -2779,14 +2779,18 @@ function kill(e, src, o) {
     for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 1.44) t.disabled = Math.max(t.disabled, 2);
     Hooks.fx('emp', { x: e.x, y: e.y, r: 1.2 });
   }
-  if (e.boss) {
+  // Gloop's offspring are part of one boss: the reward comes when the last of the family dies
+  const bossDown = e.boss && (e.boss !== 'gloop' || ((e.gen || 0) >= 2 && !G.enemies.some(o => o !== e && !o.dead && o.boss === 'gloop')));
+  if (bossDown) {
     G.tokens++; G.stats.bossKills++; addEntropy(15);
     PROF.codex.bosses[e.boss] = (PROF.codex.bosses[e.boss] || 0) + 1;
-    Hooks.log(`${e.bossName} defeated · +1 Recalibration token`, '#59f0b4');
-    const opts = []; const pool = BOONS.slice();
-    for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
-    G.draft = opts;
-    Hooks.onDraft(opts);
+    Hooks.log(`${e.gen ? 'Gloop' : e.bossName} defeated · +1 Recalibration token`, '#59f0b4');
+    if (!G.draft) { // one boon pick at a time
+      const opts = []; const pool = BOONS.slice();
+      for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
+      G.draft = opts;
+      Hooks.onDraft(opts);
+    }
   }
 }
 const depth0 = o => (o && o.depth) || 0;
@@ -5348,6 +5352,11 @@ const UI = (() => {
       <div class="foot"><button class="btn" data-act="hallBack">Back</button></div></div>`, 'hall');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
+  function openDraft(opts) {
+    modal(`<div class="card"><div class="ch"><h2>Boss Defeated</h2><span class="note">Choose a boon. Lasts until the run ends. +1 Recalibration token.</span></div>
+      <div class="boons">${opts.map((b, i) => `<button class="boon" data-act="boon" data-v="${i}"><b>${esc(b.name)}</b><span>${tipify(b.desc)}</span></button>`).join('')}</div></div>`, 'draft');
+    SFX.play('milestone');
+  }
   function openGameOver() {
     const L = profLevel(), gained = L.level - G.lvlStart;
     const best = G.wave > (G.bestAtStart || 0);
@@ -5620,7 +5629,7 @@ const UI = (() => {
       case 'settings': openSettings(); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); abandonRun(); break;
-      case 'boon': { const o = G.draft[+b.dataset.v]; takeBoon(o); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
+      case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } takeBoon(o); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
       case 'anom': { takeAnomaly(b.dataset.v); closeModal(); G.paused = false; const A = ANOMALIES.find(a => a.id === b.dataset.v); toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
       case 'stab': { stabilize(); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
       case 'hangar': closeModal(); G = null; show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
@@ -5729,6 +5738,7 @@ const UI = (() => {
   function tick(dt) {
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
+    if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen) { closePanel(); openDraft(G.draft); }
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
