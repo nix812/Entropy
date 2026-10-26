@@ -238,13 +238,17 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
   overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 10px 0; z-index: 6; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; animation: pin 0.15s; }
 .pfoot { position: sticky; bottom: 0; margin: auto -10px 0; padding: 8px 10px 10px; background: linear-gradient(rgba(12, 14, 28, 0.85), rgb(12, 14, 28) 10px); display: flex; flex-direction: column; gap: 6px; z-index: 2; }
 .bgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
-.bt { background: var(--panel); border: 0; padding: 5px 2px 3px; display: flex; flex-direction: column; align-items: center; gap: 3px; box-shadow: inset 0 0 0 1px var(--line); min-height: 44px; position: relative; }
-.bt canvas { width: 26px; height: 26px; }
-.bt b { font-family: var(--f-term); font-weight: 400; font-size: 16px; line-height: 1; color: var(--amber); font-variant-numeric: tabular-nums; }
+.bt { background: var(--panel); border: 0; padding: 0 0 3px; display: flex; flex-direction: column; align-items: stretch; gap: 2px; box-shadow: inset 0 0 0 1px var(--line); position: relative; overflow: hidden; }
+.bt canvas.tcard { width: 100%; aspect-ratio: 34 / 22; height: auto; image-rendering: pixelated; display: block; }
+.bt .bn { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px; gap: 2px; }
+.bt .bn em { font-style: normal; font-family: var(--f-pix); font-size: 7px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c, #a9a7c4); white-space: nowrap; overflow: hidden; }
+.bt b { font-family: var(--f-term); font-weight: 400; font-size: 15px; line-height: 1; color: var(--amber); font-variant-numeric: tabular-nums; }
+.bt:not(.locked):active canvas.tcard { filter: brightness(1.3); }
+@media (max-height: 440px) { .bt canvas.tcard { aspect-ratio: 34 / 15; object-fit: cover; } .bt .bn em { font-size: 6px; } .bt b { font-size: 14px; } }
 .bt b.poor { color: #6a5a40; }
-.bt.on { box-shadow: inset 0 0 0 2px var(--amber); background: #1c1a24; }
-.bt.locked { opacity: 0.35; }
-.bt.locked b { color: var(--dim); font-size: 13px; }
+.bt.on { box-shadow: inset 0 0 0 2px var(--amber); background: #1c1a24; } .bt.on::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px var(--amber); pointer-events: none; }
+.bt.locked { opacity: 0.6; }
+.bt.locked b { color: var(--dim); font-size: 12px; } .bt.locked .bn em { color: var(--dim); }
 .bt i { position: absolute; left: 0; right: 0; top: 0; height: 2px; }
 .binfo { display: flex; flex-direction: column; gap: 2px; min-height: 0; }
 .binfo b { font-family: var(--f-pix); font-size: 11px; text-transform: uppercase; }
@@ -551,14 +555,15 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.13.0';
+const VERSION = '1.14.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
-const ROWS = 21, TILE = 24;
+let ROWS = 26; const TILE = 24;
 let BW = COLS * TILE, BH = ROWS * TILE;
-function setCols(n) { COLS = Math.max(32, Math.min(62, Math.round(n))); BW = COLS * TILE; }
+function setRows(n) { ROWS = n; BH = ROWS * TILE; }
+function setCols(n) { COLS = Math.max(38, Math.min(76, Math.round(n))); BW = COLS * TILE; }
 
 function mulberry32(a) {
   return function () {
@@ -801,10 +806,10 @@ const BOONS = [
 ];
 
 const CHAOS_LEVELS = [
-  { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7 },
-  { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1 },
-  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15 },
-  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.35 },
+  { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64] },
+  { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78] },
+  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [14, 26, 38, 52, 68, 86] },
+  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.35, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100] },
 ];
 
 // ---------- Passive web ----------
@@ -1573,6 +1578,7 @@ function newRun(opts) {
   const seed = opts.seed || Math.floor(Math.random() * 1e9);
   const r = mulberry32(seed);
   const chaos = clamp(opts.chaos ?? 1, 0, 3);
+  setRows(opts.rows || CHAOS_LEVELS[chaos].rows);
   G = {
     seed, r, chaos, CH: CHAOS_LEVELS[chaos], startWave: Math.max(1, opts.startWave || 1), cols: COLS,
     time: 0, speed: 1, paused: false, over: false,
@@ -1582,7 +1588,7 @@ function newRun(opts) {
     charges: { strike: 1, nova: 0, stasis: 0, overclock: 0 }, aimAbility: null,
     runMods: {}, mods: null, tokens: 2, legendQueue: 0, rerollDisc: false,
     nextMs: 0, msIdx: 0, ev: {}, evList: [], evT: {}, overclockT: 0, stasisT: 0,
-    stormT: 50, lanesOpened: 0, laneWaves: [15, 28, 42, 58, 78], laneWarn: null,
+    stormT: 50, lanesOpened: 0, laneWaves: CHAOS_LEVELS[chaos].lanes.slice(), laneWarn: null, rows: ROWS,
     rift: null, eid: 1, tid: 1, dmgLog: { combos: 0 }, unbreakUsed: -99, boonsTaken: [],
     core: null, dpsClock: 0, coreAngle: 0,
     checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
@@ -3230,7 +3236,7 @@ function snapshotRun(waveNum) {
 function snapshotNow() { if (G && !G.over) snapshotRun(G.spawningDone ? G.wave + 1 : G.wave); }
 function resumeRun(S) {
   const r = mulberry32((S.seed ^ (S.wave * 7919)) >>> 0);
-  newRun({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32 });
+  newRun({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15 });
   PROF.runs--; // newRun counted it; a resume is the same run
   G.r = r;
   G.map.tiles = S.tiles.slice();
@@ -4461,6 +4467,31 @@ const Render = (() => {
     const sc = scan.getContext('2d'); sc.fillStyle = 'rgba(0,0,0,0.13)'; sc.fillRect(0, 2, 1, 1);
   }
   function reset() { parts = []; rings = []; lines = []; texts = []; flashes = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
+
+  // build-menu card art: the tower on a lit plinth against its element's colour
+  function towerCard(type, canvas, locked) {
+    const W2 = 34, H2 = 22, el = TOWERS[type].el, c = EL[el].col, Z = 4;
+    canvas.width = W2 * Z; canvas.height = H2 * Z;
+    const g = canvas.getContext('2d'); g.imageSmoothingEnabled = false; g.setTransform(Z, 0, 0, Z, 0, 0);
+    const bg = g.createLinearGradient(0, 0, 0, H2); bg.addColorStop(0, locked ? '#0c0d16' : sh(c, -0.78)); bg.addColorStop(1, '#06070d');
+    g.fillStyle = bg; g.fillRect(0, 0, W2, H2);
+    if (!locked) {
+      const rg = g.createRadialGradient(17, 11, 1, 17, 11, 15); rg.addColorStop(0, hexA(c, 0.45)); rg.addColorStop(1, hexA(c, 0));
+      g.fillStyle = rg; g.fillRect(0, 0, W2, H2);
+      let sd = type.length * 97; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+      for (let k = 0; k < 7; k++) { g.fillStyle = rnd() < 0.5 ? '#ffffff' : sh(c, 0.4); g.globalAlpha = 0.25 + rnd() * 0.5; g.fillRect(Math.floor(rnd() * W2), Math.floor(rnd() * 10), 1, 1); }
+      g.globalAlpha = 1;
+      g.fillStyle = hexA(c, 0.5); g.fillRect(4, 19, 26, 1); g.fillStyle = hexA(c, 0.22); g.fillRect(2, 20, 30, 1);
+    }
+    g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(9, 18, 16, 2);
+    const tmp = document.createElement('canvas'); tmp.width = tmp.height = 24;
+    const tg = tmp.getContext('2d'); tg.imageSmoothingEnabled = false;
+    tg.drawImage(baseSprite(el), 0, 0);
+    const top = topSprite(type, el, 0);
+    if (ROTATES[type]) { tg.save(); tg.translate(12, 12); tg.rotate(-0.6); tg.drawImage(top, -12, -12); tg.restore(); } else tg.drawImage(top, 0, 0);
+    if (locked) { g.globalAlpha = 0.9; g.drawImage(tinted('lk:' + type, tmp, '#151829'), 5, -3); g.globalAlpha = 1; }
+    else g.drawImage(tmp, 5, -3);
+  }
   function towerIcon(type, canvas) {
     const g = canvas.getContext('2d'), el = TOWERS[type].el;
     g.imageSmoothingEnabled = false; g.clearRect(0, 0, canvas.width, canvas.height);
@@ -4484,7 +4515,7 @@ const Render = (() => {
     g.fillStyle = PAL.bad; g.fillRect(Math.floor(p.x * s), Math.floor(p.y * s), Math.ceil(s), Math.ceil(s));
   }
   return {
-    init, resize, draw, fx, reset, towerIcon, preview_map, screenToTile, zoomAt, panBy, resetCam,
+    init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
     get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, markMap() { mapDirty = true; },
@@ -4538,7 +4569,6 @@ const Save = (() => {
     const out = Object.assign(d, p);
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
     out.webV = p.webV || 1;
-    if (out.runSnap && out.runSnap.rows !== ROWS) out.runSnap = null; // map size changed: old runs can't resume
     out.alloc = Array.isArray(p.alloc) ? p.alloc.filter(id => TREE.nodes[id]) : ['start'];
     if (!out.alloc.includes('start')) out.alloc.unshift('start');
     if (!Array.isArray(out.builds) || out.builds.length !== 5) out.builds = [null, null, null, null, null];
@@ -4628,6 +4658,7 @@ const UI = (() => {
     renderSetup();
   }
   function rerollMap() {
+    setRows(CHAOS_LEVELS[setup.chaos ?? 1].rows);
     setCols(fitCols());
     setup.seed = Math.floor(Math.random() * 1e9);
     setup.map = genMap(mulberry32(setup.seed));
@@ -4650,11 +4681,12 @@ const UI = (() => {
             <div class="lbl">Chaos</div>
             <div class="chips">${CHAOS_LEVELS.map((c, i) => `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>`).join('')}</div>
             <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite} · <b class="amber">Score ×${CH.score}</b></p>
+            <p class="note">Map ${COLS}×${ROWS} · ${CH.lanes.length} extra wormholes${CH.lanes[0] <= 1 ? ', one open from the start' : ''}</p>
           </div>
           <div class="col">
             <div class="lbl">Map</div>
             <canvas id="mapPrev" width="320" height="150"></canvas>
-            <div class="row"><button class="btn small" data-act="reroll">Reroll Map</button><span class="note">More lanes open in later waves.</span></div>
+            <div class="row"><button class="btn small" data-act="reroll">Reroll Map</button><span class="note">Harder chaos means bigger maps and more wormholes.</span></div>
           </div>
         </div>
         <div class="foot"><button class="btn primary" data-act="launch">Start · Wave ${sw}</button></div>
@@ -4667,6 +4699,7 @@ const UI = (() => {
   function renderDaily() {
     const spec = dailySpec(dailyKey());
     setCols(fitCols());
+    setRows(CHAOS_LEVELS[spec.chaos].rows); setCols(fitCols());
     setup.daily = spec; setup.seed = spec.seed; setup.map = genMap(mulberry32(spec.seed));
     const d = PROF.daily && PROF.daily.date === spec.date ? PROF.daily : null;
     modal(`
@@ -4831,6 +4864,7 @@ const UI = (() => {
     else if (panel.kind === 'core') el.innerHTML = corePanelHTML();
     else if (panel.kind === 'cash') el.innerHTML = cashPanelHTML();
     for (const cv of el.querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
+    for (const cv of el.querySelectorAll('canvas[data-card]')) Render.towerCard(cv.dataset.card, cv, !!cv.dataset.lock);
     liveRefreshPanel();
   }
   function costBtn(cost) { return `data-cost="${cost}"`; }
@@ -4838,9 +4872,9 @@ const UI = (() => {
     const order = TOWER_ORDER.filter(towerUnlocked).concat(TOWER_ORDER.filter(k => !towerUnlocked(k)));
     const tiles = order.map(k => {
       const D = TOWERS[k];
-      if (!towerUnlocked(k)) return `<div class="bt locked" aria-label="${esc(D.name)} locked"><canvas class="ico" width="24" height="24" data-ico="${k}"></canvas><b>W${D.unlock}</b></div>`;
+      if (!towerUnlocked(k)) return `<div class="bt locked" aria-label="${esc(D.name)} locked"><canvas class="tcard" data-card="${k}" data-lock="1"></canvas><span class="bn"><em>???</em><b>Wave ${D.unlock}</b></span></div>`;
       const cost = towerCost(k);
-      return `<button class="bt ${pick === k ? 'on' : ''}" data-act="pick" data-type="${k}" aria-label="${esc(D.name)}"><i style="background:${EL[D.el].col}"></i><canvas class="ico" width="24" height="24" data-ico="${k}"></canvas><b ${costBtn(cost)}>${fmt(cost)}</b></button>`;
+      return `<button class="bt ${pick === k ? 'on' : ''}" data-act="pick" data-type="${k}" aria-label="${esc(D.name)}" style="--c:${EL[D.el].col}"><canvas class="tcard" data-card="${k}"></canvas><span class="bn"><em>${esc(TSHORT[k] || D.name)}</em><b ${costBtn(cost)}>${fmt(cost)}</b></span></button>`;
     }).join('');
     let info, foot;
     if (pick) {
@@ -5047,6 +5081,7 @@ const UI = (() => {
     Render.sel = { x: t.x, y: t.y }; Render.selT = t; Render.prev = null; G.selCore = false;
     openPanel({ kind: 'tower', t, x: t.x, y: t.y });
   }
+  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', lens: 'Lens', emp: 'EMP', grav: 'Gravity' };
   function openBuild(x, y) {
     Render.sel = { x, y }; Render.selT = null; G.selCore = false;
     pick = null; Render.prev = null;
@@ -5129,7 +5164,7 @@ const UI = (() => {
     if (!pr) { pr = document.createElement('div'); pr.id = 'fitProbe'; pr.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;top:0;left:max(8px,var(--sal));right:max(8px,var(--sar));bottom:max(6px,var(--sab));'; $('#app').appendChild(pr); }
     const r = pr.getBoundingClientRect(), rail = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail')) || 56;
     const w = Math.max(300, r.width / UIS - 2 * rail - 12), h = Math.max(200, r.height / UIS - 32);
-    return clamp(Math.round(ROWS * w / h), 24, 44);
+    return clamp(Math.round(ROWS * w / h), 38, 76);
   }
 
   // ---------- modals ----------
@@ -5330,7 +5365,7 @@ const UI = (() => {
         ['Ascend', 'Upgrade past max level for ×1.3 Damage and a new affix.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
         ['Milestone', 'Score threshold. Grants an ability charge and a small bonus.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
-        ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. Lanes open at Waves 15, 28, 42, 58 and 78.'],
+        ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave. Full sell refunds and free respec. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
@@ -5468,7 +5503,7 @@ const UI = (() => {
       case 'novaGo': doNova(); break;
       case 'close2': closeModal(); if (G && !G.over && screen === 'game') G.paused = false; if (screen === 'game' && G && !G.over && act === 'close2') {} break;
       case 'sw': setup.startWave = +b.dataset.v; renderSetup(); break;
-      case 'ch': setup.chaos = +b.dataset.v; renderSetup(); break;
+      case 'ch': setup.chaos = +b.dataset.v; rerollMap(); renderSetup(); break;
       case 'reroll': rerollMap(); Render.preview_map($('#mapPrev'), setup.map); break;
       case 'launch': launch(); break;
       case 'launchDaily': launch(); break;
