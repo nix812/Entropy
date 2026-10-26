@@ -551,14 +551,14 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.12.0';
+const VERSION = '1.13.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // The map is always 15 rows tall; its width adapts to the screen so there is no letterboxing.
 let COLS = 36;
-const ROWS = 15, TILE = 24;
+const ROWS = 21, TILE = 24;
 let BW = COLS * TILE, BH = ROWS * TILE;
-function setCols(n) { COLS = Math.max(24, Math.min(44, Math.round(n))); BW = COLS * TILE; }
+function setCols(n) { COLS = Math.max(32, Math.min(62, Math.round(n))); BW = COLS * TILE; }
 
 function mulberry32(a) {
   return function () {
@@ -1387,7 +1387,7 @@ function computeMods(alloc, runMods) {
 // ---------------- Run state ----------------
 let G = null;
 const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * Math.pow(1.0011, (w - 1) * (w - 1));
-const crMult = w => 1 + 0.05 * (w - 1);
+const crMult = w => 1.1 * (1 + 0.05 * (w - 1));
 const tIdx = (x, y) => y * COLS + x;
 const RESON_DMG = 0.08;
 const towerLabel = t => t.name ? `${TOWERS[t.type].name} "${t.name}"` : TOWERS[t.type].name;
@@ -1515,10 +1515,15 @@ function genExtraLane(r, openWave) {
     const s0 = tIdx(sx, sy), goal = tIdx(target.x, target.y);
     dist[s0] = 0;
     const noise = new Float32Array(N); for (let i = 0; i < N; i++) noise[i] = r() * 0.9;
-    for (let it = 0; it < N; it++) {
-      let u = -1, best = 1e9;
-      for (let i = 0; i < N; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
-      if (u < 0 || u === goal) break;
+    // binary heap of [dist, idx]
+    const hd = [], hi = [];
+    const push = (d, i) => { hd.push(d); hi.push(i); let k = hd.length - 1; while (k) { const p = (k - 1) >> 1; if (hd[p] <= hd[k]) break; [hd[p], hd[k]] = [hd[k], hd[p]]; [hi[p], hi[k]] = [hi[k], hi[p]]; k = p; } };
+    const pop = () => { const i = hi[0]; const ld = hd.pop(), li = hi.pop(); if (hd.length) { hd[0] = ld; hi[0] = li; let k = 0; for (;;) { const a = 2 * k + 1, b2 = a + 1; let m = k; if (a < hd.length && hd[a] < hd[m]) m = a; if (b2 < hd.length && hd[b2] < hd[m]) m = b2; if (m === k) break; [hd[m], hd[k]] = [hd[k], hd[m]]; [hi[m], hi[k]] = [hi[k], hi[m]]; k = m; } } return i; };
+    push(0, s0);
+    while (hd.length) {
+      const u = pop();
+      if (done[u]) continue;
+      if (u === goal) break;
       done[u] = 1;
       const ux = u % COLS, uy = (u / COLS) | 0;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -1536,7 +1541,7 @@ function genExtraLane(r, openWave) {
           }
           c += adjPath * 3;
         }
-        if (dist[u] + c < dist[v]) { dist[v] = dist[u] + c; prev[v] = u; }
+        if (dist[u] + c < dist[v]) { dist[v] = dist[u] + c; prev[v] = u; push(dist[v], v); }
       }
     }
     if (prev[goal] < 0) continue;
@@ -1577,7 +1582,7 @@ function newRun(opts) {
     charges: { strike: 1, nova: 0, stasis: 0, overclock: 0 }, aimAbility: null,
     runMods: {}, mods: null, tokens: 2, legendQueue: 0, rerollDisc: false,
     nextMs: 0, msIdx: 0, ev: {}, evList: [], evT: {}, overclockT: 0, stasisT: 0,
-    stormT: 50, lanesOpened: 0, laneWaves: [12, 24, 38, 55, 75], laneWarn: null,
+    stormT: 50, lanesOpened: 0, laneWaves: [15, 28, 42, 58, 78], laneWarn: null,
     rift: null, eid: 1, tid: 1, dmgLog: { combos: 0 }, unbreakUsed: -99, boonsTaken: [],
     core: null, dpsClock: 0, coreAngle: 0,
     checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
@@ -1590,7 +1595,7 @@ function newRun(opts) {
   const M = G.mods, sw = G.startWave;
   G.core = { x: G.map.core.x + 0.5, y: G.map.core.y + 0.5, hp: M.coreHP * G.af.coreHPx, max: M.coreHP * G.af.coreHPx, shield: M.shield, smax: M.shield,
     sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0 };
-  G.credits = Math.round(260 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
+  G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
   G.lanesOpened = 0;
   while (G.laneWaves[G.lanesOpened] !== undefined && G.laneWaves[G.lanesOpened] <= sw) { genExtraLane(r); G.lanesOpened++; }
@@ -2459,8 +2464,8 @@ function updateEnemies(dt) {
 function bossBehavior(e, dt) {
   if (e.timer > 0) return;
   switch (e.boss) {
-    case 'behemoth': e.timer = 6; if (!e.fly) for (let i = 0; i < 3; i++) spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - 0.3 * i) }); break;
-    case 'queen': e.timer = 5; for (let i = 0; i < 2; i++) spawnEnemy('flyer', { fromPt: { x: e.x, y: e.y } }); break;
+    case 'behemoth': e.timer = 7.5; if (!e.fly) for (let i = 0; i < 3; i++) spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - 0.3 * i) }); break;
+    case 'queen': e.timer = 7; for (let i = 0; i < 2; i++) spawnEnemy('flyer', { fromPt: { x: e.x, y: e.y } }); break;
     case 'wraith': e.timer = 6; e.d += 2; e.cloaked = true; e.cloakT = 1.5; Hooks.fx('blink', { x: e.x, y: e.y }); Hooks.sfx('blink'); break;
     case 'overmind': e.timer = 7;
       for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 2.5 * 2.5) t.disabled = Math.max(t.disabled, 2.5);
@@ -3213,7 +3218,7 @@ function snapshotRun(waveNum) {
   const tw = G.towers.map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
     vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc }));
   PROF.runSnap = {
-    seed: G.seed, cols: G.cols, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits), score: Math.round(G.score),
+    seed: G.seed, cols: G.cols, rows: ROWS, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0 }, towers: tw,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
@@ -4137,7 +4142,7 @@ const Render = (() => {
   function tileToScreen(x, y) { const v = view(); return { x: ox + (x * TILE - v.vx) * scale * cam.z, y: oy + (y * TILE - v.vy) * scale * cam.z }; }
   function zoomAt(sx, sy, factor) {
     const before = screenToBuf(sx, sy);
-    cam.z = clamp(cam.z * factor, 1, 3.2);
+    cam.z = clamp(cam.z * factor, 1, 4);
     const v = view();
     // keep the point under the fingers fixed
     const nx = before.x - (sx - ox) / (scale * cam.z), ny = before.y - (sy - oy) / (scale * cam.z);
@@ -4533,6 +4538,7 @@ const Save = (() => {
     const out = Object.assign(d, p);
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
     out.webV = p.webV || 1;
+    if (out.runSnap && out.runSnap.rows !== ROWS) out.runSnap = null; // map size changed: old runs can't resume
     out.alloc = Array.isArray(p.alloc) ? p.alloc.filter(id => TREE.nodes[id]) : ['start'];
     if (!out.alloc.includes('start')) out.alloc.unshift('start');
     if (!Array.isArray(out.builds) || out.builds.length !== 5) out.builds = [null, null, null, null, null];
@@ -4631,7 +4637,7 @@ const UI = (() => {
     const maxStart = Math.max(1, Math.floor((PROF.bestWave - 5) / 5) * 5);
     const starts = [1]; for (let w = 5; w <= maxStart; w += 5) starts.push(w);
     const sw = setup.startWave;
-    const credits = Math.round(260 + computeMods(PROF.alloc, null).startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
+    const credits = Math.round(320 + computeMods(PROF.alloc, null).startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
     const CH = CHAOS_LEVELS[setup.chaos];
     modal(`
       <div class="card setup">
@@ -4695,6 +4701,7 @@ const UI = (() => {
       newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS });
     }
     Render.resetCam(); updateZoomBtn();
+    if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave;
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
@@ -5082,9 +5089,17 @@ const UI = (() => {
     const g = gesture; gesture = null;
     if (g.kind !== 'tap' || g.moved > 12 || !G || G.over) return;
     const r = $('#cv').getBoundingClientRect();
-    const t = Render.screenToTile((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS));
-    tapTile(t);
+    const sx = (e.clientX - r.left) / UIS, sy = (e.clientY - r.top) / UIS, now = performance.now();
+    // double-tap: zoom in on that spot, or back out to the full map
+    if (lastTap && now - lastTap.t < 330 && Math.hypot(sx - lastTap.x, sy - lastTap.y) < 30) {
+      lastTap = null; closePanel();
+      if (Render.zoom < 1.5) Render.zoomAt(sx, sy, 2.2 / Render.zoom); else Render.resetCam();
+      updateZoomBtn(); SFX.play('ui'); return;
+    }
+    lastTap = { t: now, x: sx, y: sy };
+    tapTile(Render.screenToTile(sx, sy));
   }
+  let lastTap = null;
   function tapTile(p) {
     if (G.aimAbility) {
       if (p.x < 0 || p.y < 0 || p.x > COLS || p.y > ROWS) return;
@@ -5315,7 +5330,7 @@ const UI = (() => {
         ['Ascend', 'Upgrade past max level for ×1.3 Damage and a new affix.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
         ['Milestone', 'Score threshold. Grants an ability charge and a small bonus.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
-        ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. Lanes open at Waves 12, 24, 38, 55 and 75.'],
+        ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. Lanes open at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave. Full sell refunds and free respec. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
