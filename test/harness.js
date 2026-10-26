@@ -1,0 +1,16 @@
+// Shared loader for headless tests
+const fs = require('fs'), vm = require('vm');
+function load() {
+  const src = ['data.js', 'sim.js'].map(f => fs.readFileSync(__dirname + '/../src/' + f, 'utf8')).join('\n');
+  const ctx = { console, Math, Set, Map, Object, Array, JSON, Float32Array, Int32Array, Uint8Array, module: {} };
+  vm.createContext(ctx);
+  vm.runInContext(src + `
+this.S = { get G(){return G}, set G(v){G=v}, get PROF(){return PROF}, set PROF(v){PROF=v},
+  get COLS(){return COLS}, get ROWS(){return ROWS}, TREE, TOWERS, TOWER_ORDER, ENEMIES, BOSSES, ANOMALIES, LV_COST, TILE, EL, ELS,
+  newRun, simStep, buildTower, upgradeTower, upgradeCost, towerCost, canBuildAt, treeAllocate, treePathTo, takeBoon,
+  useAbility, Hooks, tIdx, profLevel, pointsFree, callEarly, resumeRun, levelFromXP, towerStats, recomputeAll,
+  recomputeAuras, spawnEnemy, makeLane, prepLane, lanePos, hpMult, crMult, takeAnomaly, stabilize, vetOffer, claimVet,
+  coreUpgrade, coreWeaponCost, coreRepairCost, rerollTower, snapshotNow, defaultProfile, computeMods, genExtraLane, stormAt, resumeCheckpoint, cashIn, cashRate, cpBonus, supernova, novaReady, starBuy, regionsDone, REGION_NODES, LAWS, pointsSpent };`, ctx);
+  return ctx.S;
+}
+module.exports = { load };

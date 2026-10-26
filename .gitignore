@@ -1,0 +1,4 @@
+dist/
+test/out/
+test/audit/
+__pycache__/

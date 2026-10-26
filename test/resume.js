@@ -1,0 +1,21 @@
+const fs = require('fs'), vm = require('vm');
+const src = fs.readFileSync(__dirname + '/../src/data.js', 'utf8') + '\n' + fs.readFileSync(__dirname + '/../src/sim.js', 'utf8');
+const ctx = { console, Math, Set, Object, Array, JSON, Float32Array, Int32Array, Uint8Array, module: {} };
+vm.createContext(ctx);
+vm.runInContext(src + '\nthis.A={get G(){return G},get PROF(){return PROF},newRun,simStep,buildTower,upgradeTower,canBuildAt,snapshotNow,resumeRun,Hooks,COLS,ROWS,takeBoon};', ctx);
+const A = ctx.A;
+A.PROF.bestWave = 30;
+A.Hooks.onDraft = o => A.takeBoon(o[0]);
+let G = A.newRun({ seed: 42, chaos: 3, startWave: 1 });
+G.credits = 5000;
+let n = 0;
+for (let y = 0; y < A.ROWS && n < 15; y++) for (let x = 0; x < A.COLS && n < 15; x++) if (A.canBuildAt(x, y) && G.map.tiles[(y + 1) * A.COLS + x] === 1) { const t = A.buildTower(['pulse', 'cryo', 'rail', 'missile', 'coil'][n % 5], x, y); if (t) { A.upgradeTower(t); n++; } }
+for (let i = 0; i < 30 * 200 && !G.over; i++) A.simStep(1 / 30);
+console.log('before', G.wave, G.towers.length, Math.round(G.credits), G.over);
+A.snapshotNow();
+const snap = JSON.parse(JSON.stringify(A.PROF.runSnap));
+console.log('snap bytes', JSON.stringify(A.PROF).length);
+G = A.resumeRun(snap);
+console.log('resumed', G.wave, G.towers.length, Math.round(G.credits), G.map.lanes.length);
+for (let i = 0; i < 30 * 200 && !G.over; i++) A.simStep(1 / 30);
+console.log('after', G.wave, G.over);
