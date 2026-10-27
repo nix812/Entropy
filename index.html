@@ -307,6 +307,9 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .aff.pickable:active { filter: brightness(1.3); }
 .sts.reson { color: #d6c8ff; }
 .sts.node { color: #8fe6ff; }
+.vrow.od .xpbar i { background: var(--core); box-shadow: 0 0 6px rgba(89, 240, 180, 0.6); }
+.pfoot .btn.od { min-height: 44px; color: #062018; background: var(--core); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), inset 0 -3px 0 rgba(0, 60, 40, 0.5); animation: pulse 1.2s infinite; }
+.pfoot .btn.od small { color: #0d4a36; }
 .ph small.node { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em; color: #6ae2ff; margin-left: 8px; }
 .sts.bad { color: var(--bad); }
 
@@ -561,7 +564,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.17.0';
+const VERSION = '1.18.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1646,6 +1649,7 @@ function updateCaches(dt) {
   if (G.caches.some(c => c.t <= 0)) G.caches = G.caches.filter(c => c.t > 0);
   if (G.wave < 3 || G.spawningDone) return;
   G.cacheT = (G.cacheT === undefined ? 20 : G.cacheT) - dt;
+  if (G.wave % 10 === 0 && G.goldAt !== G.wave) G.cacheT = Math.min(G.cacheT, 4);
   if (G.cacheT > 0 || G.caches.length >= 2) return;
   G.cacheT = 30 + G.r() * 30;
   const R = G.region, core = G.map.core;
@@ -1653,22 +1657,39 @@ function updateCaches(dt) {
     const x = rngInt(G.r, R.x0, R.x1 - 1), y = rngInt(G.r, R.y0, R.y1 - 1), i = tIdx(x, y);
     if (G.map.tiles[i] !== 0 || G.towerAt[i] || G.nodeSet.has(i) || cacheAt(x, y)) continue;
     if (Math.abs(x - core.x) + Math.abs(y - core.y) < 4) continue;
-    G.caches.push({ x, y, t: CACHE_LIFE, id: G.eid++ });
-    Hooks.fx('cache', { x: x + 0.5, y: y + 0.5 }); Hooks.sfx('blink');
+    // boss waves always bring one golden crate; from wave 10, some crates are cursed
+    let kind = 'normal';
+    if (G.wave % 10 === 0 && G.goldAt !== G.wave) { kind = 'gold'; G.goldAt = G.wave; }
+    else if (G.wave >= 10 && G.r() < 0.22) kind = 'cursed';
+    G.caches.push({ x, y, t: CACHE_LIFE, id: G.eid++, kind });
+    Hooks.fx('cache', { x: x + 0.5, y: y + 0.5, kind }); Hooks.sfx('blink');
+    if (kind === 'gold') Hooks.toast('GOLDEN CACHE', 'A rare crate dropped. Find it before it decays', '#ffd84a');
     return;
   }
 }
 function claimCache(c) {
   if (!c || !G.caches.includes(c)) return null;
   G.caches = G.caches.filter(o => o !== c);
-  const w = Math.max(1, G.wave), roll = G.r() * 100;
+  const w = Math.max(1, G.wave), roll = G.r() * 100, k2 = c.kind === 'cursed' ? 2 : 1;
   let msg;
-  if (roll < 40) { const v = Math.round((40 + 14 * w) * G.mods.credits); G.credits += v; msg = `+${v} credits`; }
-  else if (roll < 60) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + 1; msg = `+1 ${ABILITIES[k] ? ABILITIES[k].name : k} charge`; }
-  else if (roll < 75) { addEntropy(12); msg = '+12 Entropy'; }
-  else if (roll < 90) { const v = Math.round(150 * w); addScore(v); msg = `+${v} base score`; }
-  else { G.tokens++; msg = '+1 Recalibration token'; }
-  Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5 }); Hooks.sfx('cash');
+  if (c.kind === 'gold') {
+    if (G.r() < 0.5) { G.legendQueue++; msg = 'Your next tower rolls a Legendary affix'; }
+    else { const v = Math.round((40 + 14 * w) * 3 * G.mods.credits), k = pick(G.r, ABIL_ORDER); G.credits += v; G.charges[k] = (G.charges[k] || 0) + 1; msg = `+${v} credits · +1 ${ABILITIES[k].name} charge`; }
+  }
+  else if (roll < 40) { const v = Math.round((40 + 14 * w) * G.mods.credits * k2); G.credits += v; msg = `+${v} credits`; }
+  else if (roll < 60) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + k2; msg = `+${k2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${k2 > 1 ? 's' : ''}`; }
+  else if (roll < 75) { addEntropy(12 * k2); msg = `+${12 * k2} Entropy`; }
+  else if (roll < 90) { const v = Math.round(150 * w * k2); addScore(v); msg = `+${v} base score`; }
+  else { G.tokens += k2; msg = `+${k2} Recalibration token${k2 > 1 ? 's' : ''}`; }
+  if (c.kind === 'cursed') {
+    // the price: an elite climbs out of a wormhole
+    const lanes = G.map.lanes.filter(L => !L.openWave), types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && k !== 'swarmer');
+    const e = spawnEnemy(pick(G.r, types), { lane: pick(G.r, lanes), elite: 2 + Math.floor(w / 30), hpm: hpMult(w) * (G.CH.hp || 1) * 1.5 });
+    G.stats.cursed = (G.stats.cursed || 0) + 1;
+    Hooks.fx('rift', { x: e.L.pts[0].x, y: e.L.pts[0].y });
+    msg += ' · an elite emerges';
+  }
+  Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5, kind: c.kind }); Hooks.sfx(c.kind === 'cursed' ? 'bosswarn' : 'cash');
   return msg;
 }
 
@@ -2063,6 +2084,60 @@ function recomputeAuras() {
   G.pylons = G.towers.filter(t => t.s.kind === 'support');
   G.forges = G.towers.filter(t => t.s.kind === 'eco');
   G.snares = G.towers.filter(t => t.s.kind === 'snare');
+  updateLinks();
+}
+// ---------- Node Links: combat towers on Power Nodes within LINK_MAX tiles share a beam ----------
+const LINK_MAX = 9, LINK_DMG = 0.1, LINK_BEAM = 0.5;
+function updateLinks() {
+  G.links = [];
+  const on = G.towers.filter(t => t.s.node && !['support', 'eco', 'snare'].includes(t.s.kind));
+  for (const t of G.towers) t.linkedTo = null;
+  for (let i = 0; i < on.length; i++) for (let j = i + 1; j < on.length; j++) {
+    const a = on[i], b = on[j];
+    if (dist2(a.cx, a.cy, b.cx, b.cy) > LINK_MAX * LINK_MAX) continue;
+    G.links.push([a, b]);
+    for (const [t, o] of [[a, b], [b, a]]) { if (!t.linkedTo) { t.linkedTo = o; t.buff.dmg += LINK_DMG; } }
+  }
+}
+function updateLinkBeams(dt) {
+  for (const [a, b] of G.links || []) {
+    if (a.disabled > 0 || b.disabled > 0) continue;
+    const dps = LINK_BEAM * (a.s.dmg * a.s.rate + b.s.dmg * b.s.rate) / 2;
+    const dx = b.cx - a.cx, dy = b.cy - a.cy, L2 = dx * dx + dy * dy || 1;
+    for (const e of G.enemies) {
+      if (e.dead) continue;
+      const u = clamp(((e.x - a.cx) * dx + (e.y - a.cy) * dy) / L2, 0, 1);
+      if (dist2(e.x, e.y, a.cx + dx * u, a.cy + dy * u) > 0.3) continue;
+      hit(e, dps * dt, u < 0.5 ? a.s.el : b.s.el, u < 0.5 ? a : b, { noStatus: 1, dot: 1 });
+    }
+  }
+}
+
+// ---------- Core Overdrive: kills near the core charge it; tap the core to release a shockwave ----------
+const OD_RANGE = 4.5, OD_MAX = 100, OD_RADIUS = 3.5;
+function odCharge(e) {
+  const c = G.core;
+  if (!c || dist2(e.x, e.y, c.x, c.y) > OD_RANGE * OD_RANGE) return;
+  const was = c.od || 0;
+  c.od = Math.min(OD_MAX, was + (e.boss ? 25 : e.elite.length ? 6 : 3));
+  if (was < OD_MAX && c.od >= OD_MAX) { Hooks.toast('OVERDRIVE READY', 'Tap the core to release it', '#59f0b4'); Hooks.sfx('milestone'); }
+}
+function overdriveTargets() { const c = G.core; return G.enemies.filter(e => !e.dead && dist2(e.x, e.y, c.x, c.y) <= OD_RADIUS * OD_RADIUS); }
+function releaseOverdrive() {
+  const c = G.core;
+  if (G.over || (c.od || 0) < OD_MAX) return 'charge';
+  const tg = overdriveTargets();
+  if (!tg.length) return 'empty';
+  c.od = 0;
+  const s = coreStats(), base = s.dmg * 10;
+  for (const e of tg) {
+    if (e.dead) continue;
+    hit(e, base + e.maxHp * (e.boss ? 0.05 : 0.15), s.el, c, { noStatus: 1, abil: 1 });
+    if (!e.dead) { if (!e.fly && !e.lureT) e.d = Math.max(0, e.d - 2); e.st.stun = Math.max(e.st.stun || 0, e.boss ? 0.4 : 1.2); }
+  }
+  Hooks.fx('overdrive', { x: c.x, y: c.y, r: OD_RADIUS }); Hooks.sfx('nova'); Hooks.fx('shake', { v: 8 });
+  Hooks.log(`Overdrive · hit ${tg.length}`, '#59f0b4');
+  return 'ok';
 }
 
 // ---------- storms ----------
@@ -2380,7 +2455,7 @@ function updateWaves(dt) {
     if (G.cpDue && G.cpDue === G.wave + 1) {
       // hold until the last wave's enemies are gone (capped, so a stuck enemy can never stall the run)
       if (G.enemies.some(e => !e.dead) && (G.cpWait = (G.cpWait || 0) + dt) < 180) return;
-      G.cpWait = 0;
+      G.cpWait = 0; G.caches = [];
       G.checkpoint = G.cpDue; G.cpDue = 0; G.cpT = 0;
       Hooks.log(`Checkpoint · Wormhole opens in Wave ${G.checkpoint}`, '#59f0b4');
       Hooks.sfx('milestone'); Hooks.onCheckpoint(G.checkpoint);
@@ -2878,6 +2953,7 @@ function milestone() {
 function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
+  odCharge(e);
   const M = G.mods;
   let cm = M.credits * (G.CH.cr || 1) * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
   if (src && src.s && src.s.bounty) cm *= 1 + src.s.bounty;
@@ -3511,6 +3587,7 @@ function simStep(dt) {
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
+  updateLinkBeams(dt);
   updateCaches(dt);
 }
 
@@ -3541,7 +3618,7 @@ function snapshotRun(waveNum) {
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
-    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw,
+    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0, od: G.core.od || 0 }, towers: tw,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
@@ -3580,7 +3657,7 @@ function resumeRun(S) {
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
-  G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; coreAffSum(G.core);
+  G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.core.od = S.core.od || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
   prepareWave(S.wave);
@@ -4210,6 +4287,8 @@ const Render = (() => {
   function scaledSpr(k, s, f) { if (scCache[k]) return scCache[k]; const c = document.createElement('canvas'); c.width = Math.round(s.width * f); c.height = Math.round(s.height * f); const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, c.width, c.height); return scCache[k] = c; }
   function bossSprite(id) { return outlined('oboss:' + id, spr('boss:' + id, 48, 48, g => BOSS[id](g, ENEMY_COL.boss))); }
 
+  // crate palettes: frame, body, lid, beacon
+  const CACHE_PAL = { normal: ['#3a2a10', '#a8741c', '#e0a640', '#ffe14d'], cursed: ['#2a0a18', '#8a1a3a', '#c8325a', '#ff4d6a'], gold: ['#5a4206', '#e8b820', '#fff0a0', '#ffffff'] };
   // ---------- map layer ----------
   function drawMap() {
     if (mapLayer.width !== BW || mapLayer.height !== BH) { mapLayer.width = BW; mapLayer.height = BH; }
@@ -4566,11 +4645,25 @@ const Render = (() => {
     // salvage caches: a crate with a beacon that blinks faster as it decays
     for (const cc of G.caches || []) {
       const X = cc.x * TILE + 5, Y = cc.y * TILE + 7, late = cc.t < 6, on = late ? (frame >> 2) % 2 : (frame >> 4) % 2;
+      const P2 = CACHE_PAL[cc.kind || 'normal'];
       R(b, X - 1, Y + 1, 16, 12, 'rgba(0,0,0,0.45)');
-      R(b, X, Y, 14, 11, '#3a2a10'); R(b, X + 1, Y + 1, 12, 9, '#a8741c'); R(b, X + 1, Y + 1, 12, 2, '#e0a640'); R(b, X + 6, Y + 1, 2, 9, '#5a3c0c'); R(b, X + 1, Y + 5, 12, 1, '#5a3c0c');
-      R(b, X + 5, Y - 3, 4, 3, on ? '#ffe14d' : '#7a6a20');
+      R(b, X, Y, 14, 11, P2[0]); R(b, X + 1, Y + 1, 12, 9, P2[1]); R(b, X + 1, Y + 1, 12, 2, P2[2]); R(b, X + 6, Y + 1, 2, 9, P2[0]); R(b, X + 1, Y + 5, 12, 1, P2[0]);
+      if (cc.kind === 'cursed') { R(b, X + 4, Y + 3, 2, 2, '#ffd0d8'); R(b, X + 8, Y + 3, 2, 2, '#ffd0d8'); R(b, X + 5, Y + 7, 4, 1, '#ffd0d8'); }
+      if (cc.kind === 'gold' && frame % 20 < 10) { P(b, X - 2 + (frame >> 1) % 18, Y - 2, '#ffffff'); P(b, X + 14 - (frame >> 2) % 16, Y + 12, '#fff6c0'); }
+      R(b, X + 5, Y - 3, 4, 3, on ? P2[3] : P2[0]);
       const f = Math.max(0, cc.t / CACHE_LIFE), rr = 12;
-      b.strokeStyle = hexA(late ? '#ff4d6a' : '#ffe14d', 0.8); b.lineWidth = 1.5; b.beginPath(); b.arc(cc.x * TILE + 12, cc.y * TILE + 12, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
+      b.strokeStyle = hexA(late ? '#ff4d6a' : P2[3], 0.8); b.lineWidth = 1.5; b.beginPath(); b.arc(cc.x * TILE + 12, cc.y * TILE + 12, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
+    }
+    // Node Links: a jittering cyan beam between linked node towers
+    for (const [a, b2] of G.links || []) {
+      const ax = a.cx * TILE, ay = a.cy * TILE, bx = b2.cx * TILE, by = b2.cy * TILE, off = a.disabled > 0 || b2.disabled > 0;
+      const n = Math.max(4, Math.round(Math.hypot(bx - ax, by - ay) / 10)), nx = -(by - ay), ny = bx - ax, nl = Math.hypot(nx, ny) || 1;
+      for (const [w, col, al] of [[4, '#1a5a70', off ? 0.25 : 0.55], [2, '#6ae2ff', off ? 0.25 : 0.85], [1, '#e6fbff', off ? 0 : 0.8]]) {
+        if (!al) continue;
+        b.strokeStyle = hexA(col, al); b.lineWidth = w; b.beginPath(); b.moveTo(ax, ay);
+        for (let k = 1; k < n; k++) { const j = off ? 0 : (Math.sin(frame * 0.7 + k * 2.3 + a.id) * 2.2); b.lineTo(ax + (bx - ax) * k / n + nx / nl * j, ay + (by - ay) * k / n + ny / nl * j); }
+        b.lineTo(bx, by); b.stroke();
+      }
     }
     for (const t of G.towers) drawTower(t);
     // resonance links
@@ -4590,6 +4683,9 @@ const Render = (() => {
       }
     }
     drawCore();
+    { const od = G.core.od || 0, cx = G.core.x * TILE, cy = G.core.y * TILE;
+      if (od > 0) { b.strokeStyle = hexA(PAL.core, od >= OD_MAX ? 0.95 : 0.6); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17, -1.5708, -1.5708 + 6.2832 * od / OD_MAX); b.stroke(); }
+      if (od >= OD_MAX) { const pr = 19 + (frame % 24) / 24 * 10; b.strokeStyle = hexA(PAL.core, 0.7 * (1 - (frame % 24) / 24)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, pr, 0, 6.2832); b.stroke(); } }
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // projectiles
@@ -4653,7 +4749,9 @@ const Render = (() => {
     for (const z of G.zones) light(z.x * TILE, z.y * TILE, z.r * TILE * 1.2, '#ff7b39', 0.22);
     for (const q of conduits) light(q.x, q.y, 14, q.col, 0.05 + 0.05 * Math.sin(frame / 20 + q.ph));
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
-    for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * 1.3, '#ffe14d', 0.22);
+    for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
+    for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
+    if ((G.core.od || 0) >= OD_MAX) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
     // ---------- composite ----------
@@ -4780,7 +4878,7 @@ const Render = (() => {
       const mw = 64, mh = mw * reg.h / reg.w, mx = W - mw - 8, my = H - mh - 8;
       c.fillStyle = 'rgba(7,8,15,0.7)'; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
       c.drawImage(mapLayer, reg.x, reg.y, reg.w, reg.h, mx, my, mw, mh);
-      for (const cc of G.caches || []) { c.fillStyle = (frame >> 3) % 2 ? '#ffe14d' : '#7a6a20'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
+      for (const cc of G.caches || []) { c.fillStyle = (frame >> 3) % 2 ? CACHE_PAL[cc.kind || 'normal'][3] : '#3a3020'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
     if (!scanPat) scanPat = c.createPattern(scan, 'repeat');
@@ -4842,8 +4940,9 @@ const Render = (() => {
       case 'stasis': flashes.push({ col: '#6ae2ff', life: 0.5, max: 0.5, a: 0.4 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
+      case 'overdrive': flashes.push({ col: PAL.core, life: 0.45, max: 0.45, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
       case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
-      case 'cacheClaim': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 34, life: 0.5, max: 0.5, col: '#ffe14d', w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), 22, '#ffe14d', 50 * K, 0.6); break;
+      case 'cacheClaim': { const cc = CACHE_PAL[d.kind || 'normal'][3]; rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.kind === 'gold' ? 60 : 34, life: 0.5, max: 0.5, col: cc, w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), d.kind === 'gold' ? 50 : 22, cc, 50 * K, 0.6); break; }
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
       case 'lane': flashes.push({ col: '#ff4d6a', life: 0.5, max: 0.5, a: 0.3 }); { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 2, r1: 56, life: 0.7, max: 0.7, col: '#ff4d6a', w: 4, fill: 1 }); } for (const p of d.lane.tiles.slice(0, d.lane.branch || 99)) burst(p.x * TILE + 12, p.y * TILE + 12, 4, '#ff4d6a', 20 * K, 0.8); break;
       case 'meteor': lines.push({ pts: [{ x: T2P(d.x) - 70, y: T2P(d.y) - 120 }, { x: T2P(d.x), y: T2P(d.y) }], life: 0.5, max: 0.5, col: '#ff7b39', core: 1, w: 5 }); break;
@@ -5412,6 +5511,7 @@ const UI = (() => {
       ${t.lvl === 3 ? up : ''}
       ${vet}
       ${stats}
+      ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       <div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>
       ${modes}
@@ -5424,13 +5524,14 @@ const UI = (() => {
     return `<div class="ph"><div class="pt"><b>Core</b><small>Weapon LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
+      <div class="vrow od"><span class="lbl">Overdrive</span><div class="xpbar"><i data-live="od" style="width:${pct(clamp((c.od || 0) / OD_MAX, 0, 1))}"></i></div><span class="lbl" data-live="odt">${Math.floor(c.od || 0)}%</span></div>
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
       ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="lbl">Weapon Element</div>
       <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       ${canRelocate() ? '' : relocHTML()}
-      <div class="pfoot">${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>${c.wLvl >= 12 ? 'Weapon · Max' : `Upgrade Weapon · ${fmt(wc)}<small>+Damage, new affix</small>`}</button>
+      <div class="pfoot">${(c.od || 0) >= OD_MAX ? `<button class="btn wide od" data-act="od">Release Overdrive<small>Shockwave · ${OD_RADIUS} tiles · knocks enemies back</small></button>` : ''}${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>${c.wLvl >= 12 ? 'Weapon · Max' : `Upgrade Weapon · ${fmt(wc)}<small>+Damage, new affix</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
   }
   const relocPrice = () => relocCost() ? `${fmt(RELOCATE_COST)}` : 'Free';
@@ -5478,10 +5579,12 @@ const UI = (() => {
     }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; el.innerHTML = cashPanelHTML(); } return; }
     if (panel.kind === 'core') {
-      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length;
+      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + ((c.od || 0) >= OD_MAX ? 1 : 0);
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const a = el.querySelector('[data-live="chp"]'); if (a) a.textContent = `${Math.ceil(c.hp)}/${Math.round(c.max)}`;
+      const o = el.querySelector('[data-live="od"]'); if (o) o.style.width = pct(clamp((c.od || 0) / OD_MAX, 0, 1));
+      const ot = el.querySelector('[data-live="odt"]'); if (ot) ot.textContent = Math.floor(c.od || 0) + '%';
       const s = el.querySelector('[data-live="csh"]'); if (s) s.textContent = `${Math.floor(c.shield)}/${Math.round(c.smax)}`;
       const r = el.querySelector('[data-act="cr"]'); if (r && c.hp >= c.max) r.disabled = true;
     }
@@ -5524,6 +5627,7 @@ const UI = (() => {
       else if (act === 'cs') { if (!coreUpgrade('shield')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cr') { if (!coreUpgrade('repair')) SFX.play('deny'); renderPanel(); }
       else if (act === 'crr') { if (!rerollCore()) SFX.play('deny'); renderPanel(); }
+      else if (act === 'od') { const r = releaseOverdrive(); if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', `No enemies within ${OD_RADIUS} tiles`, '#ff4d6a'); } else if (r !== 'ok') SFX.play('deny'); else closePanel(); }
       else if (act === 'reloc') startReloc();
       return;
     }
@@ -5618,7 +5722,7 @@ const UI = (() => {
     }
     if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
     const cc = cacheAt(tx, ty);
-    if (cc) { const m = claimCache(cc); if (m) { toast('SALVAGE', m, '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
+    if (cc) { const kind = cc.kind, m = claimCache(cc); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
     SFX.play('ui');
     if (tx === G.map.core.x && ty === G.map.core.y) return openCore();
     const t = G.towerAt[tIdx(tx, ty)];
@@ -5808,7 +5912,9 @@ const UI = (() => {
       ['Bosses', 'Every 10 waves. Drop a boon and a Recalibration token.'],
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds, free respec, and you can relocate the core. Resume fast for a bonus.'],
       ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Move the core onto one for a bigger boost. Each sector expansion reveals a new one.'],
-      ['Salvage', 'Crates drop in during waves. Tap one before its ring runs out for credits, a charge, Entropy, score or a token.'],
+      ['Salvage', 'Crates drop in during waves. Tap one before its ring runs out for credits, a charge, Entropy, score or a token. Red crates pay double but release an elite. Boss waves drop a golden crate.'],
+      ['Overdrive', 'Kills near the core charge its ring. When full, tap the core and release a shockwave that hits and knocks back everything close.'],
+      ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
@@ -5850,6 +5956,10 @@ const UI = (() => {
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
         ['Power Node', 'Charged tile. Towers on it get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
+        ['Overdrive', `Kills within ${OD_RANGE} tiles of the core charge it (bosses fill a quarter). Full: tap the core, Release Overdrive. Hits everything within ${OD_RADIUS} tiles for 10× core damage plus 15% max HP (5% on bosses), knocks ground enemies back 2 tiles and stuns.`],
+        ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
+        ['Cursed Cache', 'Red crate from Wave 10. Double reward, but an elite enemy climbs out of a wormhole.'],
+        ['Golden Cache', 'One per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],
         ['Salvage Cache', `Drops during waves from Wave 3 and decays in ${CACHE_LIFE}s. Tap to claim credits, an ability charge, Entropy, score or a Recalibration token.`],
         ['Relocate Core', `At Checkpoints: move the core up to ${RELOCATE_RADIUS} tiles. Every road re-routes to reach it. The first move each run is free, then ${RELOCATE_COST} credits each.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
