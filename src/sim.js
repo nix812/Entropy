@@ -875,32 +875,32 @@ function updateLinkBeams(dt) {
   }
 }
 
-// ---------- Core Overdrive: kills near the core charge it; tap the core to release a shockwave ----------
-const OD_RANGE = 4.5, OD_MAX = 100, OD_RADIUS = 3.5;
-function odCharge(e) {
-  const c = G.core;
-  if (!c || dist2(e.x, e.y, c.x, c.y) > OD_RANGE * OD_RANGE) return;
-  const was = c.od || 0;
-  c.od = Math.min(OD_MAX, was + (e.boss ? 25 : e.elite.length ? 6 : 3));
-  if (was < OD_MAX && c.od >= OD_MAX) { Hooks.toast('OVERDRIVE READY', 'Tap the core to release it', '#59f0b4'); Hooks.sfx('milestone'); }
-}
-function overdriveTargets() { const c = G.core; return G.enemies.filter(e => !e.dead && dist2(e.x, e.y, c.x, c.y) <= OD_RADIUS * OD_RADIUS); }
+// ---------- Core Overdrive: once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
+const OD_WAVE = 35, OD_BOSS = 0.2;
+const odReady = () => !!(G && !G.over && !G.odUsed && G.wave >= OD_WAVE);
+function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('OVERDRIVE ONLINE', 'Tap the core: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
 function releaseOverdrive() {
+  if (G.over) return 'over';
+  if (G.odUsed) return 'used';
+  if (G.wave < OD_WAVE) return 'locked';
+  if (!G.enemies.some(e => !e.dead && !e.boss)) return 'empty';
+  G.odUsed = G.wave;
   const c = G.core;
-  if (G.over || (c.od || 0) < OD_MAX) return 'charge';
-  const tg = overdriveTargets();
-  if (!tg.length) return 'empty';
-  c.od = 0;
-  const s = coreStats(), base = s.dmg * 10;
-  for (const e of tg) {
-    if (e.dead) continue;
-    hit(e, base + e.maxHp * (e.boss ? 0.05 : 0.15), s.el, c, { noStatus: 1, abil: 1 });
-    if (!e.dead) { if (!e.fly && !e.lureT) e.d = Math.max(0, e.d - 2); e.st.stun = Math.max(e.st.stun || 0, e.boss ? 0.4 : 1.2); }
+  let n = 0;
+  // several passes: splitters and split elites leave children behind
+  for (let pass = 0; pass < 6; pass++) {
+    const tg = G.enemies.filter(e => !e.dead && !e.boss);
+    if (!tg.length) break;
+    for (const e of tg) { if (e.dead) continue; Hooks.fx('spark', { x: e.x, y: e.y, col: PAL_CORE }); kill(e, null, { abil: 1 }); n++; }
   }
-  Hooks.fx('overdrive', { x: c.x, y: c.y, r: OD_RADIUS }); Hooks.sfx('nova'); Hooks.fx('shake', { v: 8 });
-  Hooks.log(`Overdrive · hit ${tg.length}`, '#59f0b4');
+  // bosses ride it out: they lose a chunk of their remaining HP but never die to it
+  for (const e of G.enemies) if (!e.dead && e.boss) { e.hp = Math.max(1, e.hp * (1 - OD_BOSS)); e.st.stun = Math.max(e.st.stun || 0, 0.6); }
+  G.stats.odKills = n;
+  Hooks.fx('overdrive', { x: c.x, y: c.y, r: Math.hypot(COLS, ROWS) }); Hooks.sfx('nova'); Hooks.fx('shake', { v: 10 });
+  Hooks.log(`Overdrive · ${n} enemies erased`, '#59f0b4');
   return 'ok';
 }
+const PAL_CORE = '#59f0b4';
 
 // ---------- storms ----------
 function stormAt(x, y) {
@@ -1143,6 +1143,7 @@ function startWave() {
   for (const t of G.snares || []) t.caught = 0;
   lureAll();
   if (FX('shieldWave') || (G.core.leg && G.core.leg.bulwark)) G.core.shield = G.core.smax;
+  odAnnounce();
   if (G.core.A && G.core.A.cregen && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * G.core.A.cregen / 100);
   // anomaly upkeep
   if (G.af.coreDrain) G.core.hp = Math.max(1, G.core.hp - G.core.max * G.af.coreDrain);
@@ -1715,7 +1716,6 @@ function milestone() {
 function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
-  odCharge(e);
   const M = G.mods;
   let cm = M.credits * (G.CH.cr || 1) * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
   if (src && src.s && src.s.bounty) cm *= 1 + src.s.bounty;
@@ -2380,7 +2380,7 @@ function snapshotRun(waveNum) {
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
-    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0, od: G.core.od || 0 }, towers: tw,
+    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
@@ -2419,7 +2419,7 @@ function resumeRun(S) {
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
-  G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.core.od = S.core.od || 0; coreAffSum(G.core);
+  G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
   prepareWave(S.wave);

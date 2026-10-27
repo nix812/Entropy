@@ -485,14 +485,14 @@ const UI = (() => {
     return `<div class="ph"><div class="pt"><b>Core</b><small>Weapon LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
-      <div class="vrow od"><span class="lbl">Overdrive</span><div class="xpbar"><i data-live="od" style="width:${pct(clamp((c.od || 0) / OD_MAX, 0, 1))}"></i></div><span class="lbl" data-live="odt">${Math.floor(c.od || 0)}%</span></div>
+      <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Overdrive: used on Wave ${G.odUsed}` : odReady() ? 'Overdrive: ready · one board clear this run' : `Overdrive: unlocks at Wave ${OD_WAVE} · once per run`)}</div>
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
       ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="lbl">Weapon Element</div>
       <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       ${canRelocate() ? '' : relocHTML()}
-      <div class="pfoot">${(c.od || 0) >= OD_MAX ? `<button class="btn wide od" data-act="od">Release Overdrive<small>Shockwave · ${OD_RADIUS} tiles · knocks enemies back</small></button>` : ''}${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>${c.wLvl >= 12 ? 'Weapon · Max' : `Upgrade Weapon · ${fmt(wc)}<small>+Damage, new affix</small>`}</button>
+      <div class="pfoot">${odReady() ? `<button class="btn wide od ${panel.odArm ? 'arm' : ''}" data-act="od">${panel.odArm ? 'Tap again to release' : 'Release Overdrive'}<small>${panel.odArm ? 'This is your only one this run' : 'Erases every enemy except bosses · once per run'}</small></button>` : ''}${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>${c.wLvl >= 12 ? 'Weapon · Max' : `Upgrade Weapon · ${fmt(wc)}<small>+Damage, new affix</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
   }
   const relocPrice = () => relocCost() ? `${fmt(RELOCATE_COST)}` : 'Free';
@@ -540,12 +540,10 @@ const UI = (() => {
     }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; el.innerHTML = cashPanelHTML(); } return; }
     if (panel.kind === 'core') {
-      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + ((c.od || 0) >= OD_MAX ? 1 : 0);
+      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0);
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const a = el.querySelector('[data-live="chp"]'); if (a) a.textContent = `${Math.ceil(c.hp)}/${Math.round(c.max)}`;
-      const o = el.querySelector('[data-live="od"]'); if (o) o.style.width = pct(clamp((c.od || 0) / OD_MAX, 0, 1));
-      const ot = el.querySelector('[data-live="odt"]'); if (ot) ot.textContent = Math.floor(c.od || 0) + '%';
       const s = el.querySelector('[data-live="csh"]'); if (s) s.textContent = `${Math.floor(c.shield)}/${Math.round(c.smax)}`;
       const r = el.querySelector('[data-act="cr"]'); if (r && c.hp >= c.max) r.disabled = true;
     }
@@ -588,7 +586,15 @@ const UI = (() => {
       else if (act === 'cs') { if (!coreUpgrade('shield')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cr') { if (!coreUpgrade('repair')) SFX.play('deny'); renderPanel(); }
       else if (act === 'crr') { if (!rerollCore()) SFX.play('deny'); renderPanel(); }
-      else if (act === 'od') { const r = releaseOverdrive(); if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', `No enemies within ${OD_RADIUS} tiles`, '#ff4d6a'); } else if (r !== 'ok') SFX.play('deny'); else closePanel(); }
+      else if (act === 'od') {
+        // two taps: the first arms it for 3 seconds
+        if (!panel.odArm) { panel.odArm = true; renderPanel(); setTimeout(() => { if (panel && panel.kind === 'core' && panel.odArm) { panel.odArm = false; renderPanel(); } }, 3000); return; }
+        panel.odArm = false;
+        const r = releaseOverdrive();
+        if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); renderPanel(); }
+        else if (r !== 'ok') { SFX.play('deny'); renderPanel(); }
+        else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
+      }
       else if (act === 'reloc') startReloc();
       return;
     }
@@ -874,7 +880,7 @@ const UI = (() => {
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds, free respec, and you can relocate the core. Resume fast for a bonus.'],
       ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Move the core onto one for a bigger boost. Each sector expansion reveals a new one.'],
       ['Salvage', 'Crates drop in during waves. Tap one before its ring runs out for credits, a charge, Entropy, score or a token. Red crates pay double but release an elite. Boss waves drop a golden crate.'],
-      ['Overdrive', 'Kills near the core charge its ring. When full, tap the core and release a shockwave that hits and knocks back everything close.'],
+      ['Overdrive', `Your one emergency button. From Wave ${OD_WAVE}, tap the core to erase every enemy on the map except bosses. Once per run.`],
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
@@ -917,7 +923,7 @@ const UI = (() => {
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
         ['Power Node', 'Charged tile. Towers on it get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
-        ['Overdrive', `Kills within ${OD_RANGE} tiles of the core charge it (bosses fill a quarter). Full: tap the core, Release Overdrive. Hits everything within ${OD_RADIUS} tiles for 10× core damage plus 15% max HP (5% on bosses), knocks ground enemies back 2 tiles and stuns.`],
+        ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap the core, Release Overdrive, tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
         ['Cursed Cache', 'Red crate from Wave 10. Double reward, but an elite enemy climbs out of a wormhole.'],
         ['Golden Cache', 'One per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],

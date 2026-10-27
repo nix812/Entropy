@@ -19,7 +19,7 @@ with sync_playwright() as p:
     pg.evaluate('''() => { G.credits = 50000; const N = G.nodes; let best = null;
       for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) { const d = Math.hypot(N[i].x - N[j].x, N[i].y - N[j].y); if (!best || d < best[0]) best = [d, N[i], N[j]]; }
       buildTower('rail', best[1].x, best[1].y); buildTower('coil', best[2].x, best[2].y);
-      G.core.od = 100; G.wave = 12; G.spawningDone = false; G.queue = [{ t: 999, type: 'drone', lane: G.map.lanes[0], hpm: 1, elite: 0 }];
+      G.wave = 36; G.spawningDone = false; G.queue = [{ t: 999, type: 'drone', lane: G.map.lanes[0], hpm: 1, elite: 0 }];
       const R = G.region; let k = 0;
       for (const kind of ['normal', 'cursed', 'gold']) { for (let n = 0; n < 200; n++) { const x = R.x0 + 2 + ((n * 7 + k * 11) % (R.x1 - R.x0 - 4)), y = R.y0 + 2 + ((n * 5 + k * 3) % (R.y1 - R.y0 - 4)); if (G.map.tiles[y * COLS + x] === 0 && !G.towerAt[y * COLS + x] && !isNode(x, y)) { G.caches.push({ x, y, t: 18, kind, id: 900 + k }); break; } } k++; }
       for (let i = 0; i < 6; i++) { const e = spawnEnemy('tank', { lane: G.map.lanes[0] }); e.d = G.map.lanes[0].len - 2 - i * 0.6; }
@@ -29,9 +29,16 @@ with sync_playwright() as p:
     pg.wait_for_timeout(300); pg.screenshot(path=str(out / 'od01_field.png'))
     c = pg.evaluate('() => G.map.core'); tap_tile(pg, c['x'], c['y']); pg.wait_for_timeout(300)
     pg.screenshot(path=str(out / 'od02_core_panel.png'))
-    pg.click('[data-act=od]'); pg.wait_for_timeout(120)
+    pg.click('[data-act=od]'); pg.wait_for_timeout(150)
+    pg.screenshot(path=str(out / 'od02b_armed.png'))
+    print('armed, not fired:', pg.evaluate('() => !G.odUsed'), pg.inner_text('[data-act=od]').replace(chr(10), ' | '))
+    pg.click('[data-act=od]'); pg.wait_for_timeout(150)
     pg.screenshot(path=str(out / 'od03_shockwave.png'))
-    print('after release od', pg.evaluate('() => G.core.od'), 'panel', pg.evaluate('() => UI.modalOpen'))
+    print('fired:', pg.evaluate('() => ({ used: G.odUsed, left: G.enemies.filter(e => !e.dead && !e.boss).length })'))
+    c = pg.evaluate('() => G.map.core'); tap_tile(pg, c['x'], c['y']); pg.wait_for_timeout(250)
+    print('core panel after use:', pg.evaluate('() => !!document.querySelector("[data-act=od]")'), '|', pg.inner_text('#panel').split(chr(10))[0:12][-6:])
+    pg.screenshot(path=str(out / 'od03b_used.png'))
+    pg.evaluate('() => UI.closePanel()')
     t = pg.evaluate('() => G.towers[0]'); tap_tile(pg, t['x'], t['y']); pg.wait_for_timeout(250)
     pg.screenshot(path=str(out / 'od04_link_panel.png'))
     b.close()

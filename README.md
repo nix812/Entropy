@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.18.0 · October 26, 2026**
+**Version at handoff: 1.19.0 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.18.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.19.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -143,7 +143,7 @@ Publish `dist/entropy.html` to the existing URL above.
   - Not snapshotted (they're transient). Shown on the minimap when zoomed. Cleared when a checkpoint starts.
   - **Variants (v1.18):** `kind` is `normal`, `cursed` or `gold`. From wave 10, 22% are **cursed** (red): double reward, but `spawnEnemy` releases an elite (2 + wave/30 affixes, HP × chaos HP × 1.5) from a random open wormhole. Every boss wave forces one **golden** crate (`G.goldAt`): 50% the next tower built rolls a Legendary (`legendQueue++`), otherwise triple credits plus an ability charge.
 - **Node Links (v1.18):** combat towers (not support, eco or snare) on Power Nodes within `LINK_MAX` = 9 tiles pair up in `updateLinks()` (called from `recomputeAuras`). Each linked tower gets `+LINK_DMG` = 10% damage via `t.buff.dmg` and `t.linkedTo`. `updateLinkBeams(dt)` makes the beam deal `LINK_BEAM` = 50% × the average of the two towers' dmg × rate per second (as `dot` hits, no statuses) to enemies within about 0.55 tiles of the segment. Drawn as a jittering cyan beam; it goes slack and dim when either tower is disabled.
-- **Core Overdrive (v1.18):** `G.core.od` (0–`OD_MAX` = 100, snapshotted). `odCharge(e)` in `kill()` adds 3 per kill within `OD_RANGE` = 4.5 tiles of the core (elite 6, boss 25). When full, the core panel shows a pulsing Release Overdrive button. `releaseOverdrive()` returns `charge`, `empty` (keeps the charge if nothing is within `OD_RADIUS` = 3.5) or `ok`. It hits for 10 × core damage + 15% max HP (5% bosses), knocks ground enemies back 2 tiles along their lane, and stuns for 1.2 s (bosses 0.4 s). A green arc around the core shows the charge.
+- **Core Overdrive (v1.19, replaces the v1.18 charge version):** once per run, from wave `OD_WAVE` = 35 (`odReady()`; `G.odUsed` = the wave it was used, snapshotted along with `odToldAt`). `odAnnounce()` at wave start toasts "OVERDRIVE ONLINE" once. From the core panel, the first tap arms the button for 3 s and the second releases it. `releaseOverdrive()` returns `over`, `used`, `locked`, `empty` (no non-boss enemies; not consumed) or `ok`. It `kill()`s every non-boss enemy on the map (up to 6 passes, so splitter children go too; full kill credits and score). Bosses survive, losing `OD_BOSS` = 20% of current HP (floor 1) plus a 0.6 s stun. The core shows pulsing rings while it's available.
 
 ### 4.3 Towers (12)
 | Tower | Cost | Unlocks at wave | Notes |
@@ -398,4 +398,5 @@ The expanding sector made every level a little easier, because the compact early
 | 1.15.3 | Version watermark in the main menu's bottom-left corner (`#hVer`, set in `renderHangar`). |
 | 1.16 | Core relocation at checkpoints (first free, then 800); core affixes on Weapon/Shield upgrades with reroll; checkpoints wait for a clear field |
 | 1.17 | Random core position (main road enters from the far side); Power Nodes; Salvage caches |
-| 1.18 | Core Overdrive, Node Links, cursed and golden Salvage crates |
+| 1.18 | Core Overdrive (charged shockwave), Node Links, cursed and golden Salvage crates |
+| 1.19 | Overdrive reworked: one board clear per run from Wave 35, bosses survive, two-tap confirm |

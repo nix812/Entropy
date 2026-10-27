@@ -704,9 +704,8 @@ const Render = (() => {
       }
     }
     drawCore();
-    { const od = G.core.od || 0, cx = G.core.x * TILE, cy = G.core.y * TILE;
-      if (od > 0) { b.strokeStyle = hexA(PAL.core, od >= OD_MAX ? 0.95 : 0.6); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17, -1.5708, -1.5708 + 6.2832 * od / OD_MAX); b.stroke(); }
-      if (od >= OD_MAX) { const pr = 19 + (frame % 24) / 24 * 10; b.strokeStyle = hexA(PAL.core, 0.7 * (1 - (frame % 24) / 24)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, pr, 0, 6.2832); b.stroke(); } }
+    if (odReady()) { const cx = G.core.x * TILE, cy = G.core.y * TILE, k = (frame % 30) / 30;
+      for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // projectiles
@@ -772,7 +771,7 @@ const Render = (() => {
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
     for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
-    if ((G.core.od || 0) >= OD_MAX) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
+    if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
     // ---------- composite ----------
@@ -961,7 +960,7 @@ const Render = (() => {
       case 'stasis': flashes.push({ col: '#6ae2ff', life: 0.5, max: 0.5, a: 0.4 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
-      case 'overdrive': flashes.push({ col: PAL.core, life: 0.45, max: 0.45, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
+      case 'overdrive': flashes.push({ col: '#e6fff6', life: 0.25, max: 0.25, a: 0.6 }); flashes.push({ col: PAL.core, life: 0.9, max: 0.9, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
       case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
       case 'cacheClaim': { const cc = CACHE_PAL[d.kind || 'normal'][3]; rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.kind === 'gold' ? 60 : 34, life: 0.5, max: 0.5, col: cc, w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), d.kind === 'gold' ? 50 : 22, cc, 50 * K, 0.6); break; }
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
