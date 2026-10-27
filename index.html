@@ -577,7 +577,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -744,15 +744,9 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '2.0.0', title: 'Entropy 2.0', items: [
-  ['Every tower pulls its weight', 'Thousands of simulated runs later: Void Lens is toned down, and EMP Mortar, Arc Coil, Gravity Well, Swarm Missile, Pylon, Cryo Tower and Snare Beacon are all stronger. No single build runs away with it now, so play what feels good.'],
-  ['Tower roles', 'The build menu now says what each tower is for, like "Boss killer" or "Crowds", so new builds are easier to try.'],
-  ['Gravity Well', 'Cheaper and hits harder. Each pull on the same enemy is a little weaker, so it holds lines without freezing them forever.'],
-  ['Snare Beacon', 'Cheaper, and netted fliers take +20% damage from every tower.'],
-  ['Conflagration', 'The fire keystone no longer switches off Resonance, its Thermal bonus rises to +50%, burning enemies are slowed by 25%, Chill turns into Burn (Cryo towers become fire starters), and heat builds into Thermal Shock combos.'],
-  ['Soundtrack', 'New Mixed mode in Settings blends the composed tracks with generative interludes so long runs stay fresh. Extra composed tracks join the playlist automatically when added.'],
-  ['Run highlights', 'The end-of-run summary and Hall of Fame now count salvage crates, pirates downed, Overdrive erasures and core moves.'],
-  ['Polish and fixes', 'Version and What\'s New live in Settings. Fixed a rare freeze if the passive web was still open when a run started, a rare crash from tapping a panel as it closed, and a map layout bug on some core positions.']
+const WHATS_NEW = { ver: '2.1.0', title: 'Entropy 2.1', items: [
+  ['Bosses fight back', 'Bosses have far more health, the most from Wave 15 to 40 (up to ×7). They used to die within seconds of the first hit; now they take a real fight, and a weak defence can let one through.'],
+  ['Collapse', 'The Collapse combo now takes only a sliver of a boss\'s max health (it was 3% per trigger, which melted bosses whatever their health). Against everything else it\'s unchanged.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -2682,11 +2676,16 @@ function spawnEnemy(type, q) {
   if (e.elite.length) Hooks.fx('elite', { x: e.x, y: e.y });
   return e;
 }
+// v2.1: bosses died within seconds of the first hit (5-6 s at waves 20-30 in bot runs with 60 web points).
+// Extra health, shaped to where towers outscale bosses the most: x3 at wave 10, x7 across waves 20-30,
+// easing to x2.5 from wave 60 where late bosses already push deep.
+const BOSS_HPX = [[10, 3], [20, 7], [30, 7], [40, 5], [50, 3], [60, 2.5]];
+const bossHpX = w => { const P = BOSS_HPX; if (w <= P[0][0]) return P[0][1]; for (let i = 1; i < P.length; i++) if (w <= P[i][0]) { const [a, va] = P[i - 1], [b, vb] = P[i]; return va + (vb - va) * (w - a) / (b - a); } return P[P.length - 1][1]; };
 function spawnBoss(q) {
   const B = BOSSES.find(b => b.id === q.boss), w = G.wave;
   const lane = q.lane, gen = q.gen || 0;
   const L = q.L || (B.fly ? lane.fly : lane);
-  const hp = q.hpAbs || 30 * B.hp * q.hpm * (1 + Math.floor((w - 1) / 50) * 0.5) * (1 + ((G.af && G.af.bossHP) || 0));
+  const hp = q.hpAbs || 30 * B.hp * q.hpm * bossHpX(w) * (1 + Math.floor((w - 1) / 50) * 0.5) * (1 + ((G.af && G.af.bossHP) || 0));
   const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
     armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 0.8, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
@@ -2933,6 +2932,7 @@ function hit(e, dmg, el, src, o) {
     if (amt <= 0) { e.hitFlash = 0.08; if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
   const dealt = Math.min(e.hp, amt);
+  if (G.dbgBoss && e.boss) { if (!e._hit0) e._hit0 = G.time; const k = o.combo || (o.abil ? 'ability' : o.dot ? 'dot' : src && src.type ? src.type : src === G.core ? 'core' : 'other'); G.dbgBoss[k] = (G.dbgBoss[k] || 0) + dealt; }
   e.hp -= amt;
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
   if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; }
@@ -2991,7 +2991,8 @@ function applyStatuses(e, dmg, el, src, o) {
     combo(e, 'COLLAPSE', '#b86cff');
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * 0.03) * cmb, 'V', src, { noStatus: 1 });
+      // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss ? 0.004 : 0.03)) * cmb, 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
     }
     if (e.dead) return;
