@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.15.1 · October 26, 2026**
+**Version at handoff: 1.15.2 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.15.1.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.15.2.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -46,7 +46,7 @@ cd entropy-site
 cp -r ../entropy/dist/pages/* .
 git add -A && git commit -m "vX.Y.Z: summary" && git push origin HEAD:main
 ```
-Pages updates in about a minute. Nic restarts the Home Screen app to get the new version.
+Pages updates in about a minute, but GitHub serves pages with a 10-minute cache. Since v1.15.2 the app checks for a newer `VERSION` at launch and when it returns from the background, and reloads itself from the main menu. Tell Nic to check Settings → Version if in doubt.
 
 ### Publish the artifact
 Publish `dist/entropy.html` to the existing URL above.
@@ -275,6 +275,8 @@ Publish `dist/entropy.html` to the existing URL above.
 | `par.sh` | `COLS=48 bash test/par.sh N points chaos startWave bestWave`: N seeds in parallel, printing a summary row each. Column 3 is the wave reached; column 6 is what killed the run. |
 | `mkpage.py` | Wraps `dist/entropy.html` with local fonts into `test/out/page.html` for Playwright. **Ad-hoc Playwright scripts must call `mkpage.mk()` after a rebuild**, or they test a stale page. |
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
+| `bossfight.py [seed wave chaos]` | Plays a real boss wave through the live UI loop and reports whether the boon pick appeared. |
+| `updshot.py` | Serves the Pages build at its real URL and checks the auto-update reloads once, from the menu only. |
 | `boonshot.py` | Kills a boss and checks the boon pick appears and the game resumes; checks the Gloop family gives one pick. |
 | `expandshot.py [W H chaos]` | Triggers a wormhole detection and screenshots the zoom-out (`x03_expand_*.png`), then jumps to the full map (`x04_full.png`). |
 | `bossshot.py`, `constshot.py`, `navshot.py`, `novashot.py`, `snareshot.py`, `tipshot.py`, `webshot.py` | Focused screenshot scripts for each feature. |
@@ -346,3 +348,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.14 | Map size and wormhole count scale with Chaos; build-menu card art |
 | 1.15 | Expanding sector: runs start on 60% of the map, each wormhole grows it, the camera pulls back and the main path extends |
 | 1.15.1 | Fix: boss kills froze the game since 1.11 (the boon pick screen `openDraft` had been deleted). The Gloop family now gives one reward when its last member dies. A pending pick with no screen showing reopens itself. |
+| 1.15.2 | Home Screen auto-update: on launch and on return from background, the GitHub Pages copy fetches itself (`cache: 'reload'`), and if `VERSION` differs it reloads once from the main menu (never mid-run; a sessionStorage guard stops loops). |

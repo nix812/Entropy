@@ -1708,6 +1708,28 @@ const Tree = (() => {
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec');
   Save.initRemote();
+  // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)
+  // and reload onto it from the main menu, never mid-run
+  let updTo = null, updAt = 0;
+  function checkUpdate() {
+    if (!/github\.io$/.test(location.hostname) || !window.fetch) return;
+    const now = Date.now(); if (now - updAt < 60000) return; updAt = now;
+    fetch(location.pathname, { cache: 'reload' }).then(r => r.ok ? r.text() : '').then(t => {
+      const m = t.match(/const VERSION = '([0-9.]+)'/);
+      if (m && m[1] !== VERSION) updTo = m[1];
+    }).catch(() => {});
+  }
+  checkUpdate();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+  setInterval(() => {
+    if (!updTo || UI.screen !== 'hangar' || UI.modalOpen || Tree.isOpen) return;
+    let tried = null; try { tried = sessionStorage.getItem('entropy.upd'); } catch (e) {}
+    if (tried === updTo) { updTo = null; return; } // already reloaded for this one; don't loop
+    try { sessionStorage.setItem('entropy.upd', updTo); } catch (e) {}
+    UI.toast('UPDATING', 'Version ' + updTo, '#59f0b4', true);
+    Save.save(); if (Save.flushNow) Save.flushNow();
+    updTo = null; setTimeout(() => location.reload(), 900);
+  }, 1000);
   // hangar backdrop
   const bg = $('#bgfx'), bc = bg.getContext('2d');
   let bt = 0;
