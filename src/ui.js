@@ -482,8 +482,12 @@ const UI = (() => {
   function corePanelHTML() {
     const c = G.core, s = coreStats();
     const wc = coreWeaponCost(), sc = coreShieldCost(), rc = coreRepairCost();
-    return `<div class="ph"><div class="pt"><b>Core</b><small>Weapon LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
+    const nextMod = CORE_MODULES.find(m => m.lv === c.wLvl + 1);
+    const mods = `<div class="cmods">${CORE_MODULES.map(m => `<span class="${c.wLvl >= m.lv ? 'on' : ''}"><b>${c.wLvl >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>`;
+    return `<div class="ph"><div class="pt"><b>Core Battery</b><small>Battery LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
+      <div class="sts">${tipify(`Shells hit whatever is closest to reaching the core · Blast ${num1(s.splash)}`)}</div>
+      ${mods}
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
       <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Overdrive: used on Wave ${G.odUsed}` : odReady() ? 'Overdrive: ready · one board clear this run' : `Overdrive: unlocks at Wave ${OD_WAVE} · once per run`)}</div>
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
@@ -492,7 +496,7 @@ const UI = (() => {
       <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       ${canRelocate() ? '' : relocHTML()}
-      <div class="pfoot">${odReady() ? `<button class="btn wide od ${panel.odArm ? 'arm' : ''}" data-act="od">${panel.odArm ? 'Tap again to release' : 'Release Overdrive'}<small>${panel.odArm ? 'This is your only one this run' : 'Erases every enemy except bosses · once per run'}</small></button>` : ''}${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>${c.wLvl >= 12 ? 'Weapon · Max' : `Upgrade Weapon · ${fmt(wc)}<small>+Damage, new affix</small>`}</button>
+      <div class="pfoot">${odReady() ? `<button class="btn wide od ${panel.odArm ? 'arm' : ''}" data-act="od">${panel.odArm ? 'Tap again to release' : 'Release Overdrive'}<small>${panel.odArm ? 'This is your only one this run' : 'Erases every enemy except bosses · once per run'}</small></button>` : ''}${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= CORE_GUN.maxLv ? 'disabled' : costBtn(wc)}>${c.wLvl >= CORE_GUN.maxLv ? 'Battery · Max' : `Upgrade Battery · ${fmt(wc)}<small>${nextMod ? `LV ${nextMod.lv}: unlocks ${esc(nextMod.name)}` : '+50% Damage, +Range, new affix'}</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
   }
   const relocPrice = () => relocCost() ? `${fmt(RELOCATE_COST)}` : 'Free';
@@ -855,7 +859,7 @@ const UI = (() => {
       ['Build', 'Tap an empty tile, choose a tower, then tap it again to build.'],
       ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
       ['Specialize', 'At LV 3, choose one of two specializations.'],
-      ['Core', 'Tap the core to upgrade its weapon and shield, or repair it.'],
+      ['Core Battery', 'The core is a long-range gun that shells whatever is closest to reaching it, almost anywhere on the map. It starts as light support; Battery upgrades are expensive but make it a real weapon, with Twin Battery at LV 4, Siege Shells at LV 8 and Orbital Uplink at LV 12. Tap the core to upgrade, repair or reroll it.'],
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan. Tap Fit to reset the view.'],

@@ -711,7 +711,13 @@ const Render = (() => {
     // projectiles
     for (const p of G.projs) {
       const X = p.x * TILE, Y = p.y * TILE, col = EL[p.el] ? EL[p.el].col : '#fff';
-      if (p.k === 'bullet') {
+      if (p.k === 'bullet' && p.shell) {
+        // core battery shell: a bright plasma orb with a streaming tail
+        let dx = 0, dy = 0; if (p.e && !p.e.dead) { dx = p.e.x - p.x; dy = p.e.y - p.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; }
+        for (let k = 4; k >= 1; k--) D(b, X - dx * k * 3, Y - dy * k * 3, Math.max(1, 3 - k * 0.6), hexA(col, 0.12 + 0.1 * (4 - k)));
+        D(b, X, Y, 3, hexA(col, 0.9)); D(b, X, Y, 1.5, '#ffffff');
+        if (frame % 3 === 0) parts.push({ x: X, y: Y, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8, life: 0.35, max: 0.35, col, s: 2 });
+      } else if (p.k === 'bullet') {
         let dx = 0, dy = 0; if (p.e && !p.e.dead) { dx = p.e.x - p.x; dy = p.e.y - p.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; }
         R(b, X - dx * 4 - 1, Y - dy * 4 - 1, 2, 2, hexA(col, 0.4)); R(b, X - dx * 2 - 1, Y - dy * 2 - 1, 2, 2, hexA(col, 0.7));
         R(b, X - 1.5, Y - 1.5, 3, 3, p.crit ? '#ffffff' : col); if (p.crit) { R(b, X - 2.5, Y - 0.5, 5, 1, '#ffffff'); R(b, X - 0.5, Y - 2.5, 1, 5, '#ffffff'); }

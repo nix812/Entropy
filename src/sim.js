@@ -2160,11 +2160,11 @@ function coreStats() {
   const el = M.ks.conflag ? 'T' : c.el;
   const st = CORE_EL_STATUS[el];
   return {
-    el, kind: 'core', dmg: 16 * Math.pow(1.5, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1), rate: 1.3 * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
-    range: (3 + M.coreRange + 0.25 * (c.wLvl - 1)) * (1 + p('range')), critC: M.critC + (A.critC || 0), critM: 1.5 + M.critM + p('critM'),
+    el, kind: 'core', dmg: CORE_GUN.dmg * Math.pow(CORE_GUN.growth, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1), rate: CORE_GUN.rate * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
+    range: (CORE_GUN.range + M.coreRange + CORE_GUN.rangeLv * (c.wLvl - 1)) * (1 + p('range')), critC: M.critC + (A.critC || 0), critM: 1.5 + M.critM + p('critM'),
     burn: clamp((st.burn || 0) + p('burn'), 0, 1), chill: M.ks.conflag ? 0 : clamp((st.chill || 0) + p('chill'), 0, 1), shock: clamp((st.shock || 0) + p('shock'), 0, 1), mark: clamp((st.mark || 0) + p('mark'), 0, 1),
-    chillPot: M.chillPot, freezeBonus: M.freezeDur, shockX: 1, burnX: 1, stun: 0, stunDur: 0, leg: c.leg, cur: {}, boss: M.eliteDmg + p('boss'), slowd: p('slowd'), exec: A.exec || 0, bounty: p('bounty'),
-    pierce: A.pierce || 0, chain: A.chain || 0, splash: A.splash || 0, multi: A.multi || 0,
+    chillPot: M.chillPot, freezeBonus: M.freezeDur, shockX: 1, burnX: 1, stun: 0, stunDur: 0, leg: c.leg, cur: {}, boss: M.eliteDmg + p('boss') + (c.wLvl >= 8 ? 0.25 : 0), slowd: p('slowd'), exec: A.exec || 0, bounty: p('bounty'),
+    pierce: A.pierce || 0, chain: A.chain || 0, splash: CORE_GUN.splash + (c.wLvl >= 8 ? 0.6 : 0) + (A.splash || 0), multi: (A.multi || 0) + (c.wLvl >= 4 ? 1 : 0),
     node: nd,
   };
 }
@@ -2190,16 +2190,24 @@ function updateCore(dt) {
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
   c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1);
   if (c.cd > 0) return;
+  // last line of defence: shells go to whatever is closest to reaching the core along its route, anywhere in range
   const r2 = s.range * s.range, near = [];
-  for (const e of G.enemies) if (enemyTargetable(e)) { const d = dist2(e.x, e.y, c.x, c.y); if (d < r2) near.push([d, e]); }
+  for (const e of G.enemies) if (enemyTargetable(e)) { const d = dist2(e.x, e.y, c.x, c.y); if (d < r2) near.push([e.fly || !e.L ? Math.sqrt(d) : e.L.len - e.d, e]); }
   if (!near.length) { c.cd = 0; return; }
   c.cd += 1;
   near.sort((a, b) => a[0] - b[0]);
+  c.volley = (c.volley || 0) + 1;
+  if (c.wLvl >= 12 && c.volley % 5 === 0) {
+    let tough = null; for (const [, e] of near) if (!tough || e.hp > tough.hp) tough = e;
+    const x = tough.x, y = tough.y, dmg = s.dmg * 3;
+    Hooks.fx('strike', { x, y });
+    setTimeoutSim(0.6, () => { Hooks.fx('boom', { x, y, r: 1.5, col: '#e6fff6', big: 1 }); Hooks.sfx('strike'); for (const o of G.enemies) if (!o.dead && dist2(o.x, o.y, x, y) <= 2.25) hit(o, dmg, s.el, c, { abil: 1 }); });
+  }
   const sw = stormAt(c.x, c.y), volleys = s.leg.echo && G.r() < 0.3 ? 2 : 1;
   c.angle = Math.atan2(near[0][1].y - c.y, near[0][1].x - c.x);
   for (let v = 0; v < volleys; v++) for (const [, e] of near.slice(0, 1 + s.multi)) {
     const crit = G.r() * 100 < s.critC;
-    G.projs.push({ k: 'bullet', x: c.x, y: c.y, e, spd: 14, dmg: s.dmg * sw[s.el] * (crit ? s.critM : 1), crit, el: s.el, src: c, bounces: s.pierce + s.chain, hitSet: new Set(), splash: s.splash, life: 2 });
+    G.projs.push({ k: 'bullet', x: c.x, y: c.y, e, spd: 16, dmg: s.dmg * sw[s.el] * (crit ? s.critM : 1), crit, el: s.el, src: c, bounces: s.pierce + s.chain, hitSet: new Set(), splash: s.splash, life: 3, shell: 1 });
   }
   Hooks.sfx('coreshot', {});
 }

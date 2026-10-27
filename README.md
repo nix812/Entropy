@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.19.0 · October 26, 2026**
+**Version at handoff: 1.20.0 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.19.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.20.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -168,6 +168,20 @@ Publish `dist/entropy.html` to the existing URL above.
 - **Statuses:** Burn, Chill (Freeze at 5 stacks), Shock, Mark.
 - **Combos:** Shatter, Thermal Shock, Overload, Superconduct, Collapse.
 
+### 4.3a Core Battery (v1.20)
+- The core is a long-range support gun (`CORE_GUN`): damage `12 × 1.5^(LV−1)`, rate 0.8/s, range `16 + 1.4 × (LV−1)` (+ web `coreRange`, × range affixes), blast 0.6. Battery max LV 12; costs are unchanged (`120 × 1.75^(LV−1)`, about 32k for LV 12).
+- Average coverage over 30 random cores: LV 1 reaches 86% of the starting sector and 49% of the full map; LV 12 reaches 94% of the full map.
+- **Targeting:** the shortest remaining route to the core (`L.len − d`; fliers use straight-line distance), anywhere in range. Shells are homing bullets (`shell: 1`, speed 16, life 3 s) drawn as plasma orbs with trails.
+- **Modules** (`CORE_MODULES`):
+
+| LV | Module | Effect |
+|---|---|---|
+| 4 | Twin Battery | +1 target per volley |
+| 8 | Siege Shells | +0.6 blast radius, +25% damage vs elites and bosses |
+| 12 | Orbital Uplink | Every 5th volley strikes the highest-HP enemy in range: 3 × shell damage in 1.5 tiles |
+
+- Approximate DPS (no affixes or web): LV 1 about 10 · LV 4 about 68 · LV 8 about 343 · LV 12 about 1,700 (plus blast and uplink). The old core was about 21 DPS at 3 range on LV 1. Bots: Normal 47.9 (24 seeds) versus 45.5 before.
+
 ### 4.3b Core affixes (v1.16)
 - Every Weapon or Shield upgrade rolls one affix with the tower rarity odds (`rollTier`, shared with towers). The pool is every attack-tower affix plus core-only ones, weighted 3× (`CORE_AFFIX_W`):
 
@@ -312,6 +326,7 @@ Publish `dist/entropy.html` to the existing URL above.
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
 | `bossfight.py [seed wave chaos]` | Plays a real boss wave through the live UI loop and reports whether the boon pick appeared. |
 | `updshot.py` | Serves the Pages build at its real URL and checks the auto-update reloads once, from the menu only. |
+| `coreshot.py` | Core Battery shells mid-wave and the battery panel. |
 | `odshot.py` | Node Link beam, Overdrive meter, button and shockwave, and all three crate variants. |
 | `nodeshot.py [seeds…]` | Random-core starts, building on a Power Node, spawning and tapping a Salvage cache. |
 | `relocshot.py [W H tag]` | Core affixes, reroll, relocation mode, preview, free then paid move, resume. |
@@ -400,3 +415,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.17 | Random core position (main road enters from the far side); Power Nodes; Salvage caches |
 | 1.18 | Core Overdrive (charged shockwave), Node Links, cursed and golden Salvage crates |
 | 1.19 | Overdrive reworked: one board clear per run from Wave 35, bosses survive, two-tap confirm |
+| 1.20 | Core Battery: long range, shortest-route targeting, plasma shells, modules at LV 4, 8 and 12 |
