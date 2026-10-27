@@ -308,6 +308,8 @@ const Render = (() => {
   function scaledSpr(k, s, f) { if (scCache[k]) return scCache[k]; const c = document.createElement('canvas'); c.width = Math.round(s.width * f); c.height = Math.round(s.height * f); const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, c.width, c.height); return scCache[k] = c; }
   function bossSprite(id) { return outlined('oboss:' + id, spr('boss:' + id, 48, 48, g => BOSS[id](g, ENEMY_COL.boss))); }
 
+  // crate palettes: frame, body, lid, beacon
+  const CACHE_PAL = { normal: ['#3a2a10', '#a8741c', '#e0a640', '#ffe14d'], cursed: ['#2a0a18', '#8a1a3a', '#c8325a', '#ff4d6a'], gold: ['#5a4206', '#e8b820', '#fff0a0', '#ffffff'] };
   // ---------- map layer ----------
   function drawMap() {
     if (mapLayer.width !== BW || mapLayer.height !== BH) { mapLayer.width = BW; mapLayer.height = BH; }
@@ -664,11 +666,25 @@ const Render = (() => {
     // salvage caches: a crate with a beacon that blinks faster as it decays
     for (const cc of G.caches || []) {
       const X = cc.x * TILE + 5, Y = cc.y * TILE + 7, late = cc.t < 6, on = late ? (frame >> 2) % 2 : (frame >> 4) % 2;
+      const P2 = CACHE_PAL[cc.kind || 'normal'];
       R(b, X - 1, Y + 1, 16, 12, 'rgba(0,0,0,0.45)');
-      R(b, X, Y, 14, 11, '#3a2a10'); R(b, X + 1, Y + 1, 12, 9, '#a8741c'); R(b, X + 1, Y + 1, 12, 2, '#e0a640'); R(b, X + 6, Y + 1, 2, 9, '#5a3c0c'); R(b, X + 1, Y + 5, 12, 1, '#5a3c0c');
-      R(b, X + 5, Y - 3, 4, 3, on ? '#ffe14d' : '#7a6a20');
+      R(b, X, Y, 14, 11, P2[0]); R(b, X + 1, Y + 1, 12, 9, P2[1]); R(b, X + 1, Y + 1, 12, 2, P2[2]); R(b, X + 6, Y + 1, 2, 9, P2[0]); R(b, X + 1, Y + 5, 12, 1, P2[0]);
+      if (cc.kind === 'cursed') { R(b, X + 4, Y + 3, 2, 2, '#ffd0d8'); R(b, X + 8, Y + 3, 2, 2, '#ffd0d8'); R(b, X + 5, Y + 7, 4, 1, '#ffd0d8'); }
+      if (cc.kind === 'gold' && frame % 20 < 10) { P(b, X - 2 + (frame >> 1) % 18, Y - 2, '#ffffff'); P(b, X + 14 - (frame >> 2) % 16, Y + 12, '#fff6c0'); }
+      R(b, X + 5, Y - 3, 4, 3, on ? P2[3] : P2[0]);
       const f = Math.max(0, cc.t / CACHE_LIFE), rr = 12;
-      b.strokeStyle = hexA(late ? '#ff4d6a' : '#ffe14d', 0.8); b.lineWidth = 1.5; b.beginPath(); b.arc(cc.x * TILE + 12, cc.y * TILE + 12, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
+      b.strokeStyle = hexA(late ? '#ff4d6a' : P2[3], 0.8); b.lineWidth = 1.5; b.beginPath(); b.arc(cc.x * TILE + 12, cc.y * TILE + 12, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
+    }
+    // Node Links: a jittering cyan beam between linked node towers
+    for (const [a, b2] of G.links || []) {
+      const ax = a.cx * TILE, ay = a.cy * TILE, bx = b2.cx * TILE, by = b2.cy * TILE, off = a.disabled > 0 || b2.disabled > 0;
+      const n = Math.max(4, Math.round(Math.hypot(bx - ax, by - ay) / 10)), nx = -(by - ay), ny = bx - ax, nl = Math.hypot(nx, ny) || 1;
+      for (const [w, col, al] of [[4, '#1a5a70', off ? 0.25 : 0.55], [2, '#6ae2ff', off ? 0.25 : 0.85], [1, '#e6fbff', off ? 0 : 0.8]]) {
+        if (!al) continue;
+        b.strokeStyle = hexA(col, al); b.lineWidth = w; b.beginPath(); b.moveTo(ax, ay);
+        for (let k = 1; k < n; k++) { const j = off ? 0 : (Math.sin(frame * 0.7 + k * 2.3 + a.id) * 2.2); b.lineTo(ax + (bx - ax) * k / n + nx / nl * j, ay + (by - ay) * k / n + ny / nl * j); }
+        b.lineTo(bx, by); b.stroke();
+      }
     }
     for (const t of G.towers) drawTower(t);
     // resonance links
@@ -688,6 +704,9 @@ const Render = (() => {
       }
     }
     drawCore();
+    { const od = G.core.od || 0, cx = G.core.x * TILE, cy = G.core.y * TILE;
+      if (od > 0) { b.strokeStyle = hexA(PAL.core, od >= OD_MAX ? 0.95 : 0.6); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17, -1.5708, -1.5708 + 6.2832 * od / OD_MAX); b.stroke(); }
+      if (od >= OD_MAX) { const pr = 19 + (frame % 24) / 24 * 10; b.strokeStyle = hexA(PAL.core, 0.7 * (1 - (frame % 24) / 24)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, pr, 0, 6.2832); b.stroke(); } }
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // projectiles
@@ -751,7 +770,9 @@ const Render = (() => {
     for (const z of G.zones) light(z.x * TILE, z.y * TILE, z.r * TILE * 1.2, '#ff7b39', 0.22);
     for (const q of conduits) light(q.x, q.y, 14, q.col, 0.05 + 0.05 * Math.sin(frame / 20 + q.ph));
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
-    for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * 1.3, '#ffe14d', 0.22);
+    for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
+    for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
+    if ((G.core.od || 0) >= OD_MAX) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
     // ---------- composite ----------
@@ -878,7 +899,7 @@ const Render = (() => {
       const mw = 64, mh = mw * reg.h / reg.w, mx = W - mw - 8, my = H - mh - 8;
       c.fillStyle = 'rgba(7,8,15,0.7)'; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
       c.drawImage(mapLayer, reg.x, reg.y, reg.w, reg.h, mx, my, mw, mh);
-      for (const cc of G.caches || []) { c.fillStyle = (frame >> 3) % 2 ? '#ffe14d' : '#7a6a20'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
+      for (const cc of G.caches || []) { c.fillStyle = (frame >> 3) % 2 ? CACHE_PAL[cc.kind || 'normal'][3] : '#3a3020'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
     if (!scanPat) scanPat = c.createPattern(scan, 'repeat');
@@ -940,8 +961,9 @@ const Render = (() => {
       case 'stasis': flashes.push({ col: '#6ae2ff', life: 0.5, max: 0.5, a: 0.4 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
+      case 'overdrive': flashes.push({ col: PAL.core, life: 0.45, max: 0.45, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
       case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
-      case 'cacheClaim': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 34, life: 0.5, max: 0.5, col: '#ffe14d', w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), 22, '#ffe14d', 50 * K, 0.6); break;
+      case 'cacheClaim': { const cc = CACHE_PAL[d.kind || 'normal'][3]; rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.kind === 'gold' ? 60 : 34, life: 0.5, max: 0.5, col: cc, w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), d.kind === 'gold' ? 50 : 22, cc, 50 * K, 0.6); break; }
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
       case 'lane': flashes.push({ col: '#ff4d6a', life: 0.5, max: 0.5, a: 0.3 }); { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 2, r1: 56, life: 0.7, max: 0.7, col: '#ff4d6a', w: 4, fill: 1 }); } for (const p of d.lane.tiles.slice(0, d.lane.branch || 99)) burst(p.x * TILE + 12, p.y * TILE + 12, 4, '#ff4d6a', 20 * K, 0.8); break;
       case 'meteor': lines.push({ pts: [{ x: T2P(d.x) - 70, y: T2P(d.y) - 120 }, { x: T2P(d.x), y: T2P(d.y) }], life: 0.5, max: 0.5, col: '#ff7b39', core: 1, w: 5 }); break;

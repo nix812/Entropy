@@ -411,6 +411,7 @@ function updateCaches(dt) {
   if (G.caches.some(c => c.t <= 0)) G.caches = G.caches.filter(c => c.t > 0);
   if (G.wave < 3 || G.spawningDone) return;
   G.cacheT = (G.cacheT === undefined ? 20 : G.cacheT) - dt;
+  if (G.wave % 10 === 0 && G.goldAt !== G.wave) G.cacheT = Math.min(G.cacheT, 4);
   if (G.cacheT > 0 || G.caches.length >= 2) return;
   G.cacheT = 30 + G.r() * 30;
   const R = G.region, core = G.map.core;
@@ -418,22 +419,39 @@ function updateCaches(dt) {
     const x = rngInt(G.r, R.x0, R.x1 - 1), y = rngInt(G.r, R.y0, R.y1 - 1), i = tIdx(x, y);
     if (G.map.tiles[i] !== 0 || G.towerAt[i] || G.nodeSet.has(i) || cacheAt(x, y)) continue;
     if (Math.abs(x - core.x) + Math.abs(y - core.y) < 4) continue;
-    G.caches.push({ x, y, t: CACHE_LIFE, id: G.eid++ });
-    Hooks.fx('cache', { x: x + 0.5, y: y + 0.5 }); Hooks.sfx('blink');
+    // boss waves always bring one golden crate; from wave 10, some crates are cursed
+    let kind = 'normal';
+    if (G.wave % 10 === 0 && G.goldAt !== G.wave) { kind = 'gold'; G.goldAt = G.wave; }
+    else if (G.wave >= 10 && G.r() < 0.22) kind = 'cursed';
+    G.caches.push({ x, y, t: CACHE_LIFE, id: G.eid++, kind });
+    Hooks.fx('cache', { x: x + 0.5, y: y + 0.5, kind }); Hooks.sfx('blink');
+    if (kind === 'gold') Hooks.toast('GOLDEN CACHE', 'A rare crate dropped. Find it before it decays', '#ffd84a');
     return;
   }
 }
 function claimCache(c) {
   if (!c || !G.caches.includes(c)) return null;
   G.caches = G.caches.filter(o => o !== c);
-  const w = Math.max(1, G.wave), roll = G.r() * 100;
+  const w = Math.max(1, G.wave), roll = G.r() * 100, k2 = c.kind === 'cursed' ? 2 : 1;
   let msg;
-  if (roll < 40) { const v = Math.round((40 + 14 * w) * G.mods.credits); G.credits += v; msg = `+${v} credits`; }
-  else if (roll < 60) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + 1; msg = `+1 ${ABILITIES[k] ? ABILITIES[k].name : k} charge`; }
-  else if (roll < 75) { addEntropy(12); msg = '+12 Entropy'; }
-  else if (roll < 90) { const v = Math.round(150 * w); addScore(v); msg = `+${v} base score`; }
-  else { G.tokens++; msg = '+1 Recalibration token'; }
-  Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5 }); Hooks.sfx('cash');
+  if (c.kind === 'gold') {
+    if (G.r() < 0.5) { G.legendQueue++; msg = 'Your next tower rolls a Legendary affix'; }
+    else { const v = Math.round((40 + 14 * w) * 3 * G.mods.credits), k = pick(G.r, ABIL_ORDER); G.credits += v; G.charges[k] = (G.charges[k] || 0) + 1; msg = `+${v} credits · +1 ${ABILITIES[k].name} charge`; }
+  }
+  else if (roll < 40) { const v = Math.round((40 + 14 * w) * G.mods.credits * k2); G.credits += v; msg = `+${v} credits`; }
+  else if (roll < 60) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + k2; msg = `+${k2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${k2 > 1 ? 's' : ''}`; }
+  else if (roll < 75) { addEntropy(12 * k2); msg = `+${12 * k2} Entropy`; }
+  else if (roll < 90) { const v = Math.round(150 * w * k2); addScore(v); msg = `+${v} base score`; }
+  else { G.tokens += k2; msg = `+${k2} Recalibration token${k2 > 1 ? 's' : ''}`; }
+  if (c.kind === 'cursed') {
+    // the price: an elite climbs out of a wormhole
+    const lanes = G.map.lanes.filter(L => !L.openWave), types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && k !== 'swarmer');
+    const e = spawnEnemy(pick(G.r, types), { lane: pick(G.r, lanes), elite: 2 + Math.floor(w / 30), hpm: hpMult(w) * (G.CH.hp || 1) * 1.5 });
+    G.stats.cursed = (G.stats.cursed || 0) + 1;
+    Hooks.fx('rift', { x: e.L.pts[0].x, y: e.L.pts[0].y });
+    msg += ' · an elite emerges';
+  }
+  Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5, kind: c.kind }); Hooks.sfx(c.kind === 'cursed' ? 'bosswarn' : 'cash');
   return msg;
 }
 
@@ -828,6 +846,60 @@ function recomputeAuras() {
   G.pylons = G.towers.filter(t => t.s.kind === 'support');
   G.forges = G.towers.filter(t => t.s.kind === 'eco');
   G.snares = G.towers.filter(t => t.s.kind === 'snare');
+  updateLinks();
+}
+// ---------- Node Links: combat towers on Power Nodes within LINK_MAX tiles share a beam ----------
+const LINK_MAX = 9, LINK_DMG = 0.1, LINK_BEAM = 0.5;
+function updateLinks() {
+  G.links = [];
+  const on = G.towers.filter(t => t.s.node && !['support', 'eco', 'snare'].includes(t.s.kind));
+  for (const t of G.towers) t.linkedTo = null;
+  for (let i = 0; i < on.length; i++) for (let j = i + 1; j < on.length; j++) {
+    const a = on[i], b = on[j];
+    if (dist2(a.cx, a.cy, b.cx, b.cy) > LINK_MAX * LINK_MAX) continue;
+    G.links.push([a, b]);
+    for (const [t, o] of [[a, b], [b, a]]) { if (!t.linkedTo) { t.linkedTo = o; t.buff.dmg += LINK_DMG; } }
+  }
+}
+function updateLinkBeams(dt) {
+  for (const [a, b] of G.links || []) {
+    if (a.disabled > 0 || b.disabled > 0) continue;
+    const dps = LINK_BEAM * (a.s.dmg * a.s.rate + b.s.dmg * b.s.rate) / 2;
+    const dx = b.cx - a.cx, dy = b.cy - a.cy, L2 = dx * dx + dy * dy || 1;
+    for (const e of G.enemies) {
+      if (e.dead) continue;
+      const u = clamp(((e.x - a.cx) * dx + (e.y - a.cy) * dy) / L2, 0, 1);
+      if (dist2(e.x, e.y, a.cx + dx * u, a.cy + dy * u) > 0.3) continue;
+      hit(e, dps * dt, u < 0.5 ? a.s.el : b.s.el, u < 0.5 ? a : b, { noStatus: 1, dot: 1 });
+    }
+  }
+}
+
+// ---------- Core Overdrive: kills near the core charge it; tap the core to release a shockwave ----------
+const OD_RANGE = 4.5, OD_MAX = 100, OD_RADIUS = 3.5;
+function odCharge(e) {
+  const c = G.core;
+  if (!c || dist2(e.x, e.y, c.x, c.y) > OD_RANGE * OD_RANGE) return;
+  const was = c.od || 0;
+  c.od = Math.min(OD_MAX, was + (e.boss ? 25 : e.elite.length ? 6 : 3));
+  if (was < OD_MAX && c.od >= OD_MAX) { Hooks.toast('OVERDRIVE READY', 'Tap the core to release it', '#59f0b4'); Hooks.sfx('milestone'); }
+}
+function overdriveTargets() { const c = G.core; return G.enemies.filter(e => !e.dead && dist2(e.x, e.y, c.x, c.y) <= OD_RADIUS * OD_RADIUS); }
+function releaseOverdrive() {
+  const c = G.core;
+  if (G.over || (c.od || 0) < OD_MAX) return 'charge';
+  const tg = overdriveTargets();
+  if (!tg.length) return 'empty';
+  c.od = 0;
+  const s = coreStats(), base = s.dmg * 10;
+  for (const e of tg) {
+    if (e.dead) continue;
+    hit(e, base + e.maxHp * (e.boss ? 0.05 : 0.15), s.el, c, { noStatus: 1, abil: 1 });
+    if (!e.dead) { if (!e.fly && !e.lureT) e.d = Math.max(0, e.d - 2); e.st.stun = Math.max(e.st.stun || 0, e.boss ? 0.4 : 1.2); }
+  }
+  Hooks.fx('overdrive', { x: c.x, y: c.y, r: OD_RADIUS }); Hooks.sfx('nova'); Hooks.fx('shake', { v: 8 });
+  Hooks.log(`Overdrive · hit ${tg.length}`, '#59f0b4');
+  return 'ok';
 }
 
 // ---------- storms ----------
@@ -1145,7 +1217,7 @@ function updateWaves(dt) {
     if (G.cpDue && G.cpDue === G.wave + 1) {
       // hold until the last wave's enemies are gone (capped, so a stuck enemy can never stall the run)
       if (G.enemies.some(e => !e.dead) && (G.cpWait = (G.cpWait || 0) + dt) < 180) return;
-      G.cpWait = 0;
+      G.cpWait = 0; G.caches = [];
       G.checkpoint = G.cpDue; G.cpDue = 0; G.cpT = 0;
       Hooks.log(`Checkpoint · Wormhole opens in Wave ${G.checkpoint}`, '#59f0b4');
       Hooks.sfx('milestone'); Hooks.onCheckpoint(G.checkpoint);
@@ -1643,6 +1715,7 @@ function milestone() {
 function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
+  odCharge(e);
   const M = G.mods;
   let cm = M.credits * (G.CH.cr || 1) * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
   if (src && src.s && src.s.bounty) cm *= 1 + src.s.bounty;
@@ -2276,6 +2349,7 @@ function simStep(dt) {
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
+  updateLinkBeams(dt);
   updateCaches(dt);
 }
 
@@ -2306,7 +2380,7 @@ function snapshotRun(waveNum) {
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
-    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw,
+    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0, od: G.core.od || 0 }, towers: tw,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
@@ -2345,7 +2419,7 @@ function resumeRun(S) {
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
-  G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; coreAffSum(G.core);
+  G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.core.od = S.core.od || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
   prepareWave(S.wave);

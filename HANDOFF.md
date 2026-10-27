@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.17.0 · October 26, 2026**
+**Version at handoff: 1.18.0 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.17.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.18.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -140,7 +140,10 @@ Publish `dist/entropy.html` to the existing URL above.
   - Drawn as a pulsing cyan diamond, or corner brackets when built on.
 - **Salvage caches** (`G.caches`, `updateCaches`, `claimCache`): from wave 3, only while a wave is spawning, every 30–60 s, at most 2 at once. Each lasts `CACHE_LIFE` = 22 s and is never on a node, tower or road, nor within 4 tiles of the core.
   - Tapping one (checked before tower and build taps) rewards: credits `(40 + 14·wave) × credit mult` 40% · random ability charge 20% · +12 Entropy 15% · `150·wave` base score 15% · +1 Recalibration token 10%.
-  - Not snapshotted (they're transient). Shown on the minimap when zoomed.
+  - Not snapshotted (they're transient). Shown on the minimap when zoomed. Cleared when a checkpoint starts.
+  - **Variants (v1.18):** `kind` is `normal`, `cursed` or `gold`. From wave 10, 22% are **cursed** (red): double reward, but `spawnEnemy` releases an elite (2 + wave/30 affixes, HP × chaos HP × 1.5) from a random open wormhole. Every boss wave forces one **golden** crate (`G.goldAt`): 50% the next tower built rolls a Legendary (`legendQueue++`), otherwise triple credits plus an ability charge.
+- **Node Links (v1.18):** combat towers (not support, eco or snare) on Power Nodes within `LINK_MAX` = 9 tiles pair up in `updateLinks()` (called from `recomputeAuras`). Each linked tower gets `+LINK_DMG` = 10% damage via `t.buff.dmg` and `t.linkedTo`. `updateLinkBeams(dt)` makes the beam deal `LINK_BEAM` = 50% × the average of the two towers' dmg × rate per second (as `dot` hits, no statuses) to enemies within about 0.55 tiles of the segment. Drawn as a jittering cyan beam; it goes slack and dim when either tower is disabled.
+- **Core Overdrive (v1.18):** `G.core.od` (0–`OD_MAX` = 100, snapshotted). `odCharge(e)` in `kill()` adds 3 per kill within `OD_RANGE` = 4.5 tiles of the core (elite 6, boss 25). When full, the core panel shows a pulsing Release Overdrive button. `releaseOverdrive()` returns `charge`, `empty` (keeps the charge if nothing is within `OD_RADIUS` = 3.5) or `ok`. It hits for 10 × core damage + 15% max HP (5% bosses), knocks ground enemies back 2 tiles along their lane, and stuns for 1.2 s (bosses 0.4 s). A green arc around the core shows the charge.
 
 ### 4.3 Towers (12)
 | Tower | Cost | Unlocks at wave | Notes |
@@ -309,12 +312,15 @@ Publish `dist/entropy.html` to the existing URL above.
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
 | `bossfight.py [seed wave chaos]` | Plays a real boss wave through the live UI loop and reports whether the boon pick appeared. |
 | `updshot.py` | Serves the Pages build at its real URL and checks the auto-update reloads once, from the menu only. |
+| `odshot.py` | Node Link beam, Overdrive meter, button and shockwave, and all three crate variants. |
 | `nodeshot.py [seeds…]` | Random-core starts, building on a Power Node, spawning and tapping a Salvage cache. |
 | `relocshot.py [W H tag]` | Core affixes, reroll, relocation mode, preview, free then paid move, resume. |
 | `cpwait.py` | Checks the checkpoint holds while enemies remain and starts once the field clears. |
 | `boonshot.py` | Kills a boss and checks the boon pick appears and the game resumes; checks the Gloop family gives one pick. |
 | `expandshot.py [W H chaos]` | Triggers a wormhole detection and screenshots the zoom-out (`x03_expand_*.png`), then jumps to the full map (`x04_full.png`). |
 | `bossshot.py`, `constshot.py`, `navshot.py`, `novashot.py`, `snareshot.py`, `tipshot.py`, `webshot.py` | Focused screenshot scripts for each feature. |
+
+**v1.18.0**: Normal about 45.5 (24 seeds; the bot uses neither Overdrive nor crates, so the gain comes from Node Links plus variance).
 
 **v1.17.0** (random core): Calm about 47 · Normal about 41.5 (24 seeds) · Unstable about 40 · Pandemonium about 44 at the old HP ×1.35 (24 seeds), so it was retuned to HP ×1.5 and kill credits ×0.8 (bracketed by HP 1.5 / credits 0.85 → 41.8 and HP 1.6 / credits 0.72 → 40.4). **Lesson:** raising enemy count (`CH.count`, still supported in `genWave`) made Pandemonium *easier* (46.5), because extra kills pay extra credits. Use HP or kill credits, not count. A random core adds a lot of per-map variance (Normal runs ranged from wave 17 to 53).
 
@@ -366,7 +372,6 @@ The expanding sector made every level a little easier, because the compact early
 - **Watch the expanding sector's balance.** Bots say v1.15 is slightly easier at every level; check Nic's feel before touching HP. Possible knobs: `REGION0` (start size), the main-path extension jog (3–7 rows), wormhole radius (75–100%).
 - **If multi-direction wormholes feel too punishing:** lengthen the warning, or make the first lane longer.
 - **Smarter test bot** that defends multiple lanes, for more trustworthy balance numbers.
-- **Ideas pitched in v1.17, not built:** Core Overdrive (charge from kills near the core, tap to release a shockwave); node-linked towers (two towers on nodes in range share a beam); cache variants (cursed caches that spawn an elite, golden caches at boss waves).
 - **Possible extras:** more oddball bosses, more Laws after all 9 are owned, cosmetic galaxy colours per Supernova (the menu background and web dust), and an animated build-card idle.
 
 ---
@@ -393,3 +398,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.15.3 | Version watermark in the main menu's bottom-left corner (`#hVer`, set in `renderHangar`). |
 | 1.16 | Core relocation at checkpoints (first free, then 800); core affixes on Weapon/Shield upgrades with reroll; checkpoints wait for a clear field |
 | 1.17 | Random core position (main road enters from the far side); Power Nodes; Salvage caches |
+| 1.18 | Core Overdrive, Node Links, cursed and golden Salvage crates |
