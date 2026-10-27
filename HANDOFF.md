@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.21.0 · October 26, 2026**
+**Version at handoff: 2.0.0 · October 27, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,8 +15,8 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.21.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
-| **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
+| **Source zip** | `entropy-source-v2.0.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). The composer isn't recorded anywhere in either repo (the files were re-encoded, tags stripped); ask Nic if more tracks are wanted. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
 ```bash
@@ -76,7 +76,7 @@ Publish `dist/entropy.html` to the existing URL above.
 |---|---|---|
 | `src/data.js` | ~650 | All tunables and content: towers, enemies, bosses, affixes, legendaries, curses, storms, events, abilities, chaos levels, passive web definition plus the `buildTree()` layout, anomalies, Cosmic Laws, Star Ranks, glossary sources. Also globals `COLS`, `ROWS` (mutable via `setCols`/`setRows`), `TILE=24`, `BW`/`BH`, `UIS` (interface scale), `VERSION`. |
 | `src/sim.js` | ~2060 | Deterministic simulation: profile (`PROF`), passive web allocation, `computeMods`, map generation (`genMap`, `genExtraLane`), waves, enemies, towers, combat, statuses, combos, storms, anomalies, checkpoints, cash-in, Supernova, Snare Beacon, snapshots and resume. No DOM access, so it runs headless in Node (`test/harness.js`). Talks to the UI only through `Hooks`. |
-| `src/audio.js` | ~310 | Web Audio synth SFX (`SFX.play(name)`) and music. Music uses plain `HTMLAudio` elements, because `createMediaElementSource` broke playback on iOS. |
+| `src/audio.js` | ~360 | Web Audio synth SFX (`SFX.play(name)`) and music. Music uses plain `HTMLAudio` elements, because `createMediaElementSource` broke playback on iOS. **Playlists (v2.0):** on start it probes `audio/bgm-battle-2.mp3` … `-6` and `audio/bgm-menu-2.mp3` … `-6`; each file that loads joins its playlist (a lone track loops, a playlist advances on `ended`). To add music, commit the files to `main`'s `audio/` folder with those names (and attach them to the artifact with `files`); no code change. **Mixed** mode plays a 150 s generative interlude (`MIX_INTERLUDE`) after each composed battle track. `SFX.bgm` exposes the lists for tests. |
 | `src/render.js` | ~950 | Canvas renderer (`Render`): pixel sprites built in code (towers via `TOPS`, enemies via `EN`, bosses via `BOSS`), map layer, lighting buffer, FX (particles, rings, lines, floating text, speech bubbles), camera zoom and pan, minimap, build-card art (`towerCard`), tower icons. |
 | `src/ui.js` | ~1740 | DOM UI (`UI`): HUD, rails, panels (build, tower, core, cash), modals (setup, pause, game over, help, dictionary, archive, Hall of Fame, settings, save transfer, Supernova), toasts, glossary tooltips (`tipify`), input handling, the **passive web module `Tree`** (3D/flat galaxy view, constellations, regions, profile radar, Star Ranks panel), the `Save` module, and the boot loop. |
 | `src/template.html` | ~540 | All CSS and markup skeleton. Design tokens live in `:root` (`--amber`, `--core`, `--bad`, `--panel`, `--line`, `--f-pix` = Silkscreen, `--f-term` = VT323, `--rail`, `--ui`). |
@@ -158,16 +158,19 @@ Publish `dist/entropy.html` to the existing URL above.
 | Pulse Blaster | 60 | 1 | |
 | Rail Lance | 110 | 1 | |
 | Cryo Emitter | 75 | 1 | |
-| **Snare Beacon** | 90 | 4 | Kind `snare`. Fliers whose straight line passes within the lure range (3.5) detour through the beacon, get held 0.8 s, and are slowed 50% inside the net (radius 1.3). Catches 8 fliers per wave. Bosses are affected less. Building one mid-wave re-routes fliers already in the air. |
+| **Snare Beacon** | 75 | 4 | Kind `snare`. Netted fliers take +20% damage (v2.0, in `hit()`). Fliers whose straight line passes within the lure range (3.5) detour through the beacon, get held 0.8 s, and are slowed 50% inside the net (radius 1.3). Catches 8 fliers per wave. Bosses are affected less. Building one mid-wave re-routes fliers already in the air. |
 | Swarm Missile | 120 | 5 | |
-| Relay Pylon | 100 | 8 | Support. |
+| Relay Pylon | 100 | 8 | Support. Range 2.6, +18% damage, +12% rate (v2.0). |
 | Arc Coil | 100 | 10 | |
 | Credit Forge | 150 | 12 | Economy. |
 | Flame Projector | 90 | 15 | |
-| Void Lens | 140 | 20 | |
+| Void Lens | 150 | 20 | Ramp ×4 (Event Horizon ×6.5, Prism Split ×3). The strongest boss killer; trimmed three times in v2.0. |
 | EMP Mortar | 130 | 25 | |
-| Gravity Well | 150 | 30 | |
+| Gravity Well | 140 | 30 | Each pull on the same enemy is 15% weaker (floor 30%), so it can't hold a line forever (`e.pullN`). |
 
+- **Roles:** `TOWER_ROLE` in `ui.js` gives each tower a one-line role in the build menu ("Boss killer · …"). Keep it in step with any rework.
+- **v2.0 tuning** (from 1.21): Lens dmg 2.8→2.0, ramp 4.5→4, Event Horizon 8→6.5, Prism 3.5→3, cost 140→150; EMP dmg 26→32 (Blackout 1.2 s stun, +0.3 splash, ×1.4 dmg); Coil 17→22; Grav 8→14, cost 150→140; Missile 26→31; Cryo dmg 5→6, rate 1.0→1.15, range 2.1→2.5; Pylon as above; Snare cost 90→75; Splinter Rail ×1.25→×1.4 damage. Conflagration keystone reworked: Thermal +25%→+50%; Resonance reads each tower's own element (`s.el0`) instead of the converted Thermal (it used to wipe Resonance out); Chill converts into Burn chance (Cryo towers become burn appliers); burning enemies are 25% slower (`enemySlow`); and with no Chill, heat builds instead: every 3rd Thermal hit on a burning enemy triggers Thermal Shock (`e.heat` in `applyStatuses`). The bots showed the real loss was combos and crowd control, not damage: raising Thermal alone from +35% to +60% moved it only from 58 to 60.5; restoring combos took it to 62.5, and the final version (+50%, 25% slow) to 64.5, near Chaos Engine's 67.5. The bot still builds Cryo for control, which suits this keystone badly, so players running fire builds should do better. Note `st.burn` is an object (`{dps, t, src}`), never compare it with numbers.
+- **Keystone check (v2.0, 8 seeds, 40 points, Normal):** none 72.5 · Glass 71.5 · Overgrid 68.5 · Absolute Zero 70.5 · Singularity 74.5 · Diminishing Returns 73.5 · Prismatic 69 · Chaos Engine 67.5 · Unbreakable 71 · Celestial 70 · Event Singularity 70.5 · Conflagration 64.5 after its rework (medians). No keystone stands out.
 - **Levels and specializations:** towers go to level 3, then pick one of 2 specializations, then can Ascend (levels 4–5) for ×1.3 damage and a new affix.
 - **Affixes and veterans:** affixes roll on build and upgrade, and can be rerolled. Kills earn veteran ranks, and each rank offers a choice of mutations.
 - **Resonance:** adjacent towers of different elements give +8% damage per element.
@@ -311,12 +314,12 @@ Publish `dist/entropy.html` to the existing URL above.
   - Settings has Interface Size: Auto, Small (×0.85), Large (×1.2).
 - **Zoom:** pinch or double-tap (2.2×), up to 4×. Drag to pan when zoomed. A Fit button and a minimap appear while zoomed. The first run shows a one-time hint (`PROF.zoomHint`).
 - **Help:** a tabbed How to Play plus a searchable Dictionary.
-- **Settings:** volumes, soundtrack (Composed or Generative), HUD lean or full, damage numbers, screen shake, interface size, fullscreen, and save export/import. The save code is `ENT1:` + base64 of the JSON profile, used to move progress between the iPhone and the iPad.
+- **Settings:** volumes, soundtrack (Composed, Mixed or Generative; see below), version and What's New, HUD lean or full, damage numbers, screen shake, interface size, fullscreen, and save export/import. The save code is `ENT1:` + base64 of the JSON profile, used to move progress between the iPhone and the iPad.
 
 ---
 
 ## 5. Profile (`PROF`) fields worth knowing
-`v, webV, xp, alloc[], builds[5], bestWave, bestScore, runs, kills, playTime, settings{sfx, music, soundtrack, hud, dmgNums, shake, webView, uiScale}, seenHelp, zoomHint, runSnap, lastSetup, codex, mastery{}, loadout[], orbit{}, nova, remnants[], laws[], stars{}, hall[], novaOffer, daily, updatedAt`
+`v, webV, xp, alloc[], builds[5], bestWave, bestScore, runs, seenVer (last version whose What's New was closed; the popup shows once per version for returning players), kills, playTime, settings{sfx, music, soundtrack, hud, dmgNums, shake, webView, uiScale}, seenHelp, zoomHint, runSnap, lastSetup, codex, mastery{}, loadout[], orbit{}, nova, remnants[], laws[], stars{}, hall[], novaOffer, daily, updatedAt`
 
 - `Save.merge()` fills defaults for any missing fields, so adding a field means adding it to `defaultProfile()` in `sim.js`.
 - Any change to the web layout that alters node IDs needs a `WEB_VER` bump, or saved builds break.
@@ -329,6 +332,11 @@ Publish `dist/entropy.html` to the existing URL above.
 | `harness.js` | Loads `data.js` and `sim.js` into a Node VM and exports the sim API. `ROWS` and `COLS` are getters. Add new exports here when you need them in tests. |
 | `smartbot.js` | A heuristic player. Usage: `node test/smartbot.js runs points chaos startWave bestWave [keystone]`. `NOVA="s1,s3:lean,gravity"` simulates remnants and laws. The tower plan includes `snare`. |
 | `par.sh` | `COLS=48 bash test/par.sh N points chaos startWave bestWave`: N seeds in parallel, printing a summary row each. Column 3 is the wave reached; column 6 is what killed the run. |
+| `smartbot.js` `FORCE=type` | Makes that tower half of the bot's build plan. `for f in pulse rail …; do FORCE=$f bash test/par.sh 12 0 1 1 60; done` compares towers as the backbone of a whole run. |
+| `lab.js WAVE SEEDS [filter]` | Equal-budget tower lab: each config (every attack tower at L3, Spec 1, Spec 2, plus "pulse+support" mixes at a 30% share) spends the same credits at the best road spots and fights 3 waves with the core held alive. Prints share of wave HP prevented and damage per credit. Set `BMULT` (calibrated: w8 0.559, w14 2.902, w20 2.211) or `CALIB=1` to find it. Survivors at the 1200 s cap count as leaked. **Don't edit `src/` while it runs**: the harness reloads source files for every config. |
+| `bench.js` | Damage per 100 credits for every tower, level and spec against a single target, a pack and a stream. |
+| `monkey.py MINUTES [W H seed]` | Plays the real page with random taps, panel buttons, zooms, reloads, snapshots and wave jumps, checking invariants (finite numbers, one core tile, `towerAt` in sync, no stalls). Prints page errors with stack lines, problems, and where the time went. Screens land in `test/audit/monkey_*`. CPU-starved runs can report false stalls; it now needs 4 s of frozen sim time, and its report includes frame counts so a starved page is easy to spot. |
+| `newsshot.py [W H tag]` | What's New popup for a returning player, no repeat after closing, Settings, a build-menu role line and the run-recap highlights. |
 | `mkpage.py` | Wraps `dist/entropy.html` with local fonts into `test/out/page.html` for Playwright. **Ad-hoc Playwright scripts must call `mkpage.mk()` after a rebuild**, or they test a stale page. |
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
 | `bossfight.py [seed wave chaos]` | Plays a real boss wave through the live UI loop and reports whether the boon pick appeared. |
@@ -342,6 +350,8 @@ Publish `dist/entropy.html` to the existing URL above.
 | `boonshot.py` | Kills a boss and checks the boon pick appears and the game resumes; checks the Gloop family gives one pick. |
 | `expandshot.py [W H chaos]` | Triggers a wormhole detection and screenshots the zoom-out (`x03_expand_*.png`), then jumps to the full map (`x04_full.png`). |
 | `bossshot.py`, `constshot.py`, `navshot.py`, `novashot.py`, `snareshot.py`, `tipshot.py`, `webshot.py` | Focused screenshot scripts for each feature. |
+
+**v2.0.0 tower check** (`FORCE=type`, 12 seeds, Normal, 0 points; median wave): default plan 51.5 · Pulse 47.5 · Rail 50 · Cryo 46 · Missile 49.5 · Coil 49.5 · Flame 51 · Lens 55–58 · EMP 47 · Grav 49.5. Before the retune the bots' damage-per-credit had Lens at 4.1× the average and EMP, Cryo, Flame, Coil and Grav at 0.1–0.5×. Lens stays the best boss killer by design; its cost went to 150 after this table. Early deaths around waves 16–21 appear in every set (the bot defends new wormhole directions badly), so compare medians, not averages.
 
 **v1.18.0**: Normal about 45.5 (24 seeds; the bot uses neither Overdrive nor crates, so the gain comes from Node Links plus variance).
 
@@ -377,6 +387,9 @@ The expanding sector made every level a little easier, because the compact early
 12. **Boss rewards and `G.draft`:** while `G.draft` is set the main loop halts, so the pick screen must always open. `UI.tick` reopens it if a pick is pending and nothing is on screen. Test with `test/boonshot.py`.
 13. **Lane objects get replaced** (sector growth and core relocation). Anything that stores a lane reference outside an enemy (queued spawns, the rift) must be remapped, as `applyRelocation` does.
 14. **Never mutate `map.lanes[0]` in place** when its shape changes; build a new lane with `makeLane` so walking enemies keep valid geometry.
+15. **Click handlers can fire after their panel has closed** (double taps, a tap during a close). `panelAction` returns early when `panel` is null; keep that guard in any new handler that reads `panel`.
+16. **Bot balance numbers are noisy.** Boon picks use `Math.random`, so the same 12 seeds can swing ±4 waves between runs (Lens measured 55, 56 and 58 on three runs). Re-run before acting on a gap under about 5 waves, and use `lab.js` and `bench.js` for controlled comparisons.
+17. **The passive web (`#tree`) is a `.screen`.** `show(id)` hides every other screen, so switching screens while the web was open used to hide it but leave `Tree.isOpen` true, which halts the game loop (frozen run). `show()` now closes the web first. `monkey.py` checks this invariant.
 
 ---
 
@@ -425,3 +438,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.19 | Overdrive reworked: one board clear per run from Wave 35, bosses survive, two-tap confirm |
 | 1.20 | Core Battery: long range, shortest-route targeting, plasma shells, modules at LV 4, 8 and 12 |
 | 1.21 | Space pirates: drop-ship deliveries, booby-trapped loot with stowaways, Captain's Chest flagship, Pirate Skiff thieves |
+| 2.0 | Whole-game balance and polish pass: tower retune from bot, lab and bench sims (no build stands out); tower roles in the build menu; Gravity Well diminishing pull; Snare net damage bonus; Mixed soundtrack and auto-detected playlists; What's New popup and Settings version row; run highlights in the recap and Hall of Fame; stale-tap crash and serpentine map fixes; monkey, lab, bench and newsshot test tools |

@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.21.0';
+const VERSION = '2.0.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -61,24 +61,24 @@ const TOWERS = {
   rail: { name: 'Rail Lance', el: 'K', cost: 110, dmg: 50, rate: 0.5, range: 4.6, kind: 'rail', pierce: 2, crit: 10, unlock: 1,
     blurb: 'Long-range piercing shot.',
     specs: [{ name: 'Gauss Spire', desc: '×1.8 Damage, +15% Crit Chance', m: { dmgX: 1.8, critC: 15 } },
-            { name: 'Splinter Rail', desc: '+4 Pierce, ignores Armor, ×1.25 Damage', m: { pierce: 4, shred: 1, dmgX: 1.25 } }] },
-  cryo: { name: 'Cryo Emitter', el: 'C', cost: 75, dmg: 5, rate: 1.0, range: 2.1, kind: 'pulse', st: { chill: 1 }, unlock: 1,
+            { name: 'Splinter Rail', desc: '+4 Pierce, ignores Armor, ×1.4 Damage', m: { pierce: 4, shred: 1, dmgX: 1.4 } }] },
+  cryo: { name: 'Cryo Emitter', el: 'C', cost: 75, dmg: 6, rate: 1.15, range: 2.5, kind: 'pulse', st: { chill: 1 }, unlock: 1,
     blurb: 'Pulse that Chills nearby enemies.',
     specs: [{ name: 'Glacier Core', desc: '×1.5 Chill strength. Freeze lasts 0.6s longer', m: { chillPot: 1.5, freezeBonus: 0.6 } },
             { name: 'Shatter Field', desc: 'Chilled enemies in range take +60% Kinetic Damage', m: { shatterField: 0.6 } }] },
-  missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 26, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
+  missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 31, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
     blurb: 'Homing missiles. Splash and Burn.',
     specs: [{ name: 'Cluster Pods', desc: 'Missiles split into 3 bomblets', m: { cluster: 3 } },
             { name: 'Napalm Payload', desc: 'Impacts leave burning ground', m: { napalm: 1 } }] },
-  pylon: { name: 'Relay Pylon', el: 'N', cost: 100, dmg: 0, rate: 0, range: 2.0, kind: 'support', buffDmg: 15, buffRate: 10, unlock: 8,
+  pylon: { name: 'Relay Pylon', el: 'N', cost: 100, dmg: 0, rate: 0, range: 2.6, kind: 'support', buffDmg: 18, buffRate: 12, unlock: 8,
     blurb: 'Boosts nearby towers. Reveals cloaked.',
     specs: [{ name: 'Amplifier', desc: '+20% Damage boost', m: { buffDmg: 20 } },
             { name: 'Uplink', desc: '+1 Range. Also boosts Crit Chance by 12%', m: { rangeAdd: 1, buffCrit: 12 } }] },
-  snare: { name: 'Snare Beacon', el: 'N', cost: 90, dmg: 0, rate: 0, range: 3.5, kind: 'snare', net: 1.3, netSlow: 0.5, hold: 0.8, catches: 8, unlock: 4,
-    blurb: 'Lures fliers off course into a slowing net.',
+  snare: { name: 'Snare Beacon', el: 'N', cost: 75, dmg: 0, rate: 0, range: 3.5, kind: 'snare', net: 1.3, netSlow: 0.5, hold: 0.8, catches: 8, unlock: 4,
+    blurb: 'Lures fliers off course into a slowing net. Netted fliers take +20% damage.',
     specs: [{ name: 'Tangle Web', desc: 'Caught fliers are held 2s. Net slows 70%', m: { hold: 2, netSlow: 0.7 } },
             { name: 'Long Lure', desc: '+2 lure range, +6 catches per wave', m: { rangeAdd: 2, catches: 6 } }] },
-  coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 17, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
+  coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 22, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
     blurb: 'Chain lightning. Applies Shock.',
     specs: [{ name: 'Tesla Crown', desc: '+3 Chain', m: { chain: 3 } },
             { name: 'Overvolt', desc: '×2 Shock effect, 12% chance to Stun', m: { shockX: 2, stun: 0.12 } }] },
@@ -90,15 +90,15 @@ const TOWERS = {
     blurb: 'Short-range cone. Applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
-  lens: { name: 'Void Lens', el: 'V', cost: 140, dmg: 2.8, rate: 10, range: 3.2, kind: 'beam', rampMax: 4.5, st: { mark: 0.15 }, unlock: 20,
+  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 2.0, rate: 10, range: 3.2, kind: 'beam', rampMax: 4, st: { mark: 0.15 }, unlock: 20,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×8 damage', m: { rampMax: 8 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×3.5', m: { beams: 3, rampMax: 3.5 } }] },
-  emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 26, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×6.5 damage', m: { rampMax: 6.5 } },
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×3', m: { beams: 3, rampMax: 3 } }] },
+  emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 32, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
-    specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash', m: { stunDur: 1.2, splash: 0.3 } },
+    specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
             { name: 'Ion Barrage', desc: 'Fires 3 shells per volley', m: { shells: 3 } }] },
-  grav: { name: 'Gravity Well', el: 'V', cost: 150, dmg: 8, rate: 0.35, range: 2.6, kind: 'grav', pull: 0.7, unlock: 30,
+  grav: { name: 'Gravity Well', el: 'V', cost: 140, dmg: 14, rate: 0.35, range: 2.6, kind: 'grav', pull: 0.7, unlock: 30,
     blurb: 'Pulls enemies back along the path.',
     specs: [{ name: 'Singularity', desc: '×3 Damage. Pulses apply Mark', m: { dmgX: 3, addMark: 1 } },
             { name: 'Tidal Lock', desc: '×2 pull distance', m: { pullX: 2 } }] },
@@ -166,6 +166,17 @@ const LEGENDARIES = [
 const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 'prism', 'echo'];
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
+// "What's New" sheet, shown once per version to returning players (and from Settings)
+const WHATS_NEW = { ver: '2.0.0', title: 'Entropy 2.0', items: [
+  ['Every tower pulls its weight', 'Thousands of simulated runs later: Void Lens is toned down, and EMP Mortar, Arc Coil, Gravity Well, Swarm Missile, Pylon, Cryo Tower and Snare Beacon are all stronger. No single build runs away with it now, so play what feels good.'],
+  ['Tower roles', 'The build menu now says what each tower is for, like "Boss killer" or "Crowds", so new builds are easier to try.'],
+  ['Gravity Well', 'Cheaper and hits harder. Each pull on the same enemy is a little weaker, so it holds lines without freezing them forever.'],
+  ['Snare Beacon', 'Cheaper, and netted fliers take +20% damage from every tower.'],
+  ['Conflagration', 'The fire keystone no longer switches off Resonance, its Thermal bonus rises to +50%, burning enemies are slowed by 25%, Chill turns into Burn (Cryo towers become fire starters), and heat builds into Thermal Shock combos.'],
+  ['Soundtrack', 'New Mixed mode in Settings blends the composed tracks with generative interludes so long runs stay fresh. Extra composed tracks join the playlist automatically when added.'],
+  ['Run highlights', 'The end-of-run summary and Hall of Fame now count salvage crates, pirates downed, Overdrive erasures and core moves.'],
+  ['Polish and fixes', 'Version and What\'s New live in Settings. Fixed a rare freeze if the passive web was still open when a run started, a rare crash from tapping a panel as it closed, and a map layout bug on some core positions.']
+] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
   normal: ['Yarr!', 'Special delivery', "That's not ours", 'Tell no one', 'Insurance fraud!', 'Fell off a freighter', 'No refunds', 'Arr, butterfingers', 'Keep the change', 'Dropping the evidence', 'This never happened', 'Free sample!', 'Mind the paint', 'Totally legal cargo', 'Ye saw nothing', 'Express shipping'],
@@ -378,7 +389,7 @@ const SECTORS = [
       { name: 'Chain Ignition', fx: { chainIgnite: 1, burnDur: 20 }, smalls: [{ burnDur: 10 }, { burnDmg: 8 }, { burnDur: 10 }] }],
     mastery: { name: 'Pyre Mastery', fx: { dmgT: 15 }, opts: [
       { name: 'Wildfire', fx: { burnSpread: 1 } }, { name: 'Inferno Core', fx: { infernoCore: 1 } }, { name: 'Heat Sink', fx: { heatSink: 1 } }], smalls: [{ dmgT: 8 }, { burnDmg: 10 }] },
-    keystone: { name: 'Conflagration', ks: 'conflag', lines: ['All damage becomes Thermal', '+25% Thermal Damage, +150% Burn damage', 'Cannot Chill or Freeze'], smalls: [{ dmgT: 6 }, { burnDmg: 8 }] } },
+    keystone: { name: 'Conflagration', ks: 'conflag', lines: ['All damage becomes Thermal (Resonance unaffected)', '+50% Thermal Damage, +150% Burn damage. Burning enemies are 25% slower', 'Every 3rd Thermal hit on a burning enemy triggers Thermal Shock', 'Chill becomes Burn: cannot Chill or Freeze'], smalls: [{ dmgT: 6 }, { burnDmg: 8 }] } },
   { id: 'A', name: 'Voltaic', col: '#ffe14d', attr: 'Tm', spine: [{ dmgA: 8 }, { rate: 4 }, { shockChance: 3 }],
     clusters: [
       { name: 'Capacitors', fx: { capacitor: 1, dmgA: 10 }, smalls: [{ dmgA: 6 }, { rateA: 4 }, { dmgA: 6 }] },

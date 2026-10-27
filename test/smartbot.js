@@ -20,7 +20,9 @@ function profile(seed) {
     else { const c = cands[Math.floor(rnd() * cands.length)]; const p2 = S.treePathTo(c.id); if (p2 && p2.length <= S.pointsFree() && p2.length < 3) S.treeAllocate(c.id); }
   }
 }
-const PLAN = ['pulse', 'cryo', 'rail', 'snare', 'pulse', 'missile', 'coil', 'flame', 'pylon', 'lens', 'forge', 'emp', 'grav', 'rail', 'missile', 'flame', 'coil', 'lens', 'cryo'];
+const BASE_PLAN = ['pulse', 'cryo', 'rail', 'snare', 'pulse', 'missile', 'coil', 'flame', 'pylon', 'lens', 'forge', 'emp', 'grav', 'rail', 'missile', 'flame', 'coil', 'lens', 'cryo'];
+// FORCE=type makes that tower half of every build (backbone test); the rest follows the usual mix
+const PLAN = process.env.FORCE ? BASE_PLAN.flatMap(k => [process.env.FORCE, k]) : BASE_PLAN;
 function coverage(G, x, y, range) {
   let c = 0;
   for (const L of G.map.lanes) for (let i = 0; i < L.pts.length; i++) { const p = L.pts[i]; if ((p.x - x - 0.5) ** 2 + (p.y - y - 0.5) ** 2 <= range * range) c += 1 + i / L.pts.length; }

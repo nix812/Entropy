@@ -97,6 +97,8 @@ const UI = (() => {
   const stage = () => $('#stage');
 
   function show(id) {
+    // the web is a .screen too: switching screens while it's open would hide it but leave Tree.isOpen set, which halts the game
+    try { if (id !== 'tree' && Tree.isOpen) Tree.close(); } catch (e) { /* Tree not built yet during boot */ }
     for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== id;
     screen = id;
     if (id !== 'tree') SFX.setTrack(id === 'game' ? 'game' : 'menu');
@@ -348,6 +350,15 @@ const UI = (() => {
     liveRefreshPanel();
   }
   function costBtn(cost) { return `data-cost="${cost}"`; }
+  // what each tower is for, in one line: a playstyle, not a stat sheet
+  const TOWER_ROLE = {
+    pulse: 'All-rounder · fast single-target fire', rail: 'Lines and armor · long-range piercing shots',
+    cryo: 'Control · slows and freezes groups', snare: 'Control · pulls fliers into a net',
+    missile: 'Crowds · splash and Burn', pylon: 'Support · boosts every tower around it',
+    coil: 'Crowds and combos · chains and Shocks', forge: 'Economy · credits every wave',
+    flame: 'Close crowds · brutal at short range', lens: 'Boss killer · ramps up on one target, weak against swarms',
+    emp: 'Control · stuns groups from afar', grav: 'Control · drags enemies back down the road',
+  };
   function buildPanelHTML() {
     const order = TOWER_ORDER.filter(towerUnlocked).concat(TOWER_ORDER.filter(k => !towerUnlocked(k)));
     const tiles = order.map(k => {
@@ -362,7 +373,7 @@ const UI = (() => {
       const stat = D.kind === 'snare' ? `Catches ${D.catches} fliers per wave · Lure range ${D.range}` : D.kind === 'support' ? `+${D.buffDmg}% Damage, +${D.buffRate}% Attack Speed · Range ${D.range}`
         : D.kind === 'eco' ? `+${D.income} credits per wave`
         : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
-      info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
+      info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p class="role">${tipify(TOWER_ROLE[pick] || '')}</p><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
       foot = `<button class="btn primary wide" data-act="build" ${costBtn(cost)}>Build · ${fmt(cost)}</button>`;
     } else {
       info = `<div class="binfo"><p class="dim">Select a tower to see its range. Tap it again to build.</p></div>`;
@@ -555,6 +566,7 @@ const UI = (() => {
   function panelAction(act, b) {
     SFX.play('ui');
     if (act === 'close') return closePanel();
+    if (!panel || !G || G.over) return; // a stale tap on a panel that just closed
     if (panel.kind === 'build') {
       if (act === 'pick') {
         if (pick === b.dataset.type && G.credits >= towerCost(pick)) return panelAction('build', b);
@@ -754,7 +766,7 @@ const UI = (() => {
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
-      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '',
+      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
   }
@@ -766,6 +778,7 @@ const UI = (() => {
       <div class="elbar">${ELS.filter(e => els[e] / tot > 0.005).map(e => `<i style="flex:${Math.max(0.001, els[e] / tot)};background:${EL[e].col}" title="${EL[e].name}"></i>`).join('')}</div>
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
+      ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
   }
@@ -797,6 +810,12 @@ const UI = (() => {
     modal(`<div class="card"><div class="ch"><h2>Boss Defeated</h2><span class="note">Choose a boon. Lasts until the run ends. +1 Recalibration token.</span></div>
       <div class="boons">${opts.map((b, i) => `<button class="boon" data-act="boon" data-v="${i}"><b>${esc(b.name)}</b><span>${tipify(b.desc)}</span></button>`).join('')}</div></div>`, 'draft');
     SFX.play('milestone');
+  }
+  function openNews() {
+    const N = WHATS_NEW;
+    modal(`<div class="card news"><div class="ch"><h2>${esc(N.title)}</h2><span class="note">Version ${esc(N.ver)}</span><button class="x" data-act="newsDone" aria-label="Close">✕</button></div>
+      <div class="newslist">${N.items.map(([h, t]) => `<div><b>${esc(h)}</b><span>${tipify(t)}</span></div>`).join('')}</div>
+      <div class="foot"><button class="btn primary" data-act="newsDone">Let's go</button></div></div>`, 'news');
   }
   function openGameOver() {
     const L = profLevel(), gained = L.level - G.lvlStart;
@@ -839,7 +858,7 @@ const UI = (() => {
     const S = PROF.settings;
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
       <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
-      <div class="set"><span>Soundtrack</span><div class="chips"><button class="chip ${S.soundtrack !== 'synth' ? 'on' : ''}" data-act="strack" data-v="ec">Composed</button><button class="chip ${S.soundtrack === 'synth' ? 'on' : ''}" data-act="strack" data-v="synth">Generative</button></div></div>
+      <div class="set"><span>Soundtrack</span><div class="chips"><button class="chip ${!S.soundtrack || S.soundtrack === 'ec' ? 'on' : ''}" data-act="strack" data-v="ec">Composed</button><button class="chip ${S.soundtrack === 'mix' ? 'on' : ''}" data-act="strack" data-v="mix">Mixed</button><button class="chip ${S.soundtrack === 'synth' ? 'on' : ''}" data-act="strack" data-v="synth">Generative</button></div></div>
       <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
       ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
       <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
@@ -849,7 +868,7 @@ const UI = (() => {
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
       ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
       ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
-      <p class="note">Version ${VERSION}</p></div>`, 'settings');
+      <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div></div>`, 'settings');
     $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
@@ -1089,6 +1108,8 @@ const UI = (() => {
       case 'again': closeModal(); G = null; show('hangar'); renderHangar(); openSetup(); break;
       case 'web': closeModal(); G = null; show('hangar'); renderHangar(); Tree.open(); break;
       case 'fs': toggleFs(); break;
+      case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
+      case 'news': openNews(); break;
       case 'strack': PROF.settings.soundtrack = b.dataset.v; SFX.setSoundtrack(b.dataset.v); Save.save(); openSettings(); break;
       case 'xcopy': openTransfer('copy'); break;
       case 'xpaste': openTransfer('paste'); break;
@@ -1196,7 +1217,7 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(),
+    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews,
     get screen() { return screen; }, get modalOpen() { return modalOpen; },
   };
 })();
@@ -1791,6 +1812,9 @@ const Tree = (() => {
   UI.wire();
   UI.renderHangar();
   UI.show('hangar');
+  // returning players see what changed once per version; brand-new players skip it
+  if (!PROF.runs) { PROF.seenVer = VERSION; }
+  else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900);
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec');
   Save.initRemote();

@@ -242,6 +242,7 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .binfo b { font-family: var(--f-pix); font-size: 11px; text-transform: uppercase; }
 .binfo p { margin: 0; font-size: 16px; line-height: 1.05; }
 .binfo p.bst { font-size: 15px; color: var(--dim); margin-top: 2px; }
+.binfo p.role { font-family: var(--f-pix); font-size: 8px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--amber); margin: 1px 0 2px; line-height: 1.3; }
 .panel.right { right: 0; } .panel.left { left: 0; }
 .panel .x { width: 36px; height: 36px; margin: -4px -6px -4px auto; font-size: 20px; }
 @keyframes pin { from { opacity: 0; } }
@@ -294,6 +295,10 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .aff.pickable:active { filter: brightness(1.3); }
 .sts.reson { color: #d6c8ff; }
 .sts.node { color: #8fe6ff; }
+.newslist { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 6px; }
+.newslist div { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; background: var(--panel2); box-shadow: inset 2px 0 0 var(--amber); }
+.newslist b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); }
+.newslist span { font-size: 17px; line-height: 1.1; }
 .cmods { display: flex; flex-direction: column; gap: 3px; }
 .cmods span { font-size: 15px; line-height: 1.05; padding: 3px 7px; background: var(--panel); box-shadow: inset 2px 0 0 var(--line2); color: var(--dim); }
 .cmods span b { display: block; font-family: var(--f-pix); font-size: 8px; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; }
@@ -334,6 +339,7 @@ h2.void { color: #d6a6ff; }
 .anlist div { display: flex; flex-direction: column; background: var(--panel2); padding: 4px 8px; }
 .anlist b { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; color: #d6a6ff; }
 .recap { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.recap .note.hl { color: #59f0b4; }
 .mvp { display: flex; gap: 10px; align-items: center; background: var(--panel2); padding: 6px 8px; }
 .mvp div { display: flex; flex-direction: column; }
 .mvp b { font-size: 19px; font-weight: 400; color: var(--warn); }

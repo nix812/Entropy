@@ -29,41 +29,75 @@ const SFX = (() => {
     BGM.attach();
     if (soundtrack === 'synth') Music.start();
   }
-  // ---------------- soundtrack: Elemental Clash tracks (default) or the procedural synth ----------------
+  // ---------------- soundtrack: composed tracks (default), the procedural synth, or a mix of both ----------------
+  // Composed tracks rotate as a playlist: audio/bgm-battle.mp3, bgm-battle-2.mp3 … (and bgm-menu-2.mp3 …) are picked up
+  // automatically when present, so new tracks only need dropping into the audio folder.
+  // 'mix' plays the composed battle track, then a generative interlude, then the next composed track.
   let soundtrack = 'ec', synthBus = null, track = 'menu';
-  // Plain media elements (no Web Audio routing): the most reliable playback path on iOS and inside iframes.
+  const MIX_INTERLUDE = 150;
   const BGM = (() => {
-    const els = {};
-    let failed = false, unlocked = false;
+    const els = {}, lists = { menu: ['menu'], battle: ['battle'] }, idx = { menu: 0, battle: 0 };
+    let failed = false, unlocked = false, interlude = 0, interludeTimer = null;
+    const cur = () => lists[track][idx[track] % lists[track].length];
     function el(id) {
       if (els[id]) return els[id];
       const a = document.createElement('audio');
-      a.loop = true; a.preload = id === track ? 'auto' : 'metadata'; a.setAttribute('playsinline', ''); a.setAttribute('webkit-playsinline', '');
+      a.preload = id === cur() ? 'auto' : 'metadata'; a.setAttribute('playsinline', ''); a.setAttribute('webkit-playsinline', '');
       a.src = new URL('audio/bgm-' + id + '.mp3', document.baseURI).href;
-      a.addEventListener('error', () => { if (!a.src) return; failed = true; fallback(); });
+      a.addEventListener('error', () => { if (!a.src) return; if (id === 'menu' || id === 'battle') { failed = true; fallback(); } });
+      a.addEventListener('ended', () => next(id));
       a.style.display = 'none'; document.body.appendChild(a);
       els[id] = a; return a;
     }
-    function attach() { unlocked = true; el('menu'); el('battle'); apply(); }
+    // probe for extra tracks; each one that loads joins its playlist
+    function probe() {
+      for (const cat of ['battle', 'menu']) for (let n = 2; n <= 6; n++) {
+        const id = cat + '-' + n, a = document.createElement('audio');
+        a.preload = 'metadata'; a.src = new URL('audio/bgm-' + id + '.mp3', document.baseURI).href;
+        a.addEventListener('loadedmetadata', () => { if (!lists[cat].includes(id)) { lists[cat].push(id); a.removeAttribute('src'); a.load(); loopFlags(); } }, { once: true });
+        a.addEventListener('error', () => a.removeAttribute('src'), { once: true });
+      }
+    }
+    // a lone track loops; a playlist (or mix mode) advances on 'ended'
+    function loopFlags() { for (const cat in lists) for (const id of lists[cat]) if (els[id]) els[id].loop = lists[cat].length === 1 && !(soundtrack === 'mix' && cat === 'battle'); }
+    function next(id) {
+      const cat = id.startsWith('menu') ? 'menu' : 'battle';
+      idx[cat] = (idx[cat] + 1) % lists[cat].length;
+      if (els[id]) els[id].currentTime = 0;
+      if (soundtrack === 'mix' && cat === 'battle') startInterlude(); else apply();
+    }
+    function startInterlude() {
+      interlude = 1; if (synthBus) synthBus.gain.setTargetAtTime(1, now(), 1.5); if (ctx) Music.start();
+      clearTimeout(interludeTimer);
+      interludeTimer = setTimeout(() => { interlude = 0; if (synthBus && soundtrack !== 'synth') synthBus.gain.setTargetAtTime(0, now(), 1.5); apply(); }, MIX_INTERLUDE * 1000);
+      apply();
+    }
+    function attach() { unlocked = true; el('menu'); el('battle'); loopFlags(); probe(); apply(); }
     function apply() {
-      const on = soundtrack === 'ec' && !failed && unlocked && !document.hidden && musVol > 0.001;
-      for (const id in els) { els[id].volume = Math.min(1, musVol * 1.4); if ((!on || id !== track) && !els[id].paused) els[id].pause(); }
+      const composed = (soundtrack === 'ec' || soundtrack === 'mix') && !(soundtrack === 'mix' && track === 'battle' && interlude);
+      const on = composed && !failed && unlocked && !document.hidden && musVol > 0.001;
+      for (const id in els) { els[id].volume = Math.min(1, musVol * 1.4); if ((!on || id !== cur()) && !els[id].paused) els[id].pause(); }
       if (!on) return;
-      const a = el(track);
+      const a = el(cur()); loopFlags();
       if (a.paused) { const p = a.play(); if (p && p.catch) p.catch(() => {}); }
     }
-    function fallback() { if (soundtrack === 'ec') { soundtrack = 'synth-fallback'; if (synthBus) synthBus.gain.value = 1; if (ctx) Music.start(); } }
+    function reset() { interlude = 0; clearTimeout(interludeTimer); }
+    function fallback() { if (soundtrack === 'ec' || soundtrack === 'mix') { soundtrack = 'synth-fallback'; if (synthBus) synthBus.gain.value = 1; if (ctx) Music.start(); } }
     document.addEventListener('visibilitychange', () => apply());
     // iOS only grants playback inside a user gesture: retry on every tap until a track is actually playing
     for (const ev of ['touchend', 'click', 'pointerup', 'keydown']) document.addEventListener(ev, () => {
       if (ctx && ctx.state === 'suspended') ctx.resume();
-      if (unlocked && soundtrack === 'ec' && els[track] && els[track].paused) apply();
+      if (unlocked && (soundtrack === 'ec' || soundtrack === 'mix') && els[cur()] && els[cur()].paused) apply();
     }, { passive: true });
-    return { attach, apply, get failed() { return failed; } };
+    return { attach, apply, reset, loopFlags, get failed() { return failed; }, get lists() { return lists; }, get interlude() { return interlude; } };
   })();
-  function setTrack(t) { track = t === 'game' ? 'battle' : 'menu'; BGM.apply(); }
+  function setTrack(t) {
+    const nt = t === 'game' ? 'battle' : 'menu';
+    if (nt !== track && synthBus && soundtrack === 'mix') { BGM.reset(); synthBus.gain.setTargetAtTime(0, now(), 0.3); }
+    track = nt; BGM.apply();
+  }
   function setSoundtrack(v) {
-    soundtrack = v;
+    soundtrack = v; BGM.reset(); BGM.loopFlags();
     if (synthBus) synthBus.gain.setTargetAtTime(v === 'synth' ? 1 : 0, now(), 0.1);
     if (v === 'synth' && ctx) Music.start();
     BGM.apply();
@@ -305,5 +339,5 @@ const SFX = (() => {
     };
   })();
 
-  return { init, play, setVolumes, setTrack, setSoundtrack, music: Music, get ready() { return !!ctx; } };
+  return { init, play, setVolumes, setTrack, setSoundtrack, music: Music, bgm: BGM, get ready() { return !!ctx; } };
 })();

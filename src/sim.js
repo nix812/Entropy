@@ -10,7 +10,7 @@ function defaultProfile() {
     v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, soundtrack: 'ec', hud: 'lean', dmgNums: true, shake: true },
-    seenHelp: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
+    seenHelp: false, seenVer: '', runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
     mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
@@ -173,7 +173,7 @@ function computeMods(alloc, runMods) {
   if (m.infernoCore) { M.burnDmg *= 2; M.burnDur *= 0.6; }
   if (m.loadout) M.abilPower += 0.25 * (ABIL_ORDER.length - loadoutList().length);
   if (ks.glass) { M.dmg *= 1.6; M.coreHP *= 0.6; M.shield *= 0.6; }
-  if (ks.conflag) { M.burnDmg *= 2.5; M.el.T *= 1.25; }
+  if (ks.conflag) { M.burnDmg *= 2.5; M.el.T *= 1.5; }
   if (ks.overgrid) M.rate *= 1.4;
   if (ks.singularity) { for (const e of ELS) M.el[e] *= e === 'V' ? 2 : 0.7; }
   if (ks.abszero) M.el.T *= 0.5;
@@ -242,7 +242,7 @@ function genMap(r) {
     let u = 0, y = rngInt(r, R.y0 + 2, R.y1 - 3);
     const pts = [{ x: X(0), y }];
     const put = () => { pts.push({ x: X(u), y }); };
-    let up = y > ROWS / 2;
+    let up = y > (R.y0 + R.y1) / 2;
     while (true) {
       const remain = uc - 2 - u;
       if (remain <= 0) break;
@@ -467,6 +467,7 @@ function updateCaches(dt) {
 function claimCache(c) {
   if (!c || !G.caches.includes(c)) return null;
   G.caches = G.caches.filter(o => o !== c);
+  G.stats.crates = (G.stats.crates || 0) + 1;
   if (c.thief && !c.thief.dead) c.thief.pirate.cache = null; // beat the thief to it
   const w = Math.max(1, G.wave), roll = G.r() * 100, k2 = c.kind === 'cursed' ? 2 : 1;
   let msg;
@@ -789,8 +790,8 @@ function sellTower(t) {
 function towerStats(t) {
   const D = TOWERS[t.type], M = G.mods, lv = t.lvl;
   const sp = t.spec ? D.specs[t.spec - 1].m : {};
-  const s = { el: D.el, kind: D.kind };
-  if (M.ks.conflag && D.el !== 'N') s.el = 'T';
+  const s = { el: D.el, el0: D.el, kind: D.kind };
+  if (M.ks.conflag && D.el !== 'N') s.el = 'T'; // damage turns Thermal, but Resonance still reads the tower's own element (el0)
   const A = {}, leg = {}, cur = {};
   for (const a of t.affixes) {
     if (a.tier === 3) leg[a.id] = 1;
@@ -823,7 +824,8 @@ function towerStats(t) {
   const ost = oe('status') / 100;
   if (s.el === 'K') s.critC += oe('status');
   s.burn = clamp(((st.burn || 0) + (s.el === 'T' ? ost : 0) + ((A.burn || 0) + M.burnChance + (s.el === 'K' ? M.kBurn : 0)) / 100 + (M.ks.conflag ? 0.35 : 0)) * sm, 0, 1);
-  s.chill = M.ks.conflag ? 0 : clamp(((st.chill || 0) + (s.el === 'C' ? ost : 0) + ((A.chill || 0) + M.chillChance) / 100) * sm, 0, 1);
+  s.chill = clamp(((st.chill || 0) + (s.el0 === 'C' ? ost : 0) + ((A.chill || 0) + M.chillChance) / 100) * sm, 0, 1);
+  if (M.ks.conflag) { s.burn = clamp(s.burn + s.chill, 0, 1); s.chill = 0; } // Conflagration: Chill becomes Burn
   s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
   s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
   s.chillPot = (sp.chillPot || 1) * M.chillPot;
@@ -872,7 +874,7 @@ function recomputeAuras() {
       const d2 = dist2(t.cx, t.cy, o.cx, o.cy);
       if (d2 <= 1.5 * 1.5 + 0.01) {
         t.isolated = false;
-        if (t.s.el !== 'N' && o.s.el !== 'N' && o.s.el !== t.s.el && !els.has(o.s.el)) { els.add(o.s.el); t.resonWith.push(o); }
+        { const te = t.s.el0 || t.s.el, oe = o.s.el0 || o.s.el; if (te !== 'N' && oe !== 'N' && oe !== te && !els.has(oe)) { els.add(oe); t.resonWith.push(o); } }
       }
       if (o.s.kind === 'support' && d2 <= o.s.range * o.s.range) {
         t.buff.dmg = Math.max(t.buff.dmg, o.s.buffDmg); t.buff.rate = Math.max(t.buff.rate, o.s.buffRate); t.buff.crit = Math.max(t.buff.crit, o.s.buffCrit);
@@ -1438,6 +1440,7 @@ function enemySlow(e) {
   let s = 0;
   if (e.st.chill > 0) s += e.st.chill * 0.08 * e.st.chillPot;
   s += e.fieldSlow || 0;
+  if (G.mods.ks.conflag && e.st.burn) s += 0.25; // Conflagration: burning enemies are scorched (25% slow)
   if (e.st.chill > 0) s += FX('glacial') / 100;
   if (e.kSlowT > 0) s += FX('kSlow') / 100;
   if (FX('markSlow') && e.st.mark >= G.mods.markMax) s += FX('markSlow') / 100;
@@ -1630,6 +1633,7 @@ function hit(e, dmg, el, src, o) {
   if (el === 'K' && e.armor) mult *= 1 - Math.max(0, e.armor * (1 - M.armorPen - (src && src.s && src.s.shred ? 1 : 0)));
   if (e.armorAll) mult *= 1 - e.armorAll;
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
+  if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2;
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
   if (st.frozen > 0) mult *= 1 + M.frozenVuln;
   if (M.ks.abszero && st.chill > 0) mult *= 1.5;
@@ -1685,6 +1689,8 @@ function applyStatuses(e, dmg, el, src, o) {
     hit(e, dmg * 1.0 * M.shatter * cmb, 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return;
   }
   if (el === 'T' && st.chill >= 3) { st.chill = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * 1.5 * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; }
+  // Conflagration has no Chill, so heat builds instead: every 3rd Thermal hit on a burning enemy flashes a Thermal Shock
+  if (el === 'T' && M.ks.conflag && st.burn) { e.heat = (e.heat || 0) + 1; if (e.heat >= 3) { e.heat = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * 1.5 * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; } }
   if (((el === 'T' && st.shock > 0) || (el === 'A' && st.burn)) && e.ovlCD <= 0) {
     e.ovlCD = FX('ovlFree') ? 0 : 1; st.shock = 0;
     const rad = 1 * M.overloadRad, d = (dmg * 0.6 + 10 * Math.sqrt(hpMult(G.wave))) * M.overload * cmb;
@@ -2075,7 +2081,7 @@ function towerAttack(t, range, sw) {
       if (!tg.length) return false;
       const dmg = towerDmg(t, sw);
       for (const e of tg) {
-        if (!e.elite.includes('jugg')) e.d = Math.max(0, e.d - s.pull * (e.boss ? 0.3 : 1));
+        if (!e.elite.includes('jugg')) { e.pullN = (e.pullN || 0) + 1; e.d = Math.max(0, e.d - s.pull * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - 0.15 * (e.pullN - 1))); }
         hit(e, dmg, s.el, t);
       }
       Hooks.fx('grav', { x: t.cx, y: t.cy, r: range });
