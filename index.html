@@ -306,6 +306,8 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .aff.pickable { border: 0; text-align: left; font: inherit; font-size: 16px; cursor: pointer; }
 .aff.pickable:active { filter: brightness(1.3); }
 .sts.reson { color: #d6c8ff; }
+.sts.node { color: #8fe6ff; }
+.ph small.node { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em; color: #6ae2ff; margin-left: 8px; }
 .sts.bad { color: var(--bad); }
 
 /* ---------- modal ---------- */
@@ -559,7 +561,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.16.0';
+const VERSION = '1.17.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -838,7 +840,7 @@ const CHAOS_LEVELS = [
   { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64] },
   { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78] },
   { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [12, 24, 36, 50, 66, 84] },
-  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.35, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100] },
+  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.5, cr: 0.8, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100] },
 ];
 
 // ---------- Passive web ----------
@@ -1465,20 +1467,23 @@ function genMap(r) {
   let fallback = null;
   for (let attempt = 0; attempt < 80; attempt++) {
     const tiles = new Array(COLS * ROWS).fill(0);
-    // core sits inward so wormholes can open on every side of it, even behind
-    const core = { x: COLS - rngInt(r, 6, 8), y: rngInt(r, 3, ROWS - 4) };
-    // the main path lives inside the starting sector; the rest of the map is revealed as wormholes appear
-    const R = mapRegion(core, REGION0), w0 = R.x1 - R.x0;
-    let x = R.x0, y = rngInt(r, R.y0 + 2, R.y1 - 3);
-    const pts = [{ x, y }];
-    const put = () => { pts.push({ x, y }); };
+    // the core lands anywhere on the field (v1.17); wormholes can open on every side of it
+    const core = { x: rngInt(r, Math.round(COLS * 0.18), COLS - 6), y: rngInt(r, 3, ROWS - 4) };
+    // the main path lives inside the starting sector and enters from the edge farther from the core;
+    // u counts tiles in from that edge, so one serpentine works for either side
+    const R = mapRegion(core, REGION0);
+    const dir = core.x + 0.5 >= (R.x0 + R.x1) / 2 ? 1 : -1, X = u => dir > 0 ? R.x0 + u : R.x1 - 1 - u;
+    const uc = dir > 0 ? core.x - R.x0 : R.x1 - 1 - core.x, span = uc - 2;
+    let u = 0, y = rngInt(r, R.y0 + 2, R.y1 - 3);
+    const pts = [{ x: X(0), y }];
+    const put = () => { pts.push({ x: X(u), y }); };
     let up = y > ROWS / 2;
     while (true) {
-      const remain = core.x - 2 - x;
+      const remain = uc - 2 - u;
       if (remain <= 0) break;
       const run = Math.min(remain, rngInt(r, 3, 6));
-      for (let i = 0; i < run; i++) { x++; put(); }
-      if (core.x - 2 - x <= 0) break;
+      for (let i = 0; i < run; i++) { u++; put(); }
+      if (uc - 2 - u <= 0) break;
       // serpentine: mostly sweep to the far edge so the whole field gets used
       let ny;
       if (r() < 0.7) ny = up ? rngInt(r, R.y0 + 1, R.y0 + 3) : rngInt(r, R.y1 - 4, R.y1 - 2);
@@ -1488,11 +1493,11 @@ function genMap(r) {
       while (y !== ny) { y += Math.sign(ny - y); put(); }
     }
     while (y !== core.y) { y += Math.sign(core.y - y); put(); }
-    while (x < core.x) { x++; put(); }
+    while (u < uc) { u++; put(); }
     let minY = 99, maxY = -1; for (const p of pts) { minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
-    const okLen = pts.length >= w0 * 1.55 && pts.length <= w0 * 2.5;
+    const okLen = pts.length >= Math.max(28, span * 2.05) && pts.length <= span * 3.4 + 8;
     const okSpan = minY <= R.y0 + 3 && maxY >= R.y1 - 4;
-    if (!okLen || !okSpan) { if (!fallback && pts.length >= w0 * 1.4) fallback = 1; if (attempt < 79 || !fallback) continue; }
+    if (!okLen || !okSpan) { if (!fallback && pts.length >= Math.max(24, span * 1.8)) fallback = 1; if (attempt < 79 || !fallback) continue; }
     for (const p of pts) tiles[tIdx(p.x, p.y)] = 1;
     tiles[tIdx(core.x, core.y)] = 4;
     // obstacles
@@ -1532,7 +1537,7 @@ function genExtraLane(r, openWave) {
     const rad = Math.max(4, Math.round(maxR * (0.75 + r() * 0.25)));
     const sx = Math.round(core.x + Math.cos(ang) * rad), sy = Math.round(core.y + Math.sin(ang) * rad);
     if (!inRegion(sx, sy, R)) continue;
-    if (map.tiles[tIdx(sx, sy)] !== 0 || G.towerAt[tIdx(sx, sy)]) continue;
+    if (map.tiles[tIdx(sx, sy)] !== 0 || G.towerAt[tIdx(sx, sy)] || G.nodeSet.has(tIdx(sx, sy))) continue;
     if (Math.abs(sx - core.x) + Math.abs(sy - core.y) < 5) continue;
     if (starts.some(p => Math.abs(p.x - sx) + Math.abs(p.y - sy) < (attempt > 60 ? 3 : 5))) continue;
     // wormholes need a little clear space around them
@@ -1569,7 +1574,7 @@ function genExtraLane(r, openWave) {
         if (!inRegion(vx, vy, R)) continue;
         const v = tIdx(vx, vy);
         const tv = map.tiles[v], crossing = tv === 1 || tv === 5;
-        if (v !== goal && ((tv !== 0 && !crossing) || G.towerAt[v])) continue;
+        if (v !== goal && ((tv !== 0 && !crossing) || G.towerAt[v] || G.nodeSet.has(v))) continue;
         let c = 1 + noise[v] + (crossing && v !== goal ? 4 : 0);
         if (v !== goal) {
           let adjPath = 0;
@@ -1610,26 +1615,85 @@ function growRegion(stage, quiet) {
   if (!quiet) Hooks.log(`Sector expanded · ${R.x1 - R.x0}×${R.y1 - R.y0}`, '#b86cff');
   return true;
 }
+// ---------- Power Nodes: charged tiles. A tower on one is overcharged; the core on one even more so ----------
+const NODE_TOWER = { dmg: 1.25, range: 1.15, aura: 1.25 }, NODE_CORE = { dmg: 1.5, rate: 1.2 };
+const isNode = (x, y) => !!(G.nodeSet && G.nodeSet.has(tIdx(x, y)));
+function setNodes(list) { G.nodes = list; G.nodeSet = new Set(list.map(q => tIdx(q.x, q.y))); }
+// n new nodes inside R (and outside P, the previous sector, when growing), near a road where possible
+function placeNodes(n, R, P) {
+  const map = G.map, r = G.r, list = G.nodes.slice();
+  const nearRoad = (x, y) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const ax = x + dx, ay = y + dy; if (ax >= 0 && ay >= 0 && ax < COLS && ay < ROWS) { const t = map.tiles[tIdx(ax, ay)]; if (t === 1 || t === 5) return true; } } return false; };
+  let placed = 0;
+  for (let k = 0; k < 300 && placed < n; k++) {
+    const x = rngInt(r, R.x0 + 1, R.x1 - 2), y = rngInt(r, R.y0 + 1, R.y1 - 2), i = tIdx(x, y);
+    if ((P && inRegion(x, y, P)) || map.tiles[i] !== 0 || G.towerAt[i]) continue;
+    if (Math.abs(x - map.core.x) + Math.abs(y - map.core.y) < 3) continue;
+    if (list.some(q => Math.abs(q.x - x) + Math.abs(q.y - y) < 6)) continue;
+    if (k < 200 && !nearRoad(x, y)) continue;
+    list.push({ x, y }); placed++;
+  }
+  setNodes(list);
+  if (placed) G.mapRev = (G.mapRev || 0) + 1;
+  return placed;
+}
+
+// ---------- Salvage caches: drop in during waves, tap to claim before they decay ----------
+const CACHE_LIFE = 22;
+const cacheAt = (x, y) => (G.caches || []).find(c => c.x === x && c.y === y);
+function updateCaches(dt) {
+  if (!G.caches) G.caches = [];
+  for (const c of G.caches) c.t -= dt;
+  if (G.caches.some(c => c.t <= 0)) G.caches = G.caches.filter(c => c.t > 0);
+  if (G.wave < 3 || G.spawningDone) return;
+  G.cacheT = (G.cacheT === undefined ? 20 : G.cacheT) - dt;
+  if (G.cacheT > 0 || G.caches.length >= 2) return;
+  G.cacheT = 30 + G.r() * 30;
+  const R = G.region, core = G.map.core;
+  for (let k = 0; k < 60; k++) {
+    const x = rngInt(G.r, R.x0, R.x1 - 1), y = rngInt(G.r, R.y0, R.y1 - 1), i = tIdx(x, y);
+    if (G.map.tiles[i] !== 0 || G.towerAt[i] || G.nodeSet.has(i) || cacheAt(x, y)) continue;
+    if (Math.abs(x - core.x) + Math.abs(y - core.y) < 4) continue;
+    G.caches.push({ x, y, t: CACHE_LIFE, id: G.eid++ });
+    Hooks.fx('cache', { x: x + 0.5, y: y + 0.5 }); Hooks.sfx('blink');
+    return;
+  }
+}
+function claimCache(c) {
+  if (!c || !G.caches.includes(c)) return null;
+  G.caches = G.caches.filter(o => o !== c);
+  const w = Math.max(1, G.wave), roll = G.r() * 100;
+  let msg;
+  if (roll < 40) { const v = Math.round((40 + 14 * w) * G.mods.credits); G.credits += v; msg = `+${v} credits`; }
+  else if (roll < 60) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + 1; msg = `+1 ${ABILITIES[k] ? ABILITIES[k].name : k} charge`; }
+  else if (roll < 75) { addEntropy(12); msg = '+12 Entropy'; }
+  else if (roll < 90) { const v = Math.round(150 * w); addScore(v); msg = `+${v} base score`; }
+  else { G.tokens++; msg = '+1 Recalibration token'; }
+  Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5 }); Hooks.sfx('cash');
+  return msg;
+}
+
 // the main road reaches out to the sector's new edge, jogging a few rows on the way in.
 // Enemies already walking keep their old lane object, so nobody jumps.
 function extendMain(R) {
   const map = G.map, L0 = map.lanes[0], s = L0.tiles[0], r = G.r;
-  if (s.x <= R.x0) return;
-  const free = (x, y) => inRegion(x, y, R) && (map.tiles[tIdx(x, y)] === 0 || map.tiles[tIdx(x, y)] === 2) && !G.towerAt[tIdx(x, y)];
+  // the main wormhole sits on a left or right sector edge; push it out to the new edge on that side
+  const left = s.x - R.x0 <= R.x1 - 1 - s.x, edge = left ? R.x0 : R.x1 - 1, sg = left ? 1 : -1, gap = Math.abs(s.x - edge);
+  if (!gap || (left ? s.x < edge : s.x > edge)) return;
+  const free = (x, y) => inRegion(x, y, R) && (map.tiles[tIdx(x, y)] === 0 || map.tiles[tIdx(x, y)] === 2) && !G.towerAt[tIdx(x, y)] && !isNode(x, y);
   const route = (ny, jx) => {
     const pts = [];
-    for (let x = R.x0; x <= jx; x++) pts.push({ x, y: ny });
+    for (let x = edge; x !== jx + sg; x += sg) pts.push({ x, y: ny });
     for (let y = ny; y !== s.y;) { y += Math.sign(s.y - y); pts.push({ x: jx, y }); }
-    for (let x = jx + 1; x < s.x; x++) pts.push({ x, y: s.y });
+    for (let x = jx + sg; x !== s.x; x += sg) pts.push({ x, y: s.y });
     return pts.every(p => free(p.x, p.y)) ? pts : null;
   };
   let ext = null;
-  if (s.x - R.x0 >= 2) for (let k = 0; k < 10 && !ext; k++) {
+  if (gap >= 2) for (let k = 0; k < 10 && !ext; k++) {
     const ny = s.y + (r() < 0.5 ? -1 : 1) * rngInt(r, 3, 7);
     if (ny < R.y0 + 1 || ny > R.y1 - 2) continue;
-    ext = route(ny, R.x0 + rngInt(r, 0, s.x - R.x0 - 2));
+    ext = route(ny, edge + sg * rngInt(r, 0, gap - 2));
   }
-  if (!ext) ext = route(s.y, s.x - 1);
+  if (!ext) ext = route(s.y, s.x - sg);
   if (!ext || !ext.length) return;
   for (const p of ext) map.tiles[tIdx(p.x, p.y)] = 1;
   map.lanes[0] = makeLane(ext.concat(L0.tiles), map.core);
@@ -1672,11 +1736,17 @@ function newRun(opts) {
     sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
+  setNodes([]); G.caches = []; G.cacheT = 20;
   G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
   G.lanesOpened = 0;
   G.region = regionAt(0);
-  while (G.laneWaves[G.lanesOpened] !== undefined && G.laneWaves[G.lanesOpened] <= sw) { growRegion(G.lanesOpened + 1, true); genExtraLane(r); G.lanesOpened++; }
+  placeNodes(3, G.region, null);
+  while (G.laneWaves[G.lanesOpened] !== undefined && G.laneWaves[G.lanesOpened] <= sw) {
+    const P0 = G.region, grew = growRegion(G.lanesOpened + 1, true);
+    genExtraLane(r); G.lanesOpened++;
+    if (grew) placeNodes(1, G.region, P0);
+  }
   G.nextMs = Math.round(1500 * M.abilCharge * Math.pow(1.5, 0));
   if (sw > 1) { G.nextMs = Math.round(G.nextMs * Math.pow(1.4, Math.floor(sw / 4))); G.tokens += Math.floor(sw / 10); }
   G.next = sw > 1 ? 25 : 18;
@@ -1959,8 +2029,14 @@ function towerStats(t) {
     s.hold = (sp.hold || D.hold) * (1 + 0.15 * (lv - 1));
     if (leg.nexus) s.range += 1;
   }
+  s.node = isNode(t.x, t.y);
+  if (s.node) {
+    s.dmg *= NODE_TOWER.dmg; s.range *= NODE_TOWER.range;
+    if (D.kind === 'support') { s.buffDmg = Math.min(0.9, s.buffDmg * NODE_TOWER.aura); s.buffRate = Math.min(0.6, s.buffRate * NODE_TOWER.aura); }
+    if (D.kind === 'snare') s.catches = Math.round(s.catches * NODE_TOWER.aura);
+  }
   if (D.kind === 'eco') {
-    s.income = D.income * (1 + 0.5 * (lv - 1)) * (sp.incomeX || 1) * (1 + (A.yield || 0) / 100) * (leg.midas ? 2 : 1);
+    s.income = D.income * (1 + 0.5 * (lv - 1)) * (sp.incomeX || 1) * (1 + (A.yield || 0) / 100) * (leg.midas ? 2 : 1) * (s.node ? NODE_TOWER.aura : 1);
     s.fbounty = (A.fbounty || 0) / 100; s.bountyAura = sp.bounty || 0; s.interest = leg.midas ? 0.01 : 0;
     s.range = s.bountyAura ? 3 : 0;
   }
@@ -2136,9 +2212,10 @@ function prepareWave(w) {
   // build the next wave during the countdown so the player can see it coming
   // a wormhole appears two waves before its lane opens
   if (G.laneWaves[G.lanesOpened] === w + 1) {
-    const grew = growRegion(G.lanesOpened + 1);
+    const P0 = G.region, grew = growRegion(G.lanesOpened + 1);
     const L = genExtraLane(G.r, w + 1);
     G.lanesOpened++;
+    if (grew && placeNodes(1, G.region, P0)) Hooks.log('New Power Node in the expanded sector', '#6ae2ff');
     if (L) {
       G.mapRev = (G.mapRev || 0) + 1;
       Hooks.toast('WORMHOLE DETECTED', `${grew ? 'Sector expanding · ' : ''}Lane opens at Wave ${w + 1}`, '#b86cff');
@@ -2168,7 +2245,7 @@ function prepareWave(w) {
 }
 function genWave(w, ev) {
   const r = G.r, isBoss = w % 10 === 0, af = G.af || {};
-  let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)));
+  let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)) * (G.CH.count || 1));
   let hpm = hpMult(w) * (1 + (af.hpx || 0)) * (G.CH.hp || 1);
   if (ev.swarm) { count *= 2; hpm *= 0.55; }
   const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w);
@@ -2802,7 +2879,7 @@ function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
   const M = G.mods;
-  let cm = M.credits * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
+  let cm = M.credits * (G.CH.cr || 1) * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
   if (src && src.s && src.s.bounty) cm *= 1 + src.s.bounty;
   for (const f of G.forges || []) {
     if (f.s.fbounty) cm *= 1 + f.s.fbounty;
@@ -3241,15 +3318,16 @@ const CORE_EL_STATUS = { K: {}, T: { burn: 0.5 }, C: { chill: 1 }, A: { shock: 0
 function coreStats() {
   const M = G.mods, c = G.core;
   if (!c.A) coreAffSum(c);
-  const A = c.A, p = k => (A[k] || 0) / 100;
+  const A = c.A, p = k => (A[k] || 0) / 100, nd = isNode(G.map.core.x, G.map.core.y);
   const el = M.ks.conflag ? 'T' : c.el;
   const st = CORE_EL_STATUS[el];
   return {
-    el, kind: 'core', dmg: 16 * Math.pow(1.5, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')), rate: 1.3 * M.coreRate * M.rate * (1 + p('rate')),
+    el, kind: 'core', dmg: 16 * Math.pow(1.5, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1), rate: 1.3 * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
     range: (3 + M.coreRange + 0.25 * (c.wLvl - 1)) * (1 + p('range')), critC: M.critC + (A.critC || 0), critM: 1.5 + M.critM + p('critM'),
     burn: clamp((st.burn || 0) + p('burn'), 0, 1), chill: M.ks.conflag ? 0 : clamp((st.chill || 0) + p('chill'), 0, 1), shock: clamp((st.shock || 0) + p('shock'), 0, 1), mark: clamp((st.mark || 0) + p('mark'), 0, 1),
     chillPot: M.chillPot, freezeBonus: M.freezeDur, shockX: 1, burnX: 1, stun: 0, stunDur: 0, leg: c.leg, cur: {}, boss: M.eliteDmg + p('boss'), slowd: p('slowd'), exec: A.exec || 0, bounty: p('bounty'),
     pierce: A.pierce || 0, chain: A.chain || 0, splash: A.splash || 0, multi: A.multi || 0,
+    node: nd,
   };
 }
 const coreWeaponCost = () => Math.round(120 * Math.pow(1.75, G.core.wLvl - 1));
@@ -3338,7 +3416,7 @@ function planRelocation(nx, ny) {
   // other lanes' roads can be crossed but are no shortcut; later lanes merge into earlier new stretches
   const step = (u, v) => {
     const t = map.tiles[v];
-    if (v !== goal && (t === 2 || G.towerAt[v])) return -1;
+    if (v !== goal && (t === 2 || G.towerAt[v] || G.nodeSet.has(v))) return -1;
     if (own[v]) return 0.08;
     if (fresh[v]) return 0.5;
     if (road[v]) return 1.2;
@@ -3433,6 +3511,7 @@ function simStep(dt) {
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
+  updateCaches(dt);
 }
 
 function gameOver() {
@@ -3463,7 +3542,7 @@ function snapshotRun(waveNum) {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0,
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -3482,6 +3561,7 @@ function resumeRun(S) {
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
   G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0;
+  setNodes((S.nodes || []).slice()); G.caches = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};
   G.runMods = Object.assign({}, S.runMods); G.mods = computeMods(PROF.alloc, G.runMods);
@@ -4472,6 +4552,26 @@ const Render = (() => {
     b.strokeStyle = 'rgba(89,240,180,0.45)'; b.lineWidth = 1; b.setLineDash([2, 4]);
     for (const e of G.enemies) if (e.lureT && !e.netted) { b.beginPath(); b.moveTo(e.x * TILE, e.y * TILE - 7); b.lineTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.stroke(); }
     b.setLineDash([]);
+    // Power Nodes: a pulsing cyan diamond; with a tower on top, corner brackets show the charge
+    for (const q of G.nodes || []) {
+      const cx = q.x * TILE + 12, cy = q.y * TILE + 12, ph = (Math.sin(frame / 12 + q.x * 1.7 + q.y) + 1) / 2;
+      if (G.towerAt[q.y * COLS + q.x] || (G.map.core.x === q.x && G.map.core.y === q.y)) {
+        const col = hexA('#6ae2ff', 0.55 + 0.4 * ph);
+        for (const [sx2, sy2] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { R(b, cx + sx2 * 12 - (sx2 > 0 ? 4 : 0), cy + sy2 * 12 - (sy2 > 0 ? 1 : 0), 4, 1, col); R(b, cx + sx2 * 12 - (sx2 > 0 ? 1 : 0), cy + sy2 * 12 - (sy2 > 0 ? 4 : 0), 1, 4, col); }
+        continue;
+      }
+      for (let k = -7; k <= 7; k++) { const h = 7 - Math.abs(k); R(b, cx + k, cy - h, 1, 1, hexA('#6ae2ff', 0.75)); R(b, cx + k, cy + h, 1, 1, hexA('#6ae2ff', 0.75)); }
+      for (let k = -3; k <= 3; k++) { const h = 3 - Math.abs(k); R(b, cx + k, cy - h, 1, h * 2 + 1, hexA('#bff4ff', 0.35 + 0.5 * ph)); }
+    }
+    // salvage caches: a crate with a beacon that blinks faster as it decays
+    for (const cc of G.caches || []) {
+      const X = cc.x * TILE + 5, Y = cc.y * TILE + 7, late = cc.t < 6, on = late ? (frame >> 2) % 2 : (frame >> 4) % 2;
+      R(b, X - 1, Y + 1, 16, 12, 'rgba(0,0,0,0.45)');
+      R(b, X, Y, 14, 11, '#3a2a10'); R(b, X + 1, Y + 1, 12, 9, '#a8741c'); R(b, X + 1, Y + 1, 12, 2, '#e0a640'); R(b, X + 6, Y + 1, 2, 9, '#5a3c0c'); R(b, X + 1, Y + 5, 12, 1, '#5a3c0c');
+      R(b, X + 5, Y - 3, 4, 3, on ? '#ffe14d' : '#7a6a20');
+      const f = Math.max(0, cc.t / CACHE_LIFE), rr = 12;
+      b.strokeStyle = hexA(late ? '#ff4d6a' : '#ffe14d', 0.8); b.lineWidth = 1.5; b.beginPath(); b.arc(cc.x * TILE + 12, cc.y * TILE + 12, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
+    }
     for (const t of G.towers) drawTower(t);
     // resonance links
     for (const t of G.towers) for (const o of t.resonWith || []) {
@@ -4552,6 +4652,8 @@ const Render = (() => {
     for (const s2 of G.storms) light(s2.x * TILE, s2.y * TILE, s2.r * TILE * 1.1, s2.mael ? '#ff4d6a' : STORMS[s2.types[0]].col, 0.13);
     for (const z of G.zones) light(z.x * TILE, z.y * TILE, z.r * TILE * 1.2, '#ff7b39', 0.22);
     for (const q of conduits) light(q.x, q.y, 14, q.col, 0.05 + 0.05 * Math.sin(frame / 20 + q.ph));
+    for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
+    for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * 1.3, '#ffe14d', 0.22);
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
     // ---------- composite ----------
@@ -4678,6 +4780,7 @@ const Render = (() => {
       const mw = 64, mh = mw * reg.h / reg.w, mx = W - mw - 8, my = H - mh - 8;
       c.fillStyle = 'rgba(7,8,15,0.7)'; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
       c.drawImage(mapLayer, reg.x, reg.y, reg.w, reg.h, mx, my, mw, mh);
+      for (const cc of G.caches || []) { c.fillStyle = (frame >> 3) % 2 ? '#ffe14d' : '#7a6a20'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
     if (!scanPat) scanPat = c.createPattern(scan, 'repeat');
@@ -4739,6 +4842,8 @@ const Render = (() => {
       case 'stasis': flashes.push({ col: '#6ae2ff', life: 0.5, max: 0.5, a: 0.4 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
+      case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
+      case 'cacheClaim': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 34, life: 0.5, max: 0.5, col: '#ffe14d', w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), 22, '#ffe14d', 50 * K, 0.6); break;
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
       case 'lane': flashes.push({ col: '#ff4d6a', life: 0.5, max: 0.5, a: 0.3 }); { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 2, r1: 56, life: 0.7, max: 0.7, col: '#ff4d6a', w: 4, fill: 1 }); } for (const p of d.lane.tiles.slice(0, d.lane.branch || 99)) burst(p.x * TILE + 12, p.y * TILE + 12, 4, '#ff4d6a', 20 * K, 0.8); break;
       case 'meteor': lines.push({ pts: [{ x: T2P(d.x) - 70, y: T2P(d.y) - 120 }, { x: T2P(d.x), y: T2P(d.y) }], life: 0.5, max: 0.5, col: '#ff7b39', core: 1, w: 5 }); break;
@@ -4993,7 +5098,7 @@ const UI = (() => {
             <p class="note">${starts.length === 1 ? 'Reach Wave 10 to unlock later starts.' : sw === 1 ? 'Later starts skip early waves and grant bonus credits.' : `${fmt(credits)} starting credits. Tougher enemies, bigger rewards.`}</p>
             <div class="lbl">Chaos</div>
             <div class="chips">${CHAOS_LEVELS.map((c, i) => `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>`).join('')}</div>
-            <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite} · <b class="amber">Score ×${CH.score}</b></p>
+            <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite}${CH.cr ? ` · Credits ×${CH.cr}` : ""} · <b class="amber">Score ×${CH.score}</b></p>
             <p class="note">Sector ${R0.x1 - R0.x0}×${R0.y1 - R0.y0} → ${COLS}×${ROWS} · ${CH.lanes.length} wormholes${CH.lanes[0] <= 1 ? ', one at start' : ''}</p>
           </div>
           <div class="col">
@@ -5203,7 +5308,8 @@ const UI = (() => {
       info = `<div class="binfo"><p class="dim">Select a tower to see its range. Tap it again to build.</p></div>`;
       foot = '';
     }
-    return `<div class="ph"><b>Build</b><button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
+    const nodeNote = isNode(panel.x, panel.y) ? `<div class="sts node">${tipify('Power Node: towers here are overcharged (+25% Damage, +15% Range; support and economy +25%)')}</div>` : '';
+    return `<div class="ph"><b>Build</b>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
   }
 
   // ---------- tappable glossary terms ----------
@@ -5306,6 +5412,7 @@ const UI = (() => {
       ${t.lvl === 3 ? up : ''}
       ${vet}
       ${stats}
+      ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       <div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
@@ -5316,6 +5423,7 @@ const UI = (() => {
     const wc = coreWeaponCost(), sc = coreShieldCost(), rc = coreRepairCost();
     return `<div class="ph"><div class="pt"><b>Core</b><small>Weapon LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
+      ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
       ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="lbl">Weapon Element</div>
@@ -5341,6 +5449,7 @@ const UI = (() => {
     const rows = P.before.map((b, i) => { const a = P.after[i], dd = a - b, L = G.map.lanes[i]; return `<span>${i === 0 ? 'Main road' : L.openWave ? 'Forming' : 'Lane ' + (i + 1)}<b class="${dd > 0 ? 'good' : dd < 0 ? 'bad' : ''}">${b} → ${a}</b></span>`; }).join('');
     return head + `<div class="lbl">Road length (tiles)</div><div class="sg">${rows}</div>
       <div class="sts ${d > 0 ? 'good' : d < 0 ? 'bad' : ''}">${d === 0 ? 'Same total road length' : `${d > 0 ? '+' : '−'}${Math.abs(d)} tiles of road in total`}${d > 0 ? ': enemies walk further' : d < 0 ? ': enemies arrive sooner' : ''}</div>
+      ${isNode(P.x, P.y) ? `<div class="sts node">${tipify('Power Node: the core will be overcharged, +50% Damage, +20% Rate')}</div>` : ''}
       <p class="note">Tap another tile to compare.</p>
       <div class="pfoot"><button class="btn primary wide" data-act="rgo" ${cost ? costBtn(cost) : ''}>Move Core · ${relocPrice()}</button><button class="btn" data-act="rcancel">Cancel</button></div>`;
   }
@@ -5508,6 +5617,8 @@ const UI = (() => {
       SFX.play('ui'); G.reloc.plan = P; Render.sel = { x: tx, y: ty }; renderPanel(); return;
     }
     if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
+    const cc = cacheAt(tx, ty);
+    if (cc) { const m = claimCache(cc); if (m) { toast('SALVAGE', m, '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
     SFX.play('ui');
     if (tx === G.map.core.x && ty === G.map.core.y) return openCore();
     const t = G.towerAt[tIdx(tx, ty)];
@@ -5696,6 +5807,8 @@ const UI = (() => {
       ['Abilities', 'Earned from score milestones. Shown on the left.'],
       ['Bosses', 'Every 10 waves. Drop a boon and a Recalibration token.'],
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds, free respec, and you can relocate the core. Resume fast for a bonus.'],
+      ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Move the core onto one for a bigger boost. Each sector expansion reveals a new one.'],
+      ['Salvage', 'Crates drop in during waves. Tap one before its ring runs out for credits, a charge, Entropy, score or a token.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
@@ -5736,6 +5849,8 @@ const UI = (() => {
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
+        ['Power Node', 'Charged tile. Towers on it get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
+        ['Salvage Cache', `Drops during waves from Wave 3 and decays in ${CACHE_LIFE}s. Tap to claim credits, an ability charge, Entropy, score or a Recalibration token.`],
         ['Relocate Core', `At Checkpoints: move the core up to ${RELOCATE_RADIUS} tiles. Every road re-routes to reach it. The first move each run is free, then ${RELOCATE_COST} credits each.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
