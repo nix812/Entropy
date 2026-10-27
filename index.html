@@ -310,6 +310,8 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .vrow.od .xpbar i { background: var(--core); box-shadow: 0 0 6px rgba(89, 240, 180, 0.6); }
 .pfoot .btn.od { min-height: 44px; color: #062018; background: var(--core); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), inset 0 -3px 0 rgba(0, 60, 40, 0.5); animation: pulse 1.2s infinite; }
 .pfoot .btn.od small { color: #0d4a36; }
+.pfoot .btn.od.arm { background: var(--warn); color: #2a1a00; animation: pulse 0.5s infinite; }
+.pfoot .btn.od.arm small { color: #5a3a08; }
 .ph small.node { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em; color: #6ae2ff; margin-left: 8px; }
 .sts.bad { color: var(--bad); }
 
@@ -564,7 +566,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.18.0';
+const VERSION = '1.19.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -2113,32 +2115,32 @@ function updateLinkBeams(dt) {
   }
 }
 
-// ---------- Core Overdrive: kills near the core charge it; tap the core to release a shockwave ----------
-const OD_RANGE = 4.5, OD_MAX = 100, OD_RADIUS = 3.5;
-function odCharge(e) {
-  const c = G.core;
-  if (!c || dist2(e.x, e.y, c.x, c.y) > OD_RANGE * OD_RANGE) return;
-  const was = c.od || 0;
-  c.od = Math.min(OD_MAX, was + (e.boss ? 25 : e.elite.length ? 6 : 3));
-  if (was < OD_MAX && c.od >= OD_MAX) { Hooks.toast('OVERDRIVE READY', 'Tap the core to release it', '#59f0b4'); Hooks.sfx('milestone'); }
-}
-function overdriveTargets() { const c = G.core; return G.enemies.filter(e => !e.dead && dist2(e.x, e.y, c.x, c.y) <= OD_RADIUS * OD_RADIUS); }
+// ---------- Core Overdrive: once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
+const OD_WAVE = 35, OD_BOSS = 0.2;
+const odReady = () => !!(G && !G.over && !G.odUsed && G.wave >= OD_WAVE);
+function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('OVERDRIVE ONLINE', 'Tap the core: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
 function releaseOverdrive() {
+  if (G.over) return 'over';
+  if (G.odUsed) return 'used';
+  if (G.wave < OD_WAVE) return 'locked';
+  if (!G.enemies.some(e => !e.dead && !e.boss)) return 'empty';
+  G.odUsed = G.wave;
   const c = G.core;
-  if (G.over || (c.od || 0) < OD_MAX) return 'charge';
-  const tg = overdriveTargets();
-  if (!tg.length) return 'empty';
-  c.od = 0;
-  const s = coreStats(), base = s.dmg * 10;
-  for (const e of tg) {
-    if (e.dead) continue;
-    hit(e, base + e.maxHp * (e.boss ? 0.05 : 0.15), s.el, c, { noStatus: 1, abil: 1 });
-    if (!e.dead) { if (!e.fly && !e.lureT) e.d = Math.max(0, e.d - 2); e.st.stun = Math.max(e.st.stun || 0, e.boss ? 0.4 : 1.2); }
+  let n = 0;
+  // several passes: splitters and split elites leave children behind
+  for (let pass = 0; pass < 6; pass++) {
+    const tg = G.enemies.filter(e => !e.dead && !e.boss);
+    if (!tg.length) break;
+    for (const e of tg) { if (e.dead) continue; Hooks.fx('spark', { x: e.x, y: e.y, col: PAL_CORE }); kill(e, null, { abil: 1 }); n++; }
   }
-  Hooks.fx('overdrive', { x: c.x, y: c.y, r: OD_RADIUS }); Hooks.sfx('nova'); Hooks.fx('shake', { v: 8 });
-  Hooks.log(`Overdrive · hit ${tg.length}`, '#59f0b4');
+  // bosses ride it out: they lose a chunk of their remaining HP but never die to it
+  for (const e of G.enemies) if (!e.dead && e.boss) { e.hp = Math.max(1, e.hp * (1 - OD_BOSS)); e.st.stun = Math.max(e.st.stun || 0, 0.6); }
+  G.stats.odKills = n;
+  Hooks.fx('overdrive', { x: c.x, y: c.y, r: Math.hypot(COLS, ROWS) }); Hooks.sfx('nova'); Hooks.fx('shake', { v: 10 });
+  Hooks.log(`Overdrive · ${n} enemies erased`, '#59f0b4');
   return 'ok';
 }
+const PAL_CORE = '#59f0b4';
 
 // ---------- storms ----------
 function stormAt(x, y) {
@@ -2381,6 +2383,7 @@ function startWave() {
   for (const t of G.snares || []) t.caught = 0;
   lureAll();
   if (FX('shieldWave') || (G.core.leg && G.core.leg.bulwark)) G.core.shield = G.core.smax;
+  odAnnounce();
   if (G.core.A && G.core.A.cregen && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * G.core.A.cregen / 100);
   // anomaly upkeep
   if (G.af.coreDrain) G.core.hp = Math.max(1, G.core.hp - G.core.max * G.af.coreDrain);
@@ -2953,7 +2956,6 @@ function milestone() {
 function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
-  odCharge(e);
   const M = G.mods;
   let cm = M.credits * (G.CH.cr || 1) * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
   if (src && src.s && src.s.bounty) cm *= 1 + src.s.bounty;
@@ -3618,7 +3620,7 @@ function snapshotRun(waveNum) {
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
-    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0, od: G.core.od || 0 }, towers: tw,
+    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
@@ -3657,7 +3659,7 @@ function resumeRun(S) {
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
-  G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.core.od = S.core.od || 0; coreAffSum(G.core);
+  G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
   prepareWave(S.wave);
@@ -4683,9 +4685,8 @@ const Render = (() => {
       }
     }
     drawCore();
-    { const od = G.core.od || 0, cx = G.core.x * TILE, cy = G.core.y * TILE;
-      if (od > 0) { b.strokeStyle = hexA(PAL.core, od >= OD_MAX ? 0.95 : 0.6); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17, -1.5708, -1.5708 + 6.2832 * od / OD_MAX); b.stroke(); }
-      if (od >= OD_MAX) { const pr = 19 + (frame % 24) / 24 * 10; b.strokeStyle = hexA(PAL.core, 0.7 * (1 - (frame % 24) / 24)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, pr, 0, 6.2832); b.stroke(); } }
+    if (odReady()) { const cx = G.core.x * TILE, cy = G.core.y * TILE, k = (frame % 30) / 30;
+      for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // projectiles
@@ -4751,7 +4752,7 @@ const Render = (() => {
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
     for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
-    if ((G.core.od || 0) >= OD_MAX) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
+    if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
     // ---------- composite ----------
@@ -4940,7 +4941,7 @@ const Render = (() => {
       case 'stasis': flashes.push({ col: '#6ae2ff', life: 0.5, max: 0.5, a: 0.4 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
-      case 'overdrive': flashes.push({ col: PAL.core, life: 0.45, max: 0.45, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
+      case 'overdrive': flashes.push({ col: '#e6fff6', life: 0.25, max: 0.25, a: 0.6 }); flashes.push({ col: PAL.core, life: 0.9, max: 0.9, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
       case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
       case 'cacheClaim': { const cc = CACHE_PAL[d.kind || 'normal'][3]; rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.kind === 'gold' ? 60 : 34, life: 0.5, max: 0.5, col: cc, w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), d.kind === 'gold' ? 50 : 22, cc, 50 * K, 0.6); break; }
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
@@ -5524,14 +5525,14 @@ const UI = (() => {
     return `<div class="ph"><div class="pt"><b>Core</b><small>Weapon LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
-      <div class="vrow od"><span class="lbl">Overdrive</span><div class="xpbar"><i data-live="od" style="width:${pct(clamp((c.od || 0) / OD_MAX, 0, 1))}"></i></div><span class="lbl" data-live="odt">${Math.floor(c.od || 0)}%</span></div>
+      <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Overdrive: used on Wave ${G.odUsed}` : odReady() ? 'Overdrive: ready · one board clear this run' : `Overdrive: unlocks at Wave ${OD_WAVE} · once per run`)}</div>
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
       ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="lbl">Weapon Element</div>
       <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       ${canRelocate() ? '' : relocHTML()}
-      <div class="pfoot">${(c.od || 0) >= OD_MAX ? `<button class="btn wide od" data-act="od">Release Overdrive<small>Shockwave · ${OD_RADIUS} tiles · knocks enemies back</small></button>` : ''}${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>${c.wLvl >= 12 ? 'Weapon · Max' : `Upgrade Weapon · ${fmt(wc)}<small>+Damage, new affix</small>`}</button>
+      <div class="pfoot">${odReady() ? `<button class="btn wide od ${panel.odArm ? 'arm' : ''}" data-act="od">${panel.odArm ? 'Tap again to release' : 'Release Overdrive'}<small>${panel.odArm ? 'This is your only one this run' : 'Erases every enemy except bosses · once per run'}</small></button>` : ''}${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>${c.wLvl >= 12 ? 'Weapon · Max' : `Upgrade Weapon · ${fmt(wc)}<small>+Damage, new affix</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
   }
   const relocPrice = () => relocCost() ? `${fmt(RELOCATE_COST)}` : 'Free';
@@ -5579,12 +5580,10 @@ const UI = (() => {
     }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; el.innerHTML = cashPanelHTML(); } return; }
     if (panel.kind === 'core') {
-      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + ((c.od || 0) >= OD_MAX ? 1 : 0);
+      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0);
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const a = el.querySelector('[data-live="chp"]'); if (a) a.textContent = `${Math.ceil(c.hp)}/${Math.round(c.max)}`;
-      const o = el.querySelector('[data-live="od"]'); if (o) o.style.width = pct(clamp((c.od || 0) / OD_MAX, 0, 1));
-      const ot = el.querySelector('[data-live="odt"]'); if (ot) ot.textContent = Math.floor(c.od || 0) + '%';
       const s = el.querySelector('[data-live="csh"]'); if (s) s.textContent = `${Math.floor(c.shield)}/${Math.round(c.smax)}`;
       const r = el.querySelector('[data-act="cr"]'); if (r && c.hp >= c.max) r.disabled = true;
     }
@@ -5627,7 +5626,15 @@ const UI = (() => {
       else if (act === 'cs') { if (!coreUpgrade('shield')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cr') { if (!coreUpgrade('repair')) SFX.play('deny'); renderPanel(); }
       else if (act === 'crr') { if (!rerollCore()) SFX.play('deny'); renderPanel(); }
-      else if (act === 'od') { const r = releaseOverdrive(); if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', `No enemies within ${OD_RADIUS} tiles`, '#ff4d6a'); } else if (r !== 'ok') SFX.play('deny'); else closePanel(); }
+      else if (act === 'od') {
+        // two taps: the first arms it for 3 seconds
+        if (!panel.odArm) { panel.odArm = true; renderPanel(); setTimeout(() => { if (panel && panel.kind === 'core' && panel.odArm) { panel.odArm = false; renderPanel(); } }, 3000); return; }
+        panel.odArm = false;
+        const r = releaseOverdrive();
+        if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); renderPanel(); }
+        else if (r !== 'ok') { SFX.play('deny'); renderPanel(); }
+        else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
+      }
       else if (act === 'reloc') startReloc();
       return;
     }
@@ -5913,7 +5920,7 @@ const UI = (() => {
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds, free respec, and you can relocate the core. Resume fast for a bonus.'],
       ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Move the core onto one for a bigger boost. Each sector expansion reveals a new one.'],
       ['Salvage', 'Crates drop in during waves. Tap one before its ring runs out for credits, a charge, Entropy, score or a token. Red crates pay double but release an elite. Boss waves drop a golden crate.'],
-      ['Overdrive', 'Kills near the core charge its ring. When full, tap the core and release a shockwave that hits and knocks back everything close.'],
+      ['Overdrive', `Your one emergency button. From Wave ${OD_WAVE}, tap the core to erase every enemy on the map except bosses. Once per run.`],
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
@@ -5956,7 +5963,7 @@ const UI = (() => {
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
         ['Power Node', 'Charged tile. Towers on it get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
-        ['Overdrive', `Kills within ${OD_RANGE} tiles of the core charge it (bosses fill a quarter). Full: tap the core, Release Overdrive. Hits everything within ${OD_RADIUS} tiles for 10× core damage plus 15% max HP (5% on bosses), knocks ground enemies back 2 tiles and stuns.`],
+        ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap the core, Release Overdrive, tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
         ['Cursed Cache', 'Red crate from Wave 10. Double reward, but an elite enemy climbs out of a wormhole.'],
         ['Golden Cache', 'One per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],
