@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.16.0 · October 26, 2026**
+**Version at handoff: 1.17.0 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.16.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.17.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -106,7 +106,7 @@ Publish `dist/entropy.html` to the existing URL above.
 | Calm | 22 | 16, 30, 46, 64 | HP ×0.7, score ×0.8 |
 | Normal | 26 | 15, 28, 42, 58, 78 | ×1 |
 | Unstable | 30 | 12, 24, 36, 50, 66, 84 | HP ×1.15, score ×1.35 |
-| Pandemonium | 34 | **1**, 10, 20, 32, 46, 62, 80, 100 | HP ×1.35, score ×1.8 |
+| Pandemonium | 34 | **1**, 10, 20, 32, 46, 62, 80, 100 | HP ×1.5, kill credits ×0.8 (`CH.cr`, v1.17), score ×1.8 |
 
 - **Expanding sector (v1.15):** a run starts on `REGION0` = 60% of the full map (rows and columns), placed so the core keeps the same relative position. Each time a wormhole is *detected*, `growRegion()` widens the sector one step (`stageFrac(stage, N)`, linear), so the last scheduled wormhole brings the full map.
   - `G.region = {x0, y0, x1, y1}` (tiles, x1/y1 exclusive) is derived, never stored: `regionAt(G.lanesOpened)`. Snapshots carry `grow: 1`; snapshots without it (v1.14 and older) resume with `G.fullMap = true`.
@@ -116,7 +116,7 @@ Publish `dist/entropy.html` to the existing URL above.
   - **Camera:** `Render` frames `reg` (buffer px), not the whole buffer. `updateRegion()` snaps on a new run and otherwise eases over 2.6 s (wall clock, so it runs while paused), resets zoom to 1, and draws the old border as a fading dashed outline. The minimap shows the sector. `Render.onCam` lets the UI refresh the Fit button.
   - **Setup screen:** the preview dims the full map and outlines the starting sector; the note reads "Sector 28×16 → 47×26".
 - **Columns** are fitted to the playfield aspect: `fitCols()` = `ROWS × w / h`, clamped to 38–76. A phone on Normal gets about 44×26.
-- **Core position:** the core sits 6–8 tiles in from the right edge, so wormholes can open on every side, including behind it.
+- **Core position (v1.17):** random, x from 18% of the width to 6 tiles from the right edge, y 3 tiles in from top and bottom. `genMap` builds the main serpentine in a mirrored coordinate `u` from the sector edge *farther* from the core (left or right). Length rule: at least max(28, 2.05 × span) and at most 3.4 × span + 8, where span = tiles from that edge to the core − 2. Normal main road: median about 48 tiles at the start (range 32–69). `extendMain` extends on whichever side the main wormhole sits.
 - **`genExtraLane`:**
   - It favours directions (angles around the core) that no existing wormhole uses.
   - It places the wormhole at 70–100% of the in-bounds distance along that angle.
@@ -131,6 +131,16 @@ Publish `dist/entropy.html` to the existing URL above.
   - **The sector grows around `G.anchor`** (where the core started), not the current core. Snapshots carry `anchor` and `relocUsed`.
   - UI: `G.reloc = {cands, plan}`; panel kind `reloc` shows road lengths before → after per lane and the total. The map draws the 10-tile circle, valid tiles, dashed amber routes and a ghost core. The checkpoint banner hides and the bonus timer pauses while relocating.
 - **Checkpoint:** the wave before a wormhole opens is a pause. Since v1.16 it waits for the field to clear (`cpPending()`; HUD says "N left · Checkpoint next", Next is disabled), with a 180 s safety cap so a stuck enemy can never stall a run. Sells refund 100% and respecs are free. Resuming quickly pays a bonus that decays over `CP_WINDOW` = 45 s.
+
+### 4.2b Power Nodes and Salvage (v1.17)
+- **Power Nodes** (`G.nodes`, `G.nodeSet`, `isNode`): 3 in the starting sector, then 1 in each newly revealed band (`placeNodes(n, R, P)`), on open ground within 2 tiles of a road where possible, at least 6 apart.
+  - A tower on a node gets ×1.25 damage and ×1.15 range (`NODE_TOWER`). Support boost, economy income and snare catches get ×1.25.
+  - The core on a node gets ×1.5 damage and ×1.2 rate (`NODE_CORE`). Only reachable by relocation; the core never spawns on one.
+  - Roads (new lanes, main extension, relocation routes) never pave over a node. Snapshotted as `nodes`.
+  - Drawn as a pulsing cyan diamond, or corner brackets when built on.
+- **Salvage caches** (`G.caches`, `updateCaches`, `claimCache`): from wave 3, only while a wave is spawning, every 30–60 s, at most 2 at once. Each lasts `CACHE_LIFE` = 22 s and is never on a node, tower or road, nor within 4 tiles of the core.
+  - Tapping one (checked before tower and build taps) rewards: credits `(40 + 14·wave) × credit mult` 40% · random ability charge 20% · +12 Entropy 15% · `150·wave` base score 15% · +1 Recalibration token 10%.
+  - Not snapshotted (they're transient). Shown on the minimap when zoomed.
 
 ### 4.3 Towers (12)
 | Tower | Cost | Unlocks at wave | Notes |
@@ -299,11 +309,14 @@ Publish `dist/entropy.html` to the existing URL above.
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
 | `bossfight.py [seed wave chaos]` | Plays a real boss wave through the live UI loop and reports whether the boon pick appeared. |
 | `updshot.py` | Serves the Pages build at its real URL and checks the auto-update reloads once, from the menu only. |
+| `nodeshot.py [seeds…]` | Random-core starts, building on a Power Node, spawning and tapping a Salvage cache. |
 | `relocshot.py [W H tag]` | Core affixes, reroll, relocation mode, preview, free then paid move, resume. |
 | `cpwait.py` | Checks the checkpoint holds while enemies remain and starts once the field clears. |
 | `boonshot.py` | Kills a boss and checks the boon pick appears and the game resumes; checks the Gloop family gives one pick. |
 | `expandshot.py [W H chaos]` | Triggers a wormhole detection and screenshots the zoom-out (`x03_expand_*.png`), then jumps to the full map (`x04_full.png`). |
 | `bossshot.py`, `constshot.py`, `navshot.py`, `novashot.py`, `snareshot.py`, `tipshot.py`, `webshot.py` | Focused screenshot scripts for each feature. |
+
+**v1.17.0** (random core): Calm about 47 · Normal about 41.5 (24 seeds) · Unstable about 40 · Pandemonium about 44 at the old HP ×1.35 (24 seeds), so it was retuned to HP ×1.5 and kill credits ×0.8 (bracketed by HP 1.5 / credits 0.85 → 41.8 and HP 1.6 / credits 0.72 → 40.4). **Lesson:** raising enemy count (`CH.count`, still supported in `genWave`) made Pandemonium *easier* (46.5), because extra kills pay extra credits. Use HP or kill credits, not count. A random core adds a lot of per-map variance (Normal runs ranged from wave 17 to 53).
 
 **v1.16.0 check** (same 12 seeds): Normal about 47, Unstable about 38, unchanged within noise from v1.15.
 
@@ -353,6 +366,7 @@ The expanding sector made every level a little easier, because the compact early
 - **Watch the expanding sector's balance.** Bots say v1.15 is slightly easier at every level; check Nic's feel before touching HP. Possible knobs: `REGION0` (start size), the main-path extension jog (3–7 rows), wormhole radius (75–100%).
 - **If multi-direction wormholes feel too punishing:** lengthen the warning, or make the first lane longer.
 - **Smarter test bot** that defends multiple lanes, for more trustworthy balance numbers.
+- **Ideas pitched in v1.17, not built:** Core Overdrive (charge from kills near the core, tap to release a shockwave); node-linked towers (two towers on nodes in range share a beam); cache variants (cursed caches that spawn an elite, golden caches at boss waves).
 - **Possible extras:** more oddball bosses, more Laws after all 9 are owned, cosmetic galaxy colours per Supernova (the menu background and web dust), and an animated build-card idle.
 
 ---
@@ -378,3 +392,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.15.2 | Home Screen auto-update: on launch and on return from background, the GitHub Pages copy fetches itself (`cache: 'reload'`), and if `VERSION` differs it reloads once from the main menu (never mid-run; a sessionStorage guard stops loops). |
 | 1.15.3 | Version watermark in the main menu's bottom-left corner (`#hVer`, set in `renderHangar`). |
 | 1.16 | Core relocation at checkpoints (first free, then 800); core affixes on Weapon/Shield upgrades with reroll; checkpoints wait for a clear field |
+| 1.17 | Random core position (main road enters from the far side); Power Nodes; Salvage caches |
