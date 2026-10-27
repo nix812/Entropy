@@ -10,7 +10,7 @@ this.S = { get G(){return G}, set G(v){G=v}, get PROF(){return PROF}, set PROF(v
   newRun, simStep, buildTower, upgradeTower, upgradeCost, towerCost, canBuildAt, treeAllocate, treePathTo, takeBoon,
   useAbility, Hooks, tIdx, profLevel, pointsFree, callEarly, resumeRun, levelFromXP, towerStats, recomputeAll,
   recomputeAuras, spawnEnemy, makeLane, prepLane, lanePos, hpMult, crMult, takeAnomaly, stabilize, vetOffer, claimVet,
-  prepareWave, hit, kill, spawnBoss, releaseOverdrive, odReady, updateLinks, updateLinkBeams, updateCaches, cpPending, claimCache, cacheAt, placeNodes, isNode, genMap, mulberry32, setCols, setRows, regionAt, planRelocation, applyRelocation, relocCandidates, canRelocate, relocCost, rerollCore, rollCoreAffix, coreStats, coreUpgrade, coreWeaponCost, coreRepairCost, rerollTower, snapshotNow, defaultProfile, computeMods, genExtraLane, stormAt, resumeCheckpoint, cashIn, cashRate, cpBonus, supernova, novaReady, starBuy, regionsDone, REGION_NODES, LAWS, pointsSpent };`, ctx);
+  prepareWave, hit, kill, spawnBoss, spawnThief, updatePirates, releaseOverdrive, odReady, updateLinks, updateLinkBeams, updateCaches, cpPending, claimCache, cacheAt, placeNodes, isNode, genMap, mulberry32, setCols, setRows, regionAt, planRelocation, applyRelocation, relocCandidates, canRelocate, relocCost, rerollCore, rollCoreAffix, coreStats, coreUpgrade, coreWeaponCost, coreRepairCost, rerollTower, snapshotNow, defaultProfile, computeMods, genExtraLane, stormAt, resumeCheckpoint, cashIn, cashRate, cpBonus, supernova, novaReady, starBuy, regionsDone, REGION_NODES, LAWS, pointsSpent };`, ctx);
   return ctx.S;
 }
 module.exports = { load };

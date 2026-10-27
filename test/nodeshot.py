@@ -35,7 +35,7 @@ with sync_playwright() as p:
             pg.screenshot(path=str(out / 'n_tower_on_node.png'))
             pg.evaluate('() => UI.closePanel()')
             # a cache mid-wave
-            pg.evaluate('() => { G.wave = 4; G.spawningDone = false; G.queue = [{ t: 999, type: "drone", lane: G.map.lanes[0], hpm: 1, elite: 0 }]; G.cacheT = 0; for (let i = 0; i < 3; i++) simStep(1/30); }')
+            pg.evaluate('() => { G.wave = 4; G.spawningDone = false; G.queue = [{ t: 999, type: "drone", lane: G.map.lanes[0], hpm: 1, elite: 0 }]; G.cacheT = 0; for (let i = 0; i < 150 && !G.caches.length; i++) simStep(1/30); }')
             c = pg.evaluate('() => G.caches[0]'); print('cache', c)
             pg.wait_for_timeout(300); pg.screenshot(path=str(out / 'n_cache.png'))
             cr = pg.evaluate('() => [G.credits, G.tokens, G.entropy, G.score]')

@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.20.0 · October 26, 2026**
+**Version at handoff: 1.21.0 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.20.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.21.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -142,6 +142,13 @@ Publish `dist/entropy.html` to the existing URL above.
   - Tapping one (checked before tower and build taps) rewards: credits `(40 + 14·wave) × credit mult` 40% · random ability charge 20% · +12 Entropy 15% · `150·wave` base score 15% · +1 Recalibration token 10%.
   - Not snapshotted (they're transient). Shown on the minimap when zoomed. Cleared when a checkpoint starts.
   - **Variants (v1.18):** `kind` is `normal`, `cursed` or `gold`. From wave 10, 22% are **cursed** (red): double reward, but `spawnEnemy` releases an elite (2 + wave/30 affixes, HP × chaos HP × 1.5) from a random open wormhole. Every boss wave forces one **golden** crate (`G.goldAt`): 50% the next tower built rolls a Legendary (`legendQueue++`), otherwise triple credits plus an ability charge.
+- **Space pirates (v1.21):** crates are delivered by pirate drop ships (`G.pirates`, `updatePirates`, cosmetic and not targetable). A ship enters from the left or right sector edge at the crate's row, at 18 tiles/s (the gold flagship at 14, drawn ×1.5), and the crate appears as it passes over the tile. A dashed marker shows the drop spot. Ships in flight count toward the 2-crate cap.
+  - Speech lines from `PIRATE_LINES` (normal, cursed, gold, thief, stow) via the existing `say` fx: 25% of drops, 60% of flagships, 50–60% of thieves, always for stowaways.
+  - **Cursed claim:** the elite gets `e.stowaway` (drawn with a red bandana) and says a line.
+  - **Thieves:** from wave 5, when an unclaimed crate drops below 8 s, there is a one-time 25% roll (`c.thiefRolled`) for `spawnThief(c)`. That spawns a real `pirate` enemy (in `ENEMIES` with `from: 9999` and `w: 0`, so never in waves; flying, 70 HP × wave HP × chaos HP, speed 2.6) on a custom lane: edge → crate → opposite edge.
+    - The crate stops decaying while its thief lives. On reaching the crate the thief removes it ("LOOT STOLEN"). At the lane end it simply despawns (no leak, no core damage).
+    - Snare Beacons ignore pirates. Killing a thief pays `(25 + 6·wave) × credit mult` bounty plus the crate's reward, whether or not it had grabbed it yet. Claiming the crate first leaves the thief empty-handed.
+  - Ships and crates are cleared at checkpoints.
 - **Node Links (v1.18):** combat towers (not support, eco or snare) on Power Nodes within `LINK_MAX` = 9 tiles pair up in `updateLinks()` (called from `recomputeAuras`). Each linked tower gets `+LINK_DMG` = 10% damage via `t.buff.dmg` and `t.linkedTo`. `updateLinkBeams(dt)` makes the beam deal `LINK_BEAM` = 50% × the average of the two towers' dmg × rate per second (as `dot` hits, no statuses) to enemies within about 0.55 tiles of the segment. Drawn as a jittering cyan beam; it goes slack and dim when either tower is disabled.
 - **Core Overdrive (v1.19, replaces the v1.18 charge version):** once per run, from wave `OD_WAVE` = 35 (`odReady()`; `G.odUsed` = the wave it was used, snapshotted along with `odToldAt`). `odAnnounce()` at wave start toasts "OVERDRIVE ONLINE" once. From the core panel, the first tap arms the button for 3 s and the second releases it. `releaseOverdrive()` returns `over`, `used`, `locked`, `empty` (no non-boss enemies; not consumed) or `ok`. It `kill()`s every non-boss enemy on the map (up to 6 passes, so splitter children go too; full kill credits and score). Bosses survive, losing `OD_BOSS` = 20% of current HP (floor 1) plus a 0.6 s stun. The core shows pulsing rings while it's available.
 
@@ -326,6 +333,7 @@ Publish `dist/entropy.html` to the existing URL above.
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
 | `bossfight.py [seed wave chaos]` | Plays a real boss wave through the live UI loop and reports whether the boon pick appeared. |
 | `updshot.py` | Serves the Pages build at its real URL and checks the auto-update reloads once, from the menu only. |
+| `pirateshot.py` | Drop ship, flagship, a thief skiff and a stowaway on screen. |
 | `coreshot.py` | Core Battery shells mid-wave and the battery panel. |
 | `odshot.py` | Node Link beam, Overdrive meter, button and shockwave, and all three crate variants. |
 | `nodeshot.py [seeds…]` | Random-core starts, building on a Power Node, spawning and tapping a Salvage cache. |
@@ -416,3 +424,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.18 | Core Overdrive (charged shockwave), Node Links, cursed and golden Salvage crates |
 | 1.19 | Overdrive reworked: one board clear per run from Wave 35, bosses survive, two-tap confirm |
 | 1.20 | Core Battery: long range, shortest-route targeting, plasma shells, modules at LV 4, 8 and 12 |
+| 1.21 | Space pirates: drop-ship deliveries, booby-trapped loot with stowaways, Captain's Chest flagship, Pirate Skiff thieves |

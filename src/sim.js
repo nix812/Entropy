@@ -405,14 +405,49 @@ function placeNodes(n, R, P) {
 // ---------- Salvage caches: drop in during waves, tap to claim before they decay ----------
 const CACHE_LIFE = 22;
 const cacheAt = (x, y) => (G.caches || []).find(c => c.x === x && c.y === y);
+const pirateSay = (kind, x, y, chance) => { if (G.r() < chance) Hooks.fx('say', { x, y: y - 0.6, t: pick(G.r, PIRATE_LINES[kind]) }); };
+// drop ships: cosmetic fly-bys that release a crate as they pass over its tile
+function updatePirates(dt) {
+  if (!G.pirates) G.pirates = [];
+  const R = G.region;
+  for (const P of G.pirates) {
+    P.x += P.vx * dt;
+    if (!P.dropped && (P.vx > 0 ? P.x >= P.tx + 0.5 : P.x <= P.tx + 0.5)) {
+      P.dropped = true;
+      const c = { x: P.tx, y: P.ty, t: CACHE_LIFE, id: G.eid++, kind: P.kind };
+      G.caches.push(c);
+      Hooks.fx('cache', { x: c.x + 0.5, y: c.y + 0.5, kind: c.kind }); Hooks.sfx('blink');
+      pirateSay(P.kind, P.x, P.y, P.kind === 'gold' ? 0.6 : 0.25);
+    }
+    if (P.x < R.x0 - 4 || P.x > R.x1 + 4) P.gone = true;
+  }
+  if (G.pirates.some(P => P.gone)) G.pirates = G.pirates.filter(P => !P.gone);
+}
+// an unclaimed crate about to decay sometimes draws a thief: a real flying enemy that heads for it, grabs it and leaves
+function spawnThief(c) {
+  const R = G.region, fromLeft = G.r() < 0.5, y0 = clamp(c.y + 0.5 + (G.r() - 0.5) * 6, R.y0 + 0.5, R.y1 - 0.5);
+  const a = { x: fromLeft ? R.x0 - 1.5 : R.x1 + 1.5, y: y0 }, m = { x: c.x + 0.5, y: c.y + 0.5 }, z = { x: fromLeft ? R.x1 + 1.5 : R.x0 - 1.5, y: clamp(m.y + (G.r() - 0.5) * 8, R.y0 + 0.5, R.y1 - 0.5) };
+  const L = prepLane([a, m, z]);
+  const e = spawnEnemy('pirate', { L, hpm: hpMult(Math.max(1, G.wave)) * (G.CH.hp || 1) });
+  e.pirate = { cache: c, grabD: L.cum[1], got: false };
+  c.thief = e;
+  Hooks.toast('PIRATES', 'A skiff is after your salvage. Shoot it down', '#ff4d6a');
+  pirateSay('thief', a.x, a.y, 0.5);
+  return e;
+}
 function updateCaches(dt) {
   if (!G.caches) G.caches = [];
-  for (const c of G.caches) c.t -= dt;
+  updatePirates(dt);
+  for (const c of G.caches) {
+    if (c.thief && !c.thief.dead) continue; // the loot waits for the thief
+    c.t -= dt;
+    if (c.t < 8 && !c.thiefRolled) { c.thiefRolled = true; if (G.wave >= 5 && G.r() < 0.25) spawnThief(c); }
+  }
   if (G.caches.some(c => c.t <= 0)) G.caches = G.caches.filter(c => c.t > 0);
   if (G.wave < 3 || G.spawningDone) return;
   G.cacheT = (G.cacheT === undefined ? 20 : G.cacheT) - dt;
   if (G.wave % 10 === 0 && G.goldAt !== G.wave) G.cacheT = Math.min(G.cacheT, 4);
-  if (G.cacheT > 0 || G.caches.length >= 2) return;
+  if (G.cacheT > 0 || G.caches.length + G.pirates.filter(P => !P.dropped).length >= 2) return;
   G.cacheT = 30 + G.r() * 30;
   const R = G.region, core = G.map.core;
   for (let k = 0; k < 60; k++) {
@@ -423,15 +458,16 @@ function updateCaches(dt) {
     let kind = 'normal';
     if (G.wave % 10 === 0 && G.goldAt !== G.wave) { kind = 'gold'; G.goldAt = G.wave; }
     else if (G.wave >= 10 && G.r() < 0.22) kind = 'cursed';
-    G.caches.push({ x, y, t: CACHE_LIFE, id: G.eid++, kind });
-    Hooks.fx('cache', { x: x + 0.5, y: y + 0.5, kind }); Hooks.sfx('blink');
-    if (kind === 'gold') Hooks.toast('GOLDEN CACHE', 'A rare crate dropped. Find it before it decays', '#ffd84a');
+    const fromLeft = G.r() < 0.5, spd = kind === 'gold' ? 14 : 18;
+    G.pirates.push({ id: G.eid++, x: fromLeft ? R.x0 - 3 : R.x1 + 3, y: y + 0.5, vx: fromLeft ? spd : -spd, tx: x, ty: y, kind, dropped: false });
+    if (kind === 'gold') Hooks.toast("CAPTAIN'S CHEST", 'The pirate flagship is dropping treasure. Grab it', '#ffd84a');
     return;
   }
 }
 function claimCache(c) {
   if (!c || !G.caches.includes(c)) return null;
   G.caches = G.caches.filter(o => o !== c);
+  if (c.thief && !c.thief.dead) c.thief.pirate.cache = null; // beat the thief to it
   const w = Math.max(1, G.wave), roll = G.r() * 100, k2 = c.kind === 'cursed' ? 2 : 1;
   let msg;
   if (c.kind === 'gold') {
@@ -447,9 +483,11 @@ function claimCache(c) {
     // the price: an elite climbs out of a wormhole
     const lanes = G.map.lanes.filter(L => !L.openWave), types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && k !== 'swarmer');
     const e = spawnEnemy(pick(G.r, types), { lane: pick(G.r, lanes), elite: 2 + Math.floor(w / 30), hpm: hpMult(w) * (G.CH.hp || 1) * 1.5 });
+    e.stowaway = true;
     G.stats.cursed = (G.stats.cursed || 0) + 1;
     Hooks.fx('rift', { x: e.L.pts[0].x, y: e.L.pts[0].y });
-    msg += ' · an elite emerges';
+    lanePos(e.L, 0, e); pirateSay('stow', e.x, e.y, 1);
+    msg += ' · a stowaway pirate breaks loose';
   }
   Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5, kind: c.kind }); Hooks.sfx(c.kind === 'cursed' ? 'bosswarn' : 'cash');
   return msg;
@@ -519,7 +557,7 @@ function newRun(opts) {
     sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
-  setNodes([]); G.caches = []; G.cacheT = 20;
+  setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
   G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
   G.lanesOpened = 0;
@@ -669,7 +707,7 @@ function canBuildAt(x, y) {
 }
 // ---------- Snare Beacons: lure fliers off their straight line into a net ----------
 function lure(e) {
-  if (!e.fly || e.lured || e.dead || !G.snares || !G.snares.length) return;
+  if (!e.fly || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
   const cx = G.core.x, cy = G.core.y, dx = cx - e.x, dy = cy - e.y, L2 = dx * dx + dy * dy || 1;
   let best = null, bd = 1e9;
   for (const t of G.snares) {
@@ -1218,7 +1256,7 @@ function updateWaves(dt) {
     if (G.cpDue && G.cpDue === G.wave + 1) {
       // hold until the last wave's enemies are gone (capped, so a stuck enemy can never stall the run)
       if (G.enemies.some(e => !e.dead) && (G.cpWait = (G.cpWait || 0) + dt) < 180) return;
-      G.cpWait = 0; G.caches = [];
+      G.cpWait = 0; G.caches = []; G.pirates = [];
       G.checkpoint = G.cpDue; G.cpDue = 0; G.cpT = 0;
       Hooks.log(`Checkpoint · Wormhole opens in Wave ${G.checkpoint}`, '#59f0b4');
       Hooks.sfx('milestone'); Hooks.onCheckpoint(G.checkpoint);
@@ -1489,6 +1527,16 @@ function updateEnemies(dt) {
     }
     if (e.d < 0) e.d = 0;
     lanePos(e.L, e.d, e);
+    if (e.pirate) {
+      const P = e.pirate;
+      if (!P.got && e.d >= P.grabD - 0.05) {
+        P.got = true;
+        if (P.cache && G.caches.includes(P.cache)) { G.caches = G.caches.filter(o => o !== P.cache); Hooks.toast('LOOT STOLEN', 'Shoot the skiff down to get it back', '#ff4d6a'); Hooks.fx('cacheClaim', { x: e.x, y: e.y, kind: 'cursed' }); pirateSay('thief', e.x, e.y, 0.6); }
+        else P.cache = null;
+      }
+      if (e.d >= e.L.len - 0.05) { e.dead = true; if (P.got && P.cache) Hooks.log('Pirates escaped with the salvage', '#ff4d6a'); }
+      continue;
+    }
     if (e.d >= e.L.len - 0.05) leak(e);
   }
   if (G.stasisT > 0) G.stasisT -= dt;
@@ -1716,6 +1764,14 @@ function milestone() {
 function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
+  if (e.pirate) {
+    const P = e.pirate, bounty = Math.round((25 + 6 * G.wave) * G.mods.credits);
+    G.credits += bounty;
+    let msg = `+${bounty} bounty`;
+    if (P.cache) { if (!G.caches.includes(P.cache)) G.caches.push(P.cache); const m = claimCache(P.cache); if (m) msg += ' · ' + m; }
+    Hooks.toast('PIRATE DOWN', msg, '#ffe14d');
+    G.stats.pirates = (G.stats.pirates || 0) + 1;
+  }
   const M = G.mods;
   let cm = M.credits * (G.CH.cr || 1) * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
   if (src && src.s && src.s.bounty) cm *= 1 + src.s.bounty;
@@ -2408,7 +2464,7 @@ function resumeRun(S) {
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
   G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0;
-  setNodes((S.nodes || []).slice()); G.caches = [];
+  setNodes((S.nodes || []).slice()); G.caches = []; G.pirates = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};
   G.runMods = Object.assign({}, S.runMods); G.mods = computeMods(PROF.alloc, G.runMods);

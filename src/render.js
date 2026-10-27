@@ -4,7 +4,7 @@ const PAL = {
 };
 const ENEMY_COL = {
   drone: '#ff5470', swarmer: '#ff9ad5', tank: '#c9405a', flyer: '#ff86b0', splitter: '#ff6f3c', phantom: '#d6d2ff',
-  medic: '#ff7c9c', shielder: '#8ab6ff', voidling: '#b86cff', boss: '#ff3355',
+  medic: '#ff7c9c', shielder: '#8ab6ff', voidling: '#b86cff', boss: '#ff3355', pirate: '#d8281a',
 };
 
 const Render = (() => {
@@ -182,7 +182,20 @@ const Render = (() => {
   }
 
   // ---------- enemy sprites ----------
+  // pirate skiff (faces right): black skull sail, dented hull, blue thruster
+  function pirateShip(g, gold) {
+    const trim = gold ? '#ffd84a' : '#8a6a3a', hull = gold ? '#6a3a14' : '#4a2e16';
+    R(g, 3, 10, 17, 3, hull); R(g, 5, 13, 13, 1, '#2a180a'); R(g, 20, 10, 1, 2, hull); P(g, 21, 10, hull);
+    R(g, 3, 9, 18, 1, trim); for (let k = 6; k < 19; k += 4) P(g, k, 11, '#2a180a');
+    R(g, 0, 10, 3, 2, '#6ae2ff'); P(g, 0, 10, '#e6fbff');
+    R(g, 11, 1, 1, 8, '#2a1a0a');
+    R(g, 6, 2, 10, 6, gold ? '#2a1438' : '#141018'); R(g, 6, 2, 10, 1, '#3a3040');
+    R(g, 9, 3, 4, 3, '#e8e0d0'); P(g, 10, 4, '#141018'); P(g, 12, 4, '#141018'); R(g, 10, 6, 3, 1, '#e8e0d0'); P(g, 8, 7, '#e8e0d0'); P(g, 14, 7, '#e8e0d0');
+    R(g, 12, 0, 4, 2, '#d8281a');
+    if (gold) { P(g, 4, 9, '#ffffff'); P(g, 15, 9, '#ffffff'); R(g, 14, 0, 2, 1, '#ffd84a'); }
+  }
   const EN = {
+    pirate(g) { pirateShip(g, false); },
     drone(g, c) { diamond(g, 7, 7, 7, '#2a0610'); diamond(g, 7, 7, 6, c); for (let dy = -5; dy < 0; dy++) R(g, 7 - (6 - Math.abs(dy)) + 1, 7 + dy, 6 - Math.abs(dy), 1, sh(c, 0.3)); R(g, 6, 6, 3, 3, '#2a0010'); P(g, 6, 6, '#ffd0dc'); P(g, 1, 7, '#ffb03a'); P(g, 13, 7, '#ffb03a'); },
     swarmer(g, c) { D(g, 4, 4, 3, '#3a0a24'); D(g, 4, 4, 2, c); P(g, 3, 3, sh(c, 0.6)); P(g, 0, 2, '#3a0a24'); P(g, 8, 2, '#3a0a24'); P(g, 0, 6, '#3a0a24'); P(g, 8, 6, '#3a0a24'); },
     tank(g, c) {
@@ -211,7 +224,9 @@ const Render = (() => {
     voidling(g, c) { diamond(g, 5, 5, 5, '#1a0830'); diamond(g, 5, 5, 4, c); P(g, 4, 3, '#ffffff'); P(g, 5, 5, '#ffffff'); },
   };
   const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11 };
+  const pirateSprite = gold => outlined('opship' + (gold ? 'g' : ''), spr('pship' + (gold ? 'g' : ''), 22, 14, g => pirateShip(g, gold)));
   function enemySprite(type) {
+    if (type === 'pirate') return pirateSprite(false);
     const s = EN_SIZE[type] || 14, c = ENEMY_COL[type] || '#ff5470';
     return outlined('oen:' + type, spr('en:' + type, s, s, g => (EN[type] || EN.drone)(g, c)));
   }
@@ -506,7 +521,9 @@ const Render = (() => {
     if (e.fly) { b.fillStyle = 'rgba(0,0,0,0.35)'; b.fillRect(X - hw + 2, Y + 4, s.width - 4, 3); }
     else { b.fillStyle = 'rgba(0,0,0,0.38)'; b.fillRect(Math.round(X - hw + 1), Math.round(Y + hh - 1), s.width - 2, 2); }
     if (cloaked) b.globalAlpha = 0.25;
-    b.drawImage(s, Math.round(X - hw), Math.round(y - hh));
+    if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh); b.restore(); }
+    else b.drawImage(s, Math.round(X - hw), Math.round(y - hh));
+    if (e.stowaway) { R(b, X - 5, y - hh - 1, 10, 2, '#d8281a'); R(b, X + 5, y - hh - 1, 2, 1, '#d8281a'); P(b, X + 7, y - hh, '#d8281a'); }
     if (e.hitFlash > 0) { b.globalAlpha = cloaked ? 0.2 : e.boss ? 0.3 : 0.6; b.drawImage(tinted('w:' + (e.boss || e.type), s, '#ffffff'), Math.round(X - hw), Math.round(y - hh)); }
     else if (st.frozen > 0) { b.globalAlpha = 0.6; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#bff4ff'), Math.round(X - hw), Math.round(y - hh)); }
     else if (st.chill > 0) { b.globalAlpha = 0.12 + st.chill * 0.06; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#9ad8ff'), Math.round(X - hw), Math.round(y - hh)); }
@@ -708,6 +725,14 @@ const Render = (() => {
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
+    // pirate drop ships
+    for (const P2 of G.pirates || []) {
+      const gold = P2.kind === 'gold', sp = pirateSprite(gold), k = gold ? 1.5 : 1, w = sp.width * k, h = sp.height * k, X = P2.x * TILE, Y = P2.y * TILE - 16;
+      b.fillStyle = 'rgba(0,0,0,0.3)'; b.fillRect(Math.round(X - w * 0.4), Math.round(P2.y * TILE + 4), Math.round(w * 0.8), 3);
+      b.save(); b.translate(Math.round(X), Math.round(Y + Math.sin(frame / 5 + P2.id) * 1.5)); if (P2.vx < 0) b.scale(-1, 1); b.drawImage(sp, -w / 2, -h / 2, w, h); b.restore();
+      if (frame % 2 === 0) parts.push({ x: X - Math.sign(P2.vx) * w / 2, y: Y + 2, vx: -P2.vx * 2, vy: (Math.random() - 0.5) * 6, life: 0.3, max: 0.3, col: '#6ae2ff', s: 2 });
+      if (!P2.dropped) { const tx = (P2.tx + 0.5) * TILE, ty = (P2.ty + 0.5) * TILE; b.strokeStyle = hexA(CACHE_PAL[P2.kind][3], 0.4 + 0.3 * Math.sin(frame / 3)); b.lineWidth = 1; b.setLineDash([2, 3]); b.strokeRect(tx - 10, ty - 10, 20, 20); b.setLineDash([]); }
+    }
     // projectiles
     for (const p of G.projs) {
       const X = p.x * TILE, Y = p.y * TILE, col = EL[p.el] ? EL[p.el].col : '#fff';
