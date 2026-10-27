@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.15.2 · October 26, 2026**
+**Version at handoff: 1.15.3 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.15.2.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.15.3.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -46,7 +46,7 @@ cd entropy-site
 cp -r ../entropy/dist/pages/* .
 git add -A && git commit -m "vX.Y.Z: summary" && git push origin HEAD:main
 ```
-Pages updates in about a minute, but GitHub serves pages with a 10-minute cache. Since v1.15.2 the app checks for a newer `VERSION` at launch and when it returns from the background, and reloads itself from the main menu. Tell Nic to check Settings → Version if in doubt.
+Pages updates in about a minute, but GitHub serves pages with a 10-minute cache. Since v1.15.2 the app checks for a newer `VERSION` at launch and when it returns from the background, and reloads itself from the main menu. The version also shows in the bottom-left of the main menu.
 
 ### Publish the artifact
 Publish `dist/entropy.html` to the existing URL above.
@@ -349,3 +349,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.15 | Expanding sector: runs start on 60% of the map, each wormhole grows it, the camera pulls back and the main path extends |
 | 1.15.1 | Fix: boss kills froze the game since 1.11 (the boon pick screen `openDraft` had been deleted). The Gloop family now gives one reward when its last member dies. A pending pick with no screen showing reopens itself. |
 | 1.15.2 | Home Screen auto-update: on launch and on return from background, the GitHub Pages copy fetches itself (`cache: 'reload'`), and if `VERSION` differs it reloads once from the main menu (never mid-run; a sessionStorage guard stops loops). |
+| 1.15.3 | Version watermark in the main menu's bottom-left corner (`#hVer`, set in `renderHangar`). |

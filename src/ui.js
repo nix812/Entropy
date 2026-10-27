@@ -105,6 +105,7 @@ const UI = (() => {
 
   // ---------- Hangar ----------
   function renderHangar() {
+    const hv = $('#hVer'); if (hv) hv.textContent = 'v' + VERSION;
     const L = profLevel(), free = pointsFree();
     $('#hLevel').textContent = L.level;
     $('#hXpFill').style.width = pct(L.into / L.need);

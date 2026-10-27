@@ -52,6 +52,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 /* ---------- hangar: brand left, play in the right thumb zone, utilities top-right ---------- */
 #bgfx { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; z-index: 0; }
 #hangar { padding-bottom: max(12px, var(--sab)); padding-top: max(12px, var(--sat)); }
+#hangar .ver { position: absolute; z-index: 1; left: max(16px, var(--sal)); bottom: max(10px, var(--sab)); font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.08em; color: var(--dim); opacity: 0.75; pointer-events: none; }
 .hwrap { position: relative; z-index: 1; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) min(300px, 42%); grid-template-rows: auto 1fr auto; gap: 0 24px; max-width: 1000px; width: 100%; margin: 0 auto; }
 .util { grid-column: 2; grid-row: 1; display: flex; gap: 8px; justify-content: flex-end; }
 .ib { width: 44px; height: 44px; display: grid; place-items: center; background: var(--panel2); border: 0; clip-path: var(--cut); box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; }
@@ -458,6 +459,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 
   <section id="hangar" class="screen">
     <canvas id="bgfx"></canvas>
+    <div class="ver" id="hVer"></div>
     <div class="hwrap">
       <div class="util">
         <button class="ib" id="bArchive" aria-label="Archive" data-svg="archive"></button>
