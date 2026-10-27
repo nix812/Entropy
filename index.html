@@ -571,7 +571,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '1.20.0';
+const VERSION = '1.21.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -737,6 +737,14 @@ const LEGENDARIES = [
 const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 'prism', 'echo'];
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
+// Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
+const PIRATE_LINES = {
+  normal: ['Yarr!', 'Special delivery', "That's not ours", 'Tell no one', 'Insurance fraud!', 'Fell off a freighter', 'No refunds', 'Arr, butterfingers', 'Keep the change', 'Dropping the evidence', 'This never happened', 'Free sample!', 'Mind the paint', 'Totally legal cargo', 'Ye saw nothing', 'Express shipping'],
+  cursed: ['Heh heh heh', 'Totally safe', 'Open it. Go on.', 'Do NOT shake', "Don't mind the noises", 'Our gift to you'],
+  gold: ["Cap'n's orders", "Hide it from the Cap'n", 'Treasure!', 'X marks the spot', 'Mutiny pays'],
+  thief: ['Finders keepers', "I'll take that", 'Yoink', 'Salvage rights!', 'Mine now', 'Thank ye kindly'],
+  stow: ['Arr!', 'Surprise!', 'Ahoy, core!', 'Stowaway!'],
+};
 // Core Battery (v1.20): a long-range support gun. Weak per shot early; the expensive late levels make it a real weapon.
 const CORE_GUN = { dmg: 12, growth: 1.5, rate: 0.8, range: 16, rangeLv: 1.4, splash: 0.6, maxLv: 12 };
 const CORE_MODULES = [
@@ -762,6 +770,7 @@ const ENEMIES = {
   phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically. Weak to Void' },
   medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies' },
   shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies. Resists Kinetic' },
+  pirate: { name: 'Pirate Skiff', hp: 70, spd: 2.6, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core' },
   voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'Flies. Spawned by a Maelstrom' },
 };
 const BOSSES = [
@@ -1657,14 +1666,49 @@ function placeNodes(n, R, P) {
 // ---------- Salvage caches: drop in during waves, tap to claim before they decay ----------
 const CACHE_LIFE = 22;
 const cacheAt = (x, y) => (G.caches || []).find(c => c.x === x && c.y === y);
+const pirateSay = (kind, x, y, chance) => { if (G.r() < chance) Hooks.fx('say', { x, y: y - 0.6, t: pick(G.r, PIRATE_LINES[kind]) }); };
+// drop ships: cosmetic fly-bys that release a crate as they pass over its tile
+function updatePirates(dt) {
+  if (!G.pirates) G.pirates = [];
+  const R = G.region;
+  for (const P of G.pirates) {
+    P.x += P.vx * dt;
+    if (!P.dropped && (P.vx > 0 ? P.x >= P.tx + 0.5 : P.x <= P.tx + 0.5)) {
+      P.dropped = true;
+      const c = { x: P.tx, y: P.ty, t: CACHE_LIFE, id: G.eid++, kind: P.kind };
+      G.caches.push(c);
+      Hooks.fx('cache', { x: c.x + 0.5, y: c.y + 0.5, kind: c.kind }); Hooks.sfx('blink');
+      pirateSay(P.kind, P.x, P.y, P.kind === 'gold' ? 0.6 : 0.25);
+    }
+    if (P.x < R.x0 - 4 || P.x > R.x1 + 4) P.gone = true;
+  }
+  if (G.pirates.some(P => P.gone)) G.pirates = G.pirates.filter(P => !P.gone);
+}
+// an unclaimed crate about to decay sometimes draws a thief: a real flying enemy that heads for it, grabs it and leaves
+function spawnThief(c) {
+  const R = G.region, fromLeft = G.r() < 0.5, y0 = clamp(c.y + 0.5 + (G.r() - 0.5) * 6, R.y0 + 0.5, R.y1 - 0.5);
+  const a = { x: fromLeft ? R.x0 - 1.5 : R.x1 + 1.5, y: y0 }, m = { x: c.x + 0.5, y: c.y + 0.5 }, z = { x: fromLeft ? R.x1 + 1.5 : R.x0 - 1.5, y: clamp(m.y + (G.r() - 0.5) * 8, R.y0 + 0.5, R.y1 - 0.5) };
+  const L = prepLane([a, m, z]);
+  const e = spawnEnemy('pirate', { L, hpm: hpMult(Math.max(1, G.wave)) * (G.CH.hp || 1) });
+  e.pirate = { cache: c, grabD: L.cum[1], got: false };
+  c.thief = e;
+  Hooks.toast('PIRATES', 'A skiff is after your salvage. Shoot it down', '#ff4d6a');
+  pirateSay('thief', a.x, a.y, 0.5);
+  return e;
+}
 function updateCaches(dt) {
   if (!G.caches) G.caches = [];
-  for (const c of G.caches) c.t -= dt;
+  updatePirates(dt);
+  for (const c of G.caches) {
+    if (c.thief && !c.thief.dead) continue; // the loot waits for the thief
+    c.t -= dt;
+    if (c.t < 8 && !c.thiefRolled) { c.thiefRolled = true; if (G.wave >= 5 && G.r() < 0.25) spawnThief(c); }
+  }
   if (G.caches.some(c => c.t <= 0)) G.caches = G.caches.filter(c => c.t > 0);
   if (G.wave < 3 || G.spawningDone) return;
   G.cacheT = (G.cacheT === undefined ? 20 : G.cacheT) - dt;
   if (G.wave % 10 === 0 && G.goldAt !== G.wave) G.cacheT = Math.min(G.cacheT, 4);
-  if (G.cacheT > 0 || G.caches.length >= 2) return;
+  if (G.cacheT > 0 || G.caches.length + G.pirates.filter(P => !P.dropped).length >= 2) return;
   G.cacheT = 30 + G.r() * 30;
   const R = G.region, core = G.map.core;
   for (let k = 0; k < 60; k++) {
@@ -1675,15 +1719,16 @@ function updateCaches(dt) {
     let kind = 'normal';
     if (G.wave % 10 === 0 && G.goldAt !== G.wave) { kind = 'gold'; G.goldAt = G.wave; }
     else if (G.wave >= 10 && G.r() < 0.22) kind = 'cursed';
-    G.caches.push({ x, y, t: CACHE_LIFE, id: G.eid++, kind });
-    Hooks.fx('cache', { x: x + 0.5, y: y + 0.5, kind }); Hooks.sfx('blink');
-    if (kind === 'gold') Hooks.toast('GOLDEN CACHE', 'A rare crate dropped. Find it before it decays', '#ffd84a');
+    const fromLeft = G.r() < 0.5, spd = kind === 'gold' ? 14 : 18;
+    G.pirates.push({ id: G.eid++, x: fromLeft ? R.x0 - 3 : R.x1 + 3, y: y + 0.5, vx: fromLeft ? spd : -spd, tx: x, ty: y, kind, dropped: false });
+    if (kind === 'gold') Hooks.toast("CAPTAIN'S CHEST", 'The pirate flagship is dropping treasure. Grab it', '#ffd84a');
     return;
   }
 }
 function claimCache(c) {
   if (!c || !G.caches.includes(c)) return null;
   G.caches = G.caches.filter(o => o !== c);
+  if (c.thief && !c.thief.dead) c.thief.pirate.cache = null; // beat the thief to it
   const w = Math.max(1, G.wave), roll = G.r() * 100, k2 = c.kind === 'cursed' ? 2 : 1;
   let msg;
   if (c.kind === 'gold') {
@@ -1699,9 +1744,11 @@ function claimCache(c) {
     // the price: an elite climbs out of a wormhole
     const lanes = G.map.lanes.filter(L => !L.openWave), types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && k !== 'swarmer');
     const e = spawnEnemy(pick(G.r, types), { lane: pick(G.r, lanes), elite: 2 + Math.floor(w / 30), hpm: hpMult(w) * (G.CH.hp || 1) * 1.5 });
+    e.stowaway = true;
     G.stats.cursed = (G.stats.cursed || 0) + 1;
     Hooks.fx('rift', { x: e.L.pts[0].x, y: e.L.pts[0].y });
-    msg += ' · an elite emerges';
+    lanePos(e.L, 0, e); pirateSay('stow', e.x, e.y, 1);
+    msg += ' · a stowaway pirate breaks loose';
   }
   Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5, kind: c.kind }); Hooks.sfx(c.kind === 'cursed' ? 'bosswarn' : 'cash');
   return msg;
@@ -1771,7 +1818,7 @@ function newRun(opts) {
     sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
-  setNodes([]); G.caches = []; G.cacheT = 20;
+  setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
   G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
   G.lanesOpened = 0;
@@ -1921,7 +1968,7 @@ function canBuildAt(x, y) {
 }
 // ---------- Snare Beacons: lure fliers off their straight line into a net ----------
 function lure(e) {
-  if (!e.fly || e.lured || e.dead || !G.snares || !G.snares.length) return;
+  if (!e.fly || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
   const cx = G.core.x, cy = G.core.y, dx = cx - e.x, dy = cy - e.y, L2 = dx * dx + dy * dy || 1;
   let best = null, bd = 1e9;
   for (const t of G.snares) {
@@ -2470,7 +2517,7 @@ function updateWaves(dt) {
     if (G.cpDue && G.cpDue === G.wave + 1) {
       // hold until the last wave's enemies are gone (capped, so a stuck enemy can never stall the run)
       if (G.enemies.some(e => !e.dead) && (G.cpWait = (G.cpWait || 0) + dt) < 180) return;
-      G.cpWait = 0; G.caches = [];
+      G.cpWait = 0; G.caches = []; G.pirates = [];
       G.checkpoint = G.cpDue; G.cpDue = 0; G.cpT = 0;
       Hooks.log(`Checkpoint · Wormhole opens in Wave ${G.checkpoint}`, '#59f0b4');
       Hooks.sfx('milestone'); Hooks.onCheckpoint(G.checkpoint);
@@ -2741,6 +2788,16 @@ function updateEnemies(dt) {
     }
     if (e.d < 0) e.d = 0;
     lanePos(e.L, e.d, e);
+    if (e.pirate) {
+      const P = e.pirate;
+      if (!P.got && e.d >= P.grabD - 0.05) {
+        P.got = true;
+        if (P.cache && G.caches.includes(P.cache)) { G.caches = G.caches.filter(o => o !== P.cache); Hooks.toast('LOOT STOLEN', 'Shoot the skiff down to get it back', '#ff4d6a'); Hooks.fx('cacheClaim', { x: e.x, y: e.y, kind: 'cursed' }); pirateSay('thief', e.x, e.y, 0.6); }
+        else P.cache = null;
+      }
+      if (e.d >= e.L.len - 0.05) { e.dead = true; if (P.got && P.cache) Hooks.log('Pirates escaped with the salvage', '#ff4d6a'); }
+      continue;
+    }
     if (e.d >= e.L.len - 0.05) leak(e);
   }
   if (G.stasisT > 0) G.stasisT -= dt;
@@ -2968,6 +3025,14 @@ function milestone() {
 function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
+  if (e.pirate) {
+    const P = e.pirate, bounty = Math.round((25 + 6 * G.wave) * G.mods.credits);
+    G.credits += bounty;
+    let msg = `+${bounty} bounty`;
+    if (P.cache) { if (!G.caches.includes(P.cache)) G.caches.push(P.cache); const m = claimCache(P.cache); if (m) msg += ' · ' + m; }
+    Hooks.toast('PIRATE DOWN', msg, '#ffe14d');
+    G.stats.pirates = (G.stats.pirates || 0) + 1;
+  }
   const M = G.mods;
   let cm = M.credits * (G.CH.cr || 1) * (G.ev.gold ? 2 : 1) * (e.elite.length && G.af.eliteCr ? 2 : 1);
   if (src && src.s && src.s.bounty) cm *= 1 + src.s.bounty;
@@ -3660,7 +3725,7 @@ function resumeRun(S) {
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
   G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0;
-  setNodes((S.nodes || []).slice()); G.caches = [];
+  setNodes((S.nodes || []).slice()); G.caches = []; G.pirates = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};
   G.runMods = Object.assign({}, S.runMods); G.mods = computeMods(PROF.alloc, G.runMods);
@@ -4005,7 +4070,7 @@ const PAL = {
 };
 const ENEMY_COL = {
   drone: '#ff5470', swarmer: '#ff9ad5', tank: '#c9405a', flyer: '#ff86b0', splitter: '#ff6f3c', phantom: '#d6d2ff',
-  medic: '#ff7c9c', shielder: '#8ab6ff', voidling: '#b86cff', boss: '#ff3355',
+  medic: '#ff7c9c', shielder: '#8ab6ff', voidling: '#b86cff', boss: '#ff3355', pirate: '#d8281a',
 };
 
 const Render = (() => {
@@ -4183,7 +4248,20 @@ const Render = (() => {
   }
 
   // ---------- enemy sprites ----------
+  // pirate skiff (faces right): black skull sail, dented hull, blue thruster
+  function pirateShip(g, gold) {
+    const trim = gold ? '#ffd84a' : '#8a6a3a', hull = gold ? '#6a3a14' : '#4a2e16';
+    R(g, 3, 10, 17, 3, hull); R(g, 5, 13, 13, 1, '#2a180a'); R(g, 20, 10, 1, 2, hull); P(g, 21, 10, hull);
+    R(g, 3, 9, 18, 1, trim); for (let k = 6; k < 19; k += 4) P(g, k, 11, '#2a180a');
+    R(g, 0, 10, 3, 2, '#6ae2ff'); P(g, 0, 10, '#e6fbff');
+    R(g, 11, 1, 1, 8, '#2a1a0a');
+    R(g, 6, 2, 10, 6, gold ? '#2a1438' : '#141018'); R(g, 6, 2, 10, 1, '#3a3040');
+    R(g, 9, 3, 4, 3, '#e8e0d0'); P(g, 10, 4, '#141018'); P(g, 12, 4, '#141018'); R(g, 10, 6, 3, 1, '#e8e0d0'); P(g, 8, 7, '#e8e0d0'); P(g, 14, 7, '#e8e0d0');
+    R(g, 12, 0, 4, 2, '#d8281a');
+    if (gold) { P(g, 4, 9, '#ffffff'); P(g, 15, 9, '#ffffff'); R(g, 14, 0, 2, 1, '#ffd84a'); }
+  }
   const EN = {
+    pirate(g) { pirateShip(g, false); },
     drone(g, c) { diamond(g, 7, 7, 7, '#2a0610'); diamond(g, 7, 7, 6, c); for (let dy = -5; dy < 0; dy++) R(g, 7 - (6 - Math.abs(dy)) + 1, 7 + dy, 6 - Math.abs(dy), 1, sh(c, 0.3)); R(g, 6, 6, 3, 3, '#2a0010'); P(g, 6, 6, '#ffd0dc'); P(g, 1, 7, '#ffb03a'); P(g, 13, 7, '#ffb03a'); },
     swarmer(g, c) { D(g, 4, 4, 3, '#3a0a24'); D(g, 4, 4, 2, c); P(g, 3, 3, sh(c, 0.6)); P(g, 0, 2, '#3a0a24'); P(g, 8, 2, '#3a0a24'); P(g, 0, 6, '#3a0a24'); P(g, 8, 6, '#3a0a24'); },
     tank(g, c) {
@@ -4212,7 +4290,9 @@ const Render = (() => {
     voidling(g, c) { diamond(g, 5, 5, 5, '#1a0830'); diamond(g, 5, 5, 4, c); P(g, 4, 3, '#ffffff'); P(g, 5, 5, '#ffffff'); },
   };
   const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11 };
+  const pirateSprite = gold => outlined('opship' + (gold ? 'g' : ''), spr('pship' + (gold ? 'g' : ''), 22, 14, g => pirateShip(g, gold)));
   function enemySprite(type) {
+    if (type === 'pirate') return pirateSprite(false);
     const s = EN_SIZE[type] || 14, c = ENEMY_COL[type] || '#ff5470';
     return outlined('oen:' + type, spr('en:' + type, s, s, g => (EN[type] || EN.drone)(g, c)));
   }
@@ -4507,7 +4587,9 @@ const Render = (() => {
     if (e.fly) { b.fillStyle = 'rgba(0,0,0,0.35)'; b.fillRect(X - hw + 2, Y + 4, s.width - 4, 3); }
     else { b.fillStyle = 'rgba(0,0,0,0.38)'; b.fillRect(Math.round(X - hw + 1), Math.round(Y + hh - 1), s.width - 2, 2); }
     if (cloaked) b.globalAlpha = 0.25;
-    b.drawImage(s, Math.round(X - hw), Math.round(y - hh));
+    if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh); b.restore(); }
+    else b.drawImage(s, Math.round(X - hw), Math.round(y - hh));
+    if (e.stowaway) { R(b, X - 5, y - hh - 1, 10, 2, '#d8281a'); R(b, X + 5, y - hh - 1, 2, 1, '#d8281a'); P(b, X + 7, y - hh, '#d8281a'); }
     if (e.hitFlash > 0) { b.globalAlpha = cloaked ? 0.2 : e.boss ? 0.3 : 0.6; b.drawImage(tinted('w:' + (e.boss || e.type), s, '#ffffff'), Math.round(X - hw), Math.round(y - hh)); }
     else if (st.frozen > 0) { b.globalAlpha = 0.6; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#bff4ff'), Math.round(X - hw), Math.round(y - hh)); }
     else if (st.chill > 0) { b.globalAlpha = 0.12 + st.chill * 0.06; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#9ad8ff'), Math.round(X - hw), Math.round(y - hh)); }
@@ -4709,6 +4791,14 @@ const Render = (() => {
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
+    // pirate drop ships
+    for (const P2 of G.pirates || []) {
+      const gold = P2.kind === 'gold', sp = pirateSprite(gold), k = gold ? 1.5 : 1, w = sp.width * k, h = sp.height * k, X = P2.x * TILE, Y = P2.y * TILE - 16;
+      b.fillStyle = 'rgba(0,0,0,0.3)'; b.fillRect(Math.round(X - w * 0.4), Math.round(P2.y * TILE + 4), Math.round(w * 0.8), 3);
+      b.save(); b.translate(Math.round(X), Math.round(Y + Math.sin(frame / 5 + P2.id) * 1.5)); if (P2.vx < 0) b.scale(-1, 1); b.drawImage(sp, -w / 2, -h / 2, w, h); b.restore();
+      if (frame % 2 === 0) parts.push({ x: X - Math.sign(P2.vx) * w / 2, y: Y + 2, vx: -P2.vx * 2, vy: (Math.random() - 0.5) * 6, life: 0.3, max: 0.3, col: '#6ae2ff', s: 2 });
+      if (!P2.dropped) { const tx = (P2.tx + 0.5) * TILE, ty = (P2.ty + 0.5) * TILE; b.strokeStyle = hexA(CACHE_PAL[P2.kind][3], 0.4 + 0.3 * Math.sin(frame / 3)); b.lineWidth = 1; b.setLineDash([2, 3]); b.strokeRect(tx - 10, ty - 10, 20, 20); b.setLineDash([]); }
+    }
     // projectiles
     for (const p of G.projs) {
       const X = p.x * TILE, Y = p.y * TILE, col = EL[p.el] ? EL[p.el].col : '#fff';
@@ -5949,7 +6039,7 @@ const UI = (() => {
       ['Bosses', 'Every 10 waves. Drop a boon and a Recalibration token.'],
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds, free respec, and you can relocate the core. Resume fast for a bonus.'],
       ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Move the core onto one for a bigger boost. Each sector expansion reveals a new one.'],
-      ['Salvage', 'Crates drop in during waves. Tap one before its ring runs out for credits, a charge, Entropy, score or a token. Red crates pay double but release an elite. Boss waves drop a golden crate.'],
+      ['Space Pirates', "Pirate ships fly over during waves and drop salvage crates. Tap a crate before its ring runs out for credits, a charge, Entropy, score or a token. Red crates are booby-trapped: double loot, but a stowaway elite breaks loose. Boss waves bring the Captain's Chest. Leave a crate too long and a Pirate Skiff may come to steal it; shoot it down to get the loot back plus a bounty."],
       ['Overdrive', `Your one emergency button. From Wave ${OD_WAVE}, tap the core to erase every enemy on the map except bosses. Once per run.`],
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
     ] },
@@ -5995,8 +6085,9 @@ const UI = (() => {
         ['Power Node', 'Charged tile. Towers on it get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
         ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap the core, Release Overdrive, tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
-        ['Cursed Cache', 'Red crate from Wave 10. Double reward, but an elite enemy climbs out of a wormhole.'],
-        ['Golden Cache', 'One per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],
+        ['Cursed Cache', 'Booby-trapped pirate loot, red, from Wave 10. Double reward, but a stowaway pirate (an elite) breaks loose from a wormhole.'],
+        ["Captain's Chest", 'Golden crate the pirate flagship drops once per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],
+        ['Pirate Skiff', `From Wave 5, a crate left with under 8 seconds sometimes draws a skiff (1 in 4). It flies in, grabs the crate and escapes. Shoot it down for a bounty of 25 + 6 per wave credits and the loot. It never attacks the core.`],
         ['Salvage Cache', `Drops during waves from Wave 3 and decays in ${CACHE_LIFE}s. Tap to claim credits, an ability charge, Entropy, score or a Recalibration token.`],
         ['Relocate Core', `At Checkpoints: move the core up to ${RELOCATE_RADIUS} tiles. Every road re-routes to reach it. The first move each run is free, then ${RELOCATE_COST} credits each.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
