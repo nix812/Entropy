@@ -1404,11 +1404,16 @@ function spawnEnemy(type, q) {
   if (e.elite.length) Hooks.fx('elite', { x: e.x, y: e.y });
   return e;
 }
+// v2.1: bosses died within seconds of the first hit (5-6 s at waves 20-30 in bot runs with 60 web points).
+// Extra health, shaped to where towers outscale bosses the most: x3 at wave 10, x7 across waves 20-30,
+// easing to x2.5 from wave 60 where late bosses already push deep.
+const BOSS_HPX = [[10, 3], [20, 7], [30, 7], [40, 5], [50, 3], [60, 2.5]];
+const bossHpX = w => { const P = BOSS_HPX; if (w <= P[0][0]) return P[0][1]; for (let i = 1; i < P.length; i++) if (w <= P[i][0]) { const [a, va] = P[i - 1], [b, vb] = P[i]; return va + (vb - va) * (w - a) / (b - a); } return P[P.length - 1][1]; };
 function spawnBoss(q) {
   const B = BOSSES.find(b => b.id === q.boss), w = G.wave;
   const lane = q.lane, gen = q.gen || 0;
   const L = q.L || (B.fly ? lane.fly : lane);
-  const hp = q.hpAbs || 30 * B.hp * q.hpm * (1 + Math.floor((w - 1) / 50) * 0.5) * (1 + ((G.af && G.af.bossHP) || 0));
+  const hp = q.hpAbs || 30 * B.hp * q.hpm * bossHpX(w) * (1 + Math.floor((w - 1) / 50) * 0.5) * (1 + ((G.af && G.af.bossHP) || 0));
   const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
     armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 0.8, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
@@ -1655,6 +1660,7 @@ function hit(e, dmg, el, src, o) {
     if (amt <= 0) { e.hitFlash = 0.08; if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
   const dealt = Math.min(e.hp, amt);
+  if (G.dbgBoss && e.boss) { if (!e._hit0) e._hit0 = G.time; const k = o.combo || (o.abil ? 'ability' : o.dot ? 'dot' : src && src.type ? src.type : src === G.core ? 'core' : 'other'); G.dbgBoss[k] = (G.dbgBoss[k] || 0) + dealt; }
   e.hp -= amt;
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
   if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; }
@@ -1713,7 +1719,8 @@ function applyStatuses(e, dmg, el, src, o) {
     combo(e, 'COLLAPSE', '#b86cff');
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * 0.03) * cmb, 'V', src, { noStatus: 1 });
+      // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss ? 0.004 : 0.03)) * cmb, 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
     }
     if (e.dead) return;

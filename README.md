@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 2.0.0 · October 27, 2026**
+**Version at handoff: 2.1.0 · October 27, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v2.0.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v2.1.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). The composer isn't recorded anywhere in either repo (the files were re-encoded, tags stripped); ask Nic if more tracks are wanted. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -221,6 +221,9 @@ Publish `dist/entropy.html` to the existing URL above.
 | Quackzilla | A rubber duck. Quacks, hops forward and briefly disables nearby towers. |
 | Flying Spaghetti Monster | Its noodly appendages disable up to 3 towers, and it drops meatball fliers. |
 
+- **Boss health (v2.1):** `30 × B.hp × hpMult(w) × bossHpX(w) × …` in `spawnBoss`. `BOSS_HPX` is a piecewise curve: ×3 at wave 10, ×7 across waves 20–30, ×5 at 40, ×3 at 50, ×2.5 from 60. Nic reported bosses dying almost instantly; bots with 60 web points showed 5–6 s from the first hit to death at waves 20–30. After the change: 11–20 s, with run length unchanged (average wave 75 vs 76 at 60 points); with 0 points, bosses sometimes leak at waves 30–50. Gloop's children inherit through `hpAbs`, so they scale automatically.
+- **Collapse vs bosses:** the combo's max-HP part is 3% for normal enemies but 0.4% for bosses. At 3% it fired about once a second under Void Lens and killed bosses regardless of their health.
+- **Measuring bosses:** `BOSSLOG=1 node test/smartbot.js 1 60 1 1 60` prints each boss's life, time under fire, how far down the road it died, and the top damage sources (from `G.dbgBoss`, collected in `hit()` only when set). `test/bossttk.js` is a controlled version (a set budget of L3 towers against a lone boss).
 - Oddballs have speech bubbles (the `say` FX), custom SFX (`quack`, `meow`, `whale`, `blorp`) and random titles that show on the boss bar.
 
 ### 4.5 Run modifiers
@@ -390,6 +393,7 @@ The expanding sector made every level a little easier, because the compact early
 15. **Click handlers can fire after their panel has closed** (double taps, a tap during a close). `panelAction` returns early when `panel` is null; keep that guard in any new handler that reads `panel`.
 16. **Bot balance numbers are noisy.** Boon picks use `Math.random`, so the same 12 seeds can swing ±4 waves between runs (Lens measured 55, 56 and 58 on three runs). Re-run before acting on a gap under about 5 waves, and use `lab.js` and `bench.js` for controlled comparisons.
 17. **The passive web (`#tree`) is a `.screen`.** `show(id)` hides every other screen, so switching screens while the web was open used to hide it but leave `Tree.isOpen` true, which halts the game loop (frozen run). `show()` now closes the web first. `monkey.py` checks this invariant.
+18. **Damage based on max HP must be reduced for bosses**, or boss health stops mattering. Every other max-HP effect uses about 0.3× for bosses; Collapse had none until v2.1. Check new effects with `BOSSLOG`.
 
 ---
 
@@ -439,3 +443,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.20 | Core Battery: long range, shortest-route targeting, plasma shells, modules at LV 4, 8 and 12 |
 | 1.21 | Space pirates: drop-ship deliveries, booby-trapped loot with stowaways, Captain's Chest flagship, Pirate Skiff thieves |
 | 2.0 | Whole-game balance and polish pass: tower retune from bot, lab and bench sims (no build stands out); tower roles in the build menu; Gravity Well diminishing pull; Snare net damage bonus; Mixed soundtrack and auto-detected playlists; What's New popup and Settings version row; run highlights in the recap and Hall of Fame; stale-tap crash and serpentine map fixes; monkey, lab, bench and newsshot test tools |
+| 2.1 | Bosses: much more health (×3 at wave 10, ×7 at waves 20–30, easing to ×2.5 from 60); Collapse's max-HP damage on bosses cut from 3% to 0.4%; boss measuring tools |

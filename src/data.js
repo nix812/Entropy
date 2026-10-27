@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,15 +167,9 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '2.0.0', title: 'Entropy 2.0', items: [
-  ['Every tower pulls its weight', 'Thousands of simulated runs later: Void Lens is toned down, and EMP Mortar, Arc Coil, Gravity Well, Swarm Missile, Pylon, Cryo Tower and Snare Beacon are all stronger. No single build runs away with it now, so play what feels good.'],
-  ['Tower roles', 'The build menu now says what each tower is for, like "Boss killer" or "Crowds", so new builds are easier to try.'],
-  ['Gravity Well', 'Cheaper and hits harder. Each pull on the same enemy is a little weaker, so it holds lines without freezing them forever.'],
-  ['Snare Beacon', 'Cheaper, and netted fliers take +20% damage from every tower.'],
-  ['Conflagration', 'The fire keystone no longer switches off Resonance, its Thermal bonus rises to +50%, burning enemies are slowed by 25%, Chill turns into Burn (Cryo towers become fire starters), and heat builds into Thermal Shock combos.'],
-  ['Soundtrack', 'New Mixed mode in Settings blends the composed tracks with generative interludes so long runs stay fresh. Extra composed tracks join the playlist automatically when added.'],
-  ['Run highlights', 'The end-of-run summary and Hall of Fame now count salvage crates, pirates downed, Overdrive erasures and core moves.'],
-  ['Polish and fixes', 'Version and What\'s New live in Settings. Fixed a rare freeze if the passive web was still open when a run started, a rare crash from tapping a panel as it closed, and a map layout bug on some core positions.']
+const WHATS_NEW = { ver: '2.1.0', title: 'Entropy 2.1', items: [
+  ['Bosses fight back', 'Bosses have far more health, the most from Wave 15 to 40 (up to ×7). They used to die within seconds of the first hit; now they take a real fight, and a weak defence can let one through.'],
+  ['Collapse', 'The Collapse combo now takes only a sliver of a boss\'s max health (it was 3% per trigger, which melted bosses whatever their health). Against everything else it\'s unchanged.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
