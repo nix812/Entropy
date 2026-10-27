@@ -779,6 +779,26 @@ const Render = (() => {
       for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const px = x + dx * w, py = y + dy * w, sx2 = dx ? -1 : 1, sy2 = dy ? -1 : 1; c.moveTo(px, py + sy2 * L); c.lineTo(px, py); c.lineTo(px + sx2 * L, py); }
       c.stroke();
     }
+    // core relocation: reach circle, valid tiles, and the planned roads
+    if (G.reloc) {
+      ringS(G.core.x * TILE, G.core.y * TILE, RELOCATE_RADIUS * TILE, PAL.core, 0.55, 1.5, 0.025);
+      const tw = TILE * ws, pa = 0.1 + 0.06 * Math.sin(frame / 9);
+      c.fillStyle = hexA(PAL.core, pa);
+      for (const i of G.reloc.cands) { const x = bx2s((i % COLS) * TILE), y = by2s(((i / COLS) | 0) * TILE); c.fillRect(Math.round(x + tw * 0.18), Math.round(y + tw * 0.18), Math.round(tw * 0.64), Math.round(tw * 0.64)); }
+      const P = G.reloc.plan;
+      if (P) {
+        c.lineCap = 'round'; c.lineJoin = 'round';
+        for (const route of P.routes) {
+          c.beginPath();
+          route.forEach((i, k) => { const x = bx2s(((i % COLS) + 0.5) * TILE), y = by2s((((i / COLS) | 0) + 0.5) * TILE); if (k) c.lineTo(x, y); else c.moveTo(x, y); });
+          c.strokeStyle = 'rgba(7,8,15,0.7)'; c.lineWidth = Math.max(3, tw * 0.3); c.setLineDash([]); c.stroke();
+          c.strokeStyle = hexA(PAL.amber, 0.95); c.lineWidth = Math.max(2, tw * 0.14); c.setLineDash([tw * 0.35, tw * 0.25]); c.lineDashOffset = -frame / 2; c.stroke();
+        }
+        c.setLineDash([]); c.lineCap = 'butt'; c.lineJoin = 'miter';
+        const gx = (P.x + 0.5) * TILE, gy = (P.y + 0.5) * TILE;
+        ringS(gx, gy, TILE * (0.62 + 0.08 * Math.sin(frame / 5)), PAL.core, 1, 2.5, 0.25);
+      }
+    }
     // the old sector border fades out as the camera pulls back
     if (frontier) {
       const age = (performance.now() - frontier.t0) / 1000, a = age < 0.4 ? age / 0.4 : Math.max(0, 1 - (age - 0.4) / 3.2);

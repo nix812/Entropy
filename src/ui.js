@@ -238,16 +238,17 @@ const UI = (() => {
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
     $('#cr').textContent = fmt(G.credits);
     $('#wave').textContent = G.wave;
-    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : G.spawningDone ? (false ? '' : `in ${Math.max(0, Math.ceil(G.next))}s`) : `${G.queue.length + G.enemies.length} left`;
+    const cpWait = G.spawningDone && cpPending();
+    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`;
     $('#score').textContent = fmt(G.score);
-    const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint;
+    const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint && !cpWait;
     const cb = $('#bCall');
     cb.disabled = !canCall && !G.checkpoint;
     cb.classList.toggle('cp', !!G.checkpoint);
     cb.querySelector('span').textContent = G.checkpoint ? 'Resume' : 'Next';
     const cpb = G.checkpoint ? cpBonus() : null;
     cb.querySelector('b').textContent = G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '';
-    $('#cpBanner').hidden = !G.checkpoint;
+    $('#cpBanner').hidden = !G.checkpoint || !!G.reloc;
     if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); $('#cpBanner').querySelector('span').textContent = cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'; $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash'));
     const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
@@ -321,7 +322,7 @@ const UI = (() => {
     panel = null; pick = null;
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null;
-    if (G) G.selCore = false;
+    if (G) { G.selCore = false; G.reloc = null; }
     document.body.classList.remove('panel-l', 'panel-r');
   }
   function openPanel(p) {
@@ -341,6 +342,7 @@ const UI = (() => {
     else if (panel.kind === 'tower') el.innerHTML = towerPanelHTML(panel.t);
     else if (panel.kind === 'core') el.innerHTML = corePanelHTML();
     else if (panel.kind === 'cash') el.innerHTML = cashPanelHTML();
+    else if (panel.kind === 'reloc') el.innerHTML = relocPanelHTML();
     for (const cv of el.querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
     for (const cv of el.querySelectorAll('canvas[data-card]')) Render.towerCard(cv.dataset.card, cv, !!cv.dataset.lock);
     liveRefreshPanel();
@@ -479,11 +481,33 @@ const UI = (() => {
     const wc = coreWeaponCost(), sc = coreShieldCost(), rc = coreRepairCost();
     return `<div class="ph"><div class="pt"><b>Core</b><small>Weapon LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
+      <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
+      ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="lbl">Weapon Element</div>
       <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
-      <div class="pfoot"><button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>Upgrade Weapon · ${fmt(wc)}</button>
-      <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}</div></div>`;
+      ${canRelocate() ? '' : relocHTML()}
+      <div class="pfoot">${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= 12 ? 'disabled' : costBtn(wc)}>${c.wLvl >= 12 ? 'Weapon · Max' : `Upgrade Weapon · ${fmt(wc)}<small>+Damage, new affix</small>`}</button>
+      <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
+  }
+  const relocPrice = () => relocCost() ? `${fmt(RELOCATE_COST)}` : 'Free';
+  function relocHTML() {
+    const free = !relocCost();
+    if (canRelocate()) return `<button class="btn wide reloc" data-act="reloc" ${free ? '' : costBtn(RELOCATE_COST)}>Relocate Core · ${relocPrice()}<small>Up to ${RELOCATE_RADIUS} tiles · roads re-route</small></button>`;
+    return `<div class="sts">${tipify(`Relocate Core: at Checkpoints, field clear · ${free ? 'first move this run is free' : `${fmt(RELOCATE_COST)} credits`}`)}</div>`;
+  }
+  function relocPanelHTML() {
+    const P = G.reloc && G.reloc.plan, cost = relocCost();
+    const head = `<div class="ph"><div class="pt"><b>Relocate Core</b><small>${cost ? `${fmt(RELOCATE_COST)} credits` : 'Free · first move this run'}</small></div><button class="x" data-act="rcancel" aria-label="Cancel">✕</button></div>`;
+    if (!P) return head + `<p class="note">Tap a highlighted tile within ${RELOCATE_RADIUS} tiles of the core. Every road re-routes to reach it. Road no lane uses any more becomes buildable ground.</p>
+      <p class="note">After the free move, each move costs ${fmt(RELOCATE_COST)} credits.</p>
+      <div class="pfoot"><button class="btn" data-act="rcancel">Cancel</button></div>`;
+    const tot = a => a.reduce((x, y) => x + y, 0), d = tot(P.after) - tot(P.before);
+    const rows = P.before.map((b, i) => { const a = P.after[i], dd = a - b, L = G.map.lanes[i]; return `<span>${i === 0 ? 'Main road' : L.openWave ? 'Forming' : 'Lane ' + (i + 1)}<b class="${dd > 0 ? 'good' : dd < 0 ? 'bad' : ''}">${b} → ${a}</b></span>`; }).join('');
+    return head + `<div class="lbl">Road length (tiles)</div><div class="sg">${rows}</div>
+      <div class="sts ${d > 0 ? 'good' : d < 0 ? 'bad' : ''}">${d === 0 ? 'Same total road length' : `${d > 0 ? '+' : '−'}${Math.abs(d)} tiles of road in total`}${d > 0 ? ': enemies walk further' : d < 0 ? ': enemies arrive sooner' : ''}</div>
+      <p class="note">Tap another tile to compare.</p>
+      <div class="pfoot"><button class="btn primary wide" data-act="rgo" ${cost ? costBtn(cost) : ''}>Move Core · ${relocPrice()}</button><button class="btn" data-act="rcancel">Cancel</button></div>`;
   }
   function cashPanelHTML() {
     const r = cashRate() * G.CH.score * (G.scoreMult || 1), cr = Math.floor(G.credits);
@@ -510,7 +534,9 @@ const UI = (() => {
     }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; el.innerHTML = cashPanelHTML(); } return; }
     if (panel.kind === 'core') {
-      const c = G.core;
+      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length;
+      if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
+      panel.sig = sig;
       const a = el.querySelector('[data-live="chp"]'); if (a) a.textContent = `${Math.ceil(c.hp)}/${Math.round(c.max)}`;
       const s = el.querySelector('[data-live="csh"]'); if (s) s.textContent = `${Math.floor(c.shield)}/${Math.round(c.smax)}`;
       const r = el.querySelector('[data-act="cr"]'); if (r && c.hp >= c.max) r.disabled = true;
@@ -553,8 +579,27 @@ const UI = (() => {
       else if (act === 'cw') { if (!coreUpgrade('weapon')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cs') { if (!coreUpgrade('shield')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cr') { if (!coreUpgrade('repair')) SFX.play('deny'); renderPanel(); }
+      else if (act === 'crr') { if (!rerollCore()) SFX.play('deny'); renderPanel(); }
+      else if (act === 'reloc') startReloc();
+      return;
+    }
+    if (panel.kind === 'reloc') {
+      if (act === 'rcancel') endReloc();
+      else if (act === 'rgo') {
+        if (!applyRelocation(G.reloc && G.reloc.plan)) { SFX.play('deny'); return; }
+        const paid = G.relocUsed > 1;
+        endReloc(); toast('CORE RELOCATED', paid ? `−${fmt(RELOCATE_COST)} credits` : 'Next move costs ' + fmt(RELOCATE_COST), '#59f0b4'); updateHud(); Save.save();
+      }
     }
   }
+  function startReloc() {
+    if (!canRelocate()) { SFX.play('deny'); return; }
+    if (relocCost() && G.credits < relocCost()) { SFX.play('deny'); toast('RELOCATE CORE', `Needs ${fmt(RELOCATE_COST)} credits`, '#ff4d6a'); return; }
+    G.reloc = { cands: new Set(relocCandidates()), plan: null };
+    Render.sel = null; G.selCore = false;
+    openPanel({ kind: 'reloc', x: G.map.core.x, y: G.map.core.y });
+  }
+  function endReloc() { if (G) G.reloc = null; Render.sel = null; closePanel(); }
   function openTower(t) {
     Render.sel = { x: t.x, y: t.y }; Render.selT = t; Render.prev = null; G.selCore = false;
     openPanel({ kind: 'tower', t, x: t.x, y: t.y });
@@ -621,6 +666,12 @@ const UI = (() => {
       return;
     }
     const tx = Math.floor(p.x), ty = Math.floor(p.y);
+    if (G.reloc) {
+      if (!G.reloc.cands.has(tIdx(tx, ty))) { SFX.play('deny'); return; }
+      const P = planRelocation(tx, ty);
+      if (!P) { SFX.play('deny'); toast('NO ROUTE', 'A road cannot reach that tile', '#ff4d6a'); return; }
+      SFX.play('ui'); G.reloc.plan = P; Render.sel = { x: tx, y: ty }; renderPanel(); return;
+    }
     if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
     SFX.play('ui');
     if (tx === G.map.core.x && ty === G.map.core.y) return openCore();
@@ -809,7 +860,7 @@ const UI = (() => {
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
       ['Abilities', 'Earned from score milestones. Shown on the left.'],
       ['Bosses', 'Every 10 waves. Drop a boon and a Recalibration token.'],
-      ['Checkpoint', 'The game holds when a wormhole opens. Full refunds, free respec. Resume fast for a bonus.'],
+      ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds, free respec, and you can relocate the core. Resume fast for a bonus.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
@@ -832,7 +883,7 @@ const UI = (() => {
   let helpTab = 'basics', dictCat = 'status', dictQ = '';
   const rng = (lo, hi, div) => div ? `${lo / div}–${hi / div}` : `${lo}–${hi}`;
   function dictData() {
-    const P = { atk: 'Attack towers', pylon: 'Relay Pylon', forge: 'Credit Forge' };
+    const P = { atk: 'Attack towers and the Core', pylon: 'Relay Pylon', forge: 'Credit Forge', core: 'Core' };
     const affRange = A => A.fixed ? (() => { const f = A.fixed.filter(x => x > 0); return f.length > 1 ? `${Math.min(...f)}–${Math.max(...f)}` : `${f[0]}`; })() : rng(A.lo, A.hi, A.div);
     return [
       { id: 'status', name: 'Statuses', rows: [
@@ -849,7 +900,8 @@ const UI = (() => {
         ['Milestone', 'Score threshold. Grants an ability charge and a small bonus.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
-        ['Checkpoint', `Pause before a wormhole's first wave. Full sell refunds and free respec. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
+        ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
+        ['Relocate Core', `At Checkpoints: move the core up to ${RELOCATE_RADIUS} tiles. Every road re-routes to reach it. The first move each run is free, then ${RELOCATE_COST} credits each.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
         ['Common', 'Base value.', RARITY[0].col], ['Magic', '×1.7 value.', RARITY[1].col], ['Rare', '×2.6 value.', RARITY[2].col], ['Legendary', 'Unique effect. See Legendaries.', RARITY[3].col], ['Curse', 'Negative affix. See Curses.', RARITY[4].col],
@@ -1108,6 +1160,7 @@ const UI = (() => {
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
     if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen) { closePanel(); openDraft(G.draft); }
+    if (G && G.reloc && !canRelocate()) endReloc();
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
@@ -1754,7 +1807,7 @@ const Tree = (() => {
     requestAnimationFrame(frame);
     const dt = Math.min(0.1, Math.max(0, (ts - last) / 1000)); last = ts;
     if (UI.screen === 'game' && G) {
-      if (G.checkpoint && !G.paused && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt;
+      if (G.checkpoint && !G.paused && !G.reloc && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt;
       const halted = G.over || G.paused || G.draft || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen;
       if (!halted) {
         acc += dt * G.speed;

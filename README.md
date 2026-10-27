@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 1.15.3 · October 26, 2026**
+**Version at handoff: 1.16.0 · October 26, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v1.15.3.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v1.16.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -124,7 +124,13 @@ Publish `dist/entropy.html` to the existing URL above.
   - Routes may cross existing paths (crossing costs extra in the pathfinder).
   - Pathfinding is Dijkstra on a binary heap.
 - **Warning and opening:** a forming wormhole appears 2 waves before it opens, with its route marked as tile type 5, plus a "WORMHOLE DETECTED" toast.
-- **Checkpoint:** the wave before a wormhole opens is a pause. Sells refund 100% and respecs are free. Resuming quickly pays a bonus that decays over `CP_WINDOW` = 45 s.
+- **Core relocation (v1.16):** at a checkpoint with the field clear (`canRelocate()`), the core panel offers Relocate Core. The first move each run is free, then each costs `RELOCATE_COST` = 800 credits (flat, always shown). Range is `RELOCATE_RADIUS` = 10 tiles from the current core.
+  - `relocCandidates()`: inside the sector (1-tile margin), not an obstacle or tower, at least 6 tiles (Manhattan) from any wormhole. Roads are allowed.
+  - `planRelocation(x, y)` re-paths every lane with `pathfind()` (Dijkstra in the sector). Costs: own road 0.08 (lanes keep their winding shape), roads already re-planned in this move 0.5 (later lanes merge), other lanes' roads 1.2 (crossable, no shortcut), ground 1 + 1.2 per adjacent road. Towers and obstacles block. Routes shorter than 6 fail. The result carries `before`/`after` lengths for the preview.
+  - `applyRelocation(plan)` rewrites tiles (open lanes type 1, forming type 5 with `branch` = whole route), moves `G.core`, builds new lane objects, and remaps `G.prep.queue`/`G.queue` lane references (and rebuilds a Breach rift).
+  - **The sector grows around `G.anchor`** (where the core started), not the current core. Snapshots carry `anchor` and `relocUsed`.
+  - UI: `G.reloc = {cands, plan}`; panel kind `reloc` shows road lengths before → after per lane and the total. The map draws the 10-tile circle, valid tiles, dashed amber routes and a ghost core. The checkpoint banner hides and the bonus timer pauses while relocating.
+- **Checkpoint:** the wave before a wormhole opens is a pause. Since v1.16 it waits for the field to clear (`cpPending()`; HUD says "N left · Checkpoint next", Next is disabled), with a 180 s safety cap so a stuck enemy can never stall a run. Sells refund 100% and respecs are free. Resuming quickly pays a bonus that decays over `CP_WINDOW` = 45 s.
 
 ### 4.3 Towers (12)
 | Tower | Cost | Unlocks at wave | Notes |
@@ -148,6 +154,22 @@ Publish `dist/entropy.html` to the existing URL above.
 - **Elements:** Kinetic K, Thermal T, Cryo C, Arc A, Void V, plus N (neutral).
 - **Statuses:** Burn, Chill (Freeze at 5 stacks), Shock, Mark.
 - **Combos:** Shatter, Thermal Shock, Overload, Superconduct, Collapse.
+
+### 4.3b Core affixes (v1.16)
+- Every Weapon or Shield upgrade rolls one affix with the tower rarity odds (`rollTier`, shared with towers). The pool is every attack-tower affix plus core-only ones, weighted 3× (`CORE_AFFIX_W`):
+
+| Core affix | Common range |
+|---|---|
+| Core max HP | +6–10% |
+| Shield | +10–15% |
+| Shield recharge speed | +15–25% |
+| Hull repair each wave | 2–3% |
+| Leak damage reduction | 5–8% (total capped at 60%) |
+
+- Core legendaries (`CORE_LEGS`): **Bulwark Matrix** (shield refills each wave), **Retribution** (a leak blasts 2.5 tiles for 4× core damage, 1.5 s cooldown), plus Detonator, Siphon, Ricochet, Prism and Echo.
+- Attack affixes work through `coreStats()`: damage, rate, range, crit, status chances, boss and slowed damage, Execute, bounty, pierce and chain (as bullet bounces), splash, and extra targets.
+- **Reroll** rerolls all core affixes for `45 × (1 + 0.5 × rerolls)` (halved by the reroll-discount boon). No curses on the core.
+- `G.core.affixes`/`rerolls` are snapshotted; `coreAffSum(c)` caches `c.A` (sums) and `c.leg`.
 
 ### 4.4 Enemies and bosses
 - **Enemies:** Drone, Swarmer, Juggernaut, Skimmer (flier), Splitter, Phantom (cloaks), Mender, Aegis, Voidling. Elite affixes stack on later waves.
@@ -277,9 +299,13 @@ Publish `dist/entropy.html` to the existing URL above.
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
 | `bossfight.py [seed wave chaos]` | Plays a real boss wave through the live UI loop and reports whether the boon pick appeared. |
 | `updshot.py` | Serves the Pages build at its real URL and checks the auto-update reloads once, from the menu only. |
+| `relocshot.py [W H tag]` | Core affixes, reroll, relocation mode, preview, free then paid move, resume. |
+| `cpwait.py` | Checks the checkpoint holds while enemies remain and starts once the field clears. |
 | `boonshot.py` | Kills a boss and checks the boon pick appears and the game resumes; checks the Gloop family gives one pick. |
 | `expandshot.py [W H chaos]` | Triggers a wormhole detection and screenshots the zoom-out (`x03_expand_*.png`), then jumps to the full map (`x04_full.png`). |
 | `bossshot.py`, `constshot.py`, `navshot.py`, `novashot.py`, `snareshot.py`, `tipshot.py`, `webshot.py` | Focused screenshot scripts for each feature. |
+
+**v1.16.0 check** (same 12 seeds): Normal about 47, Unstable about 38, unchanged within noise from v1.15.
 
 **Balance baseline at v1.15.0** (fresh profile, 0 points, bots, COLS=48, the same 12 seeds; v1.14 in brackets):
 
@@ -307,7 +333,8 @@ The expanding sector made every level a little easier, because the compact early
 10. **Commits** must be authored as Claude with the attribution trailer.
 11. **`G.region` bounds everything placeable.** New code that picks random tiles or spawn points must use `G.region`, not `0..COLS/ROWS`, or things land in unrevealed ground.
 12. **Boss rewards and `G.draft`:** while `G.draft` is set the main loop halts, so the pick screen must always open. `UI.tick` reopens it if a pick is pending and nothing is on screen. Test with `test/boonshot.py`.
-13. **Never mutate `map.lanes[0]` in place** when its shape changes; build a new lane with `makeLane` so walking enemies keep valid geometry.
+13. **Lane objects get replaced** (sector growth and core relocation). Anything that stores a lane reference outside an enemy (queued spawns, the rift) must be remapped, as `applyRelocation` does.
+14. **Never mutate `map.lanes[0]` in place** when its shape changes; build a new lane with `makeLane` so walking enemies keep valid geometry.
 
 ---
 
@@ -350,3 +377,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.15.1 | Fix: boss kills froze the game since 1.11 (the boon pick screen `openDraft` had been deleted). The Gloop family now gives one reward when its last member dies. A pending pick with no screen showing reopens itself. |
 | 1.15.2 | Home Screen auto-update: on launch and on return from background, the GitHub Pages copy fetches itself (`cache: 'reload'`), and if `VERSION` differs it reloads once from the main menu (never mid-run; a sessionStorage guard stops loops). |
 | 1.15.3 | Version watermark in the main menu's bottom-left corner (`#hVer`, set in `renderHangar`). |
+| 1.16 | Core relocation at checkpoints (first free, then 800); core affixes on Weapon/Shield upgrades with reroll; checkpoints wait for a clear field |
