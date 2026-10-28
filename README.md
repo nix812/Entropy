@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 2.2.0 · October 27, 2026**
+**Version at handoff: 2.3.0 · October 27, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v2.2.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v2.3.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). The composer isn't recorded anywhere in either repo (the files were re-encoded, tags stripped); ask Nic if more tracks are wanted. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -210,8 +210,8 @@ Publish `dist/entropy.html` to the existing URL above.
 
 ### 4.4 Enemies and bosses
 - **Enemies:** Drone, Swarmer, Juggernaut, Skimmer (flier), Splitter, Phantom (cloaks), Mender, Aegis, Voidling. Elite affixes stack on later waves.
-- **Core boss rotation:** Behemoth, Hive Queen, Phase Wraith, Overmind, Titan.
-- **Oddball bosses** have a 40% chance from wave 20 (100% with the Cat Nebula law). The wave preview shows them as "Boss ???".
+- **Boss rotation (v2.3):** every boss wave calls `nextBoss(w, r)` in `genWave`: a weighted draw from every boss unlocked by that wave (`BOSS_FROM`, or `from` on the boss): Behemoth, Hive Queen, Mr. Whiskers, Gloop, Quackzilla and The Auditor from 10; Phase Wraith and Wormhole Worm from 15; Overmind, Space Whale and Flying Spaghetti Monster from 20; Immortal Snail from 25; Titan from 30. Never-seen bosses weigh 4, others 0.5 + (waves since seen)/20 up to 4, and the last two drawn are excluded (`G.bossHist`, `G.bossRecent`, both in snapshots). The Cat Nebula law limits the draw to oddballs.
+- **Oddball bosses** are part of the random rotation above. The wave preview shows them as "Boss ???".
 
 | Oddball | What it does |
 |---|---|
@@ -220,6 +220,9 @@ Publish `dist/entropy.html` to the existing URL above.
 | Space Whale | Flies. Its song heals nearby enemies. |
 | Quackzilla | A rubber duck. Quacks, hops forward and briefly disables nearby towers. |
 | Flying Spaghetti Monster | Its noodly appendages disable up to 3 towers, and it drops meatball fliers. |
+| Wormhole Worm (v2.3) | A centipede (head sprite plus 7 trailing `wormSeg` segments drawn along its lane). Every 10 s it burrows for 1 s (untargetable, immune, held) and resurfaces 4–9% further down the road (never past 75%), sometimes on another lane (`wormSurface`). It swallows the nearest tower within 3.2 tiles (2 in its frenzy), and 15% of the time (always in a frenzy) also your top-damage tower anywhere. Swallowed towers live in `e.gut`; `wormRelease` puts them back on death (same tile or nearest free); a breach digests them. hp 26, speed 0.45. Forced into every boss wave, bots leaked it about 1 in 6 through wave 40 and about 2 in 3 at waves 50–60. |
+| The Auditor (v2.3) | Drains 3% of credits + 4 + 1.5×wave every second into `e.audited`; every 9 s freezes your top earner (Credit Forges first, then damage) for 5 s; the empowered audit takes 15% at once and freezes 3. Killing him refunds 125% of the take; a breach keeps it. |
+| The Immortal Snail (v2.3) | hp 70, speed 0.16, 20% armour. Regenerates 1.2% per second after 2 s without being hit (capped at its current phase ceiling). Lays slime (`G.slime`, points on its lane lasting 10 s) that makes other enemies 40% faster. Empowered: heals 8% and slimes 6 tiles behind it. |
 
 - **Boss rework (v2.2).** Nic: bosses were no threat, so their abilities and art went unseen. Four parts:
   - **Adaptive health:** `G.power` is the defence's recent peak total tower DPS (sum of `t.dps` each second, held with ×0.995 decay per second, saved in snapshots). In `spawnBoss`: `hp = max(30 × B.hp × hpMult × bossHpX(w) × …, G.power × BOSS_SECS(w) × B.hp/38)`. `BOSS_HPX` (fixed floor for weak builds) is ×2 at wave 10, ×3 from 20 to 40, ×2 from 60; `BOSS_SECS` runs from 18 s at wave 10 to 28 s from wave 40. Gloop's children use `hpAbs`, so they scale with it.
@@ -230,6 +233,7 @@ Publish `dist/entropy.html` to the existing URL above.
 - **Boss health history:** v2.1 tried a bigger fixed curve (up to ×7); it barely moved fight length for strong builds, which is why v2.2 went adaptive.
 - **Collapse vs bosses:** the combo's max-HP part is 3% for normal enemies but 0.4% for bosses. At 3% it fired about once a second under Void Lens and killed bosses regardless of their health.
 - **Measuring bosses:** `BOSSLOG=1 node test/smartbot.js 1 60 1 1 60` prints each boss's life, time under fire, how far down the road it died, and the top damage sources (from `G.dbgBoss`, collected in `hit()` only when set). `test/bossttk.js` is a controlled version (a set budget of L3 towers against a lone boss).
+- **Snapshots and the new bosses:** bosses aren't saved, so `snapshotRun` writes swallowed towers back into the tower list (when their tile is free) and adds the Auditor's take back to credits.
 - Oddballs have speech bubbles (the `say` FX), custom SFX (`quack`, `meow`, `whale`, `blorp`) and random titles that show on the boss bar.
 
 ### 4.5 Run modifiers
@@ -345,6 +349,7 @@ Publish `dist/entropy.html` to the existing URL above.
 | `lab.js WAVE SEEDS [filter]` | Equal-budget tower lab: each config (every attack tower at L3, Spec 1, Spec 2, plus "pulse+support" mixes at a 30% share) spends the same credits at the best road spots and fights 3 waves with the core held alive. Prints share of wave HP prevented and damage per credit. Set `BMULT` (calibrated: w8 0.559, w14 2.902, w20 2.211) or `CALIB=1` to find it. Survivors at the 1200 s cap count as leaked. **Don't edit `src/` while it runs**: the harness reloads source files for every config. |
 | `bench.js` | Damage per 100 credits for every tower, level and spec against a single target, a pack and a stream. |
 | `monkey.py MINUTES [W H seed]` | Plays the real page with random taps, panel buttons, zooms, reloads, snapshots and wave jumps, checking invariants (finite numbers, one core tile, `towerAt` in sync, no stalls). Prints page errors with stack lines, problems, and where the time went. Screens land in `test/audit/monkey_*`. CPU-starved runs can report false stalls; it now needs 4 s of frozen sim time, and its report includes frame counts so a starved page is easy to spot. |
+| `newbosses.py [W H tag]` | Wormhole Worm intro, walk, burrow, surfacing bite and spit-back on death; Auditor drain, freeze and refund; Snail slime and regen. |
 | `bossintro.py [W H tag boss]` | Boss intro card, phase II and final phase with the empowered ability, damage reduction during the shift, and breach damage. |
 | `newsshot.py [W H tag]` | What's New popup for a returning player, no repeat after closing, Settings, a build-menu role line and the run-recap highlights. |
 | `mkpage.py` | Wraps `dist/entropy.html` with local fonts into `test/out/page.html` for Playwright. **Ad-hoc Playwright scripts must call `mkpage.mk()` after a rebuild**, or they test a stale page. |
@@ -452,3 +457,4 @@ The expanding sector made every level a little easier, because the compact early
 | 2.0 | Whole-game balance and polish pass: tower retune from bot, lab and bench sims (no build stands out); tower roles in the build menu; Gravity Well diminishing pull; Snare net damage bonus; Mixed soundtrack and auto-detected playlists; What's New popup and Settings version row; run highlights in the recap and Hall of Fame; stale-tap crash and serpentine map fixes; monkey, lab, bench and newsshot test tools |
 | 2.1 | Bosses: much more health (×3 at wave 10, ×7 at waves 20–30, easing to ×2.5 from 60); Collapse's max-HP damage on bosses cut from 3% to 0.4%; boss measuring tools |
 | 2.2 | Boss rework: health scales to the defence's peak DPS, three phases with empowered abilities, intro card with portrait and slow motion, breach damage as a share of the core |
+| 2.3 | Random weighted boss rotation; three new oddball bosses: Wormhole Worm, The Auditor, The Immortal Snail |

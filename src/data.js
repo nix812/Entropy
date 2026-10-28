@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,11 +167,11 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '2.2.0', title: 'Entropy 2.2 · Boss Rework', items: [
-  ['Bosses scale to you', 'Every boss sizes its health to your defence\'s recent peak damage, so a strong build gets a real fight instead of a two-second pop.'],
-  ['Three phases', 'At 66% and 33% health a boss phase-shifts: it shrugs off damage for a moment, speeds up and unleashes an empowered version of its ability. The boss bar marks the thresholds.'],
-  ['Grand entrances', 'Each boss arrives with a portrait card, its abilities and a moment of slow motion. Tap the card to skip it.'],
-  ['Breaches hurt', 'A boss that reaches the core takes 35% of its health, more if it got there in a later phase. Their minions and abilities matter now.']
+const WHATS_NEW = { ver: '2.3.0', title: 'Entropy 2.3 · New Bosses', items: [
+  ['Random boss rotation', 'Boss waves no longer follow a fixed order. Each one draws from every boss you\'ve unlocked, favouring ones you haven\'t seen in a while, and never the same one twice in a row.'],
+  ['Wormhole Worm', 'A space centipede that burrows through wormholes and resurfaces further down the road, swallowing towers. Sometimes it hunts your best one. Kill it and it spits them all back out; let it reach the core and they\'re digested.'],
+  ['The Auditor', 'Drains your credits every second and freezes your top earners pending review. Kill him for a full refund, plus 25% interest.'],
+  ['The Immortal Snail', 'Barely moves. Barely dies. Heals whenever you stop shooting, and its slime trail speeds up every enemy behind it.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -211,7 +211,8 @@ const ENEMIES = {
 };
 // what each boss's empowered ability does at a phase change (shown in the phase toast and the intro card)
 const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', wraith: 'a long phase-jump', overmind: 'a massive EMP',
-  titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once' };
+  titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once',
+  worm: 'a feeding frenzy', auditor: 'a full audit', snail: 'a second wind' };
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
@@ -229,6 +230,12 @@ const BOSSES = [
     titles: ['Bath Time Is Over', 'The Rubber Reckoning', 'Squeaks When Hit', 'Unsinkable'] },
   { id: 'fsm', odd: 1, tip: 'Flies, seizes towers', name: 'Flying Spaghetti Monster', hp: 40, spd: 0.5, fly: 1, size: 2, desc: 'Flies. Noodly appendages seize towers. Drops meatballs',
     titles: ['His Noodly Appendage', 'Al Dente', 'Touched By Marinara', 'Pastafarian Prophecy'] },
+  { id: 'worm', odd: 1, from: 15, tip: 'Burrows, swallows towers', name: 'Wormhole Worm', hp: 26, spd: 0.45, size: 2, desc: 'Burrows through wormholes and resurfaces further down the road, swallowing towers. Sometimes it hunts your best one. Kill it to get them back',
+    titles: ['Eater of Turrets', 'Long Boi', 'The Hungry Hyperspace', 'Has Too Many Legs'] },
+  { id: 'auditor', odd: 1, from: 10, tip: 'Drains credits', name: 'The Auditor', hp: 30, spd: 0.55, size: 2, desc: 'Drains your credits while alive and freezes your best towers pending review. Kill him for a full refund, plus interest',
+    titles: ['Department of Intergalactic Revenue', 'Your Receipts, Please', 'Itemized Deductions', 'Form 1040-Z'] },
+  { id: 'snail', odd: 1, from: 25, tip: 'Slow, tough, heals', name: 'The Immortal Snail', hp: 70, spd: 0.16, size: 2, desc: 'Barely moves. Barely dies. Heals whenever you stop shooting, and its slime trail speeds up everything behind it',
+    titles: ['It Is Coming', 'Patience Incarnate', 'One Touch And You Die', 'Inevitable, Eventually'] },
 ];
 const ELITE_AFFIXES = [
   { id: 'shielded', name: 'Shielded', col: '#7fd4ff' , desc: 'Starts with a shield worth 40% of max HP' },

@@ -316,8 +316,43 @@ const Render = (() => {
       for (const [x0, x1] of [[13, 9], [35, 39]]) { for (let y = 3; y < 17; y++) { const x = Math.round(x0 + (x1 - x0) * (1 - (y - 3) / 14)); P(g, x, y, ns); P(g, x + 1, y, n); } }
       for (const x of [9, 39]) { D(g, x, 4, 4, dk); D(g, x, 4, 3, '#ffffff'); D(g, x + (x < 24 ? 1 : -1), 5, 1, '#0a0a0a'); }
     },
+    worm(g) { // the head: armoured purple carapace, mandibles, wormhole-glow eyes
+      const c = '#8a3ad6', dk = '#1e0838', lt = '#c48cff', gl = '#5cf2ff';
+      for (let k = 0; k < 6; k++) { const y = 22 + k * 3; R(g, 4 - k % 2, y, 8, 2, dk); R(g, 36 + k % 2, y, 8, 2, dk); R(g, 5 - k % 2, y, 6, 1, '#4a1a7a'); R(g, 37 + k % 2, y, 6, 1, '#4a1a7a'); }
+      D(g, 24, 26, 17, dk); D(g, 24, 26, 16, c); D(g, 24, 22, 12, sh(c, 0.15));
+      for (let k = 0; k < 4; k++) R(g, 10 + k * 1, 14 + k * 6, 28 - k * 2, 1, sh(c, -0.35));
+      R(g, 12, 9, 24, 4, lt); R(g, 14, 7, 20, 2, sh(lt, 0.2));
+      for (const x of [17, 31]) { D(g, x, 19, 4, '#081a20'); D(g, x, 19, 3, gl); P(g, x - 1, 18, '#ffffff'); D(g, x, 19, 1, '#0a3a48'); }
+      for (const sd of [-1, 1]) for (let i = 0; i < 9; i++) { const x = 24 + sd * (6 + i * 0.6), y = 34 + i; R(g, x - 1, y, 3, 1, dk); P(g, x, y, '#e8d8ff'); }
+      R(g, 19, 36, 10, 4, '#2a0010'); R(g, 20, 37, 8, 2, '#ff4d6a'); for (let x = 20; x < 28; x += 2) P(g, x, 36, '#ffffff');
+      for (const sd of [-1, 1]) for (let i = 0; i < 6; i++) P(g, 24 + sd * (4 + i), 6 - i, i % 2 ? lt : '#ffffff');
+    },
+    auditor(g) { // grey suit, red tie, comb-over, one monocle, a briefcase full of forms
+      const suit = '#4a5266', sd = '#2a3040', skin = '#e8c2a0', dk = '#14161e';
+      R(g, 14, 26, 20, 18, dk); R(g, 15, 27, 18, 16, suit); R(g, 15, 27, 18, 2, sh(suit, 0.2));
+      R(g, 21, 27, 6, 10, '#f0f0f0'); R(g, 23, 28, 2, 9, '#d8281a'); P(g, 23, 37, '#a01810'); P(g, 24, 37, '#a01810');
+      for (let i = 0; i < 6; i++) { P(g, 20 - i % 2, 27 + i, sd); P(g, 28 + i % 2, 27 + i, sd); }
+      R(g, 16, 44, 6, 3, dk); R(g, 26, 44, 6, 3, dk);
+      D(g, 24, 16, 10, dk); D(g, 24, 16, 9, skin); R(g, 15, 9, 18, 3, '#6a5a4a'); for (let x = 16; x < 32; x += 2) P(g, x, 8, '#6a5a4a');
+      R(g, 17, 15, 5, 2, dk); D(g, 29, 16, 3, '#ffd83a'); D(g, 29, 16, 2, '#cfefff'); P(g, 28, 15, '#ffffff'); for (let y = 19; y < 26; y++) P(g, 32, y, '#ffd83a');
+      R(g, 20, 21, 8, 1, '#8a4a3a');
+      R(g, 34, 32, 12, 10, '#2a1408'); R(g, 35, 33, 10, 8, '#7a4a20'); R(g, 38, 30, 4, 2, '#2a1408'); R(g, 39, 36, 2, 2, '#ffd83a');
+      R(g, 2, 30, 10, 13, dk); R(g, 3, 31, 8, 11, '#f0f0f0'); for (let y = 33; y < 41; y += 2) R(g, 4, y, 6, 1, '#8a8fa8'); R(g, 7, 38, 4, 3, '#d8281a');
+    },
+    snail(g) { // a smug little snail with a cosmic swirl shell
+      const body = '#9ad86a', bd = '#2a4a14', sh1 = '#b86cff', sh2 = '#5a2a8a';
+      R(g, 4, 36, 40, 8, bd); R(g, 5, 37, 38, 6, body); R(g, 5, 37, 38, 1, sh(body, 0.3)); for (let x = 7; x < 42; x += 5) P(g, x, 42, sh(body, -0.3));
+      D(g, 22, 24, 15, '#1a0830'); D(g, 22, 24, 14, sh2);
+      for (let a = 0; a < 26; a += 0.04) { const r = 1 + a * 0.5; P(g, 22 + Math.cos(a) * r, 24 + Math.sin(a) * r, a % 1.6 < 0.8 ? sh1 : '#ffd6ff'); }
+      D(g, 22, 24, 2, '#ffffff');
+      for (let i = 0; i < 10; i++) { P(g, 36 + i * 0.2, 34 - i, bd); P(g, 37 + i * 0.2, 34 - i, body); P(g, 40 + i * 0.3, 34 - i, bd); P(g, 41 + i * 0.3, 34 - i, body); }
+      D(g, 38, 23, 3, bd); D(g, 38, 23, 2, '#ffffff'); P(g, 39, 23, '#0a0a0a'); D(g, 44, 23, 3, bd); D(g, 44, 23, 2, '#ffffff'); P(g, 43, 23, '#0a0a0a');
+      R(g, 39, 39, 5, 1, bd);
+    },
   };
-  const BOSS_COL = { cat: '#ff9a3c', gloop: '#5cff7a', whale: '#4f8dff', duck: '#ffd83a', fsm: '#f2d27a' };
+  const BOSS_COL = { cat: '#ff9a3c', gloop: '#5cff7a', whale: '#4f8dff', duck: '#ffd83a', fsm: '#f2d27a', worm: '#c46cff', auditor: '#ffd83a', snail: '#9ad86a' };
+  const wormSeg = () => outlined('owseg', spr('wseg', 22, 22, g => { D(g, 11, 11, 9, '#1e0838'); D(g, 11, 11, 8, '#7a2ec4'); D(g, 11, 9, 5, '#9a5ae0'); R(g, 4, 11, 14, 1, '#4a1a7a');
+    for (const x of [2, 19]) { R(g, x, 13, 1, 6, '#1e0838'); } R(g, 1, 18, 2, 1, '#e8d8ff'); R(g, 19, 18, 2, 1, '#e8d8ff'); P(g, 9, 6, '#c48cff'); }));
   const meatSprite = () => outlined('omeat', spr('meat', 12, 12, g => { D(g, 6, 6, 5, '#2a0a02'); D(g, 6, 6, 4, '#8a3a1a'); D(g, 5, 5, 1, '#c06a3a'); R(g, 6, 2, 3, 2, '#d8281a'); P(g, 8, 8, '#5a1a0a'); }));
   const scCache = {};
   function scaledSpr(k, s, f) { if (scCache[k]) return scCache[k]; const c = document.createElement('canvas'); c.width = Math.round(s.width * f); c.height = Math.round(s.height * f); const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, c.width, c.height); return scCache[k] = c; }
@@ -515,6 +550,15 @@ const Render = (() => {
     const bob = e.fly ? Math.round(Math.sin(frame / 6 + e.wob) * 1.5) : (e.boss ? 0 : (((frame >> 3) + ((e.wob * 10) | 0)) & 1) && !(e.st.frozen > 0) && !(e.st.stun > 0) ? -1 : 0);
     const y = Y - (e.fly ? 7 : 0) + bob;
     let s;
+    if (e.boss === 'worm') {
+      if (e.burrowT > 0) { // only the wormhole shows while it's under
+        const k = (frame % 30) / 30; b.strokeStyle = hexA('#c46cff', 0.8 - k * 0.6); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 6 + k * 14, 0, 6.283); b.stroke();
+        b.fillStyle = 'rgba(10,0,20,0.85)'; b.beginPath(); b.arc(X, Y, 9, 0, 6.283); b.fill(); return;
+      }
+      const sg = wormSeg(), o = {};
+      for (let k = 7; k >= 1; k--) { const dd = e.d - k * 0.42; if (dd < 0) continue; lanePos(e.L, dd, o); const wig = Math.sin(frame / 4 + k) * 1.5;
+        b.drawImage(sg, Math.round(o.x * TILE - 11), Math.round(o.y * TILE - 11 + wig)); }
+    }
     if (e.boss) s = bossSprite(e.boss); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
     if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
     const hw = s.width >> 1, hh = s.height >> 1;
@@ -724,6 +768,7 @@ const Render = (() => {
     drawCore();
     if (odReady()) { const cx = G.core.x * TILE, cy = G.core.y * TILE, k = (frame % 30) / 30;
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
+    if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // pirate drop ships
@@ -1005,6 +1050,9 @@ const Render = (() => {
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
       case 'coin': text(d.x, d.y - 0.6, '+' + d.v, PAL.amber, 15, 1, -0.6); break;
       case 'shake': shakeAt(d.v, 0.3); break;
+      case 'burrow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: TILE * 1.6, life: 0.5, max: 0.5, col: '#c46cff', w: 3, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: TILE * 1.8, r1: 2, life: 0.5, max: 0.5, col: '#5cf2ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 30, '#c46cff', 60 * K, 0.5); break;
+      case 'swallow': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.45, max: 0.45, col: d.back ? '#59f0b4' : '#c46cff', core: 1, w: 5 }); burst(T2P(d.x1), T2P(d.y1), 24, d.back ? '#59f0b4' : '#c46cff', 50 * K, 0.5); break;
+      case 'audit': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.5, max: 0.5, col: '#ffd83a', w: 2 }); burst(T2P(d.x2), T2P(d.y2), 10, '#ffd83a', 30 * K, 0.4); break;
       case 'bossPhase': { const col = BOSS_COL[d.boss] || '#ff3355';
         flashes.push({ col: '#ff3355', life: 0.35, max: 0.35, a: 0.35 });
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: TILE * 4, life: 0.7, max: 0.7, col, w: 4, fill: 1 });
