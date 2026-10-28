@@ -593,7 +593,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -760,11 +760,11 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '2.2.0', title: 'Entropy 2.2 · Boss Rework', items: [
-  ['Bosses scale to you', 'Every boss sizes its health to your defence\'s recent peak damage, so a strong build gets a real fight instead of a two-second pop.'],
-  ['Three phases', 'At 66% and 33% health a boss phase-shifts: it shrugs off damage for a moment, speeds up and unleashes an empowered version of its ability. The boss bar marks the thresholds.'],
-  ['Grand entrances', 'Each boss arrives with a portrait card, its abilities and a moment of slow motion. Tap the card to skip it.'],
-  ['Breaches hurt', 'A boss that reaches the core takes 35% of its health, more if it got there in a later phase. Their minions and abilities matter now.']
+const WHATS_NEW = { ver: '2.3.0', title: 'Entropy 2.3 · New Bosses', items: [
+  ['Random boss rotation', 'Boss waves no longer follow a fixed order. Each one draws from every boss you\'ve unlocked, favouring ones you haven\'t seen in a while, and never the same one twice in a row.'],
+  ['Wormhole Worm', 'A space centipede that burrows through wormholes and resurfaces further down the road, swallowing towers. Sometimes it hunts your best one. Kill it and it spits them all back out; let it reach the core and they\'re digested.'],
+  ['The Auditor', 'Drains your credits every second and freezes your top earners pending review. Kill him for a full refund, plus 25% interest.'],
+  ['The Immortal Snail', 'Barely moves. Barely dies. Heals whenever you stop shooting, and its slime trail speeds up every enemy behind it.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -804,7 +804,8 @@ const ENEMIES = {
 };
 // what each boss's empowered ability does at a phase change (shown in the phase toast and the intro card)
 const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', wraith: 'a long phase-jump', overmind: 'a massive EMP',
-  titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once' };
+  titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once',
+  worm: 'a feeding frenzy', auditor: 'a full audit', snail: 'a second wind' };
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
@@ -822,6 +823,12 @@ const BOSSES = [
     titles: ['Bath Time Is Over', 'The Rubber Reckoning', 'Squeaks When Hit', 'Unsinkable'] },
   { id: 'fsm', odd: 1, tip: 'Flies, seizes towers', name: 'Flying Spaghetti Monster', hp: 40, spd: 0.5, fly: 1, size: 2, desc: 'Flies. Noodly appendages seize towers. Drops meatballs',
     titles: ['His Noodly Appendage', 'Al Dente', 'Touched By Marinara', 'Pastafarian Prophecy'] },
+  { id: 'worm', odd: 1, from: 15, tip: 'Burrows, swallows towers', name: 'Wormhole Worm', hp: 26, spd: 0.45, size: 2, desc: 'Burrows through wormholes and resurfaces further down the road, swallowing towers. Sometimes it hunts your best one. Kill it to get them back',
+    titles: ['Eater of Turrets', 'Long Boi', 'The Hungry Hyperspace', 'Has Too Many Legs'] },
+  { id: 'auditor', odd: 1, from: 10, tip: 'Drains credits', name: 'The Auditor', hp: 30, spd: 0.55, size: 2, desc: 'Drains your credits while alive and freezes your best towers pending review. Kill him for a full refund, plus interest',
+    titles: ['Department of Intergalactic Revenue', 'Your Receipts, Please', 'Itemized Deductions', 'Form 1040-Z'] },
+  { id: 'snail', odd: 1, from: 25, tip: 'Slow, tough, heals', name: 'The Immortal Snail', hp: 70, spd: 0.16, size: 2, desc: 'Barely moves. Barely dies. Heals whenever you stop shooting, and its slime trail speeds up everything behind it',
+    titles: ['It Is Coming', 'Patience Incarnate', 'One Touch And You Die', 'Inevitable, Eventually'] },
 ];
 const ELITE_AFFIXES = [
   { id: 'shielded', name: 'Shielded', col: '#7fd4ff' , desc: 'Starts with a shield worth 40% of max HP' },
@@ -2449,8 +2456,7 @@ function genWave(w, ev) {
     }
     n += grp > 1 ? 2 : 1;
     if (isBoss && n >= Math.floor(count / 2) && !q.some(e => e.boss)) {
-      const core = BOSSES.filter(b => !b.odd), odd = BOSSES.filter(b => b.odd);
-      const B = (w >= 20 && r() < 0.4) || (af.oddAll && w >= 10) ? odd[Math.floor(r() * odd.length)] : core[(Math.floor(w / 10) - 1) % core.length];
+      const B = nextBoss(w, r);
       t += 1.5;
       let bl = laneFor(); if (bl === rift || B.fly) bl = lanes[0];
       q.push({ t, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0 });
@@ -2704,6 +2710,20 @@ const BOSS_HPX = [[10, 2], [20, 3], [40, 3], [60, 2]];
 const bossHpX = w => { const P = BOSS_HPX; if (w <= P[0][0]) return P[0][1]; for (let i = 1; i < P.length; i++) if (w <= P[i][0]) { const [a, va] = P[i - 1], [b, vb] = P[i]; return va + (vb - va) * (w - a) / (b - a); } return P[P.length - 1][1]; };
 const BOSS_SECS = w => 18 + 10 * Math.min(1, Math.max(0, (w - 10) / 30));
 const BOSS_PHASES = [0.66, 0.33];
+// v2.3: every boss wave is a weighted draw from the bosses unlocked by that wave. Never-seen bosses weigh most,
+// and a boss gets likelier the longer it's been away; the last two can't repeat.
+const BOSS_FROM = { behemoth: 10, queen: 10, wraith: 15, overmind: 20, titan: 30, cat: 10, gloop: 10, duck: 10, whale: 20, fsm: 20 };
+function bossFrom(B) { return B.from || BOSS_FROM[B.id] || 10; }
+function nextBoss(w, r) {
+  const H = G.bossHist || (G.bossHist = {}), recent = G.bossRecent || (G.bossRecent = []);
+  let ok = BOSSES.filter(B => bossFrom(B) <= Math.max(10, w) && (!G.af.oddAll || B.odd));
+  if (ok.length > 3) ok = ok.filter(B => !recent.includes(B.id));
+  const wt = ok.map(B => H[B.id] === undefined ? 4 : Math.min(4, 0.5 + (w - H[B.id]) / 20));
+  let x = r() * wt.reduce((a, b) => a + b, 0), k = 0;
+  while (k < ok.length - 1 && (x -= wt[k]) > 0) k++;
+  const B = ok[k]; H[B.id] = w; recent.push(B.id); if (recent.length > 2) recent.shift();
+  return B;
+}
 function spawnBoss(q) {
   const B = BOSSES.find(b => b.id === q.boss), w = G.wave;
   const lane = q.lane, gen = q.gen || 0;
@@ -2718,6 +2738,9 @@ function spawnBoss(q) {
   if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
   if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.6 : 0.45; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
   if (B.id === 'cat') e.timer2 = 9;
+  if (B.id === 'worm') { e.gut = []; e.timer = 6; }
+  if (B.id === 'auditor') { e.audited = 0; e.timer2 = 4; }
+  if (B.id === 'snail') { e.lastHit = G.time; e.armorAll = 0.2; }
   if (q.elite) {
     const pool = ELITE_AFFIXES.filter(a => a.id !== 'split');
     for (let i = 0; i < q.elite; i++) e.elite.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
@@ -2819,13 +2842,14 @@ function updateEnemies(dt) {
       }
     }
     if (e.netHold > 0) e.netHold -= dt;
-    if (st.stun > 0 || st.frozen > 0 || G.stasisT > 0 || e.napT > 0 || e.netHold > 0) { /* held */ }
+    if (st.stun > 0 || st.frozen > 0 || G.stasisT > 0 || e.napT > 0 || e.netHold > 0 || e.burrowT > 0) { /* held */ }
     else {
       let spd = e.spd * (1 - Math.max(enemySlow(e), Math.min(0.75, sw.slow)));
       if (ev.surge) spd *= 1.35;
       spd *= 1 + sw.haste + (G.af.haste || 0) + (sw.inStorm ? 0.12 + (G.af.magnet ? 0.2 : 0) : 0);
       if (G.af.groundSlow && !e.fly) spd *= 1 - G.af.groundSlow;
       spd *= netK;
+      if (G.slime && G.slime.length && e.boss !== 'snail') for (const p of G.slime) if (p.L === e.L && Math.abs(p.d - e.d) < 0.4) { spd *= 1.4; break; }
       e.slow = 1 - spd / e.spd;
       e.d += spd * dt;
     }
@@ -2844,6 +2868,7 @@ function updateEnemies(dt) {
     if (e.d >= e.L.len - 0.05) leak(e);
   }
   if (G.stasisT > 0) G.stasisT -= dt;
+  if (G.slime && G.slime.length) { for (const p of G.slime) p.t -= dt; G.slime = G.slime.filter(p => p.t > 0); }
   G.enemies = G.enemies.filter(e => !e.dead);
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
   // reveal cloak near pylons
@@ -2852,7 +2877,8 @@ function updateEnemies(dt) {
 }
 const PHASE_LINES = { behemoth: ['RRRAAARGH', 'THE GROUND SHAKES'], queen: ['RISE, MY BROOD', 'SKREEEEE'], wraith: ['you cannot hold me', 'between, beyond'],
   overmind: ['YOUR MACHINES ARE MINE', 'SILENCE.'], titan: ['*CRACK*', 'UNSTOPPABLE'], cat: ['HSSSS', '*zoomies*'], whale: ['OOOOOOOOO', 'the deep remembers'],
-  duck: ['QUAAAACK', 'QUACK QUACK QUACK'], fsm: ["R'AMEN!!", 'EXTRA SAUCE'] };
+  duck: ['QUAAAACK', 'QUACK QUACK QUACK'], fsm: ["R'AMEN!!", 'EXTRA SAUCE'], worm: ['*SLURP*', 'MORE. MORE.'],
+  auditor: ['THIS IS AN AUDIT', 'YOU OWE BACK TAXES'], snail: ['...', 'i am still coming'] };
 function bossPhase(e) {
   const th = BOSS_PHASES[e.phase];
   e.phase++;
@@ -2866,8 +2892,55 @@ function bossPhase(e) {
   Hooks.toast(e.phase === 1 ? 'PHASE II' : 'FINAL PHASE', `${e.bossName} unleashes ${BOSS_POWER[e.boss] || 'its power'}`, '#ff4d6a', true);
   Hooks.log(`${e.bossName} enters ${e.phase === 1 ? 'phase II' : 'its final phase'}`, '#ff4d6a');
 }
+// Wormhole Worm: resurfaces further along (sometimes on another lane) and swallows towers near where it comes up;
+// now and then (always in a frenzy) it hunts your strongest tower anywhere. Killing it spits them all back out.
+function swallowTower(e, t) {
+  G.towers = G.towers.filter(o => o !== t); delete G.towerAt[tIdx(t.x, t.y)];
+  t.disabled = 0; e.gut.push(t); recomputeAuras();
+  Hooks.fx('swallow', { x1: t.cx, y1: t.cy, x2: e.x, y2: e.y }); Hooks.sfx('crack');
+}
+function wormSurface(e) {
+  const frac = Math.min(0.75, e.d / e.L.len + 0.04 + G.r() * 0.05); // never pops up right on top of the core
+  const lanes = G.map.lanes.filter(L => !L.openWave);
+  if (lanes.length > 1 && G.r() < 0.35) e.L = pick(G.r, lanes);
+  e.d = Math.max(e.d, frac * e.L.len); lanePos(e.L, e.d, e);
+  Hooks.fx('burrow', { x: e.x, y: e.y }); Hooks.fx('shake', { v: 5 });
+  const n = e.frenzy ? 2 : 1;
+  const near = G.towers.filter(t => dist2(t.cx, t.cy, e.x, e.y) <= 3.2 * 3.2).sort((a, b) => dist2(a.cx, a.cy, e.x, e.y) - dist2(b.cx, b.cy, e.x, e.y));
+  const got = near.slice(0, n);
+  if ((e.frenzy || G.r() < 0.15) && G.towers.length > 3) { // the hunt: your best tower, wherever it is
+    const best = G.towers.filter(t => !got.includes(t)).sort((a, b) => b.dmgDone - a.dmgDone)[0];
+    if (best) { got.push(best); Hooks.toast('THE WORM HUNTS', `It swallowed ${best.name || TOWERS[best.type].name}. Kill it to get it back`, '#c46cff', true); }
+  }
+  for (const t of got) swallowTower(e, t);
+  if (got.length) { Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: ['*CHOMP*', 'nom.', '*gulp*', 'crunchy'][Math.floor(G.r() * 4)] }); Hooks.log(`Wormhole Worm swallowed ${got.length > 1 ? got.length + ' towers' : 'a tower'}`, '#c46cff'); }
+  e.frenzy = 0;
+}
+function wormRelease(e) { // put swallowed towers back where they stood (or the nearest free tile)
+  let back = 0;
+  for (const t of e.gut || []) {
+    let spot = canBuildAt(t.x, t.y) ? [t.x, t.y] : null;
+    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (canBuildAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
+    if (!spot) continue;
+    t.x = spot[0]; t.y = spot[1]; t.cx = t.x + 0.5; t.cy = t.y + 0.5; t.disabled = 1;
+    G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t; back++;
+    Hooks.fx('swallow', { x1: e.x, y1: e.y, x2: t.cx, y2: t.cy, back: 1 });
+  }
+  e.gut = [];
+  if (back) { recomputeAuras(); Hooks.toast('SPAT OUT', `${back} swallowed tower${back > 1 ? 's' : ''} returned`, '#59f0b4', true); }
+}
 function bossBehavior(e, dt) {
   if (e.phaseT > 0) e.phaseT -= dt;
+  if (e.boss === 'worm' && e.burrowT > 0) { e.burrowT -= dt; if (e.burrowT <= 0) wormSurface(e); return; }
+  if (e.boss === 'auditor') { // drains credits every second; refunded with interest when he dies
+    e.drainT = (e.drainT || 0) + dt;
+    if (e.drainT >= 1) { e.drainT = 0; const take = Math.min(G.credits, Math.round(G.credits * 0.03 + 4 + G.wave * 1.5)); if (take > 0) { G.credits -= take; e.audited += take; Hooks.fx('num', { x: e.x, y: e.y - 0.5, v: take, combo: 'TAXED', col: '#ffb03a' }); } }
+  }
+  if (e.boss === 'snail') {
+    if (G.time - e.lastHit > 2) { const cap = e.maxHp * (e.phase ? BOSS_PHASES[e.phase - 1] : 1); if (e.hp < cap) { e.hp = Math.min(cap, e.hp + e.maxHp * 0.012 * dt); if ((G.time * 2 | 0) % 4 === 0 && G.r() < dt * 2) Hooks.fx('heal', { x: e.x, y: e.y }); } }
+    e.slimeT = (e.slimeT || 0) - dt;
+    if (e.slimeT <= 0) { e.slimeT = 0.4; (G.slime || (G.slime = [])).push({ L: e.L, d: e.d, x: e.x, y: e.y, t: 10 }); }
+  }
   if (e.timer > 0) return;
   const big = e.empowered ? 1 : 0; e.empowered = 0;
   switch (e.boss) {
@@ -2908,6 +2981,22 @@ function bossBehavior(e, dt) {
       e.d += big ? 3 : 0.8;
       for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= (big ? 12 : 4)) t.disabled = Math.max(t.disabled, big ? 2.5 : 1.2);
       Hooks.fx('emp', { x: e.x, y: e.y, r: 2 }); Hooks.fx('say', { x: e.x, y: e.y, t: 'QUACK' }); Hooks.sfx('quack'); break;
+    case 'worm': // dive into a wormhole; wormSurface handles the bite
+      e.timer = big ? 3 : 10; e.burrowT = big ? 0.8 : 1; e.frenzy = big ? 1 : 0;
+      Hooks.fx('burrow', { x: e.x, y: e.y }); Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: big ? '*SLURP*' : '*burrows*' }); Hooks.sfx('blink'); break;
+    case 'auditor': {
+      e.timer = 9;
+      if (big) { const take = Math.round(G.credits * 0.15); G.credits -= take; e.audited += take; Hooks.fx('num', { x: e.x, y: e.y - 0.5, v: take, combo: 'FULL AUDIT', col: '#ffb03a' }); }
+      // freeze the biggest earners "pending review": Credit Forges first, then the top damage dealers
+      const pool = G.towers.filter(t => t.disabled <= 0).sort((a, b) => ((b.s.kind === 'eco') - (a.s.kind === 'eco')) || b.dmgDone - a.dmgDone).slice(0, big ? 3 : 1);
+      for (const t of pool) { t.disabled = Math.max(t.disabled, 5); Hooks.fx('audit', { x1: e.x, y1: e.y, x2: t.cx, y2: t.cy }); }
+      if (pool.length) { Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: ['Pending review.', 'Receipts?', 'Interesting...', 'Denied.'][Math.floor(G.r() * 4)] }); Hooks.log(`The Auditor froze ${pool.length > 1 ? pool.length + ' towers' : 'a tower'} pending review`, '#ffb03a'); }
+      break;
+    }
+    case 'snail':
+      e.timer = 6;
+      if (big) { e.hp = Math.min(e.maxHp * BOSS_PHASES[e.phase - 1], e.hp + e.maxHp * 0.08); for (let k = 1; k <= 12; k++) (G.slime || (G.slime = [])).push({ L: e.L, d: Math.max(0, e.d - k * 0.5), ...lanePos(e.L, Math.max(0, e.d - k * 0.5), {}), t: 12 }); Hooks.fx('heal', { x: e.x, y: e.y }); }
+      Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: ['...', '.....', 'soon.', '*schlorp*'][Math.floor(G.r() * 4)] }); break;
     case 'fsm': {
       e.timer = 6; e.timer2 = (e.timer2 || 0) + 1;
       const near = G.towers.filter(t => dist2(t.cx, t.cy, e.x, e.y) <= 9).sort((a, b) => dist2(a.cx, a.cy, e.x, e.y) - dist2(b.cx, b.cy, e.x, e.y)).slice(0, big ? 7 : 3);
@@ -2927,6 +3016,8 @@ function leak(e) {
   let dmg = e.leak * (1 + 0.03 * w);
   // a boss that reaches the core breaches it: a fixed share of the core, so it always hurts and is never a free pass
   if (e.boss) dmg = e.gen ? c.max * (e.gen === 1 ? 0.12 : 0.06) : c.max * (0.35 + 0.1 * (e.phase || 0));
+  if (e.boss === 'worm' && e.gut && e.gut.length) { Hooks.toast('DIGESTED', `${e.gut.length} swallowed tower${e.gut.length > 1 ? 's are' : ' is'} gone for good`, '#ff4d6a', true); e.gut = []; }
+  if (e.boss === 'auditor' && e.audited > 0) { Hooks.log(`The Auditor left with ${Math.round(e.audited)} of your credits`, '#ff4d6a'); e.audited = 0; }
   if (e.shield > 0 && e.boss) dmg *= 1.2;
   if (c.A && c.A.cguard) dmg *= 1 - Math.min(0.6, c.A.cguard / 100);
   if (c.leg && c.leg.retribution && G.time - (c.retT || -99) > 1.5) {
@@ -2952,7 +3043,8 @@ function leak(e) {
 
 // ---------- damage ----------
 function hit(e, dmg, el, src, o) {
-  if (e.dead || dmg <= 0) return 0;
+  if (e.dead || dmg <= 0 || e.burrowT > 0) return 0;
+  if (e.boss) e.lastHit = G.time;
   o = o || {};
   const M = G.mods, st = e.st;
   let mult = 1;
@@ -3160,6 +3252,8 @@ function kill(e, src, o) {
     Hooks.fx('emp', { x: e.x, y: e.y, r: 1.2 });
   }
   // Gloop's offspring are part of one boss: the reward comes when the last of the family dies
+  if (e.boss === 'worm' && e.gut && e.gut.length) wormRelease(e);
+  if (e.boss === 'auditor' && e.audited > 0) { const back = Math.round(e.audited * 1.25); G.credits += back; Hooks.toast('TAX REFUND', `+${back} credits, with 25% interest`, '#59f0b4', true); Hooks.fx('num', { x: e.x, y: e.y - 0.5, v: back, combo: 'REFUND', col: '#59f0b4' }); e.audited = 0; }
   const bossDown = e.boss && (e.boss !== 'gloop' || ((e.gen || 0) >= 2 && !G.enemies.some(o => o !== e && !o.dead && o.boss === 'gloop')));
   if (bossDown) {
     G.tokens++; G.stats.bossKills++; addEntropy(15);
@@ -3191,7 +3285,7 @@ function takeBoon(b) {
 }
 
 // ---------- tower combat ----------
-function enemyTargetable(e) { return !e.dead && (!e.cloaked || e.revealed > 0); }
+function enemyTargetable(e) { return !e.dead && !(e.burrowT > 0) && (!e.cloaked || e.revealed > 0); }
 function findTargets(t, range, n, exclude) {
   const r2 = range * range, out = [];
   const cand = [];
@@ -3782,13 +3876,14 @@ function abandonRun() {
 // ---------- snapshots (resume after the app is closed) ----------
 function snapshotRun(waveNum) {
   if (!G || G.over) return;
-  const tw = G.towers.map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
+  const gut = []; let owed = 0; for (const e of G.enemies) if (!e.dead) { if (e.gut) for (const t of e.gut) if (!G.towerAt[tIdx(t.x, t.y)]) gut.push(t); if (e.audited) owed += e.audited; }
+  const tw = G.towers.concat(gut).map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
     vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc }));
   PROF.runSnap = {
-    seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits), score: Math.round(G.score),
+    seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0,
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [],
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -3806,7 +3901,7 @@ function resumeRun(S) {
   const ci = S.tiles.indexOf(4);
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
-  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0;
+  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice();
   setNodes((S.nodes || []).slice()); G.caches = []; G.pirates = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};
@@ -4498,8 +4593,43 @@ const Render = (() => {
       for (const [x0, x1] of [[13, 9], [35, 39]]) { for (let y = 3; y < 17; y++) { const x = Math.round(x0 + (x1 - x0) * (1 - (y - 3) / 14)); P(g, x, y, ns); P(g, x + 1, y, n); } }
       for (const x of [9, 39]) { D(g, x, 4, 4, dk); D(g, x, 4, 3, '#ffffff'); D(g, x + (x < 24 ? 1 : -1), 5, 1, '#0a0a0a'); }
     },
+    worm(g) { // the head: armoured purple carapace, mandibles, wormhole-glow eyes
+      const c = '#8a3ad6', dk = '#1e0838', lt = '#c48cff', gl = '#5cf2ff';
+      for (let k = 0; k < 6; k++) { const y = 22 + k * 3; R(g, 4 - k % 2, y, 8, 2, dk); R(g, 36 + k % 2, y, 8, 2, dk); R(g, 5 - k % 2, y, 6, 1, '#4a1a7a'); R(g, 37 + k % 2, y, 6, 1, '#4a1a7a'); }
+      D(g, 24, 26, 17, dk); D(g, 24, 26, 16, c); D(g, 24, 22, 12, sh(c, 0.15));
+      for (let k = 0; k < 4; k++) R(g, 10 + k * 1, 14 + k * 6, 28 - k * 2, 1, sh(c, -0.35));
+      R(g, 12, 9, 24, 4, lt); R(g, 14, 7, 20, 2, sh(lt, 0.2));
+      for (const x of [17, 31]) { D(g, x, 19, 4, '#081a20'); D(g, x, 19, 3, gl); P(g, x - 1, 18, '#ffffff'); D(g, x, 19, 1, '#0a3a48'); }
+      for (const sd of [-1, 1]) for (let i = 0; i < 9; i++) { const x = 24 + sd * (6 + i * 0.6), y = 34 + i; R(g, x - 1, y, 3, 1, dk); P(g, x, y, '#e8d8ff'); }
+      R(g, 19, 36, 10, 4, '#2a0010'); R(g, 20, 37, 8, 2, '#ff4d6a'); for (let x = 20; x < 28; x += 2) P(g, x, 36, '#ffffff');
+      for (const sd of [-1, 1]) for (let i = 0; i < 6; i++) P(g, 24 + sd * (4 + i), 6 - i, i % 2 ? lt : '#ffffff');
+    },
+    auditor(g) { // grey suit, red tie, comb-over, one monocle, a briefcase full of forms
+      const suit = '#4a5266', sd = '#2a3040', skin = '#e8c2a0', dk = '#14161e';
+      R(g, 14, 26, 20, 18, dk); R(g, 15, 27, 18, 16, suit); R(g, 15, 27, 18, 2, sh(suit, 0.2));
+      R(g, 21, 27, 6, 10, '#f0f0f0'); R(g, 23, 28, 2, 9, '#d8281a'); P(g, 23, 37, '#a01810'); P(g, 24, 37, '#a01810');
+      for (let i = 0; i < 6; i++) { P(g, 20 - i % 2, 27 + i, sd); P(g, 28 + i % 2, 27 + i, sd); }
+      R(g, 16, 44, 6, 3, dk); R(g, 26, 44, 6, 3, dk);
+      D(g, 24, 16, 10, dk); D(g, 24, 16, 9, skin); R(g, 15, 9, 18, 3, '#6a5a4a'); for (let x = 16; x < 32; x += 2) P(g, x, 8, '#6a5a4a');
+      R(g, 17, 15, 5, 2, dk); D(g, 29, 16, 3, '#ffd83a'); D(g, 29, 16, 2, '#cfefff'); P(g, 28, 15, '#ffffff'); for (let y = 19; y < 26; y++) P(g, 32, y, '#ffd83a');
+      R(g, 20, 21, 8, 1, '#8a4a3a');
+      R(g, 34, 32, 12, 10, '#2a1408'); R(g, 35, 33, 10, 8, '#7a4a20'); R(g, 38, 30, 4, 2, '#2a1408'); R(g, 39, 36, 2, 2, '#ffd83a');
+      R(g, 2, 30, 10, 13, dk); R(g, 3, 31, 8, 11, '#f0f0f0'); for (let y = 33; y < 41; y += 2) R(g, 4, y, 6, 1, '#8a8fa8'); R(g, 7, 38, 4, 3, '#d8281a');
+    },
+    snail(g) { // a smug little snail with a cosmic swirl shell
+      const body = '#9ad86a', bd = '#2a4a14', sh1 = '#b86cff', sh2 = '#5a2a8a';
+      R(g, 4, 36, 40, 8, bd); R(g, 5, 37, 38, 6, body); R(g, 5, 37, 38, 1, sh(body, 0.3)); for (let x = 7; x < 42; x += 5) P(g, x, 42, sh(body, -0.3));
+      D(g, 22, 24, 15, '#1a0830'); D(g, 22, 24, 14, sh2);
+      for (let a = 0; a < 26; a += 0.04) { const r = 1 + a * 0.5; P(g, 22 + Math.cos(a) * r, 24 + Math.sin(a) * r, a % 1.6 < 0.8 ? sh1 : '#ffd6ff'); }
+      D(g, 22, 24, 2, '#ffffff');
+      for (let i = 0; i < 10; i++) { P(g, 36 + i * 0.2, 34 - i, bd); P(g, 37 + i * 0.2, 34 - i, body); P(g, 40 + i * 0.3, 34 - i, bd); P(g, 41 + i * 0.3, 34 - i, body); }
+      D(g, 38, 23, 3, bd); D(g, 38, 23, 2, '#ffffff'); P(g, 39, 23, '#0a0a0a'); D(g, 44, 23, 3, bd); D(g, 44, 23, 2, '#ffffff'); P(g, 43, 23, '#0a0a0a');
+      R(g, 39, 39, 5, 1, bd);
+    },
   };
-  const BOSS_COL = { cat: '#ff9a3c', gloop: '#5cff7a', whale: '#4f8dff', duck: '#ffd83a', fsm: '#f2d27a' };
+  const BOSS_COL = { cat: '#ff9a3c', gloop: '#5cff7a', whale: '#4f8dff', duck: '#ffd83a', fsm: '#f2d27a', worm: '#c46cff', auditor: '#ffd83a', snail: '#9ad86a' };
+  const wormSeg = () => outlined('owseg', spr('wseg', 22, 22, g => { D(g, 11, 11, 9, '#1e0838'); D(g, 11, 11, 8, '#7a2ec4'); D(g, 11, 9, 5, '#9a5ae0'); R(g, 4, 11, 14, 1, '#4a1a7a');
+    for (const x of [2, 19]) { R(g, x, 13, 1, 6, '#1e0838'); } R(g, 1, 18, 2, 1, '#e8d8ff'); R(g, 19, 18, 2, 1, '#e8d8ff'); P(g, 9, 6, '#c48cff'); }));
   const meatSprite = () => outlined('omeat', spr('meat', 12, 12, g => { D(g, 6, 6, 5, '#2a0a02'); D(g, 6, 6, 4, '#8a3a1a'); D(g, 5, 5, 1, '#c06a3a'); R(g, 6, 2, 3, 2, '#d8281a'); P(g, 8, 8, '#5a1a0a'); }));
   const scCache = {};
   function scaledSpr(k, s, f) { if (scCache[k]) return scCache[k]; const c = document.createElement('canvas'); c.width = Math.round(s.width * f); c.height = Math.round(s.height * f); const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, c.width, c.height); return scCache[k] = c; }
@@ -4697,6 +4827,15 @@ const Render = (() => {
     const bob = e.fly ? Math.round(Math.sin(frame / 6 + e.wob) * 1.5) : (e.boss ? 0 : (((frame >> 3) + ((e.wob * 10) | 0)) & 1) && !(e.st.frozen > 0) && !(e.st.stun > 0) ? -1 : 0);
     const y = Y - (e.fly ? 7 : 0) + bob;
     let s;
+    if (e.boss === 'worm') {
+      if (e.burrowT > 0) { // only the wormhole shows while it's under
+        const k = (frame % 30) / 30; b.strokeStyle = hexA('#c46cff', 0.8 - k * 0.6); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 6 + k * 14, 0, 6.283); b.stroke();
+        b.fillStyle = 'rgba(10,0,20,0.85)'; b.beginPath(); b.arc(X, Y, 9, 0, 6.283); b.fill(); return;
+      }
+      const sg = wormSeg(), o = {};
+      for (let k = 7; k >= 1; k--) { const dd = e.d - k * 0.42; if (dd < 0) continue; lanePos(e.L, dd, o); const wig = Math.sin(frame / 4 + k) * 1.5;
+        b.drawImage(sg, Math.round(o.x * TILE - 11), Math.round(o.y * TILE - 11 + wig)); }
+    }
     if (e.boss) s = bossSprite(e.boss); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
     if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
     const hw = s.width >> 1, hh = s.height >> 1;
@@ -4906,6 +5045,7 @@ const Render = (() => {
     drawCore();
     if (odReady()) { const cx = G.core.x * TILE, cy = G.core.y * TILE, k = (frame % 30) / 30;
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
+    if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // pirate drop ships
@@ -5187,6 +5327,9 @@ const Render = (() => {
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
       case 'coin': text(d.x, d.y - 0.6, '+' + d.v, PAL.amber, 15, 1, -0.6); break;
       case 'shake': shakeAt(d.v, 0.3); break;
+      case 'burrow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: TILE * 1.6, life: 0.5, max: 0.5, col: '#c46cff', w: 3, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: TILE * 1.8, r1: 2, life: 0.5, max: 0.5, col: '#5cf2ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 30, '#c46cff', 60 * K, 0.5); break;
+      case 'swallow': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.45, max: 0.45, col: d.back ? '#59f0b4' : '#c46cff', core: 1, w: 5 }); burst(T2P(d.x1), T2P(d.y1), 24, d.back ? '#59f0b4' : '#c46cff', 50 * K, 0.5); break;
+      case 'audit': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.5, max: 0.5, col: '#ffd83a', w: 2 }); burst(T2P(d.x2), T2P(d.y2), 10, '#ffd83a', 30 * K, 0.4); break;
       case 'bossPhase': { const col = BOSS_COL[d.boss] || '#ff3355';
         flashes.push({ col: '#ff3355', life: 0.35, max: 0.35, a: 0.35 });
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: TILE * 4, life: 0.7, max: 0.7, col, w: 4, fill: 1 });
@@ -6513,6 +6656,7 @@ const UI = (() => {
     Hooks.onEntropy = () => {};
   }
   function tick(dt) {
+    if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
