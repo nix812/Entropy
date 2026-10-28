@@ -312,6 +312,25 @@ const UI = (() => {
     while (box.children.length > 2) box.removeChild(box.firstChild);
     setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 400); }, (body || '').length > 44 ? 4500 : 2200);
   }
+  // boss arrival: a portrait card and a moment of slow motion, so every boss gets its entrance
+  let bossT = null;
+  function bossIntro(e, B) {
+    const box = $('#bossIntro'); if (!box) return;
+    const first = !PROF.codex.bosses[B.id];
+    box.querySelector('em').textContent = first ? 'NEW BOSS · FIRST ENCOUNTER' : B.odd ? 'BOSS?!' : 'BOSS INCOMING';
+    box.querySelector('h3').textContent = B.name;
+    box.querySelector('.ttl').textContent = e.bossTitle || '';
+    box.querySelector('.desc').textContent = B.desc;
+    box.querySelector('.ph').textContent = B.id === 'gloop' ? 'Pop it. Then pop the pieces.' : `Phase II at 66% and a final phase at 33%: each time it unleashes ${BOSS_POWER[B.id] || 'its power'}.`;
+    Render.bossPortrait(B.id, box.querySelector('canvas'));
+    box.classList.remove('out'); box.hidden = false;
+    UI.slowmo = 1.4;
+    clearTimeout(bossT);
+    const hide = () => { box.classList.add('out'); bossT = setTimeout(() => { box.hidden = true; box.classList.remove('out'); }, 350); };
+    box.onclick = () => { clearTimeout(bossT); UI.slowmo = 0; hide(); };
+    bossT = setTimeout(hide, first ? 4800 : 3400);
+    log(`${B.name} incoming`, '#ff4d6a');
+  }
   function log(text, col) {
     logLines.push({ text, col });
     if (logLines.length > 7) logLines.shift();
@@ -1197,6 +1216,7 @@ const UI = (() => {
     // hooks
     Hooks.sfx = (n, a) => SFX.play(n, a);
     Hooks.fx = (t, d) => Render.fx(t, d);
+    Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.log = log;
     Hooks.toast = toast;
     Hooks.onDraft = opts => { closePanel(); openDraft(opts); };
@@ -1210,6 +1230,7 @@ const UI = (() => {
     Hooks.onEntropy = () => {};
   }
   function tick(dt) {
+    const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
     if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen) { closePanel(); openDraft(G.draft); }
@@ -1217,7 +1238,7 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews,
+    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, slowmo: 0,
     get screen() { return screen; }, get modalOpen() { return modalOpen; },
   };
 })();
@@ -1864,9 +1885,10 @@ const Tree = (() => {
     const dt = Math.min(0.1, Math.max(0, (ts - last) / 1000)); last = ts;
     if (UI.screen === 'game' && G) {
       if (G.checkpoint && !G.paused && !G.reloc && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt;
+      if (UI.slowmo > 0) UI.slowmo -= dt;
       const halted = G.over || G.paused || G.draft || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen;
       if (!halted) {
-        acc += dt * G.speed;
+        acc += dt * G.speed * (UI.slowmo > 0 ? 0.3 : 1);
         let n = 0;
         while (acc >= STEP && n < 10) { simStep(STEP); acc -= STEP; n++; }
         if (n >= 10) acc = 0;

@@ -190,6 +190,7 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .evchip.next.bad { color: #ff8a9c; } .evchip.next.good { color: var(--core); }
 #toasts { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; z-index: 30; width: min(520px, 70%); }
 body.modal-open #toasts { display: none; }
+body.bossbar #toasts { top: 58px; }
 body.panel-l #toasts { left: calc(50% + 140px); width: min(400px, 46%); }
 body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 .toast { background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 1px var(--c), 0 0 18px rgba(0,0,0,0.5); padding: 4px 10px; display: flex; gap: 8px; align-items: baseline; animation: tin 0.2s; transition: opacity 0.4s; max-width: 100%; }
@@ -197,6 +198,20 @@ body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 .toast span { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .toast.out { opacity: 0; }
 @keyframes tin { from { transform: translateY(-6px); opacity: 0; } }
+#bossIntro { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 31; display: flex; gap: 14px; align-items: center; width: min(520px, 76%);
+  background: linear-gradient(90deg, rgba(40,4,14,0.94), rgba(7,8,15,0.94)); box-shadow: inset 0 0 0 2px #ff3355, 0 0 40px rgba(255,51,85,0.35); padding: 12px 16px; animation: bossin 0.35s ease-out; }
+#bossIntro[hidden] { display: none; }
+#bossIntro.out { animation: bossout 0.35s ease-in forwards; }
+#bossIntro canvas { width: 112px; height: 112px; flex: none; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(255,51,85,0.6)); animation: bossbob 1.2s ease-in-out infinite; }
+#bossIntro .bi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+#bossIntro em { font-style: normal; font-family: var(--f-pix); font-size: 9px; letter-spacing: 2px; color: #ff3355; animation: blink 0.6s steps(2) infinite; }
+#bossIntro h3 { margin: 0; font-family: var(--f-pix); font-size: 20px; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+#bossIntro .ttl { margin: 0; color: #ff9aac; font-size: 15px; }
+#bossIntro .desc { margin: 0; color: #e8e6dc; font-size: 15px; line-height: 1.15; }
+#bossIntro .ph { margin: 0; color: #8a8fa8; font-size: 13px; }
+@keyframes bossin { from { opacity: 0; transform: translate(-50%, -50%) scale(1.25); filter: brightness(3); } }
+@keyframes bossout { to { opacity: 0; transform: translate(-50%, -70%); } }
+@keyframes bossbob { 50% { transform: translateY(-3px); } }
 #log, #dps { display: none; position: absolute; pointer-events: none; z-index: 3; font-size: 14px; }
 body.hudfull #log, body.hudfull #dps { display: block; }
 #log { left: 6px; bottom: 6px; max-width: 40%; font-size: 14px; text-shadow: 1px 1px 0 #000; }
@@ -556,6 +571,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 
   <div id="modal" hidden></div>
   <div id="toasts"></div>
+  <div id="bossIntro" hidden><canvas width="144" height="144"></canvas><div class="bi"><em></em><h3></h3><p class="ttl"></p><p class="desc"></p><p class="ph"></p></div></div>
 </div>
 
 <script>

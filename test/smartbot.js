@@ -62,7 +62,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     if (process.env.BOSSLOG) {
       if (!G.dbgBoss) G.dbgBoss = {};
       for (const e of G.enemies) if (e.boss && !e.gen && !e._t0) { e._t0 = t; e._w = G.wave; (G._bl || (G._bl = [])).push(e); }
-      for (const e of G._bl || []) if (e.dead && !e._logged) { e._logged = 1; console.log(`BOSS w${e._w} ${e.boss} life=${(t - e._t0).toFixed(1)}s fire=${(G.time - (e._hit0 || G.time)).toFixed(1)}s road=${(e.d / e.L.len).toFixed(2)} ${e.hp > 0 ? 'LEAKED' : 'killed'} ${Object.entries(G.dbgBoss).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => k + ':' + Math.round(v / e.maxHp * 100) + '%').join(' ')}`); G.dbgBoss = {}; }
+      for (const e of G._bl || []) if (e.dead && !e._logged) { e._logged = 1; console.log(`BOSS w${e._w} ${e.boss} life=${(t - e._t0).toFixed(1)}s fire=${(G.time - (e._hit0 || G.time)).toFixed(1)}s road=${(e.d / e.L.len).toFixed(2)} ${e.hp > 0 ? "LEAKED" : "killed"} ph=${e.phase} hp=${Math.round(e.maxHp)} pw=${Math.round(G.power || 0)} ${Object.entries(G.dbgBoss).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => k + ':' + Math.round(v / e.maxHp * 100) + '%').join(' ')}`); G.dbgBoss = {}; }
     }
     while (q.length) q.shift()();
     met.minCore = Math.min(met.minCore, G.core.hp / G.core.max);

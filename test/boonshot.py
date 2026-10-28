@@ -17,7 +17,7 @@ with sync_playwright() as p:
     # a core boss on the field, then kill it
     pg.evaluate('() => { G.wave = 10; spawnBoss({ boss: "behemoth", L: G.map.lanes[0], d: 3, hpm: 1 }); }')
     pg.wait_for_timeout(200)
-    r = pg.evaluate('() => { const e = G.enemies.find(e => e.boss); hit(e, e.hp + e.shield + 1e9, "K", null, { noStatus: 1 }); return { dead: e.dead, draft: !!G.draft, modal: UI.modalOpen, tokens: G.tokens }; }')
+    r = pg.evaluate('() => { const e = G.enemies.find(e => e.boss); for (let i = 0; i < 4 && !e.dead; i++) { e.phaseT = 0; hit(e, e.hp + e.shield + 1e9, "K", null, { noStatus: 1 }); } return { dead: e.dead, draft: !!G.draft, modal: UI.modalOpen, tokens: G.tokens }; }')
     pg.wait_for_timeout(400)
     r['modalAfter'] = pg.evaluate('() => UI.modalOpen')
     print('core boss kill:', r)
@@ -29,7 +29,7 @@ with sync_playwright() as p:
     picks = pg.evaluate('''() => {
       let n = 0; const orig = Hooks.onDraft; Hooks.onDraft = o => { n++; takeBoon(o[0]); };
       spawnBoss({ boss: 'gloop', L: G.map.lanes[0], d: 3, hpm: 1 });
-      for (let k = 0; k < 6; k++) for (const e of G.enemies.slice()) if (e.boss === 'gloop' && !e.dead) hit(e, e.hp + e.shield + 1e9, 'K', null, { noStatus: 1 });
+      for (let k = 0; k < 6; k++) for (const e of G.enemies.slice()) if (e.boss === 'gloop' && !e.dead) { e.phaseT = 0; hit(e, e.hp + e.shield + 1e9, 'K', null, { noStatus: 1 }); }
       Hooks.onDraft = orig;
       return { picks: n, gloopsLeft: G.enemies.filter(e => e.boss === 'gloop' && !e.dead).length };
     }''')

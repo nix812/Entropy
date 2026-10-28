@@ -23,9 +23,9 @@ with sync_playwright() as p:
     pg.click('[data-act=launch]'); pg.wait_for_timeout(300)
     pg.evaluate(f'''() => {{
       const spots=[]; for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){{ if(!canBuildAt(x,y))continue; let c=0; for(const L of G.map.lanes) for(const p of L.pts) if((p.x-x-.5)**2+(p.y-y-.5)**2<5) c++; spots.push([c,x,y]); }}
-      spots.sort((a,b)=>b[0]-a[0]); G.credits = 6000;
+      spots.sort((a,b)=>b[0]-a[0]); G.credits = 40000;
       const types=['coil','cryo','pulse','flame','rail','missile','coil','cryo','pulse','coil'];
-      for(let i=0;i<10;i++){{ const t=buildTower(types[i], spots[i][1], spots[i][2]); if(t){{ upgradeTower(t); }} }}
+      for(let i=0;i<10;i++){{ const t=buildTower(types[i], spots[i][1], spots[i][2]); if(t){{ upgradeTower(t); upgradeTower(t); upgradeTower(t, 1); }} }}
       for (const t of G.towers) grantVxp(t, 200);
       G.wave = {wave} - 1; G.prep = null; prepareWave({wave}); G.speed = 3; G.next = 0.2;
     }}''')

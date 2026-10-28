@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,9 +167,11 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '2.1.0', title: 'Entropy 2.1', items: [
-  ['Bosses fight back', 'Bosses have far more health, the most from Wave 15 to 40 (up to ×7). They used to die within seconds of the first hit; now they take a real fight, and a weak defence can let one through.'],
-  ['Collapse', 'The Collapse combo now takes only a sliver of a boss\'s max health (it was 3% per trigger, which melted bosses whatever their health). Against everything else it\'s unchanged.']
+const WHATS_NEW = { ver: '2.2.0', title: 'Entropy 2.2 · Boss Rework', items: [
+  ['Bosses scale to you', 'Every boss sizes its health to your defence\'s recent peak damage, so a strong build gets a real fight instead of a two-second pop.'],
+  ['Three phases', 'At 66% and 33% health a boss phase-shifts: it shrugs off damage for a moment, speeds up and unleashes an empowered version of its ability. The boss bar marks the thresholds.'],
+  ['Grand entrances', 'Each boss arrives with a portrait card, its abilities and a moment of slow motion. Tap the card to skip it.'],
+  ['Breaches hurt', 'A boss that reaches the core takes 35% of its health, more if it got there in a later phase. Their minions and abilities matter now.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -207,6 +209,9 @@ const ENEMIES = {
   pirate: { name: 'Pirate Skiff', hp: 70, spd: 2.6, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core' },
   voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'Flies. Spawned by a Maelstrom' },
 };
+// what each boss's empowered ability does at a phase change (shown in the phase toast and the intro card)
+const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', wraith: 'a long phase-jump', overmind: 'a massive EMP',
+  titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once' };
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },

@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 2.1.0 · October 27, 2026**
+**Version at handoff: 2.2.0 · October 27, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v2.1.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v2.2.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). The composer isn't recorded anywhere in either repo (the files were re-encoded, tags stripped); ask Nic if more tracks are wanted. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -221,7 +221,13 @@ Publish `dist/entropy.html` to the existing URL above.
 | Quackzilla | A rubber duck. Quacks, hops forward and briefly disables nearby towers. |
 | Flying Spaghetti Monster | Its noodly appendages disable up to 3 towers, and it drops meatball fliers. |
 
-- **Boss health (v2.1):** `30 × B.hp × hpMult(w) × bossHpX(w) × …` in `spawnBoss`. `BOSS_HPX` is a piecewise curve: ×3 at wave 10, ×7 across waves 20–30, ×5 at 40, ×3 at 50, ×2.5 from 60. Nic reported bosses dying almost instantly; bots with 60 web points showed 5–6 s from the first hit to death at waves 20–30. After the change: 11–20 s, with run length unchanged (average wave 75 vs 76 at 60 points); with 0 points, bosses sometimes leak at waves 30–50. Gloop's children inherit through `hpAbs`, so they scale automatically.
+- **Boss rework (v2.2).** Nic: bosses were no threat, so their abilities and art went unseen. Four parts:
+  - **Adaptive health:** `G.power` is the defence's recent peak total tower DPS (sum of `t.dps` each second, held with ×0.995 decay per second, saved in snapshots). In `spawnBoss`: `hp = max(30 × B.hp × hpMult × bossHpX(w) × …, G.power × BOSS_SECS(w) × B.hp/38)`. `BOSS_HPX` (fixed floor for weak builds) is ×2 at wave 10, ×3 from 20 to 40, ×2 from 60; `BOSS_SECS` runs from 18 s at wave 10 to 28 s from wave 40. Gloop's children use `hpAbs`, so they scale with it.
+  - **Phases:** `BOSS_PHASES = [0.66, 0.33]`. Crossing one in `hit()` calls `bossPhase`: health clamps at the threshold (no blowing through a phase in one volley), 2.5 s phase shift at 10% damage taken (`e.phaseT`, a pulsing aura in render), +15% speed, a speech line (`PHASE_LINES`) and a toast, and the next ability fires at once, empowered (`e.empowered` read as `big` in `bossBehavior`). Empowered: Behemoth quake (disables towers in 2.5) plus 8 tougher Swarmers; Queen 7 Skimmers; Wraith 4.5-tile jump with 3 s cloak; Overmind EMP radius 4.2 for 4 s; Titan stomp; Cat zoomies (swats every tower in 3.5); Whale big heal; Duck mega-hop; FSM seizes 7 towers and drops meatballs. Gloop has no phases (it splits). `BOSS_POWER` in data.js names each one.
+  - **Breach:** a boss that leaks deals 35% of core max HP, +10% per phase reached (children 12% and 6%).
+  - **Presentation:** `Hooks.bossIntro` shows `#bossIntro` (portrait via `Render.bossPortrait`, name, title, ability, phase line, "NEW BOSS · FIRST ENCOUNTER" until one is killed) with 1.4 s of 30% slow motion (`UI.slowmo`, UI-only so the sim stays deterministic). The boss bar shows phase notches and PHASE I / PHASE II / FINAL PHASE / SHIFTING; `body.bossbar` pushes toasts below it.
+  - **Bot results** (6 seeds, 60 points, Normal): bosses reach both phases in nearly every fight, die 50–70% down the road, and breach about 1 fight in 6 mid-game; runs average wave 77 (75 before), so overall difficulty held.
+- **Boss health history:** v2.1 tried a bigger fixed curve (up to ×7); it barely moved fight length for strong builds, which is why v2.2 went adaptive.
 - **Collapse vs bosses:** the combo's max-HP part is 3% for normal enemies but 0.4% for bosses. At 3% it fired about once a second under Void Lens and killed bosses regardless of their health.
 - **Measuring bosses:** `BOSSLOG=1 node test/smartbot.js 1 60 1 1 60` prints each boss's life, time under fire, how far down the road it died, and the top damage sources (from `G.dbgBoss`, collected in `hit()` only when set). `test/bossttk.js` is a controlled version (a set budget of L3 towers against a lone boss).
 - Oddballs have speech bubbles (the `say` FX), custom SFX (`quack`, `meow`, `whale`, `blorp`) and random titles that show on the boss bar.
@@ -339,6 +345,7 @@ Publish `dist/entropy.html` to the existing URL above.
 | `lab.js WAVE SEEDS [filter]` | Equal-budget tower lab: each config (every attack tower at L3, Spec 1, Spec 2, plus "pulse+support" mixes at a 30% share) spends the same credits at the best road spots and fights 3 waves with the core held alive. Prints share of wave HP prevented and damage per credit. Set `BMULT` (calibrated: w8 0.559, w14 2.902, w20 2.211) or `CALIB=1` to find it. Survivors at the 1200 s cap count as leaked. **Don't edit `src/` while it runs**: the harness reloads source files for every config. |
 | `bench.js` | Damage per 100 credits for every tower, level and spec against a single target, a pack and a stream. |
 | `monkey.py MINUTES [W H seed]` | Plays the real page with random taps, panel buttons, zooms, reloads, snapshots and wave jumps, checking invariants (finite numbers, one core tile, `towerAt` in sync, no stalls). Prints page errors with stack lines, problems, and where the time went. Screens land in `test/audit/monkey_*`. CPU-starved runs can report false stalls; it now needs 4 s of frozen sim time, and its report includes frame counts so a starved page is easy to spot. |
+| `bossintro.py [W H tag boss]` | Boss intro card, phase II and final phase with the empowered ability, damage reduction during the shift, and breach damage. |
 | `newsshot.py [W H tag]` | What's New popup for a returning player, no repeat after closing, Settings, a build-menu role line and the run-recap highlights. |
 | `mkpage.py` | Wraps `dist/entropy.html` with local fonts into `test/out/page.html` for Playwright. **Ad-hoc Playwright scripts must call `mkpage.mk()` after a rebuild**, or they test a stale page. |
 | `audit.py TAG [W H SAFE]` | A full UI walkthrough with screenshots (`test/audit/TAG*.png`). Prints `ERRORS: []` when there are no page errors. The tap helper multiplies by `UIS`. |
@@ -444,3 +451,4 @@ The expanding sector made every level a little easier, because the compact early
 | 1.21 | Space pirates: drop-ship deliveries, booby-trapped loot with stowaways, Captain's Chest flagship, Pirate Skiff thieves |
 | 2.0 | Whole-game balance and polish pass: tower retune from bot, lab and bench sims (no build stands out); tower roles in the build menu; Gravity Well diminishing pull; Snare net damage bonus; Mixed soundtrack and auto-detected playlists; What's New popup and Settings version row; run highlights in the recap and Hall of Fame; stale-tap crash and serpentine map fixes; monkey, lab, bench and newsshot test tools |
 | 2.1 | Bosses: much more health (×3 at wave 10, ×7 at waves 20–30, easing to ×2.5 from 60); Collapse's max-HP damage on bosses cut from 3% to 0.4%; boss measuring tools |
+| 2.2 | Boss rework: health scales to the defence's peak DPS, three phases with empowered abilities, intro card with portrait and slow motion, breach damage as a share of the core |

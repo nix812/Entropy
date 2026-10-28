@@ -531,6 +531,7 @@ const Render = (() => {
     if (e.boss === 'cat' && e.napT > 0) { const ox = Math.round(X - hw), oy = Math.round(y - hh); R(b, ox + 16, oy + 15, 6, 6, '#ff9a3c'); R(b, ox + 27, oy + 15, 6, 6, '#ff9a3c'); R(b, ox + 16, oy + 18, 6, 1, '#3a1606'); R(b, ox + 27, oy + 18, 6, 1, '#3a1606'); }
     if (e.boss === 'titan' && e.plates > 0) { R(b, X - 22, y - 22, 44, 5, '#8a8fa8'); R(b, X - 22, y + 17, 44, 5, '#8a8fa8'); if (e.plates > 1) { R(b, X - 22, y - 22, 5, 44, '#a4aac4'); R(b, X + 17, y - 22, 5, 44, '#a4aac4'); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
+    if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
     if (e.elite.length && !cloaked) {
       const ec = ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, r = hw + 4;
@@ -916,11 +917,13 @@ const Render = (() => {
     if (texts.length > 30) texts.splice(0, texts.length - 30);
     if (G.bossAlive && !G.bossAlive.dead) {
       const e = G.bossAlive, bw = Math.min(260, W * 0.4), bx = (W - bw) / 2, by = 6;
-      c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(bx - 4, by - 2, bw + 8, 22);
+      c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(bx - 4, by - 2, bw + 8, e.gen || e.boss === 'gloop' ? 22 : 31);
       c.font = '10px Silkscreen, monospace'; c.fillStyle = '#ff9aac'; c.textAlign = 'left';
       c.fillText(e.bossName.toUpperCase() + (e.bossTitle ? ' · ' + e.bossTitle.toUpperCase() : '') + (e.elite.length ? ' · ' + e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).name).join(' · ') : ''), bx, by + 5);
       c.fillStyle = '#3a0a18'; c.fillRect(bx, by + 12, bw, 5);
-      c.fillStyle = '#ff3355'; c.fillRect(bx, by + 12, bw * Math.max(0, e.hp / e.maxHp), 5);
+      c.fillStyle = e.phaseT > 0 && frame % 8 < 4 ? '#ffffff' : '#ff3355'; c.fillRect(bx, by + 12, bw * Math.max(0, e.hp / e.maxHp), 5);
+      if (!e.gen && e.boss !== 'gloop') { for (const th of BOSS_PHASES) { c.fillStyle = '#07080f'; c.fillRect(Math.round(bx + bw * th) - 1, by + 11, 2, 7); }
+        c.font = '8px Silkscreen, monospace'; c.textAlign = 'right'; c.fillStyle = e.phase ? '#ff9aac' : '#8a8fa8'; c.fillText(e.phaseT > 0 ? 'SHIFTING' : ['PHASE I', 'PHASE II', 'FINAL PHASE'][e.phase || 0], bx + bw, by + 26); }
       if (e.shield > 0) { c.fillStyle = '#8ab6ff'; c.fillRect(bx, by + 12, bw * Math.min(1, e.shield / e.maxHp), 2); }
       c.textAlign = 'center';
     }
@@ -1002,6 +1005,11 @@ const Render = (() => {
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
       case 'coin': text(d.x, d.y - 0.6, '+' + d.v, PAL.amber, 15, 1, -0.6); break;
       case 'shake': shakeAt(d.v, 0.3); break;
+      case 'bossPhase': { const col = BOSS_COL[d.boss] || '#ff3355';
+        flashes.push({ col: '#ff3355', life: 0.35, max: 0.35, a: 0.35 });
+        rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: TILE * 4, life: 0.7, max: 0.7, col, w: 4, fill: 1 });
+        rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: TILE * 6, life: 1, max: 1, col: '#ffffff', w: 2 });
+        burst(T2P(d.x), T2P(d.y), 80, col, 110 * K, 0.9); break; }
       case 'cash': flashes.push({ col: '#ffb03a', life: 0.25, max: 0.25, a: 0.18 }); break;
     }
   }
@@ -1085,5 +1093,8 @@ const Render = (() => {
     get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, markMap() { mapDirty = true; },
     set onCam(f) { onCam = f; },
     tileToScreen,
+    // draws a boss sprite, pixel-scaled, centred on a canvas (the boss intro card)
+    bossPortrait(id, cv) { const sp = bossSprite(id), g = cv.getContext('2d'), k = Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height));
+      g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false; g.drawImage(sp, Math.round((cv.width - sp.width * k) / 2), Math.round((cv.height - sp.height * k) / 2), sp.width * k, sp.height * k); },
   };
 })();
