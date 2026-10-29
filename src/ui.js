@@ -161,6 +161,7 @@ const UI = (() => {
             <div class="lbl">Chaos</div>
             <div class="chips">${CHAOS_LEVELS.map((c, i) => `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>`).join('')}</div>
             <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite}${CH.cr ? ` · Credits ×${CH.cr}` : ""} · <b class="amber">Score ×${CH.score}</b></p>
+            <p class="note">${tipify('Evolution')}: ${esc(CH.evo ? CH.evo.desc : '')}</p>
             <p class="note">Sector ${R0.x1 - R0.x0}×${R0.y1 - R0.y0} → ${COLS}×${ROWS} · ${CH.lanes.length} wormholes${CH.lanes[0] <= 1 ? ', one at start' : ''}</p>
           </div>
           <div class="col">
@@ -216,6 +217,7 @@ const UI = (() => {
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave;
+    if (!snap && G.preAdapted) setTimeout(() => toast('SWARM PRE-ADAPTED', `${G.preAdapted.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1), 1600);
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
     document.body.classList.toggle('hudfull', hudFull);
@@ -823,7 +825,7 @@ const UI = (() => {
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
-      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null,
+      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
   }
@@ -835,7 +837,7 @@ const UI = (() => {
       <div class="elbar">${ELS.filter(e => els[e] / tot > 0.005).map(e => `<i style="flex:${Math.max(0.001, els[e] / tot)};background:${EL[e].col}" title="${EL[e].name}"></i>`).join('')}</div>
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
-      ${R.peakGene ? `<p class="note hl" style="color:${GENES[R.peakGene.g].col}">${tipify(`Evolution peak: ${GENES[R.peakGene.g].name} reached ${Math.round(R.peakGene.v * 100)}% of the swarm at Wave ${R.peakGene.w}`)}</p>` : ''}
+      ${R.peakGene ? `<p class="note hl" style="color:${GENES[R.peakGene.g].col}">${tipify(`Evolution peak: ${GENES[R.peakGene.g].name} reached ${Math.round(R.peakGene.v * 100)}% of the swarm at Wave ${R.peakGene.w}`)}${R.strain ? ` · Signature strain: <b>${esc(R.strain.name)}</b> ×${fmt(R.strain.n)}` : ''}${R.pre ? ` · Arrived adapted: ${esc(R.pre.join(', '))}` : ''}</p>` : ''}
       ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
@@ -851,7 +853,7 @@ const UI = (() => {
   function hallHTML() {
     const H = PROF.hall || [];
     if (!H.length) return `<div class="lbl">Hall of Fame</div><p class="note">Finish a run to claim a spot.</p>`;
-    return `<div class="lbl">Hall of Fame</div><div class="hall">${H.map((R, i) => `<button class="hrow" data-act="hall" data-v="${i}"><em>#${i + 1}</em><span><b>${fmt(R.score)}</b><small>Wave ${R.wave} · ${esc(runMode(R))}${R.nova ? ' · Supernova ' + R.nova : ''} · ${esc(runDate(R))}</small></span>${R.mvp ? `<canvas class="ico" width="20" height="20" data-ico="${R.mvp.type}"></canvas>` : ''}</button>`).join('')}</div>`;
+    return `<div class="lbl">Hall of Fame</div><div class="hall">${H.map((R, i) => `<button class="hrow" data-act="hall" data-v="${i}"><em>#${i + 1}</em><span><b>${fmt(R.score)}</b><small>Wave ${R.wave} · ${esc(runMode(R))}${R.strain ? ' · vs ' + esc(R.strain.name) : ''}${R.nova ? ' · Supernova ' + R.nova : ''} · ${esc(runDate(R))}</small></span>${R.mvp ? `<canvas class="ico" width="20" height="20" data-ico="${R.mvp.type}"></canvas>` : ''}</button>`).join('')}</div>`;
   }
   function openHall(i) {
     const R = (PROF.hall || [])[i]; if (!R) return openArchive();
@@ -1165,6 +1167,13 @@ const UI = (() => {
         ${codexHTML()}</div></div></div>`, 'archive');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
+  function strainsHTML() {
+    const X = (PROF.codex || {}).strains || {}, ks = Object.keys(X);
+    if (!ks.length) return `<div class="codex"><em>Strains</em><span>None met yet</span></div>`;
+    const top = ks.map(k => { const [type, key] = k.split(/:(.*)/), P = parseGenes(key); return { k, type, P, n: X[k].n, w: X[k].w }; })
+      .sort((a, b) => (b.P.genes.length - a.P.genes.length) || (b.n - a.n)).slice(0, 10);
+    return `<div class="codex strains"><em>Strains · ${ks.length} met</em>${top.map(t => `<span class="on" title="First met on Wave ${t.w}">${esc(strainName(t.type, t.P.genes, t.P.el))} <small>×${fmt(t.n)}</small>${t.P.genes.map(g => `<i style="background:${GENES[g].col}"></i>`).join('')}</span>`).join('')}</div>`;
+  }
   function codexHTML() {
     const C = PROF.codex || {};
     const cb = COMBO_NAMES.map(n => `<span class="${C.combos && C.combos[n] ? 'on' : ''}">${C.combos && C.combos[n] ? n[0] + n.slice(1).toLowerCase() : '???'}</span>`).join('');
@@ -1174,6 +1183,7 @@ const UI = (() => {
     return `<div class="lbl">Codex</div>
       <div class="codex"><em>Combos</em>${cb}</div>
       <div class="codex"><em>Bosses</em>${bs}</div>
+      ${strainsHTML()}
       <p class="note">Anomalies ${an}/${ANOMALIES.length} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
   }
   function modalAction(act, b) {

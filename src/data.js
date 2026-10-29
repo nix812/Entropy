@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,12 +167,10 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '3.1.0', title: 'Entropy 3.1', items: [
-  ['Tougher early bosses', 'Bosses now size themselves to what your towers can actually do, not just what they did last wave, so the Wave 10 to 40 bosses take a real fight. Flying bosses get a little extra.'],
-  ['Calmer notifications', 'One message at a time, routine ones short and moved to the log when things get busy. Tooltips close on their own.'],
-  ['Swarm DNA', 'The DNA chip in the top bar shows what the swarm is evolving right now. Tap it for every trait, its trend and its counter.'],
-  ['Reactor expansion', 'When the grid is full, spend credits on +1 power from the build menu or the core panel. Each expansion costs more.'],
-  ['Run log', 'Tap Copy log on the game-over screen (or in Settings) and paste it to Claude for a breakdown of your run.']
+const WHATS_NEW = { ver: '3.2.0', title: 'Entropy 3.2', items: [
+  ['Swarm Codex', 'Every strain you meet gets a name, from Zippy Gremlins to Fortress Juggernauts and the occasional Broody Bumper Car Phantom. The Archive keeps the collection.'],
+  ['Your nemesis, remembered', 'Each run records its signature strain and the swarm\'s evolution peak, in the recap and the Hall of Fame.'],
+  ['Difficulty shapes evolution', 'Calm evolves gently from Wave 12. Unstable starts at Wave 6, fiercer, with the swarm already adapted to one weakness. Pandemonium starts at Wave 4, fiercest, adapted to two, with an extra gene later on. The setup screen shows which.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -233,6 +231,17 @@ const GENES = {
   cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon' },
 };
 const GENE_IDS = Object.keys(GENES);
+// Swarm Codex: every evolved strain gets a name
+const GENE_ADJ = { plating: 'Plated', wings: 'Winged', haste: 'Zippy', bulk: 'Chonky', brood: 'Broody', shell: 'Bubbled', regen: 'Unkillable', cloak: 'Sneaky' };
+const WARD_ADJ = { K: 'Bulletproof', T: 'Fireproof', C: 'Frostproof', A: 'Insulated', V: 'Grounded' };
+const SPECIES_NICK = { drone: 'Drone', swarmer: 'Gremlin', tank: 'Juggernaut', flyer: 'Skimmer', splitter: 'Splitter', phantom: 'Phantom', medic: 'Mender', shielder: 'Aegis' };
+const STRAIN_COMBO = { 'haste+wings': 'Zoomwing', 'bulk+plating': 'Fortress', 'brood+bulk': 'Momma', 'cloak+haste': 'Ninja', 'regen+shell': 'Immortal-ish', 'plating+wings': 'Gunship',
+  'brood+wings': 'Swarmcarrier', 'cloak+wings': 'Ghostbird', 'bulk+regen': 'Troll', 'haste+shell': 'Bumper Car', 'brood+cloak': 'Surprise Party', 'bulk+haste': 'Freight Train' };
+function strainName(type, genes, el) {
+  const g = genes.slice().sort(), sp = SPECIES_NICK[type] || (ENEMIES[type] ? ENEMIES[type].name : type);
+  for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) { const c = STRAIN_COMBO[g[i] + '+' + g[j]]; if (c) { const rest = g.filter((x, k) => k !== i && k !== j).map(x => x === 'ward' ? WARD_ADJ[el] || 'Warded' : GENE_ADJ[x]); return (rest.length ? rest.join(' ') + ' ' : '') + c + ' ' + sp; } }
+  return g.map(x => x === 'ward' ? WARD_ADJ[el] || 'Warded' : GENE_ADJ[x]).join(' ') + ' ' + sp;
+}
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
@@ -330,10 +339,10 @@ const BOONS = [
 ];
 
 const CHAOS_LEVELS = [
-  { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64] },
-  { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78] },
-  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [12, 24, 36, 50, 66, 84] },
-  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.5, cr: 0.8, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100] },
+  { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64], evo: { start: 12, press: 0.6, desc: 'Gentle evolution from Wave 12' } },
+  { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78], evo: { start: 8, press: 1, desc: 'Evolution from Wave 8' } },
+  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [12, 24, 36, 50, 66, 84], evo: { start: 6, press: 1.25, seed: 1, desc: 'The swarm arrives adapted to one weakness; evolution from Wave 6, fiercer' } },
+  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.5, cr: 0.8, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100], evo: { start: 4, press: 1.5, seed: 2, capAdd: 1, desc: 'The swarm arrives adapted to two weaknesses; evolution from Wave 4, fiercest, one extra gene' } },
 ];
 
 // ---------- Passive web ----------

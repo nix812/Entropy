@@ -627,8 +627,17 @@ function newRun(opts) {
   }
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
+  // harder difficulties: the swarm arrives already adapted to one or two weaknesses (seeded as strong parents)
+  if (G.CH.evo && G.CH.evo.seed) {
+    const pool = ['plating', 'haste', 'bulk', 'shell', 'regen', 'ward', 'cloak', 'brood'], picks = [];
+    while (picks.length < G.CH.evo.seed) { const g = pick(G.r, pool); if (!picks.includes(g)) picks.push(g); }
+    const el = pick(G.r, ELS);
+    G.geneFit = {}; for (const g of picks) G.geneFit[geneKey([g], el)] = { s: 2.4, n: 6 };
+    if (picks.length > 1) G.geneFit[geneKey(picks, el)] = { s: 2.4, n: 6 };
+    G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
+  }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: (PROF.alloc || []).length,
-    ks: TREE.list.filter(n => n.kind === 'keystone' && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS] }];
+    ks: TREE.list.filter(n => n.kind === 'keystone' && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
   return G;
 }
 
@@ -1188,7 +1197,8 @@ function prepareWave(w) {
 // it got compared with the average for its species (its advantage). Each wave is bred from last generation's best genomes
 // (softmax on advantage, crossover, mutation) plus 25% random immigrants, so the swarm drifts towards whatever your defence
 // handles worst, and drifts away again when you answer it. Fitness halves every wave so it tracks the current defence.
-function geneCap(w) { return w < 8 ? 0 : w < 22 ? 1 : w < 45 ? 2 : 3; }
+const evoCfg = () => (G && G.CH && G.CH.evo) || { start: 8, press: 1 };
+function geneCap(w) { const E = evoCfg(), st = E.start; const base = w < st ? 0 : w < st + 14 ? 1 : w < st + 37 ? 2 : 3; return base + (base >= 2 ? E.capAdd || 0 : 0); }
 function geneKey(genes, el) { const g = genes.slice().sort(); return g.join('+') + (g.includes('ward') ? '|' + el : ''); }
 function parseGenes(k) { const [a, el] = k.split('|'); return { genes: a ? a.split('+') : [], el: el || null }; }
 function geneOk(type, g, w) { const D = ENEMIES[type]; if (GENES[g].from && (w || G.wave || 1) < GENES[g].from) return false; return !(g === 'wings' && D.fly) && !(g === 'cloak' && D.cloak) && !(g === 'brood' && (type === 'swarmer' || type === 'splitter')) && !(g === 'plating' && D.armor); }
@@ -1198,11 +1208,11 @@ function breedPlan(w) {
   par.sort((a, b) => b.adv - a.adv);
   const top = (typeof process !== 'undefined' && process.env && process.env.NOGA) ? [] : par.slice(0, 10); // NOGA: genes stay random (balance tests)
   // selection pressure ramps up: close to random early (you can't diversify yet), full strength from Wave 30
-  const press = 4 * clamp((w - 8) / 22, 0.1, 1);
+  const E = evoCfg(), press = 4 * clamp((w - E.start) / 22, 0.1, 1) * (E.press || 1);
   for (const p of top) p.wt = Math.exp(p.adv * press);
   // the next generation starts here: halve old evidence
   for (const k in F) { F[k].s *= 0.5; F[k].n *= 0.5; if (F[k].n < 0.25) delete F[k]; }
-  return { w, cap: geneCap(w), parents: top, tot: top.reduce((a, p) => a + p.wt, 0), imm: 0.3 + 0.4 * clamp((30 - w) / 22, 0, 1) };
+  return { w, cap: geneCap(w), parents: top, tot: top.reduce((a, p) => a + p.wt, 0), imm: (0.3 + 0.4 * clamp((E.start + 22 - w) / 22, 0, 1)) / Math.sqrt(E.press || 1) };
 }
 function breedOne(plan, type, r) {
   if (!plan.cap) return null;
@@ -1222,6 +1232,11 @@ function breedOne(plan, type, r) {
   genes = genes.filter(g => geneOk(type, g, plan.w));
   while (genes.length > plan.cap) genes.splice(Math.floor(r() * genes.length), 1);
   return { genes, el };
+}
+function topStrain() {
+  const e = Object.entries(G.strainN || {}).sort((a, b) => b[1] - a[1])[0]; if (!e) return null;
+  const [type, key] = e[0].split(/:(.*)/), P = parseGenes(key);
+  return { name: strainName(type, P.genes, P.el), n: e[1], genes: P.genes };
 }
 function geneShares() {
   const c = {}; let n = 0;
@@ -1513,6 +1528,12 @@ function spawnEnemy(type, q) {
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
+    if (genes.length) {
+      const sk = type + ':' + e.gkey, X = PROF.codex.strains || (PROF.codex.strains = {});
+      if (!X[sk] && Object.keys(X).length < 400) { X[sk] = { n: 0, w: G.wave }; if (genes.length >= 2) Hooks.toast('NEW STRAIN', strainName(type, genes, q.gel), GENES[genes[0]].col); }
+      if (X[sk]) X[sk].n++;
+      const RS = G.strainN || (G.strainN = {}); RS[sk] = (RS[sk] || 0) + 1;
+    }
     for (const g of genes) {
       if (GENES[g].spd) e.spd *= GENES[g].spd;
       if (g === 'plating') e.armor = Math.min(0.7, e.armor + 0.4);
@@ -2720,7 +2741,7 @@ function gameOver() {
   if (G.over) return;
   G.over = true;
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
-    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null }); }
+    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain() }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
   if (G.daily) {
     const d = PROF.daily && PROF.daily.date === G.daily ? PROF.daily : { date: G.daily, best: 0, score: 0, tries: 0 };
@@ -2747,7 +2768,7 @@ function snapshotRun(waveNum) {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {},
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {},
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -2765,7 +2786,7 @@ function resumeRun(S) {
   const ci = S.tiles.indexOf(4);
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
-  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.rlog = (S.rlog || []).slice(); G.rlog.push({ k: 'resume', w: S.wave, t: S.time }); G.reactorN = S.reactorN || 0; G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {});
+  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.rlog = (S.rlog || []).slice(); G.rlog.push({ k: 'resume', w: S.wave, t: S.time }); G.reactorN = S.reactorN || 0; G.strainN = Object.assign({}, S.strainN || {}); G.preAdapted = S.preAdapted || null; G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {});
   setNodes((S.nodes || []).slice()); G.caches = []; G.pirates = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};
