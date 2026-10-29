@@ -11,7 +11,7 @@ function defaultProfile() {
     v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, soundtrack: 'ec', hud: 'lean', dmgNums: true, shake: true },
-    seenHelp: false, seenVer: '', runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
+    seenHelp: false, seenVer: '', seenEvo: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
     mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
@@ -384,6 +384,38 @@ function growRegion(stage, quiet) {
 // ---------- Power Nodes: charged tiles. A tower on one is overcharged; the core on one even more so ----------
 const NODE_TOWER = { dmg: 1.25, range: 1.15, aura: 1.25 }, NODE_CORE = { dmg: 1.5, rate: 1.2 };
 const isNode = (x, y) => !!(G.nodeSet && G.nodeSet.has(tIdx(x, y)));
+// v3.1: what the defence could pour into one boss, from tower stats (measured DPS reads low early: small waves never let towers fire flat out)
+function potentialDps() {
+  let tot = 0;
+  for (const t of G.towers) {
+    const s = t.s; if (!s || !s.dmg || s.kind === 'eco' || s.kind === 'support' || s.kind === 'snare') continue;
+    let d = s.dmg * s.rate * (1 + t.buff.dmg) * (1 + t.buff.rate) * (1 + Math.min(1, (s.critC + t.buff.crit) / 100) * (s.critM - 1)) * (1 + (s.boss || 0));
+    if (s.kind === 'beam') d *= 1 + (s.rampMax - 1) * 0.7;
+    tot += d;
+  }
+  return tot;
+}
+// ---- v3.1 reactor expansion: spend surplus credits on +1 power ----
+const REACTOR = { base: 450, growth: 1.3 };
+function reactorCost() { return Math.round(REACTOR.base * Math.pow(REACTOR.growth, G.reactorN || 0) * (1 + 0.02 * Math.max(0, (G.wave || 1) - 10))); }
+function expandReactor() {
+  const c = reactorCost(); if (G.credits < c || gridCap() >= GRID.max + 30) return false;
+  G.credits -= c; G.reactorN = (G.reactorN || 0) + 1; G.gridBonus = (G.gridBonus || 0) + 1;
+  Hooks.sfx('upgrade'); Hooks.fx('upgrade', { x: G.core.x, y: G.core.y, col: '#59f0b4' });
+  rlog('reactor', { n: G.reactorN, cost: c });
+  return true;
+}
+// ---- v3.1 run log: compact events for after-run analysis (exported from the game-over screen) ----
+function rlog(k, d) { if (!G || !G.rlog) return; G.rlog.push(Object.assign({ k, w: G.wave, t: Math.round(G.time) }, d || {})); if (G.rlog.length > 5000) G.rlog.splice(1, 1); }
+function rlogWave() {
+  const w = G.wave, H = G.geneHist && G.geneHist[G.geneHist.length - 1];
+  const d = { core: Math.round(G.core.hp), cmax: Math.round(G.core.max), cr: Math.round(G.credits), sc: Math.round(G.score), grid: gridUsed() + '/' + gridCap(),
+    n: G.towers.length, leaks: G.stats.leaks, kills: G.kills, pow: Math.round(G.power || 0), pot: Math.round(potentialDps()), ent: Math.round(G.entropy) };
+  if (H && H.w === w) d.genes = Object.fromEntries(Object.entries(H.g).filter(([g, v]) => v >= 0.05).map(([g, v]) => [g, Math.round(v * 100)]));
+  if (G.evList && G.evList.length) d.ev = G.evList.map(E => E.name);
+  if (w <= 3 || w % 5 === 0) d.tw = G.towers.map(t => [t.type, t.lvl, t.asc || 0, t.spec || 0, t.oc || 0, Math.round(t.dps), Math.round(t.dmgDone)]);
+  rlog('wave', d);
+}
 // ---- v3.0 power grid ----
 function gridCap() { return Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)) + (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); }
 function canOvercharge(t) { const k = TOWERS[t.type].kind; return k !== 'eco' && k !== 'support' && k !== 'snare'; }
@@ -595,6 +627,8 @@ function newRun(opts) {
   }
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
+  G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: (PROF.alloc || []).length,
+    ks: TREE.list.filter(n => n.kind === 'keystone' && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS] }];
   return G;
 }
 
@@ -943,7 +977,7 @@ function releaseOverdrive() {
   if (G.odUsed) return 'used';
   if (G.wave < OD_WAVE) return 'locked';
   if (!G.enemies.some(e => !e.dead && !e.boss)) return 'empty';
-  G.odUsed = G.wave;
+  G.odUsed = G.wave; rlog('overdrive', {});
   const c = G.core;
   let n = 0;
   // several passes: splitters and split elites leave children behind
@@ -1139,12 +1173,13 @@ function prepareWave(w) {
     if (ENEMIES[q.type].fly) fly++;
   }
   for (const k in genes) { genes[k] = ng ? genes[k] / ng : 0; if (genes[k] > ((G.stats.peakGene || {}).v || 0)) G.stats.peakGene = { g: k, v: genes[k], w }; }
+  G.geneHist = (G.geneHist || []).concat([{ w, g: Object.assign({}, genes) }]).slice(-12);
   G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length, genes };
   // announce a trait when it takes hold (35%+), again only after it has faded below 20%
   const told = G.geneTold || (G.geneTold = {});
   for (const k of GENE_IDS) {
     const sh = genes[k] || 0;
-    if (sh >= 0.35 && !told[k]) { told[k] = 1; Hooks.toast('SWARM EVOLVES', `${GENES[k].name} ${Math.round(sh * 100)}% · counter: ${GENES[k].counter}`, GENES[k].col); Hooks.log(`Evolution: ${GENES[k].name} ${Math.round(sh * 100)}%`, GENES[k].col); }
+    if (sh >= 0.35 && !told[k]) { told[k] = 1; if (!PROF.seenEvo) Hooks.evoIntro && Hooks.evoIntro(k, sh); Hooks.toast('SWARM EVOLVES', `${GENES[k].name} ${Math.round(sh * 100)}% · counter: ${GENES[k].counter}`, GENES[k].col); Hooks.log(`Evolution: ${GENES[k].name} ${Math.round(sh * 100)}%`, GENES[k].col); }
     else if (sh < 0.2 && told[k]) told[k] = 0;
   }
 }
@@ -1187,6 +1222,14 @@ function breedOne(plan, type, r) {
   genes = genes.filter(g => geneOk(type, g, plan.w));
   while (genes.length > plan.cap) genes.splice(Math.floor(r() * genes.length), 1);
   return { genes, el };
+}
+function geneShares() {
+  const c = {}; let n = 0;
+  for (const q of G.queue) if (q.genes) { n++; for (const g of q.genes) c[g] = (c[g] || 0) + 1; }
+  for (const e of G.enemies) if (e.genes && !e.dead) { n++; for (const g of e.genes) c[g] = (c[g] || 0) + 1; }
+  if (!n && G.prep && G.prep.genes) return Object.assign({}, G.prep.genes);
+  for (const k in c) c[k] /= n;
+  return c;
 }
 function geneRecord(e, leaked) {
   if (e.gkey === undefined) return;
@@ -1245,6 +1288,7 @@ function genWave(w, ev) {
   return { queue: q, rift };
 }
 function startWave() {
+  if (G.wave > 0) rlogWave();
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
@@ -1385,7 +1429,7 @@ function addEntropy(v) {
 function takeAnomaly(id) {
   if (!G.anomOffers || !G.anomOffers.includes(id)) return false;
   const A = ANOMALIES.find(a => a.id === id);
-  G.anoms.push(id); G.anomOffers = null; G.entropy = 0;
+  G.anoms.push(id); G.anomOffers = null; G.entropy = 0; rlog('anom', { id });
   PROF.codex.anomalies[id] = (PROF.codex.anomalies[id] || 0) + 1;
   if (A.special === 'legendAll') for (const t of G.towers) if (towerPool(t.type) !== 'eco') t.affixes.push(rollAffix(t, 3));
   if (A.af && A.af.flux) G.flux = { el: pick(G.r, ELS), t: 20 };
@@ -1500,9 +1544,11 @@ function spawnEnemy(type, q) {
 }
 // v2.2 boss health: the larger of a fixed curve and the defence's recent peak damage output (G.power) times
 // BOSS_SECS(w). The fixed curve keeps bosses meaningful for weak builds; the power part stops strong builds melting them.
-const BOSS_HPX = [[10, 2], [20, 3], [40, 3], [60, 2]];
+const BOSS_HPX = [[10, 3], [20, 3.5], [40, 3], [60, 2]];
 const bossHpX = w => { const P = BOSS_HPX; if (w <= P[0][0]) return P[0][1]; for (let i = 1; i < P.length; i++) if (w <= P[i][0]) { const [a, va] = P[i - 1], [b, vb] = P[i]; return va + (vb - va) * (w - a) / (b - a); } return P[P.length - 1][1]; };
-const BOSS_SECS = w => 18 + 10 * Math.min(1, Math.max(0, (w - 10) / 30));
+// seconds of your real firepower a boss should soak. v3.1: firepower = the larger of measured peak (G.power, accurate late)
+// and half the stat-based potential (potentialDps, accurate early when small waves never let towers fire flat out)
+const BOSS_SECS = w => w < 45 ? 36 : 30;
 const BOSS_PHASES = [0.66, 0.33];
 // v2.3: every boss wave is a weighted draw from the bosses unlocked by that wave. Never-seen bosses weigh most,
 // and a boss gets likelier the longer it's been away; the last two can't repeat.
@@ -1523,7 +1569,9 @@ function spawnBoss(q) {
   const lane = q.lane, gen = q.gen || 0;
   const L = q.L || (B.fly ? lane.fly : lane);
   const base = 30 * B.hp * q.hpm * bossHpX(w) * (1 + Math.floor((w - 1) / 50) * 0.5);
-  const hp = q.hpAbs || Math.max(base, (G.power || 0) * BOSS_SECS(w) * (B.hp / 38)) * (1 + ((G.af && G.af.bossHP) || 0));
+  // flying bosses take the short line straight into your densest fire, so they get 30% more
+  const fire = Math.max(G.power || 0, potentialDps() * 0.5);
+  const hp = q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (B.fly ? 1.3 : 1) * (1 + ((G.af && G.af.bossHP) || 0));
   const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
     armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 0.8, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
@@ -1549,6 +1597,7 @@ function spawnBoss(q) {
   const ttl = B.titles ? B.titles[Math.floor(G.r() * B.titles.length)] : null;
   if (ttl) { e.bossTitle = ttl; Hooks.fx('say', { x: e.x, y: e.y, t: B.id === 'cat' ? 'mrrp.' : B.id === 'duck' ? 'QUACK' : B.id === 'whale' ? 'HELLOOOO' : B.id === 'fsm' ? 'ramen.' : 'blorp' }); }
   Hooks.bossIntro(e, B);
+  rlog('boss', { id: B.id, hp: Math.round(e.maxHp), fire: Math.round(Math.max(G.power || 0, potentialDps() * 0.5)) });
   if (ttl) Hooks.log(`${B.name}, ${ttl}: ${B.desc}`, '#ff4d6a');
   Hooks.log(`${B.name} incoming`, '#ff4d6a');
   Hooks.sfx('boss');
@@ -1691,6 +1740,7 @@ function bossPhase(e) {
 // Wormhole Worm: resurfaces further along (sometimes on another lane) and swallows towers near where it comes up;
 // now and then (always in a frenzy) it hunts your strongest tower anywhere. Killing it spits them all back out.
 function swallowTower(e, t) {
+  rlog('swallow', { tw: t.type, lvl: t.lvl });
   G.towers = G.towers.filter(o => o !== t); delete G.towerAt[tIdx(t.x, t.y)];
   t.disabled = 0; e.gut.push(t); recomputeAuras();
   Hooks.fx('swallow', { x1: t.cx, y1: t.cy, x2: e.x, y2: e.y }); Hooks.sfx('crack');
@@ -1807,6 +1857,7 @@ function bossBehavior(e, dt) {
 function leak(e) {
   e.dead = true;
   geneRecord(e, true);
+  if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
   G.stats.leaks++;
   G.stats.lastLeak = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type;
   const c = G.core, w = G.wave;
@@ -2059,6 +2110,7 @@ function kill(e, src, o) {
   // Gloop's offspring are part of one boss: the reward comes when the last of the family dies
   if (e.boss === 'worm' && e.gut && e.gut.length) wormRelease(e);
   if (e.boss === 'auditor' && e.audited > 0) { const back = Math.round(e.audited * 1.25); G.credits += back; Hooks.toast('TAX REFUND', `+${back} credits, with 25% interest`, '#59f0b4', true); Hooks.fx('num', { x: e.x, y: e.y - 0.5, v: back, combo: 'REFUND', col: '#59f0b4' }); e.audited = 0; }
+  if (e.boss && !e.gen) rlog('bossDown', { id: e.boss, ph: e.phase || 0, road: +(e.d / e.L.len).toFixed(2) });
   const bossDown = e.boss && (e.boss !== 'gloop' || ((e.gen || 0) >= 2 && !G.enemies.some(o => o !== e && !o.dead && o.boss === 'gloop')));
   if (bossDown) {
     G.tokens++; G.stats.bossKills++; addEntropy(15);
@@ -2074,7 +2126,7 @@ function kill(e, src, o) {
 }
 const depth0 = o => (o && o.depth) || 0;
 function takeBoon(b) {
-  G.boonsTaken.push(b.id);
+  G.boonsTaken.push(b.id); rlog('boon', { id: b.id });
   if (b.m) for (const k in b.m) G.runMods[k] = (G.runMods[k] || 0) + b.m[k];
   switch (b.special) {
     case 'core': G.core.hpBonus = (G.core.hpBonus || 0) + 0.25; break;
@@ -2586,7 +2638,7 @@ function applyRelocation(plan) {
   if (!plan || !canRelocate()) return false;
   const cost = relocCost();
   if (G.credits < cost) return false;
-  G.credits -= cost; G.relocUsed = (G.relocUsed || 0) + 1;
+  G.credits -= cost; G.relocUsed = (G.relocUsed || 0) + 1; rlog('reloc', { cost });
   const map = G.map, old = map.lanes;
   for (let i = 0; i < map.tiles.length; i++) { const t = map.tiles[i]; if (t === 1 || t === 4 || t === 5) map.tiles[i] = 0; }
   map.core = { x: plan.x, y: plan.y };
@@ -2620,7 +2672,7 @@ function applyRelocation(plan) {
 function useAbility(k, x, y) {
   if (!G.charges[k] || G.charges[k] <= 0) return false;
   const M = G.mods, w = Math.max(1, G.wave);
-  G.charges[k]--;
+  G.charges[k]--; rlog('abil', { id: k });
   switch (k) {
     case 'strike':
       Hooks.fx('strike', { x, y });
@@ -2667,6 +2719,8 @@ function simStep(dt) {
 function gameOver() {
   if (G.over) return;
   G.over = true;
+  { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
+    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
   if (G.daily) {
     const d = PROF.daily && PROF.daily.date === G.daily ? PROF.daily : { date: G.daily, best: 0, score: 0, tries: 0 };
@@ -2693,7 +2747,7 @@ function snapshotRun(waveNum) {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {},
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {},
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -2711,7 +2765,7 @@ function resumeRun(S) {
   const ci = S.tiles.indexOf(4);
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
-  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {});
+  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.rlog = (S.rlog || []).slice(); G.rlog.push({ k: 'resume', w: S.wave, t: S.time }); G.reactorN = S.reactorN || 0; G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {});
   setNodes((S.nodes || []).slice()); G.caches = []; G.pirates = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};

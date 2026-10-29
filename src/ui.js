@@ -280,6 +280,10 @@ const UI = (() => {
       chips.push(`<span class="evchip next">Next ${P.total}${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
+    if (!(G.spawningDone && G.prep) && geneCap(G.wave) > 0) {
+      const gs = Object.entries(geneShares()).filter(([g, v]) => v >= 0.15).sort((a, b) => b[1] - a[1]).slice(0, 2);
+      chips.unshift(`<span class="evchip dna" data-evo="1">DNA${gs.length ? ' · ' + gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : ' · stable'}</span>`);
+    }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) chips.push(`<span class="evchip storm" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}</span>`);
@@ -302,18 +306,33 @@ const UI = (() => {
     $('#dps').innerHTML = `<div class="dh">DPS <b>${fmt(total)}</b></div>` + list.map(t => `<div class="drow"><span>${esc(TOWERS[t.type].name)} ${t.lvl}</span><i style="width:${Math.round(t.dps / max * 100)}%;background:${EL[t.s.el].col}"></i><b>${fmt(t.dps)}</b></div>`).join('');
   }
   const toastHeld = [], toastSeen = {};
+  // v3.1 notifications: one at a time, routine ones short and dropped when things are busy, repeats merged
+  const LOW_TOAST = /^(NEW COMBO|MILESTONE|SALVAGE|GOLDEN SALVAGE|CURSED SALVAGE|BOON|CASHED IN|TAX REFUND|SPAT OUT|NEW BOSS|LEGENDARY|VETERAN|ASCEND)/;
+  const toastNQ = []; let toastBusy = false;
   function toast(title, body, col, force) {
     const key = title + '|' + body, now = performance.now();
     if (toastSeen[key] !== undefined && now - toastSeen[key] < 4000) return;
     toastSeen[key] = now;
     if (!force && screen === 'game' && (modalOpen || Tree.isOpen)) { toastHeld.push([title, body, col]); if (toastHeld.length > 3) toastHeld.shift(); return; }
+    const low = LOW_TOAST.test(title) && !force;
+    if (toastNQ.some(t => t.title === title && t.body === body)) return;
+    if (low && (toastBusy || toastNQ.length) ) { if (toastNQ.length >= 1) { log(`${title[0]}${title.slice(1).toLowerCase()}: ${body}`, col); return; } }
+    toastNQ.push({ title, body, col, low });
+    // keep the queue short: drop routine ones first, then the oldest
+    while (toastNQ.length > 3) { const li = toastNQ.findIndex(t => t.low); toastNQ.splice(li >= 0 ? li : 0, 1); }
+    if (!toastBusy) nextToast();
+  }
+  function nextToast() {
+    const t = toastNQ.shift(); if (!t) { toastBusy = false; return; }
+    toastBusy = true;
     const box = $('#toasts');
+    box.innerHTML = '';
     const d = document.createElement('div');
-    d.className = 'toast'; d.style.setProperty('--c', col || '#ffb03a');
-    d.innerHTML = `<b>${esc(title)}</b><span>${esc(body)}</span>`;
+    d.className = 'toast'; d.style.setProperty('--c', t.col || '#ffb03a');
+    d.innerHTML = `<b>${esc(t.title)}</b><span>${esc(t.body)}</span>`;
     box.appendChild(d);
-    while (box.children.length > 2) box.removeChild(box.firstChild);
-    setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 400); }, (body || '').length > 44 ? 4500 : 2200);
+    const dur = t.low ? 1700 : (t.body || '').length > 44 ? 3800 : 2600;
+    setTimeout(() => { d.classList.add('out'); setTimeout(() => { d.remove(); nextToast(); }, 300); }, toastNQ.length ? Math.min(dur, 1800) : dur);
   }
   // boss arrival: a portrait card and a moment of slow motion, so every boss gets its entrance
   let bossT = null;
@@ -397,7 +416,7 @@ const UI = (() => {
         : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
       info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p class="role">${tipify(TOWER_ROLE[pick] || '')}</p><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
       const full = gridFree() < 1 && !isNode(panel.x, panel.y);
-      foot = full ? `<button class="btn primary wide" disabled>Grid full · ${gridUsed()}/${gridCap()}<small>Upgrade, Overcharge or sell. +1 power every ${GRID.perWaves} waves; Power Nodes are free</small></button>`
+      foot = full ? `<button class="btn primary wide" data-act="reactor" ${costBtn(reactorCost())}>Expand reactor · ${fmt(reactorCost())}<small>Grid full (${gridUsed()}/${gridCap()}): +1 power. Or upgrade, Overcharge or sell; Power Nodes are free</small></button>`
         : `<button class="btn primary wide" data-act="build" ${costBtn(cost)}>Build · ${fmt(cost)}<small>Uses 1 power · grid ${gridUsed()}/${gridCap()}</small></button>`;
     } else {
       info = `<div class="binfo"><p class="dim">Select a tower to see its range. Tap it again to build.</p></div>`;
@@ -463,6 +482,7 @@ const UI = (() => {
     let box = $('#tipbox'); if (!box) { box = document.createElement('div'); box.id = 'tipbox'; document.body.appendChild(box); }
     box.innerHTML = `<b>${esc(g[0])}</b><span>${g[1]}</span>`;
     box.hidden = false;
+    clearTimeout(box._t); box._t = setTimeout(() => { box.hidden = true; box.dataset.for = ''; }, 7000);
     const r = el.getBoundingClientRect(), bw = Math.min(260 * UIS, window.innerWidth - 24);
     box.style.width = bw + 'px';
     box.style.left = Math.max(12, Math.min(window.innerWidth - bw - 12, r.left + r.width / 2 - bw / 2)) + 'px';
@@ -536,6 +556,8 @@ const UI = (() => {
       <div class="lbl">Weapon Element</div>
       <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
+      <div class="lbl">${tipify('Power')} · grid ${gridUsed()}/${gridCap()}${G.reactorN ? ` · ${G.reactorN} expansion${G.reactorN > 1 ? 's' : ''}` : ''}</div>
+      <button class="btn wide" data-act="reactor" ${costBtn(reactorCost())}>Expand reactor · ${fmt(reactorCost())}<small>+1 power for the rest of the run. Each expansion costs more</small></button>
       ${canRelocate() ? '' : relocHTML()}
       <div class="pfoot">${odReady() ? `<button class="btn wide od ${panel.odArm ? 'arm' : ''}" data-act="od">${panel.odArm ? 'Tap again to release' : 'Release Overdrive'}<small>${panel.odArm ? 'This is your only one this run' : 'Erases every enemy except bosses · once per run'}</small></button>` : ''}${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= CORE_GUN.maxLv ? 'disabled' : costBtn(wc)}>${c.wLvl >= CORE_GUN.maxLv ? 'Battery · Max' : `Upgrade Battery · ${fmt(wc)}<small>${nextMod ? `LV ${nextMod.lv}: unlocks ${esc(nextMod.name)}` : '+50% Damage, +Range, new affix'}</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
@@ -604,6 +626,9 @@ const UI = (() => {
         const D = TOWERS[pick];
         Render.prev = D.range ? { x: panel.x, y: panel.y, range: D.range * G.mods.range * (pick === 'pulse' || pick === 'rail' ? 1 + G.mods.rangeKR : 1), col: EL[D.el].col } : null;
         renderPanel();
+      } else if (act === 'reactor') {
+        if (!expandReactor()) { SFX.play('deny'); return; }
+        toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next expansion ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud();
       } else if (act === 'build') {
         const t = buildTower(pick, panel.x, panel.y);
         if (!t) { SFX.play('deny'); return; }
@@ -643,6 +668,7 @@ const UI = (() => {
         else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
       }
       else if (act === 'reloc') startReloc();
+      else if (act === 'reactor') { if (!expandReactor()) SFX.play('deny'); else toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud(); }
       return;
     }
     if (panel.kind === 'reloc') {
@@ -843,6 +869,38 @@ const UI = (() => {
       <div class="boons">${opts.map((b, i) => `<button class="boon" data-act="boon" data-v="${i}"><b>${esc(b.name)}</b><span>${tipify(b.desc)}</span></button>`).join('')}</div></div>`, 'draft');
     SFX.play('milestone');
   }
+  function evoRowsHTML() {
+    const now = geneShares(), H = G.geneHist || [], prev = H.length > 1 ? H[H.length - 2].g : {};
+    return GENE_IDS.map(g => { const v = now[g] || 0, d = v - (prev[g] || 0), A = GENES[g];
+      const locked = A.from && G.wave < A.from;
+      return `<div class="evrow ${locked ? 'dim' : ''}"><b style="color:${A.col}">${A.name}</b><div class="evbar"><i style="width:${Math.round(v * 100)}%;background:${A.col}"></i></div><em>${locked ? 'Wave ' + A.from : Math.round(v * 100) + '%' + (Math.abs(d) >= 0.05 ? (d > 0 ? ' ▲' : ' ▼') : '')}</em><span>${esc(A.desc)} · <u>${esc(A.counter)}</u></span></div>`; }).join('');
+  }
+  function openEvo(intro) {
+    if (!G) return;
+    if (!G.over) G.paused = true;
+    const cap = geneCap(G.wave);
+    modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      ${intro ? `<p class="note">${tipify("Enemies that get furthest pass their traits on. Whatever your defence handles worst spreads; answer it and it fades. Each trait costs them HP or speed, so a balanced, adaptable defence keeps the swarm in check. Tap DNA in the top bar any time to see this.")}</p>` : ''}
+      <div class="evlist">${evoRowsHTML()}</div>
+      <div class="foot"><button class="btn primary" data-act="${intro ? 'evoDone' : 'close2'}">${intro ? 'Adapt' : 'Back'}</button></div></div>`, 'evo');
+  }
+  // ---- v3.1 run log export ----
+  const LOG_KEY = 'entropy.runlog';
+  function storeRunLog() { try { if (G && G.rlog) localStorage.setItem(LOG_KEY, 'ENTROPY RUN LOG · ' + VERSION + ' · ' + new Date().toISOString() + '\n' + G.rlog.map(e => JSON.stringify(e)).join('\n')); } catch (e) {} }
+  function lastLogText() { try { return localStorage.getItem(LOG_KEY) || ''; } catch (e) { return ''; } }
+  function copyText(txt) {
+    const done = () => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · paste it into a chat with Claude`, '#59f0b4', true);
+    const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); ok ? done() : toast('COPY FAILED', 'Use Save log instead', '#ff4d6a', true); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+  }
+  function saveText(txt) {
+    const name = `entropy-run-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.txt`;
+    try {
+      const file = new File([txt], name, { type: 'text/plain' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Entropy run log' }).catch(() => {}); return; }
+    } catch (e) {}
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
   function openNews() {
     const N = WHATS_NEW;
     modal(`<div class="card news"><div class="ch"><h2>${esc(N.title)}</h2><span class="note">Version ${esc(N.ver)}</span><button class="x" data-act="newsDone" aria-label="Close">✕</button></div>
@@ -852,7 +910,7 @@ const UI = (() => {
   function openGameOver() {
     const L = profLevel(), gained = L.level - G.lvlStart;
     const best = G.wave > (G.bestAtStart || 0);
-    if (!G.rec) { G.rec = runRecord(); G.hallRank = hallAdd(G.rec); }
+    if (!G.rec) { G.rec = runRecord(); G.hallRank = hallAdd(G.rec); storeRunLog(); }
     Save.save();
     modal(`<div class="card over"><div class="ch"><h2 class="bad">Core Destroyed</h2><span class="note">${G.daily ? 'Daily Challenge' : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>Levels<b>+${gained}</b></span></div>
@@ -861,7 +919,8 @@ const UI = (() => {
       ${recapHTML(G.rec)}
       ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
       ${pointsFree() > 0 ? `<p class="good">${pointsFree()} passive point${pointsFree() === 1 ? '' : 's'} available</p>` : ''}
-      <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Passive Web</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
+      <div class="row logrow"><span class="note">Run log for analysis</span><button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button></div>
+      <div class="foot"><button class="btn small" data-act="logCopy" title="Copy this run's log to paste into a chat">Copy log</button><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Passive Web</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
   const fsOK = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
@@ -900,7 +959,8 @@ const UI = (() => {
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
       ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
       ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
-      <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div></div>`, 'settings');
+      <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div>
+      <div class="row"><p class="note">${lastLogText() ? 'Last run log' : 'No run log yet'}</p>${lastLogText() ? '<button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button>' : ''}</div></div>`, 'settings');
     $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
@@ -1149,6 +1209,9 @@ const UI = (() => {
       case 'web': closeModal(); G = null; show('hangar'); renderHangar(); Tree.open(); break;
       case 'fs': toggleFs(); break;
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
+      case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
+      case 'logSave': { const t = lastLogText(); if (t) saveText(t); break; }
+      case 'evoDone': PROF.seenEvo = true; Save.save(); closeModal(); if (G && !G.over) G.paused = false; break;
       case 'news': openNews(); break;
       case 'strack': PROF.settings.soundtrack = b.dataset.v; SFX.setSoundtrack(b.dataset.v); Save.save(); openSettings(); break;
       case 'xcopy': openTransfer('copy'); break;
@@ -1186,7 +1249,7 @@ const UI = (() => {
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
-    $('#chips').addEventListener('click', e => { const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
@@ -1239,6 +1302,7 @@ const UI = (() => {
     Hooks.sfx = (n, a) => SFX.play(n, a);
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
+    Hooks.evoIntro = () => { if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
     Hooks.gridFull = () => toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Upgrade, Overcharge or sell; Power Nodes are free`, '#ffb03a');
     Hooks.log = log;
     Hooks.toast = toast;
@@ -1262,7 +1326,7 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, slowmo: 0,
+    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0,
     get screen() { return screen; }, get modalOpen() { return modalOpen; },
   };
 })();

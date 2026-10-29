@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 3.0.0 · October 29, 2026**
+**Version at handoff: 3.1.0 · October 29, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v3.0.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v3.1.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). The composer isn't recorded anywhere in either repo (the files were re-encoded, tags stripped); ask Nic if more tracks are wanted. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -229,6 +229,21 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
   - Under Conflagration, a Thermal ward gives 25% instead of 50%.
 - **Bot:** `smartbot.js` respects the grid (it upgrades when the grid is full) and answers genes at 30% or more half the time (`NOADAPT=1` turns that off). From wave 15, when the grid is full and it has too few answers to the dominant trait, it sells its weakest non-answer tower (LV 3 or lower) once per wave. `TRACE` prints grid and gene shares; `WAVELOG=1` prints core, credits, grid, leaks, genes, fliers and towers every wave.
 
+### 4.3d v3.1 additions
+- **Notifications:** `toast()` is now a queue showing one at a time (`toastNQ`, `nextToast`). Titles matching `LOW_TOAST` (combos, milestones, salvage, boons, refunds…) show for 1.7 s and go to the log when another toast is already waiting. The queue holds 3, dropping routine ones first. Repeats within 4 s are merged. `#tipbox` tooltips close after 7 s.
+- **Swarm DNA:**
+  - `geneShares()` reads the live queue and field (or `G.prep` between waves). `G.geneHist` keeps the last 12 waves for trend arrows.
+  - During waves the HUD shows a `.evchip.dna` chip ("DNA · Plating 38% …"); between waves it shows the per-gene chips. Tapping either opens `openEvo()`, a panel listing every gene with share, trend, description and counter.
+  - The first time a trait crosses 35% in a profile, `Hooks.evoIntro` opens it as an intro (`PROF.seenEvo`). Nic missed the twist entirely in 3.0, which is why this exists.
+- **Reactor expansion:** `REACTOR = { base: 450, growth: 1.3 }`; `reactorCost()` = base × 1.3^n × (1 + 2% per wave past 10); `expandReactor()` adds 1 to `G.gridBonus` (counted in `G.reactorN`, saved). Offered on the build panel when the grid is full and always on the core panel. The bot buys one when the grid is full and the cheapest upgrade costs more.
+- **Run log:**
+  - `G.rlog` holds compact events: `start` (version, chaos, seed, level, points, keystones), `wave` (core, credits, score, grid, leaks, kills, measured and potential power, entropy, genes, events, plus the full tower list on waves 1–3 and every 5th), `boss` / `bossDown` / `bossLeak`, `boon`, `anom`, `abil`, `overdrive`, `reloc`, `reactor`, `swallow`, `resume` and `end` (totals, damage by tower type, elements, combos).
+  - Snapshots carry the last 1,500 entries.
+  - At game over `storeRunLog()` writes it as JSON lines to localStorage `entropy.runlog`. Copy log (clipboard, with a textarea fallback) is on the game-over footer and in Settings; Save log (Web Share with a file on iOS, else download) is in Settings and on the game-over card.
+  - Save log works in the Home Screen (Pages) copy. In the Claude artifact viewer, downloads are blocked unless the page declares the `downloads` capability (not done), so use Copy log there.
+  - A 100-wave run comes to about 40–50 KB. **When Nic pastes a log,** read the `wave` lines for the difficulty curve, `boss*` for fight outcomes, `tw` snapshots for build evolution, and `end.dmgBy` for the damage split.
+- **Tests:** `v31shot.py` (toast queue, evolution intro and panel, DNA chip, reactor buttons, log stored and copied).
+
 ### 4.3b Core affixes (v1.16)
 - Every Weapon or Shield upgrade rolls one affix with the tower rarity odds (`rollTier`, shared with towers). The pool is every attack-tower affix plus core-only ones, weighted 3× (`CORE_AFFIX_W`):
 
@@ -267,6 +282,11 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
   - **Breach:** a boss that leaks deals 35% of core max HP, +10% per phase reached (children 12% and 6%).
   - **Presentation:** `Hooks.bossIntro` shows `#bossIntro` (portrait via `Render.bossPortrait`, name, title, ability, phase line, "NEW BOSS · FIRST ENCOUNTER" until one is killed) with 1.4 s of 30% slow motion (`UI.slowmo`, UI-only so the sim stays deterministic). The boss bar shows phase notches and PHASE I / PHASE II / FINAL PHASE / SHIFTING; `body.bossbar` pushes toasts below it.
   - **Bot results** (6 seeds, 60 points, Normal): bosses reach both phases in nearly every fight, die 50–70% down the road, and breach about 1 fight in 6 mid-game; runs average wave 77 (75 before), so overall difficulty held.
+- **v3.1 boss health:** `fire = max(G.power, potentialDps() × 0.5)`; `hp = max(base floor, fire × BOSS_SECS(w) × B.hp / 38) × (1.3 if the boss flies)`.
+  - `BOSS_SECS` is 36 s before wave 45, then 30 s.
+  - `BOSS_HPX` floor: ×3 at wave 10, ×3.5 at 20, ×3 at 40, ×2 from 60.
+  - Why: bot logs showed `G.power` at spawn reads 8–10× below in-fight DPS early, because small waves never let towers fire flat out. Half of `potentialDps()` (from tower stats: damage, rate, buffs, crit, boss damage, beam ramp) tracks in-fight DPS early. Late, measured power wins, because combos and multipliers the estimate can't see take over.
+  - Result at 80 points: waves 10–40 bosses take 25–37 s of fire (it was 4–24 s), runs the same length. Gloop base HP 30→42 (no phases, splits fast).
 - **Boss health history:** v2.1 tried a bigger fixed curve (up to ×7); it barely moved fight length for strong builds, which is why v2.2 went adaptive.
 - **Collapse vs bosses:** the combo's max-HP part is 3% for normal enemies but 0.4% for bosses. At 3% it fired about once a second under Void Lens and killed bosses regardless of their health.
 - **Measuring bosses:** `BOSSLOG=1 node test/smartbot.js 1 60 1 1 60` prints each boss's life, time under fire, how far down the road it died, and the top damage sources (from `G.dbgBoss`, collected in `hit()` only when set). `test/bossttk.js` is a controlled version (a set budget of L3 towers against a lone boss).
@@ -386,6 +406,7 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
 | `lab.js WAVE SEEDS [filter]` | Equal-budget tower lab: each config (every attack tower at L3, Spec 1, Spec 2, plus "pulse+support" mixes at a 30% share) spends the same credits at the best road spots and fights 3 waves with the core held alive. Prints share of wave HP prevented and damage per credit. Set `BMULT` (calibrated: w8 0.559, w14 2.902, w20 2.211) or `CALIB=1` to find it. Survivors at the 1200 s cap count as leaked. **Don't edit `src/` while it runs**: the harness reloads source files for every config. |
 | `bench.js` | Damage per 100 credits for every tower, level and spec against a single target, a pack and a stream. |
 | `monkey.py MINUTES [W H seed]` | Plays the real page with random taps, panel buttons, zooms, reloads, snapshots and wave jumps, checking invariants (finite numbers, one core tile, `towerAt` in sync, no stalls). Prints page errors with stack lines, problems, and where the time went. Screens land in `test/audit/monkey_*`. CPU-starved runs can report false stalls; it now needs 4 s of frozen sim time, and its report includes frame counts so a starved page is easy to spot. |
+| `v31shot.py [W H tag]` | v3.1: notification queue, evolution intro and DNA panel, reactor expansion buttons, run log stored and copied at game over. |
 | `v3shot.py [W H tag]` | Power grid HUD readout, build panel when the grid is full, Overcharge buttons and damage, seeded evolution (gene chips, the tap-for-counter toast, evolved enemies on the field). |
 | `newbosses.py [W H tag]` | Wormhole Worm intro, walk, burrow, surfacing bite and spit-back on death; Auditor drain, freeze and refund; Snail slime and regen. |
 | `bossintro.py [W H tag boss]` | Boss intro card, phase II and final phase with the empowered ability, damage reduction during the shift, and breach damage. |
@@ -528,3 +549,4 @@ The expanding sector made every level a little easier, because the compact early
 | 2.2 | Boss rework: health scales to the defence's peak DPS, three phases with empowered abilities, intro card with portrait and slow motion, breach damage as a share of the core |
 | 2.3 | Random weighted boss rotation; three new oddball bosses: Wormhole Worm, The Auditor, The Immortal Snail |
 | 3.0 | "Red Queen": power grid and Overcharge; enemy counters (Plating, ground-only Flame and Gravity Well, Arc vs shields, Burn stops healing); the evolving swarm (waves bred from your defence's failures); tower roles; Spare Reactor boon; evolution peak in the recap |
+| 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |

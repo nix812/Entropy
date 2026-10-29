@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '3.0.0';
+const VERSION = '3.1.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,12 +167,12 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '3.0.0', title: 'Entropy 3.0 · Red Queen', items: [
-  ['The swarm evolves', 'From Wave 8, enemies carry genes: Plating, Wings, Haste, Bulk, Brood, Shell, Regrowth, Ward and Cloak. Each wave is bred from the enemies that got furthest against you, so whatever your defence handles worst spreads, and fades again once you answer it. The next-wave chips show what is spreading; tap one to see its counter.'],
-  ['A power grid', 'Every tower now draws 1 power. You start with 8 and gain 1 every 3 waves (shown beside your credits). Towers on Power Nodes are free. No more carpets of towers: pick what earns a slot, then make it great.'],
-  ['Overcharge', 'Spare power can Overcharge a tower for +25% Damage per point (up to 2). It is free to move, even mid-wave, so shift power to whatever the wave needs.'],
-  ['Every tower has a job', 'Plating blunts everything except piercing fire (Rail Lance, Void Lens, Burn). Arc tears through shields and EMP strips them. Burn stops healing. Flame and Gravity Well can\'t hit fliers. The build menu says what each tower answers.'],
-  ['Also', 'New boon Spare Reactor (+2 power). The run recap shows the swarm\'s evolution peak. Juggernauts are now Plated.']
+const WHATS_NEW = { ver: '3.1.0', title: 'Entropy 3.1', items: [
+  ['Tougher early bosses', 'Bosses now size themselves to what your towers can actually do, not just what they did last wave, so the Wave 10 to 40 bosses take a real fight. Flying bosses get a little extra.'],
+  ['Calmer notifications', 'One message at a time, routine ones short and moved to the log when things get busy. Tooltips close on their own.'],
+  ['Swarm DNA', 'The DNA chip in the top bar shows what the swarm is evolving right now. Tap it for every trait, its trend and its counter.'],
+  ['Reactor expansion', 'When the grid is full, spend credits on +1 power from the build menu or the core panel. Each expansion costs more.'],
+  ['Run log', 'Tap Copy log on the game-over screen (or in Settings) and paste it to Claude for a breakdown of your run.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -242,7 +242,7 @@ const BOSSES = [
   // oddballs: random stand-ins on boss waves
   { id: 'cat', odd: 1, tip: 'Swats towers, naps', name: 'Mr. Whiskers', hp: 38, spd: 0.55, size: 2, desc: 'Swats nearby towers offline. Naps mid-lane, and takes far less damage while asleep',
     titles: ['Devourer of Moons', 'Knocker of Things Off Tables', 'Destroyer of Couches', 'Who Is A Good Boy (No)'] },
-  { id: 'gloop', odd: 1, tip: 'Splits when popped', name: 'Gloop', hp: 30, spd: 0.5, size: 2, desc: 'Splits into two smaller Gloops on death. Twice',
+  { id: 'gloop', odd: 1, tip: 'Splits when popped', name: 'Gloop', hp: 42, spd: 0.5, size: 2, desc: 'Splits into two smaller Gloops on death. Twice',
     titles: ['The Unbothered', 'Lord of the Leftovers', 'It Came From The Fridge', 'Mostly Water'] },
   { id: 'whale', odd: 1, tip: 'Flies, heals allies', name: 'Space Whale', hp: 58, spd: 0.32, fly: 1, size: 2, desc: 'Flies. Its song heals every enemy nearby',
     titles: ['Singer of the Deep Void', 'Big Blue', 'Krill Enthusiast', 'Just Passing Through'] },
