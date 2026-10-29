@@ -504,6 +504,7 @@ const Render = (() => {
       R(b, X + 4, Y + 2, 1, 5, sc); R(b, X + 2, Y + 4, 5, 1, sc); P(b, X + 4, Y + 4, '#ffffff');
     }
     if (t.disabled > 0) for (let i = 0; i < 14; i++) R(b, X + 2 + Math.random() * 19, Y + 2 + Math.random() * 19, 2, 1, i % 2 ? '#ffffff' : '#5a5a7a');
+    if (t.oc) for (let i = 0; i < t.oc; i++) { const bx = X + 18 - i * 5, by = Y + 1, c = frame % 16 < 8 ? '#59f0b4' : '#e6fff6'; R(b, bx + 1, by, 2, 3, c); R(b, bx, by + 2, 3, 1, c); R(b, bx + 1, by + 3, 2, 3, c); }
   }
   // wormhole: swirling portal at a lane's origin. Forming portals are small and unstable; open ones are full size.
   function drawWormhole(L) {
@@ -561,6 +562,8 @@ const Render = (() => {
     }
     if (e.boss) s = bossSprite(e.boss); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
     if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
+    if (e.genes && e.genes.includes('bulk')) s = scaledSpr('bk:' + e.type, s, 1.3);
+    if (e.mite) s = scaledSpr('mite', s, 0.7);
     const hw = s.width >> 1, hh = s.height >> 1;
     if (e.fly) { b.fillStyle = 'rgba(0,0,0,0.35)'; b.fillRect(X - hw + 2, Y + 4, s.width - 4, 3); }
     else { b.fillStyle = 'rgba(0,0,0,0.38)'; b.fillRect(Math.round(X - hw + 1), Math.round(Y + hh - 1), s.width - 2, 2); }
@@ -582,6 +585,17 @@ const Render = (() => {
       b.strokeStyle = hexA(ec, frame % 12 < 9 ? 0.9 : 0.4); b.lineWidth = 2; b.setLineDash([3, 3]); b.lineDashOffset = -frame / 2;
       b.beginPath(); b.arc(X, y, r, 0, 6.283); b.stroke(); b.setLineDash([]);
       R(b, X - 2, y - r - 5, 5, 3, ec); P(b, X - 2, y - r - 6, ec); P(b, X, y - r - 6, ec); P(b, X + 2, y - r - 6, ec);
+    }
+    // evolved traits
+    if (e.genes && e.genes.length && !cloaked) {
+      for (const g of e.genes) {
+        if (g === 'plating') { R(b, X - hw - 1, y - 3, 2, 6, '#c8ccd8'); R(b, X + hw - 1, y - 3, 2, 6, '#c8ccd8'); R(b, X - 3, y - hh - 1, 6, 2, '#c8ccd8'); }
+        else if (g === 'wings') { const f = (frame >> 2) & 1; for (const sd of [-1, 1]) { R(b, X + sd * (hw + 1) - (sd < 0 ? 3 : 0), y - 3 - f, 3, 1, '#9ad8ff'); R(b, X + sd * (hw + 2) - (sd < 0 ? 2 : 0), y - 4 - f, 2, 1, '#e8f6ff'); } }
+        else if (g === 'haste') { for (let i = 0; i < 3; i++) R(b, X - hw - 4 - i * 2, y - 2 + i * 2, 3, 1, '#ffe14d'); }
+        else if (g === 'brood') { P(b, X - 2, y + hh + 1, '#ff9ad5'); P(b, X + 1, y + hh + 2, '#ff9ad5'); P(b, X + 3, y + hh, '#ff9ad5'); }
+        else if (g === 'regen' && !st.burn && frame % 30 < 15) { R(b, X + hw - 1, y - hh - 4, 3, 1, '#59f0b4'); R(b, X + hw, y - hh - 5, 1, 3, '#59f0b4'); }
+        else if (g === 'ward') { b.strokeStyle = hexA(EL[e.wardEl] ? EL[e.wardEl].col : '#d6a6ff', 0.75); b.lineWidth = 1; b.setLineDash([2, 2]); b.beginPath(); b.arc(X, y, hw + 2, 0, 6.283); b.stroke(); b.setLineDash([]); }
+      }
     }
     // status pips
     if (st.burn && frame % 6 < 4) { R(b, X - 3 + (frame % 3) * 2, y - hh - 4, 2, 2, EL.T.col); P(b, X - 2 + (frame % 3) * 2, y - hh - 5, '#ffe14d'); }

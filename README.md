@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 2.3.0 · October 27, 2026**
+**Version at handoff: 3.0.0 · October 29, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v2.3.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v3.0.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). The composer isn't recorded anywhere in either repo (the files were re-encoded, tags stripped); ask Nic if more tracks are wanted. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -192,6 +192,43 @@ Publish `dist/entropy.html` to the existing URL above.
 
 - Approximate DPS (no affixes or web): LV 1 about 10 · LV 4 about 68 · LV 8 about 343 · LV 12 about 1,700 (plus blast and uplink). The old core was about 21 DPS at 3 range on LV 1. Bots: Normal 47.9 (24 seeds) versus 45.5 before.
 
+### 4.3c v3.0 "Red Queen": power grid, counters, the evolving swarm
+Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mass-spamming any tower carried every run. v3.0 attacks the three causes: unlimited cheap towers, enemies that don't care what hits them, and nothing to read or react to.
+- **Power grid** (inspired by FTL's reactor). `GRID = { base: 8, perWaves: 3, max: 46 }` in data.js; `gridCap()` = base + floor(wave / 3) (capped at 46) + `G.gridBonus` (Spare Reactor boon, +2) + `G.mods.gridAdd` (unused hook for future web nodes). Every tower draws 1 (`towerPower`); towers on Power Nodes draw 0. `buildTower` refuses when `gridFree() < 1` and calls `Hooks.gridFull`. Runs resumed with more towers than the cap keep them (they just can't build). HUD shows `#pw` beside credits; the build panel shows the grid and a disabled "Grid full" button.
+- **Overcharge:** `t.oc` 0–2 (`OVERCHARGE = { max: 2, dmg: 0.25, rate: 0.1 }`), applied at the end of `towerStats`; draws extra power; `setOvercharge(t, n)` is free and instant (mid-wave reallocation is the point). Not for eco, support or snare towers. Saved in snapshots. Drawn as green bolt pips on the tower.
+- **Counters and identity:**
+  - Plating (`e.armor`) now blunts every hit except piercing fire: Rail (`kind: 'rail'`), Void Lens (`kind: 'beam'`), `shred`, damage over time (`o.dot`) and abilities (`o.abil`). It used to touch only Kinetic. Plating is capped at 70%. Juggernaut has armor 0.35 (0.5–0.6 caused early collapses for fresh profiles) and lost its Thermal resistance.
+  - Arc damage hits shields at ×2.5; EMP shell impacts halve shields.
+  - Burn stops all regeneration.
+  - `ground: 1` towers (Flame Projector and Gravity Well) can't target fliers (`findTargets`, the cone loop, the grav filter); napalm zones don't burn fliers. EMP started ground-only too, but forced-EMP bot runs collapsed once evolution bred Wings, so its shells hit air.
+  - Tower changes for v3: Flame damage 4.2→6.5 and range 1.9→2.1; Gravity Well 14→30; EMP 32→40; Cryo 6→7.5; Void Lens damage 2.0→1.85 and ramp ×4→×3.5 (Event Horizon ×6.5→×5.5).
+  - Ascension cost stays ×2 per Ascension. ×1.5 and ×1.75 were tried under the grid (bots sat on 3,000+ credits late), but both made the late game too easy (60-point bots: wave 72 → 82–85) and made Lens-heavy builds the meta, because the strongest tower per slot wins once slots are capped. Spare credits late go to Cash In.
+  - Missile 31→35, Arc Coil 22→24 (v3 final pass).
+  - `TOWER_ROLE` lines say what each tower answers. Splinter Rail is now `+4 Pierce, ×1.5` (Rail always pierces Plating).
+- **The evolving swarm (the twist):** a small genetic algorithm over enemy traits, inspired by the Red Queen hypothesis (an arms race where both sides keep running). No notable tower defense game breeds its waves from your defence's failures.
+  - `GENES` in data.js. Each gene trades HP or speed for its edge, priced to be roughly neutral against a balanced defence (damage needed ÷ time in range ≈ 1). The first pricing made most genes net upgrades, and bots on fresh profiles collapsed. Each gene has a counter.
+
+    | Gene | Edge | Price |
+    |---|---|---|
+    | plating | +0.4 armor | hp 0.75 |
+    | wings | flies (from wave 16) | hp 0.4, speed 0.65 (the flight line is about a third of the road, so Wings needs the steepest price; at hp 0.5, speed 0.8 it took 40–60% of the swarm in most builds) |
+    | haste | speed 1.4 | hp 0.7 |
+    | bulk | hp 1.4 | speed 0.75 |
+    | brood | 3 mites at 12% HP | hp 0.7 |
+    | shell | 50% shield | hp 0.7 |
+    | regen | 2.5%/s unless Burning | hp 0.75 |
+    | ward | 50% resistance to one element | hp 0.85 |
+    | cloak | cloaks (from wave 12) | hp 0.75 |
+  - Up to `geneCap(w)` genes per ordinary enemy: 0 before wave 8, 1 until 22, 2 until 45, then 3. `geneOk` stops pointless or early genes (a gene's `from`, wings on fliers, brood on swarmers or splitters, cloak on Phantoms, plating on already-armored types). Bosses, pirates, voidlings and spawned minions carry none.
+  - **Fitness:** `geneRecord` on kill or leak records progress along the lane (a leak counts 1.5) minus that species' running average (`G.geneExp`), so it measures the genome's advantage, not the species'.
+  - **Breeding:** `breedPlan` (once per wave in `genWave`) takes the top 10 genomes by average advantage, weights them `exp(press × adv)`, where `press` ramps from 0.4 at wave 8 to 4 by wave 30 (you can't diversify early), then halves all evidence so selection tracks the current defence. `breedOne` makes random immigrants: 70% early, falling to 30% by wave 30; the rest are crossovers (a gene shared by both parents is kept 95% of the time, one parent's 55%) with mutation (12% add, 8% drop, 10% ward element change).
+  - The queue entry carries `genes` and `gel`; `spawnEnemy` applies them.
+  - `G.prep.genes` holds each gene's share of the next wave. HUD chips show traits at 20%+; tap a chip for its counter. The "THE SWARM EVOLVES" toast fires when a trait crosses 35% (again only after it falls below 20%).
+  - Saved in snapshots: `geneFit`, `geneExp`, `geneTold`. The test switch `NOGA=1` (passed into the harness VM) keeps genes random, for control runs. The recap shows the run's evolution peak (`G.stats.peakGene`).
+  - Brood spawns 3 mites at 12% of the parent's HP (`m.mite`, drawn small).
+  - Under Conflagration, a Thermal ward gives 25% instead of 50%.
+- **Bot:** `smartbot.js` respects the grid (it upgrades when the grid is full) and answers genes at 30% or more half the time (`NOADAPT=1` turns that off). From wave 15, when the grid is full and it has too few answers to the dominant trait, it sells its weakest non-answer tower (LV 3 or lower) once per wave. `TRACE` prints grid and gene shares; `WAVELOG=1` prints core, credits, grid, leaks, genes, fliers and towers every wave.
+
 ### 4.3b Core affixes (v1.16)
 - Every Weapon or Shield upgrade rolls one affix with the tower rarity odds (`rollTier`, shared with towers). The pool is every attack-tower affix plus core-only ones, weighted 3× (`CORE_AFFIX_W`):
 
@@ -349,6 +386,7 @@ Publish `dist/entropy.html` to the existing URL above.
 | `lab.js WAVE SEEDS [filter]` | Equal-budget tower lab: each config (every attack tower at L3, Spec 1, Spec 2, plus "pulse+support" mixes at a 30% share) spends the same credits at the best road spots and fights 3 waves with the core held alive. Prints share of wave HP prevented and damage per credit. Set `BMULT` (calibrated: w8 0.559, w14 2.902, w20 2.211) or `CALIB=1` to find it. Survivors at the 1200 s cap count as leaked. **Don't edit `src/` while it runs**: the harness reloads source files for every config. |
 | `bench.js` | Damage per 100 credits for every tower, level and spec against a single target, a pack and a stream. |
 | `monkey.py MINUTES [W H seed]` | Plays the real page with random taps, panel buttons, zooms, reloads, snapshots and wave jumps, checking invariants (finite numbers, one core tile, `towerAt` in sync, no stalls). Prints page errors with stack lines, problems, and where the time went. Screens land in `test/audit/monkey_*`. CPU-starved runs can report false stalls; it now needs 4 s of frozen sim time, and its report includes frame counts so a starved page is easy to spot. |
+| `v3shot.py [W H tag]` | Power grid HUD readout, build panel when the grid is full, Overcharge buttons and damage, seeded evolution (gene chips, the tap-for-counter toast, evolved enemies on the field). |
 | `newbosses.py [W H tag]` | Wormhole Worm intro, walk, burrow, surfacing bite and spit-back on death; Auditor drain, freeze and refund; Snail slime and regen. |
 | `bossintro.py [W H tag boss]` | Boss intro card, phase II and final phase with the empowered ability, damage reduction during the shift, and breach damage. |
 | `newsshot.py [W H tag]` | What's New popup for a returning player, no repeat after closing, Settings, a build-menu role line and the run-recap highlights. |
@@ -365,6 +403,37 @@ Publish `dist/entropy.html` to the existing URL above.
 | `boonshot.py` | Kills a boss and checks the boon pick appears and the game resumes; checks the Gloop family gives one pick. |
 | `expandshot.py [W H chaos]` | Triggers a wormhole detection and screenshots the zoom-out (`x03_expand_*.png`), then jumps to the full map (`x04_full.png`). |
 | `bossshot.py`, `constshot.py`, `navshot.py`, `novashot.py`, `snareshot.py`, `tipshot.py`, `webshot.py` | Focused screenshot scripts for each feature. |
+
+**v3.0.0 balance** (12 seeds each, Normal, bots that answer evolution; median wave, v2.3 in brackets):
+
+| Profile | v3.0 | v2.3 |
+|---|---|---|
+| Fresh profile (0 points) | 52.5 | 56.5 |
+| 60 points | 75.5 | 72 |
+
+- **Controls:** evolution off (`NOGA=1`) with the same grid and counters gives about the same median at 0 points (51), so genes are fair trades. Evolution adds variance, not raw difficulty.
+- **Tower-heavy builds** (`FORCE`, half the plan one tower, 0 points), against 52.5 for the mixed build:
+
+  | Build | Median wave |
+  |---|---|
+  | Lens | 59.5 (average 50; boom or bust, because Lens unlocks at wave 20) |
+  | Rail | 54 |
+  | EMP | 53.5 |
+  | Pulse | 51 |
+  | Missile | 50 |
+  | Coil | 47 |
+  | Cryo | 41.5 |
+  | Flame | 39.5 |
+  | Gravity | 39.5 |
+
+  Over-specialising is now the thing evolution punishes, which is the design.
+- **Tuning history:** worth reading before changing genes. Each bullet below was a measured failure before the fix:
+  - Gene pricing, from net upgrades to neutral trades.
+  - Wings, three passes; the flight line is short.
+  - Selection pressure ramp (early collapses at waves 11–14 on fresh profiles).
+  - Juggernaut Plating 0.6 → 0.35.
+  - EMP hitting air.
+  - Ascension growth, ×1.5 and ×1.75 tried and reverted.
 
 **v2.0.0 tower check** (`FORCE=type`, 12 seeds, Normal, 0 points; median wave): default plan 51.5 · Pulse 47.5 · Rail 50 · Cryo 46 · Missile 49.5 · Coil 49.5 · Flame 51 · Lens 55–58 · EMP 47 · Grav 49.5. Before the retune the bots' damage-per-credit had Lens at 4.1× the average and EMP, Cryo, Flame, Coil and Grav at 0.1–0.5×. Lens stays the best boss killer by design; its cost went to 150 after this table. Early deaths around waves 16–21 appear in every set (the bot defends new wormhole directions badly), so compare medians, not averages.
 
@@ -458,3 +527,4 @@ The expanding sector made every level a little easier, because the compact early
 | 2.1 | Bosses: much more health (×3 at wave 10, ×7 at waves 20–30, easing to ×2.5 from 60); Collapse's max-HP damage on bosses cut from 3% to 0.4%; boss measuring tools |
 | 2.2 | Boss rework: health scales to the defence's peak DPS, three phases with empowered abilities, intro card with portrait and slow motion, breach damage as a share of the core |
 | 2.3 | Random weighted boss rotation; three new oddball bosses: Wormhole Worm, The Auditor, The Immortal Snail |
+| 3.0 | "Red Queen": power grid and Overcharge; enemy counters (Plating, ground-only Flame and Gravity Well, Arc vs shields, Burn stops healing); the evolving swarm (waves bred from your defence's failures); tower roles; Spare Reactor boon; evolution peak in the recap |

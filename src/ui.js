@@ -274,8 +274,10 @@ const UI = (() => {
     const chips = [];
     if (G.spawningDone && G.prep) {
       const P = G.prep;
-      chips.push(`<span class="evchip next">Next: ${P.total} enemies${P.fly ? ' · ' + P.fly + ' flying' : ''}${P.elites ? ' · ' + P.elites + (P.elites === 1 ? ' Elite' : ' Elites') : ''}</span>`);
       if (P.boss) chips.push(`<span class="evchip next bad">Boss ${P.boss.odd ? "???" : esc(P.boss.name)}</span>`);
+      for (const [g, v] of Object.entries(P.genes || {}).filter(([g, v]) => v >= 0.2).sort((a, b) => b[1] - a[1]).slice(0, 3))
+        chips.push(`<span class="evchip gene" data-gene="${g}" style="--c:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</span>`);
+      chips.push(`<span class="evchip next">Next ${P.total}${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
@@ -286,6 +288,7 @@ const UI = (() => {
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
     const html = chips.join('');
+    const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c); }
     const ch = $('#chips');
     if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
     if (hudFull) renderDps();
@@ -371,12 +374,12 @@ const UI = (() => {
   function costBtn(cost) { return `data-cost="${cost}"`; }
   // what each tower is for, in one line: a playstyle, not a stat sheet
   const TOWER_ROLE = {
-    pulse: 'All-rounder · fast single-target fire', rail: 'Lines and armor · long-range piercing shots',
-    cryo: 'Control · slows and freezes groups', snare: 'Control · pulls fliers into a net',
-    missile: 'Crowds · splash and Burn', pylon: 'Support · boosts every tower around it',
-    coil: 'Crowds and combos · chains and Shocks', forge: 'Economy · credits every wave',
-    flame: 'Close crowds · brutal at short range', lens: 'Boss killer · ramps up on one target, weak against swarms',
-    emp: 'Control · stuns groups from afar', grav: 'Control · drags enemies back down the road',
+    pulse: 'Anti-air all-rounder · fast shots, weak to Plating', rail: 'Pierces Plating and lines · slow, long range, hits air',
+    cryo: 'Control · slows everything in its ring, air included', snare: 'Anti-air control · pulls fliers into a net',
+    missile: 'Crowds, Brood and air · splash and Burn, weak to Plating', pylon: 'Support · boosts towers around it, reveals Cloak',
+    coil: 'Shields and crowds · ×2.5 vs shields, chains', forge: 'Economy · credits every wave',
+    flame: 'Ground crowds · Burn stops Regrowth · can\'t hit air', lens: 'Plating, Bulk and bosses · beam ignores Plating, weak vs swarms',
+    emp: 'Control · stuns and strips shields, hits air', grav: 'Control · drags ground enemies back · can\'t hit air',
   };
   function buildPanelHTML() {
     const order = TOWER_ORDER.filter(towerUnlocked).concat(TOWER_ORDER.filter(k => !towerUnlocked(k)));
@@ -393,13 +396,15 @@ const UI = (() => {
         : D.kind === 'eco' ? `+${D.income} credits per wave`
         : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
       info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p class="role">${tipify(TOWER_ROLE[pick] || '')}</p><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
-      foot = `<button class="btn primary wide" data-act="build" ${costBtn(cost)}>Build · ${fmt(cost)}</button>`;
+      const full = gridFree() < 1 && !isNode(panel.x, panel.y);
+      foot = full ? `<button class="btn primary wide" disabled>Grid full · ${gridUsed()}/${gridCap()}<small>Upgrade, Overcharge or sell. +1 power every ${GRID.perWaves} waves; Power Nodes are free</small></button>`
+        : `<button class="btn primary wide" data-act="build" ${costBtn(cost)}>Build · ${fmt(cost)}<small>Uses 1 power · grid ${gridUsed()}/${gridCap()}</small></button>`;
     } else {
       info = `<div class="binfo"><p class="dim">Select a tower to see its range. Tap it again to build.</p></div>`;
       foot = '';
     }
-    const nodeNote = isNode(panel.x, panel.y) ? `<div class="sts node">${tipify('Power Node: towers here are overcharged (+25% Damage, +15% Range; support and economy +25%)')}</div>` : '';
-    return `<div class="ph"><b>Build</b>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
+    const nodeNote = isNode(panel.x, panel.y) ? `<div class="sts node">${tipify('Power Node: towers here draw no power and get +25% Damage, +15% Range (support and economy +25%)')}</div>` : '';
+    return `<div class="ph"><b>Build</b><small class="grid ${gridFree() < 1 ? 'full' : ''}">Power ${gridUsed()}/${gridCap()}</small>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
   }
 
   // ---------- tappable glossary terms ----------
@@ -435,6 +440,11 @@ const UI = (() => {
       ...LEGENDARIES.map(L => [L.name, `Legendary affix. ${L.t()}.`]),
       ...Object.values(STORMS).map(S => [S.name, `Storm. ${S.desc}.`]),
       ...EVENTS.map(E => [E.name, `Wave event. ${E.desc}.`]),
+      ...GENE_IDS.map(g => [GENES[g].name, `Evolved trait. ${GENES[g].desc}. Counter: ${GENES[g].counter}.`]),
+      ['Power', `Your grid. Every tower draws 1 power (towers on Power Nodes draw none); Overcharge draws more. Capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves.`],
+      ['Overcharge', `Spend spare power on a tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Change it any time, even mid-wave.`],
+      ['Plating', 'Blunts every hit except piercing fire: Rail Lance, Void Lens beams, Burn and other damage over time, and abilities.'],
+      ['Evolution', 'Waves are bred from the enemies that got furthest last time, so the swarm drifts towards whatever your defence handles worst. Counter what is spreading and it drifts away again.'],
       ['Common', 'Affix rarity. Base value.'], ['Magic', 'Affix rarity. ×1.7 value.'], ['Rare', 'Affix rarity. ×2.6 value.'],
       ['Leaks', 'Enemies that reached your core. Each one costs core HP.'], ['Lone Wolf', 'Bonus damage for towers with no neighbours.'],
     ];
@@ -505,6 +515,7 @@ const UI = (() => {
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       <div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>
+      ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${[0, 1, 2].map(n => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n * OVERCHARGE.dmg * 100}% · ${n} pw` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
       <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}</button></div></div>`;
@@ -608,6 +619,7 @@ const UI = (() => {
       else if (act === 'spec') { if (!upgradeTower(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'reroll') { if (!rerollTower(t)) SFX.play('deny'); renderPanel(); }
       else if (act === 'sell') { sellTower(t); closePanel(); }
+      else if (act === 'oc') { if (!setOvercharge(t, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
       else if (act === 'vet') { if (!claimVet(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       return;
     }
@@ -785,7 +797,7 @@ const UI = (() => {
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
-      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0,
+      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
   }
@@ -797,6 +809,7 @@ const UI = (() => {
       <div class="elbar">${ELS.filter(e => els[e] / tot > 0.005).map(e => `<i style="flex:${Math.max(0.001, els[e] / tot)};background:${EL[e].col}" title="${EL[e].name}"></i>`).join('')}</div>
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
+      ${R.peakGene ? `<p class="note hl" style="color:${GENES[R.peakGene.g].col}">${tipify(`Evolution peak: ${GENES[R.peakGene.g].name} reached ${Math.round(R.peakGene.v * 100)}% of the swarm at Wave ${R.peakGene.w}`)}</p>` : ''}
       ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
@@ -895,6 +908,9 @@ const UI = (() => {
   const GUIDE = [
     { id: 'basics', name: 'Basics', rows: [
       ['Build', 'Tap an empty tile, choose a tower, then tap it again to build.'],
+      ['Power', `Every tower draws 1 power. You start with ${GRID.base} and gain 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes are free. When the grid is full, the game is about making the towers you have count.`],
+      ['Overcharge', `Tap a tower to spend spare power on it: +${OVERCHARGE.dmg * 100}% Damage per point, up to ${OVERCHARGE.max}. Free to move at any time, even mid-wave.`],
+      ['Evolution', 'From Wave 8 the swarm evolves. Enemies that get furthest pass on their traits (Plating, Wings, Haste, Shell...), so whatever your defence handles worst spreads. The next-wave chips show what is spreading; tap one to see its counter, then adapt.'],
       ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
       ['Specialize', 'At LV 3, choose one of two specializations.'],
       ['Core Battery', 'The core is a long-range gun that shells whatever is closest to reaching it, almost anywhere on the map. It starts as light support; Battery upgrades are expensive but make it a real weapon, with Twin Battery at LV 4, Siege Shells at LV 8 and Orbital Uplink at LV 12. Tap the core to upgrade, repair or reroll it.'],
@@ -952,7 +968,7 @@ const UI = (() => {
       { id: 'status', name: 'Statuses', rows: [
         ['Burn', 'Deals damage over time.', EL.T.col], ['Chill', 'Slows. Stacks up to 5.', EL.C.col], ['Freeze', 'At 5 Chill stacks the enemy is frozen in place.', EL.C.col],
         ['Shock', 'Enemy takes +15% damage while Shocked.', EL.A.col], ['Mark', 'Each stack adds +5% damage taken.', EL.V.col], ['Stun', 'Enemy cannot move.', EL.A.col],
-        ['Cloaked', 'Cannot be targeted. Relay Pylons reveal cloaked enemies.'], ['Armor', 'Reduces Kinetic damage taken. Pierce and Armor penetration bypass it.'],
+        ['Cloaked', 'Cannot be targeted. Relay Pylons reveal cloaked enemies.'], ['Plating', 'Blunts every hit except piercing fire: Rail Lance, Void Lens beams, Burn and other damage over time, and abilities. Armor penetration reduces it.'],
         ['Shield', 'Absorbs damage before HP.'] ] },
       { id: 'combos', name: 'Combos', rows: COMBO_NAMES.map(n => [n[0] + n.slice(1).toLowerCase(), COMBO_DESC[n] + '.']) },
       { id: 'terms', name: 'Terms', rows: [
@@ -964,7 +980,11 @@ const UI = (() => {
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
-        ['Power Node', 'Charged tile. Towers on it get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
+        ['Power', `Every tower draws 1 power from your grid; capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes draw none. When it's full, make towers better instead of adding more.`],
+        ['Overcharge', `Spend spare power on one tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Free to change at any time, so shift it to whatever the wave needs.`],
+        ['Evolution', 'From Wave 8 enemies carry genes: up to 1 until Wave 22, 2 until Wave 45, then 3. Each gene trades HP or speed for an edge. Waves are bred from the enemies that got furthest, so traits your defence handles badly spread. The next-wave chips show what is spreading; tap one for its counter.'],
+        ['Ground-only', 'Flame Projector and Gravity Well cannot hit fliers (including enemies that evolve Wings).'],
+        ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
         ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap the core, Release Overdrive, tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
         ['Cursed Cache', 'Booby-trapped pirate loot, red, from Wave 10. Double reward, but a stowaway pirate (an elite) breaks loose from a wormhole.'],
@@ -979,6 +999,7 @@ const UI = (() => {
       { id: 'legend', name: 'Legendaries', rows: LEGENDARIES.map(L => [L.name, `${L.t()}. ${P[L.pool]}.`, RARITY[3].col]) },
       { id: 'curse', name: 'Curses', rows: CURSES.map(C => [C.t(), 'Curse', RARITY[4].col]) },
       { id: 'enemy', name: 'Enemies', rows: Object.values(ENEMIES).map(E => [E.name, E.desc + '.', '#ff8a9c']) },
+      { id: 'genes', name: 'Evolution', rows: GENE_IDS.map(g => [GENES[g].name, `${GENES[g].desc}. Counter: ${GENES[g].counter}.`, GENES[g].col]) },
       { id: 'elite', name: 'Elite Affixes', rows: ELITE_AFFIXES.map(E => [E.name, E.desc + '.', E.col]) },
       { id: 'boss', name: 'Bosses', rows: BOSSES.map(B => [B.name, B.desc + '.', '#ff4d6a']) },
       { id: 'storm', name: 'Storms', rows: [...Object.values(STORMS).map(S => [S.name, S.desc + '.', S.col]),
@@ -1165,6 +1186,7 @@ const UI = (() => {
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
+    $('#chips').addEventListener('click', e => { const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
@@ -1217,6 +1239,7 @@ const UI = (() => {
     Hooks.sfx = (n, a) => SFX.play(n, a);
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
+    Hooks.gridFull = () => toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Upgrade, Overcharge or sell; Power Nodes are free`, '#ffb03a');
     Hooks.log = log;
     Hooks.toast = toast;
     Hooks.onDraft = opts => { closePanel(); openDraft(opts); };

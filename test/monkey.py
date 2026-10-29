@@ -24,6 +24,8 @@ CHECK = '''() => {
     if (G.map.tiles.filter(x => x === 4).length !== 1) bad.push('core tiles ' + G.map.tiles.filter(x => x === 4).length);
     if (G.enemies.length > 900) bad.push('enemy count ' + G.enemies.length);
     if (G.projs.length > 3000) bad.push('projectiles ' + G.projs.length);
+    if (typeof gridUsed === 'function' && G.towers.some(t => (t.oc || 0) < 0 || (t.oc || 0) > OVERCHARGE.max)) bad.push('overcharge out of range');
+    for (const e of G.enemies) if (e.genes && e.genes.length > 3) { bad.push('too many genes'); break; }
   }
   if (Tree.isOpen && document.querySelector('#tree').hidden) bad.push('web marked open but hidden (game frozen)');
   const halted = !G || G.over || G.paused || G.draft || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen;

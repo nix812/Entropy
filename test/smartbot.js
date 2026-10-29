@@ -67,11 +67,12 @@ for (let run = OFF; run < OFF + runs; run++) {
     while (q.length) q.shift()();
     met.minCore = Math.min(met.minCore, G.core.hp / G.core.max);
     if (G.wave !== lastWave) { lastWave = G.wave; met.creditsAtWave.push(G.credits);
+      if (process.env.WAVELOG) console.log(`W${G.wave} core=${Math.round(G.core.hp)}/${Math.round(G.core.max)} cr=${Math.round(G.credits)} grid=${S.gridUsed()}/${S.gridCap()} leaks=${G.stats.leaks} genes=${(() => { const c = {}; let n = 0; for (const q of G.queue.concat(G.enemies)) if (q.genes) { n++; for (const g of q.genes) c[g] = (c[g] || 0) + 1; } return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + Math.round(v / n * 100)).join(","); })()} fly=${G.enemies.filter(e => e.fly).length}/${G.enemies.length} towers=${G.towers.map(t => t.type.slice(0, 4) + t.lvl).join(',')}`);
       if (process.env.TRACE && [10, 20, 30, 40, 60, 80, 100, 120].includes(G.wave)) {
         const dps = G.towers.reduce((a, t) => a + t.dps, 0);
         const top = G.towers.slice().sort((a, b) => b.dps - a.dps)[0];
         const waveHp = G.queue.reduce((a, q) => a + (q.type === 'boss' ? 30 * 40 * q.hpm : S.ENEMIES[q.type].hp * q.hpm * (q.elite ? 2.2 : 1)), 0);
-        console.log(`w${G.wave} dps=${Math.round(dps)} waveHP=${Math.round(waveHp)} ratio=${(dps * 30 / waveHp).toFixed(2)} towers=${G.towers.length} credits=${Math.round(G.credits)} top=${top && top.type} L${top && top.lvl} A${top && top.asc} R${top && top.rank} sdmg=${top && Math.round(top.s.dmg)} buff=${top && top.buff.dmg.toFixed(2)} anoms=${G.anoms.join(',')} mods.dmg=${G.mods.dmg.toFixed(2)}`);
+        console.log(`w${G.wave} dps=${Math.round(dps)} waveHP=${Math.round(waveHp)} ratio=${(dps * 30 / waveHp).toFixed(2)} towers=${G.towers.length} credits=${Math.round(G.credits)} top=${top && top.type} L${top && top.lvl} A${top && top.asc} R${top && top.rank} sdmg=${top && Math.round(top.s.dmg)} buff=${top && top.buff.dmg.toFixed(2)} anoms=${G.anoms.join(',')} mods.dmg=${G.mods.dmg.toFixed(2)} grid=${S.gridUsed ? S.gridUsed() + '/' + S.gridCap() : '-'} genes=${(() => { const c = {}; let n = 0; for (const q of G.queue.concat(G.enemies)) if (q.genes) { n++; for (const g of q.genes) c[g] = (c[g] || 0) + 1; } return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + Math.round(v / n * 100)).join(' '); })()}`);
       } }
     if (t < act) continue;
     act = t + 0.8;
@@ -98,15 +99,30 @@ for (let run = OFF; run < OFF + runs; run++) {
       const want = PLAN.filter(k => S.TOWERS[k].unlock <= Math.max(1, S.PROF.bestWave));
       let type = want[pi % want.length];
       if (type === 'forge' && G.wave > 35) { pi++; continue; }
+      // v3.0: answer the swarm's dominant traits (set NOADAPT=1 for a bot that ignores them)
+      if (!process.env.NOADAPT && G.prep && G.prep.genes) {
+        const CT = { wings: ['pulse', 'rail', 'missile'], plating: ['rail', 'lens'], bulk: ['lens', 'rail'], shell: ['coil', 'emp'], brood: ['missile', 'flame', 'coil'], regen: ['flame', 'missile'], haste: ['cryo', 'grav', 'snare'], cloak: ['pylon'] };
+        const top = Object.entries(G.prep.genes).filter(([g, v]) => v >= 0.3 && CT[g]).sort((a, b) => b[1] - a[1])[0];
+        if (top && Math.random() < 0.5) { const c = CT[top[0]].filter(k => S.TOWERS[k].unlock <= Math.max(1, S.PROF.bestWave)); if (c.length) type = c[Math.floor(Math.random() * c.length)]; }
+        // grid full and too few answers to the dominant trait: sell the weakest tower that isn't an answer, once per wave
+        if (top && G.wave >= 15 && S.gridFree() < 1 && G._swapW !== G.wave) {
+          const ans = CT[top[0]], have = G.towers.filter(tw => ans.includes(tw.type)).length;
+          if (have < 2 + Math.floor(G.towers.length / 8)) {
+            const victim = G.towers.filter(tw => !ans.includes(tw.type) && tw.s.kind !== 'eco' && tw.s.kind !== 'support' && tw.lvl <= 3 && !tw.asc).sort((a, b) => a.dps - b.dps)[0];
+            if (victim) { S.sellTower(victim); G._swapW = G.wave; const c = ans.filter(k => S.TOWERS[k].unlock <= Math.max(1, S.PROF.bestWave)); if (c.length) type = c[0]; }
+          }
+        }
+      }
       const targetCount = Math.min(40, 4 + Math.floor(G.wave * 0.55));
       const bc = S.towerCost(type);
       const ups = G.towers.filter(tw => tw.s.kind !== 'eco' || tw.lvl < 3).sort((a, b) => S.upgradeCost(a) - S.upgradeCost(b));
       const up = ups[0];
-      if (G.towers.length < targetCount && G.credits >= bc) {
+      const room = S.gridFree ? S.gridFree() : 99;
+      if (G.towers.length < targetCount && room >= 1 && G.credits >= bc) {
         const sp = bestSpot(G, type); if (!sp) break;
         if (S.buildTower(type, sp.x, sp.y)) { pi++; continue; } else break;
       }
-      if (up && G.credits >= S.upgradeCost(up) && (G.towers.length >= targetCount || S.upgradeCost(up) < bc * 0.7)) {
+      if (up && G.credits >= S.upgradeCost(up) && (G.towers.length >= targetCount || room < 1 || S.upgradeCost(up) < bc * 0.7)) {
         if (up.lvl >= 5) met.ascends++;
         S.upgradeTower(up, 1 + Math.floor(Math.random() * 2)); continue;
       }

@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '2.3.0';
+const VERSION = '3.0.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -61,12 +61,12 @@ const TOWERS = {
   rail: { name: 'Rail Lance', el: 'K', cost: 110, dmg: 50, rate: 0.5, range: 4.6, kind: 'rail', pierce: 2, crit: 10, unlock: 1,
     blurb: 'Long-range piercing shot.',
     specs: [{ name: 'Gauss Spire', desc: '×1.8 Damage, +15% Crit Chance', m: { dmgX: 1.8, critC: 15 } },
-            { name: 'Splinter Rail', desc: '+4 Pierce, ignores Armor, ×1.4 Damage', m: { pierce: 4, shred: 1, dmgX: 1.4 } }] },
-  cryo: { name: 'Cryo Emitter', el: 'C', cost: 75, dmg: 6, rate: 1.15, range: 2.5, kind: 'pulse', st: { chill: 1 }, unlock: 1,
+            { name: 'Splinter Rail', desc: '+4 Pierce, ×1.5 Damage', m: { pierce: 4, shred: 1, dmgX: 1.5 } }] },
+  cryo: { name: 'Cryo Emitter', el: 'C', cost: 75, dmg: 7.5, rate: 1.15, range: 2.5, kind: 'pulse', st: { chill: 1 }, unlock: 1,
     blurb: 'Pulse that Chills nearby enemies.',
     specs: [{ name: 'Glacier Core', desc: '×1.5 Chill strength. Freeze lasts 0.6s longer', m: { chillPot: 1.5, freezeBonus: 0.6 } },
             { name: 'Shatter Field', desc: 'Chilled enemies in range take +60% Kinetic Damage', m: { shatterField: 0.6 } }] },
-  missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 31, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
+  missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 35, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
     blurb: 'Homing missiles. Splash and Burn.',
     specs: [{ name: 'Cluster Pods', desc: 'Missiles split into 3 bomblets', m: { cluster: 3 } },
             { name: 'Napalm Payload', desc: 'Impacts leave burning ground', m: { napalm: 1 } }] },
@@ -78,7 +78,7 @@ const TOWERS = {
     blurb: 'Lures fliers off course into a slowing net. Netted fliers take +20% damage.',
     specs: [{ name: 'Tangle Web', desc: 'Caught fliers are held 2s. Net slows 70%', m: { hold: 2, netSlow: 0.7 } },
             { name: 'Long Lure', desc: '+2 lure range, +6 catches per wave', m: { rangeAdd: 2, catches: 6 } }] },
-  coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 22, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
+  coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 24, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
     blurb: 'Chain lightning. Applies Shock.',
     specs: [{ name: 'Tesla Crown', desc: '+3 Chain', m: { chain: 3 } },
             { name: 'Overvolt', desc: '×2 Shock effect, 12% chance to Stun', m: { shockX: 2, stun: 0.12 } }] },
@@ -86,19 +86,19 @@ const TOWERS = {
     blurb: 'Produces credits each wave.',
     specs: [{ name: 'Refinery', desc: '×2.2 Income', m: { incomeX: 2.2 } },
             { name: 'Bounty Net', desc: '+30% kill credits within 3 tiles', m: { bounty: 0.3 } }] },
-  flame: { name: 'Flame Projector', el: 'T', cost: 90, dmg: 4.2, rate: 8, range: 1.9, kind: 'cone', st: { burn: 1 }, unlock: 15,
+  flame: { ground: 1, name: 'Flame Projector', el: 'T', cost: 90, dmg: 6.5, rate: 8, range: 2.1, kind: 'cone', st: { burn: 1 }, unlock: 15,
     blurb: 'Short-range cone. Applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
-  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 2.0, rate: 10, range: 3.2, kind: 'beam', rampMax: 4, st: { mark: 0.15 }, unlock: 20,
+  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.85, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.5, st: { mark: 0.15 }, unlock: 20,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×6.5 damage', m: { rampMax: 6.5 } },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×5.5 damage', m: { rampMax: 5.5 } },
             { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×3', m: { beams: 3, rampMax: 3 } }] },
-  emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 32, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
+  emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
             { name: 'Ion Barrage', desc: 'Fires 3 shells per volley', m: { shells: 3 } }] },
-  grav: { name: 'Gravity Well', el: 'V', cost: 140, dmg: 14, rate: 0.35, range: 2.6, kind: 'grav', pull: 0.7, unlock: 30,
+  grav: { ground: 1, name: 'Gravity Well', el: 'V', cost: 140, dmg: 30, rate: 0.35, range: 2.6, kind: 'grav', pull: 0.7, unlock: 30,
     blurb: 'Pulls enemies back along the path.',
     specs: [{ name: 'Singularity', desc: '×3 Damage. Pulses apply Mark', m: { dmgX: 3, addMark: 1 } },
             { name: 'Tidal Lock', desc: '×2 pull distance', m: { pullX: 2 } }] },
@@ -167,11 +167,12 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '2.3.0', title: 'Entropy 2.3 · New Bosses', items: [
-  ['Random boss rotation', 'Boss waves no longer follow a fixed order. Each one draws from every boss you\'ve unlocked, favouring ones you haven\'t seen in a while, and never the same one twice in a row.'],
-  ['Wormhole Worm', 'A space centipede that burrows through wormholes and resurfaces further down the road, swallowing towers. Sometimes it hunts your best one. Kill it and it spits them all back out; let it reach the core and they\'re digested.'],
-  ['The Auditor', 'Drains your credits every second and freezes your top earners pending review. Kill him for a full refund, plus 25% interest.'],
-  ['The Immortal Snail', 'Barely moves. Barely dies. Heals whenever you stop shooting, and its slime trail speeds up every enemy behind it.']
+const WHATS_NEW = { ver: '3.0.0', title: 'Entropy 3.0 · Red Queen', items: [
+  ['The swarm evolves', 'From Wave 8, enemies carry genes: Plating, Wings, Haste, Bulk, Brood, Shell, Regrowth, Ward and Cloak. Each wave is bred from the enemies that got furthest against you, so whatever your defence handles worst spreads, and fades again once you answer it. The next-wave chips show what is spreading; tap one to see its counter.'],
+  ['A power grid', 'Every tower now draws 1 power. You start with 8 and gain 1 every 3 waves (shown beside your credits). Towers on Power Nodes are free. No more carpets of towers: pick what earns a slot, then make it great.'],
+  ['Overcharge', 'Spare power can Overcharge a tower for +25% Damage per point (up to 2). It is free to move, even mid-wave, so shift power to whatever the wave needs.'],
+  ['Every tower has a job', 'Plating blunts everything except piercing fire (Rail Lance, Void Lens, Burn). Arc tears through shields and EMP strips them. Burn stops healing. Flame and Gravity Well can\'t hit fliers. The build menu says what each tower answers.'],
+  ['Also', 'New boon Spare Reactor (+2 power). The run recap shows the swarm\'s evolution peak. Juggernauts are now Plated.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -200,7 +201,7 @@ const CURSES = [
 const ENEMIES = {
   drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit' },
   swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups' },
-  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.4, res: { T: 0.15 }, desc: 'Slow and heavily armored. Resists Thermal' },
+  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully' },
   flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc' },
   splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death' },
   phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically. Weak to Void' },
@@ -213,6 +214,25 @@ const ENEMIES = {
 const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', wraith: 'a long phase-jump', overmind: 'a massive EMP',
   titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once',
   worm: 'a feeding frenzy', auditor: 'a full audit', snail: 'a second wind' };
+// ---------- v3.0: the power grid ----------
+// Every tower draws 1 power (towers on Power Nodes draw none). Capacity grows with the wave. Spare power can Overcharge a tower.
+const GRID = { base: 8, perWaves: 3, max: 46 };
+const OVERCHARGE = { max: 2, dmg: 0.25, rate: 0.1 };
+// ---------- v3.0: the evolving swarm ----------
+// Ordinary enemies carry genes. Each gene is a trade: an edge for some HP or speed. Waves are bred from the genomes that got
+// furthest last time, so the swarm drifts towards whatever your defence handles worst. Every gene has a counter tower.
+const GENES = {
+  plating: { name: 'Plating', col: '#c8ccd8', hp: 0.75, desc: 'Blunts all but piercing fire', counter: 'Rail, Void Lens, Burn' },
+  wings:   { name: 'Wings', col: '#9ad8ff', hp: 0.4, spd: 0.65, from: 16, desc: 'Flies over ground defences', counter: 'anti-air (not Flame or Gravity)' },
+  haste:   { name: 'Haste', col: '#ffe14d', hp: 0.7, spd: 1.4, desc: '+40% speed', counter: 'Cryo, Gravity, EMP, Snare' },
+  bulk:    { name: 'Bulk', col: '#ff7b39', hp: 1.4, spd: 0.75, desc: '+40% HP, slower', counter: 'Void Lens, Rail' },
+  brood:   { name: 'Brood', col: '#ff9ad5', hp: 0.7, desc: 'Bursts into 3 mites', counter: 'Missile, Flame, Coil' },
+  shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.7, desc: 'Shield worth 50% of HP', counter: 'Arc Coil, EMP' },
+  regen:   { name: 'Regrowth', col: '#59f0b4', hp: 0.75, desc: 'Heals 2.5%/s unless Burning', counter: 'Flame, Missile' },
+  ward:    { name: 'Ward', col: '#d6a6ff', hp: 0.85, desc: '50% resist to one element', counter: 'any other element' },
+  cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon' },
+};
+const GENE_IDS = Object.keys(GENES);
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
@@ -306,6 +326,7 @@ const BOONS = [
   { id: 'b_affix', name: 'Mutation Pulse', desc: 'All towers gain a random affix', special: 'mutate' },
   { id: 'b_reroll', name: 'Cheap Dice', desc: 'Rerolls cost 50% less', special: 'reroll' },
   { id: 'b_cash', name: 'War Chest', desc: 'Gain 25 credits per wave reached', special: 'cash' },
+  { id: 'b_grid', name: 'Spare Reactor', desc: '+2 power for the rest of the run', special: 'grid' },
 ];
 
 const CHAOS_LEVELS = [
