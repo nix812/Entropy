@@ -201,6 +201,13 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .evchip.warn.bad { background: #ff4d6a; color: #1a0610; box-shadow: none; animation: blink 0.8s infinite steps(1); }
 .evchip.next { color: #c9c6bc; background: repeating-linear-gradient(90deg, transparent 0 3px, rgba(255,255,255,0.04) 3px 6px); }
 .evchip.next.bad { color: #ff8a9c; } .evchip.next.good { color: var(--core); }
+.evchip.gene { color: var(--c); background: rgba(255,255,255,0.05); pointer-events: auto; }
+.hs.pwr { display: flex; align-items: center; gap: 4px; color: #59f0b4; }
+.hs.pwr b { font-size: 20px; }
+.hs.pwr.full { color: #ffb03a; }
+.hs.pwr .bolt { width: 8px; height: 12px; background: currentColor; clip-path: polygon(60% 0, 0 58%, 45% 58%, 30% 100%, 100% 40%, 55% 40%); }
+.ph small.grid { margin-left: 8px; color: #59f0b4; font-family: var(--f-pix); font-size: 8px; } .ph small.grid.full { color: #ffb03a; }
+.modes.oc .chip:disabled { opacity: 0.35; }
 #toasts { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; z-index: 30; width: min(520px, 70%); }
 body.modal-open #toasts { display: none; }
 body.bossbar #toasts { top: 58px; }
@@ -538,6 +545,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
     <header id="hud">
       <div class="corebox"><span class="lbl">Core</span><div id="hpbar"><i id="hpfill"></i><i id="shfill"></i></div><span id="hptxt">100</span></div>
       <div class="hs cr"><span class="coin"></span><b id="cr">0</b></div>
+      <div class="hs pwr" aria-label="Power grid"><span class="bolt"></span><b id="pw">0/0</b></div>
       <div class="hs"><span class="lbl">Wave</span><b id="wave">0</b><small id="nextw"></small></div>
       <div id="chips"></div>
       <button class="hs sc cashbtn" id="bCash" aria-label="Cash in credits for score"><span class="lbl">Score</span><b id="score">0</b><i class="cashtag">Cash In</i></button>
@@ -593,7 +601,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '2.3.0';
+const VERSION = '3.0.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -654,12 +662,12 @@ const TOWERS = {
   rail: { name: 'Rail Lance', el: 'K', cost: 110, dmg: 50, rate: 0.5, range: 4.6, kind: 'rail', pierce: 2, crit: 10, unlock: 1,
     blurb: 'Long-range piercing shot.',
     specs: [{ name: 'Gauss Spire', desc: '×1.8 Damage, +15% Crit Chance', m: { dmgX: 1.8, critC: 15 } },
-            { name: 'Splinter Rail', desc: '+4 Pierce, ignores Armor, ×1.4 Damage', m: { pierce: 4, shred: 1, dmgX: 1.4 } }] },
-  cryo: { name: 'Cryo Emitter', el: 'C', cost: 75, dmg: 6, rate: 1.15, range: 2.5, kind: 'pulse', st: { chill: 1 }, unlock: 1,
+            { name: 'Splinter Rail', desc: '+4 Pierce, ×1.5 Damage', m: { pierce: 4, shred: 1, dmgX: 1.5 } }] },
+  cryo: { name: 'Cryo Emitter', el: 'C', cost: 75, dmg: 7.5, rate: 1.15, range: 2.5, kind: 'pulse', st: { chill: 1 }, unlock: 1,
     blurb: 'Pulse that Chills nearby enemies.',
     specs: [{ name: 'Glacier Core', desc: '×1.5 Chill strength. Freeze lasts 0.6s longer', m: { chillPot: 1.5, freezeBonus: 0.6 } },
             { name: 'Shatter Field', desc: 'Chilled enemies in range take +60% Kinetic Damage', m: { shatterField: 0.6 } }] },
-  missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 31, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
+  missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 35, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
     blurb: 'Homing missiles. Splash and Burn.',
     specs: [{ name: 'Cluster Pods', desc: 'Missiles split into 3 bomblets', m: { cluster: 3 } },
             { name: 'Napalm Payload', desc: 'Impacts leave burning ground', m: { napalm: 1 } }] },
@@ -671,7 +679,7 @@ const TOWERS = {
     blurb: 'Lures fliers off course into a slowing net. Netted fliers take +20% damage.',
     specs: [{ name: 'Tangle Web', desc: 'Caught fliers are held 2s. Net slows 70%', m: { hold: 2, netSlow: 0.7 } },
             { name: 'Long Lure', desc: '+2 lure range, +6 catches per wave', m: { rangeAdd: 2, catches: 6 } }] },
-  coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 22, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
+  coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 24, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
     blurb: 'Chain lightning. Applies Shock.',
     specs: [{ name: 'Tesla Crown', desc: '+3 Chain', m: { chain: 3 } },
             { name: 'Overvolt', desc: '×2 Shock effect, 12% chance to Stun', m: { shockX: 2, stun: 0.12 } }] },
@@ -679,19 +687,19 @@ const TOWERS = {
     blurb: 'Produces credits each wave.',
     specs: [{ name: 'Refinery', desc: '×2.2 Income', m: { incomeX: 2.2 } },
             { name: 'Bounty Net', desc: '+30% kill credits within 3 tiles', m: { bounty: 0.3 } }] },
-  flame: { name: 'Flame Projector', el: 'T', cost: 90, dmg: 4.2, rate: 8, range: 1.9, kind: 'cone', st: { burn: 1 }, unlock: 15,
+  flame: { ground: 1, name: 'Flame Projector', el: 'T', cost: 90, dmg: 6.5, rate: 8, range: 2.1, kind: 'cone', st: { burn: 1 }, unlock: 15,
     blurb: 'Short-range cone. Applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
-  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 2.0, rate: 10, range: 3.2, kind: 'beam', rampMax: 4, st: { mark: 0.15 }, unlock: 20,
+  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.85, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.5, st: { mark: 0.15 }, unlock: 20,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×6.5 damage', m: { rampMax: 6.5 } },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×5.5 damage', m: { rampMax: 5.5 } },
             { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×3', m: { beams: 3, rampMax: 3 } }] },
-  emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 32, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
+  emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
             { name: 'Ion Barrage', desc: 'Fires 3 shells per volley', m: { shells: 3 } }] },
-  grav: { name: 'Gravity Well', el: 'V', cost: 140, dmg: 14, rate: 0.35, range: 2.6, kind: 'grav', pull: 0.7, unlock: 30,
+  grav: { ground: 1, name: 'Gravity Well', el: 'V', cost: 140, dmg: 30, rate: 0.35, range: 2.6, kind: 'grav', pull: 0.7, unlock: 30,
     blurb: 'Pulls enemies back along the path.',
     specs: [{ name: 'Singularity', desc: '×3 Damage. Pulses apply Mark', m: { dmgX: 3, addMark: 1 } },
             { name: 'Tidal Lock', desc: '×2 pull distance', m: { pullX: 2 } }] },
@@ -760,11 +768,12 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '2.3.0', title: 'Entropy 2.3 · New Bosses', items: [
-  ['Random boss rotation', 'Boss waves no longer follow a fixed order. Each one draws from every boss you\'ve unlocked, favouring ones you haven\'t seen in a while, and never the same one twice in a row.'],
-  ['Wormhole Worm', 'A space centipede that burrows through wormholes and resurfaces further down the road, swallowing towers. Sometimes it hunts your best one. Kill it and it spits them all back out; let it reach the core and they\'re digested.'],
-  ['The Auditor', 'Drains your credits every second and freezes your top earners pending review. Kill him for a full refund, plus 25% interest.'],
-  ['The Immortal Snail', 'Barely moves. Barely dies. Heals whenever you stop shooting, and its slime trail speeds up every enemy behind it.']
+const WHATS_NEW = { ver: '3.0.0', title: 'Entropy 3.0 · Red Queen', items: [
+  ['The swarm evolves', 'From Wave 8, enemies carry genes: Plating, Wings, Haste, Bulk, Brood, Shell, Regrowth, Ward and Cloak. Each wave is bred from the enemies that got furthest against you, so whatever your defence handles worst spreads, and fades again once you answer it. The next-wave chips show what is spreading; tap one to see its counter.'],
+  ['A power grid', 'Every tower now draws 1 power. You start with 8 and gain 1 every 3 waves (shown beside your credits). Towers on Power Nodes are free. No more carpets of towers: pick what earns a slot, then make it great.'],
+  ['Overcharge', 'Spare power can Overcharge a tower for +25% Damage per point (up to 2). It is free to move, even mid-wave, so shift power to whatever the wave needs.'],
+  ['Every tower has a job', 'Plating blunts everything except piercing fire (Rail Lance, Void Lens, Burn). Arc tears through shields and EMP strips them. Burn stops healing. Flame and Gravity Well can\'t hit fliers. The build menu says what each tower answers.'],
+  ['Also', 'New boon Spare Reactor (+2 power). The run recap shows the swarm\'s evolution peak. Juggernauts are now Plated.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -793,7 +802,7 @@ const CURSES = [
 const ENEMIES = {
   drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit' },
   swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups' },
-  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.4, res: { T: 0.15 }, desc: 'Slow and heavily armored. Resists Thermal' },
+  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully' },
   flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc' },
   splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death' },
   phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically. Weak to Void' },
@@ -806,6 +815,25 @@ const ENEMIES = {
 const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', wraith: 'a long phase-jump', overmind: 'a massive EMP',
   titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once',
   worm: 'a feeding frenzy', auditor: 'a full audit', snail: 'a second wind' };
+// ---------- v3.0: the power grid ----------
+// Every tower draws 1 power (towers on Power Nodes draw none). Capacity grows with the wave. Spare power can Overcharge a tower.
+const GRID = { base: 8, perWaves: 3, max: 46 };
+const OVERCHARGE = { max: 2, dmg: 0.25, rate: 0.1 };
+// ---------- v3.0: the evolving swarm ----------
+// Ordinary enemies carry genes. Each gene is a trade: an edge for some HP or speed. Waves are bred from the genomes that got
+// furthest last time, so the swarm drifts towards whatever your defence handles worst. Every gene has a counter tower.
+const GENES = {
+  plating: { name: 'Plating', col: '#c8ccd8', hp: 0.75, desc: 'Blunts all but piercing fire', counter: 'Rail, Void Lens, Burn' },
+  wings:   { name: 'Wings', col: '#9ad8ff', hp: 0.4, spd: 0.65, from: 16, desc: 'Flies over ground defences', counter: 'anti-air (not Flame or Gravity)' },
+  haste:   { name: 'Haste', col: '#ffe14d', hp: 0.7, spd: 1.4, desc: '+40% speed', counter: 'Cryo, Gravity, EMP, Snare' },
+  bulk:    { name: 'Bulk', col: '#ff7b39', hp: 1.4, spd: 0.75, desc: '+40% HP, slower', counter: 'Void Lens, Rail' },
+  brood:   { name: 'Brood', col: '#ff9ad5', hp: 0.7, desc: 'Bursts into 3 mites', counter: 'Missile, Flame, Coil' },
+  shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.7, desc: 'Shield worth 50% of HP', counter: 'Arc Coil, EMP' },
+  regen:   { name: 'Regrowth', col: '#59f0b4', hp: 0.75, desc: 'Heals 2.5%/s unless Burning', counter: 'Flame, Missile' },
+  ward:    { name: 'Ward', col: '#d6a6ff', hp: 0.85, desc: '50% resist to one element', counter: 'any other element' },
+  cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon' },
+};
+const GENE_IDS = Object.keys(GENES);
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
@@ -899,6 +927,7 @@ const BOONS = [
   { id: 'b_affix', name: 'Mutation Pulse', desc: 'All towers gain a random affix', special: 'mutate' },
   { id: 'b_reroll', name: 'Cheap Dice', desc: 'Rerolls cost 50% less', special: 'reroll' },
   { id: 'b_cash', name: 'War Chest', desc: 'Gain 25 credits per wave reached', special: 'cash' },
+  { id: 'b_grid', name: 'Spare Reactor', desc: '+2 power for the rest of the run', special: 'grid' },
 ];
 
 const CHAOS_LEVELS = [
@@ -1684,6 +1713,20 @@ function growRegion(stage, quiet) {
 // ---------- Power Nodes: charged tiles. A tower on one is overcharged; the core on one even more so ----------
 const NODE_TOWER = { dmg: 1.25, range: 1.15, aura: 1.25 }, NODE_CORE = { dmg: 1.5, rate: 1.2 };
 const isNode = (x, y) => !!(G.nodeSet && G.nodeSet.has(tIdx(x, y)));
+// ---- v3.0 power grid ----
+function gridCap() { return Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)) + (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); }
+function canOvercharge(t) { const k = TOWERS[t.type].kind; return k !== 'eco' && k !== 'support' && k !== 'snare'; }
+function towerPower(t) { return (isNode(t.x, t.y) ? 0 : 1) + (canOvercharge(t) ? t.oc || 0 : 0); }
+function gridUsed() { let n = 0; for (const t of G.towers) n += towerPower(t); return n; }
+function gridFree() { return gridCap() - gridUsed(); }
+function setOvercharge(t, n) {
+  n = clamp(n | 0, 0, OVERCHARGE.max);
+  if (!canOvercharge(t)) return false;
+  if (n - (t.oc || 0) > gridFree()) return false;
+  t.oc = n; t.s = towerStats(t); recomputeAuras();
+  Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: '#59f0b4' }); Hooks.sfx(n ? 'upgrade' : 'ui', t);
+  return true;
+}
 function setNodes(list) { G.nodes = list; G.nodeSet = new Set(list.map(q => tIdx(q.x, q.y))); }
 // n new nodes inside R (and outside P, the previous sector, when growing), near a road where possible
 function placeNodes(n, R, P) {
@@ -1924,7 +1967,7 @@ function towerCost(type) {
 }
 function upgradeCost(t) {
   const x = G.mods.upg * (1 + (G.af.upgX || 0));
-  if (t.lvl >= MAX_LV) return Math.round(TOWERS[t.type].cost * 4 * Math.pow(2, t.asc || 0) * x);
+  if (t.lvl >= MAX_LV) return Math.round(TOWERS[t.type].cost * 4 * Math.pow(2, t.asc || 0) * x); // ×2 per Ascension (v3.0 tested ×1.5 and ×1.75: both made the late game too easy) so credits stay useful under the power grid
   return Math.round(TOWERS[t.type].cost * LV_COST[t.lvl + 1] * x);
 }
 function rerollCost(t) {
@@ -2028,6 +2071,7 @@ function lure(e) {
 function lureAll() { for (const e of G.enemies) lure(e); }
 function buildTower(type, x, y) {
   if (!canBuildAt(x, y) || !towerUnlocked(type)) return null;
+  if (!isNode(x, y) && gridFree() < 1) { Hooks.gridFull && Hooks.gridFull(); return null; }
   const cost = towerCost(type);
   if (G.credits < cost) return null;
   G.credits -= cost;
@@ -2164,6 +2208,9 @@ function towerStats(t) {
     s.fbounty = (A.fbounty || 0) / 100; s.bountyAura = sp.bounty || 0; s.interest = leg.midas ? 0.01 : 0;
     s.range = s.bountyAura ? 3 : 0;
   }
+  s.ground = !!D.ground;
+  const oc = canOvercharge(t) ? (t.oc || 0) : 0;
+  if (oc) { s.dmg *= 1 + OVERCHARGE.dmg * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
   return s;
 }
 function recomputeAuras() {
@@ -2412,14 +2459,73 @@ function prepareWave(w) {
   }
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
-  const counts = {}; let elites = 0, fly = 0, boss = null;
+  const counts = {}, genes = {}; let elites = 0, fly = 0, boss = null, ng = 0;
   for (const q of g.queue) {
     if (q.type === 'boss') { boss = BOSSES.find(b => b.id === q.boss); continue; }
+    if (q.genes) { ng++; for (const x of q.genes) genes[x] = (genes[x] || 0) + 1; if (q.genes.includes('wings')) fly++; }
     counts[q.type] = (counts[q.type] || 0) + 1;
     if (q.elite) elites++;
     if (ENEMIES[q.type].fly) fly++;
   }
-  G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length };
+  for (const k in genes) { genes[k] = ng ? genes[k] / ng : 0; if (genes[k] > ((G.stats.peakGene || {}).v || 0)) G.stats.peakGene = { g: k, v: genes[k], w }; }
+  G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length, genes };
+  // announce a trait when it takes hold (35%+), again only after it has faded below 20%
+  const told = G.geneTold || (G.geneTold = {});
+  for (const k of GENE_IDS) {
+    const sh = genes[k] || 0;
+    if (sh >= 0.35 && !told[k]) { told[k] = 1; Hooks.toast('SWARM EVOLVES', `${GENES[k].name} ${Math.round(sh * 100)}% · counter: ${GENES[k].counter}`, GENES[k].col); Hooks.log(`Evolution: ${GENES[k].name} ${Math.round(sh * 100)}%`, GENES[k].col); }
+    else if (sh < 0.2 && told[k]) told[k] = 0;
+  }
+}
+// ===================== v3.0: THE EVOLVING SWARM =====================
+// A small genetic algorithm. Every ordinary enemy carries a genome (up to geneCap genes). When it dies or leaks we record how far
+// it got compared with the average for its species (its advantage). Each wave is bred from last generation's best genomes
+// (softmax on advantage, crossover, mutation) plus 25% random immigrants, so the swarm drifts towards whatever your defence
+// handles worst, and drifts away again when you answer it. Fitness halves every wave so it tracks the current defence.
+function geneCap(w) { return w < 8 ? 0 : w < 22 ? 1 : w < 45 ? 2 : 3; }
+function geneKey(genes, el) { const g = genes.slice().sort(); return g.join('+') + (g.includes('ward') ? '|' + el : ''); }
+function parseGenes(k) { const [a, el] = k.split('|'); return { genes: a ? a.split('+') : [], el: el || null }; }
+function geneOk(type, g, w) { const D = ENEMIES[type]; if (GENES[g].from && (w || G.wave || 1) < GENES[g].from) return false; return !(g === 'wings' && D.fly) && !(g === 'cloak' && D.cloak) && !(g === 'brood' && (type === 'swarmer' || type === 'splitter')) && !(g === 'plating' && D.armor); }
+function breedPlan(w) {
+  const F = G.geneFit || (G.geneFit = {}), par = [];
+  for (const k in F) { const v = F[k]; if (v.n >= 1.5) par.push({ k, adv: v.s / v.n }); }
+  par.sort((a, b) => b.adv - a.adv);
+  const top = (typeof process !== 'undefined' && process.env && process.env.NOGA) ? [] : par.slice(0, 10); // NOGA: genes stay random (balance tests)
+  // selection pressure ramps up: close to random early (you can't diversify yet), full strength from Wave 30
+  const press = 4 * clamp((w - 8) / 22, 0.1, 1);
+  for (const p of top) p.wt = Math.exp(p.adv * press);
+  // the next generation starts here: halve old evidence
+  for (const k in F) { F[k].s *= 0.5; F[k].n *= 0.5; if (F[k].n < 0.25) delete F[k]; }
+  return { w, cap: geneCap(w), parents: top, tot: top.reduce((a, p) => a + p.wt, 0), imm: 0.3 + 0.4 * clamp((30 - w) / 22, 0, 1) };
+}
+function breedOne(plan, type, r) {
+  if (!plan.cap) return null;
+  let genes = [], el = pick(r, ELS);
+  if (!plan.parents.length || r() < plan.imm) { // immigrant
+    const n = Math.floor(r() * (plan.cap + 1));
+    for (let i = 0; i < 6 && genes.length < n; i++) { const g = pick(r, GENE_IDS); if (!genes.includes(g)) genes.push(g); }
+  } else {
+    const roul = () => { let x = r() * plan.tot; for (const p of plan.parents) if ((x -= p.wt) <= 0) return p; return plan.parents[0]; };
+    const A = parseGenes(roul().k), B = parseGenes(roul().k);
+    for (const g of new Set(A.genes.concat(B.genes))) if (r() < (A.genes.includes(g) && B.genes.includes(g) ? 0.95 : 0.55)) genes.push(g);
+    el = A.el || B.el || el;
+    if (r() < 0.12) { const g = pick(r, GENE_IDS); if (!genes.includes(g)) genes.push(g); }
+    if (genes.length && r() < 0.08) genes.splice(Math.floor(r() * genes.length), 1);
+    if (r() < 0.1) el = pick(r, ELS);
+  }
+  genes = genes.filter(g => geneOk(type, g, plan.w));
+  while (genes.length > plan.cap) genes.splice(Math.floor(r() * genes.length), 1);
+  return { genes, el };
+}
+function geneRecord(e, leaked) {
+  if (e.gkey === undefined) return;
+  const prog = leaked ? 1.5 : clamp(e.d / (e.L.len || 1), 0, 1);
+  const X = G.geneExp || (G.geneExp = {});
+  const exp = X[e.type] === undefined ? prog : X[e.type];
+  X[e.type] = exp * 0.97 + prog * 0.03;
+  const F = G.geneFit || (G.geneFit = {}), v = F[e.gkey] || (F[e.gkey] = { s: 0, n: 0 });
+  v.s += prog - exp; v.n += 1;
+  e.gkey = undefined;
 }
 function genWave(w, ev) {
   const r = G.r, isBoss = w % 10 === 0, af = G.af || {};
@@ -2431,6 +2537,7 @@ function genWave(w, ev) {
   const affN = 1 + (w >= 25) + (w >= 50) + (w >= 80);
   const interval = Math.max(0.3, 0.8 - w * 0.008);
   const q = []; let t = 0;
+  const plan = breedPlan(w);
   const lanes = G.map.lanes.filter(L => laneOpen(L, w));
   let rift = null;
   if (ev.breach) {
@@ -2451,7 +2558,8 @@ function genWave(w, ev) {
     const grp = ENEMIES[type].group || 1;
     for (let g = 0; g < grp; g++) {
       const el = r() < eliteP && type !== 'swarmer' ? affN : 0;
-      q.push({ t, type, lane, hpm, elite: el });
+      const gm = breedOne(plan, type, r);
+      q.push({ t, type, lane, hpm, elite: el, genes: gm ? gm.genes : null, gel: gm ? gm.el : null });
       t += grp > 1 ? 0.18 : interval;
     }
     n += grp > 1 ? 2 : 1;
@@ -2673,19 +2781,34 @@ function spawnEnemy(type, q) {
   q = q || {};
   const D = ENEMIES[type], w = Math.max(1, G.wave);
   let lane = q.lane || G.map.lanes[0];
-  const fly = !!D.fly;
+  const genes = q.genes || null;
+  const fly = !!D.fly || !!(genes && genes.includes('wings') && lane.fly);
   let L = q.L || (fly ? lane.fly : lane);
   if (q.fromPt) {
     L = prepLane([{ x: q.fromPt.x, y: q.fromPt.y }, { x: G.core.x, y: G.core.y }]);
   }
   const hpm = q.hpm || hpMult(w);
   let hp = D.hp * hpm;
+  if (genes) for (const g of genes) hp *= GENES[g].hp || 1;
   const e = { id: G.eid++, type, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: D.spd, fly,
     armor: D.armor || 0, armorAll: 0, res: Object.assign({}, D.res || {}), size: type === 'tank' ? 0.42 : type === 'swarmer' ? 0.22 : 0.32,
     cr: D.cr * crMult(w), leak: D.leak, score: Math.round(D.cr * 10 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: D.cloak ? 1 : 0, cloakT: 2 + Math.random() * 2, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0,
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
+  if (genes) {
+    e.genes = genes; e.gkey = geneKey(genes, q.gel);
+    for (const g of genes) {
+      if (GENES[g].spd) e.spd *= GENES[g].spd;
+      if (g === 'plating') e.armor = Math.min(0.7, e.armor + 0.4);
+      if (g === 'bulk') e.size *= 1.2;
+      if (g === 'brood') e.brood = 1;
+      if (g === 'shell') e.shield = e.maxHp * 0.5;
+      if (g === 'regen') e.regenG = 0.025;
+      if (g === 'ward') { e.wardEl = q.gel || 'K'; e.res[e.wardEl] = (e.res[e.wardEl] || 0) + (G.mods.ks.conflag && e.wardEl === 'T' ? 0.25 : 0.5); }
+      if (g === 'cloak') e.cloak = 1;
+    }
+  } else if (geneCap(w) > 0 && !q.fromPt && !q.L && D.from < 999) e.gkey = '';
   if (q.elite) {
     const pool = ELITE_AFFIXES.slice();
     for (let i = 0; i < q.elite && pool.length; i++) {
@@ -2807,6 +2930,8 @@ function updateEnemies(dt) {
     if (e.elite.includes('regen')) regen += 0.02;
     if (ev.regen) regen += 0.015;
     if (G.af.regen) regen += G.af.regen;
+    if (e.regenG) regen += e.regenG;
+    if (st.burn) regen = 0; // Burn stops healing
     if (regen && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * regen * dt);
     // cloak
     if (e.cloak) {
@@ -3010,6 +3135,7 @@ function bossBehavior(e, dt) {
 }
 function leak(e) {
   e.dead = true;
+  geneRecord(e, true);
   G.stats.leaks++;
   G.stats.lastLeak = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type;
   const c = G.core, w = G.wave;
@@ -3050,7 +3176,8 @@ function hit(e, dmg, el, src, o) {
   let mult = 1;
   const res = e.res[el] || 0;
   mult *= 1 - res;
-  if (el === 'K' && e.armor) mult *= 1 - Math.max(0, e.armor * (1 - M.armorPen - (src && src.s && src.s.shred ? 1 : 0)));
+  // Plating (v3.0): blunts every hit except piercing fire: Rail, Void Lens beams, damage over time and abilities
+  if (e.armor && !(o.dot || o.abil || (src && src.s && (src.s.kind === 'rail' || src.s.kind === 'beam' || src.s.shred)))) mult *= 1 - clamp(e.armor * (1 - M.armorPen), 0, 0.7);
   if (e.armorAll) mult *= 1 - e.armorAll;
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2;
@@ -3072,7 +3199,8 @@ function hit(e, dmg, el, src, o) {
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
   let amt = dmg * mult;
   if (e.shield > 0) {
-    const a = Math.min(e.shield, amt); e.shield -= a; amt -= a;
+    const sk = el === 'A' ? 2.5 : 1; // Arc tears through shields
+    const a = Math.min(e.shield, amt * sk); e.shield -= a; amt -= a / sk;
     if (amt <= 0) { e.hitFlash = 0.08; if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
   const dealt = Math.min(e.hp, amt);
@@ -3194,6 +3322,12 @@ function milestone() {
 function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
+  geneRecord(e, false);
+  if (e.brood) { // Brood: bursts into mites
+    const mh = e.maxHp * 0.12 / ENEMIES.swarmer.hp;
+    for (let i = 0; i < 3; i++) { const m = spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - i * 0.2), hpm: mh }); m.fly = e.fly; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); }
+    Hooks.fx('brood', { x: e.x, y: e.y });
+  }
   if (e.pirate) {
     const P = e.pirate, bounty = Math.round((25 + 6 * G.wave) * G.mods.credits);
     G.credits += bounty;
@@ -3278,6 +3412,7 @@ function takeBoon(b) {
     case 'mutate': for (const t of G.towers) t.affixes.push(rollAffix(t)); break;
     case 'reroll': G.rerollDisc = true; break;
     case 'cash': G.credits += 25 * G.wave; break;
+    case 'grid': G.gridBonus = (G.gridBonus || 0) + 2; break;
   }
   G.draft = null;
   recomputeAll();
@@ -3289,8 +3424,9 @@ function enemyTargetable(e) { return !e.dead && !(e.burrowT > 0) && (!e.cloaked 
 function findTargets(t, range, n, exclude) {
   const r2 = range * range, out = [];
   const cand = [];
+  const ground = t.s && t.s.ground;
   for (const e of G.enemies) {
-    if (!enemyTargetable(e) || (exclude && exclude.has(e))) continue;
+    if (!enemyTargetable(e) || (exclude && exclude.has(e)) || (ground && e.fly)) continue;
     const rr = range + (e.boss ? 0.5 : 0);
     if (dist2(e.x, e.y, t.cx, t.cy) <= rr * rr) cand.push(e);
   }
@@ -3482,7 +3618,7 @@ function towerAttack(t, range, sw) {
       const dmg = atkDmg(t, sw, crit);
       const r2 = (range + 0.3) * (range + 0.3);
       for (const e of G.enemies) {
-        if (!enemyTargetable(e)) continue;
+        if (!enemyTargetable(e) || e.fly) continue; // flames can't reach fliers
         if (dist2(e.x, e.y, t.cx, t.cy) > r2) continue;
         let da = Math.atan2(e.y - t.cy, e.x - t.cx) - ang;
         while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
@@ -3604,7 +3740,10 @@ function explode(p) {
   if (G.af.fractal && p.k === 'missile') shards(p, null);
   Hooks.fx('boom', { x: p.x, y: p.y, r, col: EL[p.el].col });
   Hooks.sfx('boom', p);
-  for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, p.x, p.y) <= (r + e.size) * (r + e.size)) hit(e, p.dmg, p.el, src, { crit: p.crit });
+  for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, p.x, p.y) <= (r + e.size) * (r + e.size)) {
+    if (p.k === 'mortar' && e.shield > 0) e.shield *= 0.5; // EMP strips shields
+    hit(e, p.dmg, p.el, src, { crit: p.crit });
+  }
   if (p.k === 'missile' && s.cluster) for (let i = 0; i < s.cluster; i++) {
     G.projs.push({ k: 'bomblet', x: p.x + (G.r() - 0.5) * 1.6, y: p.y + (G.r() - 0.5) * 1.6, t: 0.25 + i * 0.12, dmg: p.dmg * 0.45, el: p.el, src, splash: 0.6, crit: false });
   }
@@ -3614,7 +3753,7 @@ function explode(p) {
 function updateZones(dt) {
   for (const z of G.zones) {
     z.t -= dt;
-    for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, z.x, z.y) <= z.r * z.r) {
+    for (const e of G.enemies) if (!e.dead && !(e.fly && z.k === 'napalm') && dist2(e.x, e.y, z.x, z.y) <= z.r * z.r) {
       hit(e, z.dps * dt, z.el, z.src, { dot: 1, noStatus: 1 });
       if (!e.dead && !e.st.burn) e.st.burn = { dps: z.dps * 0.4 * G.mods.burnDmg, t: 1.5, src: z.src };
     }
@@ -3878,12 +4017,12 @@ function snapshotRun(waveNum) {
   if (!G || G.over) return;
   const gut = []; let owed = 0; for (const e of G.enemies) if (!e.dead) { if (e.gut) for (const t of e.gut) if (!G.towerAt[tIdx(t.x, t.y)]) gut.push(t); if (e.audited) owed += e.audited; }
   const tw = G.towers.concat(gut).map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
-    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc }));
+    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0 }));
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [],
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {},
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -3901,7 +4040,7 @@ function resumeRun(S) {
   const ci = S.tiles.indexOf(4);
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
-  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice();
+  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {});
   setNodes((S.nodes || []).slice()); G.caches = []; G.pirates = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};
@@ -3910,7 +4049,7 @@ function resumeRun(S) {
     const t = { id: G.tid++, type: T.type, x: T.x, y: T.y, cx: T.x + 0.5, cy: T.y + 0.5, lvl: T.lvl, spec: T.spec, affixes: T.affixes, rerolls: T.rerolls,
       invested: T.invested, cd: 0.3, angle: -Math.PI / 2, kills: T.kills, dmgDone: T.dmgDone, dps: 0, dpsAcc: 0, mode: T.mode || 'first', disabled: 0,
       ramp: 0, olT: 0, buff: { dmg: 0, rate: 0, crit: 0 }, isolated: false, flash: 0,
-      vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [] };
+      vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0 };
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t;
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
@@ -4781,6 +4920,7 @@ const Render = (() => {
       R(b, X + 4, Y + 2, 1, 5, sc); R(b, X + 2, Y + 4, 5, 1, sc); P(b, X + 4, Y + 4, '#ffffff');
     }
     if (t.disabled > 0) for (let i = 0; i < 14; i++) R(b, X + 2 + Math.random() * 19, Y + 2 + Math.random() * 19, 2, 1, i % 2 ? '#ffffff' : '#5a5a7a');
+    if (t.oc) for (let i = 0; i < t.oc; i++) { const bx = X + 18 - i * 5, by = Y + 1, c = frame % 16 < 8 ? '#59f0b4' : '#e6fff6'; R(b, bx + 1, by, 2, 3, c); R(b, bx, by + 2, 3, 1, c); R(b, bx + 1, by + 3, 2, 3, c); }
   }
   // wormhole: swirling portal at a lane's origin. Forming portals are small and unstable; open ones are full size.
   function drawWormhole(L) {
@@ -4838,6 +4978,8 @@ const Render = (() => {
     }
     if (e.boss) s = bossSprite(e.boss); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
     if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
+    if (e.genes && e.genes.includes('bulk')) s = scaledSpr('bk:' + e.type, s, 1.3);
+    if (e.mite) s = scaledSpr('mite', s, 0.7);
     const hw = s.width >> 1, hh = s.height >> 1;
     if (e.fly) { b.fillStyle = 'rgba(0,0,0,0.35)'; b.fillRect(X - hw + 2, Y + 4, s.width - 4, 3); }
     else { b.fillStyle = 'rgba(0,0,0,0.38)'; b.fillRect(Math.round(X - hw + 1), Math.round(Y + hh - 1), s.width - 2, 2); }
@@ -4859,6 +5001,17 @@ const Render = (() => {
       b.strokeStyle = hexA(ec, frame % 12 < 9 ? 0.9 : 0.4); b.lineWidth = 2; b.setLineDash([3, 3]); b.lineDashOffset = -frame / 2;
       b.beginPath(); b.arc(X, y, r, 0, 6.283); b.stroke(); b.setLineDash([]);
       R(b, X - 2, y - r - 5, 5, 3, ec); P(b, X - 2, y - r - 6, ec); P(b, X, y - r - 6, ec); P(b, X + 2, y - r - 6, ec);
+    }
+    // evolved traits
+    if (e.genes && e.genes.length && !cloaked) {
+      for (const g of e.genes) {
+        if (g === 'plating') { R(b, X - hw - 1, y - 3, 2, 6, '#c8ccd8'); R(b, X + hw - 1, y - 3, 2, 6, '#c8ccd8'); R(b, X - 3, y - hh - 1, 6, 2, '#c8ccd8'); }
+        else if (g === 'wings') { const f = (frame >> 2) & 1; for (const sd of [-1, 1]) { R(b, X + sd * (hw + 1) - (sd < 0 ? 3 : 0), y - 3 - f, 3, 1, '#9ad8ff'); R(b, X + sd * (hw + 2) - (sd < 0 ? 2 : 0), y - 4 - f, 2, 1, '#e8f6ff'); } }
+        else if (g === 'haste') { for (let i = 0; i < 3; i++) R(b, X - hw - 4 - i * 2, y - 2 + i * 2, 3, 1, '#ffe14d'); }
+        else if (g === 'brood') { P(b, X - 2, y + hh + 1, '#ff9ad5'); P(b, X + 1, y + hh + 2, '#ff9ad5'); P(b, X + 3, y + hh, '#ff9ad5'); }
+        else if (g === 'regen' && !st.burn && frame % 30 < 15) { R(b, X + hw - 1, y - hh - 4, 3, 1, '#59f0b4'); R(b, X + hw, y - hh - 5, 1, 3, '#59f0b4'); }
+        else if (g === 'ward') { b.strokeStyle = hexA(EL[e.wardEl] ? EL[e.wardEl].col : '#d6a6ff', 0.75); b.lineWidth = 1; b.setLineDash([2, 2]); b.beginPath(); b.arc(X, y, hw + 2, 0, 6.283); b.stroke(); b.setLineDash([]); }
+      }
     }
     // status pips
     if (st.burn && frame % 6 < 4) { R(b, X - 3 + (frame % 3) * 2, y - hh - 4, 2, 2, EL.T.col); P(b, X - 2 + (frame % 3) * 2, y - hh - 5, '#ffe14d'); }
@@ -5700,8 +5853,10 @@ const UI = (() => {
     const chips = [];
     if (G.spawningDone && G.prep) {
       const P = G.prep;
-      chips.push(`<span class="evchip next">Next: ${P.total} enemies${P.fly ? ' · ' + P.fly + ' flying' : ''}${P.elites ? ' · ' + P.elites + (P.elites === 1 ? ' Elite' : ' Elites') : ''}</span>`);
       if (P.boss) chips.push(`<span class="evchip next bad">Boss ${P.boss.odd ? "???" : esc(P.boss.name)}</span>`);
+      for (const [g, v] of Object.entries(P.genes || {}).filter(([g, v]) => v >= 0.2).sort((a, b) => b[1] - a[1]).slice(0, 3))
+        chips.push(`<span class="evchip gene" data-gene="${g}" style="--c:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</span>`);
+      chips.push(`<span class="evchip next">Next ${P.total}${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
@@ -5712,6 +5867,7 @@ const UI = (() => {
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
     const html = chips.join('');
+    const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c); }
     const ch = $('#chips');
     if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
     if (hudFull) renderDps();
@@ -5797,12 +5953,12 @@ const UI = (() => {
   function costBtn(cost) { return `data-cost="${cost}"`; }
   // what each tower is for, in one line: a playstyle, not a stat sheet
   const TOWER_ROLE = {
-    pulse: 'All-rounder · fast single-target fire', rail: 'Lines and armor · long-range piercing shots',
-    cryo: 'Control · slows and freezes groups', snare: 'Control · pulls fliers into a net',
-    missile: 'Crowds · splash and Burn', pylon: 'Support · boosts every tower around it',
-    coil: 'Crowds and combos · chains and Shocks', forge: 'Economy · credits every wave',
-    flame: 'Close crowds · brutal at short range', lens: 'Boss killer · ramps up on one target, weak against swarms',
-    emp: 'Control · stuns groups from afar', grav: 'Control · drags enemies back down the road',
+    pulse: 'Anti-air all-rounder · fast shots, weak to Plating', rail: 'Pierces Plating and lines · slow, long range, hits air',
+    cryo: 'Control · slows everything in its ring, air included', snare: 'Anti-air control · pulls fliers into a net',
+    missile: 'Crowds, Brood and air · splash and Burn, weak to Plating', pylon: 'Support · boosts towers around it, reveals Cloak',
+    coil: 'Shields and crowds · ×2.5 vs shields, chains', forge: 'Economy · credits every wave',
+    flame: 'Ground crowds · Burn stops Regrowth · can\'t hit air', lens: 'Plating, Bulk and bosses · beam ignores Plating, weak vs swarms',
+    emp: 'Control · stuns and strips shields, hits air', grav: 'Control · drags ground enemies back · can\'t hit air',
   };
   function buildPanelHTML() {
     const order = TOWER_ORDER.filter(towerUnlocked).concat(TOWER_ORDER.filter(k => !towerUnlocked(k)));
@@ -5819,13 +5975,15 @@ const UI = (() => {
         : D.kind === 'eco' ? `+${D.income} credits per wave`
         : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
       info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p class="role">${tipify(TOWER_ROLE[pick] || '')}</p><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
-      foot = `<button class="btn primary wide" data-act="build" ${costBtn(cost)}>Build · ${fmt(cost)}</button>`;
+      const full = gridFree() < 1 && !isNode(panel.x, panel.y);
+      foot = full ? `<button class="btn primary wide" disabled>Grid full · ${gridUsed()}/${gridCap()}<small>Upgrade, Overcharge or sell. +1 power every ${GRID.perWaves} waves; Power Nodes are free</small></button>`
+        : `<button class="btn primary wide" data-act="build" ${costBtn(cost)}>Build · ${fmt(cost)}<small>Uses 1 power · grid ${gridUsed()}/${gridCap()}</small></button>`;
     } else {
       info = `<div class="binfo"><p class="dim">Select a tower to see its range. Tap it again to build.</p></div>`;
       foot = '';
     }
-    const nodeNote = isNode(panel.x, panel.y) ? `<div class="sts node">${tipify('Power Node: towers here are overcharged (+25% Damage, +15% Range; support and economy +25%)')}</div>` : '';
-    return `<div class="ph"><b>Build</b>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
+    const nodeNote = isNode(panel.x, panel.y) ? `<div class="sts node">${tipify('Power Node: towers here draw no power and get +25% Damage, +15% Range (support and economy +25%)')}</div>` : '';
+    return `<div class="ph"><b>Build</b><small class="grid ${gridFree() < 1 ? 'full' : ''}">Power ${gridUsed()}/${gridCap()}</small>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
   }
 
   // ---------- tappable glossary terms ----------
@@ -5861,6 +6019,11 @@ const UI = (() => {
       ...LEGENDARIES.map(L => [L.name, `Legendary affix. ${L.t()}.`]),
       ...Object.values(STORMS).map(S => [S.name, `Storm. ${S.desc}.`]),
       ...EVENTS.map(E => [E.name, `Wave event. ${E.desc}.`]),
+      ...GENE_IDS.map(g => [GENES[g].name, `Evolved trait. ${GENES[g].desc}. Counter: ${GENES[g].counter}.`]),
+      ['Power', `Your grid. Every tower draws 1 power (towers on Power Nodes draw none); Overcharge draws more. Capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves.`],
+      ['Overcharge', `Spend spare power on a tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Change it any time, even mid-wave.`],
+      ['Plating', 'Blunts every hit except piercing fire: Rail Lance, Void Lens beams, Burn and other damage over time, and abilities.'],
+      ['Evolution', 'Waves are bred from the enemies that got furthest last time, so the swarm drifts towards whatever your defence handles worst. Counter what is spreading and it drifts away again.'],
       ['Common', 'Affix rarity. Base value.'], ['Magic', 'Affix rarity. ×1.7 value.'], ['Rare', 'Affix rarity. ×2.6 value.'],
       ['Leaks', 'Enemies that reached your core. Each one costs core HP.'], ['Lone Wolf', 'Bonus damage for towers with no neighbours.'],
     ];
@@ -5931,6 +6094,7 @@ const UI = (() => {
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       <div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>
+      ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${[0, 1, 2].map(n => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n * OVERCHARGE.dmg * 100}% · ${n} pw` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
       <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}</button></div></div>`;
@@ -6034,6 +6198,7 @@ const UI = (() => {
       else if (act === 'spec') { if (!upgradeTower(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'reroll') { if (!rerollTower(t)) SFX.play('deny'); renderPanel(); }
       else if (act === 'sell') { sellTower(t); closePanel(); }
+      else if (act === 'oc') { if (!setOvercharge(t, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
       else if (act === 'vet') { if (!claimVet(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       return;
     }
@@ -6211,7 +6376,7 @@ const UI = (() => {
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
-      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0,
+      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
   }
@@ -6223,6 +6388,7 @@ const UI = (() => {
       <div class="elbar">${ELS.filter(e => els[e] / tot > 0.005).map(e => `<i style="flex:${Math.max(0.001, els[e] / tot)};background:${EL[e].col}" title="${EL[e].name}"></i>`).join('')}</div>
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
+      ${R.peakGene ? `<p class="note hl" style="color:${GENES[R.peakGene.g].col}">${tipify(`Evolution peak: ${GENES[R.peakGene.g].name} reached ${Math.round(R.peakGene.v * 100)}% of the swarm at Wave ${R.peakGene.w}`)}</p>` : ''}
       ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
@@ -6321,6 +6487,9 @@ const UI = (() => {
   const GUIDE = [
     { id: 'basics', name: 'Basics', rows: [
       ['Build', 'Tap an empty tile, choose a tower, then tap it again to build.'],
+      ['Power', `Every tower draws 1 power. You start with ${GRID.base} and gain 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes are free. When the grid is full, the game is about making the towers you have count.`],
+      ['Overcharge', `Tap a tower to spend spare power on it: +${OVERCHARGE.dmg * 100}% Damage per point, up to ${OVERCHARGE.max}. Free to move at any time, even mid-wave.`],
+      ['Evolution', 'From Wave 8 the swarm evolves. Enemies that get furthest pass on their traits (Plating, Wings, Haste, Shell...), so whatever your defence handles worst spreads. The next-wave chips show what is spreading; tap one to see its counter, then adapt.'],
       ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
       ['Specialize', 'At LV 3, choose one of two specializations.'],
       ['Core Battery', 'The core is a long-range gun that shells whatever is closest to reaching it, almost anywhere on the map. It starts as light support; Battery upgrades are expensive but make it a real weapon, with Twin Battery at LV 4, Siege Shells at LV 8 and Orbital Uplink at LV 12. Tap the core to upgrade, repair or reroll it.'],
@@ -6378,7 +6547,7 @@ const UI = (() => {
       { id: 'status', name: 'Statuses', rows: [
         ['Burn', 'Deals damage over time.', EL.T.col], ['Chill', 'Slows. Stacks up to 5.', EL.C.col], ['Freeze', 'At 5 Chill stacks the enemy is frozen in place.', EL.C.col],
         ['Shock', 'Enemy takes +15% damage while Shocked.', EL.A.col], ['Mark', 'Each stack adds +5% damage taken.', EL.V.col], ['Stun', 'Enemy cannot move.', EL.A.col],
-        ['Cloaked', 'Cannot be targeted. Relay Pylons reveal cloaked enemies.'], ['Armor', 'Reduces Kinetic damage taken. Pierce and Armor penetration bypass it.'],
+        ['Cloaked', 'Cannot be targeted. Relay Pylons reveal cloaked enemies.'], ['Plating', 'Blunts every hit except piercing fire: Rail Lance, Void Lens beams, Burn and other damage over time, and abilities. Armor penetration reduces it.'],
         ['Shield', 'Absorbs damage before HP.'] ] },
       { id: 'combos', name: 'Combos', rows: COMBO_NAMES.map(n => [n[0] + n.slice(1).toLowerCase(), COMBO_DESC[n] + '.']) },
       { id: 'terms', name: 'Terms', rows: [
@@ -6390,7 +6559,11 @@ const UI = (() => {
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
-        ['Power Node', 'Charged tile. Towers on it get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
+        ['Power', `Every tower draws 1 power from your grid; capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes draw none. When it's full, make towers better instead of adding more.`],
+        ['Overcharge', `Spend spare power on one tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Free to change at any time, so shift it to whatever the wave needs.`],
+        ['Evolution', 'From Wave 8 enemies carry genes: up to 1 until Wave 22, 2 until Wave 45, then 3. Each gene trades HP or speed for an edge. Waves are bred from the enemies that got furthest, so traits your defence handles badly spread. The next-wave chips show what is spreading; tap one for its counter.'],
+        ['Ground-only', 'Flame Projector and Gravity Well cannot hit fliers (including enemies that evolve Wings).'],
+        ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
         ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap the core, Release Overdrive, tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
         ['Cursed Cache', 'Booby-trapped pirate loot, red, from Wave 10. Double reward, but a stowaway pirate (an elite) breaks loose from a wormhole.'],
@@ -6405,6 +6578,7 @@ const UI = (() => {
       { id: 'legend', name: 'Legendaries', rows: LEGENDARIES.map(L => [L.name, `${L.t()}. ${P[L.pool]}.`, RARITY[3].col]) },
       { id: 'curse', name: 'Curses', rows: CURSES.map(C => [C.t(), 'Curse', RARITY[4].col]) },
       { id: 'enemy', name: 'Enemies', rows: Object.values(ENEMIES).map(E => [E.name, E.desc + '.', '#ff8a9c']) },
+      { id: 'genes', name: 'Evolution', rows: GENE_IDS.map(g => [GENES[g].name, `${GENES[g].desc}. Counter: ${GENES[g].counter}.`, GENES[g].col]) },
       { id: 'elite', name: 'Elite Affixes', rows: ELITE_AFFIXES.map(E => [E.name, E.desc + '.', E.col]) },
       { id: 'boss', name: 'Bosses', rows: BOSSES.map(B => [B.name, B.desc + '.', '#ff4d6a']) },
       { id: 'storm', name: 'Storms', rows: [...Object.values(STORMS).map(S => [S.name, S.desc + '.', S.col]),
@@ -6591,6 +6765,7 @@ const UI = (() => {
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
+    $('#chips').addEventListener('click', e => { const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
@@ -6643,6 +6818,7 @@ const UI = (() => {
     Hooks.sfx = (n, a) => SFX.play(n, a);
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
+    Hooks.gridFull = () => toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Upgrade, Overcharge or sell; Power Nodes are free`, '#ffb03a');
     Hooks.log = log;
     Hooks.toast = toast;
     Hooks.onDraft = opts => { closePanel(); openDraft(opts); };
