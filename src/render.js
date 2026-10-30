@@ -571,6 +571,7 @@ const Render = (() => {
         b.drawImage(sg, Math.round(o.x * TILE - so), Math.round(o.y * TILE - so + wig)); }
     }
     if (e.boss) s = scaledSpr('B:' + e.boss, bossSprite(e.boss), BOSS_SCALE); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
+    if (e.wanted === 'colossal') s = scaledSpr('W:' + e.boss, s, 1.5);
     if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
     if (e.genes && e.genes.includes('bulk')) s = scaledSpr('bk:' + e.type, s, 1.3);
     if (e.mite) s = scaledSpr('mite', s, 0.7);
@@ -590,6 +591,7 @@ const Render = (() => {
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
     if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
+    if (e.wanted && !cloaked) { b.strokeStyle = hexA('#ffd84a', 0.6 + 0.35 * Math.sin(frame / 5)); b.lineWidth = 2; b.setLineDash([5, 4]); b.lineDashOffset = frame / 2; b.beginPath(); b.arc(X, y, hw + 8, 0, 6.283); b.stroke(); b.setLineDash([]); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
     if (e.elite.length && !cloaked) {
       const ec = ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, r = hw + 4;

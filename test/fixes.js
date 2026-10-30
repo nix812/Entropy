@@ -48,3 +48,23 @@ prof(90, 60); ok(S.treeAllocate('d3') && S.treeAllocate('d1'), 'Glacier and Wild
 ok(S.treeBlock('k1').startsWith('conflict'), `Conflagration blocked under Glacier (${S.treeBlock('k1')})`);
 prof(90, 60); ok(S.treeAllocate('d1') && S.treeAllocate('k1'), 'Conflagration taken'); ok(S.treeBlock('d3').startsWith('conflict'), 'Glacier blocked under Conflagration');
 ok(!S.treeBlock('d4'), 'other seals unaffected');
+
+// 7. Most Wanted: planned at run start, forced onto its wave, twins pay on the second kill, survives a resume
+G = S.newRun({ seed: 9, chaos: 1, startWave: 15 });
+ok(G.wanted && G.wanted.w === 30, `wanted planned for Wave ${G.wanted && G.wanted.w} (start 15): ${G.wanted && G.wanted.name}`);
+G.wanted.mod = 'twins'; G.wanted.name = 'Twin ' + G.wanted.boss;
+G.wave = 29; G.prep = null; S.prepareWave(30);
+ok(G.prep.boss && G.prep.boss.id === G.wanted.boss, `the wanted boss is forced onto Wave ${G.wanted.w} (${G.prep.boss && G.prep.boss.id})`);
+G.credits = 50000; G.towers.length = 0; // no towers: just spawn and inspect
+G.next = 0; S.simStep(1/30);
+for (let i = 0; i < 30 * 60 && !G.enemies.some(e => e.boss); i++) S.simStep(1 / 30);
+let bosses = G.enemies.filter(e => e.boss);
+for (let i = 0; i < 30 * 4; i++) S.simStep(1 / 30);
+bosses = G.enemies.filter(e => e.boss);
+ok(bosses.length === 2 && bosses.every(e => e.wanted === 'twins'), `twins: ${bosses.length} wanted bosses on the field`);
+let cr0 = G.credits, lq0 = G.legendQueue;
+S.kill(bosses[0], null, {}); ok(!G.wanted.done && !G.stats.bounty, 'first twin pays no bounty yet');
+S.kill(bosses[1], null, {}); ok(G.credits > cr0 && G.legendQueue === lq0 + 1 && G.wanted.done && G.stats.bounty, `second twin pays the bounty: +${G.credits - cr0} credits, legend queue +1`);
+// snapshot
+S.snapshotNow(); const snap3 = JSON.parse(JSON.stringify(S.PROF.runSnap)); const G2 = S.resumeRun(snap3);
+ok(G2.wanted && G2.wanted.done, 'wanted state survives a resume');

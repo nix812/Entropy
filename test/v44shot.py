@@ -68,6 +68,20 @@ with sync_playwright() as p:
     # the core deals ×2.5 to that boss
     mult = pg.evaluate('''() => { const e = G.enemies.find(x => x.boss); G.core.s = coreStats(); e.phaseT = 0; const h0 = e.hp; hit(e, 1000, 'K', G.core, { noStatus: 1 }); const a = h0 - e.hp; e.redAlert = 0; const h1 = e.hp; hit(e, 1000, 'K', G.core, { noStatus: 1 }); const b = h1 - e.hp; e.redAlert = 1; return a / b; }''')
     ok(mult > 2, f'core shells hit the boss at ×{mult:.1f}')
+    # --- Most Wanted: the chip between waves, the poster, the intro card ---
+    pg.evaluate('''() => { for (const e of G.enemies) e.dead = true; G.enemies = []; G.bossAlive = null; G.redAlert = false; G.spawningDone = true; G.next = 30; G.wave = 19; G.prep = null;
+      G.wanted = { boss: 'duck', mod: 'colossal', w: 20, done: 0, name: 'Colossal Quackzilla', crime: 'disturbing the peace', bounty: 1200 }; prepareWave(20); }''')
+    pg.wait_for_timeout(300)
+    ok(pg.evaluate('() => !!document.querySelector(".evchip.wanted")'), 'WANTED chip shows between waves')
+    pg.click('.evchip.wanted'); pg.wait_for_timeout(300)
+    pg.screenshot(path=str(out / f'{tag}07_wanted_poster.png'))
+    pg.evaluate('''() => { document.querySelector('#toasts .toast') && document.querySelector('#toasts .toast').click(); G.next = 0; simStep(1/30); for (let i = 0; i < 30 * 40 && !G.enemies.some(e => e.boss); i++) simStep(1/30); }''')
+    pg.wait_for_timeout(400)
+    w = pg.evaluate('() => { const e = G.enemies.find(x => x.boss); return e ? { wanted: e.wanted, size: e.size } : null; }')
+    ok(w and w['wanted'] == 'colossal', f'the wanted boss spawned with its mutation ({w})')
+    ok('MOST WANTED' in pg.evaluate('() => document.querySelector("#bossIntro em").textContent'), 'boss intro card says MOST WANTED')
+    pg.screenshot(path=str(out / f'{tag}08_wanted_intro.png'))
+    pg.evaluate('() => { document.querySelector("#bossIntro").click(); }'); pg.wait_for_timeout(200)
     # --- Help from Pause goes back to Pause ---
     pg.click('#bPause'); pg.wait_for_timeout(150); pg.click('[data-act=help]'); pg.wait_for_timeout(200); pg.click('[data-act=close2]'); pg.wait_for_timeout(200)
     ok(pg.evaluate('() => UI.modalOpen') == 'pause' and pg.evaluate('() => G.paused'), 'closing Help returns to the Pause menu, still paused')

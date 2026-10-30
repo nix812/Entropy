@@ -660,6 +660,7 @@ function newRun(opts) {
     if (G.anoms.includes('flux')) G.flux = { el: pick(r, ELS), t: 20 };
     recomputeAll(); G.core.hp = G.core.max; G.core.shield = G.core.smax;
   }
+  planWanted();
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
   // harder difficulties: the swarm arrives already adapted to one or two weaknesses (seeded as strong parents)
@@ -1841,8 +1842,31 @@ const BOSS_PHASES = [0.66, 0.33];
 // and a boss gets likelier the longer it's been away; the last two can't repeat.
 const BOSS_FROM = { behemoth: 10, queen: 10, wraith: 15, overmind: 20, titan: 30, cat: 10, gloop: 10, duck: 10, whale: 20, fsm: 20 };
 function bossFrom(B) { return B.from || BOSS_FROM[B.id] || 10; }
+// ---------- v4.4 Most Wanted ----------
+// One boss per run gets a poster: a mutation (Colossal, Twin, Hasted, Armored, Spectral, Loaded) and a bounty. It is announced at the start,
+// shows as a chip between waves, and lands on the first boss wave at least ten waves out (never before Wave 20).
+function planWanted() {
+  const r = G.r, w = Math.max(20, Math.ceil((G.startWave + 10) / 10) * 10);
+  const pool = BOSSES.filter(B => bossFrom(B) <= w && !(G.af && G.af.oddAll && !B.odd));
+  const B = pick(r, pool), M = pick(r, WANTED_MODS);
+  G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w * (G.CH.cr || 1)) };
+  rlog('wanted', { boss: B.id, mod: M.id, w });
+}
+function wantedMod(e) { return e.wanted ? WANTED_MODS.find(m => m.id === e.wanted) : null; }
+function claimBounty(e) {
+  const Wd = G.wanted, M = wantedMod(e); if (!Wd || !M) return;
+  // twins: the bounty comes with the second kill
+  if (M.twins && G.enemies.some(o => o !== e && !o.dead && o.wanted)) { Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: 'my twin will avenge me' }); return; }
+  const cr = Wd.bounty * (M.loaded ? 2 : 1);
+  G.credits += cr; G.legendQueue++; Wd.done = 1; G.stats.bounty = Wd.name;
+  if (M.loaded) { const c = { x: Math.round(e.x - 0.5), y: Math.round(e.y - 0.5), t: CACHE_LIFE * 2, id: G.eid++, kind: 'gold' }; if (inRegion(c.x, c.y, G.region) && G.map.tiles[tIdx(c.x, c.y)] !== 2 && !G.towerAt[tIdx(c.x, c.y)]) { (G.caches || (G.caches = [])).push(c); Hooks.fx('cache', { x: c.x + 0.5, y: c.y + 0.5, kind: 'gold' }); } }
+  rlog('bounty', { boss: e.boss, mod: M.id, cr });
+  Hooks.toast('BOUNTY CLAIMED', `${Wd.name} brought in: +${fmt(cr)} credits, your next tower rolls a Legendary${M.loaded ? ", and the Captain's Chest it was carrying" : ''}`, '#ffd84a', true);
+  Hooks.sfx('levelup'); Hooks.fx('cash', {});
+}
 function nextBoss(w, r) {
   const H = G.bossHist || (G.bossHist = {}), recent = G.bossRecent || (G.bossRecent = []);
+  if (G.wanted && !G.wanted.done && G.wanted.w === w) { const B = BOSSES.find(b => b.id === G.wanted.boss); H[B.id] = w; recent.push(B.id); if (recent.length > 2) recent.shift(); return B; }
   let ok = BOSSES.filter(B => bossFrom(B) <= Math.max(10, w) && (!G.af.oddAll || B.odd));
   if (ok.length > 3) ok = ok.filter(B => !recent.includes(B.id));
   const wt = ok.map(B => H[B.id] === undefined ? 4 : Math.min(4, 0.5 + (w - H[B.id]) / 20));
@@ -1871,6 +1895,12 @@ function spawnBoss(q) {
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2, phase: 0, phaseT: 0 };
   if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
   if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.85 : 0.6; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
+  // Most Wanted: the poster's boss gets its mutation (twins: the second copy follows 3 s later)
+  if (!gen && G.wanted && !G.wanted.done && G.wanted.boss === B.id && G.wanted.w === w) {
+    const M = WANTED_MODS.find(m => m.id === G.wanted.mod);
+    e.wanted = M.id; e.hp = e.maxHp *= M.hp || 1; e.spd *= M.spd || 1; e.size *= M.size || 1; if (M.armorAll) e.armorAll = Math.max(e.armorAll, M.armorAll); if (M.cloak) e.wcloak = 1; if (M.loaded) e.wantedLoaded = 1;
+    if (M.twins && !q.twin) setTimeoutSim(3, () => { const t2 = spawnBoss(Object.assign({}, q, { twin: 1 })); if (t2) Hooks.fx('say', { x: t2.x, y: t2.y - 1, t: 'two for one' }); });
+  }
   if (G.bossBribe && !gen) { G.bossBribe = 0; e.hp = e.maxHp * 0.7; e.bribed = 1; Hooks.fx('say', { x: e.x, y: e.y - 1, t: B.id === 'auditor' ? 'Donation noted.' : '*pockets the bribe*' }); }
   if (B.id === 'cat') e.timer2 = 9;
   if (B.id === 'worm') { e.gut = []; e.timer = 6; }
@@ -1969,7 +1999,8 @@ function updateEnemies(dt) {
       e.cloakT -= dt;
       if (e.cloakT <= 0) { e.cloaked = !e.cloaked; e.cloakT = e.cloaked ? 2 : 3.5; }
     }
-    if (e.boss === 'wraith' && e.cloakT > 0) { e.cloakT -= dt; if (e.cloakT <= 0) e.cloaked = false; }
+    if ((e.boss === 'wraith' || e.wcloak) && e.cloakT > 0) { e.cloakT -= dt; if (e.cloakT <= 0) e.cloaked = false; }
+    if (e.wcloak && !e.cloaked) { e.wcT = (e.wcT === undefined ? 7 : e.wcT) - dt; if (e.wcT <= 0) { e.wcT = 7; e.cloaked = true; e.cloakT = 2; Hooks.fx('blink', { x: e.x, y: e.y }); } }
     // behaviors
     e.timer -= dt;
     if (e.type === 'medic' && e.timer <= 0) {
@@ -2439,6 +2470,7 @@ function kill(e, src, o) {
   // Gloop's offspring are part of one boss: the reward comes when the last of the family dies
   if (e.boss === 'worm' && e.gut && e.gut.length) wormRelease(e);
   if (e.boss === 'auditor' && e.audited > 0) { const back = Math.round(e.audited * 1.25); G.credits += back; Hooks.toast('TAX REFUND', `+${back} credits, with 25% interest`, '#59f0b4', true); Hooks.fx('num', { x: e.x, y: e.y - 0.5, v: back, combo: 'REFUND', col: '#59f0b4' }); e.audited = 0; }
+  if (e.wanted && !e.gen) claimBounty(e);
   if (e.boss && !e.gen) rlog('bossDown', { id: e.boss, ph: e.phase || 0, road: +(e.d / e.L.len).toFixed(2) });
   const bossDown = e.boss && (e.boss !== 'gloop' || ((e.gen || 0) >= 2 && !G.enemies.some(o => o !== e && !o.dead && o.boss === 'gloop')));
   if (bossDown) {
@@ -3112,7 +3144,7 @@ function snapshotRun(waveNum) {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -3150,7 +3182,7 @@ function resumeRun(S) {
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   if (G.daily) { G.laws = []; G.novaN = 0; } // dailies never carry Cosmic Laws, resumed or not
-  G.goldAt = S.goldAt || 0; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
+  G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
   // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
   if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
