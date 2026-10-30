@@ -204,7 +204,7 @@ function computeMods(alloc, runMods) {
   if (ks.chaos) M.affixLuck += 1.5;
   if (ks.prismatic) M.dmg *= 0.9;
   if (ks.unbreakable) M.dmg *= 0.9;
-  if (ks.glacier) M.dmg *= 0.8;
+  if (ks.glacier) M.dmg *= 0.9;
   for (const [k2, d2] of [['cLink', 'circuit'], ['cBolt', 'circuit'], ['hPull', 'horizon'], ['hWell', 'horizon'], ['aRank', 'artisan'], ['aVxp', 'artisan'], ['gScore', 'gambler']]) if (!ks[d2]) delete m[k2];
   if (!ks.marksman) delete m.msOc; if (!ks.wildfire) { delete m.wfHeat; delete m.wfDur; } if (!ks.wareco) { delete m.weStep; delete m.weTur; }
   M.raw = m;
@@ -1193,7 +1193,8 @@ function rollEvents(w) {
     chance *= 0.6;
   }
   // Gambler: one more roll of the dice every wave
-  if (G.mods && G.mods.ks.gambler && w >= 2) { const opts = EVENTS.filter(E => E.from <= w + 10 && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
+  // a fair coin: good or bad, and always good on a boss wave (a breach ends the run)
+  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
   return { ev, list };
 }
 function prepareWave(w) {

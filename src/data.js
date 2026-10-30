@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.2.1';
+const VERSION = '4.3.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,14 +167,14 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.2.1', title: 'Entropy 4.2 · Doctrines', items: [
-  ['Easier Passive Web', 'Zoom into a region and the rest fades back (in 3D the Zenith and Nadir pillars hide), so taps land where you look. Two nodes under one finger? It zooms in instead of guessing. New Undo button, and the Doctrine panel suggests your next goal.'],
-  ['Doctrines', 'Seal a region of the Passive Web to adopt its play style. You hold 1 seal (2 from level 75, 3 from level 120). Its notables, mastery, keystone and arm only open with the seal. Tap Doctrine in the web to compare them and track your build.'],
-  ['Marksman', 'Few towers, enormous shots: a 40% smaller power grid, but every attack tower gets +2 Overcharge free and can go to 5. Targeting lasers show what they hunt.'],
-  ['Wildfire', 'The road burns: burning enemies leave fire behind, Heat builds as more road burns, and towers right next to the fire overheat.'],
-  ['War Economy', 'Money is firepower: banked credits grow turrets on your core, up to 8. Spend and they shrink. Towers cost 20% more.'],
-  ['Points refunded', 'Your passive points are all back. The other regions become Doctrines in a later update and stay open until then.'],
-  ['From 4.1', 'Bigger bosses, and a boss that reaches your core ends the run.']
+const WHATS_NEW = { ver: '4.3.0', title: 'Entropy 4.3 · Every Region a Doctrine', items: [
+  ['Circuit (Voltaic)', 'Towers next to each other wire up and fire faster. Chains of 4+ throw lightning every 4s. But if one tower in a chain is knocked out, the whole chain stalls.'],
+  ['Glacier (Cryogenics)', 'A Frozen enemy becomes an ice block and everything behind it piles up. All towers deal 10% less damage.'],
+  ['Event Horizon (Singularity)', 'Kills open small gravity wells that drag enemies back, and fully Marked enemies get yanked back down the road. Enemies move 12% faster.'],
+  ['Artisan (Zenith)', 'Veterans rank up twice as fast and hit harder with every rank; rerolls are half price. Rookie towers deal 20% less.'],
+  ['Gambler (Nadir)', 'Every wave flips a coin for an extra event, good or bad (always good on boss waves). +25% score, and Entropy fills faster.'],
+  ['All 8 regions', 'Every region now has a seal. The Doctrine panel in the Passive Web compares them all and points you at your next goal.'],
+  ['From 4.2', 'Doctrines, an easier Passive Web with Undo, Marksman, Wildfire and War Economy.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -533,7 +533,7 @@ const DOCTRINES = {
     lines: ['Attack towers next to each other are wired: +8% Attack Speed per wired neighbour', 'A chain of 4+ wired towers fires a lightning bolt every 4s at the toughest enemy in its reach, for 2s of the whole chain\'s damage', 'If one tower in a chain is disabled or jammed, the whole chain stalls'],
     smalls: [{ cLink: 2 }, { cBolt: 15 }] },
   3: { id: 'glacier', name: 'Glacier', tag: 'Hold the line', counter: 'wings',
-    lines: ['A Frozen ground enemy becomes an ice block: enemies behind it pile up and stop', 'Bosses and fliers are never blocked', 'All towers deal 20% less damage'],
+    lines: ['A Frozen ground enemy becomes an ice block: enemies behind it pile up and stop', 'Bosses and fliers are never blocked', 'All towers deal 10% less damage'],
     smalls: [{ freezeDur: 0.15 }, { frozenVuln: 8 }] },
   4: { id: 'horizon', name: 'Event Horizon', tag: 'Drag them back', counter: 'bulk',
     lines: ['Every kill opens a small gravity well that drags nearby enemies back down the road', 'Enemies at max Marks are yanked back 1.5 tiles (once each)', 'Enemies move 12% faster'],
@@ -542,7 +542,7 @@ const DOCTRINES = {
     lines: ['Veterans rank up 2× faster and gain +6% Damage per rank', 'Rerolls cost 50% less', 'Towers without a Veteran rank deal 20% less damage'],
     smalls: [{ aRank: 2 }, { aVxp: 20 }] },
   7: { id: 'gambler', name: 'Gambler', tag: 'Every wave is a dice roll', counter: '', pillar: 'nad',
-    lines: ['Every wave from Wave 2 rolls an extra random event, good or bad', 'Score +25%', 'The Entropy gauge fills 25% faster'],
+    lines: ['Every wave from Wave 2 flips a coin for an extra event: good or bad (always good on boss waves)', 'Score +25%', 'The Entropy gauge fills 25% faster'],
     smalls: [{ gScore: 5 }, { gScore: 5 }] },
   5: { id: 'wareco', name: 'War Economy', tag: 'Money is firepower', counter: 'haste',
     lines: ['The core grows a turret for every stack of banked credits (up to 8): +60% core Damage and +8% core Attack Speed each', 'The stack size grows with the wave, so keep banking', 'Towers cost 20% more'],
