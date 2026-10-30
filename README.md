@@ -582,6 +582,13 @@ The expanding sector made every level a little easier, because the compact early
 ---
 
 ## 9. Backlog and ideas discussed
+- **Open threads as of 4.3 (October 30, 2026):**
+  - **More music:** Nic wants more tracks by kjartan_abel. Freesound is blocked from the workspace; Nic plans to add `freesound.org` and `cdn.freesound.org` to his allowed domains (claude.ai Settings → Capabilities). Then fetch the public previews (no login), check each track page's licence (his profile says most are CC BY-SA 4.0; EC credited CC BY 4.0), commit to `main` as `audio/bgm-battle-2..6.mp3` / `bgm-menu-2..6.mp3` (no code change needed), attach to the artifact with `files`, and add each to the Settings credit line. Candidates: battle "Aube Électronique", "Snabba Ladda", "Project Nine – Time is of the Essence"; menu "Homage", "Duality". Nic may instead attach files himself.
+  - **Early boss deaths:** since 4.1 a breach ends the run, and every 12-seed bot batch loses 1–3 runs to the wave 10–30 boss. Decide whether that's fair (warning, counterplay) or needs an early-boss HP cut / a first-breach grace.
+  - **Doctrine feedback pending from Nic:** Wildfire overheat (−25%) is the first knob if it feels weak; Artisan is the bot's strongest.
+  - **Nic's habits from his logs:** never uses Overcharge; banks 25–60k credits late with a full grid (War Economy is the answer offered); used Conflagration in 4.0.
+  - **Fable experiment:** Nic may run one Fable session with a broad prompt (full review, bug hunt, balance sweep with bots, then 2–3 bold features of its own). If a later session sees big unexplained changes, that's where they came from; the version table and commits say what changed.
+  - **Selling the game:** honest take given: worth trying on itch.io first ($2–3); blockers are a first-run tutorial, a name/trademark check on "Entropy", and confirming the music licences. iOS needs a wrapper and Apple's $99/yr account; Steam is $100 per game.
 - **Keystones costing 2 points**, to slow web completion for veterans. Proposed, not built.
 - **Watch the expanding sector's balance.** Bots say v1.15 is slightly easier at every level; check Nic's feel before touching HP. Possible knobs: `REGION0` (start size), the main-path extension jog (3–7 rows), wormhole radius (75–100%).
 - **If multi-direction wormholes feel too punishing:** lengthen the warning, or make the first lane longer.
