@@ -2,7 +2,7 @@
 const fs = require('fs'), vm = require('vm');
 function load() {
   const src = ['data.js', 'sim.js'].map(f => fs.readFileSync(__dirname + '/../src/' + f, 'utf8')).join('\n');
-  const ctx = { console, Math, Set, Map, Object, Array, JSON, Float32Array, Int32Array, Uint8Array, module: {}, process: { env: { NOGA: process.env.NOGA || '' } } };
+  const ctx = { console, Math, Set, Map, Object, Array, JSON, Float32Array, Int32Array, Uint8Array, module: {}, process: { env: Object.assign({}, process.env) } };
   vm.createContext(ctx);
   vm.runInContext(src + `
 this.S = { get G(){return G}, set G(v){G=v}, get PROF(){return PROF}, set PROF(v){PROF=v},

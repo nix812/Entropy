@@ -1125,7 +1125,7 @@ function updateStorms(dt) {
         Hooks.log('Maelstrom collapsed', '#ff4d6a');
         for (const e of G.enemies) {
           if (e.dead || dist2(e.x, e.y, s.x, s.y) > s.r * s.r) continue;
-          hit(e, e.maxHp * (e.boss ? 0.08 : 0.25), 'V', null, { noStatus: 1, abil: 1 });
+          hit(e, e.maxHp * (e.boss || e.assault ? 0.08 : 0.25), 'V', null, { noStatus: 1, abil: 1 });
         }
       }
     }
@@ -1307,7 +1307,10 @@ function genWave(w, ev) {
   if (A && A.w === w && A.state === 'warn' && !isBoss) {
     let n = 0;
     for (const e of q) { if (e.type === 'boss' || r() > ASSAULT.share) continue; e.genes = A.genes.filter(g => geneOk(e.type, g, w)); e.gel = A.el; e.assault = 1; n++; }
-    A.n = n;
+    const src = q.filter(e => e.assault), extra = Math.round(n * (ASSAULT.count - 1));
+    for (let i = 0; i < extra && src.length; i++) { const c = Object.assign({}, src[i % src.length]); c.t += interval * 0.5; q.push(c); }
+    q.sort((a, b) => a.t - b.t);
+    A.n = n + extra;
   }
   return { queue: q, rift };
 }
@@ -1317,7 +1320,9 @@ function genWave(w, ev) {
 // assault a wave ahead and selling is free (100% refund) until it lands, so you get a move in reply.
 // Hold it (few leaks): the strain is broken, +1 power for the rest of the run, and its genes fall out of favour.
 // Fail: it entrenches. Its genome spreads through the next waves and the following assault comes sooner.
-const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1 };
+const ENVN = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
+// secs: the assault's total HP is sized to this many seconds of your firepower (like bosses), so it tests any defence
+const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1, minHp: 1.3, secs: ENVN('ASEC', 30), count: ENVN('ACNT', 1.3) };
 const assaultOff = () => typeof process !== 'undefined' && process.env && (process.env.NOASSAULT || process.env.NOGA);
 function assaultFirst() { const E = evoCfg(); return E.first || E.start + 6; }
 function assaultEvery() { return evoCfg().every || 8; }
@@ -1330,7 +1335,7 @@ function intelUpdate() {
   const E = G.stats.dmgByEl; for (const k in E) { const d = E[k] - (I.el0[k] || 0); I.el0[k] = E[k]; if (d > 0) I.el[k] = (I.el[k] || 0) + d; }
 }
 // what the swarm sees: which genes would hurt this defence most, with the reason in plain words
-function readDefence(w) {
+function readDefence(w, jitter) {
   const I = G.intel || { type: {}, el: {} };
   const tot = Object.values(I.type).reduce((a, b) => a + b, 0), etot = Object.values(I.el).reduce((a, b) => a + b, 0);
   if (tot <= 0) return [];
@@ -1353,11 +1358,11 @@ function readDefence(w) {
   add('brood', (0.2 - splash) * 1.8, `only ${pc(splash)} of your damage is splash`);
   const last = G.stats.assaults && G.stats.assaults.list.length ? G.stats.assaults.list[G.stats.assaults.list.length - 1] : null;
   if (last && last.won && last.genes) for (const o of out) if (last.genes.includes(o.g)) o.score *= 0.4;
-  for (const o of out) o.score *= 0.85 + G.r() * 0.3;
+  if (jitter) for (const o of out) o.score *= 0.85 + G.r() * 0.3;
   return out.sort((a, b) => b.score - a.score);
 }
 function planAssault(w) {
-  const r = G.r, cap = Math.max(2, geneCap(w) + 1), reads = readDefence(w);
+  const r = G.r, cap = Math.max(2, geneCap(w) + 1), reads = readDefence(w, true);
   const genes = [], why = []; let el = null;
   for (const R of reads) { if (genes.length >= Math.min(2, cap)) break; genes.push(R.g); why.push(R.why); if (R.el) el = R.el; }
   // the rest comes from the genome that has done best against you so far
@@ -1406,10 +1411,12 @@ function resolveAssault() {
     G.assaultNext = A.w + Math.max(4, assaultEvery() - 2);
     Hooks.toast('STRAIN ENTRENCHED', `${A.name} broke through (${A.leaked} leaked). It spreads, and the next assault comes sooner`, '#ff4d6a', true);
   }
-  S.list.push({ w: A.w, name: A.name, won: A.won, leaked: A.leaked, n: A.n, genes: A.genes });
+  S.list.push({ w: A.w, name: A.name, won: A.won, leaked: A.leaked, n: A.n, genes: A.genes, hpx: +(A.hpx || 1).toFixed(2) });
   rlog('assault', { w: A.w, genes: A.genes, el: A.el, n: A.n, leaked: A.leaked, won: A.won });
   Hooks.onChange && Hooks.onChange();
 }
+// on-death effects that scale with the victim's max HP use its HP before assault scaling, or they chain through a whole assault
+function hpBase(e) { return e.hpBase || e.maxHp; }
 // waves in a row an attack tower has dealt no damage at all (0 = fine). Flagged at 2+: it's in the wrong spot
 function idleWaves(t) {
   if (!t.s || t.s.kind === 'eco' || t.s.kind === 'support' || t.s.kind === 'snare') return 0;
@@ -1433,7 +1440,15 @@ function startWave() {
   G.laneWarn = null;
   for (const L of G.map.lanes) if (L.openWave) { const d = L.openWave - w; if (d >= 1 && (!G.laneWarn || d < G.laneWarn)) G.laneWarn = d; }
   G.queue = P.queue;
-  if (G.assault && G.assault.w === w && G.assault.state === 'warn') { G.assault.state = 'live'; G.refit = false; if (!G.assault.n) G.assault.state = 'done'; }
+  if (G.assault && G.assault.w === w && G.assault.state === 'warn') {
+    const A = G.assault; A.state = 'live'; G.refit = false;
+    if (!A.n) A.state = 'done';
+    else { // size it to your firepower: at least 1.3x normal HP
+      let base = 0; for (const q of G.queue) if (q.assault) base += ENEMIES[q.type].hp * (q.hpm || 1) * (q.genes.includes('bulk') ? GENES.bulk.hp : 1);
+      const fire = Math.max(G.power || 0, potentialDps() * 0.5);
+      A.hpx = Math.max(ASSAULT.minHp, base > 0 ? fire * ASSAULT.secs / base : 1);
+    }
+  }
   G.spawnClock = 0; G.spawningDone = false;
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
@@ -1637,7 +1652,9 @@ function spawnEnemy(type, q) {
   }
   const hpm = q.hpm || hpMult(w);
   let hp = D.hp * hpm;
-  if (genes) for (const g of genes) hp *= q.assault ? Math.max(1, GENES[g].hp || 1) * ASSAULT.hp : GENES[g].hp || 1;
+  if (genes) for (const g of genes) hp *= q.assault ? Math.max(1, GENES[g].hp || 1) : GENES[g].hp || 1;
+  const hp0 = hp;
+  if (q.assault && G.assault && G.assault.hpx) hp *= G.assault.hpx;
   const e = { id: G.eid++, type, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: D.spd, fly,
     armor: D.armor || 0, armorAll: 0, res: Object.assign({}, D.res || {}), size: type === 'tank' ? 0.42 : type === 'swarmer' ? 0.22 : 0.32,
     cr: D.cr * crMult(w), leak: D.leak, score: Math.round(D.cr * 10 * (1 + 0.1 * w)),
@@ -1646,7 +1663,7 @@ function spawnEnemy(type, q) {
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
-    if (q.assault) e.assault = 1;
+    if (q.assault) { e.assault = 1; e.hpBase = hp0; }
     if (genes.length && !q.assault) {
       const sk = type + ':' + e.gkey, X = PROF.codex.strains || (PROF.codex.strains = {});
       if (!X[sk] && Object.keys(X).length < 400) { X[sk] = { n: 0, w: G.wave }; if (genes.length >= 2) Hooks.toast('NEW STRAIN', strainName(type, genes, q.gel), GENES[genes[0]].col); }
@@ -2128,7 +2145,7 @@ function applyStatuses(e, dmg, el, src, o) {
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
       // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss ? 0.004 : 0.03)) * cmb, 'V', src, { noStatus: 1 });
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? 0.004 : 0.03)) * cmb, 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
     }
     if (e.dead) return;
@@ -2187,7 +2204,7 @@ function kill(e, src, o) {
   e.dead = true; e.hp = 0;
   geneRecord(e, false); assaultHit(e, false);
   if (e.brood) { // Brood: bursts into mites
-    const mh = e.maxHp * 0.12 / ENEMIES.swarmer.hp;
+    const mh = hpBase(e) * 0.12 / ENEMIES.swarmer.hp;
     for (let i = 0; i < 3; i++) { const m = spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - i * 0.2), hpm: mh }); m.fly = e.fly; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); }
     Hooks.fx('brood', { x: e.x, y: e.y });
   }
@@ -2213,7 +2230,7 @@ function kill(e, src, o) {
   if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); }
   if (e.elite.length) { G.stats.elites++; if (G.entWaveCombo < 6) { G.entWaveCombo += 0.25; addEntropy(0.25); } }
   if (G.af.boom && depth0(o) < 2) {
-    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * G.af.boom * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth0(o) + 1 });
+    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * G.af.boom * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth0(o) + 1 });
     Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' });
   }
   Hooks.fx('death', { x: e.x, y: e.y, type: e.type, boss: e.boss || false, gen: e.gen || 0, elite: e.elite.length > 0, cr });
@@ -2221,15 +2238,15 @@ function kill(e, src, o) {
   const depth = (o && o.depth) || 0;
   if (src && src.s && src.s.leg.detonator && depth < 2) {
     Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff8a2a' });
-    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * 0.4, src.s.el, src, { noStatus: 1, depth: depth + 1 });
+    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * 0.4, src.s.el, src, { noStatus: 1, depth: depth + 1 });
   }
   if (depth < 2) {
-    if (e.st.burn && FX('burnBoom')) { Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * FX('burnBoom') / 100 * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth + 1 }); }
-    if (e.st.shock > 0 && FX('shockBurst')) { Hooks.fx('arcs', { x: e.x, y: e.y, r: 1 }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * FX('shockBurst') / 100 * (o2.boss ? 0.3 : 1), 'A', null, { noStatus: 1, depth: depth + 1 }); }
+    if (e.st.burn && FX('burnBoom')) { Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * FX('burnBoom') / 100 * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth + 1 }); }
+    if (e.st.shock > 0 && FX('shockBurst')) { Hooks.fx('arcs', { x: e.x, y: e.y, r: 1 }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * FX('shockBurst') / 100 * (o2.boss ? 0.3 : 1), 'A', null, { noStatus: 1, depth: depth + 1 }); }
     if (e.st.frozen > 0 && FX('iceShards')) { Hooks.fx('freeze', { x: e.x, y: e.y }); for (const o2 of G.enemies) if (!o2.dead && !o2.elite.includes('jugg') && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) { o2.st.chill = Math.min(5, o2.st.chill + 2); o2.st.chillT = 2.5; } }
   }
   if (src && src.s && M.orb && M.orb.ent[src.s.el]) addEntropy(0.08);
-  if (src && src.s && src.s.el === 'T' && FX('napalmKill') && G.zones.length < 40) G.zones.push({ k: 'napalm', x: e.x, y: e.y, r: 0.7, t: 2, dps: Math.max(4, e.maxHp * 0.06), src, el: 'T' });
+  if (src && src.s && src.s.el === 'T' && FX('napalmKill') && G.zones.length < 40) G.zones.push({ k: 'napalm', x: e.x, y: e.y, r: 0.7, t: 2, dps: Math.max(4, hpBase(e) * 0.06), src, el: 'T' });
   if (M.chainIgnite && e.st.burn) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) {
       if (!o2.st.burn || o2.st.burn.dps < e.st.burn.dps) o2.st.burn = { dps: e.st.burn.dps, t: 3 * M.burnDur, src: e.st.burn.src };
@@ -2242,7 +2259,7 @@ function kill(e, src, o) {
   }
   if (e.type === 'splitter') for (let i = 0; i < 3; i++) spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - i * 0.25) });
   if (e.elite.includes('split') && !e.boss) for (let i = 0; i < 2; i++) {
-    const c = spawnEnemy(e.type, { L: e.L, d: Math.max(0, e.d - i * 0.3) }); c.maxHp = c.hp = e.maxHp * 0.3;
+    const c = spawnEnemy(e.type, { L: e.L, d: Math.max(0, e.d - i * 0.3) }); c.maxHp = c.hp = hpBase(e) * 0.3;
   }
   if (e.elite.includes('volatile')) {
     for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 1.44) t.disabled = Math.max(t.disabled, 2);

@@ -944,7 +944,7 @@ const UI = (() => {
     const A = G && G.assault; if (!A) { openEvo(); return; }
     if (!G.over) G.paused = true;
     const S = G.stats.assaults || { won: 0, lost: 0 };
-    const est = A.n || Math.round(Math.min(65, 6 + A.w * 1.15) * ASSAULT.share * (G.CH.count || 1));
+    const est = A.n || Math.round(Math.min(65, 6 + A.w * 1.15) * ASSAULT.share * ASSAULT.count * (G.CH.count || 1));
     const lim = Math.max(1, Math.round(est * ASSAULT.hold));
     const live = A.state === 'live', done = A.state === 'done';
     modal(`<div class="card evo assault"><div class="ch"><h2>${intro ? 'The Swarm Makes Its Move' : 'Strain Assault'}</h2><span class="note">Wave ${A.w}${live ? ' · in progress' : done ? (A.won ? ' · broken' : ' · entrenched') : ''} · record ${S.won} held, ${S.lost} lost</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
@@ -963,6 +963,7 @@ const UI = (() => {
     const cap = geneCap(G.wave);
     modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(G.assault && G.assault.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       ${intro ? `<p class="note">${tipify("Enemies that get furthest pass their traits on. Whatever your defence handles worst spreads; answer it and it fades. Each trait costs them HP or speed, so a balanced, adaptable defence keeps the swarm in check. Tap DNA in the top bar any time to see this.")}</p>` : ''}
+      ${(() => { const R = geneCap(G.wave) > 0 ? readDefence(Math.max(G.wave, 1)).slice(0, 2) : []; return R.length ? `<div class="lbl">What the swarm sees in your defence right now</div><ul class="aswhy">${R.map(x => `<li><b style="color:${GENES[x.g].col};font-weight:400">${GENES[x.g].name}${x.el ? ' · ' + EL[x.el].name : ''}</b>: ${esc(x.why)}</li>`).join('')}</ul>` : ''; })()}
       <div class="evlist">${evoRowsHTML()}</div>
       <div class="foot"><button class="btn primary" data-act="${intro ? 'evoDone' : 'close2'}">${intro ? 'Adapt' : 'Back'}</button></div></div>`, 'evo');
   }

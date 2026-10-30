@@ -128,6 +128,16 @@ for (let run = OFF; run < OFF + runs; run++) {
             const k = ans[i % ans.length], sp = bestSpot(G, k); if (!sp || G.credits < S.towerCost(k) || !S.buildTower(k, sp.x, sp.y)) break;
           }
         }
+        // Ward: move damage off the warded element (sell its weakest towers, build another element's)
+        if (AS.el && AS.genes.includes('ward')) {
+          const offEl = { K: ['missile', 'coil', 'cryo'], T: ['rail', 'coil', 'lens'], C: ['rail', 'missile', 'coil'], A: ['rail', 'missile', 'lens'], V: ['rail', 'missile', 'coil'] }[AS.el].filter(ok);
+          const mine = G.towers.filter(tw => tw.s.el === AS.el && !tw.asc && tw.s.kind !== 'support' && tw.s.kind !== 'eco').sort((a, b) => a.dps - b.dps);
+          for (let i = 0; i < Math.min(3, Math.floor(mine.length / 3)) && sold < 6; i++) {
+            S.sellTower(mine[i]); sold++;
+            const k = offEl[i % offEl.length], sp = bestSpot(G, k); if (!sp || G.credits < S.towerCost(k) || !S.buildTower(k, sp.x, sp.y)) break;
+            const nt = G.towers[G.towers.length - 1]; while (nt && G.credits > S.upgradeCost(nt) && nt.lvl < 4) S.upgradeTower(nt, 1);
+          }
+        }
         met.refits = (met.refits || 0) + sold;
       }
       const targetCount = Math.min(40, 4 + Math.floor(G.wave * 0.55));
@@ -150,7 +160,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     }
     met.maxCredits = Math.max(met.maxCredits, G.credits);
   }
-  if (process.env.ASLOG) console.log('ASSAULTS w' + G.wave, JSON.stringify((G.stats.assaults || {}).list || []), JSON.stringify((G.rlog || []).filter(x => x.k === 'assaultWarn').map(x => x.d || x)));
+  if (process.env.ASLOG) console.log('ASSAULTS w' + G.wave + ' ' + ((G.stats.assaults || {}).list || []).map(a => `W${a.w}:${a.leaked}/${a.n}${a.won ? "+" : "X"}x${a.hpx}[${(a.genes || []).join(',')}]`).join(' '));
   if (process.env.DUMP) for (const tw of G.towers) console.log('T', tw.type, 'L' + tw.lvl, 'A' + tw.asc, 'R' + tw.rank, 'inv', tw.invested, 'dmg', Math.round(tw.dmgDone), 'kills', tw.kills, 'at', tw.x, tw.y, tw.affixes.map(a => a.id + a.tier).join(','));
   const tot = Object.values(G.stats.dmgByEl).reduce((a, b) => a + b, 0) || 1;
   const byType = {};
