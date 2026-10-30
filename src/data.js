@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.0.1';
+const VERSION = '4.1.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,14 +167,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.0.1', title: 'Entropy 4.0 · The Swarm Plays Back', items: [
-  ['Music credits', 'The soundtrack is by kjartan_abel. Credits are now in Settings.'],
-  ['Strain Assaults', 'Every few waves the swarm studies your defence, breeds the strain that beats it and throws most of a wave at you. It warns you a wave ahead, says how it read you, and selling is free until it lands. Hold it to win +1 power for the run; fail and it spreads.'],
-  ['See its read', 'Tap DNA in the top bar to see what the swarm thinks your weak spots are right now, before it acts on them.'],
-  ['Calmer screen', 'Only events you should react to get a card in the middle (tap to dismiss). Feedback to your taps shows at the bottom; everything else goes to a small fading feed in the corner.'],
-  ['Overcharge', 'Now +35% Damage and +15% Attack Speed per step, up to 3 steps.'],
-  ['Idle towers', 'A tower that has hit nothing for 2 waves shows little Zs, and its panel tells you to move it. Relocating the core now warns you how many towers would lose the road.'],
-  ['Fixes', 'Arc Coils keep their shield-shredding bonus under Conflagration. The run log now records the swarm\'s genes and what leaked each wave.']
+const WHATS_NEW = { ver: '4.1.0', title: 'Entropy 4.1', items: [
+  ['Bigger bosses', 'Bosses are 50% larger on the field, so you can actually see them coming.'],
+  ['Boss breach', 'A boss that reaches your core ends the run. No shield or Unbreakable saves you. Gloop\'s little splits still only take a chunk.'],
+  ['Bosses rebalanced', 'Because a breach now ends the run, bosses carry less health than in 4.0, early ones most of all.'],
+  ['Smarter swarm', 'Strain Assaults are tougher, and the swarm no longer leans on Thermal Ward against Conflagration builds, where it barely works.'],
+  ['Music credits', 'The soundtrack is by kjartan_abel. Credits are in Settings.'],
+  ['From 4.0', 'Strain Assaults: the swarm reads your defence and attacks it, with a wave of warning and free selling to answer. Tap DNA to see its read.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {

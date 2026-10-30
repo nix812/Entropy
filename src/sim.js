@@ -1322,7 +1322,7 @@ function genWave(w, ev) {
 // Fail: it entrenches. Its genome spreads through the next waves and the following assault comes sooner.
 const ENVN = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
 // secs: the assault's total HP is sized to this many seconds of your firepower (like bosses), so it tests any defence
-const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1, minHp: 1.3, secs: ENVN('ASEC', 30), count: ENVN('ACNT', 1.3) };
+const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1, minHp: 1.3, secs: ENVN('ASEC', 40), count: ENVN('ACNT', 1.3) };
 const assaultOff = () => typeof process !== 'undefined' && process.env && (process.env.NOASSAULT || process.env.NOGA);
 function assaultFirst() { const E = evoCfg(); return E.first || E.start + 6; }
 function assaultEvery() { return evoCfg().every || 8; }
@@ -1342,7 +1342,8 @@ function readDefence(w, jitter) {
   const sh = k => (I.type[k] || 0) / tot, pc = v => Math.round(v * 100) + '%';
   const out = [], add = (g, score, why) => { if (score > 0 && (!GENES[g].from || w >= GENES[g].from)) out.push({ g, score, why }); };
   const els = Object.entries(I.el).map(([k, v]) => [k, v / (etot || 1)]).sort((a, b) => b[1] - a[1]);
-  if (els[0] && els[0][1] >= 0.35) out.push({ g: 'ward', el: els[0][0], score: (els[0][1] - 0.3) * 2.2, why: `${pc(els[0][1])} of your damage is ${EL[els[0][0]].name}` });
+  // under Conflagration a Thermal ward only resists 25%, so the swarm values it less
+  if (els[0] && els[0][1] >= 0.35) out.push({ g: 'ward', el: els[0][0], score: (els[0][1] - 0.3) * 2.2 * (els[0][0] === 'T' && G.mods.ks.conflag ? 0.45 : 1), why: `${pc(els[0][1])} of your damage is ${EL[els[0][0]].name}` });
   const pierce = sh('rail') + sh('lens') + sh('flame') * 0.5 + sh('missile') * 0.25;
   add('plating', (0.35 - pierce) * 1.6, `only ${pc(pierce)} of your fire pierces armour`);
   const arc = (I.el.A || 0) / (etot || 1);
@@ -1427,7 +1428,8 @@ function idleWaves(t) {
 function topTower() { let best = null; for (const t of G.towers) if (t.dmgDone > (best ? best.dmgDone : 0) && canOvercharge(t)) best = t; return best; }
 function startWave() {
   if (G.wave > 0) { rlogWave(); intelUpdate(); }
-  if (G.assault && G.assault.state === 'live' && !G.queue.some(q => q.assault) && !G.enemies.some(e => e.assault && !e.dead)) resolveAssault();
+  // resolve when its units are all gone, or two waves on at the latest (a straggler must not keep it open forever)
+  if (G.assault && G.assault.state === 'live' && ((!G.queue.some(q => q.assault) && !G.enemies.some(e => e.assault && !e.dead)) || G.wave >= G.assault.w + 2)) resolveAssault();
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
@@ -1705,7 +1707,8 @@ const BOSS_HPX = [[10, 3], [20, 3.5], [40, 3], [60, 2]];
 const bossHpX = w => { const P = BOSS_HPX; if (w <= P[0][0]) return P[0][1]; for (let i = 1; i < P.length; i++) if (w <= P[i][0]) { const [a, va] = P[i - 1], [b, vb] = P[i]; return va + (vb - va) * (w - a) / (b - a); } return P[P.length - 1][1]; };
 // seconds of your real firepower a boss should soak. v3.1: firepower = the larger of measured peak (G.power, accurate late)
 // and half the stat-based potential (potentialDps, accurate early when small waves never let towers fire flat out)
-const BOSS_SECS = w => w < 45 ? 36 : 30;
+// v4.1: a breach ends the run, so bosses carry less health than in 4.0 (36/30 s): ×0.65 before Wave 45, ×0.8 after (BSEC/BSEC2 for tests)
+const BOSS_SECS = w => (w < 45 ? 36 * ENVN('BSEC', 0.65) : 30 * ENVN('BSEC2', 0.8));
 const BOSS_PHASES = [0.66, 0.33];
 // v2.3: every boss wave is a weighted draw from the bosses unlocked by that wave. Never-seen bosses weigh most,
 // and a boss gets likelier the longer it's been away; the last two can't repeat.
@@ -1730,12 +1733,12 @@ function spawnBoss(q) {
   const fire = Math.max(G.power || 0, potentialDps() * 0.5);
   const hp = q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (B.fly ? 1.3 : 1) * (1 + ((G.af && G.af.bossHP) || 0));
   const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
-    armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 0.8, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
+    armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 1.15, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2, phase: 0, phaseT: 0 };
   if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
-  if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.6 : 0.45; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
+  if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.85 : 0.6; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
   if (B.id === 'cat') e.timer2 = 9;
   if (B.id === 'worm') { e.gut = []; e.timer = 6; }
   if (B.id === 'auditor') { e.audited = 0; e.timer2 = 4; }
@@ -2020,8 +2023,13 @@ function leak(e) {
   { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; }
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
-  // a boss that reaches the core breaches it: a fixed share of the core, so it always hurts and is never a free pass
-  if (e.boss) dmg = e.gen ? c.max * (e.gen === 1 ? 0.12 : 0.06) : c.max * (0.35 + 0.1 * (e.phase || 0));
+  // v4.1: a boss that reaches the core ends the run outright (shields and Unbreakable don't save you). Gloop's splits still breach for a share
+  if (e.boss && !e.gen) {
+    Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
+    Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
+    G.stats.bossBreach = e.bossName; c.shield = 0; c.hp = 0; gameOver(); return;
+  }
+  if (e.boss) dmg = c.max * (e.gen === 1 ? 0.12 : 0.06);
   if (e.boss === 'worm' && e.gut && e.gut.length) { Hooks.toast('DIGESTED', `${e.gut.length} swallowed tower${e.gut.length > 1 ? 's are' : ' is'} gone for good`, '#ff4d6a', true); e.gut = []; }
   if (e.boss === 'auditor' && e.audited > 0) { Hooks.log(`The Auditor left with ${Math.round(e.audited)} of your credits`, '#ff4d6a'); e.audited = 0; }
   if (e.shield > 0 && e.boss) dmg *= 1.2;

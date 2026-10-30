@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 4.0.1 · October 29, 2026**
+**Version at handoff: 4.1.0 · October 29, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -316,7 +316,7 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
 - **Boss rework (v2.2).** Nic: bosses were no threat, so their abilities and art went unseen. Four parts:
   - **Adaptive health:** `G.power` is the defence's recent peak total tower DPS (sum of `t.dps` each second, held with ×0.995 decay per second, saved in snapshots). In `spawnBoss`: `hp = max(30 × B.hp × hpMult × bossHpX(w) × …, G.power × BOSS_SECS(w) × B.hp/38)`. `BOSS_HPX` (fixed floor for weak builds) is ×2 at wave 10, ×3 from 20 to 40, ×2 from 60; `BOSS_SECS` runs from 18 s at wave 10 to 28 s from wave 40. Gloop's children use `hpAbs`, so they scale with it.
   - **Phases:** `BOSS_PHASES = [0.66, 0.33]`. Crossing one in `hit()` calls `bossPhase`: health clamps at the threshold (no blowing through a phase in one volley), 2.5 s phase shift at 10% damage taken (`e.phaseT`, a pulsing aura in render), +15% speed, a speech line (`PHASE_LINES`) and a toast, and the next ability fires at once, empowered (`e.empowered` read as `big` in `bossBehavior`). Empowered: Behemoth quake (disables towers in 2.5) plus 8 tougher Swarmers; Queen 7 Skimmers; Wraith 4.5-tile jump with 3 s cloak; Overmind EMP radius 4.2 for 4 s; Titan stomp; Cat zoomies (swats every tower in 3.5); Whale big heal; Duck mega-hop; FSM seizes 7 towers and drops meatballs. Gloop has no phases (it splits). `BOSS_POWER` in data.js names each one.
-  - **Breach:** a boss that leaks deals 35% of core max HP, +10% per phase reached (children 12% and 6%).
+  - **Breach (v4.1):** a boss that leaks ends the run instantly, ignoring shields and Unbreakable (Nic's call). Gloop children still deal 12% and 6% of core max HP. Before 4.1 it was 35% + 10% per phase.
   - **Presentation:** `Hooks.bossIntro` shows `#bossIntro` (portrait via `Render.bossPortrait`, name, title, ability, phase line, "NEW BOSS · FIRST ENCOUNTER" until one is killed) with 1.4 s of 30% slow motion (`UI.slowmo`, UI-only so the sim stays deterministic). The boss bar shows phase notches and PHASE I / PHASE II / FINAL PHASE / SHIFTING; `body.bossbar` pushes toasts below it.
   - **Bot results** (6 seeds, 60 points, Normal): bosses reach both phases in nearly every fight, die 50–70% down the road, and breach about 1 fight in 6 mid-game; runs average wave 77 (75 before), so overall difficulty held.
 - **v3.1 boss health:** `fire = max(G.power, potentialDps() × 0.5)`; `hp = max(base floor, fire × BOSS_SECS(w) × B.hp / 38) × (1.3 if the boss flies)`.
@@ -595,5 +595,6 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 4.1 | Boss HP `BOSS_SECS` ×0.65 before Wave 45 and ×0.8 after, because breaches now kill (bots, 60 points: lethal breach at 4.0 HP dropped the median 72 → 51; ×0.8 everywhere gave 80 but a third of runs died to wave 20–40 bosses; ×0.65 gave 63.5 with no early boss deaths). Assault `secs` 40. The swarm values a Thermal Ward ×0.45 under Conflagration (Nic's log: every assault was Ward-Thermal). Assaults force-resolve 2 waves on. Bosses drawn 1.5× (`BOSS_SCALE` in render.js; hit size 1.15, Gloop splits 0.85/0.6; titan plates, cat eyes and worm segments scaled). A non-split boss reaching the core is an instant game over in `leak()` (bypasses shields and Unbreakable); Gloop splits still breach for 12%/6% |
 | 4.0.1 | Music credits in Settings (kjartan_abel, Freesound) |
 | 4.0 | Strain Assaults: the swarm reads your defence, telegraphs a counter-strain a wave ahead, free refit, broken (+1 power) or entrenched. Notifications split into alerts, tips and a corner feed. Overcharge 3 × 35%. Idle-tower Zs, relocation coverage, Arc shield fix under Conflagration, log genes and leaks |

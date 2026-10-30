@@ -406,7 +406,7 @@ const UI = (() => {
     box.querySelector('h3').textContent = B.name;
     box.querySelector('.ttl').textContent = e.bossTitle || '';
     box.querySelector('.desc').textContent = B.desc;
-    box.querySelector('.ph').textContent = B.id === 'gloop' ? 'Pop it. Then pop the pieces.' : `Phase II at 66% and a final phase at 33%: each time it unleashes ${BOSS_POWER[B.id] || 'its power'}.`;
+    box.querySelector('.ph').textContent = (B.id === 'gloop' ? 'Pop it. Then pop the pieces.' : `Phase II at 66% and a final phase at 33%: each time it unleashes ${BOSS_POWER[B.id] || 'its power'}.`) + ' If it reaches your core, the run is over.';
     Render.bossPortrait(B.id, box.querySelector('canvas'));
     box.classList.remove('out'); box.hidden = false;
     UI.slowmo = 1.4;
