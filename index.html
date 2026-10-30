@@ -217,6 +217,16 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .evrow em { font-style: normal; font-size: 15px; color: #e8e6dc; text-align: right; }
 .evrow span { grid-column: 1 / -1; font-size: 14px; color: #8a8fa8; } .evrow span u { text-decoration: none; color: #c9c6bc; }
 .evrow.dim { opacity: 0.4; }
+.card.assault { max-height: calc(100vh - 16px); overflow-y: auto; }
+.card.assault .evlist { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin: 4px 0; }
+.card.assault { box-shadow: inset 0 0 0 1px #ff4d6a, 0 0 30px rgba(255,77,106,0.25); }
+.card.assault .asname { font-family: var(--f-pix); font-size: 13px; color: #ff4d6a; margin: 6px 0 2px; letter-spacing: 1px; }
+.card.assault .evrow { grid-template-columns: 1fr; } .card.assault .evrow div, .card.assault .evrow em { display: none; }
+.aswhy { margin: 2px 0 6px 18px; padding: 0; font-size: 15px; color: #e8e6dc; } .aswhy li { margin: 1px 0; }
+.evchip.assault { box-shadow: inset 0 0 0 1px #ff4d6a; color: #ffd0d8; background: rgba(255,77,106,0.18); cursor: pointer; animation: dnapulse 1.2s steps(2) infinite; }
+.evchip.assault.live { animation: none; background: rgba(255,77,106,0.3); } .evchip.assault.lost { background: rgba(255,77,106,0.55); color: #fff; }
+.evchip.assault i { font-style: normal; }
+.evchip.assault { flex-shrink: 0; }
 .hs.pwr { display: flex; align-items: center; gap: 4px; color: #59f0b4; }
 .hs.pwr b { font-size: 20px; }
 .hs.pwr.full { color: #ffb03a; }
@@ -227,12 +237,24 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .row.logrow { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 4px; } .row.logrow .note { margin-right: auto; }
 #toasts { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; z-index: 30; width: min(520px, 70%); }
 body.modal-open #toasts { display: none; }
-body.bossbar #toasts { top: 58px; }
+body.bossbar #toasts { top: 58px; } body.asbar #toasts { top: 84px; }
+#asbar { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; gap: 10px; align-items: baseline; padding: 4px 12px; background: rgba(40, 6, 16, 0.88); box-shadow: inset 0 0 0 1px #ff4d6a, 0 0 14px rgba(255,77,106,0.35); cursor: pointer; white-space: nowrap; max-width: 92%; overflow: hidden; }
+#asbar b { font-family: var(--f-pix); font-size: 9px; color: #ff4d6a; letter-spacing: 1px; }
+#asbar span { font-size: 15px; color: #f2e9ea; } #asbar i { font-style: normal; }
+#asbar em { font-style: normal; font-size: 15px; color: #ffd0d8; } #asbar em.lost { color: #fff; background: #ff4d6a; padding: 0 4px; }
+body.panel-l #asbar { left: calc(50% + 140px); max-width: calc(100% - 300px); } body.panel-r #asbar { left: calc(50% - 140px); max-width: calc(100% - 300px); }
 body.panel-l #toasts { left: calc(50% + 140px); width: min(400px, 46%); }
 body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
-.toast { background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 1px var(--c), 0 0 18px rgba(0,0,0,0.5); padding: 4px 10px; display: flex; gap: 8px; align-items: baseline; animation: tin 0.2s; transition: opacity 0.4s; max-width: 100%; }
-.toast b { font-family: var(--f-pix); font-size: 10px; color: var(--c); white-space: nowrap; }
-.toast span { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.toast { background: rgba(7, 8, 15, 0.94); box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c), 0 0 22px rgba(0,0,0,0.6); padding: 6px 12px 7px 14px; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; animation: tin 0.2s; transition: opacity 0.3s; max-width: 100%; pointer-events: auto; cursor: pointer; }
+.toast b { font-family: var(--f-pix); font-size: 10px; color: var(--c); letter-spacing: 1px; }
+.toast span { font-size: 17px; line-height: 1.15; color: var(--ink); }
+#tip { position: absolute; left: 50%; bottom: calc(var(--sab, 0px) + 10px); transform: translateX(-50%); z-index: 60; pointer-events: none; background: rgba(7, 8, 15, 0.94); box-shadow: inset 0 0 0 1px var(--c); padding: 4px 12px; max-width: min(560px, 80%); display: flex; gap: 8px; align-items: baseline; transition: opacity 0.25s; }
+#tip b { font-family: var(--f-pix); font-size: 9px; color: var(--c); white-space: nowrap; }
+#tip span { font-size: 15px; line-height: 1.15; }
+#tip.out { opacity: 0; }
+body.panel-l #tip { left: calc(50% + 140px); } body.panel-r #tip { left: calc(50% - 140px); }
+.evchip.dna.pulse { animation: dnapulse 0.9s steps(2) infinite; }
+@keyframes dnapulse { 50% { box-shadow: inset 0 0 0 1px #59f0b4, 0 0 10px #59f0b4; } }
 .toast.out { opacity: 0; }
 @keyframes tin { from { transform: translateY(-6px); opacity: 0; } }
 #bossIntro { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 31; display: flex; gap: 14px; align-items: center; width: min(520px, 76%);
@@ -250,8 +272,13 @@ body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 @keyframes bossout { to { opacity: 0; transform: translate(-50%, -70%); } }
 @keyframes bossbob { 50% { transform: translateY(-3px); } }
 #log, #dps { display: none; position: absolute; pointer-events: none; z-index: 3; font-size: 14px; }
-body.hudfull #log, body.hudfull #dps { display: block; }
-#log { left: 6px; bottom: 6px; max-width: 40%; font-size: 14px; text-shadow: 1px 1px 0 #000; }
+body.hudfull #dps { display: block; }
+#log { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; left: 6px; bottom: 6px; max-width: min(340px, 38%); font-size: 14px; }
+#log .fl { background: rgba(7, 8, 15, 0.78); padding: 1px 6px; line-height: 1.2; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #c9c6bc; box-shadow: inset 2px 0 0 var(--c); animation: tin 0.2s; transition: opacity 1.4s; }
+#log .fl b { color: var(--c); font-weight: 400; }
+#log .fl i { color: var(--dim); font-style: normal; }
+#log .fl.old { opacity: 0; }
+body.panel-l #log, body.tipon #log { display: none; }
 #dps { left: 6px; top: 6px; width: 170px; background: rgba(7, 8, 15, 0.75); padding: 5px 7px; }
 body.panel-l #dps { display: none; }
 .dh { font-family: var(--f-pix); font-size: 9px; color: var(--dim); margin-bottom: 3px; }
@@ -572,6 +599,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
       <canvas id="cv"></canvas>
       <button class="zoombtn" id="bZoom" hidden></button>
       <div id="log"></div>
+      <div id="asbar" hidden></div>
       <div id="dps"></div>
       <div id="panel" class="panel" hidden></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
@@ -612,13 +640,14 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 
   <div id="modal" hidden></div>
   <div id="toasts"></div>
+  <div id="tip" hidden></div>
   <div id="bossIntro" hidden><canvas width="144" height="144"></canvas><div class="bi"><em></em><h3></h3><p class="ttl"></p><p class="desc"></p><p class="ph"></p></div></div>
 </div>
 
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '3.2.1';
+const VERSION = '4.0.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -785,9 +814,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '3.2.1', title: 'Entropy 3.2.1', items: [
-  ['Overdrive button', 'Overdrive has its own button on the left rail. It shows the wave it unlocks, glows when ready, and needs a second tap to fire. The core panel still has it too.'],
-  ['From 3.2', 'Swarm Codex strain names in the Archive, your signature strain in the Hall of Fame, and evolution that scales with difficulty.']
+const WHATS_NEW = { ver: '4.0.0', title: 'Entropy 4.0 · The Swarm Plays Back', items: [
+  ['Strain Assaults', 'Every few waves the swarm studies your defence, breeds the strain that beats it and throws most of a wave at you. It warns you a wave ahead, says how it read you, and selling is free until it lands. Hold it to win +1 power for the run; fail and it spreads.'],
+  ['See its read', 'Tap DNA in the top bar to see what the swarm thinks your weak spots are right now, before it acts on them.'],
+  ['Calmer screen', 'Only events you should react to get a card in the middle (tap to dismiss). Feedback to your taps shows at the bottom; everything else goes to a small fading feed in the corner.'],
+  ['Overcharge', 'Now +35% Damage and +15% Attack Speed per step, up to 3 steps.'],
+  ['Idle towers', 'A tower that has hit nothing for 2 waves shows little Zs, and its panel tells you to move it. Relocating the core now warns you how many towers would lose the road.'],
+  ['Fixes', 'Arc Coils keep their shield-shredding bonus under Conflagration. The run log now records the swarm\'s genes and what leaked each wave.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -832,7 +865,7 @@ const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', 
 // ---------- v3.0: the power grid ----------
 // Every tower draws 1 power (towers on Power Nodes draw none). Capacity grows with the wave. Spare power can Overcharge a tower.
 const GRID = { base: 8, perWaves: 3, max: 46 };
-const OVERCHARGE = { max: 2, dmg: 0.25, rate: 0.1 };
+const OVERCHARGE = { max: 3, dmg: 0.35, rate: 0.15 };
 // ---------- v3.0: the evolving swarm ----------
 // Ordinary enemies carry genes. Each gene is a trade: an edge for some HP or speed. Waves are bred from the genomes that got
 // furthest last time, so the swarm drifts towards whatever your defence handles worst. Every gene has a counter tower.
@@ -956,10 +989,10 @@ const BOONS = [
 ];
 
 const CHAOS_LEVELS = [
-  { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64], evo: { start: 12, press: 0.6, desc: 'Gentle evolution from Wave 12' } },
-  { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78], evo: { start: 8, press: 1, desc: 'Evolution from Wave 8' } },
-  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [12, 24, 36, 50, 66, 84], evo: { start: 6, press: 1.25, seed: 1, desc: 'The swarm arrives adapted to one weakness; evolution from Wave 6, fiercer' } },
-  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.5, cr: 0.8, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100], evo: { start: 4, press: 1.5, seed: 2, capAdd: 1, desc: 'The swarm arrives adapted to two weaknesses; evolution from Wave 4, fiercest, one extra gene' } },
+  { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64], evo: { start: 12, press: 0.6, first: 18, every: 10, desc: 'Gentle evolution from Wave 12. Strain Assaults every 10 waves' } },
+  { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78], evo: { start: 8, press: 1, first: 14, every: 8, desc: 'Evolution from Wave 8. Strain Assaults every 8 waves' } },
+  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [12, 24, 36, 50, 66, 84], evo: { start: 6, press: 1.25, seed: 1, first: 12, every: 7, desc: 'The swarm arrives adapted to one weakness; evolution from Wave 6, fiercer. Strain Assaults every 7 waves' } },
+  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.5, cr: 0.8, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100], evo: { start: 4, press: 1.5, seed: 2, capAdd: 1, first: 9, every: 6, desc: 'The swarm arrives adapted to two weaknesses; evolution from Wave 4, fiercest, one extra gene. Strain Assaults every 6 waves' } },
 ];
 
 // ---------- Passive web ----------
@@ -1365,7 +1398,7 @@ function defaultProfile() {
     v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, soundtrack: 'ec', hud: 'lean', dmgNums: true, shake: true },
-    seenHelp: false, seenVer: '', seenEvo: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
+    seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
     mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
@@ -1762,10 +1795,11 @@ function expandReactor() {
 // ---- v3.1 run log: compact events for after-run analysis (exported from the game-over screen) ----
 function rlog(k, d) { if (!G || !G.rlog) return; G.rlog.push(Object.assign({ k, w: G.wave, t: Math.round(G.time) }, d || {})); if (G.rlog.length > 5000) G.rlog.splice(1, 1); }
 function rlogWave() {
-  const w = G.wave, H = G.geneHist && G.geneHist[G.geneHist.length - 1];
+  const w = G.wave, H = G.geneHist && G.geneHist.find(h => h.w === w);
   const d = { core: Math.round(G.core.hp), cmax: Math.round(G.core.max), cr: Math.round(G.credits), sc: Math.round(G.score), grid: gridUsed() + '/' + gridCap(),
     n: G.towers.length, leaks: G.stats.leaks, kills: G.kills, pow: Math.round(G.power || 0), pot: Math.round(potentialDps()), ent: Math.round(G.entropy) };
-  if (H && H.w === w) d.genes = Object.fromEntries(Object.entries(H.g).filter(([g, v]) => v >= 0.05).map(([g, v]) => [g, Math.round(v * 100)]));
+  if (G.leakBy && Object.keys(G.leakBy).length) { d.leakBy = G.leakBy; G.leakBy = {}; }
+  if (H) d.genes = Object.fromEntries(Object.entries(H.g).filter(([g, v]) => v >= 0.05).map(([g, v]) => [g, Math.round(v * 100)]));
   if (G.evList && G.evList.length) d.ev = G.evList.map(E => E.name);
   if (w <= 3 || w % 5 === 0) d.tw = G.towers.map(t => [t.type, t.lvl, t.asc || 0, t.spec || 0, t.oc || 0, Math.round(t.dps), Math.round(t.dmgDone)]);
   rlog('wave', d);
@@ -2150,6 +2184,7 @@ function buildTower(type, x, y) {
   else t.affixes.push(rollAffix(t));
   if (G.mods.ks.celestial && towerPool(type) !== 'eco') t.affixes.push(rollAffix(t));
   if (G.mods.ks.chaos) t.affixes.push(rollCurse(t));
+  t.lastFireW = G.wave; t.builtW = G.wave;
   G.towers.push(t); G.towerAt[tIdx(x, y)] = t;
   t.s = towerStats(t);
   recomputeAuras();
@@ -2190,7 +2225,7 @@ function rerollTower(t) {
   Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: '#ff8a2a' });
   return true;
 }
-function sellRefund(t) { return Math.round(t.invested * (G.checkpoint ? 1 : Math.max(G.af.scav ? 0.9 : 0.7, FX('sellPct') / 100))); }
+function sellRefund(t) { return Math.round(t.invested * (G.checkpoint || G.refit ? 1 : Math.max(G.af.scav ? 0.9 : 0.7, FX('sellPct') / 100))); }
 function sellTower(t) {
   G.credits += sellRefund(t);
   G.towers = G.towers.filter(o => o !== t);
@@ -2477,7 +2512,7 @@ function updateStorms(dt) {
         Hooks.log('Maelstrom collapsed', '#ff4d6a');
         for (const e of G.enemies) {
           if (e.dead || dist2(e.x, e.y, s.x, s.y) > s.r * s.r) continue;
-          hit(e, e.maxHp * (e.boss ? 0.08 : 0.25), 'V', null, { noStatus: 1, abil: 1 });
+          hit(e, e.maxHp * (e.boss || e.assault ? 0.08 : 0.25), 'V', null, { noStatus: 1, abil: 1 });
         }
       }
     }
@@ -2525,6 +2560,7 @@ function prepareWave(w) {
     Hooks.fx('lane', { lane: L });
     Hooks.sfx('lane');
   }
+  assaultTick(w);
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
   const counts = {}, genes = {}; let elites = 0, fly = 0, boss = null, ng = 0;
@@ -2540,7 +2576,7 @@ function prepareWave(w) {
   G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length, genes };
   // announce a trait when it takes hold (35%+), again only after it has faded below 20%
   const told = G.geneTold || (G.geneTold = {});
-  for (const k of GENE_IDS) {
+  if (!(G.assault && G.assault.w === w)) for (const k of GENE_IDS) {
     const sh = genes[k] || 0;
     if (sh >= 0.35 && !told[k]) { told[k] = 1; if (!PROF.seenEvo) Hooks.evoIntro && Hooks.evoIntro(k, sh); Hooks.toast('SWARM EVOLVES', `${GENES[k].name} ${Math.round(sh * 100)}% · counter: ${GENES[k].counter}`, GENES[k].col); Hooks.log(`Evolution: ${GENES[k].name} ${Math.round(sh * 100)}%`, GENES[k].col); }
     else if (sh < 0.2 && told[k]) told[k] = 0;
@@ -2654,10 +2690,131 @@ function genWave(w, ev) {
       t += 2;
     }
   }
+  const A = G.assault;
+  if (A && A.w === w && A.state === 'warn' && !isBoss) {
+    let n = 0;
+    for (const e of q) { if (e.type === 'boss' || r() > ASSAULT.share) continue; e.genes = A.genes.filter(g => geneOk(e.type, g, w)); e.gel = A.el; e.assault = 1; n++; }
+    const src = q.filter(e => e.assault), extra = Math.round(n * (ASSAULT.count - 1));
+    for (let i = 0; i < extra && src.length; i++) { const c = Object.assign({}, src[i % src.length]); c.t += interval * 0.5; q.push(c); }
+    q.sort((a, b) => a.t - b.t);
+    A.n = n + extra;
+  }
   return { queue: q, rift };
 }
+// ===================== v4.0: STRAIN ASSAULTS (the swarm's move) =====================
+// Every few waves the swarm reads your defence (whose damage killed it these last waves), picks the genes that beat it,
+// crosses them with its most successful genome and commits most of one wave to that single strain. It announces the
+// assault a wave ahead and selling is free (100% refund) until it lands, so you get a move in reply.
+// Hold it (few leaks): the strain is broken, +1 power for the rest of the run, and its genes fall out of favour.
+// Fail: it entrenches. Its genome spreads through the next waves and the following assault comes sooner.
+const ENVN = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
+// secs: the assault's total HP is sized to this many seconds of your firepower (like bosses), so it tests any defence
+const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1, minHp: 1.3, secs: ENVN('ASEC', 30), count: ENVN('ACNT', 1.3) };
+const assaultOff = () => typeof process !== 'undefined' && process.env && (process.env.NOASSAULT || process.env.NOGA);
+function assaultFirst() { const E = evoCfg(); return E.first || E.start + 6; }
+function assaultEvery() { return evoCfg().every || 8; }
+// recent damage by tower type and by element, halved every wave so it reads what you're doing now
+function intelUpdate() {
+  const I = G.intel || (G.intel = { type: {}, el: {}, el0: {} });
+  for (const k in I.type) I.type[k] *= 0.5;
+  for (const k in I.el) I.el[k] *= 0.5;
+  for (const t of G.towers) { const d = (t.dmgDone || 0) - (t._d0 || 0); t._d0 = t.dmgDone || 0; if (d > 0) I.type[t.type] = (I.type[t.type] || 0) + d; }
+  const E = G.stats.dmgByEl; for (const k in E) { const d = E[k] - (I.el0[k] || 0); I.el0[k] = E[k]; if (d > 0) I.el[k] = (I.el[k] || 0) + d; }
+}
+// what the swarm sees: which genes would hurt this defence most, with the reason in plain words
+function readDefence(w, jitter) {
+  const I = G.intel || { type: {}, el: {} };
+  const tot = Object.values(I.type).reduce((a, b) => a + b, 0), etot = Object.values(I.el).reduce((a, b) => a + b, 0);
+  if (tot <= 0) return [];
+  const sh = k => (I.type[k] || 0) / tot, pc = v => Math.round(v * 100) + '%';
+  const out = [], add = (g, score, why) => { if (score > 0 && (!GENES[g].from || w >= GENES[g].from)) out.push({ g, score, why }); };
+  const els = Object.entries(I.el).map(([k, v]) => [k, v / (etot || 1)]).sort((a, b) => b[1] - a[1]);
+  if (els[0] && els[0][1] >= 0.35) out.push({ g: 'ward', el: els[0][0], score: (els[0][1] - 0.3) * 2.2, why: `${pc(els[0][1])} of your damage is ${EL[els[0][0]].name}` });
+  const pierce = sh('rail') + sh('lens') + sh('flame') * 0.5 + sh('missile') * 0.25;
+  add('plating', (0.35 - pierce) * 1.6, `only ${pc(pierce)} of your fire pierces armour`);
+  const arc = (I.el.A || 0) / (etot || 1);
+  add('shell', (0.15 - arc) * 3, arc < 0.02 ? 'you have no Arc damage to pop shields' : `only ${pc(arc)} Arc damage to pop shields`);
+  const grd = sh('flame') + sh('grav');
+  add('wings', (grd - 0.2) * 2, `${pc(grd)} of your damage can't hit air`);
+  const att = G.towers.filter(t => canOvercharge(t)).length || 1, slows = G.towers.filter(t => t.type === 'cryo' || t.type === 'grav' || t.type === 'emp' || t.type === 'snare').length;
+  add('haste', (0.15 - slows / att) * 2.4, slows ? `only ${slows} of your towers slow or stun` : 'nothing of yours slows it down');
+  const burn = (I.el.T || 0) / (etot || 1);
+  add('regen', (0.15 - burn) * 2.4, burn < 0.02 ? 'nothing of yours Burns to stop it healing' : `only ${pc(burn)} Thermal damage to stop it healing`);
+  if (!G.towers.some(t => t.type === 'pylon')) add('cloak', 0.28, 'you have no Relay Pylon to reveal it');
+  const splash = sh('missile') + sh('flame') + sh('coil') + sh('emp');
+  add('brood', (0.2 - splash) * 1.8, `only ${pc(splash)} of your damage is splash`);
+  const last = G.stats.assaults && G.stats.assaults.list.length ? G.stats.assaults.list[G.stats.assaults.list.length - 1] : null;
+  if (last && last.won && last.genes) for (const o of out) if (last.genes.includes(o.g)) o.score *= 0.4;
+  if (jitter) for (const o of out) o.score *= 0.85 + G.r() * 0.3;
+  return out.sort((a, b) => b.score - a.score);
+}
+function planAssault(w) {
+  const r = G.r, cap = Math.max(2, geneCap(w) + 1), reads = readDefence(w, true);
+  const genes = [], why = []; let el = null;
+  for (const R of reads) { if (genes.length >= Math.min(2, cap)) break; genes.push(R.g); why.push(R.why); if (R.el) el = R.el; }
+  // the rest comes from the genome that has done best against you so far
+  const F = G.geneFit || {}; let best = null;
+  for (const k in F) { const v = F[k]; if (v.n >= 1 && (!best || v.s / v.n > best.a)) best = { k, a: v.s / v.n }; }
+  if (best) for (const g of parseGenes(best.k).genes) if (genes.length < cap && !genes.includes(g) && (!GENES[g].from || w >= GENES[g].from)) { genes.push(g); why.push(`${GENES[g].name}: its best survivors so far carried it`); if (g === 'ward' && !el) el = parseGenes(best.k).el; }
+  for (let i = 0; i < 12 && genes.length < cap; i++) { const g = pick(r, GENE_IDS); if (!genes.includes(g) && (!GENES[g].from || w >= GENES[g].from)) genes.push(g); }
+  if (genes.includes('ward') && !el) el = pick(r, ELS);
+  const sp = genes.includes('wings') ? 'drone' : genes.includes('brood') ? 'tank' : 'drone';
+  return { w, genes, el, key: geneKey(genes, el), why, name: strainName(sp, genes, el).replace(/ \S+$/, '') + ' Strain', state: 'warn', n: 0, killed: 0, leaked: 0 };
+}
+function assaultTick(w) { // called from prepareWave(w): announce the assault on wave w+1
+  if (assaultOff() || geneCap(w + 1) <= 0) return;
+  if (G.assaultNext == null) G.assaultNext = assaultFirst();
+  while (G.assaultNext % 10 === 0) G.assaultNext++; // never on a boss wave
+  if (w + 1 !== G.assaultNext || (G.assault && G.assault.w === w + 1)) return;
+  const A = G.assault = planAssault(w + 1);
+  G.refit = true;
+  Hooks.toast('STRAIN ASSAULT', `${A.name} attacks in Wave ${A.w}. Selling is free until then`, '#ff4d6a', true);
+  Hooks.sfx('lane');
+  Hooks.assaultWarn && Hooks.assaultWarn(A);
+  rlog('assaultWarn', { w: A.w, genes: A.genes, el: A.el, why: A.why });
+}
+function assaultLimit(A) { return Math.max(1, Math.round(A.n * ASSAULT.hold)); }
+function assaultHit(e, leaked) {
+  const A = G.assault; if (!e.assault || !A || A.state !== 'live') return;
+  if (leaked) A.leaked++; else A.killed++;
+  if (A.killed + A.leaked >= A.n) resolveAssault();
+}
+function resolveAssault() {
+  const A = G.assault; if (!A || A.state !== 'live') return;
+  A.state = 'done'; A.won = A.leaked <= assaultLimit(A);
+  const S = G.stats.assaults || (G.stats.assaults = { won: 0, lost: 0, list: [] });
+  const F = G.geneFit || (G.geneFit = {});
+  if (A.won) {
+    S.won++;
+    G.gridBonus = (G.gridBonus || 0) + 1;
+    const cr = Math.round(ASSAULT.crPerWave * A.w * (G.CH.cr || 1)); G.credits += cr; A.cr = cr;
+    for (const k in F) if (parseGenes(k).genes.some(g => A.genes.includes(g))) F[k].s = Math.min(F[k].s, -0.4 * F[k].n);
+    G.assaultNext = A.w + assaultEvery();
+    Hooks.toast('STRAIN BROKEN', `${A.name} held off (${A.leaked} leaked). +1 power for the rest of the run, +${cr} credits`, '#59f0b4', true);
+    Hooks.sfx('levelup'); Hooks.fx('cash', {});
+  } else {
+    S.lost++;
+    F[A.key] = { s: 3, n: 4 };
+    G.assaultNext = A.w + Math.max(4, assaultEvery() - 2);
+    Hooks.toast('STRAIN ENTRENCHED', `${A.name} broke through (${A.leaked} leaked). It spreads, and the next assault comes sooner`, '#ff4d6a', true);
+  }
+  S.list.push({ w: A.w, name: A.name, won: A.won, leaked: A.leaked, n: A.n, genes: A.genes, hpx: +(A.hpx || 1).toFixed(2) });
+  rlog('assault', { w: A.w, genes: A.genes, el: A.el, n: A.n, leaked: A.leaked, won: A.won });
+  Hooks.onChange && Hooks.onChange();
+}
+// on-death effects that scale with the victim's max HP use its HP before assault scaling, or they chain through a whole assault
+function hpBase(e) { return e.hpBase || e.maxHp; }
+// waves in a row an attack tower has dealt no damage at all (0 = fine). Flagged at 2+: it's in the wrong spot
+function idleWaves(t) {
+  if (!t.s || t.s.kind === 'eco' || t.s.kind === 'support' || t.s.kind === 'snare') return 0;
+  const last = Math.max(t.lastFireW == null ? G.wave : t.lastFireW, t.builtW == null ? 0 : t.builtW);
+  return Math.max(0, G.wave - last - 1);
+}
+// the tower that has dealt the most damage (for hints)
+function topTower() { let best = null; for (const t of G.towers) if (t.dmgDone > (best ? best.dmgDone : 0) && canOvercharge(t)) best = t; return best; }
 function startWave() {
-  if (G.wave > 0) rlogWave();
+  if (G.wave > 0) { rlogWave(); intelUpdate(); }
+  if (G.assault && G.assault.state === 'live' && !G.queue.some(q => q.assault) && !G.enemies.some(e => e.assault && !e.dead)) resolveAssault();
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
@@ -2670,6 +2827,15 @@ function startWave() {
   G.laneWarn = null;
   for (const L of G.map.lanes) if (L.openWave) { const d = L.openWave - w; if (d >= 1 && (!G.laneWarn || d < G.laneWarn)) G.laneWarn = d; }
   G.queue = P.queue;
+  if (G.assault && G.assault.w === w && G.assault.state === 'warn') {
+    const A = G.assault; A.state = 'live'; G.refit = false;
+    if (!A.n) A.state = 'done';
+    else { // size it to your firepower: at least 1.3x normal HP
+      let base = 0; for (const q of G.queue) if (q.assault) base += ENEMIES[q.type].hp * (q.hpm || 1) * (q.genes.includes('bulk') ? GENES.bulk.hp : 1);
+      const fire = Math.max(G.power || 0, potentialDps() * 0.5);
+      A.hpx = Math.max(ASSAULT.minHp, base > 0 ? fire * ASSAULT.secs / base : 1);
+    }
+  }
   G.spawnClock = 0; G.spawningDone = false;
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
@@ -2873,7 +3039,9 @@ function spawnEnemy(type, q) {
   }
   const hpm = q.hpm || hpMult(w);
   let hp = D.hp * hpm;
-  if (genes) for (const g of genes) hp *= GENES[g].hp || 1;
+  if (genes) for (const g of genes) hp *= q.assault ? Math.max(1, GENES[g].hp || 1) : GENES[g].hp || 1;
+  const hp0 = hp;
+  if (q.assault && G.assault && G.assault.hpx) hp *= G.assault.hpx;
   const e = { id: G.eid++, type, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: D.spd, fly,
     armor: D.armor || 0, armorAll: 0, res: Object.assign({}, D.res || {}), size: type === 'tank' ? 0.42 : type === 'swarmer' ? 0.22 : 0.32,
     cr: D.cr * crMult(w), leak: D.leak, score: Math.round(D.cr * 10 * (1 + 0.1 * w)),
@@ -2882,7 +3050,8 @@ function spawnEnemy(type, q) {
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
-    if (genes.length) {
+    if (q.assault) { e.assault = 1; e.hpBase = hp0; }
+    if (genes.length && !q.assault) {
       const sk = type + ':' + e.gkey, X = PROF.codex.strains || (PROF.codex.strains = {});
       if (!X[sk] && Object.keys(X).length < 400) { X[sk] = { n: 0, w: G.wave }; if (genes.length >= 2) Hooks.toast('NEW STRAIN', strainName(type, genes, q.gel), GENES[genes[0]].col); }
       if (X[sk]) X[sk].n++;
@@ -3231,10 +3400,11 @@ function bossBehavior(e, dt) {
 }
 function leak(e) {
   e.dead = true;
-  geneRecord(e, true);
+  geneRecord(e, true); assaultHit(e, true);
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
   G.stats.leaks++;
   G.stats.lastLeak = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type;
+  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; }
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
   // a boss that reaches the core breaches it: a fixed share of the core, so it always hurts and is never a free pass
@@ -3296,7 +3466,7 @@ function hit(e, dmg, el, src, o) {
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
   let amt = dmg * mult;
   if (e.shield > 0) {
-    const sk = el === 'A' ? 2.5 : 1; // Arc tears through shields
+    const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
     const a = Math.min(e.shield, amt * sk); e.shield -= a; amt -= a / sk;
     if (amt <= 0) { e.hitFlash = 0.08; if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
@@ -3305,7 +3475,7 @@ function hit(e, dmg, el, src, o) {
   e.hp -= amt;
   if (e.boss && !e.gen && e.boss !== 'gloop' && e.phase < BOSS_PHASES.length && e.hp < e.maxHp * BOSS_PHASES[e.phase]) bossPhase(e);
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
-  if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; }
+  if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; src.lastFireW = G.wave; }
   if (!o.dot) e.hitFlash = 0.08;
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
   if (e.hp <= 0) { kill(e, src, o); return dealt; }
@@ -3362,7 +3532,7 @@ function applyStatuses(e, dmg, el, src, o) {
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
       // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss ? 0.004 : 0.03)) * cmb, 'V', src, { noStatus: 1 });
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? 0.004 : 0.03)) * cmb, 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
     }
     if (e.dead) return;
@@ -3419,9 +3589,9 @@ function milestone() {
 function kill(e, src, o) {
   if (e.dead) return;
   e.dead = true; e.hp = 0;
-  geneRecord(e, false);
+  geneRecord(e, false); assaultHit(e, false);
   if (e.brood) { // Brood: bursts into mites
-    const mh = e.maxHp * 0.12 / ENEMIES.swarmer.hp;
+    const mh = hpBase(e) * 0.12 / ENEMIES.swarmer.hp;
     for (let i = 0; i < 3; i++) { const m = spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - i * 0.2), hpm: mh }); m.fly = e.fly; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); }
     Hooks.fx('brood', { x: e.x, y: e.y });
   }
@@ -3447,7 +3617,7 @@ function kill(e, src, o) {
   if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); }
   if (e.elite.length) { G.stats.elites++; if (G.entWaveCombo < 6) { G.entWaveCombo += 0.25; addEntropy(0.25); } }
   if (G.af.boom && depth0(o) < 2) {
-    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * G.af.boom * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth0(o) + 1 });
+    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * G.af.boom * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth0(o) + 1 });
     Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' });
   }
   Hooks.fx('death', { x: e.x, y: e.y, type: e.type, boss: e.boss || false, gen: e.gen || 0, elite: e.elite.length > 0, cr });
@@ -3455,15 +3625,15 @@ function kill(e, src, o) {
   const depth = (o && o.depth) || 0;
   if (src && src.s && src.s.leg.detonator && depth < 2) {
     Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff8a2a' });
-    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * 0.4, src.s.el, src, { noStatus: 1, depth: depth + 1 });
+    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * 0.4, src.s.el, src, { noStatus: 1, depth: depth + 1 });
   }
   if (depth < 2) {
-    if (e.st.burn && FX('burnBoom')) { Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * FX('burnBoom') / 100 * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth + 1 }); }
-    if (e.st.shock > 0 && FX('shockBurst')) { Hooks.fx('arcs', { x: e.x, y: e.y, r: 1 }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, e.maxHp * FX('shockBurst') / 100 * (o2.boss ? 0.3 : 1), 'A', null, { noStatus: 1, depth: depth + 1 }); }
+    if (e.st.burn && FX('burnBoom')) { Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * FX('burnBoom') / 100 * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth + 1 }); }
+    if (e.st.shock > 0 && FX('shockBurst')) { Hooks.fx('arcs', { x: e.x, y: e.y, r: 1 }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * FX('shockBurst') / 100 * (o2.boss ? 0.3 : 1), 'A', null, { noStatus: 1, depth: depth + 1 }); }
     if (e.st.frozen > 0 && FX('iceShards')) { Hooks.fx('freeze', { x: e.x, y: e.y }); for (const o2 of G.enemies) if (!o2.dead && !o2.elite.includes('jugg') && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) { o2.st.chill = Math.min(5, o2.st.chill + 2); o2.st.chillT = 2.5; } }
   }
   if (src && src.s && M.orb && M.orb.ent[src.s.el]) addEntropy(0.08);
-  if (src && src.s && src.s.el === 'T' && FX('napalmKill') && G.zones.length < 40) G.zones.push({ k: 'napalm', x: e.x, y: e.y, r: 0.7, t: 2, dps: Math.max(4, e.maxHp * 0.06), src, el: 'T' });
+  if (src && src.s && src.s.el === 'T' && FX('napalmKill') && G.zones.length < 40) G.zones.push({ k: 'napalm', x: e.x, y: e.y, r: 0.7, t: 2, dps: Math.max(4, hpBase(e) * 0.06), src, el: 'T' });
   if (M.chainIgnite && e.st.burn) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) {
       if (!o2.st.burn || o2.st.burn.dps < e.st.burn.dps) o2.st.burn = { dps: e.st.burn.dps, t: 3 * M.burnDur, src: e.st.burn.src };
@@ -3476,7 +3646,7 @@ function kill(e, src, o) {
   }
   if (e.type === 'splitter') for (let i = 0; i < 3; i++) spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - i * 0.25) });
   if (e.elite.includes('split') && !e.boss) for (let i = 0; i < 2; i++) {
-    const c = spawnEnemy(e.type, { L: e.L, d: Math.max(0, e.d - i * 0.3) }); c.maxHp = c.hp = e.maxHp * 0.3;
+    const c = spawnEnemy(e.type, { L: e.L, d: Math.max(0, e.d - i * 0.3) }); c.maxHp = c.hp = hpBase(e) * 0.3;
   }
   if (e.elite.includes('volatile')) {
     for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 1.44) t.disabled = Math.max(t.disabled, 2);
@@ -3602,10 +3772,11 @@ function updateTowers(dt) {
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
     t.effRange = range;
     t.cd -= dt * rate;
-    if (s.kind === 'beam') { beamUpdate(t, dt, range, sw); continue; }
+    if (s.kind === 'beam') { beamUpdate(t, dt, range, sw); if (t.beamTargets) t.lastFireW = G.wave; continue; }
     if (t.cd > 0) continue;
     t.capMult = s.el === 'A' && FX('capacitor') && t.capT >= 4 ? 3 : 1;
     const fired = towerAttack(t, range, sw);
+    if (fired) t.lastFireW = G.wave;
     if (fired && t.capMult > 1) { t.capT = 0; Hooks.fx('arcs', { x: t.cx, y: t.cy, r: 0.8 }); }
     t.capMult = 1;
     if (fired) {
@@ -4007,7 +4178,12 @@ function planRelocation(nx, ny) {
     routes.push(route);
   }
   const len = L => L.length, before = map.lanes.map(L => L.tiles.length), after = routes.map(len);
-  return { x: nx, y: ny, routes, before, after, cost: relocCost() };
+  // which attack towers would lose (or gain) road in range
+  const reach = (t, tiles) => { const r = (t.s.range || 0) + 0.3; for (const v of tiles) { const x = typeof v === 'number' ? v % COLS : v.x, y = typeof v === 'number' ? (v / COLS) | 0 : v.y; if ((x + 0.5 - t.cx) ** 2 + (y + 0.5 - t.cy) ** 2 <= r * r) return true; } return false; };
+  const oldT = [].concat(...map.lanes.map(L => L.tiles)), newT = [].concat(...routes);
+  let lose = 0, gain = 0;
+  for (const t of G.towers) { if (!t.s || !t.s.range || t.s.kind === 'eco') continue; const a = reach(t, oldT), b = reach(t, newT); if (a && !b) lose++; else if (!a && b) gain++; }
+  return { x: nx, y: ny, routes, before, after, cost: relocCost(), lose, gain };
 }
 function applyRelocation(plan) {
   if (!plan || !canRelocate()) return false;
@@ -4122,7 +4298,7 @@ function snapshotRun(waveNum) {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {},
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -4140,7 +4316,7 @@ function resumeRun(S) {
   const ci = S.tiles.indexOf(4);
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
-  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.rlog = (S.rlog || []).slice(); G.rlog.push({ k: 'resume', w: S.wave, t: S.time }); G.reactorN = S.reactorN || 0; G.strainN = Object.assign({}, S.strainN || {}); G.preAdapted = S.preAdapted || null; G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {});
+  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.rlog = (S.rlog || []).slice(); G.rlog.push({ k: 'resume', w: S.wave, t: S.time }); G.reactorN = S.reactorN || 0; G.strainN = Object.assign({}, S.strainN || {}); G.preAdapted = S.preAdapted || null; G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {}); G.assault = S.assault ? JSON.parse(JSON.stringify(S.assault)) : null; G.assaultNext = S.assaultNext == null ? null : S.assaultNext; G.refit = !!S.refit; G.intel = S.intel ? JSON.parse(JSON.stringify(S.intel)) : null;
   setNodes((S.nodes || []).slice()); G.caches = []; G.pirates = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};
@@ -5020,6 +5196,10 @@ const Render = (() => {
       R(b, X + 4, Y + 2, 1, 5, sc); R(b, X + 2, Y + 4, 5, 1, sc); P(b, X + 4, Y + 4, '#ffffff');
     }
     if (t.disabled > 0) for (let i = 0; i < 14; i++) R(b, X + 2 + Math.random() * 19, Y + 2 + Math.random() * 19, 2, 1, i % 2 ? '#ffffff' : '#5a5a7a');
+    if (G.wave > 1 && idleWaves(t) >= 2) { // sleeping: two little pixel Zs drift up from the corner
+      const zc = '#9fb3c8';
+      for (let k = 0; k < 2; k++) { const ph = ((frame >> 2) + k * 12) % 24, zx = X + 1 + k * 4, zy = Y + 6 - (ph >> 2) - k * 3; if (ph > 20) continue; R(b, zx, zy, 3, 1, zc); R(b, zx + 1, zy + 1, 1, 1, zc); R(b, zx, zy + 2, 3, 1, zc); }
+    }
     if (t.oc) for (let i = 0; i < t.oc; i++) { const bx = X + 18 - i * 5, by = Y + 1, c = frame % 16 < 8 ? '#59f0b4' : '#e6fff6'; R(b, bx + 1, by, 2, 3, c); R(b, bx, by + 2, 3, 1, c); R(b, bx + 1, by + 3, 2, 3, c); }
   }
   // wormhole: swirling portal at a lane's origin. Forming portals are small and unstable; open ones are full size.
@@ -5095,6 +5275,7 @@ const Render = (() => {
     if (e.boss === 'titan' && e.plates > 0) { R(b, X - 22, y - 22, 44, 5, '#8a8fa8'); R(b, X - 22, y + 17, 44, 5, '#8a8fa8'); if (e.plates > 1) { R(b, X - 22, y - 22, 5, 44, '#a4aac4'); R(b, X + 17, y - 22, 5, 44, '#a4aac4'); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
+    if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
     if (e.elite.length && !cloaked) {
       const ec = ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, r = hw + 4;
@@ -5887,7 +6068,7 @@ const UI = (() => {
     show('game');
     Render.reset();
     requestAnimationFrame(() => { Render.resize(); });
-    logLines = []; renderLog();
+    feedLines.length = 0; renderFeed();
     if (snap) resumeRun(snap);
     else if (setup.mode === 'daily') newRun({ seed: setup.daily.seed, chaos: setup.daily.chaos, startWave: 1, daily: setup.daily, cols: COLS });
     else {
@@ -5897,7 +6078,7 @@ const UI = (() => {
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave;
-    if (!snap && G.preAdapted) setTimeout(() => toast('SWARM PRE-ADAPTED', `${G.preAdapted.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1), 1600);
+    if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
     document.body.classList.toggle('hudfull', hudFull);
@@ -5983,8 +6164,13 @@ const UI = (() => {
     }
     if (!(G.spawningDone && G.prep) && geneCap(G.wave) > 0) {
       const gs = Object.entries(geneShares()).filter(([g, v]) => v >= 0.15).sort((a, b) => b[1] - a[1]).slice(0, 2);
-      chips.unshift(`<span class="evchip dna" data-evo="1">DNA${gs.length ? ' · ' + gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : ' · stable'}</span>`);
+      chips.unshift(`<span class="evchip dna${performance.now() < dnaPulse ? ' pulse' : ''}" data-evo="1">DNA${gs.length ? ' · ' + gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : ' · stable'}</span>`);
     }
+    // assault banner (top of the field): warn shows the strain's genes, live shows what's left and the leak budget
+    const AS = G.assault, asb = $('#asbar'); let asH = '';
+    if (AS && AS.state === 'warn') asH = `<b>STRAIN ASSAULT · WAVE ${AS.w}</b><span>${AS.genes.map(g => `<i style="color:${GENES[g].col}">${GENES[g].name}${g === 'ward' && AS.el ? ' ' + EL[AS.el].name : ''}</i>`).join(' · ')}</span><em>${G.refit ? 'Selling is free' : ''}</em>`;
+    else if (AS && AS.state === 'live') { const left = AS.n - AS.killed - AS.leaked, lim = assaultLimit(AS); asH = `<b>${esc(AS.name)}</b><span>${left} left</span><em class="${AS.leaked > lim ? 'lost' : ''}">Leaks ${AS.leaked}/${lim}</em>`; }
+    if (asb) { const on = !!asH && !(G.bossAlive && !G.bossAlive.dead); if (asb.dataset.h !== asH) { asb.innerHTML = asH; asb.dataset.h = asH; } if (asb.hidden === on) asb.hidden = !on; document.body.classList.toggle('asbar', on); }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) chips.push(`<span class="evchip storm" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}</span>`);
@@ -5997,6 +6183,7 @@ const UI = (() => {
     const ch = $('#chips');
     if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
     if (hudFull) renderDps();
+    renderFeed();
     liveRefreshPanel();
     SFX.music.setIntensity(0.25 + Math.min(0.45, G.wave / 60) + (G.bossAlive ? 0.35 : 0) + (G.storms.some(s => s.mael) ? 0.2 : 0));
   }
@@ -6007,21 +6194,35 @@ const UI = (() => {
     $('#dps').innerHTML = `<div class="dh">DPS <b>${fmt(total)}</b></div>` + list.map(t => `<div class="drow"><span>${esc(TOWERS[t.type].name)} ${t.lvl}</span><i style="width:${Math.round(t.dps / max * 100)}%;background:${EL[t.s.el].col}"></i><b>${fmt(t.dps)}</b></div>`).join('');
   }
   const toastHeld = [], toastSeen = {};
-  // v3.1 notifications: one at a time, routine ones short and dropped when things are busy, repeats merged
-  const LOW_TOAST = /^(NEW COMBO|MILESTONE|SALVAGE|GOLDEN SALVAGE|CURSED SALVAGE|BOON|CASHED IN|TAX REFUND|SPAT OUT|NEW BOSS|LEGENDARY|VETERAN|ASCEND)/;
-  const toastNQ = []; let toastBusy = false;
+  // v4.0 notifications, three channels so the centre of the screen stays clear:
+  //  ALERT: rare cards for things you should react to (a strain assault, a wormhole, pirates, the worm eating a tower).
+  //         One at a time, wrapped text, tap to dismiss.
+  //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
+  //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
+  const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP)/;
+  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
+  const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
+  function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force) {
     const key = title + '|' + body, now = performance.now();
     if (toastSeen[key] !== undefined && now - toastSeen[key] < 4000) return;
     toastSeen[key] = now;
+    const kind = screen !== 'game' ? (TIP_RE.test(title) ? 'tip' : 'alert') : toastKind(title);
+    if (/^SWARM EVOLVES/.test(title)) dnaPulse = now + 9000;
+    if (kind === 'feed') { feed(title, body, col); return; }
+    if (kind === 'tip') { flashTip(title, body, col); return; }
     if (!force && screen === 'game' && (modalOpen || Tree.isOpen)) { toastHeld.push([title, body, col]); if (toastHeld.length > 3) toastHeld.shift(); return; }
-    const low = LOW_TOAST.test(title) && !force;
-    if (toastNQ.some(t => t.title === title && t.body === body)) return;
-    if (low && (toastBusy || toastNQ.length) ) { if (toastNQ.length >= 1) { log(`${title[0]}${title.slice(1).toLowerCase()}: ${body}`, col); return; } }
-    toastNQ.push({ title, body, col, low });
-    // keep the queue short: drop routine ones first, then the oldest
-    while (toastNQ.length > 3) { const li = toastNQ.findIndex(t => t.low); toastNQ.splice(li >= 0 ? li : 0, 1); }
+    if (toastNQ.some(t => t.title === title)) return;
+    toastNQ.push({ title, body, col });
+    while (toastNQ.length > 2) feed(...Object.values(toastNQ.shift()));
     if (!toastBusy) nextToast();
+  }
+  function flashTip(title, body, col) {
+    const el = $('#tip'); if (!el) return;
+    el.style.setProperty('--c', col || '#ffb03a');
+    el.innerHTML = `<b>${esc(title)}</b>${body ? `<span>${esc(body)}</span>` : ''}`;
+    el.hidden = false; el.classList.remove('out'); document.body.classList.add('tipon');
+    clearTimeout(tipT); tipT = setTimeout(() => { el.classList.add('out'); tipT = setTimeout(() => { el.hidden = true; document.body.classList.remove('tipon'); }, 300); }, 1700 + Math.min(2200, (body || '').length * 30));
   }
   function nextToast() {
     const t = toastNQ.shift(); if (!t) { toastBusy = false; return; }
@@ -6032,8 +6233,29 @@ const UI = (() => {
     d.className = 'toast'; d.style.setProperty('--c', t.col || '#ffb03a');
     d.innerHTML = `<b>${esc(t.title)}</b><span>${esc(t.body)}</span>`;
     box.appendChild(d);
-    const dur = t.low ? 1700 : (t.body || '').length > 44 ? 3800 : 2600;
-    setTimeout(() => { d.classList.add('out'); setTimeout(() => { d.remove(); nextToast(); }, 300); }, toastNQ.length ? Math.min(dur, 1800) : dur);
+    feed(t.title, t.body, t.col, true);
+    const end = () => { if (!d.isConnected || d.classList.contains('out')) return; clearTimeout(toastT); d.classList.add('out'); setTimeout(() => { d.remove(); nextToast(); }, 300); };
+    d.onclick = end;
+    const dur = Math.min(5600, 2600 + (t.body || '').length * 35);
+    toastT = setTimeout(end, toastNQ.length ? 2400 : dur);
+  }
+  // the feed: recent events in the corner. Old ones fade; with Stats on it keeps the last few
+  const feedLines = [];
+  function feed(title, body, col, quiet) {
+    const now = performance.now(), last = feedLines[feedLines.length - 1];
+    if (last && last.title === title && last.body === body) { last.n++; last.t = now; renderFeed(); return; }
+    feedLines.push({ title, body, col, t: now, n: 1, quiet: !!quiet });
+    if (feedLines.length > 8) feedLines.shift();
+    renderFeed();
+  }
+  const feedTitle = t => t.split(' ').map(w => /^[IVX]+$/.test(w) || w.length < 2 ? w : w[0] + w.slice(1).toLowerCase()).join(' ');
+  let feedH = '';
+  function renderFeed() {
+    const l = $('#log'); if (!l) return;
+    const now = performance.now();
+    const show = hudFull ? feedLines.slice(-6) : feedLines.filter(x => !x.quiet && !x.minor && now - x.t < 7000).slice(-3);
+    const html = show.map(x => `<div class="fl ${!hudFull && now - x.t > 5500 ? 'old' : ''}" style="--c:${x.col || '#c9c6bc'}">${x.title ? `<b>${esc(feedTitle(x.title))}</b> ` : ''}${esc(x.body || '')}${x.n > 1 ? ` <i>×${x.n}</i>` : ''}</div>`).join('');
+    if (html !== feedH) { l.innerHTML = html; feedH = html; }
   }
   // boss arrival: a portrait card and a moment of slow motion, so every boss gets its entrance
   let bossT = null;
@@ -6054,12 +6276,12 @@ const UI = (() => {
     bossT = setTimeout(hide, first ? 4800 : 3400);
     log(`${B.name} incoming`, '#ff4d6a');
   }
+  // minor sim events: only shown in the feed when Stats is on
   function log(text, col) {
-    logLines.push({ text, col });
-    if (logLines.length > 7) logLines.shift();
-    renderLog();
+    feedLines.push({ title: '', body: text, col, t: performance.now(), n: 1, minor: true });
+    if (feedLines.length > 8) feedLines.shift();
+    renderFeed();
   }
-  function renderLog() { const l = $('#log'); if (l) l.innerHTML = logLines.map(x => `<div style="color:${x.col || '#c9c6bc'}">${esc(x.text)}</div>`).join(''); }
 
   // ---------- Panels ----------
   function closePanel() {
@@ -6233,13 +6455,14 @@ const UI = (() => {
       ${t.lvl === 3 ? up : ''}
       ${vet}
       ${stats}
+      ${idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : ''}
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       <div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>
-      ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${[0, 1, 2].map(n => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n * OVERCHARGE.dmg * 100}% · ${n} pw` : 'Off'}</button>`).join('')}</div>` : ''}
+      ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · 1 power per step · ${gridUsed()}/${gridCap()} used</div><div class="modes oc">${Array.from({ length: OVERCHARGE.max + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${Math.round(n * OVERCHARGE.dmg * 100)}%` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
   }
   function corePanelHTML() {
     const c = G.core, s = coreStats();
@@ -6279,6 +6502,7 @@ const UI = (() => {
     const rows = P.before.map((b, i) => { const a = P.after[i], dd = a - b, L = G.map.lanes[i]; return `<span>${i === 0 ? 'Main road' : L.openWave ? 'Forming' : 'Lane ' + (i + 1)}<b class="${dd > 0 ? 'good' : dd < 0 ? 'bad' : ''}">${b} → ${a}</b></span>`; }).join('');
     return head + `<div class="lbl">Road length (tiles)</div><div class="sg">${rows}</div>
       <div class="sts ${d > 0 ? 'good' : d < 0 ? 'bad' : ''}">${d === 0 ? 'Same total road length' : `${d > 0 ? '+' : '−'}${Math.abs(d)} tiles of road in total`}${d > 0 ? ': enemies walk further' : d < 0 ? ': enemies arrive sooner' : ''}</div>
+      ${P.lose || P.gain ? `<div class="sts ${P.lose > P.gain ? 'bad' : 'good'}">${P.lose ? `${P.lose} tower${P.lose > 1 ? 's' : ''} would lose the road and sit idle` : ''}${P.lose && P.gain ? ' · ' : ''}${P.gain ? `${P.gain} tower${P.gain > 1 ? 's' : ''} would gain road` : ''}</div>` : '<div class="sts good">Every tower keeps road in range</div>'}
       ${isNode(P.x, P.y) ? `<div class="sts node">${tipify('Power Node: the core will be overcharged, +50% Damage, +20% Rate')}</div>` : ''}
       <p class="note">Tap another tile to compare.</p>
       <div class="pfoot"><button class="btn primary wide" data-act="rgo" ${cost ? costBtn(cost) : ''}>Move Core · ${relocPrice()}</button><button class="btn" data-act="rcancel">Cancel</button></div>`;
@@ -6524,7 +6748,7 @@ const UI = (() => {
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
-      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
+      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
   }
@@ -6537,6 +6761,7 @@ const UI = (() => {
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
       ${R.peakGene ? `<p class="note hl" style="color:${GENES[R.peakGene.g].col}">${tipify(`Evolution peak: ${GENES[R.peakGene.g].name} reached ${Math.round(R.peakGene.v * 100)}% of the swarm at Wave ${R.peakGene.w}`)}${R.strain ? ` · Signature strain: <b>${esc(R.strain.name)}</b> ×${fmt(R.strain.n)}` : ''}${R.pre ? ` · Arrived adapted: ${esc(R.pre.join(', '))}` : ''}</p>` : ''}
+      ${R.assaults && R.assaults.list.length ? `<p class="note hl">${tipify(`Strain Assaults: ${R.assaults.won} broken, ${R.assaults.lost} entrenched`)}${R.assaults.list.slice(-3).map(a => ` · W${a.w} ${esc(a.name)} ${a.won ? '✓' : '✗'}`).join('')}</p>` : ''}
       ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
@@ -6576,12 +6801,31 @@ const UI = (() => {
       const locked = A.from && G.wave < A.from;
       return `<div class="evrow ${locked ? 'dim' : ''}"><b style="color:${A.col}">${A.name}</b><div class="evbar"><i style="width:${Math.round(v * 100)}%;background:${A.col}"></i></div><em>${locked ? 'Wave ' + A.from : Math.round(v * 100) + '%' + (Math.abs(d) >= 0.05 ? (d > 0 ? ' ▲' : ' ▼') : '')}</em><span>${esc(A.desc)} · <u>${esc(A.counter)}</u></span></div>`; }).join('');
   }
+  // v4.0 Strain Assault: the swarm's move, announced a wave ahead
+  function openAssault(intro) {
+    const A = G && G.assault; if (!A) { openEvo(); return; }
+    if (!G.over) G.paused = true;
+    const S = G.stats.assaults || { won: 0, lost: 0 };
+    const est = A.n || Math.round(Math.min(65, 6 + A.w * 1.15) * ASSAULT.share * ASSAULT.count * (G.CH.count || 1));
+    const lim = Math.max(1, Math.round(est * ASSAULT.hold));
+    const live = A.state === 'live', done = A.state === 'done';
+    modal(`<div class="card evo assault"><div class="ch"><h2>${intro ? 'The Swarm Makes Its Move' : 'Strain Assault'}</h2><span class="note">Wave ${A.w}${live ? ' · in progress' : done ? (A.won ? ' · broken' : ' · entrenched') : ''} · record ${S.won} held, ${S.lost} lost</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      ${intro ? `<p class="note">${tipify('Every few waves the swarm studies your defence, breeds the strain that beats it and throws most of a wave at you. It warns you a wave ahead: this is your move.')}</p>` : ''}
+      <h3 class="asname">${esc(A.name)}</h3>
+      <div class="evlist">${A.genes.map(g => { const D = GENES[g]; return `<div class="evrow"><b style="color:${D.col}">${D.name}${g === 'ward' && A.el ? ' · ' + EL[A.el].name : ''}</b><div></div><em></em><span>${esc(g === 'ward' && A.el ? `Resists ${EL[A.el].name} by 50%` : D.desc)} · <u>Counter: ${esc(g === 'ward' && A.el ? `anything but ${EL[A.el].name}` : D.counter)}</u></span></div>`; }).join('')}</div>
+      ${A.why.length ? `<div class="lbl">How it read you</div><ul class="aswhy">${A.why.map(x => `<li>${esc(x[0].toUpperCase() + x.slice(1))}</li>`).join('')}</ul>` : ''}
+      ${live ? `<p class="note hl">${A.n - A.killed - A.leaked} of ${A.n} left · ${A.leaked} leaked of ${assaultLimit(A)} allowed</p>`
+        : done ? '' : `<p class="note hl">${tipify(`Your move: selling is free (100% refund) until Wave ${A.w} starts, and Overcharge moves for free. Swap towers for the counters above.`)}</p>`}
+      ${done ? '' : `<p class="note">${tipify(`Let ${live ? assaultLimit(A) : '~' + lim} or fewer through and the strain is broken: +1 power for the rest of the run and a credit bounty, and the swarm stops trusting those genes. More, and it entrenches: it spreads through the next waves and the next assault comes sooner.`)}</p>`}
+      <div class="foot"><button class="btn primary" data-act="${intro ? 'assaultDone' : 'close2'}">${intro ? 'Answer it' : 'Back'}</button></div></div>`, 'assault');
+  }
   function openEvo(intro) {
     if (!G) return;
     if (!G.over) G.paused = true;
     const cap = geneCap(G.wave);
-    modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+    modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(G.assault && G.assault.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       ${intro ? `<p class="note">${tipify("Enemies that get furthest pass their traits on. Whatever your defence handles worst spreads; answer it and it fades. Each trait costs them HP or speed, so a balanced, adaptable defence keeps the swarm in check. Tap DNA in the top bar any time to see this.")}</p>` : ''}
+      ${(() => { const R = geneCap(G.wave) > 0 ? readDefence(Math.max(G.wave, 1)).slice(0, 2) : []; return R.length ? `<div class="lbl">What the swarm sees in your defence right now</div><ul class="aswhy">${R.map(x => `<li><b style="color:${GENES[x.g].col};font-weight:400">${GENES[x.g].name}${x.el ? ' · ' + EL[x.el].name : ''}</b>: ${esc(x.why)}</li>`).join('')}</ul>` : ''; })()}
       <div class="evlist">${evoRowsHTML()}</div>
       <div class="foot"><button class="btn primary" data-act="${intro ? 'evoDone' : 'close2'}">${intro ? 'Adapt' : 'Back'}</button></div></div>`, 'evo');
   }
@@ -6920,6 +7164,7 @@ const UI = (() => {
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
       case 'logSave': { const t = lastLogText(); if (t) saveText(t); break; }
+      case 'assaultDone': PROF.seenAssault = true; Save.save(); closeModal(); if (G && !G.over) G.paused = false; break;
       case 'evoDone': PROF.seenEvo = true; Save.save(); closeModal(); if (G && !G.over) G.paused = false; break;
       case 'news': openNews(); break;
       case 'strack': PROF.settings.soundtrack = b.dataset.v; SFX.setSoundtrack(b.dataset.v); Save.save(); openSettings(); break;
@@ -6958,6 +7203,7 @@ const UI = (() => {
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
+    $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
     $('#chips').addEventListener('click', e => { if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
@@ -7013,7 +7259,8 @@ const UI = (() => {
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
-    Hooks.gridFull = () => toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Upgrade, Overcharge or sell; Power Nodes are free`, '#ffb03a');
+    Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) openAssault(true); }, 700); };
+    Hooks.gridFull = () => { const T = topTower(); toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Build on a Power Node (free), sell an idle tower, or expand the reactor${T ? `. Or Overcharge your best: ${TOWERS[T.type].name}` : ''}`, '#ffb03a'); };
     Hooks.log = log;
     Hooks.toast = toast;
     Hooks.onDraft = opts => { closePanel(); openDraft(opts); };
