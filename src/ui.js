@@ -218,7 +218,7 @@ const UI = (() => {
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave;
-    if (!snap && G.preAdapted) setTimeout(() => toast('SWARM PRE-ADAPTED', `${G.preAdapted.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1), 1600);
+    if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
     document.body.classList.toggle('hudfull', hudFull);
@@ -306,9 +306,11 @@ const UI = (() => {
       const gs = Object.entries(geneShares()).filter(([g, v]) => v >= 0.15).sort((a, b) => b[1] - a[1]).slice(0, 2);
       chips.unshift(`<span class="evchip dna${performance.now() < dnaPulse ? ' pulse' : ''}" data-evo="1">DNA${gs.length ? ' · ' + gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : ' · stable'}</span>`);
     }
-    const AS = G.assault, asChip = [];
-    if (AS && AS.state === 'warn') asChip.push(`<span class="evchip assault" data-assault="1">ASSAULT W${AS.w} ${AS.genes.map(g => `<i style="color:${GENES[g].col}">${GENES[g].name}</i>`).join('·')}</span>`);
-    else if (AS && AS.state === 'live') { const left = AS.n - AS.killed - AS.leaked, lim = assaultLimit(AS); asChip.push(`<span class="evchip assault live ${AS.leaked > lim ? 'lost' : ''}" data-assault="1">ASSAULT ${left} · LEAKS ${AS.leaked}/${lim}</span>`); }
+    // assault banner (top of the field): warn shows the strain's genes, live shows what's left and the leak budget
+    const AS = G.assault, asb = $('#asbar'); let asH = '';
+    if (AS && AS.state === 'warn') asH = `<b>STRAIN ASSAULT · WAVE ${AS.w}</b><span>${AS.genes.map(g => `<i style="color:${GENES[g].col}">${GENES[g].name}${g === 'ward' && AS.el ? ' ' + EL[AS.el].name : ''}</i>`).join(' · ')}</span><em>${G.refit ? 'Selling is free' : ''}</em>`;
+    else if (AS && AS.state === 'live') { const left = AS.n - AS.killed - AS.leaked, lim = assaultLimit(AS); asH = `<b>${esc(AS.name)}</b><span>${left} left</span><em class="${AS.leaked > lim ? 'lost' : ''}">Leaks ${AS.leaked}/${lim}</em>`; }
+    if (asb) { const on = !!asH && !(G.bossAlive && !G.bossAlive.dead); if (asb.dataset.h !== asH) { asb.innerHTML = asH; asb.dataset.h = asH; } if (asb.hidden === on) asb.hidden = !on; document.body.classList.toggle('asbar', on); }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) chips.push(`<span class="evchip storm" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}</span>`);
@@ -316,7 +318,7 @@ const UI = (() => {
     if (G.laneWarn) chips.unshift(`<span class="evchip warn ${G.laneWarn === 1 ? 'bad' : 'storm'}" style="--c:#d6a6ff">${G.laneWarn === 1 ? 'Wormhole opens next wave' : 'Wormhole opens in ' + G.laneWarn + ' waves'}</span>`);
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
-    const html = asChip.concat(chips).join('');
+    const html = chips.join('');
     const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c); }
     const ch = $('#chips');
     if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
@@ -1341,7 +1343,8 @@ const UI = (() => {
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
-    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-assault]')) { SFX.play('ui'); openAssault(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };

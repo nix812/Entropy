@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 3.2.1 · October 29, 2026**
+**Version at handoff: 4.0.0 · October 29, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -256,6 +256,31 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
   - The setup screen shows `evo.desc`.
 - **Tests:** `v32shot.py`.
 
+### 4.3f v4.0 "The Swarm Plays Back"
+- **Strain Assaults (sim.js, after `genWave`):** the swarm's turn in a back-and-forth.
+  - Cadence comes from `CHAOS_LEVELS[i].evo.first` / `.every`: Calm 18 / 10, Normal 14 / 8, Unstable 12 / 7, Pandemonium 9 / 6. `G.assaultNext` holds the next wave; it never lands on a boss wave (`% 10 === 0` shifts +1).
+  - `assaultTick(w)` runs at the start of `prepareWave(w)`. When `w + 1 === G.assaultNext` it calls `planAssault(w + 1)`, sets `G.refit = true` (sell refund 100% via `sellRefund`), raises the "STRAIN ASSAULT" alert, and calls `Hooks.assaultWarn` (first time: `openAssault(true)`, paused).
+  - **The read:** `intelUpdate()` runs at each `startWave`. It keeps per-tower-type damage (from `t.dmgDone` deltas) and per-element damage (from `G.stats.dmgByEl` deltas), halved every wave. `readDefence(w, jitter)` turns that into scored gene picks with a plain-words reason. Ward fires on an element at 35%+ share. Plating fires on low piercing share (rail, lens, half flame, quarter missile). Shell fires on low Arc. Wings fires on ground-only share (flame, grav). Haste fires on few slow towers. Regrowth fires on low Thermal. Cloak fires on having no Pylon. Brood fires on low splash. Genes from the last assault you broke score ×0.4. `jitter` (assaults only) uses `G.r`; the DNA panel calls it without jitter, so the UI never consumes run RNG.
+  - `planAssault` takes up to 2 read genes, fills to `max(2, geneCap + 1)` from the best `G.geneFit` genome, then random. Its name is `strainName(...)` without the species, plus " Strain".
+  - `genWave` converts each non-boss entry with probability `ASSAULT.share` (0.7) to the strain (`q.assault = 1`). It then adds `ASSAULT.count − 1` (30%) extra copies and re-sorts by `t`. `A.n` is the total.
+  - At `startWave` the assault goes `live`, refit ends, and HP is sized like a boss: `A.hpx = max(1.3, fire × ASSAULT.secs / Σ base HP of the assault units)`, with `fire = max(G.power, potentialDps × 0.5)` and `secs = 30`. Assault units don't pay the gene HP price (Bulk still adds). `e.hpBase` keeps the pre-`hpx` HP.
+  - **`hpBase(e)`:** on-death effects that scale with the victim's max HP use it: boom, detonator, burnBoom, shockBurst, napalm, brood mites and split elites. Without it one kill chain-killed a whole assault. Collapse and the Void ability treat assault units like bosses.
+  - Kills and leaks of `e.assault` count in `assaultHit`. When all are done (or at the next `startWave` if any vanished) `resolveAssault()` runs. With ≤ 10% leaked (`assaultLimit`) the strain is **broken**: +1 `gridBonus`, credits `30 × wave × CH.cr`, those genes get negative fitness, next assault after `every`. Otherwise it is **entrenched**: `geneFit[key] = {s:3, n:4}`, next assault after `max(4, every − 2)`.
+  - Results go to `G.stats.assaults {won, lost, list}`, the recap, and the run log (`assaultWarn`, `assault`). Snapshots save `assault, assaultNext, refit, intel`.
+  - **UI:** `#asbar`, a red banner at the top of the field (warn: genes and "Selling is free"; live: strain name, left, leaks vs limit), tap it for `openAssault()`. It hides while a boss is alive, and `body.asbar` pushes alerts down. A HUD chip was tried first, but `#chips` is too narrow on phones. "Free refit · 100%" on the Sell button. Red diamond aura on assault enemies. The DNA panel shows "What the swarm sees in your defence right now" (top 2 reads) and the next assault wave. During an assault wave the "SWARM EVOLVES" announcements are skipped.
+- **Notifications rebuilt (`toast()` in ui.js):** three channels, picked by title.
+  - `ALERT_RE`: centre card, one at a time, at most 2 queued (extras go to the feed), wraps text, tap to dismiss.
+  - `TIP_RE`: `#tip` at the bottom, replaced instantly, never queues; it is also used outside the game screen.
+  - Everything else: the feed (`#log`, bottom left), at most 3 lines, each fading after about 7 s, with repeats merged (×n). With Stats on it keeps the last 6 and also shows minor `Hooks.log` lines. The feed hides while a tip shows or a left panel is open. To make something a card, add its title prefix to `ALERT_RE`; keep that list short.
+- **Fixes from Nic's run log:**
+  - Arc's ×2.5 shield damage keys off `src.s.el0`, so it works under Conflagration.
+  - `OVERCHARGE = {max 3, dmg 0.35, rate 0.15}`; the panel shows 4 chips.
+  - Idle towers: `t.lastFireW` (set in `hit()` when a tower deals damage) and `idleWaves(t)`. At 2+ idle waves the tower shows pixel Zs and its panel has a red line. `topTower()` names your best tower in the GRID FULL tip.
+  - `planRelocation` returns `lose`/`gain` (attack towers losing or gaining road in range), shown in the relocation panel.
+  - `rlogWave` now finds genes with `geneHist.find(h => h.w === w)`; it was almost never logged before. It also logs `leakBy` per wave (type+genes, or `boss:id`).
+- **Balance (12 seeds, Normal):** 60 points: assaults off 78.5 median, on (bot without refit) 83, on (bot with refit) 73 — within the bot's noise, and the refit bot's crude swaps are the weak link, not the assault. 0 points with all towers locked to their unlock waves (`par.sh 12 0 1 1 1`): off 42.5, on 43.5. Bots break 85–95% of assaults; the losses come late. Sizing tried: `ASEC` 45 cost about 6 waves at 60 points; 100+ made early assaults unbeatable for weak defences. Before `hpBase`, even 200× HP assaults were cleared by on-death chains. Lens ramps up on tanky targets, so it is the natural assault answer; watch that.
+- **Tests:** `v40notif.py`, `v40assault.py`. `test/harness.js` now passes the whole `process.env` into the VM; before, only `NOGA` reached the sim, so env knobs were silently ignored. New knobs: `NOASSAULT=1` (sim), `ASEC`, `ACNT` (sim), `NOREFIT=1` (bot), `ASLOG=1` (bot prints each assault: wave, leaked/n, won, hpx, genes). The bot answers an announced assault during refit by swapping its weakest non-answers for counters, and moves damage off a warded element.
+
 ### 4.3b Core affixes (v1.16)
 - Every Weapon or Shield upgrade rolls one affix with the tower rarity odds (`rollTier`, shared with towers). The pool is every attack-tower affix plus core-only ones, weighted 3× (`CORE_AFFIX_W`):
 
@@ -419,6 +444,8 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
 | `bench.js` | Damage per 100 credits for every tower, level and spec against a single target, a pack and a stream. |
 | `monkey.py MINUTES [W H seed]` | Plays the real page with random taps, panel buttons, zooms, reloads, snapshots and wave jumps, checking invariants (finite numbers, one core tile, `towerAt` in sync, no stalls). Prints page errors with stack lines, problems, and where the time went. Screens land in `test/audit/monkey_*`. CPU-starved runs can report false stalls; it now needs 4 s of frozen sim time, and its report includes frame counts so a starved page is easy to spot. |
 | `odbtn.py [W H tag]` | Overdrive rail button: locked, ready, armed, released, used. |
+| `v40notif.py [W H tag]` | v4.0 notification channels: alert card, tip, corner feed fading. |
+| `v40assault.py [W H tag]` | v4.0 Strain Assault: first-time intro, chip, free refit on Sell, live chip and aura, broken outcome. |
 | `v32shot.py [W H tag]` | v3.2: setup evolution note, Pandemonium pre-adapted toast, strains met, recap signature strain, Archive strains. |
 | `v31shot.py [W H tag]` | v3.1: notification queue, evolution intro and DNA panel, reactor expansion buttons, run log stored and copied at game over. |
 | `v3shot.py [W H tag]` | Power grid HUD readout, build panel when the grid is full, Overcharge buttons and damage, seeded evolution (gene chips, the tap-for-counter toast, evolved enemies on the field). |
@@ -496,7 +523,7 @@ The expanding sector made every level a little easier, because the compact early
 2. **`ROWS` is mutable** (`setRows`) and set per run from the Chaos level, while the setup screen calls `setRows` before `fitCols`/`genMap`. Anything new that sizes things by `ROWS` must read it at runtime, not cache it.
 3. **UIS scaling:** any new code that reads pointer `clientX`/`clientY` or `getBoundingClientRect` for canvas maths must divide by `UIS`. Elements appended to `<body>`, outside `#app`, are not scaled.
 4. **iOS audio:** keep music on plain `HTMLAudio`. It needs a user-gesture retry, and the volume slider behaves like on/off on iOS.
-5. **Toasts:** `toast()` de-duplicates identical messages within 4 s. While a modal or the web is open, toasts are queued unless `force` is passed. Long toasts (over 44 characters) stay up for 4.5 s.
+5. **Notifications (v4.0):** `toast()` routes by title regex: `ALERT_RE` (centre card), `TIP_RE` (bottom tip) and everything else (corner feed). Identical messages within 4 s are dropped. Alerts are held while a modal or the web is open, unless `force` is passed. Don't add titles to `ALERT_RE` casually: Nic's main complaint was spam.
 6. **Checkpoint stall:** the sim halts only when the field is empty. Never wait for enemies to clear before triggering a checkpoint; it caused an infinite stall before.
 7. **Map generation cost:** `genExtraLane` runs Dijkstra up to 120 attempts. Keep it heap-based. The old O(N²) version was too slow on big maps.
 8. **Snapshots** must stay compatible across versions. The resume path passes `rows: S.rows || 15`. If snapshot fields change, migrate them; don't discard runs.
@@ -510,6 +537,8 @@ The expanding sector made every level a little easier, because the compact early
 16. **Bot balance numbers are noisy.** Boon picks use `Math.random`, so the same 12 seeds can swing ±4 waves between runs (Lens measured 55, 56 and 58 on three runs). Re-run before acting on a gap under about 5 waves, and use `lab.js` and `bench.js` for controlled comparisons.
 17. **The passive web (`#tree`) is a `.screen`.** `show(id)` hides every other screen, so switching screens while the web was open used to hide it but leave `Tree.isOpen` true, which halts the game loop (frozen run). `show()` now closes the web first. `monkey.py` checks this invariant.
 18. **Damage based on max HP must be reduced for bosses**, or boss health stops mattering. Every other max-HP effect uses about 0.3× for bosses; Collapse had none until v2.1. Check new effects with `BOSSLOG`.
+19. **Harness env:** the sim reads env knobs through the VM's `process.env`, which `harness.js` must pass in. It used to pass only `NOGA`, so other knobs did nothing in bot runs.
+20. **Never inflate an enemy's max HP without `hpBase`:** on-death effects scale with the victim's max HP and will chain through the pack.
 
 ---
 
@@ -566,3 +595,4 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 4.0 | Strain Assaults: the swarm reads your defence, telegraphs a counter-strain a wave ahead, free refit, broken (+1 power) or entrenched. Notifications split into alerts, tips and a corner feed. Overcharge 3 × 35%. Idle-tower Zs, relocation coverage, Arc shield fix under Conflagration, log genes and leaks |

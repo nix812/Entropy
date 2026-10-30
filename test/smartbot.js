@@ -124,14 +124,15 @@ for (let run = OFF; run < OFF + runs; run++) {
           const ans = (CT2[g] || []).filter(ok); if (!ans.length) continue;
           const need = (g === 'cloak' ? 1 : 2 + Math.floor(G.towers.length / 10)) - G.towers.filter(tw => ans.includes(tw.type)).length;
           for (let i = 0; i < need && sold < 4; i++) {
-            if (S.gridFree() < 1) { const v = G.towers.filter(tw => !Object.values(CT2).flat().filter(k => AS.genes.some(gg => (CT2[gg] || []).includes(k))).includes(tw.type) && tw.s.kind !== 'eco' && tw.s.kind !== 'support' && !tw.asc).sort((a, b) => a.dps - b.dps)[0]; if (!v) break; S.sellTower(v); sold++; }
+            if (S.gridFree() < 1) { const v = G.towers.filter(tw => !Object.values(CT2).flat().filter(k => AS.genes.some(gg => (CT2[gg] || []).includes(k))).includes(tw.type) && tw.s.kind !== 'eco' && tw.s.kind !== 'support' && !tw.asc && tw.dps <= (G.towers.map(x => x.dps).sort((p, q) => p - q)[Math.floor(G.towers.length / 2)] || 0)).sort((a, b) => a.dps - b.dps)[0]; if (!v) break; S.sellTower(v); sold++; }
             const k = ans[i % ans.length], sp = bestSpot(G, k); if (!sp || G.credits < S.towerCost(k) || !S.buildTower(k, sp.x, sp.y)) break;
           }
         }
         // Ward: move damage off the warded element (sell its weakest towers, build another element's)
         if (AS.el && AS.genes.includes('ward')) {
           const offEl = { K: ['missile', 'coil', 'cryo'], T: ['rail', 'coil', 'lens'], C: ['rail', 'missile', 'coil'], A: ['rail', 'missile', 'lens'], V: ['rail', 'missile', 'coil'] }[AS.el].filter(ok);
-          const mine = G.towers.filter(tw => tw.s.el === AS.el && !tw.asc && tw.s.kind !== 'support' && tw.s.kind !== 'eco').sort((a, b) => a.dps - b.dps);
+          const medDps = G.towers.map(tw => tw.dps).sort((a, b) => a - b)[Math.floor(G.towers.length / 2)] || 0;
+          const mine = G.towers.filter(tw => tw.dps <= medDps && !tw.asc && tw.s.kind !== 'support' && tw.s.kind !== 'eco').sort((a, b) => a.dps - b.dps);
           for (let i = 0; i < Math.min(3, Math.floor(mine.length / 3)) && sold < 6; i++) {
             S.sellTower(mine[i]); sold++;
             const k = offEl[i % offEl.length], sp = bestSpot(G, k); if (!sp || G.credits < S.towerCost(k) || !S.buildTower(k, sp.x, sp.y)) break;

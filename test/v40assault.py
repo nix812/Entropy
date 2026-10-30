@@ -28,7 +28,7 @@ with sync_playwright() as p:
     print('modal:', pg.evaluate('() => UI.modalOpen'), 'paused', pg.evaluate('() => G.paused'))
     pg.screenshot(path=str(out / f'{tag}01_intro.png'))
     if pg.evaluate('() => UI.modalOpen === "assault"'): pg.click('[data-act=assaultDone]'); pg.wait_for_timeout(300)
-    print('seenAssault', pg.evaluate('() => PROF.seenAssault'), 'chip:', pg.evaluate('() => (document.querySelector("#chips [data-assault]") || {}).textContent'))
+    print('seenAssault', pg.evaluate('() => PROF.seenAssault'), 'chip:', pg.evaluate('() => (document.querySelector("#asbar") || {}).textContent'))
     t0 = pg.evaluate('() => [G.towers[0].x, G.towers[0].y, G.towers[0].invested, sellRefund(G.towers[0])]')
     tap_tile(pg, t0[0], t0[1]); pg.wait_for_timeout(300)
     print('invested', t0[2], 'refund', t0[3], 'sell btn:', pg.inner_text('[data-act=sell]').replace('\n', ' | '))
@@ -38,7 +38,7 @@ with sync_playwright() as p:
     pg.evaluate('() => { G.prep = null; prepareWave(14); startWave(); G.speed = 1; }')
     pg.wait_for_timeout(5000)
     print('state', pg.evaluate('() => G.assault.state'), 'n', pg.evaluate('() => G.assault.n'), 'refit', pg.evaluate('() => G.refit'), 'assault enemies', pg.evaluate('() => G.enemies.filter(e => e.assault).length'))
-    print('chip live:', pg.evaluate('() => (document.querySelector("#chips [data-assault]") || {}).textContent'))
+    print('chip live:', pg.evaluate('() => (document.querySelector("#asbar") || {}).textContent'))
     pg.screenshot(path=str(out / f'{tag}03_live.png'))
     # finish: everything killed
     pg.evaluate('() => { for (const q of G.queue) if (q.assault) G.assault.killed++; G.queue = G.queue.filter(q => !q.assault); for (const e of G.enemies.slice()) if (e.assault && !e.dead) kill(e, null, {}); }')

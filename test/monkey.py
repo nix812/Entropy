@@ -25,7 +25,7 @@ CHECK = '''() => {
     if (G.enemies.length > 900) bad.push('enemy count ' + G.enemies.length);
     if (G.projs.length > 3000) bad.push('projectiles ' + G.projs.length);
     if (typeof gridUsed === 'function' && G.towers.some(t => (t.oc || 0) < 0 || (t.oc || 0) > OVERCHARGE.max)) bad.push('overcharge out of range');
-    for (const e of G.enemies) if (e.genes && e.genes.length > geneCap(G.wave)) { bad.push('too many genes ' + e.genes.length + ' > cap ' + geneCap(G.wave)); break; }
+    for (const e of G.enemies) if (e.genes && e.genes.length > (e.assault ? Math.max(2, geneCap(G.wave) + 1) : geneCap(G.wave))) { bad.push('too many genes ' + e.genes.length + ' > cap ' + geneCap(G.wave)); break; }
   }
   if (Tree.isOpen && document.querySelector('#tree').hidden) bad.push('web marked open but hidden (game frozen)');
   const halted = !G || G.over || G.paused || G.draft || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen;

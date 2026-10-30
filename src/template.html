@@ -213,6 +213,7 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .evchip.assault { box-shadow: inset 0 0 0 1px #ff4d6a; color: #ffd0d8; background: rgba(255,77,106,0.18); cursor: pointer; animation: dnapulse 1.2s steps(2) infinite; }
 .evchip.assault.live { animation: none; background: rgba(255,77,106,0.3); } .evchip.assault.lost { background: rgba(255,77,106,0.55); color: #fff; }
 .evchip.assault i { font-style: normal; }
+.evchip.assault { flex-shrink: 0; }
 .hs.pwr { display: flex; align-items: center; gap: 4px; color: #59f0b4; }
 .hs.pwr b { font-size: 20px; }
 .hs.pwr.full { color: #ffb03a; }
@@ -223,7 +224,12 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .row.logrow { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 4px; } .row.logrow .note { margin-right: auto; }
 #toasts { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; z-index: 30; width: min(520px, 70%); }
 body.modal-open #toasts { display: none; }
-body.bossbar #toasts { top: 58px; }
+body.bossbar #toasts { top: 58px; } body.asbar #toasts { top: 84px; }
+#asbar { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; gap: 10px; align-items: baseline; padding: 4px 12px; background: rgba(40, 6, 16, 0.88); box-shadow: inset 0 0 0 1px #ff4d6a, 0 0 14px rgba(255,77,106,0.35); cursor: pointer; white-space: nowrap; max-width: 92%; overflow: hidden; }
+#asbar b { font-family: var(--f-pix); font-size: 9px; color: #ff4d6a; letter-spacing: 1px; }
+#asbar span { font-size: 15px; color: #f2e9ea; } #asbar i { font-style: normal; }
+#asbar em { font-style: normal; font-size: 15px; color: #ffd0d8; } #asbar em.lost { color: #fff; background: #ff4d6a; padding: 0 4px; }
+body.panel-l #asbar { left: calc(50% + 140px); max-width: calc(100% - 300px); } body.panel-r #asbar { left: calc(50% - 140px); max-width: calc(100% - 300px); }
 body.panel-l #toasts { left: calc(50% + 140px); width: min(400px, 46%); }
 body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 .toast { background: rgba(7, 8, 15, 0.94); box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c), 0 0 22px rgba(0,0,0,0.6); padding: 6px 12px 7px 14px; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; animation: tin 0.2s; transition: opacity 0.3s; max-width: 100%; pointer-events: auto; cursor: pointer; }
@@ -577,6 +583,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
       <canvas id="cv"></canvas>
       <button class="zoombtn" id="bZoom" hidden></button>
       <div id="log"></div>
+      <div id="asbar" hidden></div>
       <div id="dps"></div>
       <div id="panel" class="panel" hidden></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
