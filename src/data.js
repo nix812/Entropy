@@ -400,6 +400,8 @@ const STAT_TXT = {
   napalmKill: () => 'Thermal kills leave burning ground for 2s', multiA: v => `Arc towers hit +${v} target`,
   freezeImmRed: v => `Enemies can be Frozen again ${v}% sooner`, markVoid: v => `Each Mark adds +${v}% Void damage taken`,
   salvage: () => 'Kills grant +1 credit for every 10 waves reached',
+  msOc: v => `Marksman: each Overcharge step adds +${v}% more Damage`, wfHeat: v => `Wildfire: Heat can climb ${v}% higher`, wfDur: v => `Wildfire: road fire lasts ${v}% longer`,
+  weStep: v => `War Economy: core turrets need ${v}% fewer banked credits`, weTur: v => `War Economy: each core turret adds +${v}% more core Damage`,
   kBurn: v => `Kinetic hits: ${v}% chance to Burn`, chillVoid: v => `Hits on Chilled enemies: ${v}% chance to Mark`,
 };
 const SMALL_NAME = {
@@ -512,7 +514,23 @@ function satLines(n) {
   if (el === 'E') return [`Facing ${SECTORS[si].name}: ` + Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')];
   return [`Facing ${SECTORS[si].name}: ${S.t(el)}`];
 }
-const WEB_SCALE = 1.3, WEB_VER = 2;
+const WEB_SCALE = 1.3, WEB_VER = 3;
+// v4.2 Doctrines: a region's seal gives it a play style you can see on the field, with a real cost. Its notables, mastery,
+// keystone and arm only work (and can only be taken) once its seal is in. You hold a limited number of seals.
+// Indexed by sector. Sectors without an entry are still open, freeform regions (they become Doctrines later).
+const DOCTRINES = {
+  0: { id: 'marksman', name: 'Marksman', tag: 'Few towers, enormous shots', counter: 'brood',
+    lines: ['Your power grid is 40% smaller', 'Every attack tower is Overcharged +2 for free, and Overcharge goes up to 5 steps', 'Towers show targeting lasers'],
+    smalls: [{ msOc: 4 }, { msOc: 4 }] },
+  1: { id: 'wildfire', name: 'Wildfire', tag: 'The road burns', counter: 'wings',
+    lines: ['Burning ground enemies set the road on fire', 'Road fire builds Heat during a wave: up to +100% fire damage', 'Towers within 1 tile of burning road overheat: −25% Attack Speed'],
+    smalls: [{ wfHeat: 20 }, { wfDur: 20 }] },
+  5: { id: 'wareco', name: 'War Economy', tag: 'Money is firepower', counter: 'haste',
+    lines: ['The core grows a turret for every stack of banked credits (up to 8): +60% core Damage and +8% core Attack Speed each', 'The stack size grows with the wave, so keep banking', 'Towers cost 20% more'],
+    smalls: [{ weStep: 6 }, { weTur: 10 }] },
+};
+const sealSlots = lvl => 1 + (lvl >= 75 ? 1 : 0) + (lvl >= 120 ? 1 : 0);
+const SEAL_NEXT = lvl => lvl < 75 ? 75 : lvl < 120 ? 120 : 0;
 function buildTree() {
   const nodes = {}, edges = [];
   const add = (id, x, y, kind, sector, name, fx, extra) => {
@@ -535,7 +553,8 @@ function buildTree() {
     const mfx = {}; mfx[S.attr] = 5; mfx[N.attr] = (mfx[N.attr] || 0) + 5;
     add(`m${i}`, x, y, 'small', i, 'Conduit', mfx);
     // spine: four steps out from the gate
-    const spineFx = [A8, mf(S.spine[0], A8), Object.assign({}, S.spine[1]), mf(S.spine[2], A8)];
+    const DOC = DOCTRINES[i];
+    const spineFx = [A8, mf(S.spine[0], A8), Object.assign({}, S.spine[1], DOC ? DOC.smalls[0] : {}), mf(S.spine[2], A8, DOC ? DOC.smalls[1] : {})];
     for (let j = 0; j < 4; j++) {
       [x, y] = pol(140 + j * 80, a);
       add(`s${i}_${j}`, x, y, 'small', i, smallName(spineFx[j]), spineFx[j]);
@@ -551,7 +570,14 @@ function buildTree() {
       add(`${p}b`, sx + tx * 80 + rx * 14, sy + ty * 80 + ry * 14, 'small', i, smallName(fb), fb);
       add(`${p}n`, sx + tx * 120, sy + ty * 120, 'notable', i, C.name, C.fx);
       link(`s${i}_${j}`, `${p}a`); link(`${p}a`, `${p}b`); link(`${p}b`, `${p}n`);
+      if (DOC) nodes[`${p}n`].need = i;
     });
+    // the Doctrine seal hangs off the first spine node
+    if (DOC) {
+      const [sx, sy] = pol(140, a), ar = a * Math.PI / 180;
+      add(`d${i}`, sx - Math.sin(ar) * 62, sy + Math.cos(ar) * 62, 'seal', i, `${DOC.name} Doctrine`, {}, { doctrine: i, ks: DOC.id, lines: DOC.lines });
+      link(`s${i}_0`, `d${i}`);
+    }
     // keystone & mastery branches
     const K = S.keystone, M = S.mastery;
     [[K, -1, 'k', 'keystone'], [M, 1, 'x', 'mastery']].forEach(([D, sd, tag, kind]) => {
@@ -562,6 +588,7 @@ function buildTree() {
       [x, y] = pol(580, a + sd * 11);
       add(`${tag}${i}`, x, y, kind, i, D.name, D.fx || {}, D.ks ? { ks: D.ks, lines: D.lines } : D.opts ? { opts: D.opts } : null);
       link(`${tag}${i}_0`, `${tag}${i}`);
+      if (DOC) nodes[`${tag}${i}`].need = i;
     });
   });
   // ring of hybrids between sectors, plus three arc keystones
@@ -595,7 +622,7 @@ function buildTree() {
     [x, y] = pol(765, a + 34);
     add(`w${i}_1`, x, y, 'small', i, smallName(f1), f1); link(`w${i}_0`, `w${i}_1`);
     [x, y] = pol(850, a + 47);
-    add(`w${i}`, x, y, 'notable', i, ARMS[i].name, ARMS[i].fx, { arm: 1 });
+    add(`w${i}`, x, y, 'notable', i, ARMS[i].name, ARMS[i].fx, Object.assign({ arm: 1 }, DOCTRINES[i] ? { need: i } : {}));
     link(`w${i}_1`, `w${i}`);
   });
   // the Z-axis: Zenith above the galactic plane, Nadir below
@@ -706,9 +733,11 @@ const REGION_IDS = ['s0', 's1', 's2', 's3', 's4', 's5', 'zen', 'nad'];
 const REGION_NAME = { s0: 'The Archer', s1: 'The Phoenix', s2: 'The Thunderbolt', s3: 'The Crystal', s4: 'The Maw', s5: 'The Bulwark', zen: 'The Crown', nad: 'The Serpent' };
 function regionOf(n) { if (n.sector >= 0) return 's' + n.sector; if (n.sector === -2) return n.z > 0 ? 'zen' : 'nad'; return null; }
 const REGION_NODES = {};
-for (const n of TREE.list) { const r = regionOf(n); if (r) (REGION_NODES[r] = REGION_NODES[r] || []).push(n.id); }
-// a remnant keeps a sector's notables (clusters + arm) active forever
-const remnantNodes = rid => REGION_NODES[rid].filter(id => TREE.nodes[id].kind === 'notable' && !TREE.nodes[id].hybrid);
+// a region counts as complete with all its open passives: seals and seal-locked nodes don't count (you can only hold a few seals)
+const REGION_ALL = {};
+for (const n of TREE.list) { const r = regionOf(n); if (!r) continue; (REGION_ALL[r] = REGION_ALL[r] || []).push(n.id); if (n.kind !== 'seal' && n.need === undefined) (REGION_NODES[r] = REGION_NODES[r] || []).push(n.id); }
+// a remnant keeps a sector's notables (clusters + arm) active forever, seal or not
+const remnantNodes = rid => REGION_ALL[rid].filter(id => TREE.nodes[id].kind === 'notable' && !TREE.nodes[id].hybrid);
 
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',

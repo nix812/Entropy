@@ -73,11 +73,25 @@ function treeOrphans(id) {
   while (q.length) { const c = q.shift(); for (const nb of TREE.nodes[c].adj) if (A.has(nb) && !seen.has(nb)) { seen.add(nb); q.push(nb); } }
   const out = [id];
   for (const a of A) if (!seen.has(a)) out.push(a);
+  // removing a seal also releases everything it locked
+  const n0 = TREE.nodes[id];
+  if (n0.kind === 'seal') for (const a of A) if (TREE.nodes[a].need === n0.doctrine && !out.includes(a)) out.push(a);
   return out;
+}
+// why a node can't be taken right now ('' = fine): seal-locked nodes need their Doctrine seal; seals are limited
+function sealsHeld(list) { return (list || PROF.alloc).filter(id => TREE.nodes[id] && TREE.nodes[id].kind === 'seal').length; }
+function treeBlock(id, path) {
+  path = path || treePathTo(id) || [];
+  const A = allocSet(), want = new Set(path);
+  for (const pid of path) { const n = TREE.nodes[pid]; if (n.need !== undefined && !A.has('d' + n.need) && !want.has('d' + n.need)) return 'seal:' + n.need; }
+  const newSeals = path.filter(pid => TREE.nodes[pid].kind === 'seal').length;
+  if (newSeals && sealsHeld() + newSeals > sealSlots(profLevel().level)) return 'slots';
+  return '';
 }
 function treeAllocate(id) {
   const path = treePathTo(id);
   if (!path || !path.length || path.length > pointsFree()) return false;
+  if (treeBlock(id, path)) return false;
   const before = new Set(regionsDone());
   PROF.alloc.push(...path);
   if (G && !G.over) recomputeAll();
@@ -113,7 +127,12 @@ function migrateWeb() {
 function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
   if (!b) return 'empty';
-  const valid = pruneAlloc(b.alloc);
+  let valid = pruneAlloc(b.alloc);
+  // drop extra seals and anything whose seal isn't in the build
+  const slots = sealSlots(profLevel().level); let held = 0;
+  valid = valid.filter(id => { const n = TREE.nodes[id]; if (n.kind !== 'seal') return true; return ++held <= slots; });
+  const seals = new Set(valid.filter(id => TREE.nodes[id].kind === 'seal'));
+  valid = pruneAlloc(valid.filter(id => TREE.nodes[id].need === undefined || seals.has('d' + TREE.nodes[id].need)));
   if (valid.length - 1 > profLevel().level) return 'points';
   if (G && !G.over && !G.checkpoint) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   PROF.alloc = valid.includes('start') ? valid.slice() : ['start', ...valid];
@@ -131,8 +150,11 @@ function computeMods(alloc, runMods) {
   const all = new Set(alloc);
   for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) all.add(id);
   for (const r in PROF.stars || {}) if (STARS[r] && regionDone(r, new Set(alloc))) { const S = STARS[r]; m[S.key] = (m[S.key] || 0) + starTotal(r, PROF.stars[r]); }
+  const remSet = new Set(); for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) remSet.add(id);
   for (const id of all) {
     const n = TREE.nodes[id]; if (!n) continue;
+    if (n.need !== undefined && !all.has('d' + n.need) && !remSet.has(id)) continue; // seal-locked
+    if (n.kind === 'seal') { ks[n.ks] = 1; continue; }
     if (n.sat !== undefined) {
       const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)];
       if (el === 'E') for (const k in S.E) m[k] = (m[k] || 0) + S.E[k];
@@ -182,6 +204,7 @@ function computeMods(alloc, runMods) {
   if (ks.chaos) M.affixLuck += 1.5;
   if (ks.prismatic) M.dmg *= 0.9;
   if (ks.unbreakable) M.dmg *= 0.9;
+  if (!ks.marksman) delete m.msOc; if (!ks.wildfire) { delete m.wfHeat; delete m.wfDur; } if (!ks.wareco) { delete m.weStep; delete m.weTur; }
   M.raw = m;
   return M;
 }
@@ -418,13 +441,16 @@ function rlogWave() {
   rlog('wave', d);
 }
 // ---- v3.0 power grid ----
-function gridCap() { return Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)) + (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); }
+function gridCap() { const c = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)) + (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(c * 0.6)) : c; }
+// Marksman: +2 free Overcharge on every attack tower, and paid Overcharge goes 2 steps higher
+const ocFree = t => G.mods && G.mods.ks.marksman && canOvercharge(t) ? 2 : 0;
+const ocMax = () => OVERCHARGE.max + (G && G.mods && G.mods.ks.marksman ? 2 : 0);
 function canOvercharge(t) { const k = TOWERS[t.type].kind; return k !== 'eco' && k !== 'support' && k !== 'snare'; }
 function towerPower(t) { return (isNode(t.x, t.y) ? 0 : 1) + (canOvercharge(t) ? t.oc || 0 : 0); }
 function gridUsed() { let n = 0; for (const t of G.towers) n += towerPower(t); return n; }
 function gridFree() { return gridCap() - gridUsed(); }
 function setOvercharge(t, n) {
-  n = clamp(n | 0, 0, OVERCHARGE.max);
+  n = clamp(n | 0, 0, ocMax());
   if (!canOvercharge(t)) return false;
   if (n - (t.oc || 0) > gridFree()) return false;
   t.oc = n; t.s = towerStats(t); recomputeAuras();
@@ -678,6 +704,7 @@ function towerCost(type) {
   const M = G.mods, D = TOWERS[type];
   let c = D.cost * M.cost * (1 + (G.af.costX || 0));
   if (M.ks.dimret) c *= 1 + 0.12 * G.towers.filter(t => t.type === type).length;
+  if (M.ks.wareco) c *= 1.2;
   return Math.round(c);
 }
 function upgradeCost(t) {
@@ -925,8 +952,8 @@ function towerStats(t) {
     s.range = s.bountyAura ? 3 : 0;
   }
   s.ground = !!D.ground;
-  const oc = canOvercharge(t) ? (t.oc || 0) : 0;
-  if (oc) { s.dmg *= 1 + OVERCHARGE.dmg * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
+  const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
+  if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
   return s;
 }
 function recomputeAuras() {
@@ -1357,6 +1384,11 @@ function readDefence(w, jitter) {
   if (!G.towers.some(t => t.type === 'pylon')) add('cloak', 0.28, 'you have no Relay Pylon to reveal it');
   const splash = sh('missile') + sh('flame') + sh('coil') + sh('emp');
   add('brood', (0.2 - splash) * 1.8, `only ${pc(splash)} of your damage is splash`);
+  // the swarm also reads your Doctrine
+  const K = G.mods.ks;
+  if (K.marksman) add('brood', 0.5, 'you rely on a few big guns, so it comes in numbers');
+  if (K.wildfire) add('wings', 0.55, 'your fire only burns the road, so it flies over it');
+  if (K.wareco) add('haste', 0.45, 'it wants to reach your core before the war chest fills');
   const last = G.stats.assaults && G.stats.assaults.list.length ? G.stats.assaults.list[G.stats.assaults.list.length - 1] : null;
   if (last && last.won && last.genes) for (const o of out) if (last.genes.includes(o.g)) o.score *= 0.4;
   if (jitter) for (const o of out) o.score *= 0.85 + G.r() * 0.3;
@@ -1792,6 +1824,7 @@ function updateEnemies(dt) {
     // statuses
     if (st.burn) {
       st.burn.t -= dt;
+      if (G.mods.ks.wildfire && !e.fly && !e.burrowed) { e.fireT = (e.fireT || 0) - dt; if (e.fireT <= 0) { e.fireT = 0.4; roadFire(e); } }
       hit(e, st.burn.dps * dt, 'T', st.burn.src, { dot: 1, noStatus: 1 });
       if (st.burn.t <= 0) st.burn = null;
       if (e.dead) continue;
@@ -2371,6 +2404,8 @@ function updateTowers(dt) {
   if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} deals ×2`, EL[G.flux.el].col); } }
   let burning = 0;
   if (FX('heatSink')) for (const e of G.enemies) if (!e.dead && e.st.burn) burning++;
+  // Wildfire: towers within 1 tile of burning road overheat (checked 4× a second)
+  if (M.ks.wildfire) { G.hotClock = (G.hotClock || 0) - dt; if (G.hotClock <= 0) { G.hotClock = 0.25; const fires = G.zones.filter(z => z.k === 'roadfire'); for (const t of G.towers) { t.hot = false; for (const z of fires) if (dist2(t.cx, t.cy, z.x, z.y) <= (1 + z.r) * (1 + z.r)) { t.hot = true; break; } } } }
   if (FX('thunder') && G.enemies.length) {
     G.thunderT = (G.thunderT === undefined ? 6 : G.thunderT) - dt;
     if (G.thunderT <= 0) {
@@ -2390,6 +2425,7 @@ function updateTowers(dt) {
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
     if (s.leg.overloop) { t.olT = (t.olT + dt) % 8; if (t.olT < 3) rate *= 2.5; }
     if (burning && s.el === 'T') rate *= 1 + Math.min(0.4, 0.02 * burning);
+    if (t.hot && M.ks.wildfire) rate *= 0.75;
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
     t.effRange = range;
     t.cd -= dt * rate;
@@ -2640,11 +2676,22 @@ function explode(p) {
   if (p.k === 'missile' && s.napalm) G.zones.push({ k: 'napalm', x: p.x, y: p.y, r: 0.85, t: 3, dps: p.dmg * 0.5, src, el: 'T' });
   if (p.k === 'mortar' && s.stunDur) Hooks.fx('emp', { x: p.x, y: p.y, r });
 }
+// ---- v4.2 Wildfire: burning ground enemies leave fire on the road; the more road burns, the hotter it gets ----
+const WILDFIRE = { r: 0.55, t: 2.2, dps: 0.5, perZone: 0.04, cap: 1, max: 70 };
+function wildHeatCap() { return WILDFIRE.cap * (1 + FX('wfHeat') / 100); }
+function roadFire(e) {
+  const dps = e.st.burn.dps * WILDFIRE.dps, t = WILDFIRE.t * (1 + FX('wfDur') / 100);
+  for (const z of G.zones) if (z.k === 'roadfire' && dist2(z.x, z.y, e.x, e.y) < 0.36) { z.t = Math.max(z.t, t); z.dps = Math.max(z.dps, dps); return; }
+  if (G.zones.filter(z => z.k === 'roadfire').length >= WILDFIRE.max) return;
+  G.zones.push({ k: 'roadfire', x: e.x, y: e.y, r: WILDFIRE.r, t, dps, src: e.st.burn.src, el: 'T' });
+}
 function updateZones(dt) {
+  if (G.mods.ks.wildfire) { const n = G.zones.reduce((a, z) => a + (z.k === 'roadfire'), 0); G.heat = Math.min(wildHeatCap(), n * WILDFIRE.perZone); } else G.heat = 0;
   for (const z of G.zones) {
     z.t -= dt;
-    for (const e of G.enemies) if (!e.dead && !(e.fly && z.k === 'napalm') && dist2(e.x, e.y, z.x, z.y) <= z.r * z.r) {
-      hit(e, z.dps * dt, z.el, z.src, { dot: 1, noStatus: 1 });
+    const zm = z.k === 'roadfire' ? 1 + G.heat : 1;
+    for (const e of G.enemies) if (!e.dead && !(e.fly && (z.k === 'napalm' || z.k === 'roadfire')) && dist2(e.x, e.y, z.x, z.y) <= z.r * z.r) {
+      hit(e, z.dps * zm * dt, z.el, z.src, { dot: 1, noStatus: 1 });
       if (!e.dead && !e.st.burn) e.st.burn = { dps: z.dps * 0.4 * G.mods.burnDmg, t: 1.5, src: z.src };
     }
   }
@@ -2675,14 +2722,17 @@ function updateTimers(dt) {
 
 // ---------- core ----------
 const CORE_EL_STATUS = { K: {}, T: { burn: 0.5 }, C: { chill: 1 }, A: { shock: 0.5 }, V: { mark: 0.5 } };
+// ---- v4.2 War Economy: banked credits grow turrets on the core ----
+function warStep() { return Math.round((500 + 120 * Math.max(1, G.wave)) * (1 - Math.min(0.6, FX('weStep') / 100))); }
+function warTier() { return G.mods && G.mods.ks.wareco ? Math.min(8, Math.floor(Math.max(0, G.credits) / warStep())) : 0; }
 function coreStats() {
-  const M = G.mods, c = G.core;
+  const M = G.mods, c = G.core, wt = warTier(), wx = (1 + wt * (0.6 + FX('weTur') / 100)), wr = 1 + wt * 0.08;
   if (!c.A) coreAffSum(c);
   const A = c.A, p = k => (A[k] || 0) / 100, nd = isNode(G.map.core.x, G.map.core.y);
   const el = M.ks.conflag ? 'T' : c.el;
   const st = CORE_EL_STATUS[el];
   return {
-    el, kind: 'core', dmg: CORE_GUN.dmg * Math.pow(CORE_GUN.growth, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1), rate: CORE_GUN.rate * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
+    el, kind: 'core', dmg: CORE_GUN.dmg * Math.pow(CORE_GUN.growth, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1) * wx, rate: CORE_GUN.rate * wr * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
     range: (CORE_GUN.range + M.coreRange + CORE_GUN.rangeLv * (c.wLvl - 1)) * (1 + p('range')), critC: M.critC + (A.critC || 0), critM: 1.5 + M.critM + p('critM'),
     burn: clamp((st.burn || 0) + p('burn'), 0, 1), chill: M.ks.conflag ? 0 : clamp((st.chill || 0) + p('chill'), 0, 1), shock: clamp((st.shock || 0) + p('shock'), 0, 1), mark: clamp((st.mark || 0) + p('mark'), 0, 1),
     chillPot: M.chillPot, freezeBonus: M.freezeDur, shockX: 1, burnX: 1, stun: 0, stunDur: 0, leg: c.leg, cur: {}, boss: M.eliteDmg + p('boss') + (c.wLvl >= 8 ? 0.25 : 0), slowd: p('slowd'), exec: A.exec || 0, bounty: p('bounty'),
