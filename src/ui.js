@@ -1558,19 +1558,30 @@ const Tree = (() => {
     camPrep();
     if (cA > 0.5) { let hb = null, hd = 1e9; for (const h of cHits) { const d = Math.hypot(h.x - px, h.y - py); if (d < h.r && d < hd) { hd = d; hb = h; } } if (hb) { SFX.play('ui'); flyTo(hb.rid); return; } }
     selStar = null;
-    let best = null, bd = 1e9;
+    const A0 = new Set(PROF.alloc), cullR = cullRadius(), fs = focusSector(), cands = [];
     for (const n of TREE.list) {
-      const [x, y, z] = npos(n); proj(x, y, z, o);
-      const d = Math.hypot(o.x - px, o.y - py), hitR = Math.max(22, R[n.kind] * o.s + 10);
-      if (d < hitR && d - o.d * 0.002 < bd) { bd = d - o.d * 0.002; best = n; }
+      const [x, y, z] = npos(n);
+      if (nodeFade(n, x, y, z, cullR, fs, A0, n.id === sel || (path && path.includes(n.id))) < 0.3) continue; // hidden or faded back
+      proj(x, y, z, o);
+      const d = Math.hypot(o.x - px, o.y - py), hitR = Math.max(16, R[n.kind] * o.s + 9);
+      if (d >= hitR) continue;
+      // nearer to the eye wins in 3D; the next step from your build and the current path get a nudge
+      const next = !A0.has(n.id) && n.adj.some(x2 => A0.has(x2));
+      cands.push({ n, d, sc: d - o.d * 0.004 - (next ? 6 : 0) - (path && path.includes(n.id) ? 4 : 0) - (n.id === sel ? 8 : 0) });
+    }
+    cands.sort((a, b) => a.sc - b.sc);
+    const best = cands.length ? cands[0].n : null;
+    // two nodes under one finger: zoom in on the spot instead of guessing
+    if (cands.length > 1 && best.id !== sel && cands[1].sc - cands[0].sc < 5 && cands[0].d < 14 && cands[1].d < 14 && cam.zoom < 2.6) {
+      const [x, y, z] = npos(best); SFX.play('ui'); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85, zoom: Math.min(3, cam.zoom * 1.9) }; return;
     }
     if (best && sel === best.id) {
       const p = treePathTo(best.id);
-      if (p && p.length && p.length <= pointsFree()) { if (treeAllocate(best.id)) SFX.play('upgrade', {}); else { SFX.play('deny'); blockToast(best.id); } }
+      if (p && p.length && p.length <= pointsFree()) { if (allocWithUndo(best.id)) SFX.play('upgrade', {}); else { SFX.play('deny'); blockToast(best.id); } }
     }
     sel = best ? best.id : null;
     path = sel ? treePathTo(sel) : null;
-    if (best) { SFX.play('ui'); const [x, y, z] = flatMode() ? posFlat(best) : pos3(best); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85 }; }
+    if (best) { SFX.play('ui'); const [x, y, z] = flatMode() ? posFlat(best) : pos3(best); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85 }; const zf = DEF().zoom * (flatMode() ? 2.6 : 2); if (cam.zoom < zf) goal.zoom = zf; }
     refresh();
   }
   function inRun() { return !!(G && !G.over); }
@@ -1590,7 +1601,9 @@ const Tree = (() => {
         return `<span class="${A.has(id) ? 'on' : ''}">${nm}${id === 'k' + i ? ': ' + esc(TREE.nodes[id].name) : ''}</span>`; }).join('');
       return `<div class="docrow ${on ? 'on' : ''}" style="--c:${S.col}"><b>${esc(D.name.toUpperCase())}</b><em>${esc(D.tag)}</em>
         <ul>${D.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ms">${ms}</div>
-        <button class="btn small" data-tact="docgo" data-v="${i}">${on ? 'Show' : 'Show seal'}</button></div>`; }).join('');
+        ${(() => { if (!on) return `<button class="btn small" data-tact="docgo" data-n="d${i}">Show seal</button>`;
+          const goals = ['c' + i + '_0n', 'c' + i + '_1n', 'c' + i + '_2n', 'x' + i, 'k' + i, 'w' + i].filter(id => !A.has(id)).map(id => ({ id, p: treePathTo(id) })).filter(g => g.p && !treeBlock(g.id, g.p)).sort((a, b) => a.p.length - b.p.length);
+          return goals.length ? `<button class="btn small primary" data-tact="docgo" data-n="${goals[0].id}">Next: ${esc(TREE.nodes[goals[0].id].name)} · ${goals[0].p.length} pt${goals[0].p.length > 1 ? 's' : ''}</button>` : '<span class="note">Doctrine complete</span>'; })()}</div>`; }).join('');
     return `<div class="ph"><b>Doctrines · ${held}/${slots} sealed</b><button class="x" data-tact="docs">✕</button></div>
       <p class="note">${tipify(`A Doctrine changes how you play. Take its seal and its notables, mastery, keystone and arm open up. You can hold ${slots}${nx ? `; another seal opens at level ${nx}` : ''}. Refunds are free between runs.`)}</p>
       ${rows}<p class="note">Voltaic, Cryogenics, Singularity, Zenith and Nadir become Doctrines in a later update. Until then they stay open to everyone.</p>`;
@@ -1599,11 +1612,12 @@ const Tree = (() => {
     SFX.play('ui');
     switch (act) {
       case 'close': close(); break;
-      case 'alloc': if (treeAllocate(sel)) { SFX.play('upgrade', {}); path = treePathTo(sel); } else { SFX.play('deny'); blockToast(sel); } refresh(); break;
+      case 'undo': if (undo()) SFX.play('sell', {}); else SFX.play('deny'); break;
+      case 'alloc': if (allocWithUndo(sel)) { SFX.play('upgrade', {}); path = treePathTo(sel); } else { SFX.play('deny'); blockToast(sel); } refresh(); break;
       case 'refund': if (treeRefund(sel)) { SFX.play('sell', {}); path = treePathTo(sel); } else SFX.play('deny'); refresh(); break;
       case 'builds': drawer = drawer === 'builds' ? null : 'builds'; refresh(); break;
       case 'docs': drawer = drawer === 'docs' ? null : 'docs'; refresh(); break;
-      case 'docgo': { const id = 'd' + b.dataset.v, n = TREE.nodes[id]; drawer = null; sel = id; path = treePathTo(id); const [x, y, z] = flatMode() ? posFlat(n) : pos3(n); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85 }; refresh(); break; }
+      case 'docgo': { const id = b.dataset.n, n = TREE.nodes[id]; drawer = null; sel = id; path = treePathTo(id); const [x, y, z] = flatMode() ? posFlat(n) : pos3(n); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85, zoom: Math.max(cam.zoom, DEF().zoom * (flatMode() ? 2.6 : 2)) }; refresh(); break; }
       case 'totals': drawer = drawer === 'totals' ? null : 'totals'; refresh(); break;
       case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('BUILD SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
       case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
@@ -1638,6 +1652,7 @@ const Tree = (() => {
     if (profOn) renderProfile();
     const free = pointsFree(), M = computeMods(PROF.alloc, null), a = M.attrs;
     $('#tPts').textContent = free;
+    { const u = $('#tUndo'); if (u) u.hidden = !undoStack.some(p => p.length && p.every(x => PROF.alloc.includes(x))); }
     $('#tPts').parentElement.classList.toggle('glow', free > 0);
     $('#tTok').hidden = !inRun();
     if (inRun()) $('#tTok').querySelector('b').textContent = G.tokens;
@@ -1797,6 +1812,30 @@ const Tree = (() => {
     goal = { tx: Math.cos(a) * 430 * WS, ty: Math.sin(a) * 430 * WS, tz: 0, zoom: z0 * (flat ? 3.2 : 2.3) };
     if (!flat) { goal.yaw = Math.PI / 2 - a; goal.pitch = 0.9; }
   }
+  // zoomed in, only nodes near the focus are drawn and tappable, so far-off nodes (in 3D, ones behind) can't steal taps
+  let visPos = null;
+  function cullRadius() { const zr = cam.zoom / DEF().zoom; if (zr < 1.4) return 1e9; return (flatMode() ? 2600 : 1500) / zr; }
+  // zoomed into a sector, other sectors fade back and the Zenith/Nadir pillars hide (3D), so taps land in the region you're looking at
+  function focusSector() { const zr = cam.zoom / DEF().zoom; if (zr < 1.8 || viewT < 0 || Math.hypot(cam.tx, cam.ty) < 260 || Math.abs(cam.tz) > 120) return -1; const a = Math.atan2(cam.ty, cam.tx) * 180 / Math.PI; return ((Math.round((a + 90) / 60) % 6) + 6) % 6; }
+  function nodeFade(n, x, y, z, cullR, fs, A0, keep) {
+    if (keep || A0.has(n.id)) return 1;
+    let f = clamp((cullR - Math.hypot(x - cam.tx, y - cam.ty, z - cam.tz)) / (cullR * 0.3), 0, 1);
+    if (fs >= 0) { if (n.sector === -2) f = flatMode() ? f : 0; else if (n.sector >= 0 && n.sector !== fs && !n.adj.some(x2 => TREE.nodes[x2].sector === fs)) f = Math.min(f, 0.18); }
+    return f;
+  }
+  // allocation history for Undo (this session)
+  const undoStack = [];
+  function allocWithUndo(id) { const p = treePathTo(id) || []; if (!treeAllocate(id)) return false; undoStack.push(p.slice()); if (undoStack.length > 30) undoStack.shift(); return true; }
+  function undo() {
+    while (undoStack.length) {
+      const p = undoStack.pop(); if (!p.length || !p.every(x => PROF.alloc.includes(x))) continue;
+      const orph = treeOrphans(p[0]) || [];
+      if (orph.some(x => !p.includes(x))) { UI.toast('CAN\'T UNDO', 'Later picks depend on it. Refund those first', '#ff4d6a', 1); undoStack.push(p); return false; }
+      if (treeRefund(p[0])) { sel = null; path = null; refresh(); return true; }
+      UI.toast('CAN\'T UNDO', 'Needs Recalibration tokens during a run', '#ff4d6a', 1); undoStack.push(p); return false;
+    }
+    return false;
+  }
   const lastNode = () => { const a = PROF.alloc || []; for (let i = a.length - 1; i >= 0; i--) if (TREE.nodes[a[i]] && TREE.nodes[a[i]].kind !== 'start') return a[i]; return null; };
   function flyHere() {
     const id = lastNode();
@@ -1941,8 +1980,8 @@ const Tree = (() => {
       }
     }
     lc.globalAlpha = 1;
-    // orbit rings with sector ticks
-    for (const k in ORBITS) {
+    // orbit rings with sector ticks (hidden in 3D while zoomed into a sector)
+    if (!(viewT < 0.5 && focusSector() >= 0)) for (const k in ORBITS) {
       const O = ORBITS[k], on = A.has(k), hub = npos(TREE.nodes[k]);
       const fx = viewT > 0.5 ? 0.9 : 1, fy = viewT > 0.5 ? 0.55 : 1, rz = viewT > 0.5 ? 0 : O.z, cx0 = viewT > 0.5 ? hub[0] : 0, cy0 = viewT > 0.5 ? hub[1] : 0;
       lc.globalAlpha = on ? 0.6 : 0.25; let prev = null;
@@ -1956,8 +1995,11 @@ const Tree = (() => {
     const cLabels = drawConstellations(A, o);
     // edges
     const pos = {}; for (const n of TREE.list) { const [x, y, z] = npos(n); proj(x, y, z, o); pos[n.id] = { x: o.x / 2, y: o.y / 2, s: o.s, d: o.d, wz: z, wx: x, wy: y }; }
+    const cullR = cullRadius(), fs = focusSector(); for (const n of TREE.list) { const p = pos[n.id]; p.fade = nodeFade(n, p.wx, p.wy, p.wz, cullR, fs, A, n.id === sel || Pth.has(n.id)); p.vis = p.fade > 0.12; }
+    visPos = pos;
     for (const [ai, bi] of TREE.edges) {
       const a = TREE.nodes[ai], b = TREE.nodes[bi], pa = pos[ai], pb = pos[bi];
+      if (!pa.vis || !pb.vis) continue;
       if ((pa.x < -20 && pb.x < -20) || (pa.x > LW + 20 && pb.x > LW + 20) || (pa.y < -20 && pb.y < -20) || (pa.y > LH + 20 && pb.y > LH + 20)) continue;
       const both = A.has(ai) && A.has(bi);
       const onPath = (Pth.has(ai) || A.has(ai)) && (Pth.has(bi) || A.has(bi)) && (Pth.has(ai) || Pth.has(bi));
@@ -1968,7 +2010,7 @@ const Tree = (() => {
     lc.globalAlpha = 1;
     // drop lines from off-plane nodes to the disk (Elite map style)
     for (const n of TREE.list) {
-      const p = pos[n.id]; if (viewT > 0.5 || Math.abs(p.wz) < 10 || (n.sector === -2 && n.sat === undefined)) continue;
+      const p = pos[n.id]; if (!p.vis || viewT > 0.5 || Math.abs(p.wz) < 10 || (n.sector === -2 && n.sat === undefined)) continue;
       proj(p.wx, p.wy, 0, o);
       lc.globalAlpha = 0.35; line(p.x, p.y, o.x / 2, o.y / 2, n.col || '#5a5f9a');
       lc.globalAlpha = 0.6; pxR(o.x / 2 - 1, o.y / 2, 3, 1, n.col || '#5a5f9a');
@@ -1977,11 +2019,11 @@ const Tree = (() => {
     // nodes, far to near
     const order = TREE.list.slice().sort((a, b) => pos[a.id].d - pos[b.id].d);
     for (const n of order) {
-      const p = pos[n.id]; if (p.x < -10 || p.x > LW + 10 || p.y < -10 || p.y > LH + 10) continue;
+      const p = pos[n.id]; if (!p.vis || p.x < -10 || p.x > LW + 10 || p.y < -10 || p.y > LH + 10) continue;
       const col = profOn ? (PCAT[nodeCat(n)] || {}).col || '#6a6f9a' : n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
       const on = A.has(n.id) || RS.has(n.id), can = allocatable(n), onP = Pth.has(n.id);
       const r = Math.max(1, Math.round(R[n.kind] * p.s / 2));
-      lc.globalAlpha = (viewT < 0.5 ? clamp(1.25 - Math.hypot(p.wx - cam.tx, p.wy - cam.ty, p.wz - cam.tz) / 1400, 0.35, 1) : 1) * (on || onP ? 1 : nodeDim);
+      lc.globalAlpha = (viewT < 0.5 ? clamp(1.25 - Math.hypot(p.wx - cam.tx, p.wy - cam.ty, p.wz - cam.tz) / 1400, 0.35, 1) : 1) * (on || onP ? 1 : nodeDim) * p.fade;
       const fill = on ? col : '#0b0d1c', edge = on ? '#ffffff' : onP ? '#ffb03a' : can ? (pulse > 0.5 ? '#ffb03a' : '#7a5418') : sh2(col);
       if (n.kind === 'small') { pxR(p.x - r, p.y - r, r * 2 + 1, r * 2 + 1, edge); if (r > 1) pxR(p.x - r + 1, p.y - r + 1, r * 2 - 1, r * 2 - 1, fill); }
       else if (n.kind === 'keystone') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); if (on) pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
@@ -2005,6 +2047,7 @@ const Tree = (() => {
     const labels = [];
     for (const n of TREE.list) {
       const p = pos[n.id], rr = R[n.kind] * p.s;
+      if (!p.vis || p.fade < 0.5) continue;
       if (n.kind === 'small' ? rr < 7.5 : rr < 3) continue;
       if (cA > 0.5 && sel !== n.id && n.kind !== 'start') continue;
       const on = A.has(n.id), pri = (sel === n.id ? 100 : 0) + (on ? 20 : 0) + ({ keystone: 50, seal: 55, mastery: 30, notable: 25, orbit: 35, sat: 22, start: 60, small: 0 }[n.kind]) + (Pth.has(n.id) ? 10 : 0) + p.d * 0.01;
@@ -2040,7 +2083,11 @@ const Tree = (() => {
   const sh2Cache = {};
   function sh2(col) { if (sh2Cache[col]) return sh2Cache[col]; const v = parseInt(col.slice(1), 16), r = (v >> 16 & 255) * 0.42, g = (v >> 8 & 255) * 0.42, b = (v & 255) * 0.5; return (sh2Cache[col] = `rgb(${r | 0},${g | 0},${b | 0})`); }
   function select(id) { const n = TREE.nodes[id]; if (!n) return; if (!cam) cam = DEF(); sel = id; path = treePathTo(id); const [x, y, z] = npos(n); cam.tx = x; cam.ty = y; cam.tz = z * 0.85; goal = null; refresh(); }
-  return { init, open, close, resize, draw, refresh, select, get isOpen() { return open_; } };
+  // test hooks
+  const _screen = id => { const n = TREE.nodes[id]; if (!n || !cam) return null; camPrep(); const [x, y, z] = npos(n), o = {}; proj(x, y, z, o); return { x: o.x, y: o.y }; };
+  const _visCount = () => visPos ? Object.values(visPos).filter(p => p.vis).length : -1;
+  const _dbg = () => ({ fs: focusSector(), zr: cam.zoom / DEF().zoom, tx: cam.tx, ty: cam.ty, tz: cam.tz, pil: TREE.list.filter(n => n.sector === -2 && visPos[n.id].vis).length });
+  return { init, open, close, resize, draw, refresh, select, get isOpen() { return open_; }, _screen, _visCount, _dbg, _sel: () => sel };
 })();
 
 // ---------------- Main loop ----------------

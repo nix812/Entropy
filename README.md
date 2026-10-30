@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 4.2.0 · October 29, 2026**
+**Version at handoff: 4.2.1 · October 29, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -395,6 +395,14 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
 - **Balance (12 seeds, 60 points, Normal, bot forced into each):** no Doctrine 58, Marksman 65.5, Wildfire 55, War Economy 60: all within noise, none a trap. The bot builds a random mix next to the road, so Wildfire's overheat hurts it more than a player who builds back; if Nic finds Wildfire weak, soften overheat (−25%) first. Every batch had a run die to the wave-10 boss (lethal breach since 4.1).
 - **Tests:** `test/doctrine.js` (rules and each effect, headless), `test/v42doc.py` (web drawer, seal, locked notable, Wildfire + War Economy and Marksman on the field). Bot: `DOC=d0|d1|d5` forces a seal, `NODOC=1` never seals (by default it may pick one at random).
 
+### 4.6b v4.2.1 web usability (Nic: far nodes stole taps on the path)
+- `cullRadius()`: zoomed in past 1.4× the overview (`zr`), nodes farther than (flat 2600 / 3D 1500) ÷ zr from the camera target fade out over the outer 30% and stop being drawn, labelled or tappable. The selected node and its path always show.
+- `focusSector()`: at zr ≥ 1.8 with the target over a sector, other sectors' nodes (except ones linked into it) fade to 18% and can't be tapped, and in 3D the Zenith/Nadir pillars, orbit rings and drop lines hide. `nodeFade()` is shared by drawing and `tap()`.
+- `tap()`: collects every node under the finger (hit radius max(16, node + 9)), scores by distance minus a depth bonus, −6 for a next step from your build, −4 on the current path, −8 for the selected node. If the top two are within 5 px of each other (both within 14 px) and zoom < 2.6, it zooms ×1.9 on the spot instead of selecting. Selecting zooms in to at least 2.6× (flat) / 2× (3D) the overview.
+- **Undo** (`#tUndo` in the nav column, shown when possible): `allocWithUndo` records each allocated path; `undo()` refunds the last one if nothing later depends on it (mid-run it costs tokens like any refund).
+- Doctrine drawer: "Next: <name> · N pts" jumps to the cheapest remaining milestone of a sealed Doctrine.
+- Test hooks `Tree._screen(id)`, `_visCount()`, `_dbg()`, `_sel()`; test `test/v43tree.py`.
+
 ### 4.7 Supernova (prestige)
 - **Requirements:** 3 completed constellations, level ≥ `60 + 10 × novas` (capped at 150), and no saved run in progress.
 - **Resets:** XP and level, the web, and Star Ranks.
@@ -607,6 +615,7 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 4.2.1 | Passive Web usability (4.6b): zoomed-in culling and region focus, crowded taps zoom in, Undo, Doctrine next-goal button |
 | 4.2 | Doctrines phase 1 (see 4.6a): seals, Marksman, Wildfire, War Economy, Doctrine drawer and meters, full point refund (`WEB_VER = 3`) |
 | 4.1 | Boss HP `BOSS_SECS` ×0.65 before Wave 45 and ×0.8 after, because breaches now kill (bots, 60 points: lethal breach at 4.0 HP dropped the median 72 → 51; ×0.8 everywhere gave 80 but a third of runs died to wave 20–40 bosses; ×0.65 gave 63.5 with no early boss deaths). Assault `secs` 40. The swarm values a Thermal Ward ×0.45 under Conflagration (Nic's log: every assault was Ward-Thermal). Assaults force-resolve 2 waves on. Bosses drawn 1.5× (`BOSS_SCALE` in render.js; hit size 1.15, Gloop splits 0.85/0.6; titan plates, cat eyes and worm segments scaled). A non-split boss reaching the core is an instant game over in `leak()` (bypasses shields and Unbreakable); Gloop splits still breach for 12%/6% |
 | 4.0.1 | Music credits in Settings (kjartan_abel, Freesound) |

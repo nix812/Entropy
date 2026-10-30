@@ -19,7 +19,7 @@ with sync_playwright() as p:
     pg.click('[data-tact=docs]'); pg.wait_for_timeout(300)
     print('drawer rows:', pg.evaluate('() => document.querySelectorAll(".docrow").length'))
     pg.screenshot(path=str(out / f'{tag}01_drawer.png'))
-    pg.click('[data-tact=docgo][data-v="1"]'); pg.wait_for_timeout(900)
+    pg.click('[data-tact=docgo][data-n="d1"]'); pg.wait_for_timeout(900)
     print('selected info:', pg.inner_text('#tinfo')[:200].replace('\n', ' | '))
     pg.screenshot(path=str(out / f'{tag}02_seal.png'))
     pg.evaluate('() => { treeAllocate("d1"); Tree.select && Tree.select("c0_0n"); Tree.refresh(); }'); pg.wait_for_timeout(700)
