@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 4.1.0 · October 29, 2026**
+**Version at handoff: 4.2.0 · October 29, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -383,6 +383,18 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
 
   Ranks refund for free between runs, and only count while the region stays complete.
 
+### 4.6a v4.2 Doctrines (passive overhaul, phase 1 of 3)
+- **Why:** Nic said the web was aimless: mostly small % nodes with no build to track and no visible consequence. A Doctrine turns a region into a play style you see on the field, with a cost. Plan: phase 1 (done) = framework + Marksman, Wildfire, War Economy; phase 2 = Voltaic (Circuit: adjacent towers link and share charge, a disabled tower stalls the chain), Cryogenics (Glacier: frozen enemies block the lane), Singularity (Event Horizon: marked enemies dragged back), Zenith (Artisan: crafted veterans), Nadir (Gambler: random wave rules); phase 3 = bot balance + Nic's feedback. Other ideas from the proposal: forks inside doctrines, doctrine-tuning smalls everywhere.
+- **Data (`DOCTRINES` in data.js, keyed by sector index):** `{ id, name, tag, counter, lines, smalls }`. `buildTree` adds a seal node `d{i}` (kind `seal`, `ks` = doctrine id) off `s{i}_0`, puts the doctrine smalls on spine nodes `s{i}_2` and `s{i}_3`, and marks cluster notables, mastery, keystone and arm with `need: i`. `WEB_VER = 3` refunds everyone once (toast "Doctrines have arrived").
+- **Rules (sim.js):** `treeBlock(id, path)` returns `'seal:i'` (path has a `need` node without its seal) or `'slots'` (more seals than `sealSlots(level)` = 1, 2 from level 75, 3 from 120; `SEAL_NEXT`). `treeAllocate` refuses blocked paths. Refunding a seal also refunds its locked nodes (`treeOrphans`). `treeLoadBuild` drops extra seals and unsealed locked nodes. `computeMods` skips locked nodes without their seal (remnants bypass), and a seal sets `ks[id]`. Doctrine small stats are deleted when the seal is missing. `REGION_NODES` (completion, Star Ranks, Supernova) excludes seals and locked nodes; `REGION_ALL` keeps everything for remnants.
+- **Marksman (`ks.marksman`):** `gridCap() × 0.6` (min 3). `ocFree(t)` = +2 Overcharge on attack towers, not drawing power; `ocMax()` = 5. Small `msOc` adds Damage per Overcharge step. Lasers draw while `G.time − t.aimT < 0.7`.
+- **Wildfire (`ks.wildfire`):** a burning ground enemy calls `roadFire(e)` every 0.4 s: a `roadfire` zone (r 0.55, 2.2 s, dps = burn × 0.5), merged with one within 0.6 tiles, max 70. `G.heat = min(cap, zones × 0.04)` multiplies road-fire damage; cap 100% (+`wfHeat`); `wfDur` lengthens fires. Towers within 1 + r of a road fire get `t.hot` (checked 4×/s): −25% attack speed, orange flicker. Fliers ignore road fire.
+- **War Economy (`ks.wareco`):** `warTier()` = min(8, credits / `warStep()`), step = (500 + 120 × wave) × (1 − `weStep`%). Each tier: core Damage × (1 + 0.6 + `weTur`%) and Attack Speed +8% (in `coreStats`). Towers cost ×1.2. Turrets orbit the core in `drawCore`.
+- **The swarm reads Doctrines:** `readDefence` adds Brood vs Marksman, Wings vs Wildfire, Haste vs War Economy.
+- **UI:** seal nodes (double ring + bar), "Doctrine Seal" info card, lock reasons on locked nodes and on deny (`blockMsg`/`blockToast`), **Doctrine** button in the web's top bar opens `docHTML()` (each doctrine's lines, milestones Seal / Notables n/3 / Mastery / Keystone / Arm, Show seal). In a run, `#docbar` (bottom right of the field) shows Road heat, War chest tier and next threshold, Marksman's free Overcharge. The tower panel's Overcharge row goes to `ocMax()` and says how many steps are free.
+- **Balance (12 seeds, 60 points, Normal, bot forced into each):** no Doctrine 58, Marksman 65.5, Wildfire 55, War Economy 60: all within noise, none a trap. The bot builds a random mix next to the road, so Wildfire's overheat hurts it more than a player who builds back; if Nic finds Wildfire weak, soften overheat (−25%) first. Every batch had a run die to the wave-10 boss (lethal breach since 4.1).
+- **Tests:** `test/doctrine.js` (rules and each effect, headless), `test/v42doc.py` (web drawer, seal, locked notable, Wildfire + War Economy and Marksman on the field). Bot: `DOC=d0|d1|d5` forces a seal, `NODOC=1` never seals (by default it may pick one at random).
+
 ### 4.7 Supernova (prestige)
 - **Requirements:** 3 completed constellations, level ≥ `60 + 10 × novas` (capped at 150), and no saved run in progress.
 - **Resets:** XP and level, the web, and Star Ranks.
@@ -595,6 +607,7 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 4.2 | Doctrines phase 1 (see 4.6a): seals, Marksman, Wildfire, War Economy, Doctrine drawer and meters, full point refund (`WEB_VER = 3`) |
 | 4.1 | Boss HP `BOSS_SECS` ×0.65 before Wave 45 and ×0.8 after, because breaches now kill (bots, 60 points: lethal breach at 4.0 HP dropped the median 72 → 51; ×0.8 everywhere gave 80 but a third of runs died to wave 20–40 bosses; ×0.65 gave 63.5 with no early boss deaths). Assault `secs` 40. The swarm values a Thermal Ward ×0.45 under Conflagration (Nic's log: every assault was Ward-Thermal). Assaults force-resolve 2 waves on. Bosses drawn 1.5× (`BOSS_SCALE` in render.js; hit size 1.15, Gloop splits 0.85/0.6; titan plates, cat eyes and worm segments scaled). A non-split boss reaching the core is an instant game over in `leak()` (bypasses shields and Unbreakable); Gloop splits still breach for 12%/6% |
 | 4.0.1 | Music credits in Settings (kjartan_abel, Freesound) |
 | 4.0 | Strain Assaults: the swarm reads your defence, telegraphs a counter-strain a wave ahead, free refit, broken (+1 power) or entrenched. Notifications split into alerts, tips and a corner feed. Overcharge 3 × 35%. Idle-tower Zs, relocation coverage, Arc shield fix under Conflagration, log genes and leaks |

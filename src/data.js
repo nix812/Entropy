@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.1.0';
+const VERSION = '4.2.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,13 +167,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.1.0', title: 'Entropy 4.1', items: [
-  ['Bigger bosses', 'Bosses are 50% larger on the field, so you can actually see them coming.'],
-  ['Boss breach', 'A boss that reaches your core ends the run. No shield or Unbreakable saves you. Gloop\'s little splits still only take a chunk.'],
-  ['Bosses rebalanced', 'Because a breach now ends the run, bosses carry less health than in 4.0, early ones most of all.'],
-  ['Smarter swarm', 'Strain Assaults are tougher, and the swarm no longer leans on Thermal Ward against Conflagration builds, where it barely works.'],
-  ['Music credits', 'The soundtrack is by kjartan_abel. Credits are in Settings.'],
-  ['From 4.0', 'Strain Assaults: the swarm reads your defence and attacks it, with a wave of warning and free selling to answer. Tap DNA to see its read.']
+const WHATS_NEW = { ver: '4.2.0', title: 'Entropy 4.2 · Doctrines', items: [
+  ['Doctrines', 'Seal a region of the Passive Web to adopt its play style. You hold 1 seal (2 from level 75, 3 from level 120). Its notables, mastery, keystone and arm only open with the seal. Tap Doctrine in the web to compare them and track your build.'],
+  ['Marksman', 'Few towers, enormous shots: a 40% smaller power grid, but every attack tower gets +2 Overcharge free and can go to 5. Targeting lasers show what they hunt.'],
+  ['Wildfire', 'The road burns: burning enemies leave fire behind, Heat builds as more road burns, and towers right next to the fire overheat.'],
+  ['War Economy', 'Money is firepower: banked credits grow turrets on your core, up to 8. Spend and they shrink. Towers cost 20% more.'],
+  ['Points refunded', 'Your passive points are all back. The other regions become Doctrines in a later update and stay open until then.'],
+  ['From 4.1', 'Bigger bosses, and a boss that reaches your core ends the run.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
