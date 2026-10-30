@@ -214,7 +214,7 @@ const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', 
 // ---------- v3.0: the power grid ----------
 // Every tower draws 1 power (towers on Power Nodes draw none). Capacity grows with the wave. Spare power can Overcharge a tower.
 const GRID = { base: 8, perWaves: 3, max: 46 };
-const OVERCHARGE = { max: 2, dmg: 0.25, rate: 0.1 };
+const OVERCHARGE = { max: 3, dmg: 0.35, rate: 0.15 };
 // ---------- v3.0: the evolving swarm ----------
 // Ordinary enemies carry genes. Each gene is a trade: an edge for some HP or speed. Waves are bred from the genomes that got
 // furthest last time, so the swarm drifts towards whatever your defence handles worst. Every gene has a counter tower.

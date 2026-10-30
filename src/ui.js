@@ -554,10 +554,11 @@ const UI = (() => {
       ${t.lvl === 3 ? up : ''}
       ${vet}
       ${stats}
+      ${idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : ''}
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       <div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>
-      ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${[0, 1, 2].map(n => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n * OVERCHARGE.dmg * 100}% · ${n} pw` : 'Off'}</button>`).join('')}</div>` : ''}
+      ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · 1 power per step · ${gridUsed()}/${gridCap()} used</div><div class="modes oc">${Array.from({ length: OVERCHARGE.max + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${Math.round(n * OVERCHARGE.dmg * 100)}%` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
       <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}</button></div></div>`;
@@ -600,6 +601,7 @@ const UI = (() => {
     const rows = P.before.map((b, i) => { const a = P.after[i], dd = a - b, L = G.map.lanes[i]; return `<span>${i === 0 ? 'Main road' : L.openWave ? 'Forming' : 'Lane ' + (i + 1)}<b class="${dd > 0 ? 'good' : dd < 0 ? 'bad' : ''}">${b} → ${a}</b></span>`; }).join('');
     return head + `<div class="lbl">Road length (tiles)</div><div class="sg">${rows}</div>
       <div class="sts ${d > 0 ? 'good' : d < 0 ? 'bad' : ''}">${d === 0 ? 'Same total road length' : `${d > 0 ? '+' : '−'}${Math.abs(d)} tiles of road in total`}${d > 0 ? ': enemies walk further' : d < 0 ? ': enemies arrive sooner' : ''}</div>
+      ${P.lose || P.gain ? `<div class="sts ${P.lose > P.gain ? 'bad' : 'good'}">${P.lose ? `${P.lose} tower${P.lose > 1 ? 's' : ''} would lose the road and sit idle` : ''}${P.lose && P.gain ? ' · ' : ''}${P.gain ? `${P.gain} tower${P.gain > 1 ? 's' : ''} would gain road` : ''}</div>` : '<div class="sts good">Every tower keeps road in range</div>'}
       ${isNode(P.x, P.y) ? `<div class="sts node">${tipify('Power Node: the core will be overcharged, +50% Damage, +20% Rate')}</div>` : ''}
       <p class="note">Tap another tile to compare.</p>
       <div class="pfoot"><button class="btn primary wide" data-act="rgo" ${cost ? costBtn(cost) : ''}>Move Core · ${relocPrice()}</button><button class="btn" data-act="rcancel">Cancel</button></div>`;
@@ -1334,7 +1336,7 @@ const UI = (() => {
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
-    Hooks.gridFull = () => toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Upgrade, Overcharge or sell; Power Nodes are free`, '#ffb03a');
+    Hooks.gridFull = () => { const T = topTower(); toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Build on a Power Node (free), sell an idle tower, or expand the reactor${T ? `. Or Overcharge your best: ${TOWERS[T.type].name}` : ''}`, '#ffb03a'); };
     Hooks.log = log;
     Hooks.toast = toast;
     Hooks.onDraft = opts => { closePanel(); openDraft(opts); };

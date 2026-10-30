@@ -504,6 +504,10 @@ const Render = (() => {
       R(b, X + 4, Y + 2, 1, 5, sc); R(b, X + 2, Y + 4, 5, 1, sc); P(b, X + 4, Y + 4, '#ffffff');
     }
     if (t.disabled > 0) for (let i = 0; i < 14; i++) R(b, X + 2 + Math.random() * 19, Y + 2 + Math.random() * 19, 2, 1, i % 2 ? '#ffffff' : '#5a5a7a');
+    if (G.wave > 1 && idleWaves(t) >= 2) { // sleeping: two little pixel Zs drift up from the corner
+      const zc = '#9fb3c8';
+      for (let k = 0; k < 2; k++) { const ph = ((frame >> 2) + k * 12) % 24, zx = X + 1 + k * 4, zy = Y + 6 - (ph >> 2) - k * 3; if (ph > 20) continue; R(b, zx, zy, 3, 1, zc); R(b, zx + 1, zy + 1, 1, 1, zc); R(b, zx, zy + 2, 3, 1, zc); }
+    }
     if (t.oc) for (let i = 0; i < t.oc; i++) { const bx = X + 18 - i * 5, by = Y + 1, c = frame % 16 < 8 ? '#59f0b4' : '#e6fff6'; R(b, bx + 1, by, 2, 3, c); R(b, bx, by + 2, 3, 1, c); R(b, bx + 1, by + 3, 2, 3, c); }
   }
   // wormhole: swirling portal at a lane's origin. Forming portals are small and unstable; open ones are full size.

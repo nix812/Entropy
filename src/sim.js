@@ -408,10 +408,11 @@ function expandReactor() {
 // ---- v3.1 run log: compact events for after-run analysis (exported from the game-over screen) ----
 function rlog(k, d) { if (!G || !G.rlog) return; G.rlog.push(Object.assign({ k, w: G.wave, t: Math.round(G.time) }, d || {})); if (G.rlog.length > 5000) G.rlog.splice(1, 1); }
 function rlogWave() {
-  const w = G.wave, H = G.geneHist && G.geneHist[G.geneHist.length - 1];
+  const w = G.wave, H = G.geneHist && G.geneHist.find(h => h.w === w);
   const d = { core: Math.round(G.core.hp), cmax: Math.round(G.core.max), cr: Math.round(G.credits), sc: Math.round(G.score), grid: gridUsed() + '/' + gridCap(),
     n: G.towers.length, leaks: G.stats.leaks, kills: G.kills, pow: Math.round(G.power || 0), pot: Math.round(potentialDps()), ent: Math.round(G.entropy) };
-  if (H && H.w === w) d.genes = Object.fromEntries(Object.entries(H.g).filter(([g, v]) => v >= 0.05).map(([g, v]) => [g, Math.round(v * 100)]));
+  if (G.leakBy && Object.keys(G.leakBy).length) { d.leakBy = G.leakBy; G.leakBy = {}; }
+  if (H) d.genes = Object.fromEntries(Object.entries(H.g).filter(([g, v]) => v >= 0.05).map(([g, v]) => [g, Math.round(v * 100)]));
   if (G.evList && G.evList.length) d.ev = G.evList.map(E => E.name);
   if (w <= 3 || w % 5 === 0) d.tw = G.towers.map(t => [t.type, t.lvl, t.asc || 0, t.spec || 0, t.oc || 0, Math.round(t.dps), Math.round(t.dmgDone)]);
   rlog('wave', d);
@@ -796,6 +797,7 @@ function buildTower(type, x, y) {
   else t.affixes.push(rollAffix(t));
   if (G.mods.ks.celestial && towerPool(type) !== 'eco') t.affixes.push(rollAffix(t));
   if (G.mods.ks.chaos) t.affixes.push(rollCurse(t));
+  t.lastFireW = G.wave; t.builtW = G.wave;
   G.towers.push(t); G.towerAt[tIdx(x, y)] = t;
   t.s = towerStats(t);
   recomputeAuras();
@@ -1302,6 +1304,14 @@ function genWave(w, ev) {
   }
   return { queue: q, rift };
 }
+// waves in a row an attack tower has dealt no damage at all (0 = fine). Flagged at 2+: it's in the wrong spot
+function idleWaves(t) {
+  if (!t.s || t.s.kind === 'eco' || t.s.kind === 'support' || t.s.kind === 'snare') return 0;
+  const last = Math.max(t.lastFireW == null ? G.wave : t.lastFireW, t.builtW == null ? 0 : t.builtW);
+  return Math.max(0, G.wave - last - 1);
+}
+// the tower that has dealt the most damage (for hints)
+function topTower() { let best = null; for (const t of G.towers) if (t.dmgDone > (best ? best.dmgDone : 0) && canOvercharge(t)) best = t; return best; }
 function startWave() {
   if (G.wave > 0) rlogWave();
   snapshotRun(G.wave + 1);
@@ -1881,6 +1891,7 @@ function leak(e) {
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
   G.stats.leaks++;
   G.stats.lastLeak = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type;
+  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; }
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
   // a boss that reaches the core breaches it: a fixed share of the core, so it always hurts and is never a free pass
@@ -1942,7 +1953,7 @@ function hit(e, dmg, el, src, o) {
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
   let amt = dmg * mult;
   if (e.shield > 0) {
-    const sk = el === 'A' ? 2.5 : 1; // Arc tears through shields
+    const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
     const a = Math.min(e.shield, amt * sk); e.shield -= a; amt -= a / sk;
     if (amt <= 0) { e.hitFlash = 0.08; if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
@@ -1951,7 +1962,7 @@ function hit(e, dmg, el, src, o) {
   e.hp -= amt;
   if (e.boss && !e.gen && e.boss !== 'gloop' && e.phase < BOSS_PHASES.length && e.hp < e.maxHp * BOSS_PHASES[e.phase]) bossPhase(e);
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
-  if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; }
+  if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; src.lastFireW = G.wave; }
   if (!o.dot) e.hitFlash = 0.08;
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
   if (e.hp <= 0) { kill(e, src, o); return dealt; }
@@ -2248,10 +2259,11 @@ function updateTowers(dt) {
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
     t.effRange = range;
     t.cd -= dt * rate;
-    if (s.kind === 'beam') { beamUpdate(t, dt, range, sw); continue; }
+    if (s.kind === 'beam') { beamUpdate(t, dt, range, sw); if (t.beamTargets) t.lastFireW = G.wave; continue; }
     if (t.cd > 0) continue;
     t.capMult = s.el === 'A' && FX('capacitor') && t.capT >= 4 ? 3 : 1;
     const fired = towerAttack(t, range, sw);
+    if (fired) t.lastFireW = G.wave;
     if (fired && t.capMult > 1) { t.capT = 0; Hooks.fx('arcs', { x: t.cx, y: t.cy, r: 0.8 }); }
     t.capMult = 1;
     if (fired) {
@@ -2653,7 +2665,12 @@ function planRelocation(nx, ny) {
     routes.push(route);
   }
   const len = L => L.length, before = map.lanes.map(L => L.tiles.length), after = routes.map(len);
-  return { x: nx, y: ny, routes, before, after, cost: relocCost() };
+  // which attack towers would lose (or gain) road in range
+  const reach = (t, tiles) => { const r = (t.s.range || 0) + 0.3; for (const v of tiles) { const x = typeof v === 'number' ? v % COLS : v.x, y = typeof v === 'number' ? (v / COLS) | 0 : v.y; if ((x + 0.5 - t.cx) ** 2 + (y + 0.5 - t.cy) ** 2 <= r * r) return true; } return false; };
+  const oldT = [].concat(...map.lanes.map(L => L.tiles)), newT = [].concat(...routes);
+  let lose = 0, gain = 0;
+  for (const t of G.towers) { if (!t.s || !t.s.range || t.s.kind === 'eco') continue; const a = reach(t, oldT), b = reach(t, newT); if (a && !b) lose++; else if (!a && b) gain++; }
+  return { x: nx, y: ny, routes, before, after, cost: relocCost(), lose, gain };
 }
 function applyRelocation(plan) {
   if (!plan || !canRelocate()) return false;
