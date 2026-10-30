@@ -9,11 +9,13 @@ function profile(seed) {
   P.xp = xp + 1;
   let r = seed; const rnd = () => { r = (r * 1103515245 + 12345) % 2147483648; return r / 2147483648; };
   if (ks) { const n = S.TREE.list.find(n => n.ks === ks); if (n) S.treeAllocate(n.id); }
+  if (process.env.DOC) S.treeAllocate(process.env.DOC); // v4.2: force a Doctrine seal (d0 Marksman, d1 Wildfire, d5 War Economy); NODOC=1 never seals
+  const noSeal = !!process.env.NODOC;
   let guard = 0;
   while (S.pointsFree() > 0 && guard++ < 800) {
     const cands = S.TREE.list.filter(n => !P.alloc.includes(n.id) && n.kind !== 'keystone');
     // prefer notables: pick the cheapest path to a random notable/mastery
-    const goals = cands.filter(n => n.kind !== 'small');
+    const goals = cands.filter(n => n.kind !== 'small' && !(noSeal && n.kind === 'seal'));
     const g = goals[Math.floor(rnd() * goals.length)];
     const path = S.treePathTo(g.id);
     if (path && path.length <= S.pointsFree()) S.treeAllocate(g.id);

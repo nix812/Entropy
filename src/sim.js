@@ -664,7 +664,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: (PROF.alloc || []).length,
-    ks: TREE.list.filter(n => n.kind === 'keystone' && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
+    ks: TREE.list.filter(n => (n.kind === 'keystone' || n.kind === 'seal') && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
   return G;
 }
 
@@ -2433,7 +2433,7 @@ function updateTowers(dt) {
     if (t.cd > 0) continue;
     t.capMult = s.el === 'A' && FX('capacitor') && t.capT >= 4 ? 3 : 1;
     const fired = towerAttack(t, range, sw);
-    if (fired) t.lastFireW = G.wave;
+    if (fired) { t.lastFireW = G.wave; t.aimT = G.time; }
     if (fired && t.capMult > 1) { t.capT = 0; Hooks.fx('arcs', { x: t.cx, y: t.cy, r: 0.8 }); }
     t.capMult = 1;
     if (fired) {
