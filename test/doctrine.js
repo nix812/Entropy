@@ -47,9 +47,9 @@ ok(!S.treeAllocate('zo1'), 'Zenith Orbit locked without the Artisan seal');
 ok(S.treeAllocate('d6') && S.treeAllocate('zo1'), 'Artisan seal opens the Zenith orbits');
 // Circuit: a wired chain of 4 throws lightning, a disabled member stalls the chain
 G = run('d2'); G.wave = 8; sp = spots();
-const lane = G.map.lanes[0], mid = lane.tiles[Math.floor(lane.tiles.length / 2)];
-const near = sp.filter(([x, y]) => Math.abs(x - mid.x) + Math.abs(y - mid.y) <= 4).sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
-let built = []; for (const [x, y] of near) { if (built.length >= 4) break; if (built.every(t2 => Math.abs(t2.x - x) <= 1 && Math.abs(t2.y - y) <= 1) || !built.length) { const tt = S.buildTower('pulse', x, y); if (tt) built.push(tt); } }
+// a 2×2 block of free tiles anywhere on the map (every map has one), so the test never depends on the seed
+let blk = null; for (const [x, y] of sp) if (S.canBuildAt(x + 1, y) && S.canBuildAt(x, y + 1) && S.canBuildAt(x + 1, y + 1)) { blk = [x, y]; break; }
+let built = []; for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const tt = S.buildTower('pulse', blk[0] + dx, blk[1] + dy); if (tt) built.push(tt); }
 S.recomputeAuras();
 ok((G.chains || []).some(c => c.m.length >= 2), `Circuit chains: ${(G.chains || []).map(c => c.m.length).join(',')}`);
 ok(built[0].buff.rate > 0.07, `wired tower +${Math.round(built[0].buff.rate * 100)}% attack speed`);

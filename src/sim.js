@@ -79,6 +79,8 @@ function treeOrphans(id) {
   return out;
 }
 // why a node can't be taken right now ('' = fine): seal-locked nodes need their Doctrine seal; seals are limited
+// Conflagration turns every Chill into Burn, so nothing could ever Freeze: the Glacier Doctrine would do nothing
+const TREE_CONFLICTS = [['k1', 'd3']];
 function sealsHeld(list) { return (list || PROF.alloc).filter(id => TREE.nodes[id] && TREE.nodes[id].kind === 'seal').length; }
 function treeBlock(id, path) {
   path = path || treePathTo(id) || [];
@@ -86,6 +88,8 @@ function treeBlock(id, path) {
   for (const pid of path) { const n = TREE.nodes[pid]; if (n.need !== undefined && !A.has('d' + n.need) && !want.has('d' + n.need)) return 'seal:' + n.need; }
   const newSeals = path.filter(pid => TREE.nodes[pid].kind === 'seal').length;
   if (newSeals && sealsHeld() + newSeals > sealSlots(profLevel().level)) return 'slots';
+  // pairs that cancel each other out are refused rather than quietly doing nothing
+  for (const [a, b] of TREE_CONFLICTS) if ((A.has(a) || want.has(a)) && (A.has(b) || want.has(b)) && (want.has(a) || want.has(b))) return 'conflict:' + (want.has(a) ? b : a);
   return '';
 }
 function treeAllocate(id) {
@@ -443,7 +447,8 @@ function rlogWave() {
   rlog('wave', d);
 }
 // ---- v3.0 power grid ----
-function gridCap() { const c = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)) + (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(c * 0.6)) : c; }
+// Marksman shrinks only the wave-grown part of the grid: bought (reactor) and earned (assault, Spare Reactor) power is always a whole point
+function gridCap() { const base = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)), bonus = (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return (G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(base * 0.6)) : base) + bonus; }
 // Marksman: +2 free Overcharge on every attack tower, and paid Overcharge goes 2 steps higher
 const ocFree = t => G.mods && G.mods.ks.marksman && canOvercharge(t) ? 2 : 0;
 const ocMax = () => OVERCHARGE.max + (G && G.mods && G.mods.ks.marksman ? 2 : 0);
@@ -504,7 +509,7 @@ function spawnThief(c) {
   const R = G.region, fromLeft = G.r() < 0.5, y0 = clamp(c.y + 0.5 + (G.r() - 0.5) * 6, R.y0 + 0.5, R.y1 - 0.5);
   const a = { x: fromLeft ? R.x0 - 1.5 : R.x1 + 1.5, y: y0 }, m = { x: c.x + 0.5, y: c.y + 0.5 }, z = { x: fromLeft ? R.x1 + 1.5 : R.x0 - 1.5, y: clamp(m.y + (G.r() - 0.5) * 8, R.y0 + 0.5, R.y1 - 0.5) };
   const L = prepLane([a, m, z]);
-  const e = spawnEnemy('pirate', { L, hpm: hpMult(Math.max(1, G.wave)) * (G.CH.hp || 1) });
+  const e = spawnEnemy('pirate', { L, pirate: 1, hpm: hpMult(Math.max(1, G.wave)) * (G.CH.hp || 1) });
   e.pirate = { cache: c, grabD: L.cum[1], got: false };
   c.thief = e;
   Hooks.toast('PIRATES', 'A skiff is after your salvage. Shoot it down', '#ff4d6a');
@@ -1435,6 +1440,8 @@ function planAssault(w) {
 function assaultTick(w) { // called from prepareWave(w): announce the assault on wave w+1
   if (assaultOff() || geneCap(w + 1) <= 0) return;
   if (G.assaultNext == null) G.assaultNext = assaultFirst();
+  // a run that started late (or skipped waves) must not leave the next assault in the past: nothing would ever fire again
+  while (G.assaultNext < w + 1) G.assaultNext += assaultEvery();
   while (G.assaultNext % 10 === 0) G.assaultNext++; // never on a boss wave
   if (w + 1 !== G.assaultNext || (G.assault && G.assault.w === w + 1)) return;
   const A = G.assault = planAssault(w + 1);
@@ -1501,7 +1508,7 @@ function startWave() {
   G.queue = P.queue;
   if (G.assault && G.assault.w === w && G.assault.state === 'warn') {
     const A = G.assault; A.state = 'live'; G.refit = false;
-    if (!A.n) A.state = 'done';
+    if (!A.n) { A.state = 'done'; G.assaultNext = w + assaultEvery(); } // nothing converted (tiny wave): try again later
     else { // size it to your firepower: at least 1.3x normal HP
       let base = 0; for (const q of G.queue) if (q.assault) base += ENEMIES[q.type].hp * (q.hpm || 1) * (q.genes.includes('bulk') ? GENES.bulk.hp : 1);
       const fire = Math.max(G.power || 0, potentialDps() * 0.5);
@@ -1757,7 +1764,7 @@ function spawnEnemy(type, q) {
   }
   lanePos(e.L, e.d, e);
   G.enemies.push(e);
-  if (fly) lure(e);
+  if (fly && !q.pirate) lure(e); // pirates fly their own course (spawnThief marks them); Snare Beacons ignore them
   if (e.elite.length) Hooks.fx('elite', { x: e.x, y: e.y });
   return e;
 }
@@ -3032,7 +3039,7 @@ function snapshotRun(waveNum) {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -3069,6 +3076,10 @@ function resumeRun(S) {
   if (S.stats) G.stats = S.stats;
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
+  if (G.daily) { G.laws = []; G.novaN = 0; } // dailies never carry Cosmic Laws, resumed or not
+  G.goldAt = S.goldAt || 0;
+  // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
+  if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
   G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();

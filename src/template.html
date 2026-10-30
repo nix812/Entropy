@@ -254,6 +254,7 @@ body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 #tip span { font-size: 15px; line-height: 1.15; }
 #tip.out { opacity: 0; }
 body.panel-l #tip { left: calc(50% + 140px); } body.panel-r #tip { left: calc(50% - 140px); }
+body.webopen #tip { bottom: calc(var(--sab, 0px) + 58px); } /* clear the region chips in the Passive Web */
 .evchip.dna.pulse { animation: dnapulse 0.9s steps(2) infinite; }
 @keyframes dnapulse { 50% { box-shadow: inset 0 0 0 1px #59f0b4, 0 0 10px #59f0b4; } }
 .toast.out { opacity: 0; }

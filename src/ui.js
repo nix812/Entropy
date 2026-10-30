@@ -92,7 +92,7 @@ const Save = (() => {
 
 // ---------------- UI ----------------
 const UI = (() => {
-  let screen = 'hangar', panel = null, pick = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null;
+  let screen = 'hangar', panel = null, pick = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null, modalFrom = null;
   let hudClock = 0, cloudOk = null, setup = { startWave: 1, chaos: 1, seed: 0, map: null, mode: 'std' };
   let confirmAbandon = false, confirmReset = false, confirmWebReset = false;
   const stage = () => $('#stage');
@@ -871,7 +871,7 @@ const UI = (() => {
     hydrateIcons(m);
   }
   function closeModal() {
-    $('#modal').hidden = true; $('#modal').innerHTML = ''; modalOpen = null; confirmAbandon = false; confirmReset = false;
+    $('#modal').hidden = true; $('#modal').innerHTML = ''; modalOpen = null; modalFrom = null; confirmAbandon = false; confirmReset = false;
     document.body.classList.remove('modal-open');
     flushToasts();
   }
@@ -1294,7 +1294,7 @@ const UI = (() => {
       case 'novaR': novaFlow.remnant = b.dataset.v; openNova(); break;
       case 'novaL': novaFlow.law = b.dataset.v; openNova(); break;
       case 'novaGo': doNova(); break;
-      case 'close2': closeModal(); if (G && !G.over && screen === 'game') G.paused = false; if (screen === 'game' && G && !G.over && act === 'close2') {} break;
+      case 'close2': { const back = modalFrom; closeModal(); if (back === 'pause' && G && !G.over && screen === 'game') { openPause(); break; } if (G && !G.over && screen === 'game') G.paused = false; break; }
       case 'sw': setup.startWave = +b.dataset.v; renderSetup(); break;
       case 'ch': setup.chaos = +b.dataset.v; rerollMap(); renderSetup(); break;
       case 'reroll': rerollMap(); renderSetup(); break;
@@ -1302,10 +1302,10 @@ const UI = (() => {
       case 'launchDaily': launch(); break;
       case 'mode': setup.mode = b.dataset.v; if (setup.mode === 'std') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
-      case 'help': openHelp(); break;
+      case 'help': if (modalOpen === 'pause') modalFrom = 'pause'; openHelp(); break;
       case 'htab': openHelp(b.dataset.v); break;
       case 'dcat': dictCat = b.dataset.v; openHelp(); break;
-      case 'settings': openSettings(); break;
+      case 'settings': if (modalOpen === 'pause') modalFrom = 'pause'; openSettings(); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); abandonRun(); break;
       case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } takeBoon(o); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
@@ -1544,7 +1544,7 @@ const Tree = (() => {
   function open() {
     if (G && !G.over) G.wasPaused = G.paused;
     UI.closePanel();
-    $('#tree').hidden = false; open_ = true;
+    $('#tree').hidden = false; open_ = true; document.body.classList.add('webopen');
     resize();
     viewT = flatMode() ? 1 : 0;
     if (!sel || !cam) cam = DEF();
@@ -1554,7 +1554,7 @@ const Tree = (() => {
     refresh();
   }
   function close() {
-    $('#tree').hidden = true; open_ = false; sel = null; path = null; drawer = null; document.body.classList.remove('tsel');
+    $('#tree').hidden = true; open_ = false; sel = null; path = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
     UI.flushToasts();
     if (UI.screen === 'hangar') UI.renderHangar();
     Save.save();
@@ -1595,6 +1595,7 @@ const Tree = (() => {
     const r = treeBlock(id), lv = profLevel().level;
     if (r.startsWith('seal:')) { const i = +r.slice(5); return `Needs the ${DOCTRINES[i].name} seal first`; }
     if (r === 'slots') { const nx = SEAL_NEXT(lv); return `You hold ${sealsHeld()} of ${sealSlots(lv)} Doctrine seal${sealSlots(lv) > 1 ? 's' : ''}${nx ? `. Another opens at level ${nx}` : ''}. Refund one to switch`; }
+    if (r.startsWith('conflict:')) { const o = TREE.nodes[r.slice(9)]; return `Cancels out ${o ? o.name : 'another node'} you already hold: refund it first`; }
     return '';
   }
   function blockToast(id) { const m = blockMsg(id); if (m) UI.toast('DOCTRINE', m, '#ffb03a', 1); }
@@ -1628,7 +1629,7 @@ const Tree = (() => {
       case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('BUILD SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
       case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
       case 'wipe': if (inRun()) return; if (!confirmWipe) { confirmWipe = true; refresh(); return; } PROF.alloc = ['start']; confirmWipe = false; sel = null; path = null; Save.save(); refresh(); break;
-      case 'center': cam = DEF(); goal = null; break;
+      case 'center': sel = null; path = null; selStar = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
       case 'view': PROF.settings.webView = flatMode() ? '3d' : 'flat'; Save.save(); goal = Object.assign(DEF(), { yaw: flatMode() ? 0 : 0.35 }); renderRegions(); break;
       case 'profile': profOn = !profOn; renderProfile(); break;
       case 'rgn': flyTo(b.dataset.v); break;
@@ -1636,7 +1637,6 @@ const Tree = (() => {
       case 'star': { const v = b.dataset.v, n = v === 'max' ? pointsFree() : +v; if (starBuy(selStar, n)) { SFX.play('upgrade', {}); Save.save(); } refresh(); break; }
       case 'starR': if (starRefund(selStar, +b.dataset.v)) Save.save(); refresh(); break;
       case 'starX': selStar = null; refresh(); break;
-      case 'center': sel = null; path = null; selStar = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
       case 'rotL': case 'rotR': rotateOrbit(act === 'rotR' ? 1 : -1); break;
       case 'mopt': {
         const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
