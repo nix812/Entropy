@@ -204,6 +204,15 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .evrow em { font-style: normal; font-size: 15px; color: #e8e6dc; text-align: right; }
 .evrow span { grid-column: 1 / -1; font-size: 14px; color: #8a8fa8; } .evrow span u { text-decoration: none; color: #c9c6bc; }
 .evrow.dim { opacity: 0.4; }
+.card.assault { max-height: calc(100vh - 16px); overflow-y: auto; }
+.card.assault .evlist { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin: 4px 0; }
+.card.assault { box-shadow: inset 0 0 0 1px #ff4d6a, 0 0 30px rgba(255,77,106,0.25); }
+.card.assault .asname { font-family: var(--f-pix); font-size: 13px; color: #ff4d6a; margin: 6px 0 2px; letter-spacing: 1px; }
+.card.assault .evrow { grid-template-columns: 1fr; } .card.assault .evrow div, .card.assault .evrow em { display: none; }
+.aswhy { margin: 2px 0 6px 18px; padding: 0; font-size: 15px; color: #e8e6dc; } .aswhy li { margin: 1px 0; }
+.evchip.assault { box-shadow: inset 0 0 0 1px #ff4d6a; color: #ffd0d8; background: rgba(255,77,106,0.18); cursor: pointer; animation: dnapulse 1.2s steps(2) infinite; }
+.evchip.assault.live { animation: none; background: rgba(255,77,106,0.3); } .evchip.assault.lost { background: rgba(255,77,106,0.55); color: #fff; }
+.evchip.assault i { font-style: normal; }
 .hs.pwr { display: flex; align-items: center; gap: 4px; color: #59f0b4; }
 .hs.pwr b { font-size: 20px; }
 .hs.pwr.full { color: #ffb03a; }

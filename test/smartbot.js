@@ -113,6 +113,23 @@ for (let run = OFF; run < OFF + runs; run++) {
           }
         }
       }
+      // v4.0: a Strain Assault is announced. Selling is free, so swap the weakest non-answers for answers (NOADAPT/NOREFIT skip it)
+      const AS = G.assault;
+      if (!process.env.NOADAPT && !process.env.NOREFIT && AS && AS.state === 'warn' && G._refitW !== AS.w) {
+        G._refitW = AS.w;
+        const CT2 = { wings: ['pulse', 'rail', 'missile'], plating: ['rail', 'lens'], bulk: ['lens', 'rail'], shell: ['coil', 'emp'], brood: ['missile', 'flame', 'coil'], regen: ['flame', 'missile'], haste: ['cryo', 'grav', 'snare'], cloak: ['pylon'] };
+        const ok = k => S.TOWERS[k].unlock <= Math.max(1, S.PROF.bestWave);
+        let sold = 0;
+        for (const g of AS.genes) {
+          const ans = (CT2[g] || []).filter(ok); if (!ans.length) continue;
+          const need = (g === 'cloak' ? 1 : 2 + Math.floor(G.towers.length / 10)) - G.towers.filter(tw => ans.includes(tw.type)).length;
+          for (let i = 0; i < need && sold < 4; i++) {
+            if (S.gridFree() < 1) { const v = G.towers.filter(tw => !Object.values(CT2).flat().filter(k => AS.genes.some(gg => (CT2[gg] || []).includes(k))).includes(tw.type) && tw.s.kind !== 'eco' && tw.s.kind !== 'support' && !tw.asc).sort((a, b) => a.dps - b.dps)[0]; if (!v) break; S.sellTower(v); sold++; }
+            const k = ans[i % ans.length], sp = bestSpot(G, k); if (!sp || G.credits < S.towerCost(k) || !S.buildTower(k, sp.x, sp.y)) break;
+          }
+        }
+        met.refits = (met.refits || 0) + sold;
+      }
       const targetCount = Math.min(40, 4 + Math.floor(G.wave * 0.55));
       const bc = S.towerCost(type);
       const ups = G.towers.filter(tw => tw.s.kind !== 'eco' || tw.lvl < 3).sort((a, b) => S.upgradeCost(a) - S.upgradeCost(b));
@@ -133,6 +150,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     }
     met.maxCredits = Math.max(met.maxCredits, G.credits);
   }
+  if (process.env.ASLOG) console.log('ASSAULTS w' + G.wave, JSON.stringify((G.stats.assaults || {}).list || []), JSON.stringify((G.rlog || []).filter(x => x.k === 'assaultWarn').map(x => x.d || x)));
   if (process.env.DUMP) for (const tw of G.towers) console.log('T', tw.type, 'L' + tw.lvl, 'A' + tw.asc, 'R' + tw.rank, 'inv', tw.invested, 'dmg', Math.round(tw.dmgDone), 'kills', tw.kills, 'at', tw.x, tw.y, tw.affixes.map(a => a.id + a.tier).join(','));
   const tot = Object.values(G.stats.dmgByEl).reduce((a, b) => a + b, 0) || 1;
   const byType = {};
@@ -141,6 +159,7 @@ for (let run = OFF; run < OFF + runs; run++) {
   const bankMed = met.creditsAtWave.slice().sort((a, b) => a - b)[Math.floor(met.creditsAtWave.length / 2)] || 0;
   agg.push({ wave: G.wave, min: +(t / 60).toFixed(1), lvls: S.profLevel().level - points, killer: G.stats.lastLeak || '-', leaks: G.stats.leaks,
     fills: met.fills, anoms: met.anoms.length, vet: met.vetMax, asc: met.ascends, conv: met.conv, mael: met.mael, bank: Math.round(bankMed),
+    as: G.stats.assaults ? G.stats.assaults.won + '/' + (G.stats.assaults.won + G.stats.assaults.lost) : '-',
     combos: Object.values(G.stats.combos).reduce((a, b) => a + b, 0), towers: G.towers.length,
     eff: (() => { const inv = {}; for (const tw of G.towers) inv[tw.type] = (inv[tw.type] || 0) + tw.invested; const avg = dmgAll / Object.values(inv).reduce((a, b) => a + b, 0); return Object.keys(byType).filter(k => byType[k] > 0).map(k => k.slice(0, 4) + (byType[k] / inv[k] / avg).toFixed(1)).join(' '); })(),
     top: Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ':' + Math.round(v / dmgAll * 100)).join(' '),

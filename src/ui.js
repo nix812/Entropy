@@ -306,6 +306,9 @@ const UI = (() => {
       const gs = Object.entries(geneShares()).filter(([g, v]) => v >= 0.15).sort((a, b) => b[1] - a[1]).slice(0, 2);
       chips.unshift(`<span class="evchip dna${performance.now() < dnaPulse ? ' pulse' : ''}" data-evo="1">DNA${gs.length ? ' · ' + gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : ' · stable'}</span>`);
     }
+    const AS = G.assault, asChip = [];
+    if (AS && AS.state === 'warn') asChip.push(`<span class="evchip assault" data-assault="1">ASSAULT W${AS.w} ${AS.genes.map(g => `<i style="color:${GENES[g].col}">${GENES[g].name}</i>`).join('·')}</span>`);
+    else if (AS && AS.state === 'live') { const left = AS.n - AS.killed - AS.leaked, lim = assaultLimit(AS); asChip.push(`<span class="evchip assault live ${AS.leaked > lim ? 'lost' : ''}" data-assault="1">ASSAULT ${left} · LEAKS ${AS.leaked}/${lim}</span>`); }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) chips.push(`<span class="evchip storm" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}</span>`);
@@ -313,7 +316,7 @@ const UI = (() => {
     if (G.laneWarn) chips.unshift(`<span class="evchip warn ${G.laneWarn === 1 ? 'bad' : 'storm'}" style="--c:#d6a6ff">${G.laneWarn === 1 ? 'Wormhole opens next wave' : 'Wormhole opens in ' + G.laneWarn + ' waves'}</span>`);
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
-    const html = chips.join('');
+    const html = asChip.concat(chips).join('');
     const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c); }
     const ch = $('#chips');
     if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
@@ -597,7 +600,7 @@ const UI = (() => {
       ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · 1 power per step · ${gridUsed()}/${gridCap()} used</div><div class="modes oc">${Array.from({ length: OVERCHARGE.max + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${Math.round(n * OVERCHARGE.dmg * 100)}%` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
   }
   function corePanelHTML() {
     const c = G.core, s = coreStats();
@@ -883,7 +886,7 @@ const UI = (() => {
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
-      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
+      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
   }
@@ -896,6 +899,7 @@ const UI = (() => {
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
       ${R.peakGene ? `<p class="note hl" style="color:${GENES[R.peakGene.g].col}">${tipify(`Evolution peak: ${GENES[R.peakGene.g].name} reached ${Math.round(R.peakGene.v * 100)}% of the swarm at Wave ${R.peakGene.w}`)}${R.strain ? ` · Signature strain: <b>${esc(R.strain.name)}</b> ×${fmt(R.strain.n)}` : ''}${R.pre ? ` · Arrived adapted: ${esc(R.pre.join(', '))}` : ''}</p>` : ''}
+      ${R.assaults && R.assaults.list.length ? `<p class="note hl">${tipify(`Strain Assaults: ${R.assaults.won} broken, ${R.assaults.lost} entrenched`)}${R.assaults.list.slice(-3).map(a => ` · W${a.w} ${esc(a.name)} ${a.won ? '✓' : '✗'}`).join('')}</p>` : ''}
       ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
@@ -935,11 +939,29 @@ const UI = (() => {
       const locked = A.from && G.wave < A.from;
       return `<div class="evrow ${locked ? 'dim' : ''}"><b style="color:${A.col}">${A.name}</b><div class="evbar"><i style="width:${Math.round(v * 100)}%;background:${A.col}"></i></div><em>${locked ? 'Wave ' + A.from : Math.round(v * 100) + '%' + (Math.abs(d) >= 0.05 ? (d > 0 ? ' ▲' : ' ▼') : '')}</em><span>${esc(A.desc)} · <u>${esc(A.counter)}</u></span></div>`; }).join('');
   }
+  // v4.0 Strain Assault: the swarm's move, announced a wave ahead
+  function openAssault(intro) {
+    const A = G && G.assault; if (!A) { openEvo(); return; }
+    if (!G.over) G.paused = true;
+    const S = G.stats.assaults || { won: 0, lost: 0 };
+    const est = A.n || Math.round(Math.min(65, 6 + A.w * 1.15) * ASSAULT.share * (G.CH.count || 1));
+    const lim = Math.max(1, Math.round(est * ASSAULT.hold));
+    const live = A.state === 'live', done = A.state === 'done';
+    modal(`<div class="card evo assault"><div class="ch"><h2>${intro ? 'The Swarm Makes Its Move' : 'Strain Assault'}</h2><span class="note">Wave ${A.w}${live ? ' · in progress' : done ? (A.won ? ' · broken' : ' · entrenched') : ''} · record ${S.won} held, ${S.lost} lost</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      ${intro ? `<p class="note">${tipify('Every few waves the swarm studies your defence, breeds the strain that beats it and throws most of a wave at you. It warns you a wave ahead: this is your move.')}</p>` : ''}
+      <h3 class="asname">${esc(A.name)}</h3>
+      <div class="evlist">${A.genes.map(g => { const D = GENES[g]; return `<div class="evrow"><b style="color:${D.col}">${D.name}${g === 'ward' && A.el ? ' · ' + EL[A.el].name : ''}</b><div></div><em></em><span>${esc(g === 'ward' && A.el ? `Resists ${EL[A.el].name} by 50%` : D.desc)} · <u>Counter: ${esc(g === 'ward' && A.el ? `anything but ${EL[A.el].name}` : D.counter)}</u></span></div>`; }).join('')}</div>
+      ${A.why.length ? `<div class="lbl">How it read you</div><ul class="aswhy">${A.why.map(x => `<li>${esc(x[0].toUpperCase() + x.slice(1))}</li>`).join('')}</ul>` : ''}
+      ${live ? `<p class="note hl">${A.n - A.killed - A.leaked} of ${A.n} left · ${A.leaked} leaked of ${assaultLimit(A)} allowed</p>`
+        : done ? '' : `<p class="note hl">${tipify(`Your move: selling is free (100% refund) until Wave ${A.w} starts, and Overcharge moves for free. Swap towers for the counters above.`)}</p>`}
+      ${done ? '' : `<p class="note">${tipify(`Let ${live ? assaultLimit(A) : '~' + lim} or fewer through and the strain is broken: +1 power for the rest of the run and a credit bounty, and the swarm stops trusting those genes. More, and it entrenches: it spreads through the next waves and the next assault comes sooner.`)}</p>`}
+      <div class="foot"><button class="btn primary" data-act="${intro ? 'assaultDone' : 'close2'}">${intro ? 'Answer it' : 'Back'}</button></div></div>`, 'assault');
+  }
   function openEvo(intro) {
     if (!G) return;
     if (!G.over) G.paused = true;
     const cap = geneCap(G.wave);
-    modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+    modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(G.assault && G.assault.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       ${intro ? `<p class="note">${tipify("Enemies that get furthest pass their traits on. Whatever your defence handles worst spreads; answer it and it fades. Each trait costs them HP or speed, so a balanced, adaptable defence keeps the swarm in check. Tap DNA in the top bar any time to see this.")}</p>` : ''}
       <div class="evlist">${evoRowsHTML()}</div>
       <div class="foot"><button class="btn primary" data-act="${intro ? 'evoDone' : 'close2'}">${intro ? 'Adapt' : 'Back'}</button></div></div>`, 'evo');
@@ -1279,6 +1301,7 @@ const UI = (() => {
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
       case 'logSave': { const t = lastLogText(); if (t) saveText(t); break; }
+      case 'assaultDone': PROF.seenAssault = true; Save.save(); closeModal(); if (G && !G.over) G.paused = false; break;
       case 'evoDone': PROF.seenEvo = true; Save.save(); closeModal(); if (G && !G.over) G.paused = false; break;
       case 'news': openNews(); break;
       case 'strack': PROF.settings.soundtrack = b.dataset.v; SFX.setSoundtrack(b.dataset.v); Save.save(); openSettings(); break;
@@ -1317,7 +1340,7 @@ const UI = (() => {
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
-    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-assault]')) { SFX.play('ui'); openAssault(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
@@ -1372,6 +1395,7 @@ const UI = (() => {
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
+    Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) openAssault(true); }, 700); };
     Hooks.gridFull = () => { const T = topTower(); toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Build on a Power Node (free), sell an idle tower, or expand the reactor${T ? `. Or Overcharge your best: ${TOWERS[T.type].name}` : ''}`, '#ffb03a'); };
     Hooks.log = log;
     Hooks.toast = toast;

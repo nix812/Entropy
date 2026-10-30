@@ -338,10 +338,10 @@ const BOONS = [
 ];
 
 const CHAOS_LEVELS = [
-  { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64], evo: { start: 12, press: 0.6, desc: 'Gentle evolution from Wave 12' } },
-  { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78], evo: { start: 8, press: 1, desc: 'Evolution from Wave 8' } },
-  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [12, 24, 36, 50, 66, 84], evo: { start: 6, press: 1.25, seed: 1, desc: 'The swarm arrives adapted to one weakness; evolution from Wave 6, fiercer' } },
-  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.5, cr: 0.8, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100], evo: { start: 4, press: 1.5, seed: 2, capAdd: 1, desc: 'The swarm arrives adapted to two weaknesses; evolution from Wave 4, fiercest, one extra gene' } },
+  { name: 'Calm', ev: 0.5, storm: 0.6, elite: 0.8, score: 0.8, hp: 0.7, rows: 22, lanes: [16, 30, 46, 64], evo: { start: 12, press: 0.6, first: 18, every: 10, desc: 'Gentle evolution from Wave 12. Strain Assaults every 10 waves' } },
+  { name: 'Normal', ev: 1, storm: 1, elite: 1, score: 1, hp: 1, rows: 26, lanes: [15, 28, 42, 58, 78], evo: { start: 8, press: 1, first: 14, every: 8, desc: 'Evolution from Wave 8. Strain Assaults every 8 waves' } },
+  { name: 'Unstable', ev: 1.5, storm: 1.5, elite: 1.25, score: 1.35, hp: 1.15, rows: 30, lanes: [12, 24, 36, 50, 66, 84], evo: { start: 6, press: 1.25, seed: 1, first: 12, every: 7, desc: 'The swarm arrives adapted to one weakness; evolution from Wave 6, fiercer. Strain Assaults every 7 waves' } },
+  { name: 'Pandemonium', ev: 2.5, storm: 2.5, elite: 1.6, score: 1.8, hp: 1.5, cr: 0.8, rows: 34, lanes: [1, 10, 20, 32, 46, 62, 80, 100], evo: { start: 4, press: 1.5, seed: 2, capAdd: 1, first: 9, every: 6, desc: 'The swarm arrives adapted to two weaknesses; evolution from Wave 4, fiercest, one extra gene. Strain Assaults every 6 waves' } },
 ];
 
 // ---------- Passive web ----------

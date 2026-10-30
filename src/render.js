@@ -583,6 +583,7 @@ const Render = (() => {
     if (e.boss === 'titan' && e.plates > 0) { R(b, X - 22, y - 22, 44, 5, '#8a8fa8'); R(b, X - 22, y + 17, 44, 5, '#8a8fa8'); if (e.plates > 1) { R(b, X - 22, y - 22, 5, 44, '#a4aac4'); R(b, X + 17, y - 22, 5, 44, '#a4aac4'); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
+    if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
     if (e.elite.length && !cloaked) {
       const ec = ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, r = hw + 4;
