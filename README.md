@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 4.0.0 · October 29, 2026**
+**Version at handoff: 4.0.1 · October 29, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -16,7 +16,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
 | **Source zip** | `entropy-source-v3.2.1.zip`, sent alongside this document. It has the same content as the `source` branch. |
-| **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). The composer isn't recorded anywhere in either repo (the files were re-encoded, tags stripped); ask Nic if more tracks are wanted. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
+| **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. They are byte-identical to Elemental Clash's tracks: **"Attention" (freesound.org/s/568005) and "Bosch's Garden" (freesound.org/s/647212), both by kjartan_abel.** EC's settings credited them as CC BY 4.0, but kjartan_abel's Freesound profile says most of his music is CC BY-SA 4.0; check each track's page before any commercial release. Either way, commercial use is allowed with credit. Entropy credits both in Settings (since 4.0.1). EC never recorded which file is which track. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
 ```bash
@@ -595,4 +595,5 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 4.0.1 | Music credits in Settings (kjartan_abel, Freesound) |
 | 4.0 | Strain Assaults: the swarm reads your defence, telegraphs a counter-strain a wave ahead, free refit, broken (+1 power) or entrenched. Notifications split into alerts, tips and a corner feed. Overcharge 3 × 35%. Idle-tower Zs, relocation coverage, Arc shield fix under Conflagration, log genes and leaks |
