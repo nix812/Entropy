@@ -217,6 +217,19 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .evrow em { font-style: normal; font-size: 15px; color: #e8e6dc; text-align: right; }
 .evrow span { grid-column: 1 / -1; font-size: 14px; color: #8a8fa8; } .evrow span u { text-decoration: none; color: #c9c6bc; }
 .evrow.dim { opacity: 0.4; }
+.hbtn.doc { box-shadow: inset 0 0 0 1px #ffb03a; color: #ffd28a; }
+.docrow { padding: 6px 0 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.docrow b { font-family: var(--f-pix); font-size: 10px; color: var(--c); letter-spacing: 1px; }
+.docrow em { font-style: normal; color: #c9c6bc; font-size: 15px; margin-left: 6px; }
+.docrow ul { margin: 3px 0 4px 16px; padding: 0; font-size: 14px; color: #a9a7c4; }
+.docrow .ms { display: flex; gap: 6px; flex-wrap: wrap; font-size: 13px; margin: 2px 0 4px; } .docrow .ms span { padding: 1px 5px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15); color: #8a8fa8; } .docrow .ms span.on { color: #0b0d1c; background: var(--c); box-shadow: none; }
+.docrow.on { background: linear-gradient(90deg, rgba(255,176,58,0.08), transparent); }
+.ti .lock { color: #ff9a6a; }
+#docbar { position: absolute; right: 6px; bottom: 6px; z-index: 4; display: flex; flex-direction: column; gap: 2px; align-items: flex-end; pointer-events: none; }
+#docbar span { background: rgba(7, 8, 15, 0.8); padding: 2px 7px; font-size: 14px; color: #c9c6bc; box-shadow: inset -2px 0 0 var(--c, #ffb03a); }
+#docbar b { font-weight: 400; color: var(--c); margin-left: 4px; } #docbar i { font-style: normal; color: #8a8fa8; margin-left: 4px; font-size: 13px; }
+#docbar .heat { --c: #ff9a3c; } #docbar .chest { --c: #59f0b4; } #docbar .mark { --c: #efe6cf; }
+body.panel-r #docbar { display: none; }
 .note.credits { font-size: 13px; opacity: 0.7; margin-top: 6px; }
 .card.assault { max-height: calc(100vh - 16px); overflow-y: auto; }
 .card.assault .evlist { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin: 4px 0; }
@@ -601,6 +614,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
       <button class="zoombtn" id="bZoom" hidden></button>
       <div id="log"></div>
       <div id="asbar" hidden></div>
+      <div id="docbar" hidden></div>
       <div id="dps"></div>
       <div id="panel" class="panel" hidden></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
@@ -626,6 +640,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
       <button class="hbtn" data-tact="view" id="tView">3D</button>
       <button class="hbtn" data-tact="profile" id="tProf">Profile</button>
       <button class="hbtn" data-tact="totals">Totals</button>
+      <button class="hbtn doc" data-tact="docs" id="tDoc">Doctrine</button>
       <button class="hbtn" data-tact="builds">Builds</button>
       <button class="hbtn" data-tact="close" style="box-shadow: inset 0 0 0 1px var(--amber)">Done</button>
     </div>
@@ -648,7 +663,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.1.0';
+const VERSION = '4.2.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -815,13 +830,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.1.0', title: 'Entropy 4.1', items: [
-  ['Bigger bosses', 'Bosses are 50% larger on the field, so you can actually see them coming.'],
-  ['Boss breach', 'A boss that reaches your core ends the run. No shield or Unbreakable saves you. Gloop\'s little splits still only take a chunk.'],
-  ['Bosses rebalanced', 'Because a breach now ends the run, bosses carry less health than in 4.0, early ones most of all.'],
-  ['Smarter swarm', 'Strain Assaults are tougher, and the swarm no longer leans on Thermal Ward against Conflagration builds, where it barely works.'],
-  ['Music credits', 'The soundtrack is by kjartan_abel. Credits are in Settings.'],
-  ['From 4.0', 'Strain Assaults: the swarm reads your defence and attacks it, with a wave of warning and free selling to answer. Tap DNA to see its read.']
+const WHATS_NEW = { ver: '4.2.0', title: 'Entropy 4.2 · Doctrines', items: [
+  ['Doctrines', 'Seal a region of the Passive Web to adopt its play style. You hold 1 seal (2 from level 75, 3 from level 120). Its notables, mastery, keystone and arm only open with the seal. Tap Doctrine in the web to compare them and track your build.'],
+  ['Marksman', 'Few towers, enormous shots: a 40% smaller power grid, but every attack tower gets +2 Overcharge free and can go to 5. Targeting lasers show what they hunt.'],
+  ['Wildfire', 'The road burns: burning enemies leave fire behind, Heat builds as more road burns, and towers right next to the fire overheat.'],
+  ['War Economy', 'Money is firepower: banked credits grow turrets on your core, up to 8. Spend and they shrink. Towers cost 20% more.'],
+  ['Points refunded', 'Your passive points are all back. The other regions become Doctrines in a later update and stay open until then.'],
+  ['From 4.1', 'Bigger bosses, and a boss that reaches your core ends the run.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -1048,6 +1063,8 @@ const STAT_TXT = {
   napalmKill: () => 'Thermal kills leave burning ground for 2s', multiA: v => `Arc towers hit +${v} target`,
   freezeImmRed: v => `Enemies can be Frozen again ${v}% sooner`, markVoid: v => `Each Mark adds +${v}% Void damage taken`,
   salvage: () => 'Kills grant +1 credit for every 10 waves reached',
+  msOc: v => `Marksman: each Overcharge step adds +${v}% more Damage`, wfHeat: v => `Wildfire: Heat can climb ${v}% higher`, wfDur: v => `Wildfire: road fire lasts ${v}% longer`,
+  weStep: v => `War Economy: core turrets need ${v}% fewer banked credits`, weTur: v => `War Economy: each core turret adds +${v}% more core Damage`,
   kBurn: v => `Kinetic hits: ${v}% chance to Burn`, chillVoid: v => `Hits on Chilled enemies: ${v}% chance to Mark`,
 };
 const SMALL_NAME = {
@@ -1160,7 +1177,23 @@ function satLines(n) {
   if (el === 'E') return [`Facing ${SECTORS[si].name}: ` + Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')];
   return [`Facing ${SECTORS[si].name}: ${S.t(el)}`];
 }
-const WEB_SCALE = 1.3, WEB_VER = 2;
+const WEB_SCALE = 1.3, WEB_VER = 3;
+// v4.2 Doctrines: a region's seal gives it a play style you can see on the field, with a real cost. Its notables, mastery,
+// keystone and arm only work (and can only be taken) once its seal is in. You hold a limited number of seals.
+// Indexed by sector. Sectors without an entry are still open, freeform regions (they become Doctrines later).
+const DOCTRINES = {
+  0: { id: 'marksman', name: 'Marksman', tag: 'Few towers, enormous shots', counter: 'brood',
+    lines: ['Your power grid is 40% smaller', 'Every attack tower is Overcharged +2 for free, and Overcharge goes up to 5 steps', 'Towers show targeting lasers'],
+    smalls: [{ msOc: 4 }, { msOc: 4 }] },
+  1: { id: 'wildfire', name: 'Wildfire', tag: 'The road burns', counter: 'wings',
+    lines: ['Burning ground enemies set the road on fire', 'Road fire builds Heat during a wave: up to +100% fire damage', 'Towers within 1 tile of burning road overheat: −25% Attack Speed'],
+    smalls: [{ wfHeat: 20 }, { wfDur: 20 }] },
+  5: { id: 'wareco', name: 'War Economy', tag: 'Money is firepower', counter: 'haste',
+    lines: ['The core grows a turret for every stack of banked credits (up to 8): +60% core Damage and +8% core Attack Speed each', 'The stack size grows with the wave, so keep banking', 'Towers cost 20% more'],
+    smalls: [{ weStep: 6 }, { weTur: 10 }] },
+};
+const sealSlots = lvl => 1 + (lvl >= 75 ? 1 : 0) + (lvl >= 120 ? 1 : 0);
+const SEAL_NEXT = lvl => lvl < 75 ? 75 : lvl < 120 ? 120 : 0;
 function buildTree() {
   const nodes = {}, edges = [];
   const add = (id, x, y, kind, sector, name, fx, extra) => {
@@ -1183,7 +1216,8 @@ function buildTree() {
     const mfx = {}; mfx[S.attr] = 5; mfx[N.attr] = (mfx[N.attr] || 0) + 5;
     add(`m${i}`, x, y, 'small', i, 'Conduit', mfx);
     // spine: four steps out from the gate
-    const spineFx = [A8, mf(S.spine[0], A8), Object.assign({}, S.spine[1]), mf(S.spine[2], A8)];
+    const DOC = DOCTRINES[i];
+    const spineFx = [A8, mf(S.spine[0], A8), Object.assign({}, S.spine[1], DOC ? DOC.smalls[0] : {}), mf(S.spine[2], A8, DOC ? DOC.smalls[1] : {})];
     for (let j = 0; j < 4; j++) {
       [x, y] = pol(140 + j * 80, a);
       add(`s${i}_${j}`, x, y, 'small', i, smallName(spineFx[j]), spineFx[j]);
@@ -1199,7 +1233,14 @@ function buildTree() {
       add(`${p}b`, sx + tx * 80 + rx * 14, sy + ty * 80 + ry * 14, 'small', i, smallName(fb), fb);
       add(`${p}n`, sx + tx * 120, sy + ty * 120, 'notable', i, C.name, C.fx);
       link(`s${i}_${j}`, `${p}a`); link(`${p}a`, `${p}b`); link(`${p}b`, `${p}n`);
+      if (DOC) nodes[`${p}n`].need = i;
     });
+    // the Doctrine seal hangs off the first spine node
+    if (DOC) {
+      const [sx, sy] = pol(140, a), ar = a * Math.PI / 180;
+      add(`d${i}`, sx - Math.sin(ar) * 62, sy + Math.cos(ar) * 62, 'seal', i, `${DOC.name} Doctrine`, {}, { doctrine: i, ks: DOC.id, lines: DOC.lines });
+      link(`s${i}_0`, `d${i}`);
+    }
     // keystone & mastery branches
     const K = S.keystone, M = S.mastery;
     [[K, -1, 'k', 'keystone'], [M, 1, 'x', 'mastery']].forEach(([D, sd, tag, kind]) => {
@@ -1210,6 +1251,7 @@ function buildTree() {
       [x, y] = pol(580, a + sd * 11);
       add(`${tag}${i}`, x, y, kind, i, D.name, D.fx || {}, D.ks ? { ks: D.ks, lines: D.lines } : D.opts ? { opts: D.opts } : null);
       link(`${tag}${i}_0`, `${tag}${i}`);
+      if (DOC) nodes[`${tag}${i}`].need = i;
     });
   });
   // ring of hybrids between sectors, plus three arc keystones
@@ -1243,7 +1285,7 @@ function buildTree() {
     [x, y] = pol(765, a + 34);
     add(`w${i}_1`, x, y, 'small', i, smallName(f1), f1); link(`w${i}_0`, `w${i}_1`);
     [x, y] = pol(850, a + 47);
-    add(`w${i}`, x, y, 'notable', i, ARMS[i].name, ARMS[i].fx, { arm: 1 });
+    add(`w${i}`, x, y, 'notable', i, ARMS[i].name, ARMS[i].fx, Object.assign({ arm: 1 }, DOCTRINES[i] ? { need: i } : {}));
     link(`w${i}_1`, `w${i}`);
   });
   // the Z-axis: Zenith above the galactic plane, Nadir below
@@ -1354,9 +1396,11 @@ const REGION_IDS = ['s0', 's1', 's2', 's3', 's4', 's5', 'zen', 'nad'];
 const REGION_NAME = { s0: 'The Archer', s1: 'The Phoenix', s2: 'The Thunderbolt', s3: 'The Crystal', s4: 'The Maw', s5: 'The Bulwark', zen: 'The Crown', nad: 'The Serpent' };
 function regionOf(n) { if (n.sector >= 0) return 's' + n.sector; if (n.sector === -2) return n.z > 0 ? 'zen' : 'nad'; return null; }
 const REGION_NODES = {};
-for (const n of TREE.list) { const r = regionOf(n); if (r) (REGION_NODES[r] = REGION_NODES[r] || []).push(n.id); }
-// a remnant keeps a sector's notables (clusters + arm) active forever
-const remnantNodes = rid => REGION_NODES[rid].filter(id => TREE.nodes[id].kind === 'notable' && !TREE.nodes[id].hybrid);
+// a region counts as complete with all its open passives: seals and seal-locked nodes don't count (you can only hold a few seals)
+const REGION_ALL = {};
+for (const n of TREE.list) { const r = regionOf(n); if (!r) continue; (REGION_ALL[r] = REGION_ALL[r] || []).push(n.id); if (n.kind !== 'seal' && n.need === undefined) (REGION_NODES[r] = REGION_NODES[r] || []).push(n.id); }
+// a remnant keeps a sector's notables (clusters + arm) active forever, seal or not
+const remnantNodes = rid => REGION_ALL[rid].filter(id => TREE.nodes[id].kind === 'notable' && !TREE.nodes[id].hybrid);
 
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',
@@ -1461,11 +1505,25 @@ function treeOrphans(id) {
   while (q.length) { const c = q.shift(); for (const nb of TREE.nodes[c].adj) if (A.has(nb) && !seen.has(nb)) { seen.add(nb); q.push(nb); } }
   const out = [id];
   for (const a of A) if (!seen.has(a)) out.push(a);
+  // removing a seal also releases everything it locked
+  const n0 = TREE.nodes[id];
+  if (n0.kind === 'seal') for (const a of A) if (TREE.nodes[a].need === n0.doctrine && !out.includes(a)) out.push(a);
   return out;
+}
+// why a node can't be taken right now ('' = fine): seal-locked nodes need their Doctrine seal; seals are limited
+function sealsHeld(list) { return (list || PROF.alloc).filter(id => TREE.nodes[id] && TREE.nodes[id].kind === 'seal').length; }
+function treeBlock(id, path) {
+  path = path || treePathTo(id) || [];
+  const A = allocSet(), want = new Set(path);
+  for (const pid of path) { const n = TREE.nodes[pid]; if (n.need !== undefined && !A.has('d' + n.need) && !want.has('d' + n.need)) return 'seal:' + n.need; }
+  const newSeals = path.filter(pid => TREE.nodes[pid].kind === 'seal').length;
+  if (newSeals && sealsHeld() + newSeals > sealSlots(profLevel().level)) return 'slots';
+  return '';
 }
 function treeAllocate(id) {
   const path = treePathTo(id);
   if (!path || !path.length || path.length > pointsFree()) return false;
+  if (treeBlock(id, path)) return false;
   const before = new Set(regionsDone());
   PROF.alloc.push(...path);
   if (G && !G.over) recomputeAll();
@@ -1501,7 +1559,12 @@ function migrateWeb() {
 function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
   if (!b) return 'empty';
-  const valid = pruneAlloc(b.alloc);
+  let valid = pruneAlloc(b.alloc);
+  // drop extra seals and anything whose seal isn't in the build
+  const slots = sealSlots(profLevel().level); let held = 0;
+  valid = valid.filter(id => { const n = TREE.nodes[id]; if (n.kind !== 'seal') return true; return ++held <= slots; });
+  const seals = new Set(valid.filter(id => TREE.nodes[id].kind === 'seal'));
+  valid = pruneAlloc(valid.filter(id => TREE.nodes[id].need === undefined || seals.has('d' + TREE.nodes[id].need)));
   if (valid.length - 1 > profLevel().level) return 'points';
   if (G && !G.over && !G.checkpoint) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   PROF.alloc = valid.includes('start') ? valid.slice() : ['start', ...valid];
@@ -1519,8 +1582,11 @@ function computeMods(alloc, runMods) {
   const all = new Set(alloc);
   for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) all.add(id);
   for (const r in PROF.stars || {}) if (STARS[r] && regionDone(r, new Set(alloc))) { const S = STARS[r]; m[S.key] = (m[S.key] || 0) + starTotal(r, PROF.stars[r]); }
+  const remSet = new Set(); for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) remSet.add(id);
   for (const id of all) {
     const n = TREE.nodes[id]; if (!n) continue;
+    if (n.need !== undefined && !all.has('d' + n.need) && !remSet.has(id)) continue; // seal-locked
+    if (n.kind === 'seal') { ks[n.ks] = 1; continue; }
     if (n.sat !== undefined) {
       const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)];
       if (el === 'E') for (const k in S.E) m[k] = (m[k] || 0) + S.E[k];
@@ -1570,6 +1636,7 @@ function computeMods(alloc, runMods) {
   if (ks.chaos) M.affixLuck += 1.5;
   if (ks.prismatic) M.dmg *= 0.9;
   if (ks.unbreakable) M.dmg *= 0.9;
+  if (!ks.marksman) delete m.msOc; if (!ks.wildfire) { delete m.wfHeat; delete m.wfDur; } if (!ks.wareco) { delete m.weStep; delete m.weTur; }
   M.raw = m;
   return M;
 }
@@ -1806,13 +1873,16 @@ function rlogWave() {
   rlog('wave', d);
 }
 // ---- v3.0 power grid ----
-function gridCap() { return Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)) + (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); }
+function gridCap() { const c = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)) + (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(c * 0.6)) : c; }
+// Marksman: +2 free Overcharge on every attack tower, and paid Overcharge goes 2 steps higher
+const ocFree = t => G.mods && G.mods.ks.marksman && canOvercharge(t) ? 2 : 0;
+const ocMax = () => OVERCHARGE.max + (G && G.mods && G.mods.ks.marksman ? 2 : 0);
 function canOvercharge(t) { const k = TOWERS[t.type].kind; return k !== 'eco' && k !== 'support' && k !== 'snare'; }
 function towerPower(t) { return (isNode(t.x, t.y) ? 0 : 1) + (canOvercharge(t) ? t.oc || 0 : 0); }
 function gridUsed() { let n = 0; for (const t of G.towers) n += towerPower(t); return n; }
 function gridFree() { return gridCap() - gridUsed(); }
 function setOvercharge(t, n) {
-  n = clamp(n | 0, 0, OVERCHARGE.max);
+  n = clamp(n | 0, 0, ocMax());
   if (!canOvercharge(t)) return false;
   if (n - (t.oc || 0) > gridFree()) return false;
   t.oc = n; t.s = towerStats(t); recomputeAuras();
@@ -2026,7 +2096,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: (PROF.alloc || []).length,
-    ks: TREE.list.filter(n => n.kind === 'keystone' && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
+    ks: TREE.list.filter(n => (n.kind === 'keystone' || n.kind === 'seal') && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
   return G;
 }
 
@@ -2066,6 +2136,7 @@ function towerCost(type) {
   const M = G.mods, D = TOWERS[type];
   let c = D.cost * M.cost * (1 + (G.af.costX || 0));
   if (M.ks.dimret) c *= 1 + 0.12 * G.towers.filter(t => t.type === type).length;
+  if (M.ks.wareco) c *= 1.2;
   return Math.round(c);
 }
 function upgradeCost(t) {
@@ -2313,8 +2384,8 @@ function towerStats(t) {
     s.range = s.bountyAura ? 3 : 0;
   }
   s.ground = !!D.ground;
-  const oc = canOvercharge(t) ? (t.oc || 0) : 0;
-  if (oc) { s.dmg *= 1 + OVERCHARGE.dmg * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
+  const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
+  if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
   return s;
 }
 function recomputeAuras() {
@@ -2745,6 +2816,11 @@ function readDefence(w, jitter) {
   if (!G.towers.some(t => t.type === 'pylon')) add('cloak', 0.28, 'you have no Relay Pylon to reveal it');
   const splash = sh('missile') + sh('flame') + sh('coil') + sh('emp');
   add('brood', (0.2 - splash) * 1.8, `only ${pc(splash)} of your damage is splash`);
+  // the swarm also reads your Doctrine
+  const K = G.mods.ks;
+  if (K.marksman) add('brood', 0.5, 'you rely on a few big guns, so it comes in numbers');
+  if (K.wildfire) add('wings', 0.55, 'your fire only burns the road, so it flies over it');
+  if (K.wareco) add('haste', 0.45, 'it wants to reach your core before the war chest fills');
   const last = G.stats.assaults && G.stats.assaults.list.length ? G.stats.assaults.list[G.stats.assaults.list.length - 1] : null;
   if (last && last.won && last.genes) for (const o of out) if (last.genes.includes(o.g)) o.score *= 0.4;
   if (jitter) for (const o of out) o.score *= 0.85 + G.r() * 0.3;
@@ -3180,6 +3256,7 @@ function updateEnemies(dt) {
     // statuses
     if (st.burn) {
       st.burn.t -= dt;
+      if (G.mods.ks.wildfire && !e.fly && !e.burrowed) { e.fireT = (e.fireT || 0) - dt; if (e.fireT <= 0) { e.fireT = 0.4; roadFire(e); } }
       hit(e, st.burn.dps * dt, 'T', st.burn.src, { dot: 1, noStatus: 1 });
       if (st.burn.t <= 0) st.burn = null;
       if (e.dead) continue;
@@ -3759,6 +3836,8 @@ function updateTowers(dt) {
   if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} deals ×2`, EL[G.flux.el].col); } }
   let burning = 0;
   if (FX('heatSink')) for (const e of G.enemies) if (!e.dead && e.st.burn) burning++;
+  // Wildfire: towers within 1 tile of burning road overheat (checked 4× a second)
+  if (M.ks.wildfire) { G.hotClock = (G.hotClock || 0) - dt; if (G.hotClock <= 0) { G.hotClock = 0.25; const fires = G.zones.filter(z => z.k === 'roadfire'); for (const t of G.towers) { t.hot = false; for (const z of fires) if (dist2(t.cx, t.cy, z.x, z.y) <= (1 + z.r) * (1 + z.r)) { t.hot = true; break; } } } }
   if (FX('thunder') && G.enemies.length) {
     G.thunderT = (G.thunderT === undefined ? 6 : G.thunderT) - dt;
     if (G.thunderT <= 0) {
@@ -3778,6 +3857,7 @@ function updateTowers(dt) {
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
     if (s.leg.overloop) { t.olT = (t.olT + dt) % 8; if (t.olT < 3) rate *= 2.5; }
     if (burning && s.el === 'T') rate *= 1 + Math.min(0.4, 0.02 * burning);
+    if (t.hot && M.ks.wildfire) rate *= 0.75;
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
     t.effRange = range;
     t.cd -= dt * rate;
@@ -3785,7 +3865,7 @@ function updateTowers(dt) {
     if (t.cd > 0) continue;
     t.capMult = s.el === 'A' && FX('capacitor') && t.capT >= 4 ? 3 : 1;
     const fired = towerAttack(t, range, sw);
-    if (fired) t.lastFireW = G.wave;
+    if (fired) { t.lastFireW = G.wave; t.aimT = G.time; }
     if (fired && t.capMult > 1) { t.capT = 0; Hooks.fx('arcs', { x: t.cx, y: t.cy, r: 0.8 }); }
     t.capMult = 1;
     if (fired) {
@@ -4028,11 +4108,22 @@ function explode(p) {
   if (p.k === 'missile' && s.napalm) G.zones.push({ k: 'napalm', x: p.x, y: p.y, r: 0.85, t: 3, dps: p.dmg * 0.5, src, el: 'T' });
   if (p.k === 'mortar' && s.stunDur) Hooks.fx('emp', { x: p.x, y: p.y, r });
 }
+// ---- v4.2 Wildfire: burning ground enemies leave fire on the road; the more road burns, the hotter it gets ----
+const WILDFIRE = { r: 0.55, t: 2.2, dps: 0.5, perZone: 0.04, cap: 1, max: 70 };
+function wildHeatCap() { return WILDFIRE.cap * (1 + FX('wfHeat') / 100); }
+function roadFire(e) {
+  const dps = e.st.burn.dps * WILDFIRE.dps, t = WILDFIRE.t * (1 + FX('wfDur') / 100);
+  for (const z of G.zones) if (z.k === 'roadfire' && dist2(z.x, z.y, e.x, e.y) < 0.36) { z.t = Math.max(z.t, t); z.dps = Math.max(z.dps, dps); return; }
+  if (G.zones.filter(z => z.k === 'roadfire').length >= WILDFIRE.max) return;
+  G.zones.push({ k: 'roadfire', x: e.x, y: e.y, r: WILDFIRE.r, t, dps, src: e.st.burn.src, el: 'T' });
+}
 function updateZones(dt) {
+  if (G.mods.ks.wildfire) { const n = G.zones.reduce((a, z) => a + (z.k === 'roadfire'), 0); G.heat = Math.min(wildHeatCap(), n * WILDFIRE.perZone); } else G.heat = 0;
   for (const z of G.zones) {
     z.t -= dt;
-    for (const e of G.enemies) if (!e.dead && !(e.fly && z.k === 'napalm') && dist2(e.x, e.y, z.x, z.y) <= z.r * z.r) {
-      hit(e, z.dps * dt, z.el, z.src, { dot: 1, noStatus: 1 });
+    const zm = z.k === 'roadfire' ? 1 + G.heat : 1;
+    for (const e of G.enemies) if (!e.dead && !(e.fly && (z.k === 'napalm' || z.k === 'roadfire')) && dist2(e.x, e.y, z.x, z.y) <= z.r * z.r) {
+      hit(e, z.dps * zm * dt, z.el, z.src, { dot: 1, noStatus: 1 });
       if (!e.dead && !e.st.burn) e.st.burn = { dps: z.dps * 0.4 * G.mods.burnDmg, t: 1.5, src: z.src };
     }
   }
@@ -4063,14 +4154,17 @@ function updateTimers(dt) {
 
 // ---------- core ----------
 const CORE_EL_STATUS = { K: {}, T: { burn: 0.5 }, C: { chill: 1 }, A: { shock: 0.5 }, V: { mark: 0.5 } };
+// ---- v4.2 War Economy: banked credits grow turrets on the core ----
+function warStep() { return Math.round((500 + 120 * Math.max(1, G.wave)) * (1 - Math.min(0.6, FX('weStep') / 100))); }
+function warTier() { return G.mods && G.mods.ks.wareco ? Math.min(8, Math.floor(Math.max(0, G.credits) / warStep())) : 0; }
 function coreStats() {
-  const M = G.mods, c = G.core;
+  const M = G.mods, c = G.core, wt = warTier(), wx = (1 + wt * (0.6 + FX('weTur') / 100)), wr = 1 + wt * 0.08;
   if (!c.A) coreAffSum(c);
   const A = c.A, p = k => (A[k] || 0) / 100, nd = isNode(G.map.core.x, G.map.core.y);
   const el = M.ks.conflag ? 'T' : c.el;
   const st = CORE_EL_STATUS[el];
   return {
-    el, kind: 'core', dmg: CORE_GUN.dmg * Math.pow(CORE_GUN.growth, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1), rate: CORE_GUN.rate * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
+    el, kind: 'core', dmg: CORE_GUN.dmg * Math.pow(CORE_GUN.growth, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1) * wx, rate: CORE_GUN.rate * wr * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
     range: (CORE_GUN.range + M.coreRange + CORE_GUN.rangeLv * (c.wLvl - 1)) * (1 + p('range')), critC: M.critC + (A.critC || 0), critM: 1.5 + M.critM + p('critM'),
     burn: clamp((st.burn || 0) + p('burn'), 0, 1), chill: M.ks.conflag ? 0 : clamp((st.chill || 0) + p('chill'), 0, 1), shock: clamp((st.shock || 0) + p('shock'), 0, 1), mark: clamp((st.mark || 0) + p('mark'), 0, 1),
     chillPot: M.chillPot, freezeBonus: M.freezeDur, shockX: 1, burnX: 1, stun: 0, stunDur: 0, leg: c.leg, cur: {}, boss: M.eliteDmg + p('boss') + (c.wLvl >= 8 ? 0.25 : 0), slowd: p('slowd'), exec: A.exec || 0, bounty: p('bounty'),
@@ -5206,6 +5300,8 @@ const Render = (() => {
       R(b, X + 4, Y + 2, 1, 5, sc); R(b, X + 2, Y + 4, 5, 1, sc); P(b, X + 4, Y + 4, '#ffffff');
     }
     if (t.disabled > 0) for (let i = 0; i < 14; i++) R(b, X + 2 + Math.random() * 19, Y + 2 + Math.random() * 19, 2, 1, i % 2 ? '#ffffff' : '#5a5a7a');
+    if (t.hot && G.mods.ks.wildfire && frame % 6 < 4) { for (let k = 0; k < 3; k++) { const hx = X + 5 + ((frame >> 2) * 7 + k * 6) % 14, hy = Y + 2 - ((frame + k * 5) % 8); P(b, hx, hy, k % 2 ? '#ff9a3c' : '#ffd28a'); } }
+    if (G.mods.ks.marksman && t.s && canOvercharge(t) && t.aimT !== undefined && G.time - t.aimT < 0.7 && t.angle !== undefined) { const L = (t.effRange || t.s.range || 2) * TILE; b.strokeStyle = 'rgba(255,77,106,0.35)'; b.lineWidth = 1; b.beginPath(); b.moveTo(X + 12, Y + 12); b.lineTo(X + 12 + Math.cos(t.angle) * L, Y + 12 + Math.sin(t.angle) * L); b.stroke(); P(b, Math.round(X + 12 + Math.cos(t.angle) * L), Math.round(Y + 12 + Math.sin(t.angle) * L), '#ff4d6a'); }
     if (G.wave > 1 && idleWaves(t) >= 2) { // sleeping: two little pixel Zs drift up from the corner
       const zc = '#9fb3c8';
       for (let k = 0; k < 2; k++) { const ph = ((frame >> 2) + k * 12) % 24, zx = X + 1 + k * 4, zy = Y + 6 - (ph >> 2) - k * 3; if (ph > 20) continue; R(b, zx, zy, 3, 1, zc); R(b, zx + 1, zy + 1, 1, 1, zc); R(b, zx, zy + 2, 3, 1, zc); }
@@ -5248,6 +5344,8 @@ const Render = (() => {
     D(b, X, Y, Math.round(5 + pulse * 1.5), PAL.core); D(b, X - 1, Y - 1, 3, '#b8ffe6'); P(b, X - 2, Y - 2, '#ffffff');
     const ec = EL[c.s ? c.s.el : c.el].col, a = c.angle || 0;
     b.save(); b.translate(X, Y); b.rotate(a); R(b, 6, -2, 12, 4, '#090b16'); R(b, 6, -1, 11, 2, ec); R(b, 6, -1, 11, 1, sh(ec, 0.6)); b.restore();
+    { const wt = typeof warTier === 'function' ? warTier() : 0; // War Economy: a turret per stack of banked credits
+      for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 22, ty = Y + Math.sin(a2) * 22; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
     if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.25 + 0.5 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 20, 0, 6.283); b.stroke(); }
     if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 17, 0, 6.283); b.stroke(); }
   }
@@ -5949,7 +6047,7 @@ const Save = (() => {
         try { remote = merge(JSON.parse(snap.data().json)); } catch (e) {}
         if (remote && (remote.updatedAt || 0) > (PROF.updatedAt || 0) && !(G && !G.over)) {
           PROF = remote;
-          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('PASSIVE WEB REBUILT', 'Fewer, stronger nodes. All your points are refunded.', '#ffb03a'); queue(); }
+          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('PASSIVE WEB REBUILT', 'Doctrines have arrived. All your points are refunded: pick a play style', '#ffb03a'); queue(); }
           try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
           UI.refreshAll();
         } else queue();
@@ -6181,6 +6279,13 @@ const UI = (() => {
     if (AS && AS.state === 'warn') asH = `<b>STRAIN ASSAULT · WAVE ${AS.w}</b><span>${AS.genes.map(g => `<i style="color:${GENES[g].col}">${GENES[g].name}${g === 'ward' && AS.el ? ' ' + EL[AS.el].name : ''}</i>`).join(' · ')}</span><em>${G.refit ? 'Selling is free' : ''}</em>`;
     else if (AS && AS.state === 'live') { const left = AS.n - AS.killed - AS.leaked, lim = assaultLimit(AS); asH = `<b>${esc(AS.name)}</b><span>${left} left</span><em class="${AS.leaked > lim ? 'lost' : ''}">Leaks ${AS.leaked}/${lim}</em>`; }
     if (asb) { const on = !!asH && !(G.bossAlive && !G.bossAlive.dead); if (asb.dataset.h !== asH) { asb.innerHTML = asH; asb.dataset.h = asH; } if (asb.hidden === on) asb.hidden = !on; document.body.classList.toggle('asbar', on); }
+    { // Doctrine meters, bottom right of the field
+      const db = $('#docbar'), parts = [];
+      if (G.mods.ks.wildfire) parts.push(`<span class="heat">Road heat <b>${Math.round(G.heat * 100)}%</b><i>/${Math.round(wildHeatCap() * 100)}</i></span>`);
+      if (G.mods.ks.wareco) { const wt = warTier(), st = warStep(); parts.push(`<span class="chest">War chest <b>${wt}/8</b><i>${wt < 8 ? 'next at ' + fmt((wt + 1) * st) : 'full'}</i></span>`); }
+      if (G.mods.ks.marksman) parts.push(`<span class="mark">Marksman <b>+2</b><i>free Overcharge</i></span>`);
+      const h = parts.join(''); if (db && db.dataset.h !== h) { db.innerHTML = h; db.dataset.h = h; db.hidden = !h; }
+    }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) chips.push(`<span class="evchip storm" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}</span>`);
@@ -6469,7 +6574,7 @@ const UI = (() => {
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       <div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>
-      ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · 1 power per step · ${gridUsed()}/${gridCap()} used</div><div class="modes oc">${Array.from({ length: OVERCHARGE.max + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${Math.round(n * OVERCHARGE.dmg * 100)}%` : 'Off'}</button>`).join('')}</div>` : ''}
+      ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · +${Math.round((OVERCHARGE.dmg + FX('msOc') / 100) * 100)}% Damage per step · 1 power each · ${gridUsed()}/${gridCap()} used</div><div class="modes oc">${ocFree(t) ? `<span class="note">Marksman: +${ocFree(t)} free</span>` : ''}${Array.from({ length: ocMax() + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n}` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
       <div class="pfoot">${t.lvl === 3 ? '' : up}
       <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
@@ -6960,7 +7065,8 @@ const UI = (() => {
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
       ['Passive Web', 'Spend points on permanent bonuses. Open it anytime.'],
-      ['Notables', 'Larger nodes with a signature effect that changes how a build plays.'],
+      ['Doctrines', 'Seal a region to adopt its play style: Marksman (few huge guns), Wildfire (the road burns) or War Economy (banked credits arm the core). Each has a cost on the field. You hold 1 seal, 2 from level 75, 3 from level 120.'],
+      ['Notables', 'Larger nodes with a signature effect that changes how a build plays. In a Doctrine region they need its seal.'],
       ['Masteries', 'Choose 1 of 3 effects. Swap freely between runs and at checkpoints.'],
       ['Keystones', 'Powerful nodes with a drawback, on the outer rim and at the ends of the Z-axis.'],
       ['Orbits', 'Rings above and below the galaxy. Each satellite boosts the sector it faces. Rotate to retarget.'],
@@ -7303,7 +7409,7 @@ const UI = (() => {
 const Tree = (() => {
   let cv, c, lb, lc, W = 0, H = 0, dpr = 1, open_ = false, cam = null, goal = null, sel = null, path = null;
   const ptrs = new Map(); let pinch = null, dragMoved = 0, drawer = null, confirmWipe = false, frame = 0, shiftPan = false;
-  const R = { start: 15, small: 7, notable: 12, mastery: 14, keystone: 17, orbit: 13, sat: 11 };
+  const R = { start: 15, small: 7, notable: 12, mastery: 14, keystone: 17, orbit: 13, sat: 11, seal: 15 };
   const PD = 1800, ORB_R = 120, WS = WEB_SCALE, PILX = 1420;
   const DEF = () => flatMode() ? { tx: 0, ty: 40, tz: 0, yaw: 0, pitch: 0.001, zoom: clamp(Math.min(W / 3200, H / 2300), 0.1, 1) } : { tx: 0, ty: 0, tz: 0, yaw: 0.35, pitch: 0.98, zoom: clamp(Math.min(W, H) / 1650, 0.16, 1) };
   let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, camOX = 0, viewT = 1, profOn = false;
@@ -7428,7 +7534,7 @@ const Tree = (() => {
     }
     if (best && sel === best.id) {
       const p = treePathTo(best.id);
-      if (p && p.length && p.length <= pointsFree()) { treeAllocate(best.id); SFX.play('upgrade', {}); }
+      if (p && p.length && p.length <= pointsFree()) { if (treeAllocate(best.id)) SFX.play('upgrade', {}); else { SFX.play('deny'); blockToast(best.id); } }
     }
     sel = best ? best.id : null;
     path = sel ? treePathTo(sel) : null;
@@ -7436,13 +7542,36 @@ const Tree = (() => {
     refresh();
   }
   function inRun() { return !!(G && !G.over); }
+  function blockMsg(id) {
+    const r = treeBlock(id), lv = profLevel().level;
+    if (r.startsWith('seal:')) { const i = +r.slice(5); return `Needs the ${DOCTRINES[i].name} seal first`; }
+    if (r === 'slots') { const nx = SEAL_NEXT(lv); return `You hold ${sealsHeld()} of ${sealSlots(lv)} Doctrine seal${sealSlots(lv) > 1 ? 's' : ''}${nx ? `. Another opens at level ${nx}` : ''}. Refund one to switch`; }
+    return '';
+  }
+  function blockToast(id) { const m = blockMsg(id); if (m) UI.toast('DOCTRINE', m, '#ffb03a', 1); }
+  function docHTML() {
+    const A = new Set(PROF.alloc), lv = profLevel().level, held = sealsHeld(), slots = sealSlots(lv), nx = SEAL_NEXT(lv);
+    const rows = Object.keys(DOCTRINES).map(k => {
+      const i = +k, D = DOCTRINES[i], S = SECTORS[i], on = A.has('d' + i);
+      const ms = [['Seal', 'd' + i], ['Notables', [0, 1, 2].map(c => `c${i}_${c}n`)], ['Mastery', 'x' + i], ['Keystone', 'k' + i], ['Arm', 'w' + i]].map(([nm, id]) => {
+        if (Array.isArray(id)) { const h = id.filter(x => A.has(x)).length; return `<span class="${h === id.length ? 'on' : ''}">${nm} ${h}/${id.length}</span>`; }
+        return `<span class="${A.has(id) ? 'on' : ''}">${nm}${id === 'k' + i ? ': ' + esc(TREE.nodes[id].name) : ''}</span>`; }).join('');
+      return `<div class="docrow ${on ? 'on' : ''}" style="--c:${S.col}"><b>${esc(D.name.toUpperCase())}</b><em>${esc(D.tag)}</em>
+        <ul>${D.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ms">${ms}</div>
+        <button class="btn small" data-tact="docgo" data-v="${i}">${on ? 'Show' : 'Show seal'}</button></div>`; }).join('');
+    return `<div class="ph"><b>Doctrines · ${held}/${slots} sealed</b><button class="x" data-tact="docs">✕</button></div>
+      <p class="note">${tipify(`A Doctrine changes how you play. Take its seal and its notables, mastery, keystone and arm open up. You can hold ${slots}${nx ? `; another seal opens at level ${nx}` : ''}. Refunds are free between runs.`)}</p>
+      ${rows}<p class="note">Voltaic, Cryogenics, Singularity, Zenith and Nadir become Doctrines in a later update. Until then they stay open to everyone.</p>`;
+  }
   function action(act, b) {
     SFX.play('ui');
     switch (act) {
       case 'close': close(); break;
-      case 'alloc': if (treeAllocate(sel)) { SFX.play('upgrade', {}); path = treePathTo(sel); } else SFX.play('deny'); refresh(); break;
+      case 'alloc': if (treeAllocate(sel)) { SFX.play('upgrade', {}); path = treePathTo(sel); } else { SFX.play('deny'); blockToast(sel); } refresh(); break;
       case 'refund': if (treeRefund(sel)) { SFX.play('sell', {}); path = treePathTo(sel); } else SFX.play('deny'); refresh(); break;
       case 'builds': drawer = drawer === 'builds' ? null : 'builds'; refresh(); break;
+      case 'docs': drawer = drawer === 'docs' ? null : 'docs'; refresh(); break;
+      case 'docgo': { const id = 'd' + b.dataset.v, n = TREE.nodes[id]; drawer = null; sel = id; path = treePathTo(id); const [x, y, z] = flatMode() ? posFlat(n) : pos3(n); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85 }; refresh(); break; }
       case 'totals': drawer = drawer === 'totals' ? null : 'totals'; refresh(); break;
       case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('BUILD SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
       case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
@@ -7497,14 +7626,14 @@ const Tree = (() => {
     } else if (!sel) { info.innerHTML = `<p class="note">Drag to rotate · pinch to zoom · two fingers to pan · tap a node twice to allocate</p>`; }
     else {
       const n = TREE.nodes[sel], allocd = PROF.alloc.includes(sel);
-      const kindName = { start: 'Galactic Core', small: n.sector === -2 ? (n.z > 0 ? 'Zenith' : 'Nadir') : 'Passive', notable: n.hybrid ? 'Hybrid Notable' : n.arm ? 'Arm Notable' : 'Notable', mastery: 'Mastery', keystone: n.sector === -2 ? (n.z > 0 ? 'Zenith Keystone' : 'Nadir Keystone') : 'Keystone', orbit: 'Orbit', sat: 'Satellite' }[n.kind];
+      const kindName = { seal: 'Doctrine Seal', start: 'Galactic Core', small: n.sector === -2 ? (n.z > 0 ? 'Zenith' : 'Nadir') : 'Passive', notable: n.hybrid ? 'Hybrid Notable' : n.arm ? 'Arm Notable' : 'Notable', mastery: 'Mastery', keystone: n.sector === -2 ? (n.z > 0 ? 'Zenith Keystone' : 'Nadir Keystone') : 'Keystone', orbit: 'Orbit', sat: 'Satellite' }[n.kind];
       const col = n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
       let act = '';
       if (n.kind === 'start') act = '<span class="note">Starting node</span>';
       else if (!allocd) {
         const p = treePathTo(sel);
         if (!p) act = '<span class="note">Not connected</span>';
-        else act = `<button class="btn primary" data-tact="alloc" ${p.length > free ? 'disabled' : ''}>Allocate · ${p.length} point${p.length > 1 ? 's' : ''}</button>${p.length > free ? `<span class="note">${free} available</span>` : ''}`;
+        else { const bm = blockMsg(sel); act = bm ? `<span class="note lock">${esc(bm)}</span>` : `<button class="btn primary" data-tact="alloc" ${p.length > free ? 'disabled' : ''}>Allocate · ${p.length} point${p.length > 1 ? 's' : ''}</button>${p.length > free ? `<span class="note">${free} available</span>` : ''}`; }
       } else {
         const o = treeOrphans(sel) || [];
         const paid = inRun() && !G.checkpoint;
@@ -7520,6 +7649,8 @@ const Tree = (() => {
         const O = ORBITS[n.id], paid = inRun() && !G.checkpoint;
         extra = `<div class="mopts"><div class="lbl">${allocd ? 'Rotate to retarget' + (paid ? ' · 1 token per turn' : ' · free right now') : 'Allocate to power the ring'}</div>${O.sats.map((S2, k) => { const sn = TREE.nodes[n.id + '_' + k]; return `<div class="mopt ${PROF.alloc.includes(sn.id) ? 'on' : ''}"><b>${esc(S2.name)}</b><span>${tipify(satLines(sn)[0])}</span></div>`; }).join('')}${allocd ? `<div class="rots"><button class="btn" data-tact="rotL" ${paid && G.tokens < 1 ? 'disabled' : ''}>⟲ Rotate</button><button class="btn" data-tact="rotR" ${paid && G.tokens < 1 ? 'disabled' : ''}>Rotate ⟳</button></div>` : ''}</div>`;
       }
+      if (n.need !== undefined) extra += `<div class="mopts"><span class="note ${PROF.alloc.includes('d' + n.need) ? '' : 'lock'}">${PROF.alloc.includes('d' + n.need) ? `Part of the ${esc(DOCTRINES[n.need].name)} Doctrine` : `Locked: needs the ${esc(DOCTRINES[n.need].name)} seal`}</span></div>`;
+      if (n.kind === 'seal') extra += `<div class="mopts"><span class="note">${esc(DOCTRINES[n.doctrine].tag)}. Opens this region's notables, mastery, keystone and arm. Seals held: ${sealsHeld()}/${sealSlots(profLevel().level)}.</span></div>`;
       if (REM_SET().has(n.id)) extra += `<div class="mopts"><span class="note">Kept by your Remnant. Always active, even unallocated.</span></div>`;
       if (n.sat !== undefined) extra = `<div class="mopts"><span class="note">Rotate ${esc(ORBITS[n.orbit].name)} to change which sector this faces.</span></div>`;
       if (n.fx.loadout && allocd) {
@@ -7531,7 +7662,9 @@ const Tree = (() => {
     // drawer
     const dr = $('#tdrawer');
     dr.hidden = !drawer;
-    if (drawer === 'builds') {
+    { const td = $('#tDoc'); if (td) { const on = Object.keys(DOCTRINES).filter(k => PROF.alloc.includes('d' + k)).map(k => DOCTRINES[k].name); td.textContent = on.length ? on.join(' + ') : 'Doctrine'; } }
+    if (drawer === 'docs') dr.innerHTML = docHTML();
+    else if (drawer === 'builds') {
       dr.innerHTML = `<div class="ph"><b>Saved Builds</b><button class="x" data-tact="builds">✕</button></div>
         ${PROF.builds.map((bd, i) => `<div class="slot"><input id="bn${i}" type="text" maxlength="20" placeholder="Build ${i + 1}" value="${bd ? esc(bd.name) : ''}"><small>${bd ? (bd.alloc.length - 1) + ' nodes' : 'Empty'}</small><button class="btn small" data-tact="save" data-v="${i}">Save</button><button class="btn small" data-tact="load" data-v="${i}" ${bd ? '' : 'disabled'}>Load</button></div>`).join('')}
         <p class="note">${inRun() && !G.checkpoint ? 'Loading during a run costs 2 Recalibration tokens. Free at checkpoints.' : 'Loading is free right now.'}</p>
@@ -7745,7 +7878,8 @@ const Tree = (() => {
     camPrep();
     const RS = REM_SET();
     const LW = lb.width, LH = lb.height, A = new Set(PROF.alloc), Pth = new Set(path || []), o = {}, o2 = {};
-    const allocatable = n => !A.has(n.id) && n.adj.some(x => A.has(x));
+    const sealOn = i => A.has('d' + i);
+    const allocatable = n => !A.has(n.id) && n.adj.some(x => A.has(x)) && !(n.need !== undefined && !sealOn(n.need)) && !(n.kind === 'seal' && sealsHeld() >= sealSlots(profLevel().level));
     const pulse = (Math.sin(frame / 10) + 1) / 2;
     lc.setTransform(1, 0, 0, 1, 0, 0);
     lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
@@ -7820,6 +7954,7 @@ const Tree = (() => {
       if (n.kind === 'small') { pxR(p.x - r, p.y - r, r * 2 + 1, r * 2 + 1, edge); if (r > 1) pxR(p.x - r + 1, p.y - r + 1, r * 2 - 1, r * 2 - 1, fill); }
       else if (n.kind === 'keystone') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); if (on) pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
       else if (n.kind === 'mastery') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, Math.max(0, r - 1), fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); }
+      else if (n.kind === 'seal') { pxRing(p.x, p.y, r + 5, on ? '#ffffff' : sh2(col)); pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 2, on ? col : sh2(col)); pxR(p.x - 1, p.y - Math.max(2, r >> 1), 3, Math.max(4, r), on ? '#ffffff' : col); }
       else if (n.kind === 'start') { pxDia(p.x, p.y, r + 2, '#ffe9b0'); pxDia(p.x, p.y, r, '#ffb03a'); pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
       else if (n.kind === 'orbit') { pxRing(p.x, p.y, r + 1, edge); pxRing(p.x, p.y, r, edge); pxDia(p.x, p.y, Math.max(1, r - 3), on ? col : '#151933'); }
       else { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); if (n.kind === 'sat' || n.kind === 'notable') pxRing(p.x, p.y, r + 2, on ? col : sh2(col)); }
@@ -7840,14 +7975,14 @@ const Tree = (() => {
       const p = pos[n.id], rr = R[n.kind] * p.s;
       if (n.kind === 'small' ? rr < 7.5 : rr < 3) continue;
       if (cA > 0.5 && sel !== n.id && n.kind !== 'start') continue;
-      const on = A.has(n.id), pri = (sel === n.id ? 100 : 0) + (on ? 20 : 0) + ({ keystone: 50, mastery: 30, notable: 25, orbit: 35, sat: 22, start: 60, small: 0 }[n.kind]) + (Pth.has(n.id) ? 10 : 0) + p.d * 0.01;
+      const on = A.has(n.id), pri = (sel === n.id ? 100 : 0) + (on ? 20 : 0) + ({ keystone: 50, seal: 55, mastery: 30, notable: 25, orbit: 35, sat: 22, start: 60, small: 0 }[n.kind]) + (Pth.has(n.id) ? 10 : 0) + p.d * 0.01;
       labels.push({ n, x: p.x * 2, y: p.y * 2 + rr + 5, pri, on });
     }
     labels.sort((a, b) => b.pri - a.pri);
     const placed = [];
     c.textAlign = 'center'; c.textBaseline = 'top';
     for (const L of labels) {
-      const n = L.n, fs = n.kind === 'small' ? 10 : n.kind === 'keystone' ? 12 : 11;
+      const n = L.n, fs = n.kind === 'small' ? 10 : n.kind === 'keystone' || n.kind === 'seal' ? 12 : 11;
       c.font = `${fs}px Silkscreen, monospace`;
       const txt = n.name.toUpperCase(), w = c.measureText(txt).width + 6, h = fs + 4;
       const box = { x0: L.x - w / 2, x1: L.x + w / 2, y0: L.y - 2, y1: L.y + h };
@@ -7855,7 +7990,7 @@ const Tree = (() => {
       if (placed.some(q => q.x0 < box.x1 && q.x1 > box.x0 && q.y0 < box.y1 && q.y1 > box.y0)) continue;
       placed.push(box);
       c.fillStyle = 'rgba(4,5,10,0.72)'; c.fillRect(box.x0, box.y0, w, h);
-      c.fillStyle = L.on ? '#ffffff' : n.kind === 'keystone' ? '#ffb03a' : n.col && (n.kind === 'orbit' || n.kind === 'sat') ? n.col : '#a9a7c4';
+      c.fillStyle = L.on ? '#ffffff' : n.kind === 'keystone' || n.kind === 'seal' ? '#ffb03a' : n.col && (n.kind === 'orbit' || n.kind === 'sat') ? n.col : '#a9a7c4';
       c.fillText(txt, L.x, L.y);
     }
     c.font = '12px Silkscreen, monospace';
@@ -7881,7 +8016,7 @@ const Tree = (() => {
   const loaded = Save.loadLocal();
   if (loaded) PROF = loaded;
   const webReset = migrateWeb();
-  if (webReset) { Save.save(); setTimeout(() => UI.toast('PASSIVE WEB REBUILT', 'Fewer, stronger nodes. All your points are refunded.', '#ffb03a'), 900); }
+  if (webReset) { Save.save(); setTimeout(() => UI.toast('PASSIVE WEB REBUILT', 'Doctrines have arrived. All your points are refunded: pick a play style', '#ffb03a'), 900); }
   Render.init($('#cv'));
   Render.onCam = () => UI.zoomChanged && UI.zoomChanged();
   Tree.init();
