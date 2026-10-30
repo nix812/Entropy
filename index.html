@@ -228,7 +228,7 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 #docbar { position: absolute; right: 6px; bottom: 6px; z-index: 4; display: flex; flex-direction: column; gap: 2px; align-items: flex-end; pointer-events: none; }
 #docbar span { background: rgba(7, 8, 15, 0.8); padding: 2px 7px; font-size: 14px; color: #c9c6bc; box-shadow: inset -2px 0 0 var(--c, #ffb03a); }
 #docbar b { font-weight: 400; color: var(--c); margin-left: 4px; } #docbar i { font-style: normal; color: #8a8fa8; margin-left: 4px; font-size: 13px; }
-#docbar .heat { --c: #ff9a3c; } #docbar .chest { --c: #59f0b4; } #docbar .mark { --c: #efe6cf; }
+#docbar .heat { --c: #ff9a3c; } #docbar .chest { --c: #59f0b4; } #docbar .mark { --c: #efe6cf; } #docbar .circ { --c: #ffe14d; } #docbar .ice { --c: #6ae2ff; } #docbar .hor { --c: #b86cff; } #docbar .art { --c: #9fd8ff; } #docbar .gam { --c: #ff5fa8; }
 body.panel-r #docbar { display: none; }
 .note.credits { font-size: 13px; opacity: 0.7; margin-top: 6px; }
 .card.assault { max-height: calc(100vh - 16px); overflow-y: auto; }
@@ -664,7 +664,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.2.1';
+const VERSION = '4.3.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -831,14 +831,14 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.2.1', title: 'Entropy 4.2 · Doctrines', items: [
-  ['Easier Passive Web', 'Zoom into a region and the rest fades back (in 3D the Zenith and Nadir pillars hide), so taps land where you look. Two nodes under one finger? It zooms in instead of guessing. New Undo button, and the Doctrine panel suggests your next goal.'],
-  ['Doctrines', 'Seal a region of the Passive Web to adopt its play style. You hold 1 seal (2 from level 75, 3 from level 120). Its notables, mastery, keystone and arm only open with the seal. Tap Doctrine in the web to compare them and track your build.'],
-  ['Marksman', 'Few towers, enormous shots: a 40% smaller power grid, but every attack tower gets +2 Overcharge free and can go to 5. Targeting lasers show what they hunt.'],
-  ['Wildfire', 'The road burns: burning enemies leave fire behind, Heat builds as more road burns, and towers right next to the fire overheat.'],
-  ['War Economy', 'Money is firepower: banked credits grow turrets on your core, up to 8. Spend and they shrink. Towers cost 20% more.'],
-  ['Points refunded', 'Your passive points are all back. The other regions become Doctrines in a later update and stay open until then.'],
-  ['From 4.1', 'Bigger bosses, and a boss that reaches your core ends the run.']
+const WHATS_NEW = { ver: '4.3.0', title: 'Entropy 4.3 · Every Region a Doctrine', items: [
+  ['Circuit (Voltaic)', 'Towers next to each other wire up and fire faster. Chains of 4+ throw lightning every 4s. But if one tower in a chain is knocked out, the whole chain stalls.'],
+  ['Glacier (Cryogenics)', 'A Frozen enemy becomes an ice block and everything behind it piles up. All towers deal 10% less damage.'],
+  ['Event Horizon (Singularity)', 'Kills open small gravity wells that drag enemies back, and fully Marked enemies get yanked back down the road. Enemies move 12% faster.'],
+  ['Artisan (Zenith)', 'Veterans rank up twice as fast and hit harder with every rank; rerolls are half price. Rookie towers deal 20% less.'],
+  ['Gambler (Nadir)', 'Every wave flips a coin for an extra event, good or bad (always good on boss waves). +25% score, and Entropy fills faster.'],
+  ['All 8 regions', 'Every region now has a seal. The Doctrine panel in the Passive Web compares them all and points you at your next goal.'],
+  ['From 4.2', 'Doctrines, an easier Passive Web with Undo, Marksman, Wildfire and War Economy.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -1065,6 +1065,9 @@ const STAT_TXT = {
   napalmKill: () => 'Thermal kills leave burning ground for 2s', multiA: v => `Arc towers hit +${v} target`,
   freezeImmRed: v => `Enemies can be Frozen again ${v}% sooner`, markVoid: v => `Each Mark adds +${v}% Void damage taken`,
   salvage: () => 'Kills grant +1 credit for every 10 waves reached',
+  cLink: v => `Circuit: +${v}% more Attack Speed per wired neighbour`, cBolt: v => `Circuit: chain lightning deals +${v}% damage`,
+  hPull: v => `Event Horizon: gravity wells pull ${v}% harder`, hWell: v => `Event Horizon: gravity wells reach ${v}% further`,
+  aRank: v => `Artisan: +${v}% more Damage per Veteran rank`, aVxp: v => `Artisan: +${v}% Veteran XP`, gScore: v => `Gambler: +${v}% score`,
   msOc: v => `Marksman: each Overcharge step adds +${v}% more Damage`, wfHeat: v => `Wildfire: Heat can climb ${v}% higher`, wfDur: v => `Wildfire: road fire lasts ${v}% longer`,
   weStep: v => `War Economy: core turrets need ${v}% fewer banked credits`, weTur: v => `War Economy: each core turret adds +${v}% more core Damage`,
   kBurn: v => `Kinetic hits: ${v}% chance to Burn`, chillVoid: v => `Hits on Chilled enemies: ${v}% chance to Mark`,
@@ -1190,6 +1193,21 @@ const DOCTRINES = {
   1: { id: 'wildfire', name: 'Wildfire', tag: 'The road burns', counter: 'wings',
     lines: ['Burning ground enemies set the road on fire', 'Road fire builds Heat during a wave: up to +100% fire damage', 'Towers within 1 tile of burning road overheat: −25% Attack Speed'],
     smalls: [{ wfHeat: 20 }, { wfDur: 20 }] },
+  2: { id: 'circuit', name: 'Circuit', tag: 'Placement is a puzzle', counter: 'shell',
+    lines: ['Attack towers next to each other are wired: +8% Attack Speed per wired neighbour', 'A chain of 4+ wired towers fires a lightning bolt every 4s at the toughest enemy in its reach, for 2s of the whole chain\'s damage', 'If one tower in a chain is disabled or jammed, the whole chain stalls'],
+    smalls: [{ cLink: 2 }, { cBolt: 15 }] },
+  3: { id: 'glacier', name: 'Glacier', tag: 'Hold the line', counter: 'wings',
+    lines: ['A Frozen ground enemy becomes an ice block: enemies behind it pile up and stop', 'Bosses and fliers are never blocked', 'All towers deal 10% less damage'],
+    smalls: [{ freezeDur: 0.15 }, { frozenVuln: 8 }] },
+  4: { id: 'horizon', name: 'Event Horizon', tag: 'Drag them back', counter: 'bulk',
+    lines: ['Every kill opens a small gravity well that drags nearby enemies back down the road', 'Enemies at max Marks are yanked back 1.5 tiles (once each)', 'Enemies move 12% faster'],
+    smalls: [{ hPull: 15 }, { hWell: 15 }] },
+  6: { id: 'artisan', name: 'Artisan', tag: 'Craft a few legends', counter: 'brood', pillar: 'zen',
+    lines: ['Veterans rank up 2× faster and gain +6% Damage per rank', 'Rerolls cost 50% less', 'Towers without a Veteran rank deal 20% less damage'],
+    smalls: [{ aRank: 2 }, { aVxp: 20 }] },
+  7: { id: 'gambler', name: 'Gambler', tag: 'Every wave is a dice roll', counter: '', pillar: 'nad',
+    lines: ['Every wave from Wave 2 flips a coin for an extra event: good or bad (always good on boss waves)', 'Score +25%', 'The Entropy gauge fills 25% faster'],
+    smalls: [{ gScore: 5 }, { gScore: 5 }] },
   5: { id: 'wareco', name: 'War Economy', tag: 'Money is firepower', counter: 'haste',
     lines: ['The core grows a turret for every stack of banked credits (up to 8): +60% core Damage and +8% core Attack Speed each', 'The stack size grows with the wave, so keep banking', 'Towers cost 20% more'],
     smalls: [{ weStep: 6 }, { weTur: 10 }] },
@@ -1291,25 +1309,29 @@ function buildTree() {
     link(`w${i}_1`, `w${i}`);
   });
   // the Z-axis: Zenith above the galactic plane, Nadir below
-  const col = (sign, tag, orbs, ks, smallFx) => {
+  const col = (sign, tag, orbs, ks, smallFx, di) => {
+    const DOC = DOCTRINES[di];
+    if (DOC) { smallFx = smallFx.slice(); smallFx[1] = Object.assign({}, smallFx[1], DOC.smalls[0]); smallFx[3] = Object.assign({}, smallFx[3], DOC.smalls[1]); }
     let prev = 'start', zi = 0;
     const axis = (z, fx) => { const id = `${tag}${zi++}`; add(id, 0, 0, 'small', -2, smallName(fx), fx, { z, col: ORBITS[orbs[0]].col }); link(prev, id); prev = id; };
     axis(sign * 70, smallFx[0]);
+    if (DOC) { add(`d${di}`, 110, 0, 'seal', -2, `${DOC.name} Doctrine`, {}, { z: sign * 70, col: ORBITS[orbs[0]].col, doctrine: di, ks: DOC.id, lines: DOC.lines }); link(`${tag}0`, `d${di}`); }
+    const need = DOC ? { need: di } : {};
     orbs.forEach((oid, oi) => {
       const O = ORBITS[oid];
-      add(oid, 0, 0, 'orbit', -2, O.name, {}, { z: O.z, col: O.col, orbitHub: oid });
+      add(oid, 0, 0, 'orbit', -2, O.name, {}, Object.assign({ z: O.z, col: O.col, orbitHub: oid }, need));
       link(prev, oid); prev = oid;
-      O.sats.forEach((S, k) => { add(`${oid}_${k}`, 0, 0, 'sat', -2, S.name, {}, { z: O.z, col: O.col, orbit: oid, sat: k }); link(oid, `${oid}_${k}`); });
+      O.sats.forEach((S, k) => { add(`${oid}_${k}`, 0, 0, 'sat', -2, S.name, {}, Object.assign({ z: O.z, col: O.col, orbit: oid, sat: k }, need)); link(oid, `${oid}_${k}`); });
       axis(sign * (O.z + (oi ? 70 : 60)), smallFx[1 + oi * 2]);
       if (!oi) axis(sign * (O.z + 120), smallFx[2]);
     });
-    add(`${tag}k`, 0, 0, 'keystone', -2, ks.name, {}, { z: sign * 480, col: ORBITS[orbs[0]].col, ks: ks.ks, lines: ks.lines });
+    add(`${tag}k`, 0, 0, 'keystone', -2, ks.name, {}, Object.assign({ z: sign * 480, col: ORBITS[orbs[0]].col, ks: ks.ks, lines: ks.lines }, need));
     link(prev, `${tag}k`);
   };
   col(1, 'za', ['zo1', 'zo2'], { name: 'Celestial Order', ks: 'celestial', lines: ['Towers roll 2 affixes per build and upgrade', 'Legendary affixes can no longer roll'] },
-    [{ F: 6, I: 4 }, { F: 8 }, { I: 8 }, { F: 6, Tm: 4 }]);
+    [{ F: 6, I: 4 }, { F: 8 }, { I: 8 }, { F: 6, Tm: 4 }], 6);
   col(-1, 'na', ['no1', 'no2'], { name: 'Event Singularity', ks: 'singular', lines: ['Entropy fills 2× faster', 'Each Anomaly grants +10% score instead of +5%', 'You cannot Stabilize'] },
-    [{ P: 6, Tm: 4 }, { Tm: 8 }, { P: 8 }, { P: 6, F: 4 }]);
+    [{ P: 6, Tm: 4 }, { Tm: 8 }, { P: 8 }, { P: 6, F: 4 }], 7);
   // spread the disk out for phone-sized tap targets
   for (const id in nodes) { const n = nodes[id]; if (n.sector !== -2) { n.x *= WEB_SCALE; n.y *= WEB_SCALE; } }
   // slight thickness so the disk reads as 3D when tilted
@@ -1638,6 +1660,8 @@ function computeMods(alloc, runMods) {
   if (ks.chaos) M.affixLuck += 1.5;
   if (ks.prismatic) M.dmg *= 0.9;
   if (ks.unbreakable) M.dmg *= 0.9;
+  if (ks.glacier) M.dmg *= 0.9;
+  for (const [k2, d2] of [['cLink', 'circuit'], ['cBolt', 'circuit'], ['hPull', 'horizon'], ['hWell', 'horizon'], ['aRank', 'artisan'], ['aVxp', 'artisan'], ['gScore', 'gambler']]) if (!ks[d2]) delete m[k2];
   if (!ks.marksman) delete m.msOc; if (!ks.wildfire) { delete m.wfHeat; delete m.wfDur; } if (!ks.wareco) { delete m.weStep; delete m.weTur; }
   M.raw = m;
   return M;
@@ -2059,8 +2083,9 @@ function newRun(opts) {
   };
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
   G.laws = opts.daily ? [] : (PROF.laws || []).slice(); G.novaN = opts.daily ? 0 : PROF.nova || 0;
-  G.af = computeAf([]); G.scoreMult = 1 + G.af.score;
+  G.af = computeAf([]);
   G.mods = computeMods(PROF.alloc, anomMods());
+  G.scoreMult = 1 + G.af.score + gamblerScore();
   const M = G.mods, sw = G.startWave;
   G.core = { x: G.map.core.x + 0.5, y: G.map.core.y + 0.5, hp: M.coreHP * G.af.coreHPx, max: M.coreHP * G.af.coreHPx, shield: M.shield, smax: M.shield,
     sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
@@ -2122,7 +2147,7 @@ function anomMods() {
 function recomputeAll() {
   if (!G) return;
   G.af = computeAf(G.anoms);
-  G.scoreMult = 1 + G.af.score + 0.1 * G.stabilized;
+  G.scoreMult = 1 + G.af.score + 0.1 * G.stabilized + gamblerScore();
   const M = G.mods = computeMods(PROF.alloc, anomMods());
   const c = G.core;
   if (!c.A) coreAffSum(c);
@@ -2147,7 +2172,7 @@ function upgradeCost(t) {
   return Math.round(TOWERS[t.type].cost * LV_COST[t.lvl + 1] * x);
 }
 function rerollCost(t) {
-  return Math.round(TOWERS[t.type].cost * 0.35 * (1 + t.rerolls * 0.5) * (G.rerollDisc ? 0.5 : 1));
+  return Math.round(TOWERS[t.type].cost * 0.35 * (1 + t.rerolls * 0.5) * (G.rerollDisc ? 0.5 : 1) * (G.mods.ks.artisan ? 0.5 : 1));
 }
 const towerPool = type => TOWERS[type].kind === 'support' || TOWERS[type].kind === 'snare' ? 'pylon' : TOWERS[type].kind === 'eco' ? 'forge' : 'atk';
 function rollTier(forceTier, luckBonus, minTier) {
@@ -2388,6 +2413,7 @@ function towerStats(t) {
   s.ground = !!D.ground;
   const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
   if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
+  if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.06 + FX('aRank') / 100) * t.rank : 0.8;
   return s;
 }
 function recomputeAuras() {
@@ -2407,6 +2433,20 @@ function recomputeAuras() {
     }
     t.reson = Math.min(4, els.size + ((G.mods.orb && G.mods.orb.reson[t.s.el]) || 0));
     t.buff.dmg += RESON_DMG * t.reson;
+  }
+  // Circuit: attack towers in neighbouring tiles are wired; wired groups form chains
+  G.chains = [];
+  for (const t of G.towers) { t.wires = []; t.chain = null; }
+  if (G.mods.ks.circuit) {
+    const att = G.towers.filter(t => canOvercharge(t));
+    for (const t of att) for (const o of att) if (o !== t && Math.abs(o.x - t.x) <= 1 && Math.abs(o.y - t.y) <= 1) t.wires.push(o);
+    for (const t of att) { t.buff.rate += (0.08 + FX('cLink') / 100) * Math.min(4, t.wires.length); }
+    for (const t of att) {
+      if (t.chain || !t.wires.length) continue;
+      const ch = { m: [], t: 4 }, q = [t]; t.chain = ch;
+      while (q.length) { const c = q.pop(); ch.m.push(c); for (const o of c.wires) if (!o.chain) { o.chain = ch; q.push(o); } }
+      G.chains.push(ch);
+    }
   }
   G.pylons = G.towers.filter(t => t.s.kind === 'support');
   G.forges = G.towers.filter(t => t.s.kind === 'eco');
@@ -2597,7 +2637,7 @@ function updateStorms(dt) {
 // ---------- waves ----------
 function rollEvents(w) {
   const ev = {}, list = [];
-  if (w < 5) return { ev, list };
+  if (w < 5 && !(G.mods && G.mods.ks.gambler && w >= 2)) return { ev, list };
   const maxN = 1 + Math.floor(w / 18);
   let chance = Math.min(0.85, (0.28 + w * 0.012) * G.CH.ev);
   for (let i = 0; i < maxN; i++) {
@@ -2608,6 +2648,9 @@ function rollEvents(w) {
     ev[E.id] = 1; list.push(E);
     chance *= 0.6;
   }
+  // Gambler: one more roll of the dice every wave
+  // a fair coin: good or bad, and always good on a boss wave (a breach ends the run)
+  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
   return { ev, list };
 }
 function prepareWave(w) {
@@ -2823,6 +2866,10 @@ function readDefence(w, jitter) {
   if (K.marksman) add('brood', 0.5, 'you rely on a few big guns, so it comes in numbers');
   if (K.wildfire) add('wings', 0.55, 'your fire only burns the road, so it flies over it');
   if (K.wareco) add('haste', 0.45, 'it wants to reach your core before the war chest fills');
+  if (K.circuit) add('shell', 0.45, 'its shields soak your chain lightning');
+  if (K.glacier) add('wings', 0.5, 'fliers skip your ice jams');
+  if (K.horizon) add('bulk', 0.45, 'heavy bodies shrug off your gravity');
+  if (K.artisan) add('brood', 0.45, 'you trust a few crafted towers, so it comes in numbers');
   const last = G.stats.assaults && G.stats.assaults.list.length ? G.stats.assaults.list[G.stats.assaults.list.length - 1] : null;
   if (last && last.won && last.genes) for (const o of out) if (last.genes.includes(o.g)) o.score *= 0.4;
   if (jitter) for (const o of out) o.score *= 0.85 + G.r() * 0.3;
@@ -3028,7 +3075,9 @@ function updateWaves(dt) {
 
 // ---------- entropy & anomalies ----------
 const entropyNeed = () => 100 * (1 + 0.3 * (G.anoms.length + G.stabilized));
+const gamblerScore = () => G && G.mods && G.mods.ks.gambler ? 0.25 + FX('gScore') / 100 : 0;
 function addEntropy(v) {
+  if (G && G.mods && G.mods.ks.gambler) v *= 1.25;
   if (!G || G.over || G.anomOffers) return;
   // the gauge shows percent of the current threshold; each draw raises the threshold
   G.entropy = Math.min(100, G.entropy + 100 * v / entropyNeed() * (G.af.fill ? 2 : 1) * (G.mods.ks.singular ? 2 : 1) * Math.sqrt(G.CH.ev));
@@ -3067,6 +3116,7 @@ function stabilize() {
 function grantVxp(t, v) {
   if (!t || t.vxp === undefined) return;
   const vb = G.mods.orb && G.mods.orb.vxp[t.s.el]; if (vb) v *= 1 + vb / 100;
+  if (G.mods.ks.artisan) v *= 2 * (1 + FX('aVxp') / 100);
   t.vxp += v;
   const had = t.pending, r0 = t.rank;
   while (t.vxp >= vetThreshold(t.rank + 1)) {
@@ -3243,6 +3293,24 @@ function enemySlow(e) {
 }
 function updateEnemies(dt) {
   const ev = G.ev, M = G.mods;
+  // Event Horizon: gravity wells drag ground enemies back down the road
+  if (G.wells && G.wells.length) {
+    const pull = 2.6 * (1 + FX('hPull') / 100);
+    for (const w of G.wells) { w.t -= dt; for (const e of G.enemies) if (!e.dead && !e.boss && !e.fly && dist2(e.x, e.y, w.x, w.y) <= w.r * w.r) e.d = Math.max(0, e.d - pull * dt); }
+    G.wells = G.wells.filter(w => w.t > 0);
+  }
+  // Glacier: Frozen ground enemies are ice blocks; whoever walks up behind them stops (and becomes part of the jam)
+  for (const e of G.enemies) e.jammed = false;
+  if (M.ks.glacier) {
+    const byL = new Map();
+    for (const e of G.enemies) if (!e.dead && !e.fly && !e.boss) { const a = byL.get(e.L) || []; a.push(e); byL.set(e.L, a); }
+    for (const arr of byL.values()) {
+      if (!arr.some(e => e.st.frozen > 0)) continue;
+      arr.sort((a, b) => b.d - a.d);
+      let wall = null;
+      for (const e of arr) { if (e.st.frozen > 0) { wall = e.d; continue; } if (wall !== null && wall - e.d < 0.55) { e.jammed = true; wall = e.d; } else wall = null; }
+    }
+  }
   // gravity fields
   for (const e of G.enemies) e.fieldSlow = 0;
   for (const t of G.towers) {
@@ -3320,6 +3388,8 @@ function updateEnemies(dt) {
       if (ev.surge) spd *= 1.35;
       spd *= 1 + sw.haste + (G.af.haste || 0) + (sw.inStorm ? 0.12 + (G.af.magnet ? 0.2 : 0) : 0);
       if (G.af.groundSlow && !e.fly) spd *= 1 - G.af.groundSlow;
+      if (M.ks.horizon) spd *= 1.12;
+      if (e.jammed) spd = 0;
       spd *= netK;
       if (G.slime && G.slime.length && e.boss !== 'snail') for (const p of G.slime) if (p.L === e.L && Math.abs(p.d - e.d) < 0.4) { spd *= 1.4; break; }
       e.slow = 1 - spd / e.spd;
@@ -3648,6 +3718,7 @@ function applyStatuses(e, dmg, el, src, o) {
     if (s.stun && r() < s.stun && !jugg) st.stun = Math.max(st.stun, e.boss ? 0.2 : 0.6);
   }
   if (markP > 0 && r() < markP) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
+  if (M.ks.horizon && st.mark >= M.markMax && !e.yanked && !e.boss && !e.fly) { e.yanked = 1; e.d = Math.max(0, e.d - 1.5); Hooks.fx('implode', { x: e.x, y: e.y, r: 0.8 }); }
   if (M.chillVoid && st.chill > 0 && r() < M.chillVoid / 100) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
   if (M.knock && r() < M.knock && !jugg) { e.d = Math.max(0, e.d - (e.boss ? 0.15 : 0.5)); if (FX('knockMark')) { st.mark = Math.min(M.markMax, st.mark + 2); st.markT = 4; } }
   if (s.stunDur && s.kind === 'mortar' && !jugg) st.stun = Math.max(st.stun, s.stunDur * (e.boss ? 0.3 : 1));
@@ -3675,6 +3746,7 @@ function milestone() {
   Hooks.sfx('milestone');
 }
 function kill(e, src, o) {
+  if (G.mods.ks.horizon && !e.dead && (G.wells || (G.wells = [])).length < 24) { G.wells.push({ x: e.x, y: e.y, r: 1.2 * (1 + FX('hWell') / 100), t: 0.6 }); if (Math.random() < 0.35) Hooks.fx('implode', { x: e.x, y: e.y, r: 1.2 }); }
   if (e.dead) return;
   e.dead = true; e.hp = 0;
   geneRecord(e, false); assaultHit(e, false);
@@ -3838,6 +3910,19 @@ function updateTowers(dt) {
   if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} deals ×2`, EL[G.flux.el].col); } }
   let burning = 0;
   if (FX('heatSink')) for (const e of G.enemies) if (!e.dead && e.st.burn) burning++;
+  // Circuit: a disabled tower stalls its whole chain; chains of 4+ throw lightning
+  if (M.ks.circuit && G.chains) for (const ch of G.chains) {
+    if (ch.m.some(m => m.disabled > 0 && !m.stalled)) for (const m of ch.m) if (!(m.disabled > 0)) { m.disabled = 0.8; m.stalled = true; }
+    if (ch.m.length < 4 || !G.enemies.length) continue;
+    ch.t -= dt; if (ch.t > 0) continue; ch.t = 4;
+    if (ch.m.some(m => m.disabled > 0)) continue;
+    let best = null;
+    for (const e of G.enemies) if (enemyTargetable(e) && (!best || e.hp > best.hp) && ch.m.some(m => dist2(m.cx, m.cy, e.x, e.y) <= (m.s.range + 0.5) ** 2)) best = e;
+    if (!best) { ch.t = 0.5; continue; }
+    const pow = ch.m.reduce((a, m) => a + m.s.dmg * m.s.rate, 0) * 2 * (1 + FX('cBolt') / 100);
+    Hooks.fx('rail', { x1: best.x, y1: -1, x2: best.x, y2: best.y, col: '#ffe14d', crit: 1 }); Hooks.sfx('zap');
+    hit(best, pow, 'A', ch.m[0], { abil: 1 });
+  }
   // Wildfire: towers within 1 tile of burning road overheat (checked 4× a second)
   if (M.ks.wildfire) { G.hotClock = (G.hotClock || 0) - dt; if (G.hotClock <= 0) { G.hotClock = 0.25; const fires = G.zones.filter(z => z.k === 'roadfire'); for (const t of G.towers) { t.hot = false; for (const z of fires) if (dist2(t.cx, t.cy, z.x, z.y) <= (1 + z.r) * (1 + z.r)) { t.hot = true; break; } } } }
   if (FX('thunder') && G.enemies.length) {
@@ -3853,7 +3938,7 @@ function updateTowers(dt) {
     t.flash = Math.max(0, t.flash - dt);
     const s = t.s;
     if (s.kind === 'support' || s.kind === 'eco' || s.kind === 'snare') continue;
-    if (t.disabled > 0) { t.disabled -= dt; t.ramp = 0; t.beamTargets = null; continue; }
+    if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) t.stalled = false; t.ramp = 0; t.beamTargets = null; continue; }
     const sw = stormAt(t.cx, t.cy);
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
@@ -5302,6 +5387,7 @@ const Render = (() => {
       R(b, X + 4, Y + 2, 1, 5, sc); R(b, X + 2, Y + 4, 5, 1, sc); P(b, X + 4, Y + 4, '#ffffff');
     }
     if (t.disabled > 0) for (let i = 0; i < 14; i++) R(b, X + 2 + Math.random() * 19, Y + 2 + Math.random() * 19, 2, 1, i % 2 ? '#ffffff' : '#5a5a7a');
+    if (G.mods.ks.circuit && t.wires && t.wires.length) { for (const o of t.wires) if (o.id > t.id || (o.id === undefined && o.x + o.y * 1000 > t.x + t.y * 1000)) { const live = t.chain && t.chain.m.length >= 4; b.strokeStyle = live ? (frame % 20 < 10 ? 'rgba(255,225,77,0.85)' : 'rgba(255,240,170,0.6)') : 'rgba(255,225,77,0.4)'; b.lineWidth = 1; b.beginPath(); b.moveTo(X + 12, Y + 12); b.lineTo(o.x * TILE + 12, o.y * TILE + 12); b.stroke(); } }
     if (t.hot && G.mods.ks.wildfire && frame % 6 < 4) { for (let k = 0; k < 3; k++) { const hx = X + 5 + ((frame >> 2) * 7 + k * 6) % 14, hy = Y + 2 - ((frame + k * 5) % 8); P(b, hx, hy, k % 2 ? '#ff9a3c' : '#ffd28a'); } }
     if (G.mods.ks.marksman && t.s && canOvercharge(t) && t.aimT !== undefined && G.time - t.aimT < 0.7 && t.angle !== undefined) { const L = (t.effRange || t.s.range || 2) * TILE; b.strokeStyle = 'rgba(255,77,106,0.35)'; b.lineWidth = 1; b.beginPath(); b.moveTo(X + 12, Y + 12); b.lineTo(X + 12 + Math.cos(t.angle) * L, Y + 12 + Math.sin(t.angle) * L); b.stroke(); P(b, Math.round(X + 12 + Math.cos(t.angle) * L), Math.round(Y + 12 + Math.sin(t.angle) * L), '#ff4d6a'); }
     if (G.wave > 1 && idleWaves(t) >= 2) { // sleeping: two little pixel Zs drift up from the corner
@@ -6286,6 +6372,11 @@ const UI = (() => {
       if (G.mods.ks.wildfire) parts.push(`<span class="heat">Road heat <b>${Math.round(G.heat * 100)}%</b><i>/${Math.round(wildHeatCap() * 100)}</i></span>`);
       if (G.mods.ks.wareco) { const wt = warTier(), st = warStep(); parts.push(`<span class="chest">War chest <b>${wt}/8</b><i>${wt < 8 ? 'next at ' + fmt((wt + 1) * st) : 'full'}</i></span>`); }
       if (G.mods.ks.marksman) parts.push(`<span class="mark">Marksman <b>+2</b><i>free Overcharge</i></span>`);
+      if (G.mods.ks.circuit) { const ch = G.chains || [], big = ch.reduce((a, c) => Math.max(a, c.m.length), 0); parts.push(`<span class="circ">Chains <b>${ch.length}</b><i>longest ${big}${big >= 4 ? ' · lightning' : ' · need 4'}</i></span>`); }
+      if (G.mods.ks.glacier) { const j = G.enemies.filter(e => e.jammed).length; parts.push(`<span class="ice">Ice jam <b>${j}</b><i>held</i></span>`); }
+      if (G.mods.ks.horizon) parts.push(`<span class="hor">Gravity wells <b>${(G.wells || []).length}</b></span>`);
+      if (G.mods.ks.artisan) { const at = G.towers.filter(t => canOvercharge(t)), v = at.filter(t => t.rank > 0).length; parts.push(`<span class="art">Veterans <b>${v}/${at.length}</b><i>rookies −20%</i></span>`); }
+      if (G.mods.ks.gambler) parts.push(`<span class="gam">Gambler <b>×${num1(G.scoreMult || 1)}</b><i>score</i></span>`);
       const h = parts.join(''); if (db && db.dataset.h !== h) { db.innerHTML = h; db.dataset.h = h; db.hidden = !h; }
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
@@ -7433,6 +7524,7 @@ const Tree = (() => {
   function posFlat(n) {
     if (n.sector !== -2) return [n.x, n.y, 0];
     const side = n.z > 0 ? 1 : -1, px = side * PILX, py = 330 - Math.abs(n.z) * 1.45;
+    if (n.kind === 'seal') return [px + 150, py, 0];
     if (n.sat !== undefined) { const a = satAngle(n); return [px + Math.cos(a) * ORB_R * 0.9, py + Math.sin(a) * ORB_R * 0.55, 0]; }
     return [px, py, 0];
   }
@@ -7565,18 +7657,18 @@ const Tree = (() => {
   function docHTML() {
     const A = new Set(PROF.alloc), lv = profLevel().level, held = sealsHeld(), slots = sealSlots(lv), nx = SEAL_NEXT(lv);
     const rows = Object.keys(DOCTRINES).map(k => {
-      const i = +k, D = DOCTRINES[i], S = SECTORS[i], on = A.has('d' + i);
-      const ms = [['Seal', 'd' + i], ['Notables', [0, 1, 2].map(c => `c${i}_${c}n`)], ['Mastery', 'x' + i], ['Keystone', 'k' + i], ['Arm', 'w' + i]].map(([nm, id]) => {
+      const i = +k, D = DOCTRINES[i], pil = D.pillar, S = pil ? { col: pil === 'zen' ? '#9fd8ff' : '#ff5fa8' } : SECTORS[i], on = A.has('d' + i), pt = pil === 'zen' ? 'z' : 'n';
+      const ms = (pil ? [['Seal', 'd' + i], ['Orbit I', pt + 'o1'], ['Orbit II', pt + 'o2'], ['Keystone', pt + 'ak']] : [['Seal', 'd' + i], ['Notables', [0, 1, 2].map(c => `c${i}_${c}n`)], ['Mastery', 'x' + i], ['Keystone', 'k' + i], ['Arm', 'w' + i]]).map(([nm, id]) => {
         if (Array.isArray(id)) { const h = id.filter(x => A.has(x)).length; return `<span class="${h === id.length ? 'on' : ''}">${nm} ${h}/${id.length}</span>`; }
-        return `<span class="${A.has(id) ? 'on' : ''}">${nm}${id === 'k' + i ? ': ' + esc(TREE.nodes[id].name) : ''}</span>`; }).join('');
+        return `<span class="${A.has(id) ? 'on' : ''}">${nm}${TREE.nodes[id].kind === 'keystone' ? ': ' + esc(TREE.nodes[id].name) : ''}</span>`; }).join('');
       return `<div class="docrow ${on ? 'on' : ''}" style="--c:${S.col}"><b>${esc(D.name.toUpperCase())}</b><em>${esc(D.tag)}</em>
         <ul>${D.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ms">${ms}</div>
         ${(() => { if (!on) return `<button class="btn small" data-tact="docgo" data-n="d${i}">Show seal</button>`;
-          const goals = ['c' + i + '_0n', 'c' + i + '_1n', 'c' + i + '_2n', 'x' + i, 'k' + i, 'w' + i].filter(id => !A.has(id)).map(id => ({ id, p: treePathTo(id) })).filter(g => g.p && !treeBlock(g.id, g.p)).sort((a, b) => a.p.length - b.p.length);
+          const goals = (pil ? [pt + 'o1', pt + 'o2', pt + 'ak'] : ['c' + i + '_0n', 'c' + i + '_1n', 'c' + i + '_2n', 'x' + i, 'k' + i, 'w' + i]).filter(id => !A.has(id)).map(id => ({ id, p: treePathTo(id) })).filter(g => g.p && !treeBlock(g.id, g.p)).sort((a, b) => a.p.length - b.p.length);
           return goals.length ? `<button class="btn small primary" data-tact="docgo" data-n="${goals[0].id}">Next: ${esc(TREE.nodes[goals[0].id].name)} · ${goals[0].p.length} pt${goals[0].p.length > 1 ? 's' : ''}</button>` : '<span class="note">Doctrine complete</span>'; })()}</div>`; }).join('');
     return `<div class="ph"><b>Doctrines · ${held}/${slots} sealed</b><button class="x" data-tact="docs">✕</button></div>
       <p class="note">${tipify(`A Doctrine changes how you play. Take its seal and its notables, mastery, keystone and arm open up. You can hold ${slots}${nx ? `; another seal opens at level ${nx}` : ''}. Refunds are free between runs.`)}</p>
-      ${rows}<p class="note">Voltaic, Cryogenics, Singularity, Zenith and Nadir become Doctrines in a later update. Until then they stay open to everyone.</p>`;
+      ${rows}<p class="note">Hybrid notables between sectors and the three outer keystones stay open to everyone.</p>`;
   }
   function action(act, b) {
     SFX.play('ui');
