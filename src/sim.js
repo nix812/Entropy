@@ -802,7 +802,7 @@ function canBuildAt(x, y) {
 }
 // ---------- Snare Beacons: lure fliers off their straight line into a net ----------
 function lure(e) {
-  if (!e.fly || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
+  if (!e.fly || e.boss || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
   const cx = G.core.x, cy = G.core.y, dx = cx - e.x, dy = cy - e.y, L2 = dx * dx + dy * dy || 1;
   let best = null, bd = 1e9;
   for (const t of G.snares) {
@@ -1351,7 +1351,8 @@ function genWave(w, ev) {
     if (isBoss && n >= Math.floor(count / 2) && !q.some(e => e.boss)) {
       const B = nextBoss(w, r);
       t += 1.5;
-      let bl = laneFor(); if (bl === rift || B.fly) bl = lanes[0];
+      // v4.4: bosses always take the longest open road. A boss on a fresh 15-tile wormhole lane reached the core in 25 s (lethal, and luck)
+      const bl = lanes.reduce((a, L) => (L.len > a.len ? L : a), lanes[0]);
       q.push({ t, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0 });
       t += 2;
     }
@@ -1511,7 +1512,7 @@ function startWave() {
     if (!A.n) { A.state = 'done'; G.assaultNext = w + assaultEvery(); } // nothing converted (tiny wave): try again later
     else { // size it to your firepower: at least 1.3x normal HP
       let base = 0; for (const q of G.queue) if (q.assault) base += ENEMIES[q.type].hp * (q.hpm || 1) * (q.genes.includes('bulk') ? GENES.bulk.hp : 1);
-      const fire = Math.max(G.power || 0, potentialDps() * 0.5);
+      const fire = bossFire();
       A.hpx = Math.max(ASSAULT.minHp, base > 0 ? fire * ASSAULT.secs / base : 1);
     }
   }
@@ -1655,8 +1656,10 @@ function updateWaves(dt) {
       Hooks.sfx('milestone'); Hooks.onCheckpoint(G.checkpoint);
       return;
     }
-    G.next -= dt;
-    if (G.next <= 0) startWave();
+    // v4.4: while a boss is still walking, the swarm hangs back: the countdown runs at a third speed, for up to 45 s (BOSS_HOLD)
+    const bossUp = G.enemies.some(e => e.boss && !e.gen && !e.dead);
+    if (bossUp && (G.bossHold = (G.bossHold || 0) + dt) < BOSS_HOLD) G.next -= dt / 3; else G.next -= dt;
+    if (G.next <= 0) { G.bossHold = 0; startWave(); }
     return;
   }
   G.spawnClock += dt;
@@ -1824,8 +1827,11 @@ function spawnEnemy(type, q) {
 }
 // v2.2 boss health: the larger of a fixed curve and the defence's recent peak damage output (G.power) times
 // BOSS_SECS(w). The fixed curve keeps bosses meaningful for weak builds; the power part stops strong builds melting them.
-const BOSS_HPX = [[10, 3], [20, 3.5], [40, 3], [60, 2]];
+// v4.4: the early floor was ×3/×3.5 and ignored firepower, so fresh profiles lost 7 runs in 12 to the Wave 10–20 boss (a breach is lethal). Lowered.
+const BOSS_HPX = [[10, ENVN('BHX10', 2)], [20, ENVN('BHX20', 2.5)], [40, 3], [60, 2]];
 const bossHpX = w => { const P = BOSS_HPX; if (w <= P[0][0]) return P[0][1]; for (let i = 1; i < P.length; i++) if (w <= P[i][0]) { const [a, va] = P[i - 1], [b, vb] = P[i]; return va + (vb - va) * (w - a) / (b - a); } return P[P.length - 1][1]; };
+// the firepower bosses and assaults are sized to: half the stat potential at least, the measured peak at most twice it
+function bossFire() { const pot = potentialDps(); return Math.max(pot * 0.5, Math.min(G.power || 0, pot * 2)); }
 // seconds of your real firepower a boss should soak. v3.1: firepower = the larger of measured peak (G.power, accurate late)
 // and half the stat-based potential (potentialDps, accurate early when small waves never let towers fire flat out)
 // v4.1: a breach ends the run, so bosses carry less health than in 4.0 (36/30 s): ×0.65 before Wave 45, ×0.8 after (BSEC/BSEC2 for tests)
@@ -1848,11 +1854,16 @@ function nextBoss(w, r) {
 function spawnBoss(q) {
   const B = BOSSES.find(b => b.id === q.boss), w = G.wave;
   const lane = q.lane, gen = q.gen || 0;
-  const L = q.L || (B.fly ? lane.fly : lane);
+  // v4.4: flying bosses skim the road instead of cutting straight to the core. The straight line often crossed no tower at all,
+  // and with a lethal breach that was a coin flip on the map, not a fight (3 of 12 fresh runs died to the Wave 10 Hive Queen).
+  // They still fly: Flame, Gravity Well and ice jams can't touch them, and Snare Beacons don't lure them.
+  const L = q.L || lane;
   const base = 30 * B.hp * q.hpm * bossHpX(w) * (1 + Math.floor((w - 1) / 50) * 0.5);
-  // flying bosses take the short line straight into your densest fire, so they get 30% more
-  const fire = Math.max(G.power || 0, potentialDps() * 0.5);
-  const hp = q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (B.fly ? 1.3 : 1) * (1 + ((G.af && G.af.bossHP) || 0));
+  // v4.4: measured power is capped at twice the stat-based potential. The peak came from crowd damage (splash, Collapse's
+  // %-of-max-HP, chain combos) that a lone boss never takes; one Wave 40 whale was sized at 18M HP and could not be killed.
+  // Flying bosses no longer carry +30%: their straight line is usually *away* from the road towers, not into them.
+  const fire = bossFire();
+  const hp = q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (1 + ((G.af && G.af.bossHP) || 0));
   const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
     armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 1.15, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
@@ -1874,12 +1885,11 @@ function spawnBoss(q) {
   lanePos(e.L, e.d, e);
   G.enemies.push(e);
   if (!G.bossAlive || G.bossAlive.dead) G.bossAlive = e;
-  if (e.fly) lure(e);
   if (gen) return e;
   const ttl = B.titles ? B.titles[Math.floor(G.r() * B.titles.length)] : null;
   if (ttl) { e.bossTitle = ttl; Hooks.fx('say', { x: e.x, y: e.y, t: B.id === 'cat' ? 'mrrp.' : B.id === 'duck' ? 'QUACK' : B.id === 'whale' ? 'HELLOOOO' : B.id === 'fsm' ? 'ramen.' : 'blorp' }); }
   Hooks.bossIntro(e, B);
-  rlog('boss', { id: B.id, hp: Math.round(e.maxHp), fire: Math.round(Math.max(G.power || 0, potentialDps() * 0.5)) });
+  rlog('boss', { id: B.id, hp: Math.round(e.maxHp), fire: Math.round(bossFire()) });
   if (ttl) Hooks.log(`${B.name}, ${ttl}: ${B.desc}`, '#ff4d6a');
   Hooks.log(`${B.name} incoming`, '#ff4d6a');
   Hooks.sfx('boss');
@@ -2013,8 +2023,14 @@ function updateEnemies(dt) {
       if (e.d >= e.L.len - 0.05) { e.dead = true; if (P.got && P.cache) Hooks.log('Pirates escaped with the salvage', '#ff4d6a'); }
       continue;
     }
+    // Red Alert (v4.4): a boss closing on the core is called out once, and the core goes to Last Stand against it
+    if (e.boss && !e.gen && !e.redAlert && !e.dead) {
+      const rem = e.L.len - e.d;
+      if (rem <= RED_ALERT.tiles) { e.redAlert = 1; rlog('redAlert', { id: e.boss, hp: +(e.hp / e.maxHp).toFixed(2) }); Hooks.toast('RED ALERT', `${e.bossName} is ${Math.max(1, Math.ceil(rem))} tiles from the core. Last Stand: core shells hit it ×${RED_ALERT.coreDmg}. Stasis, Strike and Overcharge now`, '#ff4d6a', true); Hooks.sfx('bosswarn'); Hooks.fx('shake', { v: 6 }); Hooks.log(`Red Alert: ${e.bossName} at the gate`, '#ff4d6a'); }
+    }
     if (e.d >= e.L.len - 0.05) leak(e);
   }
+  G.redAlert = G.enemies.some(e => e.boss && e.redAlert && !e.dead);
   if (G.stasisT > 0) G.stasisT -= dt;
   if (G.slime && G.slime.length) { for (const p of G.slime) p.t -= dt; G.slime = G.slime.filter(p => p.t > 0); }
   G.enemies = G.enemies.filter(e => !e.dead);
@@ -2052,7 +2068,8 @@ function wormSurface(e) {
   const frac = Math.min(0.75, e.d / e.L.len + 0.04 + G.r() * 0.05); // never pops up right on top of the core
   const lanes = G.map.lanes.filter(L => !L.openWave);
   if (lanes.length > 1 && G.r() < 0.35) e.L = pick(G.r, lanes);
-  e.d = Math.max(e.d, frac * e.L.len); lanePos(e.L, e.d, e);
+  // the same share of the road on whichever lane it surfaces in (keeping the old distance on a shorter lane dropped it into the core)
+  e.d = frac * e.L.len; e.seg = 0; lanePos(e.L, e.d, e);
   Hooks.fx('burrow', { x: e.x, y: e.y }); Hooks.fx('shake', { v: 5 });
   const n = e.frenzy ? 2 : 1;
   const near = G.towers.filter(t => dist2(t.cx, t.cy, e.x, e.y) <= 3.2 * 3.2).sort((a, b) => dist2(a.cx, a.cy, e.x, e.y) - dist2(b.cx, b.cy, e.x, e.y));
@@ -2228,6 +2245,7 @@ function hit(e, dmg, el, src, o) {
     if (src.isolated && M.loneWolf) mult *= 1 + M.loneWolf;
   }
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
+  if (src === G.core && e.redAlert && e.boss) mult *= RED_ALERT.coreDmg; // Last Stand: the core unloads on a boss at its gate
   let amt = dmg * mult;
   if (e.shield > 0) {
     const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
@@ -2885,11 +2903,11 @@ function updateCore(dt) {
   if (c.sinceHit > 4 && c.shield < c.smax) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
   const s = coreStats();
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
-  c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1);
+  c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1) * (G.redAlert ? RED_ALERT.coreRate : 1);
   if (c.cd > 0) return;
   // last line of defence: shells go to whatever is closest to reaching the core along its route, anywhere in range
   const r2 = s.range * s.range, near = [];
-  for (const e of G.enemies) if (enemyTargetable(e)) { const d = dist2(e.x, e.y, c.x, c.y); if (d < r2) near.push([e.fly || !e.L ? Math.sqrt(d) : e.L.len - e.d, e]); }
+  for (const e of G.enemies) if (enemyTargetable(e)) { const d = dist2(e.x, e.y, c.x, c.y); if (d < r2) near.push([(e.fly && !e.boss) || !e.L ? Math.sqrt(d) : e.L.len - e.d, e]); }
   if (!near.length) { c.cd = 0; return; }
   c.cd += 1;
   near.sort((a, b) => a[0] - b[0]);

@@ -184,6 +184,9 @@ const PIRATE_LINES = {
   thief: ['Finders keepers', "I'll take that", 'Yoink', 'Salvage rights!', 'Mine now', 'Thank ye kindly'],
   stow: ['Arr!', 'Surprise!', 'Ahoy, core!', 'Stowaway!'],
 };
+// ---------- v4.4 Red Alert: a boss within this many tiles of the core puts the core on Last Stand (shells hit it much harder) ----------
+const RED_ALERT = { tiles: 8, coreDmg: 2.5, coreRate: 1.6 };
+const BOSS_HOLD = 45; // seconds the next wave's countdown runs slow while a boss is still on the field
 // ---------- v4.4 The Black Market: a pirate trader with 3 items in stock, restocked after every boss wave ----------
 // Prices scale with the wave, so late-run credits (Nic banks 25–60k) have somewhere to go. Each item sells once per stock.
 const MARKET = { slots: 3, refresh: 10, price: (base, w) => Math.round(base * (1 + 0.11 * Math.max(1, w))) };

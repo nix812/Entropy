@@ -968,6 +968,11 @@ const Render = (() => {
     }
     c.restore();
 
+    if (G.redAlert) { // a boss at the gate: the field pulses red and the frame throbs (v4.4 Red Alert)
+      const k = 0.5 + 0.5 * Math.sin(frame / 4);
+      c.fillStyle = hexA('#ff3355', 0.03 + 0.05 * k); c.fillRect(ox, oy, DW, DH);
+      c.strokeStyle = hexA('#ff3355', 0.3 + 0.5 * k); c.lineWidth = 5; c.strokeRect(ox + 2.5, oy + 2.5, DW - 5, DH - 5);
+    }
     if (G.stasisT > 0) { c.fillStyle = 'rgba(106,226,255,0.08)'; c.fillRect(ox, oy, DW, DH); }
     if (G.overclockT > 0 && frame % 10 < 5) { c.fillStyle = 'rgba(255,225,77,0.04)'; c.fillRect(ox, oy, DW, DH); }
     if (dt <= 0) flashes = [];
@@ -990,8 +995,8 @@ const Render = (() => {
     if (G.bossAlive && !G.bossAlive.dead) {
       const e = G.bossAlive, bw = Math.min(260, W * 0.4), bx = (W - bw) / 2, by = 6;
       c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(bx - 4, by - 2, bw + 8, e.gen || e.boss === 'gloop' ? 22 : 31);
-      c.font = '10px Silkscreen, monospace'; c.fillStyle = '#ff9aac'; c.textAlign = 'left';
-      c.fillText(e.bossName.toUpperCase() + (e.bossTitle ? ' · ' + e.bossTitle.toUpperCase() : '') + (e.elite.length ? ' · ' + e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).name).join(' · ') : ''), bx, by + 5);
+      c.font = '10px Silkscreen, monospace'; c.fillStyle = e.redAlert && frame % 10 < 5 ? '#ffffff' : '#ff9aac'; c.textAlign = 'left';
+      c.fillText((e.redAlert ? 'RED ALERT · ' : '') + e.bossName.toUpperCase() + (e.bossTitle ? ' · ' + e.bossTitle.toUpperCase() : '') + (e.elite.length ? ' · ' + e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).name).join(' · ') : ''), bx, by + 5);
       c.fillStyle = '#3a0a18'; c.fillRect(bx, by + 12, bw, 5);
       c.fillStyle = e.phaseT > 0 && frame % 8 < 4 ? '#ffffff' : '#ff3355'; c.fillRect(bx, by + 12, bw * Math.max(0, e.hp / e.maxHp), 5);
       if (!e.gen && e.boss !== 'gloop') { for (const th of BOSS_PHASES) { c.fillStyle = '#07080f'; c.fillRect(Math.round(bx + bw * th) - 1, by + 11, 2, 7); }
