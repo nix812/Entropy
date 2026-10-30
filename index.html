@@ -186,6 +186,12 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .abil { color: var(--warn); }
 .abil.aim { background: var(--amber); color: #1a1004; box-shadow: none; }
 .abil.aim span, .abil.aim .cnt { color: #1a1004; }
+.rb.od { color: var(--core); }
+.rb.od.dim { opacity: 0.45; color: var(--dim); }
+.rb.od.ready { box-shadow: inset 0 0 0 1px var(--core), 0 0 12px rgba(89,240,180,0.45); animation: pulse 1.2s infinite; }
+.rb.od.ready span { color: var(--core); }
+.rb.od.arm { background: var(--core); color: #062016; box-shadow: none; animation: blink 0.5s infinite steps(2); }
+.rb.od.arm span { color: #062016; }
 #bSpeed b { font-family: var(--f-term); font-weight: 400; font-size: 22px; line-height: 1; color: var(--ink); }
 #bSpeed.fast b { color: var(--amber); }
 #bCall { height: 60px; color: var(--amber); box-shadow: inset 0 0 0 2px var(--amber); }
@@ -612,7 +618,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '3.2.0';
+const VERSION = '3.2.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -779,10 +785,9 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '3.2.0', title: 'Entropy 3.2', items: [
-  ['Swarm Codex', 'Every strain you meet gets a name, from Zippy Gremlins to Fortress Juggernauts and the occasional Broody Bumper Car Phantom. The Archive keeps the collection.'],
-  ['Your nemesis, remembered', 'Each run records its signature strain and the swarm\'s evolution peak, in the recap and the Hall of Fame.'],
-  ['Difficulty shapes evolution', 'Calm evolves gently from Wave 12. Unstable starts at Wave 6, fiercer, with the swarm already adapted to one weakness. Pandemonium starts at Wave 4, fiercest, adapted to two, with an extra gene later on. The setup screen shows which.']
+const WHATS_NEW = { ver: '3.2.1', title: 'Entropy 3.2.1', items: [
+  ['Overdrive button', 'Overdrive has its own button on the left rail. It shows the wave it unlocks, glows when ready, and needs a second tap to fire. The core panel still has it too.'],
+  ['From 3.2', 'Swarm Codex strain names in the Archive, your signature strain in the Hall of Fame, and evolution that scales with difficulty.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -2329,7 +2334,7 @@ function updateLinkBeams(dt) {
 // ---------- Core Overdrive: once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
 const OD_WAVE = 35, OD_BOSS = 0.2;
 const odReady = () => !!(G && !G.over && !G.odUsed && G.wave >= OD_WAVE);
-function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('OVERDRIVE ONLINE', 'Tap the core: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
+function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('OVERDRIVE ONLINE', 'Tap Overdrive on the left: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
 function releaseOverdrive() {
   if (G.over) return 'over';
   if (G.odUsed) return 'used';
@@ -5692,6 +5697,7 @@ const ICONS = {
   archive: ['#########', '#########', '.........', '.#######.', '.#.....#.', '.#.###.#.', '.#.....#.', '.#######.', '.........'],
   help: ['..#####..', '.##...##.', '......##.', '.....##..', '....##...', '....##...', '.........', '....##...', '....##...'],
   gear: ['...#.#...', '.#######.', '.##...##.', '##.....##', '.#..#..#.', '##.....##', '.##...##.', '.#######.', '...#.#...'],
+  overdrive: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#.#.#.#.#', '#.#...#.#', '#..###..#', '.#.....#.', '..#####..'],
   fit: ['###...###', '#.......#', '#.......#', '.........', '.........', '.........', '#.......#', '#.......#', '###...###'],
 };
 function svgIcon(name, size) {
@@ -5904,8 +5910,24 @@ const UI = (() => {
   }
 
   // ---------- HUD ----------
+  // Overdrive from the rail: first tap arms it for 3 s, second tap releases
+  let odArm = false, odArmT = null;
+  function overdriveTap() {
+    if (!G || G.over) return;
+    SFX.play('ui');
+    if (G.odUsed) { toast('OVERDRIVE', `Already used on Wave ${G.odUsed}. One per run`, '#8a8fa8'); return; }
+    if (!odReady()) { toast('OVERDRIVE', `Charges at Wave ${OD_WAVE}: one board clear per run (bosses survive)`, '#8a8fa8'); return; }
+    if (!odArm) { odArm = true; clearTimeout(odArmT); odArmT = setTimeout(() => { odArm = false; updateHud(); }, 3000); updateHud(); toast('OVERDRIVE ARMED', 'Tap again to erase every non-boss enemy. One use per run', '#59f0b4', true); return; }
+    odArm = false; clearTimeout(odArmT);
+    const r = releaseOverdrive();
+    if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); }
+    else if (r !== 'ok') SFX.play('deny');
+    else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); }
+    updateHud();
+  }
   function buildAbilityBar() {
-    $('#abils').innerHTML = ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}" hidden>${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt">0</em></button>`).join('');
+    $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Overdrive">${svgIcon('overdrive')}<span>Overdrive</span></button>` +
+      ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}" hidden>${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt">0</em></button>`).join('');
   }
   function updateHud(force) {
     if (!G) return;
@@ -5930,6 +5952,9 @@ const UI = (() => {
     if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); $('#cpBanner').querySelector('span').textContent = cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'; $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash'));
     const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
+    { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Overdrive') : 'W' + OD_WAVE;
+      ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready);
+      const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
     for (const k of ABIL_ORDER) {
       const n = G.charges[k], btn = document.querySelector(`[data-abil="${k}"]`);
       if (!btn) continue;
@@ -6721,7 +6746,7 @@ const UI = (() => {
         ['Evolution', 'From Wave 8 enemies carry genes: up to 1 until Wave 22, 2 until Wave 45, then 3. Each gene trades HP or speed for an edge. Waves are bred from the enemies that got furthest, so traits your defence handles badly spread. The next-wave chips show what is spreading; tap one for its counter.'],
         ['Ground-only', 'Flame Projector and Gravity Well cannot hit fliers (including enemies that evolve Wings).'],
         ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
-        ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap the core, Release Overdrive, tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
+        ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap Overdrive on the left rail (or in the core panel), then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
         ['Cursed Cache', 'Booby-trapped pirate loot, red, from Wave 10. Double reward, but a stowaway pirate (an elite) breaks loose from a wormhole.'],
         ["Captain's Chest", 'Golden crate the pirate flagship drops once per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],
@@ -6941,6 +6966,7 @@ const UI = (() => {
     $('#bPause').onclick = () => { SFX.play('ui'); openPause(); };
     $('#bEnt').onclick = () => { SFX.play('ui'); if (G && G.anomOffers) openAnomaly(); else toast('ENTROPY', 'Fills from kills, combos and waves. Draw an Anomaly when full.', '#b86cff'); };
     $('#abils').addEventListener('click', e => {
+      if (e.target.closest('#bOD')) { overdriveTap(); return; }
       const b = e.target.closest('[data-abil]'); if (!b || b.disabled || !G) return;
       const k = b.dataset.abil;
       if (ABILITIES[k].target) { G.aimAbility = G.aimAbility === k ? null : k; if (G.aimAbility) { toast('ORBITAL STRIKE', 'Tap a target', '#ffb03a'); closePanel(); } }
