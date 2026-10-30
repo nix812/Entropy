@@ -217,9 +217,16 @@ body.modal-open #toasts { display: none; }
 body.bossbar #toasts { top: 58px; }
 body.panel-l #toasts { left: calc(50% + 140px); width: min(400px, 46%); }
 body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
-.toast { background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 1px var(--c), 0 0 18px rgba(0,0,0,0.5); padding: 4px 10px; display: flex; gap: 8px; align-items: baseline; animation: tin 0.2s; transition: opacity 0.4s; max-width: 100%; }
-.toast b { font-family: var(--f-pix); font-size: 10px; color: var(--c); white-space: nowrap; }
-.toast span { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.toast { background: rgba(7, 8, 15, 0.94); box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c), 0 0 22px rgba(0,0,0,0.6); padding: 6px 12px 7px 14px; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; animation: tin 0.2s; transition: opacity 0.3s; max-width: 100%; pointer-events: auto; cursor: pointer; }
+.toast b { font-family: var(--f-pix); font-size: 10px; color: var(--c); letter-spacing: 1px; }
+.toast span { font-size: 17px; line-height: 1.15; color: var(--ink); }
+#tip { position: absolute; left: 50%; bottom: calc(var(--sab, 0px) + 10px); transform: translateX(-50%); z-index: 60; pointer-events: none; background: rgba(7, 8, 15, 0.94); box-shadow: inset 0 0 0 1px var(--c); padding: 4px 12px; max-width: min(560px, 80%); display: flex; gap: 8px; align-items: baseline; transition: opacity 0.25s; }
+#tip b { font-family: var(--f-pix); font-size: 9px; color: var(--c); white-space: nowrap; }
+#tip span { font-size: 15px; line-height: 1.15; }
+#tip.out { opacity: 0; }
+body.panel-l #tip { left: calc(50% + 140px); } body.panel-r #tip { left: calc(50% - 140px); }
+.evchip.dna.pulse { animation: dnapulse 0.9s steps(2) infinite; }
+@keyframes dnapulse { 50% { box-shadow: inset 0 0 0 1px #59f0b4, 0 0 10px #59f0b4; } }
 .toast.out { opacity: 0; }
 @keyframes tin { from { transform: translateY(-6px); opacity: 0; } }
 #bossIntro { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 31; display: flex; gap: 14px; align-items: center; width: min(520px, 76%);
@@ -237,8 +244,13 @@ body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 @keyframes bossout { to { opacity: 0; transform: translate(-50%, -70%); } }
 @keyframes bossbob { 50% { transform: translateY(-3px); } }
 #log, #dps { display: none; position: absolute; pointer-events: none; z-index: 3; font-size: 14px; }
-body.hudfull #log, body.hudfull #dps { display: block; }
-#log { left: 6px; bottom: 6px; max-width: 40%; font-size: 14px; text-shadow: 1px 1px 0 #000; }
+body.hudfull #dps { display: block; }
+#log { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; left: 6px; bottom: 6px; max-width: min(340px, 38%); font-size: 14px; }
+#log .fl { background: rgba(7, 8, 15, 0.78); padding: 1px 6px; line-height: 1.2; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #c9c6bc; box-shadow: inset 2px 0 0 var(--c); animation: tin 0.2s; transition: opacity 1.4s; }
+#log .fl b { color: var(--c); font-weight: 400; }
+#log .fl i { color: var(--dim); font-style: normal; }
+#log .fl.old { opacity: 0; }
+body.panel-l #log, body.tipon #log { display: none; }
 #dps { left: 6px; top: 6px; width: 170px; background: rgba(7, 8, 15, 0.75); padding: 5px 7px; }
 body.panel-l #dps { display: none; }
 .dh { font-family: var(--f-pix); font-size: 9px; color: var(--dim); margin-bottom: 3px; }
@@ -596,6 +608,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 
   <div id="modal" hidden></div>
   <div id="toasts"></div>
+  <div id="tip" hidden></div>
   <div id="bossIntro" hidden><canvas width="144" height="144"></canvas><div class="bi"><em></em><h3></h3><p class="ttl"></p><p class="desc"></p><p class="ph"></p></div></div>
 </div>
 

@@ -208,7 +208,7 @@ const UI = (() => {
     show('game');
     Render.reset();
     requestAnimationFrame(() => { Render.resize(); });
-    logLines = []; renderLog();
+    feedLines.length = 0; renderFeed();
     if (snap) resumeRun(snap);
     else if (setup.mode === 'daily') newRun({ seed: setup.daily.seed, chaos: setup.daily.chaos, startWave: 1, daily: setup.daily, cols: COLS });
     else {
@@ -304,7 +304,7 @@ const UI = (() => {
     }
     if (!(G.spawningDone && G.prep) && geneCap(G.wave) > 0) {
       const gs = Object.entries(geneShares()).filter(([g, v]) => v >= 0.15).sort((a, b) => b[1] - a[1]).slice(0, 2);
-      chips.unshift(`<span class="evchip dna" data-evo="1">DNA${gs.length ? ' · ' + gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : ' · stable'}</span>`);
+      chips.unshift(`<span class="evchip dna${performance.now() < dnaPulse ? ' pulse' : ''}" data-evo="1">DNA${gs.length ? ' · ' + gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : ' · stable'}</span>`);
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
@@ -318,6 +318,7 @@ const UI = (() => {
     const ch = $('#chips');
     if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
     if (hudFull) renderDps();
+    renderFeed();
     liveRefreshPanel();
     SFX.music.setIntensity(0.25 + Math.min(0.45, G.wave / 60) + (G.bossAlive ? 0.35 : 0) + (G.storms.some(s => s.mael) ? 0.2 : 0));
   }
@@ -328,21 +329,35 @@ const UI = (() => {
     $('#dps').innerHTML = `<div class="dh">DPS <b>${fmt(total)}</b></div>` + list.map(t => `<div class="drow"><span>${esc(TOWERS[t.type].name)} ${t.lvl}</span><i style="width:${Math.round(t.dps / max * 100)}%;background:${EL[t.s.el].col}"></i><b>${fmt(t.dps)}</b></div>`).join('');
   }
   const toastHeld = [], toastSeen = {};
-  // v3.1 notifications: one at a time, routine ones short and dropped when things are busy, repeats merged
-  const LOW_TOAST = /^(NEW COMBO|MILESTONE|SALVAGE|GOLDEN SALVAGE|CURSED SALVAGE|BOON|CASHED IN|TAX REFUND|SPAT OUT|NEW BOSS|LEGENDARY|VETERAN|ASCEND)/;
-  const toastNQ = []; let toastBusy = false;
+  // v4.0 notifications, three channels so the centre of the screen stays clear:
+  //  ALERT: rare cards for things you should react to (a strain assault, a wormhole, pirates, the worm eating a tower).
+  //         One at a time, wrapped text, tap to dismiss.
+  //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
+  //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
+  const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP)/;
+  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
+  const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
+  function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force) {
     const key = title + '|' + body, now = performance.now();
     if (toastSeen[key] !== undefined && now - toastSeen[key] < 4000) return;
     toastSeen[key] = now;
+    const kind = screen !== 'game' ? (TIP_RE.test(title) ? 'tip' : 'alert') : toastKind(title);
+    if (/^SWARM EVOLVES/.test(title)) dnaPulse = now + 9000;
+    if (kind === 'feed') { feed(title, body, col); return; }
+    if (kind === 'tip') { flashTip(title, body, col); return; }
     if (!force && screen === 'game' && (modalOpen || Tree.isOpen)) { toastHeld.push([title, body, col]); if (toastHeld.length > 3) toastHeld.shift(); return; }
-    const low = LOW_TOAST.test(title) && !force;
-    if (toastNQ.some(t => t.title === title && t.body === body)) return;
-    if (low && (toastBusy || toastNQ.length) ) { if (toastNQ.length >= 1) { log(`${title[0]}${title.slice(1).toLowerCase()}: ${body}`, col); return; } }
-    toastNQ.push({ title, body, col, low });
-    // keep the queue short: drop routine ones first, then the oldest
-    while (toastNQ.length > 3) { const li = toastNQ.findIndex(t => t.low); toastNQ.splice(li >= 0 ? li : 0, 1); }
+    if (toastNQ.some(t => t.title === title)) return;
+    toastNQ.push({ title, body, col });
+    while (toastNQ.length > 2) feed(...Object.values(toastNQ.shift()));
     if (!toastBusy) nextToast();
+  }
+  function flashTip(title, body, col) {
+    const el = $('#tip'); if (!el) return;
+    el.style.setProperty('--c', col || '#ffb03a');
+    el.innerHTML = `<b>${esc(title)}</b>${body ? `<span>${esc(body)}</span>` : ''}`;
+    el.hidden = false; el.classList.remove('out'); document.body.classList.add('tipon');
+    clearTimeout(tipT); tipT = setTimeout(() => { el.classList.add('out'); tipT = setTimeout(() => { el.hidden = true; document.body.classList.remove('tipon'); }, 300); }, 1700 + Math.min(2200, (body || '').length * 30));
   }
   function nextToast() {
     const t = toastNQ.shift(); if (!t) { toastBusy = false; return; }
@@ -353,8 +368,29 @@ const UI = (() => {
     d.className = 'toast'; d.style.setProperty('--c', t.col || '#ffb03a');
     d.innerHTML = `<b>${esc(t.title)}</b><span>${esc(t.body)}</span>`;
     box.appendChild(d);
-    const dur = t.low ? 1700 : (t.body || '').length > 44 ? 3800 : 2600;
-    setTimeout(() => { d.classList.add('out'); setTimeout(() => { d.remove(); nextToast(); }, 300); }, toastNQ.length ? Math.min(dur, 1800) : dur);
+    feed(t.title, t.body, t.col, true);
+    const end = () => { if (!d.isConnected || d.classList.contains('out')) return; clearTimeout(toastT); d.classList.add('out'); setTimeout(() => { d.remove(); nextToast(); }, 300); };
+    d.onclick = end;
+    const dur = Math.min(5600, 2600 + (t.body || '').length * 35);
+    toastT = setTimeout(end, toastNQ.length ? 2400 : dur);
+  }
+  // the feed: recent events in the corner. Old ones fade; with Stats on it keeps the last few
+  const feedLines = [];
+  function feed(title, body, col, quiet) {
+    const now = performance.now(), last = feedLines[feedLines.length - 1];
+    if (last && last.title === title && last.body === body) { last.n++; last.t = now; renderFeed(); return; }
+    feedLines.push({ title, body, col, t: now, n: 1, quiet: !!quiet });
+    if (feedLines.length > 8) feedLines.shift();
+    renderFeed();
+  }
+  const feedTitle = t => t.split(' ').map(w => /^[IVX]+$/.test(w) || w.length < 2 ? w : w[0] + w.slice(1).toLowerCase()).join(' ');
+  let feedH = '';
+  function renderFeed() {
+    const l = $('#log'); if (!l) return;
+    const now = performance.now();
+    const show = hudFull ? feedLines.slice(-6) : feedLines.filter(x => !x.quiet && !x.minor && now - x.t < 7000).slice(-3);
+    const html = show.map(x => `<div class="fl ${!hudFull && now - x.t > 5500 ? 'old' : ''}" style="--c:${x.col || '#c9c6bc'}">${x.title ? `<b>${esc(feedTitle(x.title))}</b> ` : ''}${esc(x.body || '')}${x.n > 1 ? ` <i>×${x.n}</i>` : ''}</div>`).join('');
+    if (html !== feedH) { l.innerHTML = html; feedH = html; }
   }
   // boss arrival: a portrait card and a moment of slow motion, so every boss gets its entrance
   let bossT = null;
@@ -375,12 +411,12 @@ const UI = (() => {
     bossT = setTimeout(hide, first ? 4800 : 3400);
     log(`${B.name} incoming`, '#ff4d6a');
   }
+  // minor sim events: only shown in the feed when Stats is on
   function log(text, col) {
-    logLines.push({ text, col });
-    if (logLines.length > 7) logLines.shift();
-    renderLog();
+    feedLines.push({ title: '', body: text, col, t: performance.now(), n: 1, minor: true });
+    if (feedLines.length > 8) feedLines.shift();
+    renderFeed();
   }
-  function renderLog() { const l = $('#log'); if (l) l.innerHTML = logLines.map(x => `<div style="color:${x.col || '#c9c6bc'}">${esc(x.text)}</div>`).join(''); }
 
   // ---------- Panels ----------
   function closePanel() {
