@@ -505,6 +505,7 @@ const Render = (() => {
       R(b, X + 4, Y + 2, 1, 5, sc); R(b, X + 2, Y + 4, 5, 1, sc); P(b, X + 4, Y + 4, '#ffffff');
     }
     if (t.disabled > 0) for (let i = 0; i < 14; i++) R(b, X + 2 + Math.random() * 19, Y + 2 + Math.random() * 19, 2, 1, i % 2 ? '#ffffff' : '#5a5a7a');
+    if (G.mods.ks.circuit && t.wires && t.wires.length) { for (const o of t.wires) if (o.id > t.id || (o.id === undefined && o.x + o.y * 1000 > t.x + t.y * 1000)) { const live = t.chain && t.chain.m.length >= 4; b.strokeStyle = live ? (frame % 20 < 10 ? 'rgba(255,225,77,0.85)' : 'rgba(255,240,170,0.6)') : 'rgba(255,225,77,0.4)'; b.lineWidth = 1; b.beginPath(); b.moveTo(X + 12, Y + 12); b.lineTo(o.x * TILE + 12, o.y * TILE + 12); b.stroke(); } }
     if (t.hot && G.mods.ks.wildfire && frame % 6 < 4) { for (let k = 0; k < 3; k++) { const hx = X + 5 + ((frame >> 2) * 7 + k * 6) % 14, hy = Y + 2 - ((frame + k * 5) % 8); P(b, hx, hy, k % 2 ? '#ff9a3c' : '#ffd28a'); } }
     if (G.mods.ks.marksman && t.s && canOvercharge(t) && t.aimT !== undefined && G.time - t.aimT < 0.7 && t.angle !== undefined) { const L = (t.effRange || t.s.range || 2) * TILE; b.strokeStyle = 'rgba(255,77,106,0.35)'; b.lineWidth = 1; b.beginPath(); b.moveTo(X + 12, Y + 12); b.lineTo(X + 12 + Math.cos(t.angle) * L, Y + 12 + Math.sin(t.angle) * L); b.stroke(); P(b, Math.round(X + 12 + Math.cos(t.angle) * L), Math.round(Y + 12 + Math.sin(t.angle) * L), '#ff4d6a'); }
     if (G.wave > 1 && idleWaves(t) >= 2) { // sleeping: two little pixel Zs drift up from the corner

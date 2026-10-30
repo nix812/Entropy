@@ -316,6 +316,11 @@ const UI = (() => {
       if (G.mods.ks.wildfire) parts.push(`<span class="heat">Road heat <b>${Math.round(G.heat * 100)}%</b><i>/${Math.round(wildHeatCap() * 100)}</i></span>`);
       if (G.mods.ks.wareco) { const wt = warTier(), st = warStep(); parts.push(`<span class="chest">War chest <b>${wt}/8</b><i>${wt < 8 ? 'next at ' + fmt((wt + 1) * st) : 'full'}</i></span>`); }
       if (G.mods.ks.marksman) parts.push(`<span class="mark">Marksman <b>+2</b><i>free Overcharge</i></span>`);
+      if (G.mods.ks.circuit) { const ch = G.chains || [], big = ch.reduce((a, c) => Math.max(a, c.m.length), 0); parts.push(`<span class="circ">Chains <b>${ch.length}</b><i>longest ${big}${big >= 4 ? ' · lightning' : ' · need 4'}</i></span>`); }
+      if (G.mods.ks.glacier) { const j = G.enemies.filter(e => e.jammed).length; parts.push(`<span class="ice">Ice jam <b>${j}</b><i>held</i></span>`); }
+      if (G.mods.ks.horizon) parts.push(`<span class="hor">Gravity wells <b>${(G.wells || []).length}</b></span>`);
+      if (G.mods.ks.artisan) { const at = G.towers.filter(t => canOvercharge(t)), v = at.filter(t => t.rank > 0).length; parts.push(`<span class="art">Veterans <b>${v}/${at.length}</b><i>rookies −20%</i></span>`); }
+      if (G.mods.ks.gambler) parts.push(`<span class="gam">Gambler <b>×${num1(G.scoreMult || 1)}</b><i>score</i></span>`);
       const h = parts.join(''); if (db && db.dataset.h !== h) { db.innerHTML = h; db.dataset.h = h; db.hidden = !h; }
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
@@ -1463,6 +1468,7 @@ const Tree = (() => {
   function posFlat(n) {
     if (n.sector !== -2) return [n.x, n.y, 0];
     const side = n.z > 0 ? 1 : -1, px = side * PILX, py = 330 - Math.abs(n.z) * 1.45;
+    if (n.kind === 'seal') return [px + 150, py, 0];
     if (n.sat !== undefined) { const a = satAngle(n); return [px + Math.cos(a) * ORB_R * 0.9, py + Math.sin(a) * ORB_R * 0.55, 0]; }
     return [px, py, 0];
   }
@@ -1595,18 +1601,18 @@ const Tree = (() => {
   function docHTML() {
     const A = new Set(PROF.alloc), lv = profLevel().level, held = sealsHeld(), slots = sealSlots(lv), nx = SEAL_NEXT(lv);
     const rows = Object.keys(DOCTRINES).map(k => {
-      const i = +k, D = DOCTRINES[i], S = SECTORS[i], on = A.has('d' + i);
-      const ms = [['Seal', 'd' + i], ['Notables', [0, 1, 2].map(c => `c${i}_${c}n`)], ['Mastery', 'x' + i], ['Keystone', 'k' + i], ['Arm', 'w' + i]].map(([nm, id]) => {
+      const i = +k, D = DOCTRINES[i], pil = D.pillar, S = pil ? { col: pil === 'zen' ? '#9fd8ff' : '#ff5fa8' } : SECTORS[i], on = A.has('d' + i), pt = pil === 'zen' ? 'z' : 'n';
+      const ms = (pil ? [['Seal', 'd' + i], ['Orbit I', pt + 'o1'], ['Orbit II', pt + 'o2'], ['Keystone', pt + 'ak']] : [['Seal', 'd' + i], ['Notables', [0, 1, 2].map(c => `c${i}_${c}n`)], ['Mastery', 'x' + i], ['Keystone', 'k' + i], ['Arm', 'w' + i]]).map(([nm, id]) => {
         if (Array.isArray(id)) { const h = id.filter(x => A.has(x)).length; return `<span class="${h === id.length ? 'on' : ''}">${nm} ${h}/${id.length}</span>`; }
-        return `<span class="${A.has(id) ? 'on' : ''}">${nm}${id === 'k' + i ? ': ' + esc(TREE.nodes[id].name) : ''}</span>`; }).join('');
+        return `<span class="${A.has(id) ? 'on' : ''}">${nm}${TREE.nodes[id].kind === 'keystone' ? ': ' + esc(TREE.nodes[id].name) : ''}</span>`; }).join('');
       return `<div class="docrow ${on ? 'on' : ''}" style="--c:${S.col}"><b>${esc(D.name.toUpperCase())}</b><em>${esc(D.tag)}</em>
         <ul>${D.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ms">${ms}</div>
         ${(() => { if (!on) return `<button class="btn small" data-tact="docgo" data-n="d${i}">Show seal</button>`;
-          const goals = ['c' + i + '_0n', 'c' + i + '_1n', 'c' + i + '_2n', 'x' + i, 'k' + i, 'w' + i].filter(id => !A.has(id)).map(id => ({ id, p: treePathTo(id) })).filter(g => g.p && !treeBlock(g.id, g.p)).sort((a, b) => a.p.length - b.p.length);
+          const goals = (pil ? [pt + 'o1', pt + 'o2', pt + 'ak'] : ['c' + i + '_0n', 'c' + i + '_1n', 'c' + i + '_2n', 'x' + i, 'k' + i, 'w' + i]).filter(id => !A.has(id)).map(id => ({ id, p: treePathTo(id) })).filter(g => g.p && !treeBlock(g.id, g.p)).sort((a, b) => a.p.length - b.p.length);
           return goals.length ? `<button class="btn small primary" data-tact="docgo" data-n="${goals[0].id}">Next: ${esc(TREE.nodes[goals[0].id].name)} · ${goals[0].p.length} pt${goals[0].p.length > 1 ? 's' : ''}</button>` : '<span class="note">Doctrine complete</span>'; })()}</div>`; }).join('');
     return `<div class="ph"><b>Doctrines · ${held}/${slots} sealed</b><button class="x" data-tact="docs">✕</button></div>
       <p class="note">${tipify(`A Doctrine changes how you play. Take its seal and its notables, mastery, keystone and arm open up. You can hold ${slots}${nx ? `; another seal opens at level ${nx}` : ''}. Refunds are free between runs.`)}</p>
-      ${rows}<p class="note">Voltaic, Cryogenics, Singularity, Zenith and Nadir become Doctrines in a later update. Until then they stay open to everyone.</p>`;
+      ${rows}<p class="note">Hybrid notables between sectors and the three outer keystones stay open to everyone.</p>`;
   }
   function action(act, b) {
     SFX.play('ui');

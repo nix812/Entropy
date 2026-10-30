@@ -401,6 +401,9 @@ const STAT_TXT = {
   napalmKill: () => 'Thermal kills leave burning ground for 2s', multiA: v => `Arc towers hit +${v} target`,
   freezeImmRed: v => `Enemies can be Frozen again ${v}% sooner`, markVoid: v => `Each Mark adds +${v}% Void damage taken`,
   salvage: () => 'Kills grant +1 credit for every 10 waves reached',
+  cLink: v => `Circuit: +${v}% more Attack Speed per wired neighbour`, cBolt: v => `Circuit: chain lightning deals +${v}% damage`,
+  hPull: v => `Event Horizon: gravity wells pull ${v}% harder`, hWell: v => `Event Horizon: gravity wells reach ${v}% further`,
+  aRank: v => `Artisan: +${v}% more Damage per Veteran rank`, aVxp: v => `Artisan: +${v}% Veteran XP`, gScore: v => `Gambler: +${v}% score`,
   msOc: v => `Marksman: each Overcharge step adds +${v}% more Damage`, wfHeat: v => `Wildfire: Heat can climb ${v}% higher`, wfDur: v => `Wildfire: road fire lasts ${v}% longer`,
   weStep: v => `War Economy: core turrets need ${v}% fewer banked credits`, weTur: v => `War Economy: each core turret adds +${v}% more core Damage`,
   kBurn: v => `Kinetic hits: ${v}% chance to Burn`, chillVoid: v => `Hits on Chilled enemies: ${v}% chance to Mark`,
@@ -526,6 +529,21 @@ const DOCTRINES = {
   1: { id: 'wildfire', name: 'Wildfire', tag: 'The road burns', counter: 'wings',
     lines: ['Burning ground enemies set the road on fire', 'Road fire builds Heat during a wave: up to +100% fire damage', 'Towers within 1 tile of burning road overheat: −25% Attack Speed'],
     smalls: [{ wfHeat: 20 }, { wfDur: 20 }] },
+  2: { id: 'circuit', name: 'Circuit', tag: 'Placement is a puzzle', counter: 'shell',
+    lines: ['Attack towers next to each other are wired: +8% Attack Speed per wired neighbour', 'A chain of 4+ wired towers fires a lightning bolt every 4s at the toughest enemy in its reach, for 2s of the whole chain\'s damage', 'If one tower in a chain is disabled or jammed, the whole chain stalls'],
+    smalls: [{ cLink: 2 }, { cBolt: 15 }] },
+  3: { id: 'glacier', name: 'Glacier', tag: 'Hold the line', counter: 'wings',
+    lines: ['A Frozen ground enemy becomes an ice block: enemies behind it pile up and stop', 'Bosses and fliers are never blocked', 'All towers deal 20% less damage'],
+    smalls: [{ freezeDur: 0.15 }, { frozenVuln: 8 }] },
+  4: { id: 'horizon', name: 'Event Horizon', tag: 'Drag them back', counter: 'bulk',
+    lines: ['Every kill opens a small gravity well that drags nearby enemies back down the road', 'Enemies at max Marks are yanked back 1.5 tiles (once each)', 'Enemies move 12% faster'],
+    smalls: [{ hPull: 15 }, { hWell: 15 }] },
+  6: { id: 'artisan', name: 'Artisan', tag: 'Craft a few legends', counter: 'brood', pillar: 'zen',
+    lines: ['Veterans rank up 2× faster and gain +6% Damage per rank', 'Rerolls cost 50% less', 'Towers without a Veteran rank deal 20% less damage'],
+    smalls: [{ aRank: 2 }, { aVxp: 20 }] },
+  7: { id: 'gambler', name: 'Gambler', tag: 'Every wave is a dice roll', counter: '', pillar: 'nad',
+    lines: ['Every wave from Wave 2 rolls an extra random event, good or bad', 'Score +25%', 'The Entropy gauge fills 25% faster'],
+    smalls: [{ gScore: 5 }, { gScore: 5 }] },
   5: { id: 'wareco', name: 'War Economy', tag: 'Money is firepower', counter: 'haste',
     lines: ['The core grows a turret for every stack of banked credits (up to 8): +60% core Damage and +8% core Attack Speed each', 'The stack size grows with the wave, so keep banking', 'Towers cost 20% more'],
     smalls: [{ weStep: 6 }, { weTur: 10 }] },
@@ -627,25 +645,29 @@ function buildTree() {
     link(`w${i}_1`, `w${i}`);
   });
   // the Z-axis: Zenith above the galactic plane, Nadir below
-  const col = (sign, tag, orbs, ks, smallFx) => {
+  const col = (sign, tag, orbs, ks, smallFx, di) => {
+    const DOC = DOCTRINES[di];
+    if (DOC) { smallFx = smallFx.slice(); smallFx[1] = Object.assign({}, smallFx[1], DOC.smalls[0]); smallFx[3] = Object.assign({}, smallFx[3], DOC.smalls[1]); }
     let prev = 'start', zi = 0;
     const axis = (z, fx) => { const id = `${tag}${zi++}`; add(id, 0, 0, 'small', -2, smallName(fx), fx, { z, col: ORBITS[orbs[0]].col }); link(prev, id); prev = id; };
     axis(sign * 70, smallFx[0]);
+    if (DOC) { add(`d${di}`, 110, 0, 'seal', -2, `${DOC.name} Doctrine`, {}, { z: sign * 70, col: ORBITS[orbs[0]].col, doctrine: di, ks: DOC.id, lines: DOC.lines }); link(`${tag}0`, `d${di}`); }
+    const need = DOC ? { need: di } : {};
     orbs.forEach((oid, oi) => {
       const O = ORBITS[oid];
-      add(oid, 0, 0, 'orbit', -2, O.name, {}, { z: O.z, col: O.col, orbitHub: oid });
+      add(oid, 0, 0, 'orbit', -2, O.name, {}, Object.assign({ z: O.z, col: O.col, orbitHub: oid }, need));
       link(prev, oid); prev = oid;
-      O.sats.forEach((S, k) => { add(`${oid}_${k}`, 0, 0, 'sat', -2, S.name, {}, { z: O.z, col: O.col, orbit: oid, sat: k }); link(oid, `${oid}_${k}`); });
+      O.sats.forEach((S, k) => { add(`${oid}_${k}`, 0, 0, 'sat', -2, S.name, {}, Object.assign({ z: O.z, col: O.col, orbit: oid, sat: k }, need)); link(oid, `${oid}_${k}`); });
       axis(sign * (O.z + (oi ? 70 : 60)), smallFx[1 + oi * 2]);
       if (!oi) axis(sign * (O.z + 120), smallFx[2]);
     });
-    add(`${tag}k`, 0, 0, 'keystone', -2, ks.name, {}, { z: sign * 480, col: ORBITS[orbs[0]].col, ks: ks.ks, lines: ks.lines });
+    add(`${tag}k`, 0, 0, 'keystone', -2, ks.name, {}, Object.assign({ z: sign * 480, col: ORBITS[orbs[0]].col, ks: ks.ks, lines: ks.lines }, need));
     link(prev, `${tag}k`);
   };
   col(1, 'za', ['zo1', 'zo2'], { name: 'Celestial Order', ks: 'celestial', lines: ['Towers roll 2 affixes per build and upgrade', 'Legendary affixes can no longer roll'] },
-    [{ F: 6, I: 4 }, { F: 8 }, { I: 8 }, { F: 6, Tm: 4 }]);
+    [{ F: 6, I: 4 }, { F: 8 }, { I: 8 }, { F: 6, Tm: 4 }], 6);
   col(-1, 'na', ['no1', 'no2'], { name: 'Event Singularity', ks: 'singular', lines: ['Entropy fills 2× faster', 'Each Anomaly grants +10% score instead of +5%', 'You cannot Stabilize'] },
-    [{ P: 6, Tm: 4 }, { Tm: 8 }, { P: 8 }, { P: 6, F: 4 }]);
+    [{ P: 6, Tm: 4 }, { Tm: 8 }, { P: 8 }, { P: 6, F: 4 }], 7);
   // spread the disk out for phone-sized tap targets
   for (const id in nodes) { const n = nodes[id]; if (n.sector !== -2) { n.x *= WEB_SCALE; n.y *= WEB_SCALE; } }
   // slight thickness so the disk reads as 3D when tilted

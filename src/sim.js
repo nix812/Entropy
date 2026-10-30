@@ -204,6 +204,8 @@ function computeMods(alloc, runMods) {
   if (ks.chaos) M.affixLuck += 1.5;
   if (ks.prismatic) M.dmg *= 0.9;
   if (ks.unbreakable) M.dmg *= 0.9;
+  if (ks.glacier) M.dmg *= 0.8;
+  for (const [k2, d2] of [['cLink', 'circuit'], ['cBolt', 'circuit'], ['hPull', 'horizon'], ['hWell', 'horizon'], ['aRank', 'artisan'], ['aVxp', 'artisan'], ['gScore', 'gambler']]) if (!ks[d2]) delete m[k2];
   if (!ks.marksman) delete m.msOc; if (!ks.wildfire) { delete m.wfHeat; delete m.wfDur; } if (!ks.wareco) { delete m.weStep; delete m.weTur; }
   M.raw = m;
   return M;
@@ -625,8 +627,9 @@ function newRun(opts) {
   };
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
   G.laws = opts.daily ? [] : (PROF.laws || []).slice(); G.novaN = opts.daily ? 0 : PROF.nova || 0;
-  G.af = computeAf([]); G.scoreMult = 1 + G.af.score;
+  G.af = computeAf([]);
   G.mods = computeMods(PROF.alloc, anomMods());
+  G.scoreMult = 1 + G.af.score + gamblerScore();
   const M = G.mods, sw = G.startWave;
   G.core = { x: G.map.core.x + 0.5, y: G.map.core.y + 0.5, hp: M.coreHP * G.af.coreHPx, max: M.coreHP * G.af.coreHPx, shield: M.shield, smax: M.shield,
     sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
@@ -688,7 +691,7 @@ function anomMods() {
 function recomputeAll() {
   if (!G) return;
   G.af = computeAf(G.anoms);
-  G.scoreMult = 1 + G.af.score + 0.1 * G.stabilized;
+  G.scoreMult = 1 + G.af.score + 0.1 * G.stabilized + gamblerScore();
   const M = G.mods = computeMods(PROF.alloc, anomMods());
   const c = G.core;
   if (!c.A) coreAffSum(c);
@@ -713,7 +716,7 @@ function upgradeCost(t) {
   return Math.round(TOWERS[t.type].cost * LV_COST[t.lvl + 1] * x);
 }
 function rerollCost(t) {
-  return Math.round(TOWERS[t.type].cost * 0.35 * (1 + t.rerolls * 0.5) * (G.rerollDisc ? 0.5 : 1));
+  return Math.round(TOWERS[t.type].cost * 0.35 * (1 + t.rerolls * 0.5) * (G.rerollDisc ? 0.5 : 1) * (G.mods.ks.artisan ? 0.5 : 1));
 }
 const towerPool = type => TOWERS[type].kind === 'support' || TOWERS[type].kind === 'snare' ? 'pylon' : TOWERS[type].kind === 'eco' ? 'forge' : 'atk';
 function rollTier(forceTier, luckBonus, minTier) {
@@ -954,6 +957,7 @@ function towerStats(t) {
   s.ground = !!D.ground;
   const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
   if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
+  if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.06 + FX('aRank') / 100) * t.rank : 0.8;
   return s;
 }
 function recomputeAuras() {
@@ -973,6 +977,20 @@ function recomputeAuras() {
     }
     t.reson = Math.min(4, els.size + ((G.mods.orb && G.mods.orb.reson[t.s.el]) || 0));
     t.buff.dmg += RESON_DMG * t.reson;
+  }
+  // Circuit: attack towers in neighbouring tiles are wired; wired groups form chains
+  G.chains = [];
+  for (const t of G.towers) { t.wires = []; t.chain = null; }
+  if (G.mods.ks.circuit) {
+    const att = G.towers.filter(t => canOvercharge(t));
+    for (const t of att) for (const o of att) if (o !== t && Math.abs(o.x - t.x) <= 1 && Math.abs(o.y - t.y) <= 1) t.wires.push(o);
+    for (const t of att) { t.buff.rate += (0.08 + FX('cLink') / 100) * Math.min(4, t.wires.length); }
+    for (const t of att) {
+      if (t.chain || !t.wires.length) continue;
+      const ch = { m: [], t: 4 }, q = [t]; t.chain = ch;
+      while (q.length) { const c = q.pop(); ch.m.push(c); for (const o of c.wires) if (!o.chain) { o.chain = ch; q.push(o); } }
+      G.chains.push(ch);
+    }
   }
   G.pylons = G.towers.filter(t => t.s.kind === 'support');
   G.forges = G.towers.filter(t => t.s.kind === 'eco');
@@ -1163,7 +1181,7 @@ function updateStorms(dt) {
 // ---------- waves ----------
 function rollEvents(w) {
   const ev = {}, list = [];
-  if (w < 5) return { ev, list };
+  if (w < 5 && !(G.mods && G.mods.ks.gambler && w >= 2)) return { ev, list };
   const maxN = 1 + Math.floor(w / 18);
   let chance = Math.min(0.85, (0.28 + w * 0.012) * G.CH.ev);
   for (let i = 0; i < maxN; i++) {
@@ -1174,6 +1192,8 @@ function rollEvents(w) {
     ev[E.id] = 1; list.push(E);
     chance *= 0.6;
   }
+  // Gambler: one more roll of the dice every wave
+  if (G.mods && G.mods.ks.gambler && w >= 2) { const opts = EVENTS.filter(E => E.from <= w + 10 && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
   return { ev, list };
 }
 function prepareWave(w) {
@@ -1389,6 +1409,10 @@ function readDefence(w, jitter) {
   if (K.marksman) add('brood', 0.5, 'you rely on a few big guns, so it comes in numbers');
   if (K.wildfire) add('wings', 0.55, 'your fire only burns the road, so it flies over it');
   if (K.wareco) add('haste', 0.45, 'it wants to reach your core before the war chest fills');
+  if (K.circuit) add('shell', 0.45, 'its shields soak your chain lightning');
+  if (K.glacier) add('wings', 0.5, 'fliers skip your ice jams');
+  if (K.horizon) add('bulk', 0.45, 'heavy bodies shrug off your gravity');
+  if (K.artisan) add('brood', 0.45, 'you trust a few crafted towers, so it comes in numbers');
   const last = G.stats.assaults && G.stats.assaults.list.length ? G.stats.assaults.list[G.stats.assaults.list.length - 1] : null;
   if (last && last.won && last.genes) for (const o of out) if (last.genes.includes(o.g)) o.score *= 0.4;
   if (jitter) for (const o of out) o.score *= 0.85 + G.r() * 0.3;
@@ -1594,7 +1618,9 @@ function updateWaves(dt) {
 
 // ---------- entropy & anomalies ----------
 const entropyNeed = () => 100 * (1 + 0.3 * (G.anoms.length + G.stabilized));
+const gamblerScore = () => G && G.mods && G.mods.ks.gambler ? 0.25 + FX('gScore') / 100 : 0;
 function addEntropy(v) {
+  if (G && G.mods && G.mods.ks.gambler) v *= 1.25;
   if (!G || G.over || G.anomOffers) return;
   // the gauge shows percent of the current threshold; each draw raises the threshold
   G.entropy = Math.min(100, G.entropy + 100 * v / entropyNeed() * (G.af.fill ? 2 : 1) * (G.mods.ks.singular ? 2 : 1) * Math.sqrt(G.CH.ev));
@@ -1633,6 +1659,7 @@ function stabilize() {
 function grantVxp(t, v) {
   if (!t || t.vxp === undefined) return;
   const vb = G.mods.orb && G.mods.orb.vxp[t.s.el]; if (vb) v *= 1 + vb / 100;
+  if (G.mods.ks.artisan) v *= 2 * (1 + FX('aVxp') / 100);
   t.vxp += v;
   const had = t.pending, r0 = t.rank;
   while (t.vxp >= vetThreshold(t.rank + 1)) {
@@ -1809,6 +1836,24 @@ function enemySlow(e) {
 }
 function updateEnemies(dt) {
   const ev = G.ev, M = G.mods;
+  // Event Horizon: gravity wells drag ground enemies back down the road
+  if (G.wells && G.wells.length) {
+    const pull = 2.6 * (1 + FX('hPull') / 100);
+    for (const w of G.wells) { w.t -= dt; for (const e of G.enemies) if (!e.dead && !e.boss && !e.fly && dist2(e.x, e.y, w.x, w.y) <= w.r * w.r) e.d = Math.max(0, e.d - pull * dt); }
+    G.wells = G.wells.filter(w => w.t > 0);
+  }
+  // Glacier: Frozen ground enemies are ice blocks; whoever walks up behind them stops (and becomes part of the jam)
+  for (const e of G.enemies) e.jammed = false;
+  if (M.ks.glacier) {
+    const byL = new Map();
+    for (const e of G.enemies) if (!e.dead && !e.fly && !e.boss) { const a = byL.get(e.L) || []; a.push(e); byL.set(e.L, a); }
+    for (const arr of byL.values()) {
+      if (!arr.some(e => e.st.frozen > 0)) continue;
+      arr.sort((a, b) => b.d - a.d);
+      let wall = null;
+      for (const e of arr) { if (e.st.frozen > 0) { wall = e.d; continue; } if (wall !== null && wall - e.d < 0.55) { e.jammed = true; wall = e.d; } else wall = null; }
+    }
+  }
   // gravity fields
   for (const e of G.enemies) e.fieldSlow = 0;
   for (const t of G.towers) {
@@ -1886,6 +1931,8 @@ function updateEnemies(dt) {
       if (ev.surge) spd *= 1.35;
       spd *= 1 + sw.haste + (G.af.haste || 0) + (sw.inStorm ? 0.12 + (G.af.magnet ? 0.2 : 0) : 0);
       if (G.af.groundSlow && !e.fly) spd *= 1 - G.af.groundSlow;
+      if (M.ks.horizon) spd *= 1.12;
+      if (e.jammed) spd = 0;
       spd *= netK;
       if (G.slime && G.slime.length && e.boss !== 'snail') for (const p of G.slime) if (p.L === e.L && Math.abs(p.d - e.d) < 0.4) { spd *= 1.4; break; }
       e.slow = 1 - spd / e.spd;
@@ -2214,6 +2261,7 @@ function applyStatuses(e, dmg, el, src, o) {
     if (s.stun && r() < s.stun && !jugg) st.stun = Math.max(st.stun, e.boss ? 0.2 : 0.6);
   }
   if (markP > 0 && r() < markP) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
+  if (M.ks.horizon && st.mark >= M.markMax && !e.yanked && !e.boss && !e.fly) { e.yanked = 1; e.d = Math.max(0, e.d - 1.5); Hooks.fx('implode', { x: e.x, y: e.y, r: 0.8 }); }
   if (M.chillVoid && st.chill > 0 && r() < M.chillVoid / 100) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
   if (M.knock && r() < M.knock && !jugg) { e.d = Math.max(0, e.d - (e.boss ? 0.15 : 0.5)); if (FX('knockMark')) { st.mark = Math.min(M.markMax, st.mark + 2); st.markT = 4; } }
   if (s.stunDur && s.kind === 'mortar' && !jugg) st.stun = Math.max(st.stun, s.stunDur * (e.boss ? 0.3 : 1));
@@ -2241,6 +2289,7 @@ function milestone() {
   Hooks.sfx('milestone');
 }
 function kill(e, src, o) {
+  if (G.mods.ks.horizon && !e.dead && (G.wells || (G.wells = [])).length < 24) { G.wells.push({ x: e.x, y: e.y, r: 1.2 * (1 + FX('hWell') / 100), t: 0.6 }); if (Math.random() < 0.35) Hooks.fx('implode', { x: e.x, y: e.y, r: 1.2 }); }
   if (e.dead) return;
   e.dead = true; e.hp = 0;
   geneRecord(e, false); assaultHit(e, false);
@@ -2404,6 +2453,19 @@ function updateTowers(dt) {
   if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} deals ×2`, EL[G.flux.el].col); } }
   let burning = 0;
   if (FX('heatSink')) for (const e of G.enemies) if (!e.dead && e.st.burn) burning++;
+  // Circuit: a disabled tower stalls its whole chain; chains of 4+ throw lightning
+  if (M.ks.circuit && G.chains) for (const ch of G.chains) {
+    if (ch.m.some(m => m.disabled > 0 && !m.stalled)) for (const m of ch.m) if (!(m.disabled > 0)) { m.disabled = 0.8; m.stalled = true; }
+    if (ch.m.length < 4 || !G.enemies.length) continue;
+    ch.t -= dt; if (ch.t > 0) continue; ch.t = 4;
+    if (ch.m.some(m => m.disabled > 0)) continue;
+    let best = null;
+    for (const e of G.enemies) if (enemyTargetable(e) && (!best || e.hp > best.hp) && ch.m.some(m => dist2(m.cx, m.cy, e.x, e.y) <= (m.s.range + 0.5) ** 2)) best = e;
+    if (!best) { ch.t = 0.5; continue; }
+    const pow = ch.m.reduce((a, m) => a + m.s.dmg * m.s.rate, 0) * 2 * (1 + FX('cBolt') / 100);
+    Hooks.fx('rail', { x1: best.x, y1: -1, x2: best.x, y2: best.y, col: '#ffe14d', crit: 1 }); Hooks.sfx('zap');
+    hit(best, pow, 'A', ch.m[0], { abil: 1 });
+  }
   // Wildfire: towers within 1 tile of burning road overheat (checked 4× a second)
   if (M.ks.wildfire) { G.hotClock = (G.hotClock || 0) - dt; if (G.hotClock <= 0) { G.hotClock = 0.25; const fires = G.zones.filter(z => z.k === 'roadfire'); for (const t of G.towers) { t.hot = false; for (const z of fires) if (dist2(t.cx, t.cy, z.x, z.y) <= (1 + z.r) * (1 + z.r)) { t.hot = true; break; } } } }
   if (FX('thunder') && G.enemies.length) {
@@ -2419,7 +2481,7 @@ function updateTowers(dt) {
     t.flash = Math.max(0, t.flash - dt);
     const s = t.s;
     if (s.kind === 'support' || s.kind === 'eco' || s.kind === 'snare') continue;
-    if (t.disabled > 0) { t.disabled -= dt; t.ramp = 0; t.beamTargets = null; continue; }
+    if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) t.stalled = false; t.ramp = 0; t.beamTargets = null; continue; }
     const sw = stormAt(t.cx, t.cy);
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
