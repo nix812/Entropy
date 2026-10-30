@@ -648,7 +648,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.0.1';
+const VERSION = '4.1.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -815,14 +815,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.0.1', title: 'Entropy 4.0 · The Swarm Plays Back', items: [
-  ['Music credits', 'The soundtrack is by kjartan_abel. Credits are now in Settings.'],
-  ['Strain Assaults', 'Every few waves the swarm studies your defence, breeds the strain that beats it and throws most of a wave at you. It warns you a wave ahead, says how it read you, and selling is free until it lands. Hold it to win +1 power for the run; fail and it spreads.'],
-  ['See its read', 'Tap DNA in the top bar to see what the swarm thinks your weak spots are right now, before it acts on them.'],
-  ['Calmer screen', 'Only events you should react to get a card in the middle (tap to dismiss). Feedback to your taps shows at the bottom; everything else goes to a small fading feed in the corner.'],
-  ['Overcharge', 'Now +35% Damage and +15% Attack Speed per step, up to 3 steps.'],
-  ['Idle towers', 'A tower that has hit nothing for 2 waves shows little Zs, and its panel tells you to move it. Relocating the core now warns you how many towers would lose the road.'],
-  ['Fixes', 'Arc Coils keep their shield-shredding bonus under Conflagration. The run log now records the swarm\'s genes and what leaked each wave.']
+const WHATS_NEW = { ver: '4.1.0', title: 'Entropy 4.1', items: [
+  ['Bigger bosses', 'Bosses are 50% larger on the field, so you can actually see them coming.'],
+  ['Boss breach', 'A boss that reaches your core ends the run. No shield or Unbreakable saves you. Gloop\'s little splits still only take a chunk.'],
+  ['Bosses rebalanced', 'Because a breach now ends the run, bosses carry less health than in 4.0, early ones most of all.'],
+  ['Smarter swarm', 'Strain Assaults are tougher, and the swarm no longer leans on Thermal Ward against Conflagration builds, where it barely works.'],
+  ['Music credits', 'The soundtrack is by kjartan_abel. Credits are in Settings.'],
+  ['From 4.0', 'Strain Assaults: the swarm reads your defence and attacks it, with a wave of warning and free selling to answer. Tap DNA to see its read.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -2711,7 +2710,7 @@ function genWave(w, ev) {
 // Fail: it entrenches. Its genome spreads through the next waves and the following assault comes sooner.
 const ENVN = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
 // secs: the assault's total HP is sized to this many seconds of your firepower (like bosses), so it tests any defence
-const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1, minHp: 1.3, secs: ENVN('ASEC', 30), count: ENVN('ACNT', 1.3) };
+const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1, minHp: 1.3, secs: ENVN('ASEC', 40), count: ENVN('ACNT', 1.3) };
 const assaultOff = () => typeof process !== 'undefined' && process.env && (process.env.NOASSAULT || process.env.NOGA);
 function assaultFirst() { const E = evoCfg(); return E.first || E.start + 6; }
 function assaultEvery() { return evoCfg().every || 8; }
@@ -2731,7 +2730,8 @@ function readDefence(w, jitter) {
   const sh = k => (I.type[k] || 0) / tot, pc = v => Math.round(v * 100) + '%';
   const out = [], add = (g, score, why) => { if (score > 0 && (!GENES[g].from || w >= GENES[g].from)) out.push({ g, score, why }); };
   const els = Object.entries(I.el).map(([k, v]) => [k, v / (etot || 1)]).sort((a, b) => b[1] - a[1]);
-  if (els[0] && els[0][1] >= 0.35) out.push({ g: 'ward', el: els[0][0], score: (els[0][1] - 0.3) * 2.2, why: `${pc(els[0][1])} of your damage is ${EL[els[0][0]].name}` });
+  // under Conflagration a Thermal ward only resists 25%, so the swarm values it less
+  if (els[0] && els[0][1] >= 0.35) out.push({ g: 'ward', el: els[0][0], score: (els[0][1] - 0.3) * 2.2 * (els[0][0] === 'T' && G.mods.ks.conflag ? 0.45 : 1), why: `${pc(els[0][1])} of your damage is ${EL[els[0][0]].name}` });
   const pierce = sh('rail') + sh('lens') + sh('flame') * 0.5 + sh('missile') * 0.25;
   add('plating', (0.35 - pierce) * 1.6, `only ${pc(pierce)} of your fire pierces armour`);
   const arc = (I.el.A || 0) / (etot || 1);
@@ -2816,7 +2816,8 @@ function idleWaves(t) {
 function topTower() { let best = null; for (const t of G.towers) if (t.dmgDone > (best ? best.dmgDone : 0) && canOvercharge(t)) best = t; return best; }
 function startWave() {
   if (G.wave > 0) { rlogWave(); intelUpdate(); }
-  if (G.assault && G.assault.state === 'live' && !G.queue.some(q => q.assault) && !G.enemies.some(e => e.assault && !e.dead)) resolveAssault();
+  // resolve when its units are all gone, or two waves on at the latest (a straggler must not keep it open forever)
+  if (G.assault && G.assault.state === 'live' && ((!G.queue.some(q => q.assault) && !G.enemies.some(e => e.assault && !e.dead)) || G.wave >= G.assault.w + 2)) resolveAssault();
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
@@ -3094,7 +3095,8 @@ const BOSS_HPX = [[10, 3], [20, 3.5], [40, 3], [60, 2]];
 const bossHpX = w => { const P = BOSS_HPX; if (w <= P[0][0]) return P[0][1]; for (let i = 1; i < P.length; i++) if (w <= P[i][0]) { const [a, va] = P[i - 1], [b, vb] = P[i]; return va + (vb - va) * (w - a) / (b - a); } return P[P.length - 1][1]; };
 // seconds of your real firepower a boss should soak. v3.1: firepower = the larger of measured peak (G.power, accurate late)
 // and half the stat-based potential (potentialDps, accurate early when small waves never let towers fire flat out)
-const BOSS_SECS = w => w < 45 ? 36 : 30;
+// v4.1: a breach ends the run, so bosses carry less health than in 4.0 (36/30 s): ×0.65 before Wave 45, ×0.8 after (BSEC/BSEC2 for tests)
+const BOSS_SECS = w => (w < 45 ? 36 * ENVN('BSEC', 0.65) : 30 * ENVN('BSEC2', 0.8));
 const BOSS_PHASES = [0.66, 0.33];
 // v2.3: every boss wave is a weighted draw from the bosses unlocked by that wave. Never-seen bosses weigh most,
 // and a boss gets likelier the longer it's been away; the last two can't repeat.
@@ -3119,12 +3121,12 @@ function spawnBoss(q) {
   const fire = Math.max(G.power || 0, potentialDps() * 0.5);
   const hp = q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (B.fly ? 1.3 : 1) * (1 + ((G.af && G.af.bossHP) || 0));
   const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
-    armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 0.8, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
+    armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 1.15, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2, phase: 0, phaseT: 0 };
   if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
-  if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.6 : 0.45; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
+  if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.85 : 0.6; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
   if (B.id === 'cat') e.timer2 = 9;
   if (B.id === 'worm') { e.gut = []; e.timer = 6; }
   if (B.id === 'auditor') { e.audited = 0; e.timer2 = 4; }
@@ -3409,8 +3411,13 @@ function leak(e) {
   { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; }
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
-  // a boss that reaches the core breaches it: a fixed share of the core, so it always hurts and is never a free pass
-  if (e.boss) dmg = e.gen ? c.max * (e.gen === 1 ? 0.12 : 0.06) : c.max * (0.35 + 0.1 * (e.phase || 0));
+  // v4.1: a boss that reaches the core ends the run outright (shields and Unbreakable don't save you). Gloop's splits still breach for a share
+  if (e.boss && !e.gen) {
+    Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
+    Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
+    G.stats.bossBreach = e.bossName; c.shield = 0; c.hp = 0; gameOver(); return;
+  }
+  if (e.boss) dmg = c.max * (e.gen === 1 ? 0.12 : 0.06);
   if (e.boss === 'worm' && e.gut && e.gut.length) { Hooks.toast('DIGESTED', `${e.gut.length} swallowed tower${e.gut.length > 1 ? 's are' : ' is'} gone for good`, '#ff4d6a', true); e.gut = []; }
   if (e.boss === 'auditor' && e.audited > 0) { Hooks.log(`The Auditor left with ${Math.round(e.audited)} of your credits`, '#ff4d6a'); e.audited = 0; }
   if (e.shield > 0 && e.boss) dmg *= 1.2;
@@ -5050,6 +5057,7 @@ const Render = (() => {
   const meatSprite = () => outlined('omeat', spr('meat', 12, 12, g => { D(g, 6, 6, 5, '#2a0a02'); D(g, 6, 6, 4, '#8a3a1a'); D(g, 5, 5, 1, '#c06a3a'); R(g, 6, 2, 3, 2, '#d8281a'); P(g, 8, 8, '#5a1a0a'); }));
   const scCache = {};
   function scaledSpr(k, s, f) { if (scCache[k]) return scCache[k]; const c = document.createElement('canvas'); c.width = Math.round(s.width * f); c.height = Math.round(s.height * f); const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, c.width, c.height); return scCache[k] = c; }
+  const BOSS_SCALE = 1.5; // bosses draw 1.5× their 48px art (3 tiles), so they read as bosses on big maps
   function bossSprite(id) { return outlined('oboss:' + id, spr('boss:' + id, 48, 48, g => BOSS[id](g, ENEMY_COL.boss))); }
 
   // crate palettes: frame, body, lid, beacon
@@ -5254,11 +5262,11 @@ const Render = (() => {
         const k = (frame % 30) / 30; b.strokeStyle = hexA('#c46cff', 0.8 - k * 0.6); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 6 + k * 14, 0, 6.283); b.stroke();
         b.fillStyle = 'rgba(10,0,20,0.85)'; b.beginPath(); b.arc(X, Y, 9, 0, 6.283); b.fill(); return;
       }
-      const sg = wormSeg(), o = {};
+      const sg = scaledSpr('wseg', wormSeg(), BOSS_SCALE), so = sg.width >> 1, o = {};
       for (let k = 7; k >= 1; k--) { const dd = e.d - k * 0.42; if (dd < 0) continue; lanePos(e.L, dd, o); const wig = Math.sin(frame / 4 + k) * 1.5;
-        b.drawImage(sg, Math.round(o.x * TILE - 11), Math.round(o.y * TILE - 11 + wig)); }
+        b.drawImage(sg, Math.round(o.x * TILE - so), Math.round(o.y * TILE - so + wig)); }
     }
-    if (e.boss) s = bossSprite(e.boss); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
+    if (e.boss) s = scaledSpr('B:' + e.boss, bossSprite(e.boss), BOSS_SCALE); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
     if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
     if (e.genes && e.genes.includes('bulk')) s = scaledSpr('bk:' + e.type, s, 1.3);
     if (e.mite) s = scaledSpr('mite', s, 0.7);
@@ -5273,8 +5281,8 @@ const Render = (() => {
     else if (st.frozen > 0) { b.globalAlpha = 0.6; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#bff4ff'), Math.round(X - hw), Math.round(y - hh)); }
     else if (st.chill > 0) { b.globalAlpha = 0.12 + st.chill * 0.06; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#9ad8ff'), Math.round(X - hw), Math.round(y - hh)); }
     b.globalAlpha = 1;
-    if (e.boss === 'cat' && e.napT > 0) { const ox = Math.round(X - hw), oy = Math.round(y - hh); R(b, ox + 16, oy + 15, 6, 6, '#ff9a3c'); R(b, ox + 27, oy + 15, 6, 6, '#ff9a3c'); R(b, ox + 16, oy + 18, 6, 1, '#3a1606'); R(b, ox + 27, oy + 18, 6, 1, '#3a1606'); }
-    if (e.boss === 'titan' && e.plates > 0) { R(b, X - 22, y - 22, 44, 5, '#8a8fa8'); R(b, X - 22, y + 17, 44, 5, '#8a8fa8'); if (e.plates > 1) { R(b, X - 22, y - 22, 5, 44, '#a4aac4'); R(b, X + 17, y - 22, 5, 44, '#a4aac4'); } }
+    if (e.boss === 'cat' && e.napT > 0) { const ox = Math.round(X - hw), oy = Math.round(y - hh); const q = v => Math.round(v * BOSS_SCALE); R(b, ox + q(16), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(27), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(16), oy + q(18), q(6), 2, '#3a1606'); R(b, ox + q(27), oy + q(18), q(6), 2, '#3a1606'); }
+    if (e.boss === 'titan' && e.plates > 0) { const q = v => Math.round(v * BOSS_SCALE); R(b, X - q(22), y - q(22), q(44), q(5), '#8a8fa8'); R(b, X - q(22), y + q(17), q(44), q(5), '#8a8fa8'); if (e.plates > 1) { R(b, X - q(22), y - q(22), q(5), q(44), '#a4aac4'); R(b, X + q(17), y - q(22), q(5), q(44), '#a4aac4'); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
     if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
@@ -5549,7 +5557,7 @@ const Render = (() => {
     let np = 0;
     for (const p of G.projs) { if (np++ > 160) break; light(p.x * TILE, p.y * TILE, TILE * (p.k === 'bullet' ? 0.45 : 0.75), EL[p.el] ? EL[p.el].col : '#ffffff', p.k === 'bullet' ? 0.3 : 0.4); }
     for (const e of G.enemies) {
-      if (e.boss) light(e.x * TILE, e.y * TILE, TILE * (e.gen ? 1.4 : 2.4), BOSS_COL[e.boss] || '#ff3355', 0.22);
+      if (e.boss) light(e.x * TILE, e.y * TILE, TILE * (e.gen ? 1.8 : 3.4), BOSS_COL[e.boss] || '#ff3355', 0.22);
       else if (e.elite.length) light(e.x * TILE, e.y * TILE, TILE * 1.1, ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, 0.18);
       if (e.st.burn) light(e.x * TILE, e.y * TILE, TILE * 0.7, EL.T.col, 0.16);
     }
@@ -6268,7 +6276,7 @@ const UI = (() => {
     box.querySelector('h3').textContent = B.name;
     box.querySelector('.ttl').textContent = e.bossTitle || '';
     box.querySelector('.desc').textContent = B.desc;
-    box.querySelector('.ph').textContent = B.id === 'gloop' ? 'Pop it. Then pop the pieces.' : `Phase II at 66% and a final phase at 33%: each time it unleashes ${BOSS_POWER[B.id] || 'its power'}.`;
+    box.querySelector('.ph').textContent = (B.id === 'gloop' ? 'Pop it. Then pop the pieces.' : `Phase II at 66% and a final phase at 33%: each time it unleashes ${BOSS_POWER[B.id] || 'its power'}.`) + ' If it reaches your core, the run is over.';
     Render.bossPortrait(B.id, box.querySelector('canvas'));
     box.classList.remove('out'); box.hidden = false;
     UI.slowmo = 1.4;
