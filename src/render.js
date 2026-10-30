@@ -923,6 +923,8 @@ const Render = (() => {
       for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const px = x + dx * w, py = y + dy * w, sx2 = dx ? -1 : 1, sy2 = dy ? -1 : 1; c.moveTo(px, py + sy2 * L); c.lineTo(px, py); c.lineTo(px + sx2 * L, py); }
       c.stroke();
     }
+    // Node Beacon placement (Black Market): a cyan frame says "tap a tile"
+    if (G.placing === 'beacon') { c.setLineDash([8, 6]); c.lineDashOffset = -frame / 2; c.lineWidth = 3; c.strokeStyle = hexA('#6ae2ff', 0.55 + 0.35 * Math.sin(frame / 5)); c.strokeRect(ox + 1.5, oy + 1.5, DW - 3, DH - 3); c.setLineDash([]); }
     // core relocation: reach circle, valid tiles, and the planned roads
     if (G.reloc) {
       ringS(G.core.x * TILE, G.core.y * TILE, RELOCATE_RADIUS * TILE, PAL.core, 0.55, 1.5, 0.025);

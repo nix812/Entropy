@@ -331,7 +331,9 @@ const UI = (() => {
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
     const html = chips.join('');
-    const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c); }
+    const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c);
+      // spare power during a wave is wasted: the counter pulses, and a tap puts it on your best tower (Nic never used Overcharge)
+      pwEl.parentNode.classList.toggle('spare', c - u >= 1 && !G.spawningDone && G.wave >= 4 && !!topTower()); }
     const ch = $('#chips');
     if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
     if (hudFull) renderDps();
@@ -351,8 +353,8 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP)/;
-  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
+  const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT)/;
+  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force) {
@@ -662,10 +664,18 @@ const UI = (() => {
   function cashPanelHTML() {
     const r = cashRate() * G.CH.score * (G.scoreMult || 1), cr = Math.floor(G.credits);
     const opt = (f, label) => { const amt = Math.floor(cr * f); return `<button class="btn ${f === 1 ? 'primary' : ''}" data-act="cash" data-v="${f}" ${amt > 0 ? '' : 'disabled'}>${label} · ${fmt(amt)}<small>+${fmt(amt * r)} score</small></button>`; };
-    return `<div class="ph"><div class="pt"><b>Cash In</b><small>Rate rises every wave</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
-      <div class="cashrate"><b>${num1(r)}</b><span>score per credit</span></div>
+    return `<div class="ph"><div class="pt"><b>Exchange</b><small>Cash In and the Black Market</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
+      ${marketHTML()}
+      <div class="lbl">Cash In · ${num1(r)} score per credit</div>
       <div class="cashopts">${opt(0.25, '25%')}${opt(0.5, '50%')}${opt(1, 'All')}</div>
       ${G.stats.cashed ? `<div class="sts">Cashed in this run: ${fmt(G.stats.cashed)} credits</div>` : ''}`;
+  }
+  // v4.4 Black Market: a pirate trader's three items, restocked after every boss wave
+  function marketHTML() {
+    const M = marketEnsure(), nextW = (M.n + 1) * MARKET.refresh;
+    const rows = M.stock.map(id => { const I = MARKET_ITEMS.find(x => x.id === id), got = M.bought.includes(id), ok = marketOk(I), p = marketPrice(I);
+      return `<button class="mkt ${got ? 'sold' : ''}" data-act="buy" data-v="${id}" ${got || !ok ? 'disabled' : costBtn(p)} style="--c:${I.col}"><b>${esc(I.name)}</b><span>${tipify(I.desc)}</span><em>${got ? 'Sold' : !ok ? 'Unavailable' : fmt(p)}</em></button>`; }).join('');
+    return `<div class="lbl">Black Market · <i class="mline">"${esc(M.line)}"</i></div><div class="mktlist">${rows || '<p class="note">The trader has nothing left.</p>'}</div><p class="note">New stock at Wave ${nextW}. Prices rise with the wave.${M.spent ? ` Spent here: ${fmt(M.spent)}.` : ''}</p>`;
   }
   function liveRefreshPanel() {
     if (!panel || !G) return;
@@ -727,6 +737,14 @@ const UI = (() => {
     }
     if (panel.kind === 'cash') {
       if (act === 'cash') { const got = cashIn(Math.floor(G.credits * +b.dataset.v)); if (got) toast('CASHED IN', `+${fmt(got)} score`, '#ffb03a'); else SFX.play('deny'); updateHud(); panel.sig = null; liveRefreshPanel(); }
+      else if (act === 'buy') {
+        const m = marketBuy(b.dataset.v);
+        if (!m) { SFX.play('deny'); return; }
+        const I = MARKET_ITEMS.find(x => x.id === b.dataset.v);
+        if (G.placing === 'beacon') { G.placingRefund = marketPrice(I); closePanel(); toast('NODE BEACON', m + '. Tap the core to cancel', '#6ae2ff', true); }
+        else { toast('BLACK MARKET', `${I.name}: ${m}`, I.col); panel.sig = null; liveRefreshPanel(); }
+        updateHud(); Save.save();
+      }
       return;
     }
     if (panel.kind === 'core') {
@@ -831,6 +849,12 @@ const UI = (() => {
       return;
     }
     const tx = Math.floor(p.x), ty = Math.floor(p.y);
+    if (G.placing === 'beacon') {
+      if (tx === G.map.core.x && ty === G.map.core.y) { G.placing = null; G.credits += G.placingRefund || 0; G.placingRefund = 0; if (G.market) { G.market.bought = G.market.bought.filter(x => x !== 'beacon'); G.market.spent = Math.max(0, (G.market.spent || 0) - marketPrice(MARKET_ITEMS.find(x => x.id === 'beacon'))); } SFX.play('sell', {}); toast('NODE BEACON', 'Cancelled and refunded', '#6ae2ff', true); updateHud(); return; }
+      if (marketPlaceNode(tx, ty)) { SFX.play('ui'); G.placingRefund = 0; toast('POWER NODE PLANTED', 'Towers built here draw no power and hit harder', '#6ae2ff'); updateHud(); }
+      else { SFX.play('deny'); toast('NODE BEACON', 'Needs an empty ground tile inside the sector. Tap the core to cancel', '#ff4d6a', true); }
+      return;
+    }
     if (G.reloc) {
       if (!G.reloc.cands.has(tIdx(tx, ty))) { SFX.play('deny'); return; }
       const P = planRelocation(tx, ty);
@@ -1359,6 +1383,16 @@ const UI = (() => {
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
     $('#chips').addEventListener('click', e => { if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#pw').parentNode.onclick = () => {
+      if (!G || G.over) return; SFX.play('ui');
+      const free = gridFree(), T = topTower();
+      if (free >= 1 && T && canOvercharge(T) && (T.oc || 0) < ocMax()) {
+        const n = Math.min(ocMax(), (T.oc || 0) + free);
+        if (setOvercharge(T, n)) { openTower(T); toast('OVERCHARGED', `${TOWERS[T.type].name}${T.name ? ` "${T.name}"` : ''} +${n}: spare power put to work. Change it any time in the tower panel`, '#59f0b4'); updateHud(); return; }
+      }
+      if (free >= 1) toast('SPARE POWER', `${free} unused. Tap a tower and raise its Overcharge: +${Math.round(OVERCHARGE.dmg * 100)}% Damage per point`, '#59f0b4');
+      else toast('POWER', `Every tower draws 1 power; Overcharge draws more. Capacity grows 1 every ${GRID.perWaves} waves, or expand the reactor from the core panel`, '#59f0b4');
+    };
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };

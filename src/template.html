@@ -138,6 +138,14 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .cashopts { display: flex; flex-direction: column; gap: 5px; }
 .cashopts .btn { flex-direction: row; justify-content: space-between; min-height: 46px; padding: 0 12px; }
 .cashopts .btn small { font-size: 17px; }
+/* v4.4 Black Market */
+.mline { font-style: italic; color: var(--dim); text-transform: none; letter-spacing: 0; font-family: var(--f-term); font-size: 14px; }
+.mktlist { display: flex; flex-direction: column; gap: 5px; }
+.mkt { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n p" "d p"; gap: 0 10px; text-align: left; background: var(--panel); box-shadow: inset 3px 0 0 var(--c, var(--amber)), inset 0 0 0 1px var(--line); padding: 6px 10px; color: var(--ink); min-height: 46px; }
+.mkt b { grid-area: n; font-family: var(--f-pix); font-size: 9px; letter-spacing: 1px; color: var(--c, var(--amber)); }
+.mkt span { grid-area: d; font-size: 15px; line-height: 1.15; color: #c9c6bc; }
+.mkt em { grid-area: p; align-self: center; font-style: normal; font-size: 20px; color: var(--amber); white-space: nowrap; }
+.mkt:disabled { opacity: 0.55; } .mkt.sold em { color: var(--dim); text-decoration: line-through; } .mkt em.poor { color: var(--bad); }
 #bCall.cp { color: var(--core); box-shadow: inset 0 0 0 2px var(--core); animation: pulse 1.4s infinite; }
 #bCall.cp span { color: var(--core); }
 @keyframes pulse { 50% { filter: brightness(1.35); } }
@@ -231,6 +239,9 @@ body.panel-r #docbar { display: none; }
 .hs.pwr { display: flex; align-items: center; gap: 4px; color: #59f0b4; }
 .hs.pwr b { font-size: 20px; }
 .hs.pwr.full { color: #ffb03a; }
+.hs.pwr { cursor: pointer; padding: 0 4px; border-radius: 2px; }
+.hs.pwr.spare { animation: sparepw 1.6s ease-in-out infinite; }
+@keyframes sparepw { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(89, 240, 180, 0.15); } 50% { box-shadow: inset 0 0 0 1px rgba(89, 240, 180, 0.9), 0 0 10px rgba(89, 240, 180, 0.45); } }
 .hs.pwr .bolt { width: 8px; height: 12px; background: currentColor; clip-path: polygon(60% 0, 0 58%, 45% 58%, 30% 100%, 100% 40%, 55% 40%); }
 .ph small.grid { margin-left: 8px; color: #59f0b4; font-family: var(--f-pix); font-size: 8px; } .ph small.grid.full { color: #ffb03a; }
 .modes.oc .chip:disabled { opacity: 0.35; }
@@ -591,7 +602,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
       <div class="hs pwr" aria-label="Power grid"><span class="bolt"></span><b id="pw">0/0</b></div>
       <div class="hs"><span class="lbl">Wave</span><b id="wave">0</b><small id="nextw"></small></div>
       <div id="chips"></div>
-      <button class="hs sc cashbtn" id="bCash" aria-label="Cash in credits for score"><span class="lbl">Score</span><b id="score">0</b><i class="cashtag">Cash In</i></button>
+      <button class="hs sc cashbtn" id="bCash" aria-label="Cash in credits for score"><span class="lbl">Score</span><b id="score">0</b><i class="cashtag">Market</i></button>
     </header>
     <div class="rail" id="railL"><div id="abils" style="display:contents"></div></div>
     <div id="stage">

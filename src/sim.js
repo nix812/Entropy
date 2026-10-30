@@ -47,7 +47,7 @@ function supernova(remnant, law) {
   return true;
 }
 const pointsFree = () => profLevel().level - pointsSpent();
-const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave);
+const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
 
 function allocSet() { return new Set(PROF.alloc); }
 function treePathTo(id) {
@@ -1576,6 +1576,60 @@ function cashIn(amount) {
   Hooks.sfx('cash'); Hooks.fx('cash', {}); Hooks.log(`Cashed in ${fmt(amount)} credits`, '#ffb03a');
   return G.score - before;
 }
+// ---------- v4.4 The Black Market: three items a stock, restocked after every boss wave, prices climbing with the wave ----------
+const marketStockN = w => Math.floor(Math.max(1, w) / MARKET.refresh);
+const marketPrice = I => MARKET.price(I.base, G.wave);
+const nextLockedTower = () => TOWER_ORDER.filter(k => !towerUnlocked(k)).sort((a, b) => TOWERS[a].unlock - TOWERS[b].unlock)[0] || null;
+function marketOk(I) {
+  if (I.id === 'blueprint') return !!nextLockedTower();
+  if (I.id === 'beacon') return (G.market ? G.market.beacons || 0 : 0) < I.max;
+  if (I.id === 'recharge') return !!G.odUsed;
+  return true;
+}
+// stock is drawn from its own RNG (seed + stock number), so opening the panel never touches the run's dice
+function marketEnsure() {
+  if (!G.market) G.market = { n: -1, stock: [], bought: [], beacons: 0, line: '' };
+  const n = marketStockN(G.wave);
+  if (G.market.n !== n) {
+    const r = mulberry32((G.seed ^ Math.imul(n + 1, 2654435761)) >>> 0), pool = MARKET_ITEMS.filter(I => marketOk(I)), stock = [];
+    while (stock.length < MARKET.slots && pool.length) stock.push(pool.splice(Math.floor(r() * pool.length), 1)[0].id);
+    G.market = { n, stock, bought: [], beacons: G.market.beacons || 0, line: pick(r, MARKET_LINES), spent: G.market.spent || 0 };
+  }
+  return G.market;
+}
+function marketBuy(id) {
+  const M = marketEnsure(), I = MARKET_ITEMS.find(x => x.id === id);
+  if (!I || !M.stock.includes(id) || M.bought.includes(id) || G.over) return null;
+  if (!marketOk(I)) return null;
+  const price = marketPrice(I); if (G.credits < price) return null;
+  let msg = I.desc;
+  switch (id) {
+    case 'schematic': G.legendQueue += 2; break;
+    case 'blueprint': { const k = nextLockedTower(); if (!k) return null; (G.runUnlocks || (G.runUnlocks = [])).push(k); msg = `${TOWERS[k].name} unlocked for this run`; Hooks.onUnlock(k); break; }
+    case 'bribe': G.bossBribe = 1; break;
+    case 'beacon': G.placing = 'beacon'; msg = 'Tap an empty tile to plant the Power Node'; break;
+    case 'crate': for (const k of ABIL_ORDER) G.charges[k] = (G.charges[k] || 0) + 1; break;
+    case 'tokens': G.tokens += 2; break;
+    case 'starmap': G.geneFit = {}; G.geneExp = {}; if (G.assault && G.assault.state === 'warn') { G.assault = null; G.refit = false; } if (G.assaultNext != null) G.assaultNext += 3; break;
+    case 'mutagen': for (const t of G.towers) { t.affixes.push(rollAffix(t)); t.s = towerStats(t); } recomputeAuras(); break;
+    case 'medal': { const t = topTower(); if (!t) return null; grantVxp(t, Math.max(0, vetThreshold(t.rank + 1) - t.vxp)); msg = `${towerLabel(t)} is now Veteran ${roman(t.rank)}`; break; }
+    case 'recharge': G.odUsed = 0; G.odToldAt = 0; break;
+    default: return null;
+  }
+  G.credits -= price; M.bought.push(id); M.spent = (M.spent || 0) + price; G.stats.market = (G.stats.market || 0) + 1;
+  rlog('market', { id, price });
+  Hooks.sfx('cash'); Hooks.fx('cash', {});
+  return msg;
+}
+// Node Beacon: the tile becomes a Power Node (towers there draw no power and hit harder)
+function marketPlaceNode(x, y) {
+  if (G.placing !== 'beacon' || !inRegion(x, y, G.region) || G.map.tiles[tIdx(x, y)] !== 0 || isNode(x, y)) return false;
+  if (Math.abs(x - G.map.core.x) + Math.abs(y - G.map.core.y) < 2) return false;
+  G.placing = null; setNodes(G.nodes.concat([{ x, y }])); G.market.beacons = (G.market.beacons || 0) + 1; G.mapRev = (G.mapRev || 0) + 1;
+  for (const t of G.towers) t.s = towerStats(t); recomputeAuras();
+  Hooks.fx('upgrade', { x: x + 0.5, y: y + 0.5, col: '#6ae2ff' }); Hooks.sfx('upgrade', {});
+  return true;
+}
 // a checkpoint is due after this wave: it waits for the field to clear first
 const cpPending = () => !!(G.cpDue && G.cpDue === G.wave + 1 && !G.checkpoint);
 function callEarly() {
@@ -1806,6 +1860,7 @@ function spawnBoss(q) {
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2, phase: 0, phaseT: 0 };
   if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
   if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.85 : 0.6; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
+  if (G.bossBribe && !gen) { G.bossBribe = 0; e.hp = e.maxHp * 0.7; e.bribed = 1; Hooks.fx('say', { x: e.x, y: e.y - 1, t: B.id === 'auditor' ? 'Donation noted.' : '*pockets the bribe*' }); }
   if (B.id === 'cat') e.timer2 = 9;
   if (B.id === 'worm') { e.gut = []; e.timer = 6; }
   if (B.id === 'auditor') { e.audited = 0; e.timer2 = 4; }
@@ -3039,7 +3094,7 @@ function snapshotRun(waveNum) {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -3077,7 +3132,7 @@ function resumeRun(S) {
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   if (G.daily) { G.laws = []; G.novaN = 0; } // dailies never carry Cosmic Laws, resumed or not
-  G.goldAt = S.goldAt || 0;
+  G.goldAt = S.goldAt || 0; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
   // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
   if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
