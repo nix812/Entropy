@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 3.2.0 · October 29, 2026**
+**Version at handoff: 3.2.1 · October 29, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v3.2.0.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v3.2.1.zip`, sent alongside this document. It has the same content as the `source` branch. |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. Originally from Nic's Elemental Clash repo (`nix812/Elemental-Clash-V2`). The composer isn't recorded anywhere in either repo (the files were re-encoded, tags stripped); ask Nic if more tracks are wanted. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -418,6 +418,7 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
 | `lab.js WAVE SEEDS [filter]` | Equal-budget tower lab: each config (every attack tower at L3, Spec 1, Spec 2, plus "pulse+support" mixes at a 30% share) spends the same credits at the best road spots and fights 3 waves with the core held alive. Prints share of wave HP prevented and damage per credit. Set `BMULT` (calibrated: w8 0.559, w14 2.902, w20 2.211) or `CALIB=1` to find it. Survivors at the 1200 s cap count as leaked. **Don't edit `src/` while it runs**: the harness reloads source files for every config. |
 | `bench.js` | Damage per 100 credits for every tower, level and spec against a single target, a pack and a stream. |
 | `monkey.py MINUTES [W H seed]` | Plays the real page with random taps, panel buttons, zooms, reloads, snapshots and wave jumps, checking invariants (finite numbers, one core tile, `towerAt` in sync, no stalls). Prints page errors with stack lines, problems, and where the time went. Screens land in `test/audit/monkey_*`. CPU-starved runs can report false stalls; it now needs 4 s of frozen sim time, and its report includes frame counts so a starved page is easy to spot. |
+| `odbtn.py [W H tag]` | Overdrive rail button: locked, ready, armed, released, used. |
 | `v32shot.py [W H tag]` | v3.2: setup evolution note, Pandemonium pre-adapted toast, strains met, recap signature strain, Archive strains. |
 | `v31shot.py [W H tag]` | v3.1: notification queue, evolution intro and DNA panel, reactor expansion buttons, run log stored and copied at game over. |
 | `v3shot.py [W H tag]` | Power grid HUD readout, build panel when the grid is full, Overcharge buttons and damage, seeded evolution (gene chips, the tap-for-counter toast, evolved enemies on the field). |
@@ -564,3 +565,4 @@ The expanding sector made every level a little easier, because the compact early
 | 3.0 | "Red Queen": power grid and Overcharge; enemy counters (Plating, ground-only Flame and Gravity Well, Arc vs shields, Burn stops healing); the evolving swarm (waves bred from your defence's failures); tower roles; Spare Reactor boon; evolution peak in the recap |
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
+| 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |

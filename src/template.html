@@ -173,6 +173,12 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .abil { color: var(--warn); }
 .abil.aim { background: var(--amber); color: #1a1004; box-shadow: none; }
 .abil.aim span, .abil.aim .cnt { color: #1a1004; }
+.rb.od { color: var(--core); }
+.rb.od.dim { opacity: 0.45; color: var(--dim); }
+.rb.od.ready { box-shadow: inset 0 0 0 1px var(--core), 0 0 12px rgba(89,240,180,0.45); animation: pulse 1.2s infinite; }
+.rb.od.ready span { color: var(--core); }
+.rb.od.arm { background: var(--core); color: #062016; box-shadow: none; animation: blink 0.5s infinite steps(2); }
+.rb.od.arm span { color: #062016; }
 #bSpeed b { font-family: var(--f-term); font-weight: 400; font-size: 22px; line-height: 1; color: var(--ink); }
 #bSpeed.fast b { color: var(--amber); }
 #bCall { height: 60px; color: var(--amber); box-shadow: inset 0 0 0 2px var(--amber); }

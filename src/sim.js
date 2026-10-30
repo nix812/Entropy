@@ -980,7 +980,7 @@ function updateLinkBeams(dt) {
 // ---------- Core Overdrive: once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
 const OD_WAVE = 35, OD_BOSS = 0.2;
 const odReady = () => !!(G && !G.over && !G.odUsed && G.wave >= OD_WAVE);
-function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('OVERDRIVE ONLINE', 'Tap the core: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
+function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('OVERDRIVE ONLINE', 'Tap Overdrive on the left: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
 function releaseOverdrive() {
   if (G.over) return 'over';
   if (G.odUsed) return 'used';

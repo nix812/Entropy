@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '3.2.0';
+const VERSION = '3.2.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,10 +167,9 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '3.2.0', title: 'Entropy 3.2', items: [
-  ['Swarm Codex', 'Every strain you meet gets a name, from Zippy Gremlins to Fortress Juggernauts and the occasional Broody Bumper Car Phantom. The Archive keeps the collection.'],
-  ['Your nemesis, remembered', 'Each run records its signature strain and the swarm\'s evolution peak, in the recap and the Hall of Fame.'],
-  ['Difficulty shapes evolution', 'Calm evolves gently from Wave 12. Unstable starts at Wave 6, fiercer, with the swarm already adapted to one weakness. Pandemonium starts at Wave 4, fiercest, adapted to two, with an extra gene later on. The setup screen shows which.']
+const WHATS_NEW = { ver: '3.2.1', title: 'Entropy 3.2.1', items: [
+  ['Overdrive button', 'Overdrive has its own button on the left rail. It shows the wave it unlocks, glows when ready, and needs a second tap to fire. The core panel still has it too.'],
+  ['From 3.2', 'Swarm Codex strain names in the Archive, your signature strain in the Hall of Fame, and evolution that scales with difficulty.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
