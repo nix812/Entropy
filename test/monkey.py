@@ -73,7 +73,7 @@ with sync_playwright() as p:
                 if done and rnd.random() < 0.12: tap(pg, done[0]['x'], done[0]['y'])
                 elif bts and rnd.random() < 0.7: bt = rnd.choice(bts); tap(pg, bt['x'], bt['y'])
                 else:
-                    cv = pg.query_selector('#tcv').bounding_box()
+                    cv = pg.query_selector('#tgrid').bounding_box()
                     if cv: tap(pg, cv['x'] + rnd.random() * cv['width'], cv['y'] + rnd.random() * cv['height'])
                 continue
             if s['modal']:

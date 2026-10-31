@@ -90,10 +90,11 @@ const TOWERS = {
     blurb: 'Short-range cone. Applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
-  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.85, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.5, st: { mark: 0.15 }, unlock: 20,
+  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.6, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.0, // v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
+    st: { mark: 0.15 }, unlock: 20,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×5.5 damage', m: { rampMax: 5.5 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×3', m: { beams: 3, rampMax: 3 } }] },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×4.6 damage', m: { rampMax: 4.6 } },
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.6', m: { beams: 3, rampMax: 2.6 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
@@ -438,7 +439,7 @@ const STAT_TXT = {
   superChill: () => 'Superconduct also Chills',
   napalmKill: () => 'Thermal kills leave burning ground for 2s', multiA: v => `Arc towers hit +${v} target`,
   freezeImmRed: v => `Enemies can be Frozen again ${v}% sooner`, markVoid: v => `Each Mark adds +${v}% Void damage taken`,
-  salvage: () => 'Kills grant +1 credit for every 10 waves reached',
+  salvage: () => 'Kills grant +1 credit for every 10 waves reached', vxpAll: v => `Veterans rank up ${v}% faster`,
   cLink: v => `Circuit: +${v}% more Attack Speed per wired neighbour`, cBolt: v => `Circuit: chain lightning deals +${v}% damage`,
   hPull: v => `Event Horizon: gravity wells pull ${v}% harder`, hWell: v => `Event Horizon: gravity wells reach ${v}% further`,
   aRank: v => `Artisan: +${v}% more Damage per Veteran rank`, aVxp: v => `Artisan: +${v}% Veteran XP`, gScore: v => `Gambler: +${v}% score`,
@@ -456,107 +457,6 @@ const SMALL_NAME = {
   affixLuck: 'Mutation', eliteDmg: 'Hunter', armorPen: 'Penetrator', frozenVuln: 'Brittle', knock: 'Recoil', xp: 'Insight',
 };
 
-const SECTORS = [
-  { id: 'K', name: 'Ballistics', col: '#efe6cf', attr: 'P', spine: [{ dmgK: 8 }, { critC: 3 }, { rateK: 6 }],
-    clusters: [
-      { name: 'Hollow Points', fx: { critSplash: 40, critM: 15 }, smalls: [{ critM: 10 }, { dmgK: 6 }, { critM: 10 }] },
-      { name: 'Rifling', fx: { fifthCrit: 1, rateK: 10 }, smalls: [{ rateK: 5 }, { range: 4 }, { rateK: 5 }] },
-      { name: 'Armor Piercer', fx: { shredStack: 3, armorPen: 30 }, smalls: [{ armorPen: 10 }, { eliteDmg: 6 }, { armorPen: 10 }] }],
-    mastery: { name: 'Ballistic Mastery', fx: { dmgK: 15 }, opts: [
-      { name: 'Overpenetration', fx: { pierceK: 1, pierceKeep: 1 } }, { name: 'Deadeye', fx: { critCK: 15, critMK: 50 } }, { name: 'Suppression', fx: { kSlow: 15 } }], smalls: [{ dmgK: 8 }, { critC: 3 }] },
-    keystone: { name: 'Glass Cannon Array', ks: 'glass', lines: ['+60% Damage', '−40% core max HP and shield'], smalls: [{ dmg: 5 }, { dmg: 5 }] } },
-  { id: 'T', name: 'Combustion', col: '#ff7b39', attr: 'P', spine: [{ dmgT: 8 }, { burnDmg: 10 }, { burnChance: 3 }],
-    clusters: [
-      { name: 'Accelerant', fx: { burnVuln: 20, burnDmg: 10 }, smalls: [{ burnDmg: 8 }, { burnChance: 3 }, { burnDmg: 8 }] },
-      { name: 'Flashpoint', fx: { burnBoom: 25, dmgT: 10 }, smalls: [{ dmgT: 6 }, { splash: 0.1 }, { dmgT: 6 }] },
-      { name: 'Chain Ignition', fx: { chainIgnite: 1, burnDur: 20 }, smalls: [{ burnDur: 10 }, { burnDmg: 8 }, { burnDur: 10 }] }],
-    mastery: { name: 'Pyre Mastery', fx: { dmgT: 15 }, opts: [
-      { name: 'Wildfire', fx: { burnSpread: 1 } }, { name: 'Inferno Core', fx: { infernoCore: 1 } }, { name: 'Heat Sink', fx: { heatSink: 1 } }], smalls: [{ dmgT: 8 }, { burnDmg: 10 }] },
-    keystone: { name: 'Conflagration', ks: 'conflag', lines: ['All damage becomes Thermal (Resonance unaffected)', '+50% Thermal Damage, +150% Burn damage. Burning enemies are 25% slower', 'Every 3rd Thermal hit on a burning enemy triggers Thermal Shock', 'Chill becomes Burn: cannot Chill or Freeze'], smalls: [{ dmgT: 6 }, { burnDmg: 8 }] } },
-  { id: 'A', name: 'Voltaic', col: '#ffe14d', attr: 'Tm', spine: [{ dmgA: 8 }, { rate: 4 }, { shockChance: 3 }],
-    clusters: [
-      { name: 'Capacitors', fx: { capacitor: 1, dmgA: 10 }, smalls: [{ dmgA: 6 }, { rateA: 4 }, { dmgA: 6 }] },
-      { name: 'Forked Lightning', fx: { chain: 1, chainKeep: 1 }, smalls: [{ shockChance: 4 }, { dmgA: 6 }, { shockChance: 4 }] },
-      { name: 'Overvolt', fx: { shockBurst: 15, shockEff: 25 }, smalls: [{ shockEff: 12 }, { rate: 3 }, { shockEff: 12 }] }],
-    mastery: { name: 'Voltaic Mastery', fx: { dmgA: 15 }, opts: [
-      { name: 'Static Field', fx: { shockLong: 1 } }, { name: 'Thunderstrike', fx: { thunder: 1 } }, { name: 'Overcharged', fx: { ovlFree: 1, overloadRad: 50 } }], smalls: [{ dmgA: 8 }, { rate: 4 }] },
-    keystone: { name: 'Overclocked Grid', ks: 'overgrid', lines: ['+40% Attack Speed', 'Attacks have a 3% chance to jam the tower for 1.5s'], smalls: [{ rate: 4 }, { rate: 4 }] } },
-  { id: 'C', name: 'Cryogenics', col: '#6ae2ff', attr: 'F', spine: [{ dmgC: 8 }, { chillPot: 8 }, { chillChance: 3 }],
-    clusters: [
-      { name: 'Deep Freeze', fx: { freezeAt: 1, freezeDur: 0.3 }, smalls: [{ chillPot: 8 }, { freezeDur: 0.15 }, { chillPot: 8 }] },
-      { name: 'Brittle', fx: { iceShards: 1, frozenVuln: 15 }, smalls: [{ frozenVuln: 8 }, { dmgC: 6 }, { frozenVuln: 8 }] },
-      { name: 'Frost Lattice', fx: { chillSplash: 1, dmgC: 10 }, smalls: [{ chillChance: 4 }, { range: 4 }, { chillChance: 4 }] }],
-    mastery: { name: 'Cryo Mastery', fx: { dmgC: 15 }, opts: [
-      { name: 'Long Winter', fx: { chillSlowDecay: 1 } }, { name: 'Cold Snap', fx: { coldSnap: 1 } }, { name: 'Glacial', fx: { glacial: 15 } }], smalls: [{ dmgC: 8 }, { chillPot: 8 }] },
-    keystone: { name: 'Absolute Zero', ks: 'abszero', lines: ['Chilled enemies take +50% damage', '−50% Thermal Damage'], smalls: [{ chillChance: 4 }, { dmgC: 6 }] } },
-  { id: 'V', name: 'Singularity', col: '#b86cff', attr: 'F', spine: [{ dmgV: 8 }, { markChance: 3 }, { eliteDmg: 6 }],
-    clusters: [
-      { name: 'Event Horizon', fx: { markSlow: 30, markMax: 3 }, smalls: [{ markChance: 3 }, { dmgV: 6 }, { markChance: 3 }] },
-      { name: 'Null Lens', fx: { rampKeep: 1, dmgV: 10 }, smalls: [{ dmgV: 6 }, { markChance: 4 }, { dmgV: 6 }] },
-      { name: 'Gravitic Pull', fx: { knock: 6, knockMark: 1 }, smalls: [{ knock: 1 }, { dmg: 3 }, { knock: 1 }] }],
-    mastery: { name: 'Void Mastery', fx: { dmgV: 15 }, opts: [
-      { name: 'Black Hole', fx: { blackHole: 1 } }, { name: 'Entropic Decay', fx: { markPerma: 1 } }, { name: 'Void Siphon', fx: { voidSiphon: 1 } }], smalls: [{ dmgV: 8 }, { markChance: 3 }] },
-    keystone: { name: 'Singularity', ks: 'singularity', lines: ['+100% Void Damage', '−30% all other damage'], smalls: [{ dmgV: 6 }, { dmgV: 6 }] } },
-  { id: 'E', name: 'Bastion', col: '#59f0b4', attr: 'I', spine: [{ coreHP: 12 }, { credits: 4 }, { shield: 6 }],
-    clusters: [
-      { name: 'Reinforced Core', fx: { shieldWave: 1, coreHP: 30, shieldRegen: 30 }, smalls: [{ coreHP: 10 }, { shieldRegen: 15 }, { coreHP: 10 }] },
-      { name: 'Logistics', fx: { sellPct: 85, costRed: 8 }, smalls: [{ costRed: 3 }, { credits: 4 }, { upgRed: 3 }] },
-      { name: 'Command Uplink', fx: { loadout: 1, abilCharge: 10 }, smalls: [{ abilPower: 8 }, { abilCharge: 5 }, { abilPower: 8 }] }],
-    mastery: { name: 'Bastion Mastery', fx: { coreHP: 20 }, opts: [
-      { name: 'Retaliation', fx: { coreDmg: 60, coreRate: 30, coreRange: 1 } }, { name: 'Compound Interest', fx: { interest: 2 } }, { name: 'Field Repairs', fx: { fieldRepair: 5 } }], smalls: [{ coreHP: 10 }, { shield: 6 }] },
-    keystone: { name: 'Diminishing Returns', ks: 'dimret', lines: ['+50% Credits from all sources', 'Each copy of a tower costs 12% more'], smalls: [{ credits: 4 }, { credits: 4 }] } },
-];
-const HYBRIDS = [
-  { name: 'Incendiary Rounds', fx: { burnCrit: 1, dmgK: 6, dmgT: 6 } },
-  { name: 'Plasma Coupling', fx: { ovlBurn: 1, overloadRad: 30 } },
-  { name: 'Superconductors', fx: { superChill: 1, superRad: 60 } },
-  { name: 'Stasis Theory', fx: { stasisDur: 3, chillVoid: 15 } },
-  { name: 'Storm Caller', fx: { stormFreq: 50, stormPow: 50 } },
-  { name: 'Lone Wolf', fx: { loneWolf: 35 } },
-];
-const ARC_KEYSTONES = {
-  2: { name: 'Prismatic Array', ks: 'prismatic', lines: ['Hits apply a random status', '−10% Damage'], smalls: [{ shockChance: 3 }, { chillChance: 3 }] },
-  4: { name: 'Chaos Engine', ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'], smalls: [{ affixLuck: 10 }, { affixLuck: 10 }] },
-  5: { name: 'Unbreakable', ks: 'unbreakable', lines: ['Survive a lethal hit at 50% HP, once per 10 waves', '−10% tower Damage'], smalls: [{ coreHP: 10 }, { shield: 8 }] },
-};
-
-// Outer spiral arms: one per sector, each ends in a new notable
-const ARMS = [
-  { name: 'Railgun Doctrine', fx: { pierceK: 1, dmgK: 10 } },
-  { name: 'Napalm Rain', fx: { napalmKill: 1, burnDmg: 10 } },
-  { name: 'Ion Lattice', fx: { multiA: 1, dmgA: 5 } },
-  { name: 'Hoarfrost', fx: { freezeImmRed: 60, chillPot: 10 } },
-  { name: 'Dark Matter', fx: { markVoid: 5, dmgV: 5 } },
-  { name: 'Salvage Drones', fx: { salvage: 1, credits: 4 } },
-];
-// Z-axis Orbits: rings of 3 satellites around the vertical axis. Each satellite affects the sector it faces; rotate the ring to retarget.
-const SECTOR_EL = ['K', 'T', 'A', 'C', 'V', 'E'];
-const ORBITS = {
-  zo1: { name: 'Zenith Orbit I', z: 150, col: '#9fd8ff', sats: [
-    { name: 'Amplifier', d: '+30% Damage for the faced element', k: 'dmg', v: 30, t: el => `+30% ${EL[el].name} Damage`, E: { coreDmg: 40 } },
-    { name: 'Accelerator', d: '+20% Attack Speed for the faced element', k: 'rate', v: 20, t: el => `+20% ${EL[el].name} Attack Speed`, E: { credits: 12 } },
-    { name: 'Catalyst', d: '+12% status chance for the faced element (Kinetic: Crit Chance)', k: 'status', v: 12, t: el => el === 'K' ? '+12% Kinetic Crit Chance' : `+12% chance to ${{ T: 'Burn', C: 'Chill', A: 'Shock', V: 'Mark' }[el]} for ${EL[el].name} towers`, E: { shield: 30 } }] },
-  zo2: { name: 'Zenith Orbit II', z: 330, col: '#9fd8ff', sats: [
-    { name: 'Focusing Lens', d: '+15% Range for the faced element', k: 'range', v: 15, t: el => `+15% ${EL[el].name} Range`, E: { coreRange: 1 } },
-    { name: 'Harmonic', d: 'Faced element towers count +1 Resonance', k: 'reson', v: 1, t: el => `${EL[el].name} towers count +1 Resonance`, E: { costRed: 6 } },
-    { name: 'Veteran Beacon', d: 'Faced element towers rank up 2× faster', k: 'vxp', v: 100, t: el => `${EL[el].name} towers rank up 2× faster`, E: { xp: 10 } }] },
-  no1: { name: 'Nadir Orbit I', z: -150, col: '#ff5fa8', sats: [
-    { name: 'Flux Anchor', d: '+40% Damage for the faced element, −8% all other damage', k: 'flux', v: 40, t: el => `+40% ${EL[el].name} Damage, −8% all other damage`, E: { credits: 20, dmg: -5 } },
-    { name: 'Storm Beacon', d: 'Storms of the faced element appear 3× as often', k: 'storm', v: 1, t: el => `${STORMS[{ K: 'static', T: 'solar', C: 'cryo', A: 'ion', V: 'void' }[el]].name}s appear 3× as often`, E: { stormPow: 25 } },
-    { name: 'Volatile Core', d: 'Faced element hits: 10% chance to deal ×4 damage', k: 'vol', v: 10, t: el => `${EL[el].name} hits: 10% chance to deal ×4 damage`, E: { coreDmg: 80 } }] },
-  no2: { name: 'Nadir Orbit II', z: -330, col: '#ff5fa8', sats: [
-    { name: 'Entropy Well', d: 'Kills by the faced element fill the Entropy gauge', k: 'ent', v: 1, t: el => `${EL[el].name} kills fill the Entropy gauge`, E: { abilCharge: 15 } },
-    { name: 'Rift Tap', d: 'Faced element: +6% Damage per active Anomaly', k: 'rift', v: 6, t: el => `+6% ${EL[el].name} Damage per active Anomaly`, E: { credits: 15 } },
-    { name: 'Event Lens', d: 'Combos triggered by the faced element deal +60%', k: 'combo', v: 60, t: el => `Combos triggered by ${EL[el].name} hits deal +60%`, E: { shieldRegen: 50 } }] },
-};
-const orbitRot = id => (typeof PROF !== 'undefined' && PROF && PROF.orbit && PROF.orbit[id]) || 0;
-const satSector = n => ((n.sat * 2 + orbitRot(n.orbit)) % 6 + 6) % 6;
-function satLines(n) {
-  const O = ORBITS[n.orbit], S = O.sats[n.sat], si = satSector(n), el = SECTOR_EL[si];
-  if (el === 'E') return [`Facing ${SECTORS[si].name}: ` + Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')];
-  return [`Facing ${SECTORS[si].name}: ${S.t(el)}`];
-}
-const WEB_SCALE = 1.3, WEB_VER = 3;
 // v4.2 Doctrines: a region's seal gives it a play style you can see on the field, with a real cost. Its notables, mastery,
 // keystone and arm only work (and can only be taken) once its seal is in. You hold a limited number of seals.
 // Indexed by sector. Sectors without an entry are still open, freeform regions (they become Doctrines later).
@@ -586,145 +486,90 @@ const DOCTRINES = {
     lines: ['The core grows a turret for every stack of banked credits (up to 8): +60% core Damage and +8% core Attack Speed each', 'The stack size grows with the wave, so keep banking', 'Towers cost 20% more'],
     smalls: [{ weStep: 6 }, { weTur: 10 }] },
 };
-const sealSlots = lvl => 1 + (lvl >= 75 ? 1 : 0) + (lvl >= 120 ? 1 : 0);
-const SEAL_NEXT = lvl => lvl < 75 ? 75 : lvl < 120 ? 120 : 0;
-function buildTree() {
-  const nodes = {}, edges = [];
-  const add = (id, x, y, kind, sector, name, fx, extra) => {
-    nodes[id] = Object.assign({ id, x, y, kind, sector, name, fx: fx || {}, adj: [] }, extra || {});
-    return nodes[id];
-  };
-  const link = (a, b) => { nodes[a].adj.push(b); nodes[b].adj.push(a); edges.push([a, b]); };
-  const pol = (r, deg) => { const a = deg * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; };
-  const smallName = fx => SMALL_NAME[Object.keys(fx)[0]] || 'Node';
-
-  // merged travel nodes: two old smalls folded into one, at 90% of their sum
-  const mf = (...fs) => { const o = {}; for (const f of fs) for (const k in f) o[k] = (o[k] || 0) + f[k]; for (const k in o) { const v = o[k] * (fs.length > 1 ? 0.9 : 1); o[k] = Math.abs(v) < 1 ? Math.round(v * 100) / 100 : Math.round(v); } return o; };
-  add('start', 0, 0, 'start', -1, 'Entropy Core', { P: 5, Tm: 5, F: 5, I: 5 });
-  SECTORS.forEach((S, i) => {
-    const a = -90 + i * 60, N = SECTORS[(i + 1) % 6], A8 = { [S.attr]: 8 };
-    let [x, y] = pol(80, a);
-    add(`g${i}`, x, y, 'small', i, `${S.name} Gate`, { [S.attr]: 6, xp: 2 });
-    link('start', `g${i}`);
-    [x, y] = pol(88, a + 30);
-    const mfx = {}; mfx[S.attr] = 5; mfx[N.attr] = (mfx[N.attr] || 0) + 5;
-    add(`m${i}`, x, y, 'small', i, 'Conduit', mfx);
-    // spine: four steps out from the gate
-    const DOC = DOCTRINES[i];
-    const spineFx = [A8, mf(S.spine[0], A8), Object.assign({}, S.spine[1], DOC ? DOC.smalls[0] : {}), mf(S.spine[2], A8, DOC ? DOC.smalls[1] : {})];
-    for (let j = 0; j < 4; j++) {
-      [x, y] = pol(140 + j * 80, a);
-      add(`s${i}_${j}`, x, y, 'small', i, smallName(spineFx[j]), spineFx[j]);
-      link(j === 0 ? `g${i}` : `s${i}_${j - 1}`, `s${i}_${j}`);
-    }
-    // clusters: spine -> two smalls -> notable, alternating sides so neighbours never meet
-    [[1, -1], [2, 1], [3, -1]].forEach(([j, side], ci) => {
-      const C = S.clusters[ci];
-      const [sx, sy] = pol(140 + j * 80, a), ar = a * Math.PI / 180;
-      const tx = -Math.sin(ar) * side, ty = Math.cos(ar) * side, rx = Math.cos(ar), ry = Math.sin(ar);
-      const p = `c${i}_${ci}`, fa = mf(C.smalls[0], C.smalls[2]), fb = C.smalls[1];
-      add(`${p}a`, sx + tx * 40, sy + ty * 40, 'small', i, smallName(fa), fa);
-      add(`${p}b`, sx + tx * 80 + rx * 14, sy + ty * 80 + ry * 14, 'small', i, smallName(fb), fb);
-      add(`${p}n`, sx + tx * 120, sy + ty * 120, 'notable', i, C.name, C.fx);
-      link(`s${i}_${j}`, `${p}a`); link(`${p}a`, `${p}b`); link(`${p}b`, `${p}n`);
-      if (DOC) nodes[`${p}n`].need = i;
-    });
-    // the Doctrine seal hangs off the first spine node
-    if (DOC) {
-      const [sx, sy] = pol(140, a), ar = a * Math.PI / 180;
-      add(`d${i}`, sx - Math.sin(ar) * 62, sy + Math.cos(ar) * 62, 'seal', i, `${DOC.name} Doctrine`, {}, { doctrine: i, ks: DOC.id, lines: DOC.lines });
-      link(`s${i}_0`, `d${i}`);
-    }
-    // keystone & mastery branches
-    const K = S.keystone, M = S.mastery;
-    [[K, -1, 'k', 'keystone'], [M, 1, 'x', 'mastery']].forEach(([D, sd, tag, kind]) => {
-      const fx = mf(D.smalls[0], D.smalls[1]);
-      [x, y] = pol(495, a + sd * 6);
-      add(`${tag}${i}_0`, x, y, 'small', i, smallName(fx), fx);
-      link(`s${i}_3`, `${tag}${i}_0`);
-      [x, y] = pol(580, a + sd * 11);
-      add(`${tag}${i}`, x, y, kind, i, D.name, D.fx || {}, D.ks ? { ks: D.ks, lines: D.lines } : D.opts ? { opts: D.opts } : null);
-      link(`${tag}${i}_0`, `${tag}${i}`);
-      if (DOC) nodes[`${tag}${i}`].need = i;
-    });
-  });
-  // ring of hybrids between sectors, plus three arc keystones
-  SECTORS.forEach((S, i) => {
-    const a = -90 + i * 60, n = (i + 1) % 6, N = SECTORS[n];
-    link(`g${i}`, `m${i}`); link(`m${i}`, `g${n}`);
-    let [x, y] = pol(455, a + 14);
-    add(`r${i}_0`, x, y, 'small', i, smallName(S.spine[0]), Object.assign({}, S.spine[0]));
-    [x, y] = pol(455, a + 46);
-    add(`r${i}_1`, x, y, 'small', n, smallName(N.spine[0]), Object.assign({}, N.spine[0]));
-    [x, y] = pol(470, a + 30);
-    add(`h${i}`, x, y, 'notable', i, HYBRIDS[i].name, HYBRIDS[i].fx, { hybrid: 1 });
-    link(`s${i}_3`, `r${i}_0`); link(`r${i}_0`, `h${i}`); link(`h${i}`, `r${i}_1`); link(`r${i}_1`, `s${n}_3`);
-    const AK = ARC_KEYSTONES[i];
-    if (AK) {
-      const fx = mf(AK.smalls[0], AK.smalls[1]);
-      [x, y] = pol(540, a + 30);
-      add(`e${i}_0`, x, y, 'small', i, smallName(fx), fx);
-      link(`h${i}`, `e${i}_0`);
-      [x, y] = pol(605, a + 30);
-      add(`e${i}`, x, y, 'keystone', i, AK.name, {}, { ks: AK.ks, lines: AK.lines });
-      link(`e${i}_0`, `e${i}`);
-    }
-  });
-  // outer spiral arms
-  SECTORS.forEach((S, i) => {
-    const a = -90 + i * 60, A8 = { [S.attr]: 8 };
-    const f0 = mf(S.spine[0], A8), f1 = mf(S.spine[1], A8);
-    let [x, y] = pol(670, a + 21);
-    add(`w${i}_0`, x, y, 'small', i, smallName(f0), f0); link(`x${i}`, `w${i}_0`);
-    [x, y] = pol(765, a + 34);
-    add(`w${i}_1`, x, y, 'small', i, smallName(f1), f1); link(`w${i}_0`, `w${i}_1`);
-    [x, y] = pol(850, a + 47);
-    add(`w${i}`, x, y, 'notable', i, ARMS[i].name, ARMS[i].fx, Object.assign({ arm: 1 }, DOCTRINES[i] ? { need: i } : {}));
-    link(`w${i}_1`, `w${i}`);
-  });
-  // the Z-axis: Zenith above the galactic plane, Nadir below
-  const col = (sign, tag, orbs, ks, smallFx, di) => {
-    const DOC = DOCTRINES[di];
-    if (DOC) { smallFx = smallFx.slice(); smallFx[1] = Object.assign({}, smallFx[1], DOC.smalls[0]); smallFx[3] = Object.assign({}, smallFx[3], DOC.smalls[1]); }
-    let prev = 'start', zi = 0;
-    const axis = (z, fx) => { const id = `${tag}${zi++}`; add(id, 0, 0, 'small', -2, smallName(fx), fx, { z, col: ORBITS[orbs[0]].col }); link(prev, id); prev = id; };
-    axis(sign * 70, smallFx[0]);
-    if (DOC) { add(`d${di}`, 110, 0, 'seal', -2, `${DOC.name} Doctrine`, {}, { z: sign * 70, col: ORBITS[orbs[0]].col, doctrine: di, ks: DOC.id, lines: DOC.lines }); link(`${tag}0`, `d${di}`); }
-    const need = DOC ? { need: di } : {};
-    orbs.forEach((oid, oi) => {
-      const O = ORBITS[oid];
-      add(oid, 0, 0, 'orbit', -2, O.name, {}, Object.assign({ z: O.z, col: O.col, orbitHub: oid }, need));
-      link(prev, oid); prev = oid;
-      O.sats.forEach((S, k) => { add(`${oid}_${k}`, 0, 0, 'sat', -2, S.name, {}, Object.assign({ z: O.z, col: O.col, orbit: oid, sat: k }, need)); link(oid, `${oid}_${k}`); });
-      axis(sign * (O.z + (oi ? 70 : 60)), smallFx[1 + oi * 2]);
-      if (!oi) axis(sign * (O.z + 120), smallFx[2]);
-    });
-    add(`${tag}k`, 0, 0, 'keystone', -2, ks.name, {}, Object.assign({ z: sign * 480, col: ORBITS[orbs[0]].col, ks: ks.ks, lines: ks.lines }, need));
-    link(prev, `${tag}k`);
-  };
-  col(1, 'za', ['zo1', 'zo2'], { name: 'Celestial Order', ks: 'celestial', lines: ['Towers roll 2 affixes per build and upgrade', 'Legendary affixes can no longer roll'] },
-    [{ F: 6, I: 4 }, { F: 8 }, { I: 8 }, { F: 6, Tm: 4 }], 6);
-  col(-1, 'na', ['no1', 'no2'], { name: 'Event Singularity', ks: 'singular', lines: ['Entropy fills 2× faster', 'Each Anomaly grants +10% score instead of +5%', 'You cannot Stabilize'] },
-    [{ P: 6, Tm: 4 }, { Tm: 8 }, { P: 8 }, { P: 6, F: 4 }], 7);
-  // spread the disk out for phone-sized tap targets
-  for (const id in nodes) { const n = nodes[id]; if (n.sector !== -2) { n.x *= WEB_SCALE; n.y *= WEB_SCALE; } }
-  // slight thickness so the disk reads as 3D when tilted
-  for (const id in nodes) { const n = nodes[id]; if (n.z === undefined) { const h = Math.sin(n.x * 12.9898 + n.y * 78.233) * 43758.5453; n.z = ((h - Math.floor(h)) - 0.5) * (n.kind === 'small' ? 26 : 16) * Math.min(1, Math.hypot(n.x, n.y) / 300); } }
-  nodes.start.z = 0;
-  return { nodes, edges, list: Object.values(nodes) };
+// ---------- v5.0 Talents: a clean sheet for the passive web ----------
+// Seven short trees, read top to bottom like a classic RPG talent tree. Each tree has four rows of talents with ranks, and a
+// Capstone row: pick one defining play style. Row r opens after 5 × r points in that tree; a Capstone needs 20. You can hold a
+// limited number of Capstones (capSlots), so a build is "two or three things you are really good at", not 180 small bonuses.
+// Talent effects use the same stat keys as before (STAT_TXT), so every mechanic from the old web still exists.
+const WEB_VER = 4;
+const TROW = 5, TCAP = 20;
+const T_ = (id, name, max, fx, extra) => Object.assign({ id, name, max, fx }, extra || {});
+const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
+const TALENTS = [
+  { id: 'K', name: 'Ballistics', col: '#efe6cf', glyph: 'K', tag: 'Kinetic guns: crits that tear through armour',
+    rows: [
+      [T_('kDmg', 'Heavy Rounds', 5, { dmgK: 5 }), T_('kCrit', 'Precision', 5, { critC: 2 })],
+      [T_('kRate', 'Autoloader', 5, { rateK: 3 }), T_('kPen', 'Penetrator', 3, { armorPen: 10 })],
+      [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 3, { critM: 12 })],
+      [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 3, { shredStack: 1, eliteDmg: 4 })]],
+    caps: [CAP('marksman', 'Marksman', { ks: 'marksman', doc: 0 }), CAP('glass', 'Glass Cannon Array', { ks: 'glass', lines: ['+60% Damage', '−40% core max HP and shield'] }),
+      CAP('deadeye', 'Deadeye', { fx: { critCK: 15, critMK: 50, pierceK: 1, pierceKeep: 1 }, lines: ['+15% Crit Chance and +50% Crit Damage for Kinetic towers', 'Kinetic shots pierce one more enemy and lose no damage doing it'] })] },
+  { id: 'T', name: 'Combustion', col: '#ff7b39', glyph: 'T', tag: 'Thermal and Burn: set the swarm alight',
+    rows: [
+      [T_('tDmg', 'Accelerant', 5, { dmgT: 5 }), T_('tChance', 'Kindling', 5, { burnChance: 3 })],
+      [T_('tBurn', 'Fuel', 5, { burnDmg: 8 }), T_('tSplash', 'Blast Radius', 3, { splash: 0.1 })],
+      [T_('tBoom', 'Flashpoint', 1, { burnBoom: 25, dmgT: 8 }), T_('tVuln', 'Scorch', 3, { burnVuln: 7 })],
+      [T_('tChain', 'Chain Ignition', 1, { chainIgnite: 1, burnDur: 20 }), T_('tNapalm', 'Napalm', 1, { napalmKill: 1, burnDmg: 10 }), T_('tCrit', 'Incendiary Rounds', 1, { burnCrit: 1 })]],
+    caps: [CAP('wildfire', 'Wildfire', { ks: 'wildfire', doc: 1 }), CAP('conflag', 'Conflagration', { ks: 'conflag', lines: ['All damage becomes Thermal (Resonance unaffected)', '+50% Thermal Damage, +150% Burn damage. Burning enemies are 25% slower', 'Every 3rd Thermal hit on a burning enemy triggers Thermal Shock', 'Chill becomes Burn: cannot Chill or Freeze'] }),
+      CAP('pyre', 'Pyre', { fx: { burnSpread: 1, heatSink: 1 }, lines: ['Every second, Burn spreads to the nearest enemy within 1 tile', 'Thermal towers: +2% Attack Speed per Burning enemy, up to +40%'] })] },
+  { id: 'A', name: 'Voltaic', col: '#ffe14d', glyph: 'A', tag: 'Arc and speed: chains, shocks and overloads',
+    rows: [
+      [T_('aDmg', 'Voltage', 5, { dmgA: 5 }), T_('aRate', 'Cadence', 5, { rate: 2 })],
+      [T_('aShock', 'Static', 5, { shockChance: 3 }), T_('aDis', 'Discharge', 3, { rateA: 4 })],
+      [T_('aFork', 'Forked Lightning', 1, { chain: 1, chainKeep: 1 }), T_('aOver', 'Overvolt', 3, { shockEff: 12 })],
+      [T_('aCap', 'Capacitors', 1, { capacitor: 1, dmgA: 10 }), T_('aIon', 'Ion Lattice', 1, { multiA: 1 }), T_('aPlasma', 'Plasma Coupling', 1, { ovlBurn: 1, overloadRad: 30 })]],
+    caps: [CAP('circuit', 'Circuit', { ks: 'circuit', doc: 2 }), CAP('overgrid', 'Overclocked Grid', { ks: 'overgrid', lines: ['+40% Attack Speed', 'Attacks have a 3% chance to jam the tower for 1.5s'] }),
+      CAP('thunder', 'Thunderstrike', { fx: { thunder: 1, shockLong: 1, ovlFree: 1 }, lines: ['Every 6s, lightning strikes the toughest enemy on the map', 'Shock lasts 6s instead of 3s', 'Overload has no cooldown'] })] },
+  { id: 'C', name: 'Cryogenics', col: '#6ae2ff', glyph: 'C', tag: 'Chill and Freeze: slow them, then shatter them',
+    rows: [
+      [T_('cDmg', 'Frostbite', 5, { dmgC: 5 }), T_('cPot', 'Permafrost', 5, { chillPot: 8 })],
+      [T_('cChance', 'Frost', 5, { chillChance: 3 }), T_('cStill', 'Stillness', 3, { freezeDur: 0.1 })],
+      [T_('cDeep', 'Deep Freeze', 1, { freezeAt: 1, freezeDur: 0.3 }), T_('cBrittle', 'Brittle', 3, { frozenVuln: 8 })],
+      [T_('cLattice', 'Frost Lattice', 1, { chillSplash: 1, dmgC: 10 }), T_('cShards', 'Ice Shards', 1, { iceShards: 1 }), T_('cSuper', 'Superconductors', 1, { superChill: 1, superRad: 60 })]],
+    caps: [CAP('glacier', 'Glacier', { ks: 'glacier', doc: 3 }), CAP('abszero', 'Absolute Zero', { ks: 'abszero', lines: ['Chilled enemies take +50% damage', '−50% Thermal Damage'] }),
+      CAP('winter', 'Long Winter', { fx: { chillSlowDecay: 1, coldSnap: 1, glacial: 15 }, lines: ['Chill fades 3× slower', 'Shatter also Freezes enemies within 1 tile', 'Chilled enemies move an extra 15% slower'] })] },
+  { id: 'V', name: 'Singularity', col: '#b86cff', glyph: 'V', tag: 'Void and Marks: bend the road, collapse the strong',
+    rows: [
+      [T_('vDmg', 'Null', 5, { dmgV: 4 }), T_('vHunt', 'Hunter', 5, { eliteDmg: 4 })],
+      [T_('vMark', 'Mark', 5, { markChance: 3 }), T_('vKnock', 'Gravitic', 3, { knock: 2 })],
+      [T_('vLens', 'Null Lens', 1, { rampKeep: 1, dmgV: 8 }), T_('vSlow', 'Event Drag', 3, { markSlow: 10 })],
+      [T_('vDark', 'Dark Matter', 1, { markVoid: 5, markMax: 3 }), T_('vHole', 'Black Hole', 1, { blackHole: 1, collapse: 30 }), T_('vPull', 'Gravitic Pull', 1, { knockMark: 1, knock: 3 })]],
+    caps: [CAP('horizon', 'Event Horizon', { ks: 'horizon', doc: 4 }), CAP('singularity', 'Singularity', { ks: 'singularity', lines: ['+100% Void Damage', '−30% all other damage'] }),
+      CAP('decay', 'Entropic Decay', { fx: { markPerma: 1, voidSiphon: 1 }, lines: ['Marks never fade', 'Each Collapse fills the Entropy gauge'] })] },
+  { id: 'E', name: 'Bastion', col: '#59f0b4', glyph: 'E', tag: 'Core, shield and credits: the economy wins long runs',
+    rows: [
+      [T_('eHP', 'Hull Plating', 5, { coreHP: 12 }), T_('eCr', 'Salvage', 5, { credits: 4 })],
+      [T_('eShield', 'Barrier', 3, { shield: 8, shieldRegen: 15 }), T_('eCost', 'Supply Lines', 5, { costRed: 2, upgRed: 3 })],
+      [T_('eCore', 'Reinforced Core', 1, { shieldWave: 1, coreHP: 30 }), T_('eRepair', 'Field Repairs', 3, { fieldRepair: 2 })],
+      [T_('eInt', 'Compound Interest', 1, { interest: 2 }), T_('eRet', 'Retaliation', 1, { coreDmg: 60, coreRate: 30, coreRange: 1 }), T_('eDrones', 'Salvage Drones', 1, { salvage: 1 })]],
+    caps: [CAP('wareco', 'War Economy', { ks: 'wareco', doc: 5 }), CAP('dimret', 'Diminishing Returns', { ks: 'dimret', lines: ['+50% Credits from all sources', 'Each copy of a tower costs 12% more'] }),
+      CAP('unbreakable', 'Unbreakable', { ks: 'unbreakable', lines: ['Survive a lethal hit at 50% HP, once per 10 waves', '−10% tower Damage'] })] },
+  { id: 'X', name: 'Command', col: '#ff5fa8', glyph: 'X', tag: 'Abilities, veterans, luck and storms',
+    rows: [
+      [T_('xPow', 'Uplink', 5, { abilPower: 8 }), T_('xCharge', 'Telemetry', 5, { abilCharge: 5 })],
+      [T_('xLuck', 'Mutation', 3, { affixLuck: 10 }), T_('xXp', 'Insight', 3, { xp: 6 }), T_('xRange', 'Optics', 3, { range: 4 })],
+      [T_('xLoad', 'Loadout', 1, { loadout: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
+      [T_('xWolf', 'Lone Wolf', 1, { loneWolf: 35 }), T_('xStasis', 'Stasis Theory', 1, { stasisDur: 3, chillVoid: 15 }), T_('xVet', 'Field Promotion', 3, { vxpAll: 30 })]],
+    caps: [CAP('artisan', 'Artisan', { ks: 'artisan', doc: 6 }), CAP('gambler', 'Gambler', { ks: 'gambler', doc: 7 }),
+      CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'] })] },
+];
+// lookups: every talent and capstone by id, with its tree and row
+const TAL = {};
+for (const tr of TALENTS) {
+  tr.rows.forEach((row, r) => row.forEach(t => { t.tree = tr.id; t.row = r; TAL[t.id] = t; }));
+  for (const c of tr.caps) { c.tree = tr.id; c.row = 4; c.max = 1; TAL[c.id] = c; }
 }
-const TREE = buildTree();
-
-function nodeLines(n) {
-  const out = [];
-  if (n.sat !== undefined) return satLines(n);
-  if (n.orbitHub) return ['Unlocks 3 satellites. Each boosts the sector it faces.', 'Rotate the ring to change what they affect.'];
-  if (n.lines) out.push(...n.lines);
-  for (const k in n.fx) { const f = STAT_TXT[k]; if (f) out.push(f(n.fx[k])); }
-  return out;
+const TREE_BY_ID = Object.fromEntries(TALENTS.map(t => [t.id, t]));
+// v4.x Doctrine seals live on as Capstones (same ks flags, same field effects)
+const capSlots = lvl => 1 + (lvl >= 50 ? 1 : 0) + (lvl >= 100 ? 1 : 0);
+const CAP_NEXT = lvl => lvl < 50 ? 50 : lvl < 100 ? 100 : 0;
+// a talent's description at a given rank
+function talentLines(t, rank) {
+  if (t.cap) return t.lines || (t.doc !== undefined ? DOCTRINES[t.doc].lines : []);
+  const r = Math.max(1, rank || 1);
+  return Object.keys(t.fx).map(k => { const v = t.fx[k]; const txt = STAT_TXT[k]; if (!txt) return k; return typeof v === 'number' && v !== 1 ? txt(+(v * r).toFixed(2)) : txt(v); });
 }
 
-// XP curve
 const xpForLevel = L => Math.round(3000 + 250 * L + 3 * L * L);
 function levelFromXP(xp) {
   let L = 0, need = xpForLevel(0);
@@ -784,22 +629,6 @@ const LAWS = [
 ];
 const LAW_SCORE = 0.15, NOVA_SCORE = 0.1, NOVA_XP = 0.25;
 const novaLevelReq = n => Math.min(150, 60 + 10 * n);
-// Star Ranks: unlimited points into a finished constellation, with gentle diminishing returns
-const STARS = {
-  s0: { key: 'dmgK', a: 1.5 }, s1: { key: 'dmgT', a: 1.5 }, s2: { key: 'dmgA', a: 1.5 }, s3: { key: 'dmgC', a: 1.5 }, s4: { key: 'dmgV', a: 1.5 },
-  s5: { key: 'coreHP', a: 3 }, zen: { key: 'dmg', a: 0.8 }, nad: { key: 'rate', a: 0.6 },
-};
-const starTotal = (rid, n) => n > 0 ? STARS[rid].a * 20 * Math.log(1 + n / 20) : 0;
-const REGION_IDS = ['s0', 's1', 's2', 's3', 's4', 's5', 'zen', 'nad'];
-const REGION_NAME = { s0: 'The Archer', s1: 'The Phoenix', s2: 'The Thunderbolt', s3: 'The Crystal', s4: 'The Maw', s5: 'The Bulwark', zen: 'The Crown', nad: 'The Serpent' };
-function regionOf(n) { if (n.sector >= 0) return 's' + n.sector; if (n.sector === -2) return n.z > 0 ? 'zen' : 'nad'; return null; }
-const REGION_NODES = {};
-// a region counts as complete with all its open passives: seals and seal-locked nodes don't count (you can only hold a few seals)
-const REGION_ALL = {};
-for (const n of TREE.list) { const r = regionOf(n); if (!r) continue; (REGION_ALL[r] = REGION_ALL[r] || []).push(n.id); if (n.kind !== 'seal' && n.need === undefined) (REGION_NODES[r] = REGION_NODES[r] || []).push(n.id); }
-// a remnant keeps a sector's notables (clusters + arm) active forever, seal or not
-const remnantNodes = rid => REGION_ALL[rid].filter(id => TREE.nodes[id].kind === 'notable' && !TREE.nodes[id].hybrid);
-
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',
   'Last Light', 'Gravedigger', 'Little Sun', 'Night Shift', 'Paper Moon', 'Iron Psalm', 'Red Tide', 'Cold Comfort', 'Dead Reckoning',

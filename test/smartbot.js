@@ -8,18 +8,23 @@ function profile(seed) {
   let xp = 0; for (let L = 0; L < points; L++) xp += 3000 + 250 * L + 3 * L * L;
   P.xp = xp + 1;
   let r = seed; const rnd = () => { r = (r * 1103515245 + 12345) % 2147483648; return r / 2147483648; };
-  if (ks) { const n = S.TREE.list.find(n => n.ks === ks); if (n) S.treeAllocate(n.id); }
-  if (process.env.DOC) S.treeAllocate(process.env.DOC); // v4.2: force a Doctrine seal (d0 Marksman, d1 Wildfire, d5 War Economy); NODOC=1 never seals
-  const noSeal = !!process.env.NODOC;
+  // v5.0 talents: pick trees in a seeded order (CAP=capstoneId puts its tree first and takes it; NOCAP=1 never takes one),
+  // fill each tree top to bottom with random talents, take a Capstone when one opens and a slot is free, then the next tree
+  const want = process.env.CAP || process.env.DOC || ks || '';
+  const order = S.TALENTS.map(t => t.id).sort(() => rnd() - 0.5);
+  if (want && S.TAL[want]) { const tr = S.TAL[want].tree; order.splice(order.indexOf(tr), 1); order.unshift(tr); }
   let guard = 0;
-  while (S.pointsFree() > 0 && guard++ < 800) {
-    const cands = S.TREE.list.filter(n => !P.alloc.includes(n.id) && n.kind !== 'keystone');
-    // prefer notables: pick the cheapest path to a random notable/mastery
-    const goals = cands.filter(n => n.kind !== 'small' && !(noSeal && n.kind === 'seal'));
-    const g = goals[Math.floor(rnd() * goals.length)];
-    const path = S.treePathTo(g.id);
-    if (path && path.length <= S.pointsFree()) S.treeAllocate(g.id);
-    else { const c = cands[Math.floor(rnd() * cands.length)]; const p2 = S.treePathTo(c.id); if (p2 && p2.length <= S.pointsFree() && p2.length < 3) S.treeAllocate(c.id); }
+  for (const tid of order) {
+    const tr = S.TALENTS.find(t => t.id === tid);
+    while (S.pointsFree() > 0 && guard++ < 2000) {
+      const open = tr.rows.flat().filter(t => !S.talentBlock(t.id));
+      const caps = process.env.NOCAP ? [] : tr.caps.filter(c => !S.talentBlock(c.id));
+      if (caps.length) { const c = want && caps.find(c => c.id === want) || (want ? null : caps[Math.floor(rnd() * caps.length)]); if (c) { S.talentAdd(c.id); continue; } }
+      if (!open.length) break;
+      // stop a tree once its capstone is taken and only leftovers remain, 60% of the time (humans spread out)
+      if (S.capsHeld().some(c => S.TAL[c].tree === tid) && rnd() < 0.6) break;
+      S.talentAdd(open[Math.floor(rnd() * open.length)].id);
+    }
   }
 }
 const BASE_PLAN = ['pulse', 'cryo', 'rail', 'snare', 'pulse', 'missile', 'coil', 'flame', 'pylon', 'lens', 'forge', 'emp', 'grav', 'rail', 'missile', 'flame', 'coil', 'lens', 'cryo'];

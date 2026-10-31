@@ -8,7 +8,7 @@ const Hooks = {
 // ---------------- Profile (meta progression) ----------------
 function defaultProfile() {
   return {
-    v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
+    v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], tal: {}, caps: [], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
     seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
@@ -20,155 +20,124 @@ function defaultProfile() {
 let PROF = defaultProfile();
 
 const profLevel = () => levelFromXP(PROF.xp);
-const starSpent = () => { let t = 0; for (const k in PROF.stars || {}) t += PROF.stars[k] || 0; return t; };
-const pointsSpent = () => PROF.alloc.length - 1 + starSpent();
-function regionDone(rid, A) { A = A || allocSet(); return REGION_NODES[rid].every(id => A.has(id)); }
-const regionsDone = () => { const A = allocSet(); return REGION_IDS.filter(r => regionDone(r, A)); };
-function starBuy(rid, n) {
-  if (!regionDone(rid)) return 0;
-  n = Math.max(0, Math.min(n, pointsFree())); if (!n) return 0;
-  PROF.stars = PROF.stars || {}; PROF.stars[rid] = (PROF.stars[rid] || 0) + n;
-  if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return n;
-}
-function starRefund(rid, n) {
-  if (G && !G.over) return 0;
-  const have = (PROF.stars && PROF.stars[rid]) || 0; n = Math.min(n, have); if (!n) return 0;
-  PROF.stars[rid] = have - n; if (!PROF.stars[rid]) delete PROF.stars[rid];
-  Hooks.onChange('tree'); return n;
-}
-const novaReady = () => !PROF.runSnap && profLevel().level >= novaLevelReq(PROF.nova || 0) && regionsDone().length >= 3;
-function supernova(remnant, law) {
-  if (!novaReady()) return false;
-  if (remnant && !PROF.remnants.includes(remnant) && remnant[0] === 's' && regionDone(remnant)) PROF.remnants.push(remnant);
-  if (law && LAWS.some(L => L.id === law) && !PROF.laws.includes(law)) PROF.laws.push(law);
-  PROF.nova = (PROF.nova || 0) + 1;
-  PROF.xp = 0; PROF.alloc = ['start']; PROF.stars = {};
-  Hooks.onChange('tree');
-  return true;
-}
+// ---------- v5.0 Talents (see TALENTS in data.js) ----------
+// PROF.tal = { talentId: rank }, PROF.caps = [capstoneId, ...]. Remnants (from Supernova) are capstone ids that stay active forever
+// without a slot; legacy 'sN' remnants (the old web's sectors) keep that tree's one-point notables.
+const talRank = id => (PROF.tal && PROF.tal[id]) || 0;
+const capsHeld = () => (PROF.caps || []).filter(id => TAL[id]);
+const pointsSpent = () => { let t = 0; for (const k in PROF.tal || {}) if (TAL[k]) t += PROF.tal[k]; return t + capsHeld().length; };
 const pointsFree = () => profLevel().level - pointsSpent();
-const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
-
-function allocSet() { return new Set(PROF.alloc); }
-function treePathTo(id) {
-  const A = allocSet();
-  if (A.has(id)) return [];
-  const prev = {}, q = [];
-  for (const a of A) { prev[a] = null; q.push(a); }
-  while (q.length) {
-    const c = q.shift();
-    if (c === id) break;
-    for (const nb of TREE.nodes[c].adj) if (!(nb in prev)) { prev[nb] = c; q.push(nb); }
+// points spent in a tree, optionally only in rows above `row`
+function treePts(tid, belowRow) { let t = 0; for (const k in PROF.tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && (belowRow === undefined || T.row < belowRow)) t += PROF.tal[k]; } return t; }
+const rowNeed = r => r >= 4 ? TCAP : r * TROW;
+// why a talent can't take another rank right now ('' = it can)
+function talentBlock(id) {
+  const T = TAL[id]; if (!T) return 'none';
+  if (pointsFree() < 1) return 'points';
+  if (T.cap) {
+    if (capsHeld().includes(id) || (PROF.remnants || []).includes(id)) return 'have';
+    if (treePts(T.tree) < TCAP) return 'row';
+    if (capsHeld().length >= capSlots(profLevel().level)) return 'slots';
+    // Conflagration turns every Chill into Burn, so Capstones built on Chill and Freeze would do nothing beside it
+    for (const [a, b] of CAP_CONFLICTS) { const other = id === a ? b : id === b ? a : null; if (other && activeCaps().includes(other)) return 'conflict:' + other; }
+    return '';
   }
-  if (!(id in prev)) return null;
-  const path = []; let c = id;
-  while (c && !A.has(c)) { path.unshift(c); c = prev[c]; }
-  return path;
-}
-function treeOrphans(id) {
-  // nodes that would be cut off (including id) if id is removed
-  if (id === 'start') return null;
-  const A = allocSet(); A.delete(id);
-  const seen = new Set(['start']), q = ['start'];
-  while (q.length) { const c = q.shift(); for (const nb of TREE.nodes[c].adj) if (A.has(nb) && !seen.has(nb)) { seen.add(nb); q.push(nb); } }
-  const out = [id];
-  for (const a of A) if (!seen.has(a)) out.push(a);
-  // removing a seal also releases everything it locked
-  const n0 = TREE.nodes[id];
-  if (n0.kind === 'seal') for (const a of A) if (TREE.nodes[a].need === n0.doctrine && !out.includes(a)) out.push(a);
-  return out;
-}
-// why a node can't be taken right now ('' = fine): seal-locked nodes need their Doctrine seal; seals are limited
-// Conflagration turns every Chill into Burn, so nothing could ever Freeze: the Glacier Doctrine would do nothing
-const TREE_CONFLICTS = [['k1', 'd3']];
-function sealsHeld(list) { return (list || PROF.alloc).filter(id => TREE.nodes[id] && TREE.nodes[id].kind === 'seal').length; }
-function treeBlock(id, path) {
-  path = path || treePathTo(id) || [];
-  const A = allocSet(), want = new Set(path);
-  for (const pid of path) { const n = TREE.nodes[pid]; if (n.need !== undefined && !A.has('d' + n.need) && !want.has('d' + n.need)) return 'seal:' + n.need; }
-  const newSeals = path.filter(pid => TREE.nodes[pid].kind === 'seal').length;
-  if (newSeals && sealsHeld() + newSeals > sealSlots(profLevel().level)) return 'slots';
-  // pairs that cancel each other out are refused rather than quietly doing nothing
-  for (const [a, b] of TREE_CONFLICTS) if ((A.has(a) || want.has(a)) && (A.has(b) || want.has(b)) && (want.has(a) || want.has(b))) return 'conflict:' + (want.has(a) ? b : a);
+  if (talRank(id) >= T.max) return 'max';
+  if (treePts(T.tree, T.row) < rowNeed(T.row)) return 'row';
   return '';
 }
-function treeAllocate(id) {
-  const path = treePathTo(id);
-  if (!path || !path.length || path.length > pointsFree()) return false;
-  if (treeBlock(id, path)) return false;
-  const before = new Set(regionsDone());
-  PROF.alloc.push(...path);
+function talentAdd(id) {
+  if (talentBlock(id)) return false;
+  const T = TAL[id];
+  if (T.cap) PROF.caps = capsHeld().concat([id]);
+  else { PROF.tal = PROF.tal || {}; PROF.tal[id] = talRank(id) + 1; }
   if (G && !G.over) recomputeAll();
-  for (const r of regionsDone()) if (!before.has(r)) { Hooks.toast('CONSTELLATION COMPLETE', `${REGION_NAME[r]} · Star Ranks unlocked`, '#ffe9b0', 1); Hooks.sfx('levelup'); }
   Hooks.onChange('tree');
   return true;
 }
-function treeRefund(id) {
-  const orph = treeOrphans(id);
-  if (!orph) return false;
-  if (G && !G.over && !G.checkpoint) {
-    if (G.tokens < orph.length) return false;
-    G.tokens -= orph.length;
+// mid-run refunds cost Recalibration tokens (1 per rank, 2 for a Capstone); free between runs and at checkpoints
+const CAP_CONFLICTS = [['conflag', 'glacier'], ['conflag', 'abszero'], ['conflag', 'winter']];
+const refundCost = id => TAL[id] && TAL[id].cap ? 2 : 1;
+const refundFree = () => !(G && !G.over && !G.checkpoint);
+// would removing one rank of id leave a talent above it without the points its row needs?
+function talentCanRemove(id) {
+  const T = TAL[id]; if (!T) return 'none';
+  if (T.cap) { if (!capsHeld().includes(id)) return 'none'; }
+  else if (!talRank(id)) return 'none';
+  if (!T.cap) {
+    const tid = T.tree; PROF.tal[id]--;
+    let bad = '';
+    for (const k in PROF.tal) { const U = TAL[k]; if (U && U.tree === tid && PROF.tal[k] > 0 && treePts(tid, U.row) < rowNeed(U.row)) { bad = 'row'; break; } }
+    if (!bad && capsHeld().some(c => TAL[c].tree === tid) && treePts(tid) < TCAP) bad = 'cap';
+    PROF.tal[id]++;
+    if (bad) return bad;
   }
-  const rm = new Set(orph);
-  PROF.alloc = PROF.alloc.filter(a => !rm.has(a));
+  if (!refundFree() && G.tokens < refundCost(id)) return 'tokens';
+  return '';
+}
+function talentRemove(id) {
+  if (talentCanRemove(id)) return false;
+  if (!refundFree()) G.tokens -= refundCost(id);
+  const T = TAL[id];
+  if (T.cap) PROF.caps = capsHeld().filter(c => c !== id);
+  else { PROF.tal[id]--; if (!PROF.tal[id]) delete PROF.tal[id]; }
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return true;
 }
-function pruneAlloc(list) {
-  const want = new Set(list.filter(id => TREE.nodes[id])), seen = new Set(['start']), q = ['start'];
-  while (q.length) { const c = q.shift(); for (const nb of TREE.nodes[c].adj) if (want.has(nb) && !seen.has(nb)) { seen.add(nb); q.push(nb); } }
-  return ['start', ...list.filter(id => id !== 'start' && seen.has(id))];
-}
-// returns true when an older web layout was reset (points refunded)
+// clear every talent (free between runs and at checkpoints only)
+function talentReset() { if (!refundFree()) return false; PROF.tal = {}; PROF.caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
+// v5.0 clean sheet: older webs are reset with every point refunded
 function migrateWeb() {
   if (PROF.webV === WEB_VER) return false;
-  const had = (PROF.alloc || []).length > 1;
-  PROF.alloc = ['start']; PROF.webV = WEB_VER;
+  const had = (PROF.alloc || []).length > 1 || Object.keys(PROF.stars || {}).length > 0;
+  PROF.alloc = ['start']; PROF.stars = {}; PROF.orbit = {}; PROF.mastery = {}; PROF.tal = {}; PROF.caps = []; PROF.builds = [null, null, null, null, null];
+  PROF.webV = WEB_VER;
   return had;
 }
+function treeSaveBuild(slot, name) { PROF.builds[slot] = { name: name || `Build ${slot + 1}`, tal: Object.assign({}, PROF.tal || {}), caps: capsHeld().slice(), lvl: pointsSpent() }; Hooks.onChange('tree'); }
 function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
-  if (!b) return 'empty';
-  let valid = pruneAlloc(b.alloc);
-  // drop extra seals and anything whose seal isn't in the build
-  const slots = sealSlots(profLevel().level); let held = 0;
-  valid = valid.filter(id => { const n = TREE.nodes[id]; if (n.kind !== 'seal') return true; return ++held <= slots; });
-  const seals = new Set(valid.filter(id => TREE.nodes[id].kind === 'seal'));
-  valid = pruneAlloc(valid.filter(id => TREE.nodes[id].need === undefined || seals.has('d' + TREE.nodes[id].need)));
-  if (valid.length - 1 > profLevel().level) return 'points';
-  if (G && !G.over && !G.checkpoint) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
-  PROF.alloc = valid.includes('start') ? valid.slice() : ['start', ...valid];
+  if (!b || !b.tal) return 'empty';
+  let need = 0; for (const k in b.tal) if (TAL[k]) need += b.tal[k]; need += (b.caps || []).filter(c => TAL[c]).length;
+  if (need > profLevel().level) return 'points';
+  if (!refundFree()) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
+  // replay it rank by rank, row by row, so every gate is honoured
+  PROF.tal = {}; PROF.caps = [];
+  for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) PROF.tal[k] = Math.min(T.max, b.tal[k]); }
+  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(profLevel().level)) PROF.caps.push(c);
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return 'ok';
 }
+// Supernova: needs the level and two Capstones; keeps one held Capstone forever as a Remnant
+const novaReady = () => !PROF.runSnap && profLevel().level >= novaLevelReq(PROF.nova || 0) && capsHeld().length >= 2;
+function supernova(remnant, law) {
+  if (!novaReady()) return false;
+  if (remnant && capsHeld().includes(remnant) && !(PROF.remnants || []).includes(remnant)) PROF.remnants.push(remnant);
+  if (law && LAWS.some(L => L.id === law) && !PROF.laws.includes(law)) PROF.laws.push(law);
+  PROF.nova = (PROF.nova || 0) + 1;
+  PROF.xp = 0; PROF.tal = {}; PROF.caps = [];
+  Hooks.onChange('tree');
+  return true;
+}
+const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
+// the Capstones currently in force (held + remnants), as ks flags or fx bundles
+const activeCaps = () => [...new Set(capsHeld().concat((PROF.remnants || []).filter(r => TAL[r])))];
 
 function masteryPick(id) { const v = PROF.mastery && PROF.mastery[id]; return v === undefined ? 0 : v; }
 function loadoutList() { const L = (PROF.loadout || []).filter(k => ABIL_ORDER.includes(k)); return L.length ? L : ABIL_ORDER.slice(); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
+  // v5.0: alloc is ignored (kept in the signature for old callers); talents, Capstones and Remnants come from PROF
   const m = {}, ks = {};
   const orb = { dmg: {}, rate: {}, status: {}, range: {}, reson: {}, vxp: {}, flux: {}, storm: {}, vol: {}, ent: {}, rift: {}, combo: {} };
-  const all = new Set(alloc);
-  for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) all.add(id);
-  for (const r in PROF.stars || {}) if (STARS[r] && regionDone(r, new Set(alloc))) { const S = STARS[r]; m[S.key] = (m[S.key] || 0) + starTotal(r, PROF.stars[r]); }
-  const remSet = new Set(); for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) remSet.add(id);
-  for (const id of all) {
-    const n = TREE.nodes[id]; if (!n) continue;
-    if (n.need !== undefined && !all.has('d' + n.need) && !remSet.has(id)) continue; // seal-locked
-    if (n.kind === 'seal') { ks[n.ks] = 1; continue; }
-    if (n.sat !== undefined) {
-      const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)];
-      if (el === 'E') for (const k in S.E) m[k] = (m[k] || 0) + S.E[k];
-      else orb[S.k][el] = (orb[S.k][el] || 0) + S.v;
-      continue;
-    }
-    for (const k in n.fx) m[k] = (m[k] || 0) + n.fx[k];
-    if (n.ks) ks[n.ks] = 1;
-    if (n.opts) { const o = n.opts[masteryPick(id)]; if (o) for (const k in o.fx) m[k] = (m[k] || 0) + o.fx[k]; }
-  }
+  const add = fx => { for (const k in fx) m[k] = (m[k] || 0) + fx[k]; };
+  for (const id in PROF.tal || {}) { const T = TAL[id], r = PROF.tal[id]; if (!T || T.cap || !r) continue; for (const k in T.fx) m[k] = (m[k] || 0) + T.fx[k] * r; }
+  for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add(T.fx); }
+  // legacy remnants from the old web: that tree's one-point notables stay on
+  for (const r of PROF.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
+  if (m.vxpAll) for (const e of ELS) orb.vxp[e] = (orb.vxp[e] || 0) + m.vxpAll;
   if (runMods) for (const k in runMods) m[k] = (m[k] || 0) + runMods[k];
   const g = k => m[k] || 0;
   const P = g('P'), Tm = g('Tm'), F = g('F'), I = g('I');
@@ -218,7 +187,8 @@ function computeMods(alloc, runMods) {
 // ---------------- Run state ----------------
 let G = null;
 const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * Math.pow(1.0011, (w - 1) * (w - 1));
-const crMult = w => 1.1 * (1 + 0.05 * (w - 1));
+// v5.0: after Wave 40 kill credits grow 1% faster per wave (Nic: late upgrades outpaced income as waves got longer)
+const crMult = w => 1.1 * (1 + 0.05 * (w - 1)) * (1 + Math.max(0, w - 40) * 0.01);
 const tIdx = (x, y) => y * COLS + x;
 const RESON_DMG = 0.08;
 const towerLabel = t => t.name ? `${TOWERS[t.type].name} "${t.name}"` : TOWERS[t.type].name;
@@ -545,6 +515,8 @@ function updateCaches(dt) {
     return;
   }
 }
+// v5.0 crate credits: 60 + 22 × wave (was 40 + 14 × wave), then the late-game kill-credit curve on top
+const crateCr = w => (60 + 22 * w) * (1 + Math.max(0, w - 40) * 0.01);
 function claimCache(c) {
   if (!c || !G.caches.includes(c)) return null;
   G.caches = G.caches.filter(o => o !== c);
@@ -553,13 +525,15 @@ function claimCache(c) {
   const w = Math.max(1, G.wave), roll = G.r() * 100, k2 = c.kind === 'cursed' ? 2 : 1;
   let msg;
   if (c.kind === 'gold') {
-    if (G.r() < 0.5) { G.legendQueue++; msg = 'Your next tower rolls a Legendary affix'; }
-    else { const v = Math.round((40 + 14 * w) * 3 * G.mods.credits), k = pick(G.r, ABIL_ORDER); G.credits += v; G.charges[k] = (G.charges[k] || 0) + 1; msg = `+${v} credits · +1 ${ABILITIES[k].name} charge`; }
+    // v5.0: the chest always pays credits (5 crates' worth), plus a Legendary or an ability charge
+    const v = Math.round(crateCr(w) * 5 * G.mods.credits); G.credits += v; G.tokens++;
+    if (G.r() < 0.5) { G.legendQueue++; msg = `+${v} credits · +1 token · your next tower rolls a Legendary affix`; }
+    else { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + 1; msg = `+${v} credits · +1 token · +1 ${ABILITIES[k].name} charge`; }
   }
-  else if (roll < 40) { const v = Math.round((40 + 14 * w) * G.mods.credits * k2); G.credits += v; msg = `+${v} credits`; }
-  else if (roll < 60) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + k2; msg = `+${k2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${k2 > 1 ? 's' : ''}`; }
+  else if (roll < 50) { const v = Math.round(crateCr(w) * G.mods.credits * k2); G.credits += v; msg = `+${v} credits`; }
+  else if (roll < 65) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + k2; msg = `+${k2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${k2 > 1 ? 's' : ''}`; }
   else if (roll < 75) { addEntropy(12 * k2); msg = `+${12 * k2} Entropy`; }
-  else if (roll < 90) { const v = Math.round(150 * w * k2); addScore(v); msg = `+${v} base score`; }
+  else if (roll < 85) { const v = Math.round(150 * w * k2); addScore(v); msg = `+${v} base score`; }
   else { G.tokens += k2; msg = `+${k2} Recalibration token${k2 > 1 ? 's' : ''}`; }
   if (c.kind === 'cursed') {
     // the price: an elite climbs out of a wormhole
@@ -672,8 +646,8 @@ function newRun(opts) {
     if (picks.length > 1) G.geneFit[geneKey(picks, el)] = { s: 2.4, n: 6 };
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
-  G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: (PROF.alloc || []).length,
-    ks: TREE.list.filter(n => (n.kind === 'keystone' || n.kind === 'seal') && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
+  G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
+    ks: activeCaps(), tal: Object.assign({}, PROF.tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
   return G;
 }
 
@@ -860,10 +834,11 @@ function upgradeTower(t, specIdx) {
   Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: RARITY[t.affixes[t.affixes.length - 1].tier].col });
   return true;
 }
-function rerollTower(t) {
+// v5.0: a Recalibration token pays for a reroll instead of credits
+function rerollTower(t, token) {
   const cost = rerollCost(t);
-  if (G.credits < cost) return false;
-  G.credits -= cost; t.rerolls++;
+  if (token) { if (G.tokens < 1) return false; G.tokens--; } else { if (G.credits < cost) return false; G.credits -= cost; }
+  t.rerolls++;
   t.affixes = t.affixes.map(a => a.tier === 4 ? a : null);
   const n = t.affixes.filter(a => a === null).length;
   t.affixes = t.affixes.filter(a => a);
@@ -1518,6 +1493,19 @@ function startWave() {
     }
   }
   G.spawnClock = 0; G.spawningDone = false;
+  // v5.0 breach warning: the core can sit at full health while a few leaks a wave are soaked by the shield, then die in one
+  // bad wave (Nic, Wave 87). When leaks climb, say so before the cliff, with what is getting through and what stops it
+  if (G.wave > 1 && G.leaksAtStart !== undefined) {
+    const lk = G.stats.leaks - G.leaksAtStart, prev = G.lastLeakN || 0; G.lastLeakN = lk;
+    if (lk >= 3 && (lk >= 6 || prev >= 3)) {
+      const now = G.leakBy || {}, was = G.leakSnap || {}, top = Object.keys(now).map(k => [k, now[k] - (was[k] || 0)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
+      let who = '', counter = '';
+      if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
+      Hooks.toast('BREACH WARNING', `${lk} got through last wave${who ? ', mostly ' + who : ''}. Your core's shield won't hold many more.${counter}`, '#ff4d6a', true);
+      rlog('breachWarn', { n: lk, who });
+    }
+  }
+  G.leakSnap = Object.assign({}, G.leakBy || {});
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
   lureAll();
@@ -1675,7 +1663,7 @@ function updateWaves(dt) {
   if (!G.queue.length) {
     G.spawningDone = true;
     G.next = G.af.timeDebt ? 6 : 13; // v4.7: 13 s between waves (was 10)
-    const bonus = Math.round((20 + G.wave * 4) * G.mods.credits * (G.ev.gold ? 2 : 1));
+    const bonus = Math.round((25 + G.wave * 6) * G.mods.credits * (G.ev.gold ? 2 : 1)); // v5.0: was 20 + 4 × wave
     G.credits += bonus;
     if (FX('interest')) { const it = Math.min(300, Math.floor(G.credits * FX('interest') / 100)); if (it > 0) { G.credits += it; Hooks.log(`Interest +${it} credits`, '#ffb03a'); } }
     if (FX('fieldRepair') && G.stats.leaks === (G.leaksAtStart || 0) && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * FX('fieldRepair') / 100);

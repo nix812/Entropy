@@ -50,8 +50,9 @@ const Save = (() => {
     const out = Object.assign(d, p);
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
     out.webV = p.webV || 1;
-    out.alloc = Array.isArray(p.alloc) ? p.alloc.filter(id => TREE.nodes[id]) : ['start'];
-    if (!out.alloc.includes('start')) out.alloc.unshift('start');
+    out.alloc = ['start'];
+    out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
+    out.caps = Array.isArray(p.caps) ? p.caps.filter(c => TAL[c] && TAL[c].cap) : [];
     if (!Array.isArray(out.builds) || out.builds.length !== 5) out.builds = [null, null, null, null, null];
     return out;
   }
@@ -84,7 +85,7 @@ const Save = (() => {
         try { remote = merge(JSON.parse(snap.data().json)); } catch (e) {}
         if (remote && (remote.updatedAt || 0) > (PROF.updatedAt || 0) && !(G && !G.over)) {
           PROF = remote;
-          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('PASSIVE WEB REBUILT', 'Doctrines have arrived. All your points are refunded: pick a play style', '#ffb03a'); queue(); }
+          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'); queue(); }
           try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
           UI.refreshAll();
         } else queue();
@@ -120,10 +121,10 @@ const UI = (() => {
     $('#hBest').textContent = PROF.bestWave || '—';
     const hp = $('#hPts'); hp.hidden = free <= 0; hp.textContent = free + ' pt' + (free === 1 ? '' : 's');
     $('#bWebH').classList.toggle('glow', free > 0);
-    const nv = PROF.nova || 0, done = regionsDone().length, req = novaLevelReq(nv), ready = novaReady();
+    const nv = PROF.nova || 0, done = capsHeld().length, req = novaLevelReq(nv), ready = novaReady();
     $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv;
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
-    $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 3 && L.level >= req ? 'Finish your run' : `${Math.min(done, 3)}/3 constellations · Lv ${req}`;
+    $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 2 && L.level >= req ? 'Finish your run' : `${Math.min(done, 2)}/2 Capstones · Lv ${req}`;
     const snap = PROF.runSnap;
     $('#bLaunch2').hidden = !snap;
     $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
@@ -152,7 +153,7 @@ const UI = (() => {
     const maxStart = Math.max(1, Math.floor((PROF.bestWave - 5) / 5) * 5);
     const starts = [1]; for (let w = 5; w <= maxStart; w += 5) starts.push(w);
     const sw = setup.startWave;
-    const credits = Math.round(320 + computeMods(PROF.alloc, null).startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
+    const credits = Math.round(320 + computeMods(null, null).startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
     const CH = CHAOS_LEVELS[setup.chaos];
     const f0 = stageFrac(CH.lanes.filter(w => w <= sw).length, CH.lanes.length), R0 = mapRegion(setup.map.core, f0);
     setup.frac = f0;
@@ -397,9 +398,9 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const ALERT_RE = /^(BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
-  const KEY_RE = /^(RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
+  const KEY_RE = /^(BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force) {
@@ -670,7 +671,7 @@ const UI = (() => {
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${t.lvl === 3 ? '' : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
@@ -806,6 +807,7 @@ const UI = (() => {
       else if (act === 'up') { if (!upgradeTower(t)) SFX.play('deny'); renderPanel(); }
       else if (act === 'spec') { if (!upgradeTower(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'reroll') { if (!rerollTower(t)) SFX.play('deny'); renderPanel(); }
+      else if (act === 'rerollTok') { if (!rerollTower(t, true)) SFX.play('deny'); renderPanel(); }
       else if (act === 'sell') { sellTower(t); closePanel(); }
       else if (act === 'oc') { if (!setOvercharge(t, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
       else if (act === 'vet') { if (!claimVet(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
@@ -1010,7 +1012,7 @@ const UI = (() => {
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
       bounty: G.stats.bounty || null, elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
-      keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
+      keystones: activeCaps().map(id => TAL[id].name) };
   }
   function recapHTML(R) {
     const els = R.els, tot = Object.values(els).reduce((a, b) => a + b, 0) || 1, mvp = R.mvp;
@@ -1124,7 +1126,7 @@ const UI = (() => {
       ${G.hallRank >= 0 ? `<p class="amber">Hall of Fame #${G.hallRank + 1}!</p>` : ''}
       ${recapHTML(G.rec)}
       ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
-      ${pointsFree() > 0 ? `<p class="good">${pointsFree()} passive point${pointsFree() === 1 ? '' : 's'} available</p>` : ''}
+      ${pointsFree() > 0 ? `<p class="good">${pointsFree()} talent point${pointsFree() === 1 ? '' : 's'} to spend</p>` : ''}
       <div class="row logrow"><span class="note">Run log for analysis</span><button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button></div>
       <div class="foot"><button class="btn small" data-act="logCopy" title="Copy this run's log to paste into a chat">Copy log</button><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Passive Web</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
@@ -1347,8 +1349,8 @@ const UI = (() => {
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
-      ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
-      ['Passive Web', 'Spend points on permanent bonuses. Open it anytime.'],
+      ['XP', 'Score converts to XP. Each level grants 1 talent point.'],
+      ['Talents', 'Seven trees of permanent bonuses. Each row opens after 5 points in its tree; 20 points reach its Capstones, play styles you pick one of. You hold 1 Capstone, 2 from Level 50, 3 from Level 100. Changes are free between runs and at checkpoints; mid-run they cost Recalibration tokens.'],
       ['Doctrines', 'Seal a region to adopt its play style: Marksman (few huge guns), Wildfire (the road burns) or War Economy (banked credits arm the core). Each has a cost on the field. You hold 1 seal, 2 from level 75, 3 from level 120.'],
       ['Notables', 'Larger nodes with a signature effect that changes how a build plays. In a Doctrine region they need its seal.'],
       ['Masteries', 'Choose 1 of 3 effects. Swap freely between runs and at checkpoints.'],
@@ -1418,10 +1420,8 @@ const UI = (() => {
       { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
       { id: 'anom', name: 'Anomalies', rows: ANOMALIES.map(A => [A.name, `${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff']) },
-      { id: 'notable', name: 'Notables', rows: TREE.list.filter(n => n.kind === 'notable').map(n => [n.name, nodeLines(n).join('. ') + '.', n.sector >= 0 ? SECTORS[n.sector].col : '']) },
-      { id: 'mastery', name: 'Masteries', rows: TREE.list.filter(n => n.opts).flatMap(n => n.opts.map(o => [o.name, `${Object.keys(o.fx).map(k => STAT_TXT[k] ? STAT_TXT[k](o.fx[k]) : '').filter(Boolean).join('. ')}. <em>${esc(n.name)}</em>`, SECTORS[n.sector].col])) },
-      { id: 'orbit', name: 'Orbits', rows: Object.values(ORBITS).flatMap(O => O.sats.map(S => [S.name, `${S.d}. Facing Bastion instead: ${Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')}. <em>${esc(O.name)}</em>`, O.col])) },
-      { id: 'ks', name: 'Keystones', rows: TREE.list.filter(n => n.kind === 'keystone').map(n => [n.name, n.lines.join('. ') + '.']) },
+      { id: 'talent', name: 'Talents', rows: TALENTS.flatMap(tr => tr.rows.flat().map(T => [T.name, `${talentLines(T, T.max).join('. ')}. <em>${esc(tr.name)} · ${T.max > 1 ? 'at ' + T.max + ' ranks' : 'one rank'}</em>`, tr.col])) },
+      { id: 'cap', name: 'Capstones', rows: TALENTS.flatMap(tr => tr.caps.map(T => [T.name, `${talentLines(T).join('. ')}. <em>${esc(tr.name)} Capstone</em>`, tr.col])) },
       { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
       { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · Unlocks at Wave ${D.unlock}</em>`, EL[D.el].col]; }) },
     ];
@@ -1470,22 +1470,22 @@ const UI = (() => {
     return PROF.novaOffer.laws;
   }
   function openNova() {
-    const F = novaFlow, nv = PROF.nova || 0, ready = novaReady(), done = regionsDone();
-    const rems = done.filter(r => r[0] === 's' && !PROF.remnants.includes(r));
+    const F = novaFlow, nv = PROF.nova || 0, ready = novaReady(), done = capsHeld();
+    const rems = done.filter(r => !PROF.remnants.includes(r));
     const head = `<div class="ch"><h2>Supernova${nv ? ' ' + roman(nv + 1) : ''}</h2><button class="x" data-act="close">✕</button></div>`;
     let body = '';
     if (F.step === 0) {
       const lawsHave = PROF.laws.map(id => LAWS.find(L => L.id === id)).filter(Boolean);
       body = `<p class="note">Collapse your galaxy and start a new one. It's harder, it's stranger, and it's worth more.</p>
-        <div class="nkeep"><div class="lose"><b>Reset</b>Level and XP<br>Passive web and Star Ranks</div>
-        <div class="keep"><b>Keep and gain</b>One Remnant: a finished constellation's notables, active forever<br>One Cosmic Law: +${Math.round(LAW_SCORE * 100)}% score, changes the rules<br>+${Math.round(NOVA_SCORE * 100)}% score and +${Math.round(NOVA_XP * 100)}% XP per Supernova</div></div>
-        ${PROF.remnants.length ? `<div class="lbl">Your Remnants</div><p class="note">${PROF.remnants.map(r => esc(REGION_NAME[r])).join(' · ')}</p>` : ''}
+        <div class="nkeep"><div class="lose"><b>Reset</b>Level and XP<br>Talents and Capstones</div>
+        <div class="keep"><b>Keep and gain</b>One Remnant: a Capstone you hold, active forever without a slot or points<br>One Cosmic Law: +${Math.round(LAW_SCORE * 100)}% score, changes the rules<br>+${Math.round(NOVA_SCORE * 100)}% score and +${Math.round(NOVA_XP * 100)}% XP per Supernova</div></div>
+        ${PROF.remnants.length ? `<div class="lbl">Your Remnants</div><p class="note">${PROF.remnants.map(r => esc(TAL[r] ? TAL[r].name : 'Old web: ' + (TALENTS[+r.slice(1)] || {}).name)).join(' · ')}</p>` : ''}
         ${lawsHave.length ? `<div class="lbl">Your Laws</div><p class="note">${lawsHave.map(L => esc(L.name)).join(' · ')}</p>` : ''}
-        <div class="lbl">Requirements</div><p class="note">${done.length >= 3 ? '✓' : '✗'} 3 finished constellations (${done.length}) · ${profLevel().level >= novaLevelReq(nv) ? '✓' : '✗'} Level ${novaLevelReq(nv)} · ${PROF.runSnap ? '✗ Finish or abandon your saved run' : '✓ No run in progress'}</p>
+        <div class="lbl">Requirements</div><p class="note">${done.length >= 2 ? '✓' : '✗'} 2 Capstones (${done.length}) · ${profLevel().level >= novaLevelReq(nv) ? '✓' : '✗'} Level ${novaLevelReq(nv)} · ${PROF.runSnap ? '✗ Finish or abandon your saved run' : '✓ No run in progress'}</p>
         <div class="ta"><button class="btn primary" data-act="novaNext" ${ready ? '' : 'disabled'}>${ready ? 'Begin' : 'Not ready yet'}</button></div>`;
     } else if (F.step === 1) {
-      body = `<div class="lbl">Choose a Remnant</div><p class="note">Its notables stay active in every galaxy from now on, without spending points.</p>
-        <div class="ncards">${rems.length ? rems.map(r => { const S = SECTORS[+r.slice(1)]; return `<button class="ncard ${F.remnant === r ? 'on' : ''}" style="--c:${S.col}" data-act="novaR" data-v="${r}"><b>${esc(REGION_NAME[r])}</b><small>${esc(S.name)}</small>${remnantNodes(r).map(id => `<span>${esc(TREE.nodes[id].name)}</span>`).join('')}</button>`; }).join('') : '<p class="note">No new constellation to keep. Finish another sector to earn a Remnant.</p>'}</div>
+      body = `<div class="lbl">Choose a Remnant</div><p class="note">It stays active in every galaxy from now on, without a Capstone slot or points.</p>
+        <div class="ncards">${rems.length ? rems.map(r => { const T = TAL[r], tr = TREE_BY_ID[T.tree]; return `<button class="ncard ${F.remnant === r ? 'on' : ''}" style="--c:${tr.col}" data-act="novaR" data-v="${r}"><b>${esc(T.name)}</b><small>${esc(tr.name)}</small>${talentLines(T).map(l => `<span>${esc(l)}</span>`).join('')}</button>`; }).join('') : '<p class="note">Every Capstone you hold is already a Remnant.</p>'}</div>
         <div class="ta"><button class="btn" data-act="novaBack">Back</button><button class="btn primary" data-act="novaNext" ${F.remnant || !rems.length ? '' : 'disabled'}>Next</button></div>`;
     } else if (F.step === 2) {
       const offers = novaOffers();
@@ -1505,13 +1505,13 @@ const UI = (() => {
   }
   function openArchive() {
     const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k); return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? '' : 'Wave ' + D.unlock}</em></div>`; }).join('');
-    const ks = TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name);
+    const ks = activeCaps().map(id => TAL[id].name);
     const hrs = Math.floor(PROF.playTime / 3600), mins = Math.floor(PROF.playTime / 60) % 60;
     modal(`<div class="card"><div class="ch"><h2>Archive</h2><button class="x" data-act="close2">✕</button></div>
       <div class="setup-grid"><div class="col"><div class="lbl">Arsenal</div>${rows}</div>
       <div class="col">${hallHTML()}<div class="lbl">Record</div>
         <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best Wave<b>${PROF.bestWave || '—'}</b></span><span>Best Score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Time Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
-        <div class="lbl">Keystones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None allocated'}</p>
+        <div class="lbl">Capstones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None yet'}</p>
         ${codexHTML()}</div></div></div>`, 'archive');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
@@ -1692,7 +1692,7 @@ const UI = (() => {
     Hooks.toast = toast;
     Hooks.onDraft = opts => { closePanel(); openDraft(opts); };
     Hooks.onGameOver = () => { closePanel(); setTimeout(openGameOver, 900); };
-    Hooks.onLevel = (L, n) => { toast('LEVEL UP · ' + L, `+${n} passive point${n > 1 ? 's' : ''}`, '#59f0b4'); Save.save(); };
+    Hooks.onLevel = (L, n) => { toast('LEVEL UP · ' + L, `+${n} talent point${n > 1 ? 's' : ''}`, '#59f0b4'); Save.save(); };
     Hooks.onUnlock = k => { if (G) (G.unlocks || (G.unlocks = [])).push(k); if (panel && panel.kind === 'build') renderPanel(); };
     Hooks.onChange = () => { if (G && panel) renderPanel(); Save.save(); };
     Hooks.onSave = () => Save.save();
@@ -1721,658 +1721,129 @@ const UI = (() => {
   };
 })();
 
-// ---------------- Passive web view ----------------
+// ---------------- v5.0 Talents screen (replaces the 3D passive web) ----------------
+// Tree tabs on the left, the chosen tree's rows in the middle, the selected talent's details on the right. Tap a talent to see it,
+// tap + to add a rank (or double-tap the talent). Everything is plain DOM: it scrolls like any page on a phone.
 const Tree = (() => {
-  let cv, c, lb, lc, W = 0, H = 0, dpr = 1, open_ = false, cam = null, goal = null, sel = null, path = null;
-  const ptrs = new Map(); let pinch = null, dragMoved = 0, drawer = null, confirmWipe = false, frame = 0, shiftPan = false;
-  const R = { start: 15, small: 7, notable: 12, mastery: 14, keystone: 17, orbit: 13, sat: 11, seal: 15 };
-  const PD = 1800, ORB_R = 120, WS = WEB_SCALE, PILX = 1420;
-  const DEF = () => flatMode() ? { tx: 0, ty: 40, tz: 0, yaw: 0, pitch: 0.001, zoom: clamp(Math.min(W / 3200, H / 2300), 0.1, 1) } : { tx: 0, ty: 0, tz: 0, yaw: 0.35, pitch: 0.98, zoom: clamp(Math.min(W, H) / 1650, 0.16, 1) };
-  let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, camOX = 0, viewT = 1, profOn = false;
-  const flatMode = () => !PROF.settings || PROF.settings.webView !== '3d';
-  const orbView = {};
-  function camPrep() { cy_ = Math.cos(cam.yaw); sy_ = Math.sin(cam.yaw); cp_ = Math.cos(cam.pitch); sp_ = Math.sin(cam.pitch); }
-  // world (x right, y down the plane, z up) -> screen css px
-  function proj(x, y, z, o) {
-    x -= cam.tx; y -= cam.ty; z -= cam.tz;
-    const x1 = x * cy_ - y * sy_, y1 = x * sy_ + y * cy_;
-    const y2 = y1 * cp_ - z * sp_, z2 = y1 * sp_ + z * cp_;
-    const k = cam.zoom * PD / Math.max(300, PD - z2);
-    o.x = W / 2 + camOX + x1 * k; o.y = H / 2 + y2 * k; o.s = k; o.d = z2;
-    return o;
-  }
-  function satAngle(n) { const v = orbView[n.orbit] !== undefined ? orbView[n.orbit] : orbitRot(n.orbit); return (-90 + (n.sat * 2 + v) * 60) * Math.PI / 180; }
-  function pos3(n) { if (n.sat !== undefined) { const a = satAngle(n); return [Math.cos(a) * ORB_R, Math.sin(a) * ORB_R, n.z]; } return [n.x, n.y, n.z || 0]; }
-  // flat planning layout: the disk top-down, Zenith as a pillar on the right, Nadir on the left
-  function posFlat(n) {
-    if (n.sector !== -2) return [n.x, n.y, 0];
-    const side = n.z > 0 ? 1 : -1, px = side * PILX, py = 330 - Math.abs(n.z) * 1.45;
-    if (n.kind === 'seal') return [px + 150, py, 0];
-    if (n.sat !== undefined) { const a = satAngle(n); return [px + Math.cos(a) * ORB_R * 0.9, py + Math.sin(a) * ORB_R * 0.55, 0]; }
-    return [px, py, 0];
-  }
-  function npos(n) {
-    if (viewT >= 0.999) return posFlat(n);
-    if (viewT <= 0.001) return pos3(n);
-    const a = pos3(n), b = posFlat(n), t = viewT * viewT * (3 - 2 * viewT);
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-  }
-  // galaxy dust, generated once
-  let dust = null, bg = null;
-  function makeDust() {
-    let sd = 1337; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
-    const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5;
-    dust = [];
-    SECTORS.forEach((S, i) => {
-      const a0 = (-90 + i * 60) * Math.PI / 180;
-      for (let k = 0; k < 360; k++) {
-        const r = 90 + Math.pow(rnd(), 0.75) * 860 * WS, th = a0 + gauss() * 0.42 + 0.28 * Math.log(r / 90);
-        dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 26 * (1.1 - r / 1000), col: S.col, a: 0.18 + rnd() * 0.5, s: rnd() < 0.06 ? 2 : 1 });
-      }
-    });
-    for (let k = 0; k < 560; k++) { const r = Math.abs(gauss()) * 150, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 45, col: ['#fff2c8', '#ffb03a', '#ffffff', '#ffd27a'][k % 4], a: 0.25 + rnd() * 0.6, s: rnd() < 0.15 ? 2 : 1 }); }
-    for (let k = 0; k < 260; k++) { const r = 1250 + rnd() * 800, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 380, col: '#c9c6ff', a: 0.15 + rnd() * 0.35, s: 1 }); }
-    bg = []; for (let k = 0; k < 220; k++) bg.push({ x: rnd(), y: rnd(), p: 0.2 + rnd() * 0.8, a: 0.15 + rnd() * 0.5 });
-  }
+  let open_ = false, cur = 'K', sel = null, drawer = null, lastTap = { id: null, t: 0 }, confirmReset = false;
+  const el = id => document.getElementById(id);
+  const capName = id => TAL[id] ? TAL[id].name : id;
   function init() {
-    cv = $('#tcv'); c = cv.getContext('2d');
-    lb = document.createElement('canvas'); lc = lb.getContext('2d');
-    cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: (e.clientX / UIS), y: (e.clientY / UIS) }); dragMoved = 0; shiftPan = e.shiftKey || e.button === 2; goal = null; if (ptrs.size === 2) startPinch(); });
-    cv.addEventListener('contextmenu', e => e.preventDefault());
-    cv.addEventListener('pointermove', e => {
-      if (!ptrs.has(e.pointerId) || !cam) return;
-      const p = ptrs.get(e.pointerId), dx = (e.clientX / UIS) - p.x, dy = (e.clientY / UIS) - p.y;
-      p.x = (e.clientX / UIS); p.y = (e.clientY / UIS);
-      if (ptrs.size === 1) {
-        dragMoved += Math.abs(dx) + Math.abs(dy);
-        if (shiftPan || viewT > 0.5) panBy(dx, dy);
-        else { cam.yaw -= dx * 0.0065; cam.pitch = clamp(cam.pitch - dy * 0.005, 0.22, 1.38); }
-      } else if (ptrs.size === 2 && pinch) {
-        const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        cam.zoom = clamp(pinch.z * d / pinch.d, 0.12, 3);
-        panBy(mx - pinch.mx, my - pinch.my); pinch.mx = mx; pinch.my = my;
-        dragMoved += 20;
+    el('tree').addEventListener('click', e => {
+      const b = e.target.closest('[data-tact]'); if (!b) return;
+      const a = b.dataset.tact, v = b.dataset.v;
+      if (a === 'close') { close(); return; }
+      if (a === 'tab') { cur = v; sel = null; drawer = null; SFX.play('ui'); refresh(); el('tgrid').scrollTop = 0; return; }
+      if (a === 'sum') { cur = 'sum'; sel = null; drawer = null; SFX.play('ui'); refresh(); return; }
+      if (a === 'sel') {
+        const now = performance.now();
+        if (lastTap.id === v && now - lastTap.t < 350) { add(v); lastTap = { id: null, t: 0 }; return; }
+        lastTap = { id: v, t: now }; sel = v; SFX.play('ui'); refresh(); return;
       }
+      if (a === 'add') { sel = v; add(v); return; }
+      if (a === 'rem') { remove(v); return; }
+      if (a === 'builds') { drawer = drawer === 'builds' ? null : 'builds'; refresh(); return; }
+      if (a === 'reset') { if (!confirmReset) { confirmReset = true; refresh(); return; } confirmReset = false; if (talentReset()) { SFX.play('sell'); UI.toast('TALENTS RESET', 'Every point is back', '#ffb03a'); } refresh(); return; }
+      if (a === 'bsave') { treeSaveBuild(+v); Save.save(); UI.toast('BUILD SAVED', `Slot ${+v + 1}`, '#59f0b4'); refresh(); return; }
+      if (a === 'bload') { const r = treeLoadBuild(+v); if (r === 'ok') { SFX.play('upgrade'); UI.toast('BUILD LOADED', PROF.builds[+v].name, '#59f0b4'); } else UI.toast('CAN\'T LOAD', r === 'points' ? 'Not enough points for that build yet' : r === 'tokens' ? 'Loading a build mid-run costs 2 Recalibration tokens' : 'Empty slot', '#ff4d6a'); refresh(); return; }
     });
-    const up = e => {
-      if (!ptrs.has(e.pointerId)) return;
-      ptrs.delete(e.pointerId);
-      if (ptrs.size < 2) pinch = null;
-      if (ptrs.size === 0 && dragMoved < 10) tap((e.clientX / UIS), (e.clientY / UIS));
-    };
-    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); pinch = null; });
-    cv.addEventListener('wheel', e => { e.preventDefault(); if (cam) cam.zoom = clamp(cam.zoom * (e.deltaY < 0 ? 1.12 : 0.89), 0.12, 3); }, { passive: false });
-    $('#tree').addEventListener('click', e => { const b = e.target.closest('[data-tact]'); if (b && !b.disabled) action(b.dataset.tact, b); });
-    makeDust();
   }
-  function startPinch() { const [a, b] = [...ptrs.values()]; pinch = { d: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z: cam.zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
-  function panBy(dx, dy) {
-    camPrep();
-    const x1 = dx / cam.zoom, y1 = dy / cam.zoom / Math.max(0.35, cp_);
-    cam.tx = clamp(cam.tx - (x1 * cy_ + y1 * sy_), -1700, 1700); cam.ty = clamp(cam.ty - (-x1 * sy_ + y1 * cy_), -1400, 1400);
+  function add(id) {
+    const why = talentBlock(id);
+    if (why) { SFX.play('deny'); UI.toast('NOT YET', blockMsg(id, why), '#ff4d6a'); return; }
+    talentAdd(id); SFX.play(TAL[id].cap ? 'levelup' : 'upgrade');
+    if (TAL[id].cap) UI.toast('CAPSTONE', `${TAL[id].name} · ${TREE_BY_ID[TAL[id].tree].name}`, TREE_BY_ID[TAL[id].tree].col);
+    Save.save(); refresh();
   }
-  function resize() {
-    if (!cv) return;
-    const r = cv.getBoundingClientRect();
-    dpr = Math.min(3, window.devicePixelRatio || 1) * UIS;
-    W = r.width / UIS; H = r.height / UIS;
-    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    lb.width = Math.max(1, Math.ceil(W / 2)); lb.height = Math.max(1, Math.ceil(H / 2));
+  function remove(id) {
+    const why = talentCanRemove(id);
+    if (why) { SFX.play('deny'); UI.toast('CAN\'T REMOVE', why === 'tokens' ? `Refunding mid-run costs ${refundCost(id)} Recalibration token${refundCost(id) > 1 ? 's' : ''} (you have ${G ? G.tokens : 0})` : why === 'cap' ? 'Your Capstone needs 20 points in this tree' : why === 'row' ? 'A talent further down needs these points' : 'Nothing to remove', '#ff4d6a'); return; }
+    talentRemove(id); SFX.play('sell'); Save.save(); refresh();
+  }
+  function blockMsg(id, why) {
+    const T = TAL[id], tr = TREE_BY_ID[T.tree];
+    if (why === 'points') return 'No points left. You earn one each level';
+    if (why === 'max') return 'Already at its last rank';
+    if (why === 'have') return 'Already yours';
+    if (why === 'slots') { const n = CAP_NEXT(profLevel().level); return `You can hold ${capSlots(profLevel().level)} Capstone${capSlots(profLevel().level) > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
+    if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
+    if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
+    return 'Not available';
+  }
+  // ---- rendering ----
+  function rankPips(T, r) { if (T.max <= 1) return ''; let s = ''; for (let i = 0; i < T.max; i++) s += `<i class="${i < r ? 'on' : ''}"></i>`; return `<span class="pips">${s}</span>`; }
+  function tile(T, tr) {
+    const r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), canAdd = !why, locked = why === 'row', full = !T.cap && r >= T.max;
+    const rem = (PROF.remnants || []).includes(T.id);
+    const cls = ['ttile', T.cap ? 'cap' : '', r ? 'have' : '', locked ? 'locked' : '', full ? 'full' : '', sel === T.id ? 'sel' : ''].join(' ');
+    const desc = talentLines(T, Math.max(1, r)).join(' · ');
+    return `<div class="${cls}" style="--c:${tr.col}"><button class="tbody" data-tact="sel" data-v="${T.id}"><b>${esc(T.name)}${rem ? ' <em>Remnant</em>' : ''}</b>${T.cap ? '' : `<small>${r}/${T.max}</small>`}${rankPips(T, r)}<span class="td">${esc(desc)}</span></button>${canAdd ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Add a rank">+</button>` : ''}</div>`;
+  }
+  function treeHTML(tr) {
+    const pts = treePts(tr.id), rowsHTML = tr.rows.map((row, r) => {
+      const need = rowNeed(r), ok = pts >= need || treePts(tr.id, r) >= need;
+      return `<div class="trow ${ok ? '' : 'locked'}"><div class="trl"><b>${r + 1}</b>${r ? `<small>${need} pts</small>` : ''}</div><div class="trt">${row.map(T => tile(T, tr)).join('')}</div></div>`;
+    }).join('');
+    const capOk = pts >= TCAP;
+    return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${rowsHTML}
+      <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
+      <p class="note tfoot">Capstones change how you play. Pick one per tree; you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}.</p>`;
+  }
+  function sumHTML() {
+    const M = computeMods(null, null), lines = [];
+    const agg = {};
+    for (const id in PROF.tal || {}) { const T = TAL[id]; if (!T || T.cap) continue; for (const k in T.fx) agg[k] = (agg[k] || 0) + T.fx[k] * PROF.tal[id]; }
+    for (const k in agg) if (STAT_TXT[k]) lines.push(STAT_TXT[k](typeof agg[k] === 'number' && agg[k] !== 1 ? +agg[k].toFixed(2) : agg[k]));
+    const caps = activeCaps();
+    return `<div class="thead"><b>Your build</b><span>Everything your talents give you, in one place</span><em>${pointsSpent()} spent · ${pointsFree()} free</em></div>
+      <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(PROF.remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : '<p class="note">None yet. Spend 20 points in one tree to reach its Capstones.</p>'}
+      <div class="lbl">Bonuses</div>${lines.length ? `<ul class="tsum">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="note">No talents yet.</p>'}
+      <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / 26 * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
+  }
+  function infoHTML() {
+    if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after 5 points in that tree. Capstones open at 20.</p></div>`;
+    const T = TAL[sel], tr = TREE_BY_ID[T.tree], r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id);
+    const now = r ? talentLines(T, r) : null, next = !T.cap && r < T.max ? talentLines(T, r + 1) : null;
+    const rem = (PROF.remnants || []).includes(T.id);
+    return `<div class="tinfo-t" style="--c:${tr.col}"><em>${esc(tr.name)}${T.cap ? ' · Capstone' : ` · Row ${T.row + 1}`}</em><b>${esc(T.name)}</b>${T.cap ? `<small>${r ? (rem ? 'Remnant: always on' : 'Yours') : 'Not taken'}</small>` : `<small>Rank ${r} of ${T.max}</small>`}</div>
+      ${T.cap ? `<ul class="tl">${talentLines(T).map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : `${now ? `<div class="lbl">Now</div><ul class="tl">${now.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}${next ? `<div class="lbl">${r ? 'Next rank' : 'Rank 1'}</div><ul class="tl dim">${next.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}`}
+      ${why && why !== 'max' && why !== 'have' ? `<p class="note bad">${esc(blockMsg(T.id, why))}</p>` : ''}
+      <div class="tbtns">${!rem && (r > 0) ? `<button class="btn" data-tact="rem" data-v="${T.id}" ${rw && rw !== 'tokens' ? 'disabled' : ''}>Remove${refundFree() ? '' : `<small>${refundCost(T.id)} token${refundCost(T.id) > 1 ? 's' : ''}</small>`}</button>` : ''}
+      ${!why ? `<button class="btn primary" data-tact="add" data-v="${T.id}">${T.cap ? 'Take Capstone' : r ? 'Add rank' : 'Learn'}<small>1 point</small></button>` : ''}</div>`;
+  }
+  function buildsHTML() {
+    return `<div class="tbuilds"><div class="lbl">Builds <em>save a layout, load it later${refundFree() ? '' : ' (2 tokens mid-run)'}</em></div>${PROF.builds.map((b, i) => `<div class="tb"><b>${b && b.tal ? esc(b.name) : `Slot ${i + 1}`}</b><small>${b && b.tal ? `${b.lvl} pts · ${(b.caps || []).map(capName).map(esc).join(', ') || 'no Capstone'}` : 'empty'}</small><button class="btn small" data-tact="bsave" data-v="${i}">Save</button><button class="btn small" data-tact="bload" data-v="${i}" ${b && b.tal ? '' : 'disabled'}>Load</button></div>`).join('')}</div>`;
+  }
+  function refresh() {
+    if (!open_) return;
+    const lv = profLevel().level, free = pointsFree(), held = capsHeld().length, slots = capSlots(lv);
+    el('tPts').textContent = free;
+    el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
+    const tk = el('tTok'); tk.hidden = !(G && !G.over); if (G) tk.innerHTML = `<b>${G.tokens}</b> tokens`;
+    const rs = el('tReset'); rs.hidden = !refundFree(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
+    el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
+    el('tgrid').innerHTML = (drawer === 'builds' ? buildsHTML() : '') + (cur === 'sum' ? sumHTML() : treeHTML(TREE_BY_ID[cur] || TALENTS[0]));
+    el('tinfo').innerHTML = infoHTML();
+    document.body.classList.toggle('tsel', !!sel);
   }
   function open() {
-    if (G && !G.over) G.wasPaused = G.paused;
+    if (G && !G.over) { G.wasPaused = G.paused; G.paused = true; }
     UI.closePanel();
-    $('#tree').hidden = false; open_ = true; document.body.classList.add('webopen');
-    resize();
-    viewT = flatMode() ? 1 : 0;
-    if (!sel || !cam) cam = DEF();
-    renderRegions();
-    for (const k in ORBITS) { orbView[k] = orbitRot(k); delete orbView[k + '_t']; }
-    drawer = null;
-    refresh();
+    el('tree').hidden = false; open_ = true; document.body.classList.add('webopen');
+    if (cur !== 'sum' && !TREE_BY_ID[cur]) cur = 'K';
+    // open on the tree you've invested in most
+    if (!sel) { let best = cur, bp = -1; for (const tr of TALENTS) { const p = treePts(tr.id); if (p > bp) { bp = p; best = tr.id; } } if (bp > 0) cur = best; }
+    drawer = null; confirmReset = false; refresh();
   }
   function close() {
-    $('#tree').hidden = true; open_ = false; sel = null; path = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
+    el('tree').hidden = true; open_ = false; sel = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
+    if (G && !G.over) G.paused = !!G.wasPaused;
     UI.flushToasts();
     if (UI.screen === 'hangar') UI.renderHangar();
     Save.save();
   }
-  function tap(sx, sy) {
-    const r = cv.getBoundingClientRect(), px = sx - r.left / UIS, py = sy - r.top / UIS, o = {};
-    camPrep();
-    if (cA > 0.5) { let hb = null, hd = 1e9; for (const h of cHits) { const d = Math.hypot(h.x - px, h.y - py); if (d < h.r && d < hd) { hd = d; hb = h; } } if (hb) { SFX.play('ui'); flyTo(hb.rid); return; } }
-    selStar = null;
-    const A0 = new Set(PROF.alloc), cullR = cullRadius(), fs = focusSector(), cands = [];
-    for (const n of TREE.list) {
-      const [x, y, z] = npos(n);
-      if (nodeFade(n, x, y, z, cullR, fs, A0, n.id === sel || (path && path.includes(n.id))) < 0.3) continue; // hidden or faded back
-      proj(x, y, z, o);
-      const d = Math.hypot(o.x - px, o.y - py), hitR = Math.max(16, R[n.kind] * o.s + 9);
-      if (d >= hitR) continue;
-      // nearer to the eye wins in 3D; the next step from your build and the current path get a nudge
-      const next = !A0.has(n.id) && n.adj.some(x2 => A0.has(x2));
-      cands.push({ n, d, sc: d - o.d * 0.004 - (next ? 6 : 0) - (path && path.includes(n.id) ? 4 : 0) - (n.id === sel ? 8 : 0) });
-    }
-    cands.sort((a, b) => a.sc - b.sc);
-    const best = cands.length ? cands[0].n : null;
-    // two nodes under one finger: zoom in on the spot instead of guessing
-    if (cands.length > 1 && best.id !== sel && cands[1].sc - cands[0].sc < 5 && cands[0].d < 14 && cands[1].d < 14 && cam.zoom < 2.6) {
-      const [x, y, z] = npos(best); SFX.play('ui'); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85, zoom: Math.min(3, cam.zoom * 1.9) }; return;
-    }
-    if (best && sel === best.id) {
-      const p = treePathTo(best.id);
-      if (p && p.length && p.length <= pointsFree()) { if (allocWithUndo(best.id)) SFX.play('upgrade', {}); else { SFX.play('deny'); blockToast(best.id); } }
-    }
-    sel = best ? best.id : null;
-    path = sel ? treePathTo(sel) : null;
-    if (best) { SFX.play('ui'); const [x, y, z] = flatMode() ? posFlat(best) : pos3(best); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85 }; const zf = DEF().zoom * (flatMode() ? 2.6 : 2); if (cam.zoom < zf) goal.zoom = zf; }
-    refresh();
-  }
-  function inRun() { return !!(G && !G.over); }
-  function blockMsg(id) {
-    const r = treeBlock(id), lv = profLevel().level;
-    if (r.startsWith('seal:')) { const i = +r.slice(5); return `Needs the ${DOCTRINES[i].name} seal first`; }
-    if (r === 'slots') { const nx = SEAL_NEXT(lv); return `You hold ${sealsHeld()} of ${sealSlots(lv)} Doctrine seal${sealSlots(lv) > 1 ? 's' : ''}${nx ? `. Another opens at level ${nx}` : ''}. Refund one to switch`; }
-    if (r.startsWith('conflict:')) { const o = TREE.nodes[r.slice(9)]; return `Cancels out ${o ? o.name : 'another node'} you already hold: refund it first`; }
-    return '';
-  }
-  function blockToast(id) { const m = blockMsg(id); if (m) UI.toast('DOCTRINE', m, '#ffb03a', 1); }
-  function docHTML() {
-    const A = new Set(PROF.alloc), lv = profLevel().level, held = sealsHeld(), slots = sealSlots(lv), nx = SEAL_NEXT(lv);
-    const rows = Object.keys(DOCTRINES).map(k => {
-      const i = +k, D = DOCTRINES[i], pil = D.pillar, S = pil ? { col: pil === 'zen' ? '#9fd8ff' : '#ff5fa8' } : SECTORS[i], on = A.has('d' + i), pt = pil === 'zen' ? 'z' : 'n';
-      const ms = (pil ? [['Seal', 'd' + i], ['Orbit I', pt + 'o1'], ['Orbit II', pt + 'o2'], ['Keystone', pt + 'ak']] : [['Seal', 'd' + i], ['Notables', [0, 1, 2].map(c => `c${i}_${c}n`)], ['Mastery', 'x' + i], ['Keystone', 'k' + i], ['Arm', 'w' + i]]).map(([nm, id]) => {
-        if (Array.isArray(id)) { const h = id.filter(x => A.has(x)).length; return `<span class="${h === id.length ? 'on' : ''}">${nm} ${h}/${id.length}</span>`; }
-        return `<span class="${A.has(id) ? 'on' : ''}">${nm}${TREE.nodes[id].kind === 'keystone' ? ': ' + esc(TREE.nodes[id].name) : ''}</span>`; }).join('');
-      return `<div class="docrow ${on ? 'on' : ''}" style="--c:${S.col}"><b>${esc(D.name.toUpperCase())}</b><em>${esc(D.tag)}</em>
-        <ul>${D.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ms">${ms}</div>
-        ${(() => { if (!on) return `<button class="btn small" data-tact="docgo" data-n="d${i}">Show seal</button>`;
-          const goals = (pil ? [pt + 'o1', pt + 'o2', pt + 'ak'] : ['c' + i + '_0n', 'c' + i + '_1n', 'c' + i + '_2n', 'x' + i, 'k' + i, 'w' + i]).filter(id => !A.has(id)).map(id => ({ id, p: treePathTo(id) })).filter(g => g.p && !treeBlock(g.id, g.p)).sort((a, b) => a.p.length - b.p.length);
-          return goals.length ? `<button class="btn small primary" data-tact="docgo" data-n="${goals[0].id}">Next: ${esc(TREE.nodes[goals[0].id].name)} · ${goals[0].p.length} pt${goals[0].p.length > 1 ? 's' : ''}</button>` : '<span class="note">Doctrine complete</span>'; })()}</div>`; }).join('');
-    return `<div class="ph"><b>Doctrines · ${held}/${slots} sealed</b><button class="x" data-tact="docs">✕</button></div>
-      <p class="note">${tipify(`A Doctrine changes how you play. Take its seal and its notables, mastery, keystone and arm open up. You can hold ${slots}${nx ? `; another seal opens at level ${nx}` : ''}. Refunds are free between runs.`)}</p>
-      ${rows}<p class="note">Hybrid notables between sectors and the three outer keystones stay open to everyone.</p>`;
-  }
-  function action(act, b) {
-    SFX.play('ui');
-    switch (act) {
-      case 'close': close(); break;
-      case 'undo': if (undo()) SFX.play('sell', {}); else SFX.play('deny'); break;
-      case 'alloc': if (allocWithUndo(sel)) { SFX.play('upgrade', {}); path = treePathTo(sel); } else { SFX.play('deny'); blockToast(sel); } refresh(); break;
-      case 'refund': if (treeRefund(sel)) { SFX.play('sell', {}); path = treePathTo(sel); } else SFX.play('deny'); refresh(); break;
-      case 'builds': drawer = drawer === 'builds' ? null : 'builds'; refresh(); break;
-      case 'docs': drawer = drawer === 'docs' ? null : 'docs'; refresh(); break;
-      case 'docgo': { const id = b.dataset.n, n = TREE.nodes[id]; drawer = null; sel = id; path = treePathTo(id); const [x, y, z] = flatMode() ? posFlat(n) : pos3(n); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85, zoom: Math.max(cam.zoom, DEF().zoom * (flatMode() ? 2.6 : 2)) }; refresh(); break; }
-      case 'totals': drawer = drawer === 'totals' ? null : 'totals'; refresh(); break;
-      case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('BUILD SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
-      case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
-      case 'wipe': if (inRun()) return; if (!confirmWipe) { confirmWipe = true; refresh(); return; } PROF.alloc = ['start']; confirmWipe = false; sel = null; path = null; Save.save(); refresh(); break;
-      case 'center': sel = null; path = null; selStar = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
-      case 'view': PROF.settings.webView = flatMode() ? '3d' : 'flat'; Save.save(); goal = Object.assign(DEF(), { yaw: flatMode() ? 0 : 0.35 }); renderRegions(); break;
-      case 'profile': profOn = !profOn; renderProfile(); break;
-      case 'rgn': flyTo(b.dataset.v); break;
-      case 'here': flyHere(); break;
-      case 'star': { const v = b.dataset.v, n = v === 'max' ? pointsFree() : +v; if (starBuy(selStar, n)) { SFX.play('upgrade', {}); Save.save(); } refresh(); break; }
-      case 'starR': if (starRefund(selStar, +b.dataset.v)) Save.save(); refresh(); break;
-      case 'starX': selStar = null; refresh(); break;
-      case 'rotL': case 'rotR': rotateOrbit(act === 'rotR' ? 1 : -1); break;
-      case 'mopt': {
-        const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
-        if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); break; } G.tokens--; }
-        PROF.mastery[sel] = v; if (inRun()) recomputeAll(); SFX.play('upgrade', {}); Save.save(); refresh(); break;
-      }
-      case 'lout': {
-        const k = b.dataset.v; let L = loadoutList().slice();
-        if (L.includes(k)) { if (L.length > 1) L = L.filter(x => x !== k); else { SFX.play('deny'); break; } } else L.push(k);
-        PROF.loadout = ABIL_ORDER.filter(x => L.includes(x)); if (inRun()) recomputeAll(); Save.save(); refresh(); break;
-      }
-    }
-  }
-  function refresh() {
-    if (!open_) return;
-    if (sel) selStar = null;
-    renderRegions();
-    document.body.classList.toggle('tsel', !!sel || !!selStar);
-    if (profOn) renderProfile();
-    const free = pointsFree(), M = computeMods(PROF.alloc, null), a = M.attrs;
-    $('#tPts').textContent = free;
-    { const u = $('#tUndo'); if (u) u.hidden = !undoStack.some(p => p.length && p.every(x => PROF.alloc.includes(x))); }
-    $('#tPts').parentElement.classList.toggle('glow', free > 0);
-    $('#tTok').hidden = !inRun();
-    if (inRun()) $('#tTok').querySelector('b').textContent = G.tokens;
-
-    // info card
-    const info = $('#tinfo');
-    info.classList.toggle('hint', !sel && !selStar);
-    if (!sel && selStar) {
-      const rid = selStar, S = STARS[rid], rk = (PROF.stars && PROF.stars[rid]) || 0, col = rid[0] === 's' ? SECTORS[+rid.slice(1)].col : rid === 'zen' ? '#9fd8ff' : '#ff5fa8';
-      const tot = starTotal(rid, rk), nxt = starTotal(rid, rk + 1) - tot, t = STAT_TXT[S.key], f2 = v => Math.round(v * 10) / 10;
-      const rem = (PROF.remnants || []).includes(rid), canR = !inRun();
-      info.innerHTML = `<div class="ti tstar" style="--c:${col}"><div><i style="color:${col}">Star Rank</i><b>${esc(REGION_NAME[rid])}</b></div>
-        <div class="big">${rk}</div>
-        <ul><li>${rk ? esc(t(f2(tot))) : 'No ranks yet'}</li><li>Next rank: ${esc(t(f2(nxt)))}</li>${rem ? '<li>Remnant: its notables carry through every Supernova</li>' : ''}</ul>
-        <div class="srow"><button class="btn primary" data-tact="star" data-v="1" ${free ? '' : 'disabled'}>+1</button><button class="btn" data-tact="star" data-v="5" ${free >= 5 ? '' : 'disabled'}>+5</button><button class="btn" data-tact="star" data-v="max" ${free ? '' : 'disabled'}>All ${free}</button>${canR && rk ? `<button class="btn danger" data-tact="starR" data-v="1">−1</button>` : ''}</div>
-        <span class="note">${free ? '' : 'No free points. '}${canR ? 'Refunds are free between runs.' : 'Refund ranks between runs.'}</span>
-        <div class="ta"><button class="btn" data-tact="starX">Close</button></div></div>`;
-    } else if (!sel) { info.innerHTML = `<p class="note">Drag to rotate · pinch to zoom · two fingers to pan · tap a node twice to allocate</p>`; }
-    else {
-      const n = TREE.nodes[sel], allocd = PROF.alloc.includes(sel);
-      const kindName = { seal: 'Doctrine Seal', start: 'Galactic Core', small: n.sector === -2 ? (n.z > 0 ? 'Zenith' : 'Nadir') : 'Passive', notable: n.hybrid ? 'Hybrid Notable' : n.arm ? 'Arm Notable' : 'Notable', mastery: 'Mastery', keystone: n.sector === -2 ? (n.z > 0 ? 'Zenith Keystone' : 'Nadir Keystone') : 'Keystone', orbit: 'Orbit', sat: 'Satellite' }[n.kind];
-      const col = n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
-      let act = '';
-      if (n.kind === 'start') act = '<span class="note">Starting node</span>';
-      else if (!allocd) {
-        const p = treePathTo(sel);
-        if (!p) act = '<span class="note">Not connected</span>';
-        else { const bm = blockMsg(sel); act = bm ? `<span class="note lock">${esc(bm)}</span>` : `<button class="btn primary" data-tact="alloc" ${p.length > free ? 'disabled' : ''}>Allocate · ${p.length} point${p.length > 1 ? 's' : ''}</button>${p.length > free ? `<span class="note">${free} available</span>` : ''}`; }
-      } else {
-        const o = treeOrphans(sel) || [];
-        const paid = inRun() && !G.checkpoint;
-        const cost = paid ? ` · ${o.length} token${o.length > 1 ? 's' : ''}` : '';
-        act = `<button class="btn danger" data-tact="refund" ${paid && G.tokens < o.length ? 'disabled' : ''}>Refund${o.length > 1 ? ` ${o.length} nodes` : ''}${cost}</button>${paid ? `<span class="note">Costs Recalibration tokens. Free at checkpoints.</span>` : `<span class="note">${inRun() ? 'Free at this checkpoint' : 'Free between runs'}</span>`}`;
-      }
-      let extra = '';
-      if (n.opts) {
-        const cur = masteryPick(n.id), paid = inRun() && !G.checkpoint;
-        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Choose one' + (paid ? ' · changing costs 1 token' : '') : 'Allocate to choose one'}</div>${n.opts.map((o, i) => `<button class="mopt ${i === cur ? 'on' : ''}" data-tact="mopt" data-v="${i}" ${allocd && i !== cur && !(paid && G.tokens < 1) ? '' : i === cur ? '' : 'disabled'}><b>${esc(o.name)}</b><span>${Object.keys(o.fx).map(k => STAT_TXT[k] ? tipify(STAT_TXT[k](o.fx[k])) : '').filter(Boolean).join('. ')}</span></button>`).join('')}</div>`;
-      }
-      if (n.orbitHub) {
-        const O = ORBITS[n.id], paid = inRun() && !G.checkpoint;
-        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Rotate to retarget' + (paid ? ' · 1 token per turn' : ' · free right now') : 'Allocate to power the ring'}</div>${O.sats.map((S2, k) => { const sn = TREE.nodes[n.id + '_' + k]; return `<div class="mopt ${PROF.alloc.includes(sn.id) ? 'on' : ''}"><b>${esc(S2.name)}</b><span>${tipify(satLines(sn)[0])}</span></div>`; }).join('')}${allocd ? `<div class="rots"><button class="btn" data-tact="rotL" ${paid && G.tokens < 1 ? 'disabled' : ''}>⟲ Rotate</button><button class="btn" data-tact="rotR" ${paid && G.tokens < 1 ? 'disabled' : ''}>Rotate ⟳</button></div>` : ''}</div>`;
-      }
-      if (n.need !== undefined) extra += `<div class="mopts"><span class="note ${PROF.alloc.includes('d' + n.need) ? '' : 'lock'}">${PROF.alloc.includes('d' + n.need) ? `Part of the ${esc(DOCTRINES[n.need].name)} Doctrine` : `Locked: needs the ${esc(DOCTRINES[n.need].name)} seal`}</span></div>`;
-      if (n.kind === 'seal') extra += `<div class="mopts"><span class="note">${esc(DOCTRINES[n.doctrine].tag)}. Opens this region's notables, mastery, keystone and arm. Seals held: ${sealsHeld()}/${sealSlots(profLevel().level)}.</span></div>`;
-      if (REM_SET().has(n.id)) extra += `<div class="mopts"><span class="note">Kept by your Remnant. Always active, even unallocated.</span></div>`;
-      if (n.sat !== undefined) extra = `<div class="mopts"><span class="note">Rotate ${esc(ORBITS[n.orbit].name)} to change which sector this faces.</span></div>`;
-      if (n.fx.loadout && allocd) {
-        const L = loadoutList();
-        extra = `<div class="mopts"><div class="lbl">Milestone loadout · ${L.length} of ${ABIL_ORDER.length} · +${(ABIL_ORDER.length - L.length) * 25}% ability power</div><div class="louts">${ABIL_ORDER.map(k => `<button class="lout ${L.includes(k) ? 'on' : ''}" data-tact="lout" data-v="${k}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span></button>`).join('')}</div></div>`;
-      }
-      info.innerHTML = `<div class="ti"><div><i style="color:${col}">${kindName}</i><b>${esc(n.name)}</b></div><ul>${nodeLines(n).map(l => `<li>${tipify(l)}</li>`).join('')}</ul>${extra}<div class="ta">${act}</div></div>`;
-    }
-    // drawer
-    const dr = $('#tdrawer');
-    dr.hidden = !drawer;
-    { const td = $('#tDoc'); if (td) { const on = Object.keys(DOCTRINES).filter(k => PROF.alloc.includes('d' + k)).map(k => DOCTRINES[k].name); td.textContent = on.length ? on.join(' + ') : 'Doctrine'; } }
-    if (drawer === 'docs') dr.innerHTML = docHTML();
-    else if (drawer === 'builds') {
-      dr.innerHTML = `<div class="ph"><b>Saved Builds</b><button class="x" data-tact="builds">✕</button></div>
-        ${PROF.builds.map((bd, i) => `<div class="slot"><input id="bn${i}" type="text" maxlength="20" placeholder="Build ${i + 1}" value="${bd ? esc(bd.name) : ''}"><small>${bd ? (bd.alloc.length - 1) + ' nodes' : 'Empty'}</small><button class="btn small" data-tact="save" data-v="${i}">Save</button><button class="btn small" data-tact="load" data-v="${i}" ${bd ? '' : 'disabled'}>Load</button></div>`).join('')}
-        <p class="note">${inRun() && !G.checkpoint ? 'Loading during a run costs 2 Recalibration tokens. Free at checkpoints.' : 'Loading is free right now.'}</p>
-        ${inRun() ? '' : `<button class="btn danger wide" data-tact="wipe">${confirmWipe ? 'Tap again to refund all nodes' : 'Reset Web'}</button>`}`;
-    } else if (drawer === 'totals') {
-      const raw = M.raw, lines = [];
-      lines.push(`+${Math.round((M.dmg - 1) * 100)}% Damage (incl. Power)`);
-      lines.push(`+${Math.round((M.rate - 1) * 100)}% Attack Speed (incl. Tempo)`);
-      lines.push(`+${Math.round((M.range - 1) * 100)}% Range (incl. Focus)`);
-      lines.push(`×${num1(M.stMult)} status chance (Focus)`);
-      lines.push(`Core: ${Math.round(M.coreHP)} HP, ${Math.round(M.shield)} shield (incl. Integrity)`);
-      for (const k in raw) if (!['P', 'Tm', 'F', 'I', 'dmg', 'rate', 'range', 'coreHP', 'shield'].includes(k) && STAT_TXT[k] && raw[k]) lines.push(STAT_TXT[k](Math.round(raw[k] * 100) / 100));
-      const ks = TREE.list.filter(n => n.ks && PROF.alloc.includes(n.id));
-      dr.innerHTML = `<div class="ph"><b>Totals</b><button class="x" data-tact="totals">✕</button></div>
-        ${ks.length ? `<div class="lbl">Keystones</div>${ks.map(n => `<p class="amber">${esc(n.name)}</p>`).join('')}` : ''}
-        <div class="lbl">Attributes</div><p class="note">Power ${a.P} · Tempo ${a.Tm} · Focus ${a.F} · Integrity ${a.I}</p>
-        <div class="lbl">Stats</div><ul class="tot">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`;
-    }
-  }
-  const PCAT = {
-    off: { name: 'Offense', col: '#ff6a5a' }, spd: { name: 'Speed', col: '#ffe14d' }, ctl: { name: 'Control', col: '#6ae2ff' },
-    def: { name: 'Defense', col: '#59f0b4' }, eco: { name: 'Economy', col: '#ffb03a' }, chs: { name: 'Chaos', col: '#d06cff' },
-  };
-  const CATW = {
-    dmg: ['off', 1], dmgK: ['off', 0.5], dmgT: ['off', 0.5], dmgC: ['off', 0.5], dmgA: ['off', 0.5], dmgV: ['off', 0.5], critC: ['off', 2], critM: ['off', 0.5], P: ['off', 1],
-    eliteDmg: ['off', 0.6], armorPen: ['off', 0.3], critSplash: ['off', 0.4], fifthCrit: ['off', 14], shredStack: ['off', 4], burnVuln: ['off', 1], burnBoom: ['off', 0.6],
-    capacitor: ['off', 14], chainKeep: ['off', 12], shockBurst: ['off', 1], markVoid: ['off', 3], rampKeep: ['off', 12], napalmKill: ['off', 12], burnCrit: ['off', 14],
-    pierceK: ['off', 10], pierceKeep: ['off', 10], critCK: ['off', 1], critMK: ['off', 0.3], burnDmg: ['off', 0.5], overload: ['off', 0.2], shatter: ['off', 0.2], collapse: ['off', 0.2],
-    coreDmg: ['off', 0.15], multiA: ['off', 14], loneWolf: ['off', 0.6], splash: ['off', 30], chain: ['off', 10], infernoCore: ['off', 14], ovlBurn: ['off', 10], ovlFree: ['off', 10],
-    rate: ['spd', 1], rateK: ['spd', 0.5], rateA: ['spd', 0.5], Tm: ['spd', 1], heatSink: ['spd', 14], coreRate: ['spd', 0.2], thunder: ['off', 14],
-    chillChance: ['ctl', 1], shockChance: ['ctl', 1], markChance: ['ctl', 1], burnChance: ['ctl', 0.6], chillPot: ['ctl', 0.4], freezeDur: ['ctl', 25], freezeAt: ['ctl', 15],
-    knock: ['ctl', 2], kSlow: ['ctl', 1], glacial: ['ctl', 1], markSlow: ['ctl', 0.5], coldSnap: ['ctl', 15], chillSplash: ['ctl', 12], stasisDur: ['ctl', 4], iceShards: ['ctl', 12],
-    range: ['ctl', 0.6], rangeKR: ['ctl', 0.4], F: ['ctl', 0.8], frozenVuln: ['ctl', 0.5], shockEff: ['ctl', 0.3], markMax: ['ctl', 3], chillSlowDecay: ['ctl', 12], shockLong: ['ctl', 12],
-    burnDur: ['ctl', 0.3], chainIgnite: ['ctl', 10], burnSpread: ['ctl', 12], knockMark: ['ctl', 8], freezeImmRed: ['ctl', 0.2], superChill: ['ctl', 10], superRad: ['ctl', 0.1], chillVoid: ['ctl', 0.6], blackHole: ['ctl', 12],
-    coreHP: ['def', 0.3], shield: ['def', 0.4], shieldRegen: ['def', 0.15], I: ['def', 1], shieldWave: ['def', 12], fieldRepair: ['def', 3], coreRange: ['def', 6],
-    credits: ['eco', 1], costRed: ['eco', 1.2], upgRed: ['eco', 1], startCredits: ['eco', 0.05], sellPct: ['eco', 0.12], interest: ['eco', 7], salvage: ['eco', 12], xp: ['eco', 0.6],
-    abilCharge: ['eco', 0.6], abilPower: ['eco', 0.4], loadout: ['eco', 10],
-    stormFreq: ['chs', 0.3], stormPow: ['chs', 0.3], affixLuck: ['chs', 0.3], voidSiphon: ['chs', 14], markPerma: ['ctl', 12], overloadRad: ['off', 0.1],
-  };
-  const KSW = { glass: { off: 40, def: -30 }, conflag: { off: 25, ctl: -10 }, overgrid: { spd: 30, chs: 10 }, abszero: { ctl: 30 }, singularity: { off: 30 }, dimret: { eco: 30 },
-    prismatic: { ctl: 20, chs: 10 }, chaos: { chs: 35 }, unbreakable: { def: 35 }, celestial: { off: 15, chs: -15 }, singular: { chs: 40 } };
-  const SATW = { dmg: 'off', rate: 'spd', status: 'ctl', range: 'ctl', reson: 'off', vxp: 'off', flux: 'off', storm: 'chs', vol: 'chs', ent: 'chs', rift: 'chs', combo: 'off' };
-  function nodeFx(n) {
-    if (n.sat !== undefined) { const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)]; return el === 'E' ? S.E : null; }
-    const fx = Object.assign({}, n.fx);
-    if (n.opts) { const o = n.opts[masteryPick(n.id)]; if (o) for (const k in o.fx) fx[k] = (fx[k] || 0) + o.fx[k]; }
-    return fx;
-  }
-  function nodeWeights(n) {
-    const w = { off: 0, spd: 0, ctl: 0, def: 0, eco: 0, chs: 0 };
-    if (n.ks && KSW[n.ks]) for (const k in KSW[n.ks]) w[k] += KSW[n.ks][k];
-    if (n.sat !== undefined && SECTOR_EL[satSector(n)] !== 'E') { w[SATW[ORBITS[n.orbit].sats[n.sat].k]] += 18; return w; }
-    const fx = nodeFx(n) || {};
-    for (const k in fx) { const c = CATW[k]; if (c) w[c[0]] += fx[k] * c[1]; }
-    return w;
-  }
-  function nodeCat(n) { const w = nodeWeights(n); let best = null, bv = 0.01; for (const k in w) if (w[k] > bv) { bv = w[k]; best = k; } return best; }
-  function profileOf(alloc) {
-    const t = { off: 0, spd: 0, ctl: 0, def: 0, eco: 0, chs: 0 };
-    for (const id of alloc) { const n = TREE.nodes[id]; if (!n) continue; const w = nodeWeights(n); for (const k in t) t[k] += w[k]; }
-    return t;
-  }
-  function renderProfile() {
-    $('#tProf').classList.toggle('on', profOn);
-    const box = $('#tprof'); box.hidden = !profOn; if (!profOn) return;
-    const cvs = $('#tpcv'), d = Math.min(3, window.devicePixelRatio || 1); cvs.width = 180 * d; cvs.height = 150 * d;
-    const g = cvs.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, 180, 150);
-    const P = profileOf(PROF.alloc), keys = ['off', 'spd', 'ctl', 'def', 'eco', 'chs'], cx = 90, cy = 76, R0 = 50;
-    const val = k => Math.max(0, P[k]) / (Math.max(0, P[k]) + 70);
-    g.strokeStyle = '#2c3160'; g.lineWidth = 1;
-    for (const f of [0.33, 0.66, 1]) { g.beginPath(); keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; const x = cx + Math.cos(a) * R0 * f, y = cy + Math.sin(a) * R0 * f; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke(); }
-    g.beginPath(); keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3, r = R0 * Math.max(0.04, val(k)); const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
-    g.fillStyle = 'rgba(255,176,58,0.28)'; g.fill(); g.strokeStyle = '#ffb03a'; g.lineWidth = 1.5; g.stroke();
-    g.font = '8px Silkscreen, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; g.fillStyle = PCAT[k].col; g.fillText(PCAT[k].name.toUpperCase(), cx + Math.cos(a) * (R0 + 16), cy + Math.sin(a) * (R0 + 12)); });
-    const off = P.off + P.spd * 0.7, def = P.def + P.ctl * 0.7, bal = (def - off) / Math.max(30, off + def);
-    const lean = Math.abs(bal) < 0.15 ? 'Balanced' : bal < 0 ? (bal < -0.5 ? 'All-in offense' : 'Leans offensive') : (bal > 0.5 ? 'Fortress' : 'Leans defensive');
-    const top = keys.slice().sort((a, b) => P[b] - P[a])[0];
-    $('#tpbar').innerHTML = `<div class="obl"><span>Offense</span><span>Defense</span></div><div class="ob"><i style="left:calc(${Math.round((bal + 1) * 50)}% - 1px)"></i></div><span><b>${lean}</b>${P[top] > 5 ? ` · strongest in ${PCAT[top].name}` : ''}</span>`;
-  }
-  const REM_SET = () => { const o = new Set(); for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) o.add(id); return o; };
-  const REGIONS = () => [{ id: 'core', name: 'Core', col: '#ffb03a' }, ...SECTORS.map((S, i) => ({ id: 's' + i, name: S.name, col: S.col })), { id: 'zen', name: 'Zenith', col: '#9fd8ff' }, { id: 'nad', name: 'Nadir', col: '#ff5fa8' }];
-  function renderRegions() {
-    $('#tView').textContent = flatMode() ? '3D' : 'Flat';
-    const D = new Set(regionsDone());
-    $('#tregions').innerHTML = REGIONS().map(r => `<button class="rgn" data-tact="rgn" data-v="${r.id}" style="--c:${r.col}">${esc(r.name)}${D.has(r.id) ? `<em>${(PROF.stars && PROF.stars[r.id]) || 0}</em>` : ''}</button>`).join('');
-  }
-  function flyTo(id) {
-    const flat = flatMode(), z0 = DEF().zoom;
-    sel = null; path = null; selStar = REGION_IDS.includes(id) && regionDone(id) ? id : null; refresh();
-    if (id === 'core') { goal = Object.assign(DEF()); return; }
-    if (id === 'zen' || id === 'nad') {
-      const side = id === 'zen' ? 1 : -1;
-      goal = flat ? { tx: side * PILX, ty: 330 - 240 * 1.45, tz: 0, zoom: z0 * 3.4 } : { tx: 0, ty: 0, tz: side * 260, zoom: z0 * 1.7, pitch: 0.55 };
-      return;
-    }
-    const i = +id.slice(1), a = (-90 + i * 60) * Math.PI / 180;
-    goal = { tx: Math.cos(a) * 430 * WS, ty: Math.sin(a) * 430 * WS, tz: 0, zoom: z0 * (flat ? 3.2 : 2.3) };
-    if (!flat) { goal.yaw = Math.PI / 2 - a; goal.pitch = 0.9; }
-  }
-  // zoomed in, only nodes near the focus are drawn and tappable, so far-off nodes (in 3D, ones behind) can't steal taps
-  let visPos = null;
-  function cullRadius() { const zr = cam.zoom / DEF().zoom; if (zr < 1.4) return 1e9; return (flatMode() ? 2600 : 1500) / zr; }
-  // zoomed into a sector, other sectors fade back and the Zenith/Nadir pillars hide (3D), so taps land in the region you're looking at
-  function focusSector() { const zr = cam.zoom / DEF().zoom; if (zr < 1.8 || viewT < 0 || Math.hypot(cam.tx, cam.ty) < 260 || Math.abs(cam.tz) > 120) return -1; const a = Math.atan2(cam.ty, cam.tx) * 180 / Math.PI; return ((Math.round((a + 90) / 60) % 6) + 6) % 6; }
-  function nodeFade(n, x, y, z, cullR, fs, A0, keep) {
-    if (keep || A0.has(n.id)) return 1;
-    let f = clamp((cullR - Math.hypot(x - cam.tx, y - cam.ty, z - cam.tz)) / (cullR * 0.3), 0, 1);
-    if (fs >= 0) { if (n.sector === -2) f = flatMode() ? f : 0; else if (n.sector >= 0 && n.sector !== fs && !n.adj.some(x2 => TREE.nodes[x2].sector === fs)) f = Math.min(f, 0.18); }
-    return f;
-  }
-  // allocation history for Undo (this session)
-  const undoStack = [];
-  function allocWithUndo(id) { const p = treePathTo(id) || []; if (!treeAllocate(id)) return false; undoStack.push(p.slice()); if (undoStack.length > 30) undoStack.shift(); return true; }
-  function undo() {
-    while (undoStack.length) {
-      const p = undoStack.pop(); if (!p.length || !p.every(x => PROF.alloc.includes(x))) continue;
-      const orph = treeOrphans(p[0]) || [];
-      if (orph.some(x => !p.includes(x))) { UI.toast('CAN\'T UNDO', 'Later picks depend on it. Refund those first', '#ff4d6a', 1); undoStack.push(p); return false; }
-      if (treeRefund(p[0])) { sel = null; path = null; refresh(); return true; }
-      UI.toast('CAN\'T UNDO', 'Needs Recalibration tokens during a run', '#ff4d6a', 1); undoStack.push(p); return false;
-    }
-    return false;
-  }
-  const lastNode = () => { const a = PROF.alloc || []; for (let i = a.length - 1; i >= 0; i--) if (TREE.nodes[a[i]] && TREE.nodes[a[i]].kind !== 'start') return a[i]; return null; };
-  function flyHere() {
-    const id = lastNode();
-    if (!id) { flyTo('core'); return; }
-    const [x, y, z] = npos(TREE.nodes[id]), z0 = DEF().zoom;
-    hereT = 90;
-    goal = { tx: x, ty: y, tz: z * 0.85, zoom: Math.max(cam.zoom, z0 * 3.2) };
-  }
-  function rotateOrbit(dir) {
-    const n = TREE.nodes[sel]; if (!n || !n.orbitHub || !PROF.alloc.includes(sel)) return;
-    if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); UI.toast('CAN\'T ROTATE', 'Requires 1 Recalibration token', '#ff4d6a', 1); return; } G.tokens--; }
-    PROF.orbit = PROF.orbit || {};
-    PROF.orbit[sel] = ((orbitRot(sel) + dir) % 6 + 6) % 6;
-    orbView[sel + '_t'] = (orbView[sel + '_t'] !== undefined ? orbView[sel + '_t'] : orbView[sel]) + dir;
-    if (inRun()) recomputeAll();
-    SFX.play('reroll'); Save.save(); refresh();
-  }
-  // pixel helpers on the low-res buffer
-  const pxR = (x, y, w, h, col) => { lc.fillStyle = col; lc.fillRect(Math.round(x), Math.round(y), w, h); };
-  function pxDia(x, y, r, col) { lc.fillStyle = col; x = Math.round(x); y = Math.round(y); for (let dy = -r; dy <= r; dy++) { const hw = r - Math.abs(dy); lc.fillRect(x - hw, y + dy, hw * 2 + 1, 1); } }
-  function pxRing(x, y, r, col) { lc.fillStyle = col; x = Math.round(x); y = Math.round(y); const n = Math.max(8, Math.round(r * 6)); for (let k = 0; k < n; k++) { const a = k / n * 6.283; lc.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r), 1, 1); } }
-  function line(ax, ay, bx, by, col, w) { lc.strokeStyle = col; lc.lineWidth = w || 1; lc.beginPath(); lc.moveTo(Math.round(ax) + 0.5, Math.round(ay) + 0.5); lc.lineTo(Math.round(bx) + 0.5, Math.round(by) + 0.5); lc.stroke(); }
-
-  // constellations: one figure per region, stars light up as the region fills
-  const CONST = (() => {
-    const ring = (n, r, a0) => Array.from({ length: n }, (_, k) => [Math.cos(a0 + k / n * 6.283) * r, Math.sin(a0 + k / n * 6.283) * r]);
-    const flake = [[0, 0], ...ring(6, 0.45, Math.PI / 2), ...ring(6, 0.9, Math.PI / 2)];
-    const flakeL = []; for (let k = 0; k < 6; k++) flakeL.push([0, 1 + k], [1 + k, 7 + k], [1 + k, 1 + (k + 1) % 6]);
-    const spiral = [[0, 0]]; for (let k = 0; k < 10; k++) { const th = k * 0.78, r = 0.12 + k * 0.088; spiral.push([Math.cos(th) * r, Math.sin(th) * r]); }
-    const snake = []; for (let k = 0; k < 9; k++) { const t = k / 8; snake.push([Math.sin(t * Math.PI * 2.2) * 0.45, 0.85 - t * 1.7]); }
-    return {
-      K: { name: 'The Archer', pts: [[0, -0.85], [0, 0.9], [-0.16, 0.68], [0.16, 0.68], [-0.62, -0.2], [-0.46, 0.25], [0, 0.42], [0.46, 0.25], [0.62, -0.2], [0, -0.2]],
-        ln: [[0, 1], [1, 2], [1, 3], [4, 5], [5, 6], [6, 7], [7, 8], [4, 9], [9, 8]] },
-      T: { name: 'The Phoenix', pts: [[0, 0.8], [0, 0.45], [0, -0.2], [-0.4, 0.25], [-0.75, 0.6], [-0.95, 0.15], [0.4, 0.25], [0.75, 0.6], [0.95, 0.15], [-0.25, -0.7], [0, -0.92], [0.25, -0.7]],
-        ln: [[0, 1], [1, 2], [1, 3], [3, 4], [4, 5], [5, 2], [1, 6], [6, 7], [7, 8], [8, 2], [2, 9], [2, 10], [2, 11]] },
-      A: { name: 'The Thunderbolt', pts: [[0.35, 0.92], [-0.35, 0.02], [0, 0.02], [-0.3, -0.92], [0.42, 0.14], [0.06, 0.14], [-0.75, 0.55], [0.75, -0.45]],
-        ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]] },
-      C: { name: 'The Crystal', pts: flake, ln: flakeL },
-      V: { name: 'The Maw', pts: spiral, ln: spiral.slice(1).map((_, k) => [k, k + 1]) },
-      E: { name: 'The Bulwark', pts: [[-0.6, 0.72], [0, 0.88], [0.6, 0.72], [0.6, 0], [0.35, -0.52], [0, -0.88], [-0.35, -0.52], [-0.6, 0], [0, 0.5], [0, -0.45], [-0.35, 0.14], [0.35, 0.14]],
-        ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0], [8, 9], [10, 11]] },
-      zen: { name: 'The Crown', pts: [[-0.7, -0.45], [0.7, -0.45], [-0.75, 0.5], [-0.35, 0.05], [0, 0.75], [0.35, 0.05], [0.75, 0.5]],
-        ln: [[0, 1], [0, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 1]] },
-      nad: { name: 'The Serpent', pts: [...snake, [0.12, 1.0], [-0.12, 1.0]], ln: [...snake.slice(1).map((_, k) => [k, k + 1]), [0, 9], [0, 10]] },
-    };
-  })();
-  let cgeo = null, cA = 1, cHits = [], hereT = 0, selStar = null;
-  function constGeo() {
-    if (cgeo) return cgeo;
-    cgeo = [];
-    SECTORS.forEach((S, i) => {
-      const ns = TREE.list.filter(n => n.sector === i);
-      if (!ns.length) return;
-      let cx = 0, cy = 0; for (const n of ns) { cx += n.x; cy += n.y; } cx /= ns.length; cy /= ns.length;
-      const L = Math.hypot(cx, cy) || 1, ur = [cx / L, cy / L], ut = [-ur[1], ur[0]];
-      let er = 0, et = 0; for (const n of ns) { const dx = n.x - cx, dy = n.y - cy; er = Math.max(er, Math.abs(dx * ur[0] + dy * ur[1])); et = Math.max(et, Math.abs(dx * ut[0] + dy * ut[1])); }
-      cgeo.push({ rid: 's' + i, F: CONST[S.id], col: S.col, ids: ns.map(n => n.id), c: [ur[0] * 560 * WS, ur[1] * 560 * WS], sr: 235, plane: 1 });
-    });
-    for (const [key, side, col] of [['zen', 1, '#9fd8ff'], ['nad', -1, '#ff5fa8']]) {
-      const ns = TREE.list.filter(n => n.sector === -2 && Math.sign(n.z) === side);
-      if (ns.length) cgeo.push({ rid: key, F: CONST[key], col, ids: ns.map(n => n.id), side, plane: 0 });
-    }
-    return cgeo;
-  }
-  function drawConstellations(A, o) {
-    const out = []; cHits = [];
-    if (cA < 0.02) return out;
-    for (const g of constGeo()) {
-      const tot = g.ids.length, have = g.ids.filter(id => A.has(id)).length, full = g.ids.some(id => A.has(id) && TREE.nodes[id].kind === 'keystone');
-      const F = g.F, lit = full || have === tot ? F.pts.length : Math.round(have / tot * F.pts.length);
-      // world position of figure point (x across, y outward/up)
-      let W3;
-      if (g.plane) W3 = viewT > 0.5 ? (x, y) => [g.c[0] + x * g.sr, g.c[1] - y * g.sr, 0] : (x, y) => [g.c[0] + cy_ * x * g.sr * 0.8, g.c[1] - sy_ * x * g.sr * 0.8, 60 + (y + 1) * g.sr * 0.8];
-      else if (viewT > 0.5) { const px = g.side * PILX, py = 330 - 260 * 1.45; W3 = (x, y) => [px + x * 170, py - y * 240, 0]; }
-      else W3 = (x, y) => [cy_ * x * 150, -sy_ * x * 150, g.side * 600 + y * 150];
-      const sp = F.pts.map(([x, y]) => { const w = W3(x, y); proj(w[0], w[1], w[2], o); return { x: o.x / 2, y: o.y / 2, s: o.s }; });
-      lc.globalCompositeOperation = 'lighter';
-      for (const [a, b] of F.ln) {
-        const on = a < lit && b < lit;
-        lc.globalAlpha = (on ? 0.95 : 0.4) * cA; line(sp[a].x, sp[a].y, sp[b].x, sp[b].y, on ? g.col : '#7a80c0');
-      }
-      sp.forEach((p, k) => {
-        const on = k < lit, tw = 0.8 + 0.2 * Math.sin(frame / 14 + k * 1.7), cl = on ? g.col : '#c8ccf0';
-        lc.globalAlpha = cA * tw;
-        pxR(p.x - 1, p.y, 3, 1, cl); pxR(p.x, p.y - 1, 1, 3, cl);
-        if (on) { pxR(p.x, p.y, 1, 1, '#ffffff'); lc.globalAlpha = (full ? 0.5 : 0.3) * tw * cA; pxR(p.x - 2, p.y, 5, 1, g.col); pxR(p.x, p.y - 2, 1, 5, g.col); }
-      });
-      lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
-      const ctr = W3(0, 0); proj(ctr[0], ctr[1], ctr[2], o);
-      cHits.push({ rid: g.rid, x: o.x, y: o.y, r: Math.max(40, Math.hypot(sp[0].x * 2 - o.x, sp[0].y * 2 - o.y)) });
-      const top = W3(0, -1.2); proj(top[0], top[1], top[2], o);
-      const done = have === tot, rk = (PROF.stars && PROF.stars[g.rid]) || 0, rem = (PROF.remnants || []).includes(g.rid);
-      out.push({ x: o.x, y: o.y, name: F.name, txt: `${F.name.toUpperCase()}  ${done ? 'STAR ' + rk : have + '/' + tot}${rem ? '  · REMNANT' : ''}`, col: g.col, on: have > 0 || rem, full: full || done });
-    }
-    return out;
-  }
-  function draw() {
-    if (!open_ || !cam) return;
-    frame++;
-    // smooth camera glide to a tapped node, smooth orbit rotation
-    if (goal && !ptrs.size) {
-      const k = 0.12;
-      for (const f of ['tx', 'ty', 'tz', 'pitch', 'zoom']) if (goal[f] !== undefined) cam[f] += (goal[f] - cam[f]) * k;
-      if (goal.yaw !== undefined) { let d = goal.yaw - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); cam.yaw += d * k; }
-      const err = Math.abs((goal.tx ?? cam.tx) - cam.tx) + Math.abs((goal.ty ?? cam.ty) - cam.ty) + Math.abs((goal.tz ?? cam.tz) - cam.tz) + Math.abs((goal.zoom ?? cam.zoom) - cam.zoom) * 500 + Math.abs((goal.pitch ?? cam.pitch) - cam.pitch) * 300;
-      if (err < 0.5) goal = null;
-    }
-    const vt = flatMode() ? 1 : 0; viewT += (vt - viewT) * 0.12; if (Math.abs(vt - viewT) < 0.002) viewT = vt;
-    for (const k in ORBITS) { if (orbView[k + '_t'] !== undefined) { orbView[k] += (orbView[k + '_t'] - orbView[k]) * 0.15; if (Math.abs(orbView[k + '_t'] - orbView[k]) < 0.005) { orbView[k] = orbView[k + '_t']; } } }
-    camOX += ((sel ? -Math.min(330, W * 0.44) / 2 - 6 : 0) - camOX) * 0.15;
-    camPrep();
-    const RS = REM_SET();
-    const LW = lb.width, LH = lb.height, A = new Set(PROF.alloc), Pth = new Set(path || []), o = {}, o2 = {};
-    const sealOn = i => A.has('d' + i);
-    const allocatable = n => !A.has(n.id) && n.adj.some(x => A.has(x)) && !(n.need !== undefined && !sealOn(n.need)) && !(n.kind === 'seal' && sealsHeld() >= sealSlots(profLevel().level));
-    const pulse = (Math.sin(frame / 10) + 1) / 2;
-    lc.setTransform(1, 0, 0, 1, 0, 0);
-    lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
-    lc.fillStyle = '#04050a'; lc.fillRect(0, 0, LW, LH);
-    // far starfield with yaw parallax
-    for (const st of bg) { const x = ((st.x * LW + cam.yaw * 60 * st.p) % LW + LW) % LW, y = ((st.y * LH + cam.pitch * 30 * st.p) % LH + LH) % LH; lc.globalAlpha = st.a * (0.7 + 0.3 * Math.sin(frame / 30 + st.x * 50)); pxR(x, y, 1, 1, '#d8d6ff'); }
-    // galactic dust (additive)
-    lc.globalCompositeOperation = 'lighter';
-    for (const d of dust) {
-      proj(d.x, d.y, d.z, o);
-      const x = o.x / 2, y = o.y / 2; if (x < -2 || y < -2 || x > LW + 2 || y > LH + 2) continue;
-      lc.globalAlpha = d.a * Math.min(1, 0.55 + o.s * 0.8); lc.fillStyle = d.col; lc.fillRect(Math.round(x), Math.round(y), d.s, d.s);
-    }
-    lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
-    // plane grid rings and the Z axis
-    for (const rr of [250 * WS, 500 * WS, 750 * WS]) { lc.globalAlpha = 0.16; let prev = null; for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.283; proj(Math.cos(a) * rr, Math.sin(a) * rr, 0, o); if (prev && k % 2) line(prev[0], prev[1], o.x / 2, o.y / 2, '#6a6fa8'); prev = [o.x / 2, o.y / 2]; } }
-    if (viewT < 0.5) {
-      lc.globalAlpha = 0.35 * (1 - viewT * 2); proj(0, 0, -520, o); proj(0, 0, 520, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, '#8a8fd0');
-      for (let z = -500; z <= 500; z += 50) { if (!z) continue; proj(0, 0, z, o); pxR(o.x / 2 - 1, o.y / 2, 3, 1, z > 0 ? '#9fd8ff' : '#ff5fa8'); }
-    } else {
-      // flat pillars for Zenith and Nadir
-      for (const side of [1, -1]) {
-        const colr = side > 0 ? '#9fd8ff' : '#ff5fa8';
-        lc.globalAlpha = 0.3 * (viewT * 2 - 1); proj(side * PILX, 330, 0, o); proj(side * PILX, 330 - 500 * 1.45, 0, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, colr);
-        proj(side * PILX, 330 - 520 * 1.45 - 30, 0, o);
-        lc.globalAlpha = 1;
-      }
-    }
-    lc.globalAlpha = 1;
-    // orbit rings with sector ticks (hidden in 3D while zoomed into a sector)
-    if (!(viewT < 0.5 && focusSector() >= 0)) for (const k in ORBITS) {
-      const O = ORBITS[k], on = A.has(k), hub = npos(TREE.nodes[k]);
-      const fx = viewT > 0.5 ? 0.9 : 1, fy = viewT > 0.5 ? 0.55 : 1, rz = viewT > 0.5 ? 0 : O.z, cx0 = viewT > 0.5 ? hub[0] : 0, cy0 = viewT > 0.5 ? hub[1] : 0;
-      lc.globalAlpha = on ? 0.6 : 0.25; let prev = null;
-      for (let q = 0; q <= 48; q++) { const a = q / 48 * 6.283; proj(cx0 + Math.cos(a) * ORB_R * fx, cy0 + Math.sin(a) * ORB_R * fy, rz, o); if (prev) line(prev[0], prev[1], o.x / 2, o.y / 2, O.col); prev = [o.x / 2, o.y / 2]; }
-      lc.globalAlpha = 0.9;
-      SECTORS.forEach((S, i) => { const a = (-90 + i * 60) * Math.PI / 180; proj(cx0 + Math.cos(a) * (ORB_R + 14) * fx, cy0 + Math.sin(a) * (ORB_R + 14) * fy, rz, o); pxR(o.x / 2 - 1, o.y / 2 - 1, 2, 2, S.col); });
-      lc.globalAlpha = 1;
-    }
-    const zr = cam.zoom / DEF().zoom, cT = clamp((1.7 - zr) / 0.6, 0, 1); cA += (cT - cA) * 0.2;
-    const nodeDim = 1 - cA * 0.6;
-    const cLabels = drawConstellations(A, o);
-    // edges
-    const pos = {}; for (const n of TREE.list) { const [x, y, z] = npos(n); proj(x, y, z, o); pos[n.id] = { x: o.x / 2, y: o.y / 2, s: o.s, d: o.d, wz: z, wx: x, wy: y }; }
-    const cullR = cullRadius(), fs = focusSector(); for (const n of TREE.list) { const p = pos[n.id]; p.fade = nodeFade(n, p.wx, p.wy, p.wz, cullR, fs, A, n.id === sel || Pth.has(n.id)); p.vis = p.fade > 0.12; }
-    visPos = pos;
-    for (const [ai, bi] of TREE.edges) {
-      const a = TREE.nodes[ai], b = TREE.nodes[bi], pa = pos[ai], pb = pos[bi];
-      if (!pa.vis || !pb.vis) continue;
-      if ((pa.x < -20 && pb.x < -20) || (pa.x > LW + 20 && pb.x > LW + 20) || (pa.y < -20 && pb.y < -20) || (pa.y > LH + 20 && pb.y > LH + 20)) continue;
-      const both = A.has(ai) && A.has(bi);
-      const onPath = (Pth.has(ai) || A.has(ai)) && (Pth.has(bi) || A.has(bi)) && (Pth.has(ai) || Pth.has(bi));
-      const sc = b.col || a.col || (a.sector >= 0 ? SECTORS[a.sector] : SECTORS[Math.max(0, b.sector)]).col;
-      lc.globalAlpha = (both ? 1 : onPath ? 0.95 : 0.45) * (both || onPath ? 1 : nodeDim);
-      line(pa.x, pa.y, pb.x, pb.y, both ? sc : onPath ? '#ffb03a' : '#2c3160', both && (pa.s + pb.s) / 2 > 0.6 ? 2 : 1);
-    }
-    lc.globalAlpha = 1;
-    // drop lines from off-plane nodes to the disk (Elite map style)
-    for (const n of TREE.list) {
-      const p = pos[n.id]; if (!p.vis || viewT > 0.5 || Math.abs(p.wz) < 10 || (n.sector === -2 && n.sat === undefined)) continue;
-      proj(p.wx, p.wy, 0, o);
-      lc.globalAlpha = 0.35; line(p.x, p.y, o.x / 2, o.y / 2, n.col || '#5a5f9a');
-      lc.globalAlpha = 0.6; pxR(o.x / 2 - 1, o.y / 2, 3, 1, n.col || '#5a5f9a');
-    }
-    lc.globalAlpha = 1;
-    // nodes, far to near
-    const order = TREE.list.slice().sort((a, b) => pos[a.id].d - pos[b.id].d);
-    for (const n of order) {
-      const p = pos[n.id]; if (!p.vis || p.x < -10 || p.x > LW + 10 || p.y < -10 || p.y > LH + 10) continue;
-      const col = profOn ? (PCAT[nodeCat(n)] || {}).col || '#6a6f9a' : n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
-      const on = A.has(n.id) || RS.has(n.id), can = allocatable(n), onP = Pth.has(n.id);
-      const r = Math.max(1, Math.round(R[n.kind] * p.s / 2));
-      lc.globalAlpha = (viewT < 0.5 ? clamp(1.25 - Math.hypot(p.wx - cam.tx, p.wy - cam.ty, p.wz - cam.tz) / 1400, 0.35, 1) : 1) * (on || onP ? 1 : nodeDim) * p.fade;
-      const fill = on ? col : '#0b0d1c', edge = on ? '#ffffff' : onP ? '#ffb03a' : can ? (pulse > 0.5 ? '#ffb03a' : '#7a5418') : sh2(col);
-      if (n.kind === 'small') { pxR(p.x - r, p.y - r, r * 2 + 1, r * 2 + 1, edge); if (r > 1) pxR(p.x - r + 1, p.y - r + 1, r * 2 - 1, r * 2 - 1, fill); }
-      else if (n.kind === 'keystone') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); if (on) pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
-      else if (n.kind === 'mastery') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, Math.max(0, r - 1), fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); }
-      else if (n.kind === 'seal') { pxRing(p.x, p.y, r + 5, on ? '#ffffff' : sh2(col)); pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 2, on ? col : sh2(col)); pxR(p.x - 1, p.y - Math.max(2, r >> 1), 3, Math.max(4, r), on ? '#ffffff' : col); }
-      else if (n.kind === 'start') { pxDia(p.x, p.y, r + 2, '#ffe9b0'); pxDia(p.x, p.y, r, '#ffb03a'); pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
-      else if (n.kind === 'orbit') { pxRing(p.x, p.y, r + 1, edge); pxRing(p.x, p.y, r, edge); pxDia(p.x, p.y, Math.max(1, r - 3), on ? col : '#151933'); }
-      else { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); if (n.kind === 'sat' || n.kind === 'notable') pxRing(p.x, p.y, r + 2, on ? col : sh2(col)); }
-      lc.globalAlpha = 1;
-      if (on && r >= 2) { lc.globalCompositeOperation = 'lighter'; lc.globalAlpha = 0.25; pxDia(p.x, p.y, r + 3, col); lc.globalAlpha = 1; lc.globalCompositeOperation = 'source-over'; }
-    }
-    // blit pixel buffer
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    c.imageSmoothingEnabled = false;
-    c.drawImage(lb, 0, 0, LW * 2, LH * 2);
-    // hi-res overlay: selection + labels
-    if (sel && pos[sel]) { const p = pos[sel], r = R[TREE.nodes[sel].kind] * p.s + 7; c.beginPath(); c.arc(p.x * 2, p.y * 2, r, 0, 6.283); c.strokeStyle = '#ffffff'; c.lineWidth = 1.5; c.setLineDash([4, 4]); c.lineDashOffset = -frame / 3; c.stroke(); c.setLineDash([]); }
-    { const hid = lastNode(); if (hid && pos[hid]) { const p = pos[hid], r = R[TREE.nodes[hid].kind] * p.s + 5 + (Math.sin(frame / 8) + 1) * 2; c.beginPath(); c.arc(p.x * 2, p.y * 2, r, 0, 6.283); c.strokeStyle = '#ffb03a'; c.globalAlpha = 0.85; c.lineWidth = 1.5; c.stroke();
-      if (hereT > 0) { hereT--; const k = 1 - hereT / 90; c.beginPath(); c.arc(p.x * 2, p.y * 2, r + k * 60, 0, 6.283); c.globalAlpha = 1 - k; c.lineWidth = 2; c.stroke(); }
-      c.globalAlpha = 1; } }
-    const labels = [];
-    for (const n of TREE.list) {
-      const p = pos[n.id], rr = R[n.kind] * p.s;
-      if (!p.vis || p.fade < 0.5) continue;
-      if (n.kind === 'small' ? rr < 7.5 : rr < 3) continue;
-      if (cA > 0.5 && sel !== n.id && n.kind !== 'start') continue;
-      const on = A.has(n.id), pri = (sel === n.id ? 100 : 0) + (on ? 20 : 0) + ({ keystone: 50, seal: 55, mastery: 30, notable: 25, orbit: 35, sat: 22, start: 60, small: 0 }[n.kind]) + (Pth.has(n.id) ? 10 : 0) + p.d * 0.01;
-      labels.push({ n, x: p.x * 2, y: p.y * 2 + rr + 5, pri, on });
-    }
-    labels.sort((a, b) => b.pri - a.pri);
-    const placed = [];
-    c.textAlign = 'center'; c.textBaseline = 'top';
-    for (const L of labels) {
-      const n = L.n, fs = n.kind === 'small' ? 10 : n.kind === 'keystone' || n.kind === 'seal' ? 12 : 11;
-      c.font = `${fs}px Silkscreen, monospace`;
-      const txt = n.name.toUpperCase(), w = c.measureText(txt).width + 6, h = fs + 4;
-      const box = { x0: L.x - w / 2, x1: L.x + w / 2, y0: L.y - 2, y1: L.y + h };
-      if (box.y0 < 52 || box.y1 > H || box.x1 < 0 || box.x0 > W) continue;
-      if (placed.some(q => q.x0 < box.x1 && q.x1 > box.x0 && q.y0 < box.y1 && q.y1 > box.y0)) continue;
-      placed.push(box);
-      c.fillStyle = 'rgba(4,5,10,0.72)'; c.fillRect(box.x0, box.y0, w, h);
-      c.fillStyle = L.on ? '#ffffff' : n.kind === 'keystone' || n.kind === 'seal' ? '#ffb03a' : n.col && (n.kind === 'orbit' || n.kind === 'sat') ? n.col : '#a9a7c4';
-      c.fillText(txt, L.x, L.y);
-    }
-    c.font = '12px Silkscreen, monospace';
-    for (const L of cLabels) {
-      c.globalAlpha = cA;
-      const w = c.measureText(L.txt).width + 8, box = { x0: L.x - w / 2, x1: L.x + w / 2, y0: L.y - 8, y1: L.y + 8 };
-      if (box.y0 < 52 || box.y1 > H - 40 || box.x1 < 0 || box.x0 > W) continue;
-      if (placed.some(q => q.x0 < box.x1 && q.x1 > box.x0 && q.y0 < box.y1 && q.y1 > box.y0)) continue;
-      placed.push(box);
-      c.globalAlpha = cA * (L.full ? 1 : L.on ? 0.9 : 0.6); c.fillStyle = L.on ? L.col : '#a9a7c4'; c.textBaseline = 'middle';
-      c.fillText(L.txt, L.x, L.y); c.globalAlpha = 1; c.textBaseline = 'top';
-    }
-    c.globalAlpha = 1;
-  }
-  const sh2Cache = {};
-  function sh2(col) { if (sh2Cache[col]) return sh2Cache[col]; const v = parseInt(col.slice(1), 16), r = (v >> 16 & 255) * 0.42, g = (v >> 8 & 255) * 0.42, b = (v & 255) * 0.5; return (sh2Cache[col] = `rgb(${r | 0},${g | 0},${b | 0})`); }
-  function select(id) { const n = TREE.nodes[id]; if (!n) return; if (!cam) cam = DEF(); sel = id; path = treePathTo(id); const [x, y, z] = npos(n); cam.tx = x; cam.ty = y; cam.tz = z * 0.85; goal = null; refresh(); }
-  // test hooks
-  const _screen = id => { const n = TREE.nodes[id]; if (!n || !cam) return null; camPrep(); const [x, y, z] = npos(n), o = {}; proj(x, y, z, o); return { x: o.x, y: o.y }; };
-  const _visCount = () => visPos ? Object.values(visPos).filter(p => p.vis).length : -1;
-  const _dbg = () => ({ fs: focusSector(), zr: cam.zoom / DEF().zoom, tx: cam.tx, ty: cam.ty, tz: cam.tz, pil: TREE.list.filter(n => n.sector === -2 && visPos[n.id].vis).length });
-  return { init, open, close, resize, draw, refresh, select, get isOpen() { return open_; }, _screen, _visCount, _dbg, _sel: () => sel };
+  function select(id) { if (TAL[id]) { cur = TAL[id].tree; sel = id; refresh(); } }
+  return { init, open, close, resize() {}, draw() {}, refresh, select, get isOpen() { return open_; }, _sel: () => sel, _cur: () => cur };
 })();
 
 // ---------------- Main loop ----------------
@@ -2380,7 +1851,7 @@ const Tree = (() => {
   const loaded = Save.loadLocal();
   if (loaded) PROF = loaded;
   const webReset = migrateWeb();
-  if (webReset) { Save.save(); setTimeout(() => UI.toast('PASSIVE WEB REBUILT', 'Doctrines have arrived. All your points are refunded: pick a play style', '#ffb03a'), 900); }
+  if (webReset) { Save.save(); setTimeout(() => UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'), 900); }
   Render.init($('#cv'));
   Render.onCam = () => UI.zoomChanged && UI.zoomChanged();
   Tree.init();

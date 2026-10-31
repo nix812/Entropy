@@ -42,7 +42,7 @@ with sync_playwright() as p:
     pg.evaluate('() => { PROF.xp = 400000; }')
     pg.click('#bWeb'); pg.wait_for_timeout(500)
     pg.screenshot(path=str(out / '6_tree.png'))
-    pg.evaluate('() => { treeAllocate("c0_0n"); treeAllocate("h0"); }')
+    pg.evaluate('() => { talentAdd("kDmg"); talentAdd("kCrit"); }')
     pg.mouse.click(422, 195); pg.wait_for_timeout(300)
     pg.click('[data-tact=builds]'); pg.wait_for_timeout(300)
     pg.screenshot(path=str(out / '7_tree2.png'))

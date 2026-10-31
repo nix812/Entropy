@@ -521,69 +521,82 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .hbtn { font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; background: var(--panel2); border: 0; height: 36px; min-width: 44px; padding: 0 11px; clip-path: var(--cut); box-shadow: inset 0 0 0 1px var(--line2); display: flex; align-items: center; justify-content: center; gap: 5px; position: relative; }
 .hbtn:active { filter: brightness(1.3); }
 #tree { padding-left: 0; padding-right: 0; z-index: 15; background: #06070d; }
-#tcv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
-#tbar { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; height: 52px; padding-left: max(16px, var(--sal)); padding-right: max(16px, var(--sar)); padding-block: 0;
-  background: linear-gradient(#06070d 70%, rgba(6, 7, 13, 0)); pointer-events: none; }
-#tbar .hbtn { height: 40px; }
-#tbar > * { pointer-events: auto; }
+#tbar { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; height: 52px; padding-left: max(16px, var(--sal)); padding-right: max(16px, var(--sar)); padding-block: 0; background: #06070d; box-shadow: 0 1px 0 var(--line); }
+#tbar .hbtn { height: 40px; padding: 0 9px; }
 #tbar h2 { font-size: 13px; }
-.tpts { font-family: var(--f-pix); font-size: 10px; color: var(--dim); display: flex; align-items: center; gap: 4px; }
+.tpts { font-family: var(--f-pix); font-size: 10px; color: var(--dim); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 .tpts b { font-family: var(--f-term); font-weight: 400; font-size: 22px; color: var(--ink); }
-.tpts.glow b { color: var(--core); }
+#tPts { color: var(--core); }
 #tTok b { color: var(--cryo); }
-#tAttr { display: flex; gap: 10px; font-family: var(--f-pix); font-size: 9px; color: var(--dim); }
-#tAttr b { font-family: var(--f-term); font-weight: 400; font-size: 18px; color: var(--ink); }
-#tinfo { position: absolute; z-index: 2; left: 50%; transform: translateX(-50%); bottom: max(8px, var(--sab)); width: min(560px, calc(100% - 32px)); background: rgba(12, 14, 28, 0.94); box-shadow: inset 0 0 0 1px var(--line2); padding: 8px 12px; }
-#tinfo .note { margin: 0; text-align: center; }
-#tinfo.hint { width: auto; padding: 5px 12px; background: rgba(12, 14, 28, 0.8); }
-#tinfo.hint .note { font-size: 16px; white-space: nowrap; }
-.ti { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 4px 14px; align-items: center; }
-.ti > div:first-child { display: flex; flex-direction: column; }
-.ti i { font-style: normal; font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
-.ti b { font-family: var(--f-pix); font-size: 12px; text-transform: uppercase; }
-.ti ul { margin: 0; padding-left: 16px; font-size: 16px; }
-.mopts { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
-.mopt { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; background: var(--panel2); border: 0; padding: 6px 9px; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); min-height: 40px; }
-.mopt b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--amber); }
-.mopt span { font-size: 16px; line-height: 1.05; }
-.mopt.on { box-shadow: inset 0 0 0 2px var(--amber); background: #1f1a14; }
-.mopt:disabled { opacity: 0.5; }
-.louts { display: flex; gap: 6px; }
-.rots { display: flex; gap: 6px; } .rots .btn { flex: 1; min-height: 40px; justify-content: center; }
-.lout { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--panel2); border: 0; padding: 6px 0; min-height: 48px; box-shadow: inset 0 0 0 1px var(--line2); color: #5f5d7a; }
-.lout span { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
-.lout.on { color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }
-#tinfo { max-height: calc(100% - 64px); overflow-y: auto; }
-#tinfo.hint { display: none; }
-#tregions { position: absolute; z-index: 2; left: max(12px, var(--sal)); right: max(12px, var(--sar)); bottom: max(8px, var(--sab)); display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
-#tregions::-webkit-scrollbar { display: none; }
-#tnav { position: absolute; z-index: 2; right: max(12px, var(--sar)); bottom: calc(max(8px, var(--sab)) + 46px); display: flex; flex-direction: column; gap: 6px; }
-body.tsel #tnav { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px); }
-.tnb { width: 48px; height: 46px; border: 0; padding: 4px 0 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: rgba(21, 25, 51, 0.92); color: #ffb03a; box-shadow: inset 0 0 0 1px #7a5418, inset 0 -3px 0 rgba(0, 0, 0, 0.35); clip-path: var(--cut); font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-.tnb svg { width: 18px; height: 18px; }
-.tnb:active { filter: brightness(1.4); }
-body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px); }
-.rgn { flex: 0 0 auto; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; min-height: 36px; padding: 0 11px; border: 0; background: rgba(21, 25, 51, 0.92); color: var(--c); box-shadow: inset 0 0 0 1px var(--c), inset 0 -3px 0 rgba(0, 0, 0, 0.35); clip-path: var(--cut); }
-.rgn:active { filter: brightness(1.4); }
-#tprof { position: absolute; z-index: 2; left: max(12px, var(--sal)); top: 56px; width: 196px; background: rgba(10, 12, 24, 0.9); box-shadow: inset 0 0 0 1px var(--line2); padding: 6px 8px 8px; }
-#tpcv { display: block; width: 180px; height: 150px; }
-#tpbar { font-size: 15px; }
-#tpbar .ob { position: relative; height: 8px; margin: 4px 0 2px; background: linear-gradient(90deg, #ff6a5a, #3a3f6a 50%, #59f0b4); }
-#tpbar .ob i { position: absolute; top: -3px; width: 3px; height: 14px; background: #fff; box-shadow: 0 0 0 1px #000; }
-#tpbar .obl { display: flex; justify-content: space-between; font-family: var(--f-pix); font-size: 8px; color: var(--dim); text-transform: uppercase; }
-#tpbar b { font-weight: 400; color: var(--ink); }
-#tbar .hbtn { padding: 0 9px; }
-#tView.on, #tProf.on { color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
-#tinfo:not(.hint) { left: auto; transform: none; right: max(12px, var(--sar)); top: 56px; bottom: max(8px, var(--sab)); width: min(330px, 44%); max-height: none; }
-#tinfo:not(.hint) .ti { grid-template-columns: minmax(0, 1fr); align-content: start; }
-#tinfo:not(.hint) .ti ul { padding-left: 14px; }
-.ta { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ta .note { margin: 0; text-align: left; }
-#tdrawer { position: absolute; z-index: 3; top: 52px; right: max(16px, var(--sar)); bottom: 8px; width: min(300px, 60%); background: rgba(12, 14, 28, 0.97); box-shadow: inset 0 0 0 1px var(--line2); padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; }
-.slot { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 6px; align-items: center; }
-.slot input { grid-column: 1 / -1; font: inherit; font-size: 17px; background: var(--panel2); color: var(--ink); border: 0; box-shadow: inset 0 0 0 1px var(--line2); padding: 5px 7px; -webkit-user-select: text; user-select: text; }
-.slot small { color: var(--dim); font-size: 15px; }
-.tot { margin: 0; padding-left: 16px; font-size: 16px; }
+/* v5.0 talents: tabs | tree | details */
+#tbody { position: absolute; top: 52px; left: max(8px, var(--sal)); right: max(8px, var(--sar)); bottom: max(6px, var(--sab)); display: grid; grid-template-columns: 150px minmax(0, 1fr) min(300px, 32%); gap: 10px; }
+#ttabs { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding: 8px 0; scrollbar-width: none; }
+#ttabs::-webkit-scrollbar { display: none; }
+.ttab { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; border: 0; background: var(--panel); padding: 5px 9px; min-height: 40px; box-shadow: inset 3px 0 0 var(--c, var(--line2)), inset 0 0 0 1px var(--line); }
+.ttab b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--c, var(--ink)); }
+.ttab small { font-size: 15px; color: var(--dim); }
+.ttab.on { background: #1a1e3a; box-shadow: inset 4px 0 0 var(--c, var(--amber)), inset 0 0 0 1px var(--c, var(--amber)); }
+.ttab.sum { margin-top: 6px; --c: var(--amber); }
+#tgrid { overflow-y: auto; padding: 8px 2px 12px; touch-action: pan-y; }
+.thead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 8px; }
+.thead b { font-family: var(--f-pix); font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--c, var(--amber)); }
+.thead span { color: var(--dim); font-size: 17px; }
+.thead em { font-style: normal; margin-left: auto; font-size: 16px; color: var(--ink); }
+.trow { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px; margin-bottom: 6px; }
+.trl { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.trl b { font-family: var(--f-pix); font-size: 12px; font-weight: 400; color: var(--ink); }
+.trl small { font-size: 13px; color: var(--dim); white-space: nowrap; }
+.trow.locked .trl b { color: var(--dim); }
+.trt { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+.ttile { position: relative; display: flex; min-width: 0; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); }
+.ttile .tbody { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto; gap: 1px 6px; align-items: center; text-align: left; border: 0; background: none; padding: 6px 8px 7px; }
+.ttile .tbody b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttile .tbody b em { font-style: normal; color: #ff9adf; }
+.ttile .tbody small { font-size: 15px; color: var(--dim); }
+.ttile .pips { grid-column: 1 / -1; display: flex; gap: 3px; }
+.ttile .pips i { width: 10px; height: 4px; background: #2a2f52; }
+.ttile .pips i.on { background: var(--c); }
+.ttile .td { grid-column: 1 / -1; font-size: 15px; line-height: 1.05; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ttile .tadd { flex: 0 0 40px; border: 0; background: rgba(89, 240, 180, 0.12); color: var(--core); font-family: var(--f-pix); font-size: 18px; box-shadow: inset 1px 0 0 var(--line2); }
+.ttile .tadd:active { background: rgba(89, 240, 180, 0.3); }
+.ttile.have { box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c); }
+.ttile.have .tbody b { color: var(--c); }
+.ttile.full { background: #171c38; }
+.ttile.locked { opacity: 0.45; }
+.ttile.sel { box-shadow: inset 0 0 0 2px var(--amber); }
+.ttile.cap { background: linear-gradient(180deg, #1d1a33, #141831); min-height: 64px; }
+.ttile.cap .tbody b { font-size: 11px; }
+.ttile.cap .td { -webkit-line-clamp: 3; color: #b9b6cc; }
+.ttile.cap.have { box-shadow: inset 0 0 0 2px var(--c); background: linear-gradient(180deg, #24213e, #1a1e3c); }
+.caprow .trl b { color: var(--warn); font-size: 14px; }
+.caprow .trt { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.tfoot { font-size: 15px; margin-top: 6px; }
+#tinfo { overflow-y: auto; padding: 10px 12px; margin: 8px 0; background: rgba(12, 14, 28, 0.94); box-shadow: inset 0 0 0 1px var(--line2); }
+.tinfo-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding-top: 10px; }
+.tinfo-empty b { font-family: var(--f-term); font-size: 44px; font-weight: 400; color: var(--core); line-height: 1; }
+.tinfo-empty span { font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; color: var(--dim); }
+.tinfo-t { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.tinfo-t em { font-style: normal; font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; color: var(--c); letter-spacing: 0.06em; }
+.tinfo-t b { font-family: var(--f-pix); font-size: 13px; text-transform: uppercase; }
+.tinfo-t small { font-size: 16px; color: var(--dim); }
+.tl { margin: 2px 0 6px; padding-left: 16px; font-size: 17px; }
+.tl.dim { color: var(--dim); }
+.tbtns { display: flex; gap: 8px; margin-top: 8px; }
+.tbtns .btn { flex: 1; min-height: 46px; justify-content: center; }
+.tbuilds { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line2); padding: 8px 10px; margin-bottom: 10px; }
+.tbuilds .lbl em { font-family: var(--f-term); font-size: 15px; font-style: normal; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+.tb { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) auto auto; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.tb b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; }
+.tb small { font-size: 15px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tsumcap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; background: var(--panel2); padding: 6px 9px; margin-bottom: 4px; box-shadow: inset 3px 0 0 var(--c); }
+.tsumcap b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--c); }
+.tsumcap small { font-size: 15px; color: var(--dim); }
+.tsumcap span { grid-column: 1 / -1; font-size: 16px; }
+.tsum { columns: 2; column-gap: 20px; margin: 4px 0 8px; padding-left: 16px; font-size: 16px; }
+.tbars div { display: grid; grid-template-columns: 110px minmax(0, 1fr) 30px; gap: 8px; align-items: center; font-size: 16px; margin: 2px 0; }
+.tbars i { display: block; height: 8px; background: var(--c); }
+.tbars b { font-weight: 400; text-align: right; }
+@media (max-width: 760px) { #tbody { grid-template-columns: 112px minmax(0, 1fr) min(240px, 34%); gap: 6px; } .ttab { padding: 4px 6px; } .ttab b { font-size: 9px; } .trt { grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); } .tsum { columns: 1; } #tbar { gap: 8px; } .tpts { font-size: 8px; } }
 
 /* ---------- rotate overlay ---------- */
 #rotate { display: none; }
@@ -601,6 +614,8 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 @media (max-height: 340px) { .rb { height: 38px; } .rb span { display: none; } .entg { height: 54px; } #bCall { height: 46px; } }
 
 
+/* v5.0 token reroll */
+.btn.tokbtn { box-shadow: inset 0 0 0 2px var(--cryo); color: #bff4ff; }
 /* v4.8 level tiers */
 .btn.primary.lvup { background: var(--tc, var(--amber)); color: #0b0b12; }
 .btn.primary.lvup small { color: rgba(11, 11, 18, 0.72); }
@@ -679,7 +694,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
       </div>
       <nav class="menu">
         <button class="btn nova" id="bNova" hidden>Supernova<small id="hNovaSub"></small></button>
-        <button class="btn" id="bWebH">Passive Web<em class="badge" id="hPts" hidden></em></button>
+        <button class="btn" id="bWebH">Talents<em class="badge" id="hPts" hidden></em></button>
         <button class="btn alt" id="bLaunch2" hidden>New Run</button>
         <button class="btn primary play" id="bLaunch">Play<small id="hPlaySub"></small></button>
       </nav>
@@ -708,7 +723,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
     </div>
     <div class="rail" id="railR">
       <button class="rb" id="bPause" aria-label="Pause" data-svg="pause"></button>
-      <button class="rb" id="bWeb" aria-label="Passive web"><i data-svg="web"></i><span>Web</span><em class="badge" id="webBadge" hidden></em></button>
+      <button class="rb" id="bWeb" aria-label="Talents"><i data-svg="web"></i><span>Talents</span><em class="badge" id="webBadge" hidden></em></button>
       <button class="rb" id="bStats" aria-label="Toggle stats"><i data-svg="stats"></i><span>Stats</span></button>
       <div class="spacer"></div>
       <button class="entg" id="bEnt" aria-label="Entropy gauge"><span class="ebar"><i id="entFill"></i></span><em id="entCount"></em><b id="entTxt">0%</b></button>
@@ -718,28 +733,17 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
   </section>
 
   <section id="tree" class="screen" hidden>
-    <canvas id="tcv"></canvas>
     <div id="tbar">
-      <h2>Passive Web</h2>
+      <h2>Talents</h2>
       <span class="tpts"><b id="tPts">0</b> points</span>
+      <span class="tpts" id="tCaps"><b>0/1</b> Capstones</span>
       <span class="tpts" id="tTok"><b>0</b> tokens</span>
       <div class="spacer"></div>
-      <button class="hbtn" data-tact="view" id="tView">3D</button>
-      <button class="hbtn" data-tact="profile" id="tProf">Profile</button>
-      <button class="hbtn" data-tact="totals">Totals</button>
-      <button class="hbtn doc" data-tact="docs" id="tDoc">Doctrine</button>
       <button class="hbtn" data-tact="builds">Builds</button>
+      <button class="hbtn" data-tact="reset" id="tReset">Reset</button>
       <button class="hbtn" data-tact="close" style="box-shadow: inset 0 0 0 1px var(--amber)">Done</button>
     </div>
-    <div id="tinfo"></div>
-    <div id="tprof" hidden><canvas id="tpcv"></canvas><div id="tpbar"></div></div>
-    <div id="tregions"></div>
-    <div id="tnav">
-      <button class="tnb" data-tact="undo" id="tUndo" aria-label="Undo the last allocation" hidden><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="currentColor" d="M5 2h2v2h5v1h1v1h1v5h-1v1h-1v1H6v-2h5v-1h1V7h-1V6H7v2H5V7H4V6H3V5h1V4h1z"/></svg><span>Undo</span></button>
-      <button class="tnb" data-tact="here" aria-label="Jump to your latest node"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="currentColor" d="M7 0h2v3H7zM7 13h2v3H7zM0 7h3v2H0zM13 7h3v2h-3zM5 3h6v1H5zM5 12h6v1H5zM3 5h1v6H3zM12 5h1v6h-1zM4 4h1v1H4zM11 4h1v1h-1zM4 11h1v1H4zM11 11h1v1h-1zM6 6h4v4H6z"/></svg><span>Here</span></button>
-      <button class="tnb" data-tact="center" aria-label="Recenter the web"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h5v2H2v3H0zM11 0h5v5h-2V2h-3zM0 11h2v3h3v2H0zM14 11h2v5h-5v-2h3zM7 7h2v2H7z"/></svg><span>Center</span></button>
-    </div>
-    <div id="tdrawer" hidden></div>
+    <div id="tbody"><nav id="ttabs"></nav><div id="tgrid"></div><aside id="tinfo"></aside></div>
   </section>
 
   <div id="modal" hidden></div>

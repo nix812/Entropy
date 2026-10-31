@@ -4,6 +4,8 @@ const ok = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) process
 const lvlXP = L => { let x = 0; for (let i = 0; i < L; i++) x += 3000 + 250 * i + 3 * i * i; return x + 1; };
 function prof(level, bw) { const P = S.defaultProfile(); P.bestWave = bw || 60; P.xp = lvlXP(level || 0); S.PROF = P; return P; }
 S.Hooks.onDraft = o => S.takeBoon(o[0]);
+// v5.0: fill a tree to 20 points (row by row) and take one of its Capstones
+function cap(id) { const T = S.TAL[id], tr = S.TALENTS.find(t => t.id === T.tree); let g = 0; while (S.treePts(tr.id) < 20 && g++ < 60) { const t = tr.rows.flat().find(t => !S.talentBlock(t.id)); if (!t) break; S.talentAdd(t.id); } return S.talentAdd(id); }
 
 // 1. a run started at Wave 30 (Normal: first assault 14, every 8) still gets assaults
 prof(0, 60);
@@ -31,7 +33,7 @@ G = S.resumeRun(snap);
 ok(G.daily && G.laws.length === 0 && G.novaN === 0 && G.anoms.length === 2, `resumed daily: laws ${G.laws.length}, anomalies ${G.anoms.length}, scoreMult ${G.scoreMult.toFixed(2)}`);
 
 // 4. Marksman: a reactor expansion always adds a whole point of power
-prof(60, 60); S.treeAllocate('d0'); G = S.newRun({ seed: 3, chaos: 1, startWave: 1 }); G.credits = 99999;
+prof(60, 60); cap('marksman'); G = S.newRun({ seed: 3, chaos: 1, startWave: 1 }); G.credits = 99999;
 const c0 = S.gridCap(); S.expandReactor(); const c1 = S.gridCap(); S.expandReactor(); const c2 = S.gridCap();
 ok(c1 === c0 + 1 && c2 === c1 + 1, `Marksman reactor: ${c0} -> ${c1} -> ${c2}`);
 
@@ -43,11 +45,11 @@ S.snapshotNow(); const snap2 = JSON.parse(JSON.stringify(S.PROF.runSnap));
 G = S.resumeRun(snap2);
 ok(G.assault && G.assault.state === 'warn' && G.prep.queue.some(q => q.assault), 'resumed mid-assault: the wave is re-converted to the strain');
 
-// 6. Conflagration and the Glacier Doctrine refuse each other
-prof(90, 60); ok(S.treeAllocate('d3') && S.treeAllocate('d1'), 'Glacier and Wildfire seals taken (2 slots at level 90)');
-ok(S.treeBlock('k1').startsWith('conflict'), `Conflagration blocked under Glacier (${S.treeBlock('k1')})`);
-prof(90, 60); ok(S.treeAllocate('d1') && S.treeAllocate('k1'), 'Conflagration taken'); ok(S.treeBlock('d3').startsWith('conflict'), 'Glacier blocked under Conflagration');
-ok(!S.treeBlock('d4'), 'other seals unaffected');
+// 6. Conflagration and the Chill/Freeze Capstones refuse each other
+prof(90, 60); ok(cap('glacier'), 'Glacier taken'); ok(S.talentBlock('conflag') === 'row' || (S.treePts('T') < 20), 'Combustion not deep enough yet');
+{ const tr = S.TALENTS.find(t => t.id === 'T'); let g = 0; while (S.treePts('T') < 20 && g++ < 60) { const t = tr.rows.flat().find(t => !S.talentBlock(t.id)); if (!t) break; S.talentAdd(t.id); } }
+ok(S.talentBlock('conflag').startsWith('conflict'), `Conflagration blocked under Glacier (${S.talentBlock('conflag')})`);
+ok(!S.talentBlock('wildfire'), 'other Capstones unaffected');
 
 // 7. Most Wanted: planned at run start, forced onto its wave, twins pay on the second kill, survives a resume
 G = S.newRun({ seed: 9, chaos: 1, startWave: 15 });
