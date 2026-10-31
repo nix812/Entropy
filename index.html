@@ -151,6 +151,14 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .cashopts { display: flex; flex-direction: column; gap: 5px; }
 .cashopts .btn { flex-direction: row; justify-content: space-between; min-height: 46px; padding: 0 12px; }
 .cashopts .btn small { font-size: 17px; }
+/* v4.4 Black Market */
+.mline { font-style: italic; color: var(--dim); text-transform: none; letter-spacing: 0; font-family: var(--f-term); font-size: 14px; }
+.mktlist { display: flex; flex-direction: column; gap: 5px; }
+.mkt { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n p" "d p"; gap: 0 10px; text-align: left; background: var(--panel); box-shadow: inset 3px 0 0 var(--c, var(--amber)), inset 0 0 0 1px var(--line); padding: 6px 10px; color: var(--ink); min-height: 46px; }
+.mkt b { grid-area: n; font-family: var(--f-pix); font-size: 9px; letter-spacing: 1px; color: var(--c, var(--amber)); }
+.mkt span { grid-area: d; font-size: 15px; line-height: 1.15; color: #c9c6bc; }
+.mkt em { grid-area: p; align-self: center; font-style: normal; font-size: 20px; color: var(--amber); white-space: nowrap; }
+.mkt:disabled { opacity: 0.55; } .mkt.sold em { color: var(--dim); text-decoration: line-through; } .mkt em.poor { color: var(--bad); }
 #bCall.cp { color: var(--core); box-shadow: inset 0 0 0 2px var(--core); animation: pulse 1.4s infinite; }
 #bCall.cp span { color: var(--core); }
 @keyframes pulse { 50% { filter: brightness(1.35); } }
@@ -210,6 +218,7 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .evchip.gene { color: var(--c); background: rgba(255,255,255,0.05); pointer-events: auto; }
 .evchip.dna { color: #d6ffe9; background: rgba(89,240,180,0.10); box-shadow: inset 0 0 0 1px #59f0b4; pointer-events: auto; }
 .evchip.dna i { font-style: normal; margin-left: 4px; }
+.evchip.wanted { color: #ffd84a; background: rgba(255,216,74,0.08); box-shadow: inset 0 0 0 1px #ffd84a; pointer-events: auto; }
 .card.evo .evlist { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; max-height: 52vh; overflow-y: auto; }
 .evrow { display: grid; grid-template-columns: 90px 1fr 70px; gap: 2px 10px; align-items: center; }
 .evrow b { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; font-weight: 400; }
@@ -244,6 +253,9 @@ body.panel-r #docbar { display: none; }
 .hs.pwr { display: flex; align-items: center; gap: 4px; color: #59f0b4; }
 .hs.pwr b { font-size: 20px; }
 .hs.pwr.full { color: #ffb03a; }
+.hs.pwr { cursor: pointer; padding: 0 4px; border-radius: 2px; }
+.hs.pwr.spare { animation: sparepw 1.6s ease-in-out infinite; }
+@keyframes sparepw { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(89, 240, 180, 0.15); } 50% { box-shadow: inset 0 0 0 1px rgba(89, 240, 180, 0.9), 0 0 10px rgba(89, 240, 180, 0.45); } }
 .hs.pwr .bolt { width: 8px; height: 12px; background: currentColor; clip-path: polygon(60% 0, 0 58%, 45% 58%, 30% 100%, 100% 40%, 55% 40%); }
 .ph small.grid { margin-left: 8px; color: #59f0b4; font-family: var(--f-pix); font-size: 8px; } .ph small.grid.full { color: #ffb03a; }
 .modes.oc .chip:disabled { opacity: 0.35; }
@@ -267,6 +279,7 @@ body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 #tip span { font-size: 15px; line-height: 1.15; }
 #tip.out { opacity: 0; }
 body.panel-l #tip { left: calc(50% + 140px); } body.panel-r #tip { left: calc(50% - 140px); }
+body.webopen #tip { bottom: calc(var(--sab, 0px) + 58px); } /* clear the region chips in the Passive Web */
 .evchip.dna.pulse { animation: dnapulse 0.9s steps(2) infinite; }
 @keyframes dnapulse { 50% { box-shadow: inset 0 0 0 1px #59f0b4, 0 0 10px #59f0b4; } }
 .toast.out { opacity: 0; }
@@ -606,7 +619,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
       <div class="hs pwr" aria-label="Power grid"><span class="bolt"></span><b id="pw">0/0</b></div>
       <div class="hs"><span class="lbl">Wave</span><b id="wave">0</b><small id="nextw"></small></div>
       <div id="chips"></div>
-      <button class="hs sc cashbtn" id="bCash" aria-label="Cash in credits for score"><span class="lbl">Score</span><b id="score">0</b><i class="cashtag">Cash In</i></button>
+      <button class="hs sc cashbtn" id="bCash" aria-label="Cash in credits for score"><span class="lbl">Score</span><b id="score">0</b><i class="cashtag">Market</i></button>
     </header>
     <div class="rail" id="railL"><div id="abils" style="display:contents"></div></div>
     <div id="stage">
@@ -664,7 +677,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.3.0';
+const VERSION = '4.4.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -831,14 +844,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.3.0', title: 'Entropy 4.3 · Every Region a Doctrine', items: [
-  ['Circuit (Voltaic)', 'Towers next to each other wire up and fire faster. Chains of 4+ throw lightning every 4s. But if one tower in a chain is knocked out, the whole chain stalls.'],
-  ['Glacier (Cryogenics)', 'A Frozen enemy becomes an ice block and everything behind it piles up. All towers deal 10% less damage.'],
-  ['Event Horizon (Singularity)', 'Kills open small gravity wells that drag enemies back, and fully Marked enemies get yanked back down the road. Enemies move 12% faster.'],
-  ['Artisan (Zenith)', 'Veterans rank up twice as fast and hit harder with every rank; rerolls are half price. Rookie towers deal 20% less.'],
-  ['Gambler (Nadir)', 'Every wave flips a coin for an extra event, good or bad (always good on boss waves). +25% score, and Entropy fills faster.'],
-  ['All 8 regions', 'Every region now has a seal. The Doctrine panel in the Passive Web compares them all and points you at your next goal.'],
-  ['From 4.2', 'Doctrines, an easier Passive Web with Undo, Marksman, Wildfire and War Economy.']
+const WHATS_NEW = { ver: '4.4.0', title: 'Entropy 4.4 · Most Wanted', items: [
+  ['Most Wanted', 'Every run posts a bounty on one boss: Colossal, Twin, Hasted, Armored, Spectral or Loaded. It is announced at the start and lands on a boss wave you know in advance. Bring it in for credits and a Legendary.'],
+  ['The Black Market', 'Tap Score to open the Exchange. A pirate trader stocks three items, restocked after every boss: a stolen tower blueprint, a boss bribe, a Node Beacon that plants a Power Node where you tap, a fake star map that resets the swarm\'s memory, and more. Prices climb with the wave.'],
+  ['Red Alert', 'A boss within 8 tiles of the core sounds the alarm. The field goes red and the core enters Last Stand: ×2.5 damage against that boss. Stasis, Strike and Overcharge now.'],
+  ['Fairer bosses', 'Bosses always take the longest road and flying bosses skim it instead of cutting across empty ground. Early boss health is lower, boss health can no longer balloon from crowd damage, and the next wave hangs back while a boss is on the field. Bots on a fresh profile went from dying at Wave 22 to Wave 51.'],
+  ['Spare power', 'When power sits unused during a wave the counter pulses. Tap it to Overcharge your best tower in one go.'],
+  ['Fixes', 'Strain Assaults now happen in runs started at later waves. Pirate skiffs ignore Snare Beacons. Resumed Dailies no longer carry Cosmic Laws. Marksman no longer rounds reactor expansions away. Help and Settings opened from Pause return to Pause. The Wormhole Worm can no longer surface inside the core. Glacier and Conflagration refuse each other instead of cancelling out.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -848,6 +860,37 @@ const PIRATE_LINES = {
   thief: ['Finders keepers', "I'll take that", 'Yoink', 'Salvage rights!', 'Mine now', 'Thank ye kindly'],
   stow: ['Arr!', 'Surprise!', 'Ahoy, core!', 'Stowaway!'],
 };
+// ---------- v4.4 Most Wanted: every run names one boss, a mutation for it and a bounty, announced at the start ----------
+const WANTED_MODS = [
+  { id: 'colossal', name: 'Colossal', desc: '×1.6 health, half again as big, 20% slower', hp: 1.6, spd: 0.8, size: 1.5 },
+  { id: 'twins', name: 'Twin', desc: 'Two of them, each at 60% health, 3 s apart', hp: 0.6, twins: 1 },
+  { id: 'hasted', name: 'Hasted', desc: '35% faster, 25% less health', hp: 0.75, spd: 1.35 },
+  { id: 'armored', name: 'Armored', desc: 'Takes 30% less damage from everything', hp: 0.9, armorAll: 0.3 },
+  { id: 'spectral', name: 'Spectral', desc: 'Cloaks for 2 s every 7 s', cloak: 1 },
+  { id: 'loaded', name: 'Loaded', desc: 'Double bounty, and it drops a Captain\'s Chest where it dies', hp: 1.1, loaded: 1 },
+];
+const WANTED_FOR = { behemoth: 'property damage', queen: 'an unlicensed breeding programme', wraith: 'trespassing (repeatedly)', overmind: 'identity theft', titan: 'being a wall',
+  cat: 'knocking things off tables', gloop: 'loitering', whale: 'singing without a permit', duck: 'disturbing the peace', fsm: 'impersonating a deity', worm: 'eating public property', auditor: 'tax evasion (ironic)', snail: 'speeding (allegedly)' };
+const WANTED = { creditsPerWave: 60 };
+// ---------- v4.4 Red Alert: a boss within this many tiles of the core puts the core on Last Stand (shells hit it much harder) ----------
+const RED_ALERT = { tiles: 8, coreDmg: 2.5, coreRate: 1.6 };
+const BOSS_HOLD = 45; // seconds the next wave's countdown runs slow while a boss is still on the field
+// ---------- v4.4 The Black Market: a pirate trader with 3 items in stock, restocked after every boss wave ----------
+// Prices scale with the wave, so late-run credits (Nic banks 25–60k) have somewhere to go. Each item sells once per stock.
+const MARKET = { slots: 3, refresh: 10, price: (base, w) => Math.round(base * (1 + 0.11 * Math.max(1, w))) };
+const MARKET_ITEMS = [
+  { id: 'schematic', name: 'Forbidden Schematic', desc: 'Your next 2 towers roll a Legendary affix', base: 240, col: '#ff8a2a' },
+  { id: 'blueprint', name: 'Stolen Blueprint', desc: 'Unlocks your next locked tower for this run', base: 170, col: '#6ae2ff' },
+  { id: 'bribe', name: 'Boss Bribe', desc: 'The next boss arrives at 70% health. Even the Auditor takes bribes', base: 260, col: '#ffd84a' },
+  { id: 'beacon', name: 'Node Beacon', desc: 'Tap an empty tile: it becomes a Power Node', base: 480, col: '#6ae2ff', max: 2 },
+  { id: 'crate', name: 'Ability Crate', desc: '+1 charge of every ability', base: 150, col: '#ffe14d' },
+  { id: 'tokens', name: 'Recalibration Kit', desc: '+2 Recalibration tokens', base: 80, col: '#59f0b4' },
+  { id: 'starmap', name: 'Fake Star Map', desc: 'The swarm forgets what it learned: evolution starts over and the next Strain Assault is pushed back 3 waves', base: 220, col: '#b86cff' },
+  { id: 'mutagen', name: 'Mutagen Vial', desc: 'Every tower gains a random affix', base: 300, col: '#ff9ad5' },
+  { id: 'medal', name: 'Battle Medal', desc: 'Your top-damage tower gains a Veteran rank', base: 190, col: '#ffe14d' },
+  { id: 'recharge', name: 'Spare Overdrive', desc: 'Recharges Overdrive after you have used it', base: 900, col: '#59f0b4' },
+];
+const MARKET_LINES = ['No refunds. Ever.', 'Fell off a freighter', "Don't ask where it's from", 'Cash only. Space cash', 'You never bought this', 'Warranty void in all galaxies', 'Pleasure doing crimes with you', 'Restocked after the boss', 'Prices go up. Always up', 'Tell your friends. Not the authorities'];
 // Core Battery (v1.20): a long-range support gun. Weak per shot early; the expensive late levels make it a real weapon.
 const CORE_GUN = { dmg: 12, growth: 1.5, rate: 0.8, range: 16, rangeLv: 1.4, splash: 0.6, maxLv: 12 };
 const CORE_MODULES = [
@@ -910,10 +953,12 @@ function strainName(type, genes, el) {
   for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) { const c = STRAIN_COMBO[g[i] + '+' + g[j]]; if (c) { const rest = g.filter((x, k) => k !== i && k !== j).map(x => x === 'ward' ? WARD_ADJ[el] || 'Warded' : GENE_ADJ[x]); return (rest.length ? rest.join(' ') + ' ' : '') + c + ' ' + sp; } }
   return g.map(x => x === 'ward' ? WARD_ADJ[el] || 'Warded' : GENE_ADJ[x]).join(' ') + ' ' + sp;
 }
+// v4.4: hp is also the fight-time budget (boss HP = firepower × seconds × hp/38). Fast bosses reach the core in ~40 s (duck, wraith) against ~95 s for
+// Behemoth, so their hp is set lower to keep the required fire density about the same (hp / road seconds ≈ 0.4 for most).
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
-  { id: 'wraith', name: 'Phase Wraith', hp: 30, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks' },
+  { id: 'wraith', name: 'Phase Wraith', hp: 22, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks' },
   { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'Disables nearby towers' },
   { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
   // oddballs: random stand-ins on boss waves
@@ -923,7 +968,7 @@ const BOSSES = [
     titles: ['The Unbothered', 'Lord of the Leftovers', 'It Came From The Fridge', 'Mostly Water'] },
   { id: 'whale', odd: 1, tip: 'Flies, heals allies', name: 'Space Whale', hp: 58, spd: 0.32, fly: 1, size: 2, desc: 'Flies. Its song heals every enemy nearby',
     titles: ['Singer of the Deep Void', 'Big Blue', 'Krill Enthusiast', 'Just Passing Through'] },
-  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'Quackzilla', hp: 24, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
+  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'Quackzilla', hp: 17, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
     titles: ['Bath Time Is Over', 'The Rubber Reckoning', 'Squeaks When Hit', 'Unsinkable'] },
   { id: 'fsm', odd: 1, tip: 'Flies, seizes towers', name: 'Flying Spaghetti Monster', hp: 40, spd: 0.5, fly: 1, size: 2, desc: 'Flies. Noodly appendages seize towers. Drops meatballs',
     titles: ['His Noodly Appendage', 'Al Dente', 'Touched By Marinara', 'Pastafarian Prophecy'] },
@@ -1203,7 +1248,7 @@ const DOCTRINES = {
     lines: ['Every kill opens a small gravity well that drags nearby enemies back down the road', 'Enemies at max Marks are yanked back 1.5 tiles (once each)', 'Enemies move 12% faster'],
     smalls: [{ hPull: 15 }, { hWell: 15 }] },
   6: { id: 'artisan', name: 'Artisan', tag: 'Craft a few legends', counter: 'brood', pillar: 'zen',
-    lines: ['Veterans rank up 2× faster and gain +6% Damage per rank', 'Rerolls cost 50% less', 'Towers without a Veteran rank deal 20% less damage'],
+    lines: ['Veterans rank up 2× faster and gain +5% Damage per rank', 'Rerolls cost 50% less', 'Towers without a Veteran rank deal 25% less damage'],
     smalls: [{ aRank: 2 }, { aVxp: 20 }] },
   7: { id: 'gambler', name: 'Gambler', tag: 'Every wave is a dice roll', counter: '', pillar: 'nad',
     lines: ['Every wave from Wave 2 flips a coin for an extra event: good or bad (always good on boss waves)', 'Score +25%', 'The Entropy gauge fills 25% faster'],
@@ -1503,7 +1548,7 @@ function supernova(remnant, law) {
   return true;
 }
 const pointsFree = () => profLevel().level - pointsSpent();
-const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave);
+const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
 
 function allocSet() { return new Set(PROF.alloc); }
 function treePathTo(id) {
@@ -1535,6 +1580,8 @@ function treeOrphans(id) {
   return out;
 }
 // why a node can't be taken right now ('' = fine): seal-locked nodes need their Doctrine seal; seals are limited
+// Conflagration turns every Chill into Burn, so nothing could ever Freeze: the Glacier Doctrine would do nothing
+const TREE_CONFLICTS = [['k1', 'd3']];
 function sealsHeld(list) { return (list || PROF.alloc).filter(id => TREE.nodes[id] && TREE.nodes[id].kind === 'seal').length; }
 function treeBlock(id, path) {
   path = path || treePathTo(id) || [];
@@ -1542,6 +1589,8 @@ function treeBlock(id, path) {
   for (const pid of path) { const n = TREE.nodes[pid]; if (n.need !== undefined && !A.has('d' + n.need) && !want.has('d' + n.need)) return 'seal:' + n.need; }
   const newSeals = path.filter(pid => TREE.nodes[pid].kind === 'seal').length;
   if (newSeals && sealsHeld() + newSeals > sealSlots(profLevel().level)) return 'slots';
+  // pairs that cancel each other out are refused rather than quietly doing nothing
+  for (const [a, b] of TREE_CONFLICTS) if ((A.has(a) || want.has(a)) && (A.has(b) || want.has(b)) && (want.has(a) || want.has(b))) return 'conflict:' + (want.has(a) ? b : a);
   return '';
 }
 function treeAllocate(id) {
@@ -1899,7 +1948,8 @@ function rlogWave() {
   rlog('wave', d);
 }
 // ---- v3.0 power grid ----
-function gridCap() { const c = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)) + (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(c * 0.6)) : c; }
+// Marksman shrinks only the wave-grown part of the grid: bought (reactor) and earned (assault, Spare Reactor) power is always a whole point
+function gridCap() { const base = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)), bonus = (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return (G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(base * 0.6)) : base) + bonus; }
 // Marksman: +2 free Overcharge on every attack tower, and paid Overcharge goes 2 steps higher
 const ocFree = t => G.mods && G.mods.ks.marksman && canOvercharge(t) ? 2 : 0;
 const ocMax = () => OVERCHARGE.max + (G && G.mods && G.mods.ks.marksman ? 2 : 0);
@@ -1960,7 +2010,7 @@ function spawnThief(c) {
   const R = G.region, fromLeft = G.r() < 0.5, y0 = clamp(c.y + 0.5 + (G.r() - 0.5) * 6, R.y0 + 0.5, R.y1 - 0.5);
   const a = { x: fromLeft ? R.x0 - 1.5 : R.x1 + 1.5, y: y0 }, m = { x: c.x + 0.5, y: c.y + 0.5 }, z = { x: fromLeft ? R.x1 + 1.5 : R.x0 - 1.5, y: clamp(m.y + (G.r() - 0.5) * 8, R.y0 + 0.5, R.y1 - 0.5) };
   const L = prepLane([a, m, z]);
-  const e = spawnEnemy('pirate', { L, hpm: hpMult(Math.max(1, G.wave)) * (G.CH.hp || 1) });
+  const e = spawnEnemy('pirate', { L, pirate: 1, hpm: hpMult(Math.max(1, G.wave)) * (G.CH.hp || 1) });
   e.pirate = { cache: c, grabD: L.cum[1], got: false };
   c.thief = e;
   Hooks.toast('PIRATES', 'A skiff is after your salvage. Shoot it down', '#ff4d6a');
@@ -2111,6 +2161,7 @@ function newRun(opts) {
     if (G.anoms.includes('flux')) G.flux = { el: pick(r, ELS), t: 20 };
     recomputeAll(); G.core.hp = G.core.max; G.core.shield = G.core.smax;
   }
+  planWanted();
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
   // harder difficulties: the swarm arrives already adapted to one or two weaknesses (seeded as strong parents)
@@ -2253,7 +2304,7 @@ function canBuildAt(x, y) {
 }
 // ---------- Snare Beacons: lure fliers off their straight line into a net ----------
 function lure(e) {
-  if (!e.fly || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
+  if (!e.fly || e.boss || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
   const cx = G.core.x, cy = G.core.y, dx = cx - e.x, dy = cy - e.y, L2 = dx * dx + dy * dy || 1;
   let best = null, bd = 1e9;
   for (const t of G.snares) {
@@ -2413,7 +2464,7 @@ function towerStats(t) {
   s.ground = !!D.ground;
   const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
   if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
-  if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.06 + FX('aRank') / 100) * t.rank : 0.8;
+  if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.05 + FX('aRank') / 100) * t.rank : 0.75; // v4.4: 6%/−20% measured 16 waves above no Doctrine (bots); trimmed
   return s;
 }
 function recomputeAuras() {
@@ -2802,7 +2853,8 @@ function genWave(w, ev) {
     if (isBoss && n >= Math.floor(count / 2) && !q.some(e => e.boss)) {
       const B = nextBoss(w, r);
       t += 1.5;
-      let bl = laneFor(); if (bl === rift || B.fly) bl = lanes[0];
+      // v4.4: bosses always take the longest open road. A boss on a fresh 15-tile wormhole lane reached the core in 25 s (lethal, and luck)
+      const bl = lanes.reduce((a, L) => (L.len > a.len ? L : a), lanes[0]);
       q.push({ t, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0 });
       t += 2;
     }
@@ -2891,6 +2943,8 @@ function planAssault(w) {
 function assaultTick(w) { // called from prepareWave(w): announce the assault on wave w+1
   if (assaultOff() || geneCap(w + 1) <= 0) return;
   if (G.assaultNext == null) G.assaultNext = assaultFirst();
+  // a run that started late (or skipped waves) must not leave the next assault in the past: nothing would ever fire again
+  while (G.assaultNext < w + 1) G.assaultNext += assaultEvery();
   while (G.assaultNext % 10 === 0) G.assaultNext++; // never on a boss wave
   if (w + 1 !== G.assaultNext || (G.assault && G.assault.w === w + 1)) return;
   const A = G.assault = planAssault(w + 1);
@@ -2957,10 +3011,10 @@ function startWave() {
   G.queue = P.queue;
   if (G.assault && G.assault.w === w && G.assault.state === 'warn') {
     const A = G.assault; A.state = 'live'; G.refit = false;
-    if (!A.n) A.state = 'done';
+    if (!A.n) { A.state = 'done'; G.assaultNext = w + assaultEvery(); } // nothing converted (tiny wave): try again later
     else { // size it to your firepower: at least 1.3x normal HP
       let base = 0; for (const q of G.queue) if (q.assault) base += ENEMIES[q.type].hp * (q.hpm || 1) * (q.genes.includes('bulk') ? GENES.bulk.hp : 1);
-      const fire = Math.max(G.power || 0, potentialDps() * 0.5);
+      const fire = bossFire();
       A.hpx = Math.max(ASSAULT.minHp, base > 0 ? fire * ASSAULT.secs / base : 1);
     }
   }
@@ -3025,6 +3079,60 @@ function cashIn(amount) {
   Hooks.sfx('cash'); Hooks.fx('cash', {}); Hooks.log(`Cashed in ${fmt(amount)} credits`, '#ffb03a');
   return G.score - before;
 }
+// ---------- v4.4 The Black Market: three items a stock, restocked after every boss wave, prices climbing with the wave ----------
+const marketStockN = w => Math.floor(Math.max(1, w) / MARKET.refresh);
+const marketPrice = I => MARKET.price(I.base, G.wave);
+const nextLockedTower = () => TOWER_ORDER.filter(k => !towerUnlocked(k)).sort((a, b) => TOWERS[a].unlock - TOWERS[b].unlock)[0] || null;
+function marketOk(I) {
+  if (I.id === 'blueprint') return !!nextLockedTower();
+  if (I.id === 'beacon') return (G.market ? G.market.beacons || 0 : 0) < I.max;
+  if (I.id === 'recharge') return !!G.odUsed;
+  return true;
+}
+// stock is drawn from its own RNG (seed + stock number), so opening the panel never touches the run's dice
+function marketEnsure() {
+  if (!G.market) G.market = { n: -1, stock: [], bought: [], beacons: 0, line: '' };
+  const n = marketStockN(G.wave);
+  if (G.market.n !== n) {
+    const r = mulberry32((G.seed ^ Math.imul(n + 1, 2654435761)) >>> 0), pool = MARKET_ITEMS.filter(I => marketOk(I)), stock = [];
+    while (stock.length < MARKET.slots && pool.length) stock.push(pool.splice(Math.floor(r() * pool.length), 1)[0].id);
+    G.market = { n, stock, bought: [], beacons: G.market.beacons || 0, line: pick(r, MARKET_LINES), spent: G.market.spent || 0 };
+  }
+  return G.market;
+}
+function marketBuy(id) {
+  const M = marketEnsure(), I = MARKET_ITEMS.find(x => x.id === id);
+  if (!I || !M.stock.includes(id) || M.bought.includes(id) || G.over) return null;
+  if (!marketOk(I)) return null;
+  const price = marketPrice(I); if (G.credits < price) return null;
+  let msg = I.desc;
+  switch (id) {
+    case 'schematic': G.legendQueue += 2; break;
+    case 'blueprint': { const k = nextLockedTower(); if (!k) return null; (G.runUnlocks || (G.runUnlocks = [])).push(k); msg = `${TOWERS[k].name} unlocked for this run`; Hooks.onUnlock(k); break; }
+    case 'bribe': G.bossBribe = 1; break;
+    case 'beacon': G.placing = 'beacon'; msg = 'Tap an empty tile to plant the Power Node'; break;
+    case 'crate': for (const k of ABIL_ORDER) G.charges[k] = (G.charges[k] || 0) + 1; break;
+    case 'tokens': G.tokens += 2; break;
+    case 'starmap': G.geneFit = {}; G.geneExp = {}; if (G.assault && G.assault.state === 'warn') { G.assault = null; G.refit = false; } if (G.assaultNext != null) G.assaultNext += 3; break;
+    case 'mutagen': for (const t of G.towers) { t.affixes.push(rollAffix(t)); t.s = towerStats(t); } recomputeAuras(); break;
+    case 'medal': { const t = topTower(); if (!t) return null; grantVxp(t, Math.max(0, vetThreshold(t.rank + 1) - t.vxp)); msg = `${towerLabel(t)} is now Veteran ${roman(t.rank)}`; break; }
+    case 'recharge': G.odUsed = 0; G.odToldAt = 0; break;
+    default: return null;
+  }
+  G.credits -= price; M.bought.push(id); M.spent = (M.spent || 0) + price; G.stats.market = (G.stats.market || 0) + 1;
+  rlog('market', { id, price });
+  Hooks.sfx('cash'); Hooks.fx('cash', {});
+  return msg;
+}
+// Node Beacon: the tile becomes a Power Node (towers there draw no power and hit harder)
+function marketPlaceNode(x, y) {
+  if (G.placing !== 'beacon' || !inRegion(x, y, G.region) || G.map.tiles[tIdx(x, y)] !== 0 || isNode(x, y)) return false;
+  if (Math.abs(x - G.map.core.x) + Math.abs(y - G.map.core.y) < 2) return false;
+  G.placing = null; setNodes(G.nodes.concat([{ x, y }])); G.market.beacons = (G.market.beacons || 0) + 1; G.mapRev = (G.mapRev || 0) + 1;
+  for (const t of G.towers) t.s = towerStats(t); recomputeAuras();
+  Hooks.fx('upgrade', { x: x + 0.5, y: y + 0.5, col: '#6ae2ff' }); Hooks.sfx('upgrade', {});
+  return true;
+}
 // a checkpoint is due after this wave: it waits for the field to clear first
 const cpPending = () => !!(G.cpDue && G.cpDue === G.wave + 1 && !G.checkpoint);
 function callEarly() {
@@ -3050,8 +3158,10 @@ function updateWaves(dt) {
       Hooks.sfx('milestone'); Hooks.onCheckpoint(G.checkpoint);
       return;
     }
-    G.next -= dt;
-    if (G.next <= 0) startWave();
+    // v4.4: while a boss is still walking, the swarm hangs back: the countdown runs at a third speed, for up to 45 s (BOSS_HOLD)
+    const bossUp = G.enemies.some(e => e.boss && !e.gen && !e.dead);
+    if (bossUp && (G.bossHold = (G.bossHold || 0) + dt) < BOSS_HOLD) G.next -= dt / 3; else G.next -= dt;
+    if (G.next <= 0) { G.bossHold = 0; startWave(); }
     return;
   }
   G.spawnClock += dt;
@@ -3213,14 +3323,17 @@ function spawnEnemy(type, q) {
   }
   lanePos(e.L, e.d, e);
   G.enemies.push(e);
-  if (fly) lure(e);
+  if (fly && !q.pirate) lure(e); // pirates fly their own course (spawnThief marks them); Snare Beacons ignore them
   if (e.elite.length) Hooks.fx('elite', { x: e.x, y: e.y });
   return e;
 }
 // v2.2 boss health: the larger of a fixed curve and the defence's recent peak damage output (G.power) times
 // BOSS_SECS(w). The fixed curve keeps bosses meaningful for weak builds; the power part stops strong builds melting them.
-const BOSS_HPX = [[10, 3], [20, 3.5], [40, 3], [60, 2]];
+// v4.4: the early floor was ×3/×3.5 and ignored firepower, so fresh profiles lost 7 runs in 12 to the Wave 10–20 boss (a breach is lethal). Lowered.
+const BOSS_HPX = [[10, ENVN('BHX10', 2)], [20, ENVN('BHX20', 2.5)], [40, 3], [60, 2]];
 const bossHpX = w => { const P = BOSS_HPX; if (w <= P[0][0]) return P[0][1]; for (let i = 1; i < P.length; i++) if (w <= P[i][0]) { const [a, va] = P[i - 1], [b, vb] = P[i]; return va + (vb - va) * (w - a) / (b - a); } return P[P.length - 1][1]; };
+// the firepower bosses and assaults are sized to: half the stat potential at least, the measured peak at most twice it
+function bossFire() { const pot = potentialDps(); return Math.max(pot * 0.5, Math.min(G.power || 0, pot * 2)); }
 // seconds of your real firepower a boss should soak. v3.1: firepower = the larger of measured peak (G.power, accurate late)
 // and half the stat-based potential (potentialDps, accurate early when small waves never let towers fire flat out)
 // v4.1: a breach ends the run, so bosses carry less health than in 4.0 (36/30 s): ×0.65 before Wave 45, ×0.8 after (BSEC/BSEC2 for tests)
@@ -3230,8 +3343,31 @@ const BOSS_PHASES = [0.66, 0.33];
 // and a boss gets likelier the longer it's been away; the last two can't repeat.
 const BOSS_FROM = { behemoth: 10, queen: 10, wraith: 15, overmind: 20, titan: 30, cat: 10, gloop: 10, duck: 10, whale: 20, fsm: 20 };
 function bossFrom(B) { return B.from || BOSS_FROM[B.id] || 10; }
+// ---------- v4.4 Most Wanted ----------
+// One boss per run gets a poster: a mutation (Colossal, Twin, Hasted, Armored, Spectral, Loaded) and a bounty. It is announced at the start,
+// shows as a chip between waves, and lands on the first boss wave at least ten waves out (never before Wave 20).
+function planWanted() {
+  const r = G.r, w = Math.max(20, Math.ceil((G.startWave + 10) / 10) * 10);
+  const pool = BOSSES.filter(B => bossFrom(B) <= w && !(G.af && G.af.oddAll && !B.odd));
+  const B = pick(r, pool), M = pick(r, WANTED_MODS);
+  G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w * (G.CH.cr || 1)) };
+  rlog('wanted', { boss: B.id, mod: M.id, w });
+}
+function wantedMod(e) { return e.wanted ? WANTED_MODS.find(m => m.id === e.wanted) : null; }
+function claimBounty(e) {
+  const Wd = G.wanted, M = wantedMod(e); if (!Wd || !M) return;
+  // twins: the bounty comes with the second kill
+  if (M.twins && G.enemies.some(o => o !== e && !o.dead && o.wanted)) { Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: 'my twin will avenge me' }); return; }
+  const cr = Wd.bounty * (M.loaded ? 2 : 1);
+  G.credits += cr; G.legendQueue++; Wd.done = 1; G.stats.bounty = Wd.name;
+  if (M.loaded) { const c = { x: Math.round(e.x - 0.5), y: Math.round(e.y - 0.5), t: CACHE_LIFE * 2, id: G.eid++, kind: 'gold' }; if (inRegion(c.x, c.y, G.region) && G.map.tiles[tIdx(c.x, c.y)] !== 2 && !G.towerAt[tIdx(c.x, c.y)]) { (G.caches || (G.caches = [])).push(c); Hooks.fx('cache', { x: c.x + 0.5, y: c.y + 0.5, kind: 'gold' }); } }
+  rlog('bounty', { boss: e.boss, mod: M.id, cr });
+  Hooks.toast('BOUNTY CLAIMED', `${Wd.name} brought in: +${fmt(cr)} credits, your next tower rolls a Legendary${M.loaded ? ", and the Captain's Chest it was carrying" : ''}`, '#ffd84a', true);
+  Hooks.sfx('levelup'); Hooks.fx('cash', {});
+}
 function nextBoss(w, r) {
   const H = G.bossHist || (G.bossHist = {}), recent = G.bossRecent || (G.bossRecent = []);
+  if (G.wanted && !G.wanted.done && G.wanted.w === w) { const B = BOSSES.find(b => b.id === G.wanted.boss); H[B.id] = w; recent.push(B.id); if (recent.length > 2) recent.shift(); return B; }
   let ok = BOSSES.filter(B => bossFrom(B) <= Math.max(10, w) && (!G.af.oddAll || B.odd));
   if (ok.length > 3) ok = ok.filter(B => !recent.includes(B.id));
   const wt = ok.map(B => H[B.id] === undefined ? 4 : Math.min(4, 0.5 + (w - H[B.id]) / 20));
@@ -3243,11 +3379,16 @@ function nextBoss(w, r) {
 function spawnBoss(q) {
   const B = BOSSES.find(b => b.id === q.boss), w = G.wave;
   const lane = q.lane, gen = q.gen || 0;
-  const L = q.L || (B.fly ? lane.fly : lane);
+  // v4.4: flying bosses skim the road instead of cutting straight to the core. The straight line often crossed no tower at all,
+  // and with a lethal breach that was a coin flip on the map, not a fight (3 of 12 fresh runs died to the Wave 10 Hive Queen).
+  // They still fly: Flame, Gravity Well and ice jams can't touch them, and Snare Beacons don't lure them.
+  const L = q.L || lane;
   const base = 30 * B.hp * q.hpm * bossHpX(w) * (1 + Math.floor((w - 1) / 50) * 0.5);
-  // flying bosses take the short line straight into your densest fire, so they get 30% more
-  const fire = Math.max(G.power || 0, potentialDps() * 0.5);
-  const hp = q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (B.fly ? 1.3 : 1) * (1 + ((G.af && G.af.bossHP) || 0));
+  // v4.4: measured power is capped at twice the stat-based potential. The peak came from crowd damage (splash, Collapse's
+  // %-of-max-HP, chain combos) that a lone boss never takes; one Wave 40 whale was sized at 18M HP and could not be killed.
+  // Flying bosses no longer carry +30%: their straight line is usually *away* from the road towers, not into them.
+  const fire = bossFire();
+  const hp = q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (1 + ((G.af && G.af.bossHP) || 0));
   const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
     armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 1.15, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
@@ -3255,6 +3396,13 @@ function spawnBoss(q) {
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2, phase: 0, phaseT: 0 };
   if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
   if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.85 : 0.6; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
+  // Most Wanted: the poster's boss gets its mutation (twins: the second copy follows 3 s later)
+  if (!gen && G.wanted && !G.wanted.done && G.wanted.boss === B.id && G.wanted.w === w) {
+    const M = WANTED_MODS.find(m => m.id === G.wanted.mod);
+    e.wanted = M.id; e.hp = e.maxHp *= M.hp || 1; e.spd *= M.spd || 1; e.size *= M.size || 1; if (M.armorAll) e.armorAll = Math.max(e.armorAll, M.armorAll); if (M.cloak) e.wcloak = 1; if (M.loaded) e.wantedLoaded = 1;
+    if (M.twins && !q.twin) setTimeoutSim(3, () => { const t2 = spawnBoss(Object.assign({}, q, { twin: 1 })); if (t2) Hooks.fx('say', { x: t2.x, y: t2.y - 1, t: 'two for one' }); });
+  }
+  if (G.bossBribe && !gen) { G.bossBribe = 0; e.hp = e.maxHp * 0.7; e.bribed = 1; Hooks.fx('say', { x: e.x, y: e.y - 1, t: B.id === 'auditor' ? 'Donation noted.' : '*pockets the bribe*' }); }
   if (B.id === 'cat') e.timer2 = 9;
   if (B.id === 'worm') { e.gut = []; e.timer = 6; }
   if (B.id === 'auditor') { e.audited = 0; e.timer2 = 4; }
@@ -3268,12 +3416,11 @@ function spawnBoss(q) {
   lanePos(e.L, e.d, e);
   G.enemies.push(e);
   if (!G.bossAlive || G.bossAlive.dead) G.bossAlive = e;
-  if (e.fly) lure(e);
   if (gen) return e;
   const ttl = B.titles ? B.titles[Math.floor(G.r() * B.titles.length)] : null;
   if (ttl) { e.bossTitle = ttl; Hooks.fx('say', { x: e.x, y: e.y, t: B.id === 'cat' ? 'mrrp.' : B.id === 'duck' ? 'QUACK' : B.id === 'whale' ? 'HELLOOOO' : B.id === 'fsm' ? 'ramen.' : 'blorp' }); }
   Hooks.bossIntro(e, B);
-  rlog('boss', { id: B.id, hp: Math.round(e.maxHp), fire: Math.round(Math.max(G.power || 0, potentialDps() * 0.5)) });
+  rlog('boss', { id: B.id, hp: Math.round(e.maxHp), fire: Math.round(bossFire()) });
   if (ttl) Hooks.log(`${B.name}, ${ttl}: ${B.desc}`, '#ff4d6a');
   Hooks.log(`${B.name} incoming`, '#ff4d6a');
   Hooks.sfx('boss');
@@ -3353,7 +3500,8 @@ function updateEnemies(dt) {
       e.cloakT -= dt;
       if (e.cloakT <= 0) { e.cloaked = !e.cloaked; e.cloakT = e.cloaked ? 2 : 3.5; }
     }
-    if (e.boss === 'wraith' && e.cloakT > 0) { e.cloakT -= dt; if (e.cloakT <= 0) e.cloaked = false; }
+    if ((e.boss === 'wraith' || e.wcloak) && e.cloakT > 0) { e.cloakT -= dt; if (e.cloakT <= 0) e.cloaked = false; }
+    if (e.wcloak && !e.cloaked) { e.wcT = (e.wcT === undefined ? 7 : e.wcT) - dt; if (e.wcT <= 0) { e.wcT = 7; e.cloaked = true; e.cloakT = 2; Hooks.fx('blink', { x: e.x, y: e.y }); } }
     // behaviors
     e.timer -= dt;
     if (e.type === 'medic' && e.timer <= 0) {
@@ -3407,8 +3555,14 @@ function updateEnemies(dt) {
       if (e.d >= e.L.len - 0.05) { e.dead = true; if (P.got && P.cache) Hooks.log('Pirates escaped with the salvage', '#ff4d6a'); }
       continue;
     }
+    // Red Alert (v4.4): a boss closing on the core is called out once, and the core goes to Last Stand against it
+    if (e.boss && !e.gen && !e.redAlert && !e.dead) {
+      const rem = e.L.len - e.d;
+      if (rem <= RED_ALERT.tiles) { e.redAlert = 1; rlog('redAlert', { id: e.boss, hp: +(e.hp / e.maxHp).toFixed(2) }); Hooks.toast('RED ALERT', `${e.bossName} is ${Math.max(1, Math.ceil(rem))} tiles from the core. Last Stand: core shells hit it ×${RED_ALERT.coreDmg}. Stasis, Strike and Overcharge now`, '#ff4d6a', true); Hooks.sfx('bosswarn'); Hooks.fx('shake', { v: 6 }); Hooks.log(`Red Alert: ${e.bossName} at the gate`, '#ff4d6a'); }
+    }
     if (e.d >= e.L.len - 0.05) leak(e);
   }
+  G.redAlert = G.enemies.some(e => e.boss && e.redAlert && !e.dead);
   if (G.stasisT > 0) G.stasisT -= dt;
   if (G.slime && G.slime.length) { for (const p of G.slime) p.t -= dt; G.slime = G.slime.filter(p => p.t > 0); }
   G.enemies = G.enemies.filter(e => !e.dead);
@@ -3443,10 +3597,12 @@ function swallowTower(e, t) {
   Hooks.fx('swallow', { x1: t.cx, y1: t.cy, x2: e.x, y2: e.y }); Hooks.sfx('crack');
 }
 function wormSurface(e) {
-  const frac = Math.min(0.75, e.d / e.L.len + 0.04 + G.r() * 0.05); // never pops up right on top of the core
+  // v4.4: smaller hops (3–6% of the road, was 4–9%) and it never surfaces past 70%: with a lethal breach the old worm was the deadliest boss by far
+  const frac = Math.min(0.7, e.d / e.L.len + 0.03 + G.r() * 0.03);
   const lanes = G.map.lanes.filter(L => !L.openWave);
   if (lanes.length > 1 && G.r() < 0.35) e.L = pick(G.r, lanes);
-  e.d = Math.max(e.d, frac * e.L.len); lanePos(e.L, e.d, e);
+  // the same share of the road on whichever lane it surfaces in (keeping the old distance on a shorter lane dropped it into the core)
+  e.d = frac * e.L.len; e.seg = 0; lanePos(e.L, e.d, e);
   Hooks.fx('burrow', { x: e.x, y: e.y }); Hooks.fx('shake', { v: 5 });
   const n = e.frenzy ? 2 : 1;
   const near = G.towers.filter(t => dist2(t.cx, t.cy, e.x, e.y) <= 3.2 * 3.2).sort((a, b) => dist2(a.cx, a.cy, e.x, e.y) - dist2(b.cx, b.cy, e.x, e.y));
@@ -3622,6 +3778,7 @@ function hit(e, dmg, el, src, o) {
     if (src.isolated && M.loneWolf) mult *= 1 + M.loneWolf;
   }
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
+  if (src === G.core && e.redAlert && e.boss) mult *= RED_ALERT.coreDmg; // Last Stand: the core unloads on a boss at its gate
   let amt = dmg * mult;
   if (e.shield > 0) {
     const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
@@ -3815,6 +3972,7 @@ function kill(e, src, o) {
   // Gloop's offspring are part of one boss: the reward comes when the last of the family dies
   if (e.boss === 'worm' && e.gut && e.gut.length) wormRelease(e);
   if (e.boss === 'auditor' && e.audited > 0) { const back = Math.round(e.audited * 1.25); G.credits += back; Hooks.toast('TAX REFUND', `+${back} credits, with 25% interest`, '#59f0b4', true); Hooks.fx('num', { x: e.x, y: e.y - 0.5, v: back, combo: 'REFUND', col: '#59f0b4' }); e.audited = 0; }
+  if (e.wanted && !e.gen) claimBounty(e);
   if (e.boss && !e.gen) rlog('bossDown', { id: e.boss, ph: e.phase || 0, road: +(e.d / e.L.len).toFixed(2) });
   const bossDown = e.boss && (e.boss !== 'gloop' || ((e.gen || 0) >= 2 && !G.enemies.some(o => o !== e && !o.dead && o.boss === 'gloop')));
   if (bossDown) {
@@ -4279,11 +4437,11 @@ function updateCore(dt) {
   if (c.sinceHit > 4 && c.shield < c.smax) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
   const s = coreStats();
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
-  c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1);
+  c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1) * (G.redAlert ? RED_ALERT.coreRate : 1);
   if (c.cd > 0) return;
   // last line of defence: shells go to whatever is closest to reaching the core along its route, anywhere in range
   const r2 = s.range * s.range, near = [];
-  for (const e of G.enemies) if (enemyTargetable(e)) { const d = dist2(e.x, e.y, c.x, c.y); if (d < r2) near.push([e.fly || !e.L ? Math.sqrt(d) : e.L.len - e.d, e]); }
+  for (const e of G.enemies) if (enemyTargetable(e)) { const d = dist2(e.x, e.y, c.x, c.y); if (d < r2) near.push([(e.fly && !e.boss) || !e.L ? Math.sqrt(d) : e.L.len - e.d, e]); }
   if (!near.length) { c.cd = 0; return; }
   c.cd += 1;
   near.sort((a, b) => a[0] - b[0]);
@@ -4488,7 +4646,7 @@ function snapshotRun(waveNum) {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
-    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
+    anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -4525,6 +4683,10 @@ function resumeRun(S) {
   if (S.stats) G.stats = S.stats;
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
+  if (G.daily) { G.laws = []; G.novaN = 0; } // dailies never carry Cosmic Laws, resumed or not
+  G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
+  // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
+  if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
   G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
@@ -5453,6 +5615,7 @@ const Render = (() => {
         b.drawImage(sg, Math.round(o.x * TILE - so), Math.round(o.y * TILE - so + wig)); }
     }
     if (e.boss) s = scaledSpr('B:' + e.boss, bossSprite(e.boss), BOSS_SCALE); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
+    if (e.wanted === 'colossal') s = scaledSpr('W:' + e.boss, s, 1.5);
     if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
     if (e.genes && e.genes.includes('bulk')) s = scaledSpr('bk:' + e.type, s, 1.3);
     if (e.mite) s = scaledSpr('mite', s, 0.7);
@@ -5472,6 +5635,7 @@ const Render = (() => {
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
     if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
+    if (e.wanted && !cloaked) { b.strokeStyle = hexA('#ffd84a', 0.6 + 0.35 * Math.sin(frame / 5)); b.lineWidth = 2; b.setLineDash([5, 4]); b.lineDashOffset = frame / 2; b.beginPath(); b.arc(X, y, hw + 8, 0, 6.283); b.stroke(); b.setLineDash([]); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
     if (e.elite.length && !cloaked) {
       const ec = ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, r = hw + 4;
@@ -5805,6 +5969,8 @@ const Render = (() => {
       for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const px = x + dx * w, py = y + dy * w, sx2 = dx ? -1 : 1, sy2 = dy ? -1 : 1; c.moveTo(px, py + sy2 * L); c.lineTo(px, py); c.lineTo(px + sx2 * L, py); }
       c.stroke();
     }
+    // Node Beacon placement (Black Market): a cyan frame says "tap a tile"
+    if (G.placing === 'beacon') { c.setLineDash([8, 6]); c.lineDashOffset = -frame / 2; c.lineWidth = 3; c.strokeStyle = hexA('#6ae2ff', 0.55 + 0.35 * Math.sin(frame / 5)); c.strokeRect(ox + 1.5, oy + 1.5, DW - 3, DH - 3); c.setLineDash([]); }
     // core relocation: reach circle, valid tiles, and the planned roads
     if (G.reloc) {
       ringS(G.core.x * TILE, G.core.y * TILE, RELOCATE_RADIUS * TILE, PAL.core, 0.55, 1.5, 0.025);
@@ -5848,6 +6014,11 @@ const Render = (() => {
     }
     c.restore();
 
+    if (G.redAlert) { // a boss at the gate: the field pulses red and the frame throbs (v4.4 Red Alert)
+      const k = 0.5 + 0.5 * Math.sin(frame / 4);
+      c.fillStyle = hexA('#ff3355', 0.03 + 0.05 * k); c.fillRect(ox, oy, DW, DH);
+      c.strokeStyle = hexA('#ff3355', 0.3 + 0.5 * k); c.lineWidth = 5; c.strokeRect(ox + 2.5, oy + 2.5, DW - 5, DH - 5);
+    }
     if (G.stasisT > 0) { c.fillStyle = 'rgba(106,226,255,0.08)'; c.fillRect(ox, oy, DW, DH); }
     if (G.overclockT > 0 && frame % 10 < 5) { c.fillStyle = 'rgba(255,225,77,0.04)'; c.fillRect(ox, oy, DW, DH); }
     if (dt <= 0) flashes = [];
@@ -5870,8 +6041,8 @@ const Render = (() => {
     if (G.bossAlive && !G.bossAlive.dead) {
       const e = G.bossAlive, bw = Math.min(260, W * 0.4), bx = (W - bw) / 2, by = 6;
       c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(bx - 4, by - 2, bw + 8, e.gen || e.boss === 'gloop' ? 22 : 31);
-      c.font = '10px Silkscreen, monospace'; c.fillStyle = '#ff9aac'; c.textAlign = 'left';
-      c.fillText(e.bossName.toUpperCase() + (e.bossTitle ? ' · ' + e.bossTitle.toUpperCase() : '') + (e.elite.length ? ' · ' + e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).name).join(' · ') : ''), bx, by + 5);
+      c.font = '10px Silkscreen, monospace'; c.fillStyle = e.redAlert && frame % 10 < 5 ? '#ffffff' : '#ff9aac'; c.textAlign = 'left';
+      c.fillText((e.redAlert ? 'RED ALERT · ' : '') + e.bossName.toUpperCase() + (e.bossTitle ? ' · ' + e.bossTitle.toUpperCase() : '') + (e.elite.length ? ' · ' + e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).name).join(' · ') : ''), bx, by + 5);
       c.fillStyle = '#3a0a18'; c.fillRect(bx, by + 12, bw, 5);
       c.fillStyle = e.phaseT > 0 && frame % 8 < 4 ? '#ffffff' : '#ff3355'; c.fillRect(bx, by + 12, bw * Math.max(0, e.hp / e.maxHp), 5);
       if (!e.gen && e.boss !== 'gloop') { for (const th of BOSS_PHASES) { c.fillStyle = '#07080f'; c.fillRect(Math.round(bx + bw * th) - 1, by + 11, 2, 7); }
@@ -6148,7 +6319,7 @@ const Save = (() => {
 
 // ---------------- UI ----------------
 const UI = (() => {
-  let screen = 'hangar', panel = null, pick = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null;
+  let screen = 'hangar', panel = null, pick = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null, modalFrom = null;
   let hudClock = 0, cloudOk = null, setup = { startWave: 1, chaos: 1, seed: 0, map: null, mode: 'std' };
   let confirmAbandon = false, confirmReset = false, confirmWebReset = false;
   const stage = () => $('#stage');
@@ -6274,6 +6445,7 @@ const UI = (() => {
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave;
+    if (!snap && G.wanted) setTimeout(() => { if (G && screen === 'game' && G.wanted) wantedPoster(); }, 2600);
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
@@ -6286,6 +6458,12 @@ const UI = (() => {
     if (!PROF.seenHelp) { PROF.seenHelp = true; openHelp(); }
   }
 
+  // v4.4 Most Wanted: the run's bounty poster
+  function wantedPoster() {
+    const Wd = G && G.wanted; if (!Wd) return;
+    const M = WANTED_MODS.find(m => m.id === Wd.mod);
+    toast('MOST WANTED', `${Wd.name} · Wave ${Wd.w} · wanted for ${Wd.crime}. ${M ? M.desc + '. ' : ''}Reward: ${fmt(Wd.bounty)} credits and a Legendary schematic${M && M.loaded ? ' (double, plus a Captain\'s Chest)' : ''}`, '#ffd84a', true);
+  }
   // ---------- HUD ----------
   // Overdrive from the rail: first tap arms it for 3 s, second tap releases
   let odArm = false, odArmT = null;
@@ -6353,6 +6531,7 @@ const UI = (() => {
     if (G.spawningDone && G.prep) {
       const P = G.prep;
       if (P.boss) chips.push(`<span class="evchip next bad">Boss ${P.boss.odd ? "???" : esc(P.boss.name)}</span>`);
+      if (G.wanted && !G.wanted.done && G.wanted.w > G.wave) chips.push(`<span class="evchip wanted" data-wanted="1">Wanted · W${G.wanted.w}</span>`);
       for (const [g, v] of Object.entries(P.genes || {}).filter(([g, v]) => v >= 0.2).sort((a, b) => b[1] - a[1]).slice(0, 3))
         chips.push(`<span class="evchip gene" data-gene="${g}" style="--c:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</span>`);
       chips.push(`<span class="evchip next">Next ${P.total}${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
@@ -6375,7 +6554,7 @@ const UI = (() => {
       if (G.mods.ks.circuit) { const ch = G.chains || [], big = ch.reduce((a, c) => Math.max(a, c.m.length), 0); parts.push(`<span class="circ">Chains <b>${ch.length}</b><i>longest ${big}${big >= 4 ? ' · lightning' : ' · need 4'}</i></span>`); }
       if (G.mods.ks.glacier) { const j = G.enemies.filter(e => e.jammed).length; parts.push(`<span class="ice">Ice jam <b>${j}</b><i>held</i></span>`); }
       if (G.mods.ks.horizon) parts.push(`<span class="hor">Gravity wells <b>${(G.wells || []).length}</b></span>`);
-      if (G.mods.ks.artisan) { const at = G.towers.filter(t => canOvercharge(t)), v = at.filter(t => t.rank > 0).length; parts.push(`<span class="art">Veterans <b>${v}/${at.length}</b><i>rookies −20%</i></span>`); }
+      if (G.mods.ks.artisan) { const at = G.towers.filter(t => canOvercharge(t)), v = at.filter(t => t.rank > 0).length; parts.push(`<span class="art">Veterans <b>${v}/${at.length}</b><i>rookies −25%</i></span>`); }
       if (G.mods.ks.gambler) parts.push(`<span class="gam">Gambler <b>×${num1(G.scoreMult || 1)}</b><i>score</i></span>`);
       const h = parts.join(''); if (db && db.dataset.h !== h) { db.innerHTML = h; db.dataset.h = h; db.hidden = !h; }
     }
@@ -6387,7 +6566,9 @@ const UI = (() => {
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
     const html = chips.join('');
-    const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c); }
+    const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c);
+      // spare power during a wave is wasted: the counter pulses, and a tap puts it on your best tower (Nic never used Overcharge)
+      pwEl.parentNode.classList.toggle('spare', c - u >= 1 && !G.spawningDone && G.wave >= 4 && !!topTower()); }
     const ch = $('#chips');
     if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
     if (hudFull) renderDps();
@@ -6407,8 +6588,8 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP)/;
-  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
+  const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force) {
@@ -6470,7 +6651,7 @@ const UI = (() => {
   function bossIntro(e, B) {
     const box = $('#bossIntro'); if (!box) return;
     const first = !PROF.codex.bosses[B.id];
-    box.querySelector('em').textContent = first ? 'NEW BOSS · FIRST ENCOUNTER' : B.odd ? 'BOSS?!' : 'BOSS INCOMING';
+    box.querySelector('em').textContent = e.wanted ? `MOST WANTED · ${(WANTED_MODS.find(m => m.id === e.wanted) || { name: '' }).name.toUpperCase()} · ${fmt(G.wanted ? G.wanted.bounty * (e.wantedLoaded ? 2 : 1) : 0)} BOUNTY` : first ? 'NEW BOSS · FIRST ENCOUNTER' : B.odd ? 'BOSS?!' : 'BOSS INCOMING';
     box.querySelector('h3').textContent = B.name;
     box.querySelector('.ttl').textContent = e.bossTitle || '';
     box.querySelector('.desc').textContent = B.desc;
@@ -6577,7 +6758,7 @@ const UI = (() => {
       ['Supernova', 'Prestige. Reset your level and web for a Remnant, a Cosmic Law, and permanent score and XP bonuses.'],
       ['Cosmic Law', 'Permanent rule change chosen at a Supernova. Adds score.'],
       ['Recalibration', 'Recalibration tokens pay for respecs during a run.'], ['Legendary', 'Highest affix rarity with a unique effect.'], ['Curse', 'A negative affix.'],
-      ['Boss', 'Arrives every 10 waves.'], ['Snare Beacon', 'Pulls passing fliers off their straight line, through its net, then on to the core. Catches a set number per wave.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
+      ['Boss', 'Arrives every 10 waves, on the longest road.'], ['Snare Beacon', 'Pulls passing fliers off their straight line, through its net, then on to the core. Catches a set number per wave. Bosses are too big to lure.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
     ];
     const named = [
       ...Object.values(TOWERS).map(T => [T.name, T.blurb]),
@@ -6591,6 +6772,7 @@ const UI = (() => {
       ...Object.values(STORMS).map(S => [S.name, `Storm. ${S.desc}.`]),
       ...EVENTS.map(E => [E.name, `Wave event. ${E.desc}.`]),
       ...GENE_IDS.map(g => [GENES[g].name, `Evolved trait. ${GENES[g].desc}. Counter: ${GENES[g].counter}.`]),
+      ...MARKET_ITEMS.map(I => [I.name, `Black Market item. ${I.desc}.`]),
       ['Power', `Your grid. Every tower draws 1 power (towers on Power Nodes draw none); Overcharge draws more. Capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves.`],
       ['Overcharge', `Spend spare power on a tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Change it any time, even mid-wave.`],
       ['Plating', 'Blunts every hit except piercing fire: Rail Lance, Void Lens beams, Burn and other damage over time, and abilities.'],
@@ -6718,10 +6900,18 @@ const UI = (() => {
   function cashPanelHTML() {
     const r = cashRate() * G.CH.score * (G.scoreMult || 1), cr = Math.floor(G.credits);
     const opt = (f, label) => { const amt = Math.floor(cr * f); return `<button class="btn ${f === 1 ? 'primary' : ''}" data-act="cash" data-v="${f}" ${amt > 0 ? '' : 'disabled'}>${label} · ${fmt(amt)}<small>+${fmt(amt * r)} score</small></button>`; };
-    return `<div class="ph"><div class="pt"><b>Cash In</b><small>Rate rises every wave</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
-      <div class="cashrate"><b>${num1(r)}</b><span>score per credit</span></div>
+    return `<div class="ph"><div class="pt"><b>Exchange</b><small>Cash In and the Black Market</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
+      ${marketHTML()}
+      <div class="lbl">Cash In · ${num1(r)} score per credit</div>
       <div class="cashopts">${opt(0.25, '25%')}${opt(0.5, '50%')}${opt(1, 'All')}</div>
       ${G.stats.cashed ? `<div class="sts">Cashed in this run: ${fmt(G.stats.cashed)} credits</div>` : ''}`;
+  }
+  // v4.4 Black Market: a pirate trader's three items, restocked after every boss wave
+  function marketHTML() {
+    const M = marketEnsure(), nextW = (M.n + 1) * MARKET.refresh;
+    const rows = M.stock.map(id => { const I = MARKET_ITEMS.find(x => x.id === id), got = M.bought.includes(id), ok = marketOk(I), p = marketPrice(I);
+      return `<button class="mkt ${got ? 'sold' : ''}" data-act="buy" data-v="${id}" ${got || !ok ? 'disabled' : costBtn(p)} style="--c:${I.col}"><b>${esc(I.name)}</b><span>${tipify(I.desc)}</span><em>${got ? 'Sold' : !ok ? 'Unavailable' : fmt(p)}</em></button>`; }).join('');
+    return `<div class="lbl">Black Market · <i class="mline">"${esc(M.line)}"</i></div><div class="mktlist">${rows || '<p class="note">The trader has nothing left.</p>'}</div><p class="note">New stock at Wave ${nextW}. Prices rise with the wave.${M.spent ? ` Spent here: ${fmt(M.spent)}.` : ''}</p>`;
   }
   function liveRefreshPanel() {
     if (!panel || !G) return;
@@ -6783,6 +6973,14 @@ const UI = (() => {
     }
     if (panel.kind === 'cash') {
       if (act === 'cash') { const got = cashIn(Math.floor(G.credits * +b.dataset.v)); if (got) toast('CASHED IN', `+${fmt(got)} score`, '#ffb03a'); else SFX.play('deny'); updateHud(); panel.sig = null; liveRefreshPanel(); }
+      else if (act === 'buy') {
+        const m = marketBuy(b.dataset.v);
+        if (!m) { SFX.play('deny'); return; }
+        const I = MARKET_ITEMS.find(x => x.id === b.dataset.v);
+        if (G.placing === 'beacon') { G.placingRefund = marketPrice(I); closePanel(); toast('NODE BEACON', m + '. Tap the core to cancel', '#6ae2ff', true); }
+        else { toast('BLACK MARKET', `${I.name}: ${m}`, I.col); panel.sig = null; liveRefreshPanel(); }
+        updateHud(); Save.save();
+      }
       return;
     }
     if (panel.kind === 'core') {
@@ -6887,6 +7085,12 @@ const UI = (() => {
       return;
     }
     const tx = Math.floor(p.x), ty = Math.floor(p.y);
+    if (G.placing === 'beacon') {
+      if (tx === G.map.core.x && ty === G.map.core.y) { G.placing = null; G.credits += G.placingRefund || 0; G.placingRefund = 0; if (G.market) { G.market.bought = G.market.bought.filter(x => x !== 'beacon'); G.market.spent = Math.max(0, (G.market.spent || 0) - marketPrice(MARKET_ITEMS.find(x => x.id === 'beacon'))); } SFX.play('sell', {}); toast('NODE BEACON', 'Cancelled and refunded', '#6ae2ff', true); updateHud(); return; }
+      if (marketPlaceNode(tx, ty)) { SFX.play('ui'); G.placingRefund = 0; toast('POWER NODE PLANTED', 'Towers built here draw no power and hit harder', '#6ae2ff'); updateHud(); }
+      else { SFX.play('deny'); toast('NODE BEACON', 'Needs an empty ground tile inside the sector. Tap the core to cancel', '#ff4d6a', true); }
+      return;
+    }
     if (G.reloc) {
       if (!G.reloc.cands.has(tIdx(tx, ty))) { SFX.play('deny'); return; }
       const P = planRelocation(tx, ty);
@@ -6927,7 +7131,7 @@ const UI = (() => {
     hydrateIcons(m);
   }
   function closeModal() {
-    $('#modal').hidden = true; $('#modal').innerHTML = ''; modalOpen = null; confirmAbandon = false; confirmReset = false;
+    $('#modal').hidden = true; $('#modal').innerHTML = ''; modalOpen = null; modalFrom = null; confirmAbandon = false; confirmReset = false;
     document.body.classList.remove('modal-open');
     flushToasts();
   }
@@ -6956,7 +7160,7 @@ const UI = (() => {
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
-      elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
+      bounty: G.stats.bounty || null, elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
   }
@@ -6970,6 +7174,7 @@ const UI = (() => {
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
       ${R.peakGene ? `<p class="note hl" style="color:${GENES[R.peakGene.g].col}">${tipify(`Evolution peak: ${GENES[R.peakGene.g].name} reached ${Math.round(R.peakGene.v * 100)}% of the swarm at Wave ${R.peakGene.w}`)}${R.strain ? ` · Signature strain: <b>${esc(R.strain.name)}</b> ×${fmt(R.strain.n)}` : ''}${R.pre ? ` · Arrived adapted: ${esc(R.pre.join(', '))}` : ''}</p>` : ''}
       ${R.assaults && R.assaults.list.length ? `<p class="note hl">${tipify(`Strain Assaults: ${R.assaults.won} broken, ${R.assaults.lost} entrenched`)}${R.assaults.list.slice(-3).map(a => ` · W${a.w} ${esc(a.name)} ${a.won ? '✓' : '✗'}`).join('')}</p>` : ''}
+      ${R.bounty ? `<p class="note hl" style="color:#ffd84a">Bounty claimed: ${esc(R.bounty)}</p>` : ''}
       ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
@@ -7123,7 +7328,7 @@ const UI = (() => {
     { id: 'basics', name: 'Basics', rows: [
       ['Build', 'Tap an empty tile, choose a tower, then tap it again to build.'],
       ['Power', `Every tower draws 1 power. You start with ${GRID.base} and gain 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes are free. When the grid is full, the game is about making the towers you have count.`],
-      ['Overcharge', `Tap a tower to spend spare power on it: +${OVERCHARGE.dmg * 100}% Damage per point, up to ${OVERCHARGE.max}. Free to move at any time, even mid-wave.`],
+      ['Overcharge', `Tap a tower to spend spare power on it: +${OVERCHARGE.dmg * 100}% Damage per point, up to ${OVERCHARGE.max}. Free to move at any time, even mid-wave. When power sits unused during a wave, the power counter pulses: tap it to Overcharge your best tower in one go.`],
       ['Evolution', 'From Wave 8 the swarm evolves. Enemies that get furthest pass on their traits (Plating, Wings, Haste, Shell...), so whatever your defence handles worst spreads. The next-wave chips show what is spreading; tap one to see its counter, then adapt.'],
       ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
       ['Specialize', 'At LV 3, choose one of two specializations.'],
@@ -7148,7 +7353,9 @@ const UI = (() => {
       ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned 2 waves ahead.'],
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
       ['Abilities', 'Earned from score milestones. Shown on the left.'],
-      ['Bosses', 'Every 10 waves. Drop a boon and a Recalibration token.'],
+      ['Bosses', 'Every 10 waves, always on the longest road (flying bosses skim it). Drop a boon and a Recalibration token. If one reaches your core, the run ends, so watch the Red Alert.'],
+      ['Red Alert', `A boss within ${RED_ALERT.tiles} tiles of the core: sirens, the field turns red and the core goes to Last Stand, hitting it ×${RED_ALERT.coreDmg}. That is the moment for Stasis, a Strike or a burst of Overcharge.`],
+      ['Black Market', 'Tap Score to open the Exchange: Cash In, plus a pirate trader with 3 items in stock (a Legendary for your next towers, a bribe for the boss, a stolen blueprint...). Prices climb with the wave; new stock after every boss.'],
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds, free respec, and you can relocate the core. Resume fast for a bonus.'],
       ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Move the core onto one for a bigger boost. Each sector expansion reveals a new one.'],
       ['Space Pirates', "Pirate ships fly over during waves and drop salvage crates. Tap a crate before its ring runs out for credits, a charge, Entropy, score or a token. Red crates are booby-trapped: double loot, but a stowaway elite breaks loose. Boss waves bring the Captain's Chest. Leave a crate too long and a Pirate Skiff may come to steal it; shoot it down to get the loot back plus a bounty."],
@@ -7206,6 +7413,10 @@ const UI = (() => {
         ["Captain's Chest", 'Golden crate the pirate flagship drops once per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],
         ['Pirate Skiff', `From Wave 5, a crate left with under 8 seconds sometimes draws a skiff (1 in 4). It flies in, grabs the crate and escapes. Shoot it down for a bounty of 25 + 6 per wave credits and the loot. It never attacks the core.`],
         ['Salvage Cache', `Drops during waves from Wave 3 and decays in ${CACHE_LIFE}s. Tap to claim credits, an ability charge, Entropy, score or a Recalibration token.`],
+        ['Red Alert', `A boss within ${RED_ALERT.tiles} tiles of the core. The field turns red and the core goes to Last Stand: its shells deal ×${RED_ALERT.coreDmg} to that boss and it fires ×${RED_ALERT.coreRate} as fast. While a boss is on the field the next wave's countdown runs slow for up to ${BOSS_HOLD}s.`],
+        ['Black Market', `In the Exchange (tap Score). A pirate trader stocks ${MARKET.slots} items, restocked every ${MARKET.refresh} waves. Prices rise with the wave, and each item sells once per stock.`],
+        ['Node Beacon', 'Black Market item: tap an empty tile and it becomes a Power Node. Two per run.'], ['Boss Bribe', 'Black Market item: the next boss arrives at 70% health.'],
+        ['Stolen Blueprint', 'Black Market item: your next locked tower is unlocked for the rest of this run.'],
         ['Relocate Core', `At Checkpoints: move the core up to ${RELOCATE_RADIUS} tiles. Every road re-routes to reach it. The first move each run is free, then ${RELOCATE_COST} credits each.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
@@ -7350,7 +7561,7 @@ const UI = (() => {
       case 'novaR': novaFlow.remnant = b.dataset.v; openNova(); break;
       case 'novaL': novaFlow.law = b.dataset.v; openNova(); break;
       case 'novaGo': doNova(); break;
-      case 'close2': closeModal(); if (G && !G.over && screen === 'game') G.paused = false; if (screen === 'game' && G && !G.over && act === 'close2') {} break;
+      case 'close2': { const back = modalFrom; closeModal(); if (back === 'pause' && G && !G.over && screen === 'game') { openPause(); break; } if (G && !G.over && screen === 'game') G.paused = false; break; }
       case 'sw': setup.startWave = +b.dataset.v; renderSetup(); break;
       case 'ch': setup.chaos = +b.dataset.v; rerollMap(); renderSetup(); break;
       case 'reroll': rerollMap(); renderSetup(); break;
@@ -7358,10 +7569,10 @@ const UI = (() => {
       case 'launchDaily': launch(); break;
       case 'mode': setup.mode = b.dataset.v; if (setup.mode === 'std') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
-      case 'help': openHelp(); break;
+      case 'help': if (modalOpen === 'pause') modalFrom = 'pause'; openHelp(); break;
       case 'htab': openHelp(b.dataset.v); break;
       case 'dcat': dictCat = b.dataset.v; openHelp(); break;
-      case 'settings': openSettings(); break;
+      case 'settings': if (modalOpen === 'pause') modalFrom = 'pause'; openSettings(); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); abandonRun(); break;
       case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } takeBoon(o); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
@@ -7414,7 +7625,17 @@ const UI = (() => {
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
-    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#pw').parentNode.onclick = () => {
+      if (!G || G.over) return; SFX.play('ui');
+      const free = gridFree(), T = topTower();
+      if (free >= 1 && T && canOvercharge(T) && (T.oc || 0) < ocMax()) {
+        const n = Math.min(ocMax(), (T.oc || 0) + free);
+        if (setOvercharge(T, n)) { openTower(T); toast('OVERCHARGED', `${TOWERS[T.type].name}${T.name ? ` "${T.name}"` : ''} +${n}: spare power put to work. Change it any time in the tower panel`, '#59f0b4'); updateHud(); return; }
+      }
+      if (free >= 1) toast('SPARE POWER', `${free} unused. Tap a tower and raise its Overcharge: +${Math.round(OVERCHARGE.dmg * 100)}% Damage per point`, '#59f0b4');
+      else toast('POWER', `Every tower draws 1 power; Overcharge draws more. Capacity grows 1 every ${GRID.perWaves} waves, or expand the reactor from the core panel`, '#59f0b4');
+    };
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
@@ -7600,7 +7821,7 @@ const Tree = (() => {
   function open() {
     if (G && !G.over) G.wasPaused = G.paused;
     UI.closePanel();
-    $('#tree').hidden = false; open_ = true;
+    $('#tree').hidden = false; open_ = true; document.body.classList.add('webopen');
     resize();
     viewT = flatMode() ? 1 : 0;
     if (!sel || !cam) cam = DEF();
@@ -7610,7 +7831,7 @@ const Tree = (() => {
     refresh();
   }
   function close() {
-    $('#tree').hidden = true; open_ = false; sel = null; path = null; drawer = null; document.body.classList.remove('tsel');
+    $('#tree').hidden = true; open_ = false; sel = null; path = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
     UI.flushToasts();
     if (UI.screen === 'hangar') UI.renderHangar();
     Save.save();
@@ -7651,6 +7872,7 @@ const Tree = (() => {
     const r = treeBlock(id), lv = profLevel().level;
     if (r.startsWith('seal:')) { const i = +r.slice(5); return `Needs the ${DOCTRINES[i].name} seal first`; }
     if (r === 'slots') { const nx = SEAL_NEXT(lv); return `You hold ${sealsHeld()} of ${sealSlots(lv)} Doctrine seal${sealSlots(lv) > 1 ? 's' : ''}${nx ? `. Another opens at level ${nx}` : ''}. Refund one to switch`; }
+    if (r.startsWith('conflict:')) { const o = TREE.nodes[r.slice(9)]; return `Cancels out ${o ? o.name : 'another node'} you already hold: refund it first`; }
     return '';
   }
   function blockToast(id) { const m = blockMsg(id); if (m) UI.toast('DOCTRINE', m, '#ffb03a', 1); }
@@ -7684,7 +7906,7 @@ const Tree = (() => {
       case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('BUILD SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
       case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
       case 'wipe': if (inRun()) return; if (!confirmWipe) { confirmWipe = true; refresh(); return; } PROF.alloc = ['start']; confirmWipe = false; sel = null; path = null; Save.save(); refresh(); break;
-      case 'center': cam = DEF(); goal = null; break;
+      case 'center': sel = null; path = null; selStar = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
       case 'view': PROF.settings.webView = flatMode() ? '3d' : 'flat'; Save.save(); goal = Object.assign(DEF(), { yaw: flatMode() ? 0 : 0.35 }); renderRegions(); break;
       case 'profile': profOn = !profOn; renderProfile(); break;
       case 'rgn': flyTo(b.dataset.v); break;
@@ -7692,7 +7914,6 @@ const Tree = (() => {
       case 'star': { const v = b.dataset.v, n = v === 'max' ? pointsFree() : +v; if (starBuy(selStar, n)) { SFX.play('upgrade', {}); Save.save(); } refresh(); break; }
       case 'starR': if (starRefund(selStar, +b.dataset.v)) Save.save(); refresh(); break;
       case 'starX': selStar = null; refresh(); break;
-      case 'center': sel = null; path = null; selStar = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
       case 'rotL': case 'rotR': rotateOrbit(act === 'rotR' ? 1 : -1); break;
       case 'mopt': {
         const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
