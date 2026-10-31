@@ -8,6 +8,7 @@ const ENEMY_COL = {
 };
 
 const Render = (() => {
+  const RES = 2;
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
   const cam = { z: 1, x: 0, y: 0 };
@@ -78,6 +79,18 @@ const Render = (() => {
       g.fillStyle = col || '#05060c';
       for (let i = 0; i < out.length; i += 2) g.fillRect(out[i], out[i + 1], 1, 1);
     });
+  }
+  // draw a sprite centred on (cx, cy) world units; hi-res sprites carry .u (units per pixel)
+  function blit(s, cx, cy, k) {
+    const u = (s.u || 1) * (k || 1), w = s.width * u, h = s.height * u;
+    b.drawImage(s, Math.round((cx - w / 2) * RES) / RES, Math.round((cy - h / 2) * RES) / RES, w, h);
+  }
+  const tintW = new WeakMap();
+  function tintOf(src, col) {
+    let m = tintW.get(src); if (!m) { m = new Map(); tintW.set(src, m); }
+    let c = m.get(col);
+    if (!c) { c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.u = src.u; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); m.set(col, c); }
+    return c;
   }
   const STEEL = { o: '#090b16', d: '#141830', m: '#232948', l: '#343d6a', h: '#4c568c' };
 
@@ -224,7 +237,7 @@ const Render = (() => {
     voidling(g, c) { diamond(g, 5, 5, 5, '#1a0830'); diamond(g, 5, 5, 4, c); P(g, 4, 3, '#ffffff'); P(g, 5, 5, '#ffffff'); },
   };
   const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11 };
-  const pirateSprite = gold => outlined('opship' + (gold ? 'g' : ''), spr('pship' + (gold ? 'g' : ''), 22, 14, g => pirateShip(g, gold)));
+  const pirateSprite = gold => UNITS.pirate(gold);
   function enemySprite(type) {
     if (type === 'pirate') return pirateSprite(false);
     const s = EN_SIZE[type] || 14, c = ENEMY_COL[type] || '#ff5470';
@@ -363,8 +376,9 @@ const Render = (() => {
   const CACHE_PAL = { normal: ['#3a2a10', '#a8741c', '#e0a640', '#ffe14d'], cursed: ['#2a0a18', '#8a1a3a', '#c8325a', '#ff4d6a'], gold: ['#5a4206', '#e8b820', '#fff0a0', '#ffffff'] };
   // ---------- map layer ----------
   function drawMap() {
-    if (mapLayer.width !== BW || mapLayer.height !== BH) { mapLayer.width = BW; mapLayer.height = BH; }
+    if (mapLayer.width !== BW * RES || mapLayer.height !== BH * RES) { mapLayer.width = BW * RES; mapLayer.height = BH * RES; }
     const m = mapLayer.getContext('2d'), map = G.map, cols = COLS;
+    m.setTransform(RES, 0, 0, RES, 0, 0); m.imageSmoothingEnabled = false;
     m.clearRect(0, 0, BW, BH);
     const isP = (x, y) => x >= 0 && y >= 0 && x < cols && y < ROWS && (map.tiles[y * cols + x] === 1 || map.tiles[y * cols + x] === 4);
     for (let ty = 0; ty < ROWS; ty++) for (let tx = 0; tx < cols; tx++) {
@@ -377,15 +391,15 @@ const Render = (() => {
       }
       if (t === 1 || t === 4) {
         R(m, X, Y, TILE, TILE, '#251c3d');
-        for (let k = 0; k < 8; k++) P(m, X + (d * (k + 3) * 7) % 24, Y + (d * (k + 5) * 11) % 24, k % 2 ? '#2e2449' : '#1e1732');
+        for (let k = 0; k < 14; k++) { m.fillStyle = k % 3 === 0 ? '#2f254c' : k % 3 === 1 ? '#1f1834' : '#2a2045'; m.fillRect(X + ((d * (k + 3) * 7) % 48) / 2, Y + ((d * (k + 5) * 11) % 48) / 2, 0.5, 0.5); }
         continue;
       }
       const v = (d % 7) - 3;
       R(m, X, Y, TILE, TILE, `rgb(${17 + v},${20 + v},${37 + v * 2})`);
-      R(m, X, Y, TILE, 1, '#20264a'); R(m, X, Y + 1, 1, TILE - 1, '#1c2242');
-      R(m, X, Y + TILE - 1, TILE, 1, '#0a0c19'); R(m, X + TILE - 1, Y, 1, TILE, '#0a0c19');
+      m.fillStyle = '#262d55'; m.fillRect(X, Y, TILE, 0.5); m.fillStyle = '#1f2548'; m.fillRect(X, Y + 0.5, 0.5, TILE - 0.5); m.fillStyle = '#1a1f3c'; m.fillRect(X + 0.5, Y + 0.5, TILE - 1, 0.5);
+      m.fillStyle = '#080a15'; m.fillRect(X, Y + TILE - 0.5, TILE, 0.5); m.fillRect(X + TILE - 0.5, Y, 0.5, TILE); m.fillStyle = '#0e1120'; m.fillRect(X + 0.5, Y + TILE - 1, TILE - 1, 0.5);
       if (d % 3 === 0) { R(m, X + 3, Y + 11, 18, 1, '#141a2f'); R(m, X + 3, Y + 12, 18, 1, '#1d2340'); }
-      if (d % 5 === 0) for (const [bx, by] of [[3, 3], [19, 3], [3, 19], [19, 19]]) { R(m, X + bx, Y + by, 2, 2, '#283057'); P(m, X + bx, Y + by, '#3a4475'); }
+      if (d % 5 === 0) for (const [bx, by] of [[3, 3], [19.5, 3], [3, 19.5], [19.5, 19.5]]) { m.fillStyle = '#0c0f1e'; m.fillRect(X + bx + 0.5, Y + by + 0.5, 1.5, 1.5); m.fillStyle = '#2c3460'; m.fillRect(X + bx, Y + by, 1.5, 1.5); m.fillStyle = '#4a5590'; m.fillRect(X + bx, Y + by, 0.5, 0.5); }
       if (d % 17 === 0) for (let k = 0; k < 3; k++) { R(m, X + 7, Y + 8 + k * 3, 10, 1, '#0b0d1b'); R(m, X + 7, Y + 9 + k * 3, 10, 1, '#222949'); }
       if (d % 23 === 0) for (let k = 0; k < 7; k++) P(m, X + 5 + k * 2, Y + 6 + k + (k % 2), '#0c0f1e');
       if (d % 61 === 0) { R(m, X + 11, Y + 11, 2, 2, '#1f6b55'); P(m, X + 11, Y + 11, '#59f0b4'); }
@@ -456,6 +470,17 @@ const Render = (() => {
     mapDirty = false;
   }
 
+  // ground outside the current sector stays visible when zoomed out, but veiled, behind a dashed frontier line
+  function drawVeil() {
+    const x0 = reg.x, y0 = reg.y, x1 = reg.x + reg.w, y1 = reg.y + reg.h, full = reg.w >= BW - 1 && reg.h >= BH - 1;
+    b.strokeStyle = '#1c2140'; b.lineWidth = 1; b.strokeRect(-0.5, -0.5, BW + 1, BH + 1);
+    if (full) return;
+    b.fillStyle = 'rgba(4,5,11,0.66)';
+    b.fillRect(0, 0, BW, y0); b.fillRect(0, y1, BW, BH - y1); b.fillRect(0, y0, x0, y1 - y0); b.fillRect(x1, y0, BW - x1, y1 - y0);
+    b.strokeStyle = 'rgba(184,108,255,0.38)'; b.setLineDash([4, 4]); b.lineDashOffset = -frame / 8;
+    b.strokeRect(x0 - 0.5, y0 - 0.5, x1 - x0 + 1, y1 - y0 + 1); b.setLineDash([]);
+  }
+
   // ---------- screen-space lighting ----------
   const lightSprites = new Map();
   function lightSprite(col) {
@@ -473,26 +498,30 @@ const Render = (() => {
 
   // ---------- dynamic drawing ----------
   function ensureBuffers() {
-    if (bufW !== BW || buf.height !== BH) { buf.width = BW; buf.height = BH; bufW = BW; mapDirty = true; b.imageSmoothingEnabled = false; resetCam(); fit(); }
+    if (bufW !== BW || mapLayer.height !== BH * RES) { bufW = BW; mapDirty = true; fit(); resetCam(); }
+  }
+  // the view buffer grows in 128px steps so pinch-zooming doesn't reallocate every frame
+  function sizeBuf(w, h) {
+    if (buf.width < w || buf.height < h || buf.width > w + 512 || buf.height > h + 512) { buf.width = Math.ceil(w / 128) * 128; buf.height = Math.ceil(h / 128) * 128; }
   }
   function drawTower(t) {
-    const X = t.x * TILE, Y = t.y * TILE, D0 = TOWERS[t.type], el = t.s ? t.s.el : D0.el, c = EL[el].col;
-    b.drawImage(baseSprite(el), X, Y);
-    const top = topSprite(t.type, el, t.spec);
-    if (ROTATES[t.type]) {
-      const rc = t.flash > 0 ? 1.5 : 0;
-      b.save(); b.translate(X + 12, Y + 12); b.rotate(t.angle || -1.57); b.drawImage(top, -13 - rc, -13); b.restore();
-      if (t.flash > 0) { const a = t.angle || 0; D(b, X + 12 + Math.cos(a) * 11, Y + 12 + Math.sin(a) * 11, 2, '#ffffff'); }
-    } else b.drawImage(top, X - 1, Y - (t.flash > 0 ? 0 : 1) + (t.type === 'pylon' && (frame >> 4) % 2 ? -1 : 0));
+    const X = t.x * TILE, Y = t.y * TILE, D0 = TOWERS[t.type], el = t.s ? t.s.el : D0.el, c = EL[el].col, cx = X + 12, cy = Y + 12;
+    blit(UNITS.base(el), cx, cy);
+    const firing = t.flash > 0 || (t.aimT !== undefined && G.time - t.aimT < 0.25) || (t.beamTargets && t.beamTargets.length);
+    const anim = { rk: t.flash > 0.03 ? 1 : 0, ld: t.type === 'missile' ? t.cd < 0.45 : 0,
+      ph: t.type === 'forge' ? (frame >> 4) % 2 : (t.spec === 1 && t.type === 'pulse' && firing) || t.type === 'flame' && firing ? (frame >> 1) % 3 : 0 };
+    const sp = UNITS.SPIN[t.type], ang = UNITS.ROT[t.type] ? (t.angle === undefined ? -1.57 : t.angle) : sp ? frame / 60 * sp * (t.disabled > 0 ? 0 : 1) + t.id : 0;
+    const top = UNITS.top(t.type, el, t.spec || 0, ang, anim);
+    b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 11, 10, 0, 0, 6.283); b.fill();
+    blit(top, cx, cy - (t.type === 'pylon' && (frame >> 5) % 2 ? 0.5 : 0));
+    if (UNITS.ROT[t.type] && t.flash > 0.04 && t.type !== 'missile') { const a = t.angle || 0, L = t.type === 'rail' ? 13 : t.type === 'emp' ? 8 : 11.5; D(b, cx + Math.cos(a) * L, cy + Math.sin(a) * L, t.type === 'flame' ? 2 : 1.5, '#ffffff'); }
     // live details
     switch (t.type) {
-      case 'cryo': if (t.flash > 0) { D(b, X + 12, Y + 12, 3, '#ffffff'); } break;
-      case 'coil': if (frame % 7 < 3) for (let k = 0; k < 3; k++) { const a = Math.random() * 6.283; P(b, X + 12 + Math.cos(a) * 9, Y + 12 + Math.sin(a) * 9, '#fff6c0'); } break;
-      case 'pylon': D(b, X + 12, Y + 4, 2, (frame >> 4) % 2 ? c : sh(c, -0.5)); break;
-      case 'snare': if (t.s) { const left = Math.max(0, t.s.catches - (t.caught || 0)); P(b, X + 12, Y + 3, left ? ((frame >> 3) % 2 ? '#59f0b4' : '#c9fff0') : '#ff4d6a'); } break;
-      case 'forge': if ((frame >> 3) % 8 === 0) { R(b, X + 10, Y + 13, 3, 2, '#fff6c0'); } break;
-      case 'grav': { const a = frame / 10; R(b, X + 11 + Math.cos(a) * 9, Y + 11 + Math.sin(a) * 9, 2, 2, '#e0c8ff'); break; }
-      case 'lens': { const a = t.angle || 0; D(b, X + 12 + Math.cos(a) * 2, Y + 12 + Math.sin(a) * 2, 2, t.ramp > 3 ? '#ffffff' : sh(c, 0.5)); break; }
+      case 'cryo': if (t.flash > 0) { D(b, cx, cy, 3, 'rgba(255,255,255,0.8)'); } break;
+      case 'coil': if (frame % 5 < 3) for (let k = 0; k < 2; k++) { const a = Math.random() * 6.283, r = 3 + Math.random() * 6; R(b, cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1, 1, k ? '#ffffff' : '#fff6c0'); } break;
+      case 'snare': if (t.s && (t.caught || 0) >= t.s.catches) { R(b, cx - 1, cy - 1, 2, 2, frame % 20 < 10 ? '#ff4d6a' : '#5a1020'); } break;
+      case 'forge': if (frame % 9 === 0) parts.push({ x: cx + 5, y: cy - 6, vx: (Math.random() - 0.5) * 3, vy: -9, life: 0.9, max: 0.9, col: '#5a5470', s: 2 }); break;
+      case 'lens': { const k = Math.min(1, (t.ramp || 0) / 3.5); if (k > 0.05) D(b, cx, cy, 1 + Math.round(k * 2), hexA('#ffffff', 0.4 + 0.5 * k)); break; }
     }
     if (t.asc) { b.strokeStyle = hexA('#ff8a2a', 0.55 + 0.3 * Math.sin(frame / 8)); b.lineWidth = 1; b.strokeRect(X + 0.5, Y + 0.5, 23, 23); }
     for (let i = 0; i < t.lvl; i++) R(b, X + 4 + i * 3, Y + 20, 2, 2, i >= 3 && t.spec ? PAL.amber : '#9aa3d6');
@@ -543,17 +572,16 @@ const Render = (() => {
   }
   function drawCore() {
     const c = G.core, X = c.x * TILE, Y = c.y * TILE, pulse = (Math.sin(frame / 10) + 1) / 2;
-    D(b, X, Y + 2, 17, 'rgba(0,0,0,0.5)');
-    D(b, X, Y, 17, '#071812'); D(b, X, Y, 16, '#0b2a22'); O(b, X, Y, 16, 2, '#1f6b55');
-    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283 + frame / 70; R(b, X + Math.cos(a) * 12 - 1, Y + Math.sin(a) * 12 - 1, 3, 3, PAL.core); }
-    D(b, X, Y, 9, '#103c31');
-    D(b, X, Y, Math.round(5 + pulse * 1.5), PAL.core); D(b, X - 1, Y - 1, 3, '#b8ffe6'); P(b, X - 2, Y - 2, '#ffffff');
-    const ec = EL[c.s ? c.s.el : c.el].col, a = c.angle || 0;
-    b.save(); b.translate(X, Y); b.rotate(a); R(b, 6, -2, 12, 4, '#090b16'); R(b, 6, -1, 11, 2, ec); R(b, 6, -1, 11, 1, sh(ec, 0.6)); b.restore();
+    b.fillStyle = 'rgba(2,3,10,0.45)'; b.beginPath(); b.ellipse(X + 1.5, Y + 3, 18, 16, 0, 0, 6.283); b.fill();
+    const hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
+    blit(UNITS.core(frame / 70, hurt), X, Y);
+    D(b, X, Y, 1 + Math.round(pulse * 2), hexA('#ffffff', 0.35 + 0.4 * pulse));
+    const el = c.s ? c.s.el : c.el, a = c.angle || 0;
+    blit(UNITS.coreGun(el, a), X, Y);
     { const wt = typeof warTier === 'function' ? warTier() : 0; // War Economy: a turret per stack of banked credits
       for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 22, ty = Y + Math.sin(a2) * 22; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
     if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.25 + 0.5 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 20, 0, 6.283); b.stroke(); }
-    if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 17, 0, 6.283); b.stroke(); }
+    if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, 18, 0, 6.283); b.stroke(); }
   }
   function drawEnemy(e) {
     const X = e.x * TILE, Y = e.y * TILE, st = e.st;
@@ -566,27 +594,38 @@ const Render = (() => {
         const k = (frame % 30) / 30; b.strokeStyle = hexA('#c46cff', 0.8 - k * 0.6); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 6 + k * 14, 0, 6.283); b.stroke();
         b.fillStyle = 'rgba(10,0,20,0.85)'; b.beginPath(); b.arc(X, Y, 9, 0, 6.283); b.fill(); return;
       }
-      const sg = scaledSpr('wseg', wormSeg(), BOSS_SCALE), so = sg.width >> 1, o = {};
+      const sg = UNITS.wormSeg(), o = {};
       for (let k = 7; k >= 1; k--) { const dd = e.d - k * 0.42; if (dd < 0) continue; lanePos(e.L, dd, o); const wig = Math.sin(frame / 4 + k) * 1.5;
-        b.drawImage(sg, Math.round(o.x * TILE - so), Math.round(o.y * TILE - so + wig)); }
+        blit(sg, o.x * TILE, o.y * TILE + wig, 1 - k * 0.03); }
     }
-    if (e.boss) s = scaledSpr('B:' + e.boss, bossSprite(e.boss), BOSS_SCALE); else if (e.meat) s = meatSprite(); else s = enemySprite(e.type);
-    if (e.wanted === 'colossal') s = scaledSpr('W:' + e.boss, s, 1.5);
-    if (e.gen) s = scaledSpr('g' + e.gen + ':' + e.boss, s, e.gen === 1 ? 0.67 : 0.45);
-    if (e.genes && e.genes.includes('bulk')) s = scaledSpr('bk:' + e.type, s, 1.3);
-    if (e.mite) s = scaledSpr('mite', s, 0.7);
-    const hw = s.width >> 1, hh = s.height >> 1;
-    if (e.fly) { b.fillStyle = 'rgba(0,0,0,0.35)'; b.fillRect(X - hw + 2, Y + 4, s.width - 4, 3); }
-    else { b.fillStyle = 'rgba(0,0,0,0.38)'; b.fillRect(Math.round(X - hw + 1), Math.round(Y + hh - 1), s.width - 2, 2); }
+    // heading and gait: units face where they are going; legs cycle with distance walked, wings with time
+    if (e._hx === undefined) { e._hx = e.x; e._hy = e.y; e._ha = e.L && e.L.pts && e.L.pts[1] ? Math.atan2(e.L.pts[1].y - e.L.pts[0].y, e.L.pts[1].x - e.L.pts[0].x) : 0; e._wd = 0; }
+    { const mx = e.x - e._hx, my = e.y - e._hy, md = Math.hypot(mx, my);
+      if (md > 0.02) { const ta = Math.atan2(my, mx); let da = ta - e._ha; da = Math.atan2(Math.sin(da), Math.cos(da)); e._ha += da * Math.min(1, md * 6); e._wd += md; e._hx = e.x; e._hy = e.y; } }
+    let k = 1, hiS = null;
+    if (e.pirate) hiS = UNITS.pirate(false);
+    else if (!e.boss && !e.meat) hiS = UNITS.enemy(e.type, e._ha, e.fly ? (frame >> 2) + (e.wob * 4 | 0) : Math.floor(e._wd * 9));
+    if (hiS) s = hiS;
+    else if (e.boss) s = UNITS.boss(e.boss, (frame >> 4) + (e.id & 1), e.boss === 'cat' && e.napT > 0) || scaledSpr('B:' + e.boss, bossSprite(e.boss), BOSS_SCALE);
+    else if (e.meat) s = UNITS.meat(); else s = enemySprite(e.type);
+    if (e.wanted === 'colossal') k *= 1.5;
+    if (e.gen) k *= e.gen === 1 ? 0.67 : 0.45;
+    if (e.genes && e.genes.includes('bulk')) k *= 1.3;
+    if (e.mite) k *= 0.7;
+    const su = (s.u || 1) * k, sw = s.width * su, hw = sw / 2, hh = s.height * su / 2;
+    b.fillStyle = e.fly ? 'rgba(0,0,0,0.3)' : 'rgba(2,3,10,0.4)';
+    b.beginPath(); b.ellipse(X + 1, e.fly ? Y + 4 : y + hh * 0.55, hw * 0.75, Math.max(1.5, hh * (e.fly ? 0.25 : 0.4)), 0, 0, 6.283); b.fill();
     if (cloaked) b.globalAlpha = 0.25;
-    if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh); b.restore(); }
-    else b.drawImage(s, Math.round(X - hw), Math.round(y - hh));
+    if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
+    else if (e.boss) { const fl = Math.cos(e._ha) < -0.3; b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); if (fl && !e.burrowT) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
+    else b.drawImage(s, Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2);
     if (e.stowaway) { R(b, X - 5, y - hh - 1, 10, 2, '#d8281a'); R(b, X + 5, y - hh - 1, 2, 1, '#d8281a'); P(b, X + 7, y - hh, '#d8281a'); }
-    if (e.hitFlash > 0) { b.globalAlpha = cloaked ? 0.2 : e.boss ? 0.3 : 0.6; b.drawImage(tinted('w:' + (e.boss || e.type), s, '#ffffff'), Math.round(X - hw), Math.round(y - hh)); }
-    else if (st.frozen > 0) { b.globalAlpha = 0.6; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#bff4ff'), Math.round(X - hw), Math.round(y - hh)); }
-    else if (st.chill > 0) { b.globalAlpha = 0.12 + st.chill * 0.06; b.drawImage(tinted('c:' + (e.boss || e.type), s, '#9ad8ff'), Math.round(X - hw), Math.round(y - hh)); }
+    const ovl = col => { const tc = tintOf(s, col); if (e.boss && Math.cos(e._ha) < -0.3) { b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); b.scale(-1, 1); b.drawImage(tc, -hw, -hh, sw, hh * 2); b.restore(); } else b.drawImage(tc, Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2); };
+    if (e.hitFlash > 0) { b.globalAlpha = cloaked ? 0.2 : e.boss ? 0.3 : 0.55; ovl('#ffffff'); }
+    else if (st.frozen > 0) { b.globalAlpha = 0.6; ovl('#bff4ff'); }
+    else if (st.chill > 0) { b.globalAlpha = 0.12 + st.chill * 0.06; ovl('#9ad8ff'); }
     b.globalAlpha = 1;
-    if (e.boss === 'cat' && e.napT > 0) { const ox = Math.round(X - hw), oy = Math.round(y - hh); const q = v => Math.round(v * BOSS_SCALE); R(b, ox + q(16), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(27), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(16), oy + q(18), q(6), 2, '#3a1606'); R(b, ox + q(27), oy + q(18), q(6), 2, '#3a1606'); }
+    if (false) { const ox = Math.round(X - hw), oy = Math.round(y - hh); const q = v => Math.round(v * BOSS_SCALE); R(b, ox + q(16), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(27), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(16), oy + q(18), q(6), 2, '#3a1606'); R(b, ox + q(27), oy + q(18), q(6), 2, '#3a1606'); }
     if (e.boss === 'titan' && e.plates > 0) { const q = v => Math.round(v * BOSS_SCALE); R(b, X - q(22), y - q(22), q(44), q(5), '#8a8fa8'); R(b, X - q(22), y + q(17), q(44), q(5), '#8a8fa8'); if (e.plates > 1) { R(b, X - q(22), y - q(22), q(5), q(44), '#a4aac4'); R(b, X + q(17), y - q(22), q(5), q(44), '#a4aac4'); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
@@ -615,7 +654,7 @@ const Render = (() => {
     if (st.shock > 0 && frame % 5 < 3) { R(b, X + hw - 1, y - hh, 2, 2, EL.A.col); }
     for (let i = 0; i < Math.min(st.mark, 6); i++) R(b, X - 7 + i * 3, y + hh + 2, 2, 2, EL.V.col);
     if (!cloaked && (e.hp < e.maxHp || e.shield > 0) && !e.boss) {
-      const w = Math.max(12, s.width), hr = Math.max(0, e.hp / e.maxHp);
+      const w = Math.max(12, Math.round(sw)), hr = Math.max(0, e.hp / e.maxHp);
       R(b, X - w / 2, y - hh - 4, w, 2, '#2a0010'); R(b, X - w / 2, y - hh - 4, Math.max(1, Math.round(w * hr)), 2, hr > 0.5 ? '#ff7c9c' : '#ff3355');
       if (e.shield > 0) R(b, X - w / 2, y - hh - 6, Math.max(1, Math.round(w * Math.min(1, e.shield / e.maxHp))), 1, '#8ab6ff');
     }
@@ -648,56 +687,60 @@ const Render = (() => {
   }
 
   // ---------- camera ----------
-  function fit() {
-    const rw = reg.w || BW, rh = reg.h || BH;
-    scale = Math.min(W / rw, H / rh);
-    ox = Math.round((W - rw * scale) / 2); oy = Math.round((H - rh * scale) / 2);
-  }
+  // RES: buffer pixels per world unit. Sprites authored at RES (hi-res) land 1:1; classic 1× art lands as clean 2×2 blocks.
+  // The buffer only covers what the camera sees, so its cost tracks the view, not the map.
+  // Zoom 1 fits the current sector; zooming out below 1 reveals the whole map (unrevealed ground is veiled).
+  const MARGIN = TILE * 1.5;
+  let atHome = true;
+  function fit() { const rw = reg.w || BW, rh = reg.h || BH; scale = Math.min(W / rw, H / rh); ox = 0; oy = 0; }
+  function zMin() { return Math.min(1, Math.min(W / (BW + 2 * MARGIN), H / (BH + 2 * MARGIN)) / scale); }
   function view() {
-    const vw = reg.w / cam.z, vh = reg.h / cam.z;
-    const vx = clamp(cam.x - vw / 2, reg.x, reg.x + reg.w - vw), vy = clamp(cam.y - vh / 2, reg.y, reg.y + reg.h - vh);
-    return { vx, vy, vw, vh };
+    const ws = scale * cam.z, vw = W / ws, vh = H / ws, bx0 = -MARGIN, by0 = -MARGIN, bx1 = BW + MARGIN, by1 = BH + MARGIN;
+    const vx = vw >= bx1 - bx0 ? (bx0 + bx1 - vw) / 2 : clamp(cam.x - vw / 2, bx0, bx1 - vw);
+    const vy = vh >= by1 - by0 ? (by0 + by1 - vh) / 2 : clamp(cam.y - vh / 2, by0, by1 - vh);
+    return { vx, vy, vw, vh, ws };
   }
-  function resetCam() { cam.z = 1; cam.x = reg.x + reg.w / 2; cam.y = reg.y + reg.h / 2; }
+  function resetCam() { cam.z = 1; cam.x = reg.x + reg.w / 2; cam.y = reg.y + reg.h / 2; atHome = true; }
   // follow G.region: snap on a new run, otherwise pull the camera back over a few seconds
   const easeIO = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   function updateRegion() {
     const R = G.region || { x0: 0, y0: 0, x1: COLS, y1: ROWS };
     const T = { x: R.x0 * TILE, y: R.y0 * TILE, w: (R.x1 - R.x0) * TILE, h: (R.y1 - R.y0) * TILE };
     const key = T.x + ',' + T.y + ',' + T.w + ',' + T.h, now = performance.now();
-    if (G !== regG || !reg.w) { regG = G; regKey = key; Object.assign(reg, T); regAnim = null; frontier = null; resetCam(); }
+    if (G !== regG || !reg.w) { regG = G; regKey = key; Object.assign(reg, T); regAnim = null; frontier = null; fit(); resetCam(); }
     else if (key !== regKey) {
       regKey = key;
       frontier = { x: reg.x, y: reg.y, w: reg.w, h: reg.h, t0: now };
       regAnim = { from: { x: reg.x, y: reg.y, w: reg.w, h: reg.h }, to: T, t0: now, dur: 2600 };
-      const was = cam.z; cam.z = 1;
-      if (was > 1.01 && onCam) onCam();
+      const was = !atHome; atHome = true;
+      if (was && onCam) onCam();
     }
     if (regAnim) {
       const k = Math.min(1, (now - regAnim.t0) / regAnim.dur), e = easeIO(k), A = regAnim.from, B = regAnim.to;
       reg.x = A.x + (B.x - A.x) * e; reg.y = A.y + (B.y - A.y) * e; reg.w = A.w + (B.w - A.w) * e; reg.h = A.h + (B.h - A.h) * e;
       if (k >= 1) { Object.assign(reg, B); regAnim = null; }
-      if (cam.z <= 1.001) resetCam();
     }
     fit();
+    if (atHome) { cam.z = 1; cam.x = reg.x + reg.w / 2; cam.y = reg.y + reg.h / 2; }
   }
   function clampCam() { const v = view(); cam.x = v.vx + v.vw / 2; cam.y = v.vy + v.vh / 2; }
-  function screenToBuf(sx, sy) { const v = view(); return { x: v.vx + (sx - ox) / (scale * cam.z), y: v.vy + (sy - oy) / (scale * cam.z) }; }
+  function screenToBuf(sx, sy) { const v = view(); return { x: v.vx + sx / v.ws, y: v.vy + sy / v.ws }; }
   function screenToTile(sx, sy) { const p = screenToBuf(sx, sy); return { x: p.x / TILE, y: p.y / TILE }; }
-  function tileToScreen(x, y) { const v = view(); return { x: ox + (x * TILE - v.vx) * scale * cam.z, y: oy + (y * TILE - v.vy) * scale * cam.z }; }
+  function tileToScreen(x, y) { const v = view(); return { x: (x * TILE - v.vx) * v.ws, y: (y * TILE - v.vy) * v.ws }; }
   function zoomAt(sx, sy, factor) {
     const before = screenToBuf(sx, sy);
-    cam.z = clamp(cam.z * factor, 1, 4);
-    const v = view();
+    cam.z = clamp(cam.z * factor, zMin(), 4);
+    const ws = scale * cam.z;
     // keep the point under the fingers fixed
-    const nx = before.x - (sx - ox) / (scale * cam.z), ny = before.y - (sy - oy) / (scale * cam.z);
-    cam.x = nx + v.vw / 2; cam.y = ny + v.vh / 2; clampCam();
+    cam.x = before.x - sx / ws + W / ws / 2; cam.y = before.y - sy / ws + H / ws / 2; clampCam();
+    atHome = false;
   }
-  function panBy(dx, dy) { cam.x -= dx / (scale * cam.z); cam.y -= dy / (scale * cam.z); clampCam(); }
+  function panBy(dx, dy) { const ws = scale * cam.z; cam.x -= dx / ws; cam.y -= dy / ws; clampCam(); atHome = false; }
 
   // ---------- frame ----------
   function draw(dt) {
     frame++;
+    ART.idle(dt > 0 ? 3 : 1);
     const c = ctx;
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.fillStyle = PAL.bg; c.fillRect(0, 0, cv.width, cv.height);
@@ -707,8 +750,15 @@ const Render = (() => {
     const key = G.seed + ':' + G.map.lanes.length + ':' + COLS + ':' + (G.mapRev || 0);
     if (key !== mapKey) { mapKey = key; mapDirty = true; }
     if (mapDirty) drawMap();
-    b.clearRect(0, 0, BW, BH);
-    b.drawImage(mapLayer, 0, 0);
+    const v = view();
+    const vxI = Math.floor(v.vx), vyI = Math.floor(v.vy), vwI = Math.ceil(v.vw) + 2, vhI = Math.ceil(v.vh) + 2;
+    const bw = vwI * RES, bh = vhI * RES;
+    sizeBuf(bw, bh);
+    b.setTransform(1, 0, 0, 1, 0, 0); b.clearRect(0, 0, bw, bh); b.imageSmoothingEnabled = false;
+    b.setTransform(RES, 0, 0, RES, -vxI * RES, -vyI * RES);
+    { const x0 = Math.max(0, vxI), y0 = Math.max(0, vyI), x1 = Math.min(BW, vxI + vwI), y1 = Math.min(BH, vyI + vhI);
+      if (x1 > x0 && y1 > y0) b.drawImage(mapLayer, x0 * RES, y0 * RES, (x1 - x0) * RES, (y1 - y0) * RES, x0, y0, x1 - x0, y1 - y0); }
+    drawVeil();
     // animated path glow running toward the core
     if (frame % 2 === 0) for (const L of G.map.lanes) if (!L.openWave) { const k = (frame >> 1) % L.tiles.length; for (let j = k; j < L.tiles.length; j += 9) { const p = L.tiles[j]; R(b, p.x * TILE + 11, p.y * TILE + 11, 2, 2, 'rgba(184,108,255,0.35)'); } }
     if (G.rift && !G.spawningDone) { const p = G.rift.pts[0]; strokeRing(p.x * TILE, p.y * TILE, 9 + Math.sin(frame / 5) * 2, '#b86cff', 0.9, 2); strokeRing(p.x * TILE, p.y * TILE, 5 + Math.sin(frame / 3), '#ff4d6a', 0.9, 2); }
@@ -800,7 +850,7 @@ const Render = (() => {
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // pirate drop ships
     for (const P2 of G.pirates || []) {
-      const gold = P2.kind === 'gold', sp = pirateSprite(gold), k = gold ? 1.5 : 1, w = sp.width * k, h = sp.height * k, X = P2.x * TILE, Y = P2.y * TILE - 16;
+      const gold = P2.kind === 'gold', sp = pirateSprite(gold), k = (gold ? 1.5 : 1) * (sp.u || 1), w = sp.width * k, h = sp.height * k, X = P2.x * TILE, Y = P2.y * TILE - 16;
       b.fillStyle = 'rgba(0,0,0,0.3)'; b.fillRect(Math.round(X - w * 0.4), Math.round(P2.y * TILE + 4), Math.round(w * 0.8), 3);
       b.save(); b.translate(Math.round(X), Math.round(Y + Math.sin(frame / 5 + P2.id) * 1.5)); if (P2.vx < 0) b.scale(-1, 1); b.drawImage(sp, -w / 2, -h / 2, w, h); b.restore();
       if (frame % 2 === 0) parts.push({ x: X - Math.sign(P2.vx) * w / 2, y: Y + 2, vx: -P2.vx * 2, vy: (Math.random() - 0.5) * 6, life: 0.3, max: 0.3, col: '#6ae2ff', s: 2 });
@@ -881,21 +931,21 @@ const Render = (() => {
     // ---------- composite ----------
     let sx = 0, sy = 0;
     if (shakeT > 0 && doShake) { shakeT -= dt; sx = (Math.random() - 0.5) * shake; sy = (Math.random() - 0.5) * shake; }
-    const v = view();
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     // sharp-bilinear: integer nearest-neighbour upscale first, then one smooth resample to the exact size,
     // so every art pixel lands the same width on screen (no shimmer from uneven nearest-neighbour scaling)
-    const ds = scale * cam.z * dpr, k = (window.__rdbg & 8) ? 1 : Math.max(1, Math.min(8, Math.ceil(ds - 0.08)));
-    const vxI = Math.floor(v.vx), vyI = Math.floor(v.vy);
-    const vwI = Math.min(BW - vxI, Math.ceil(v.vw) + 1), vhI = Math.min(BH - vyI, Math.ceil(v.vh) + 1);
-    if (mid.width !== vwI * k || mid.height !== vhI * k) { mid.width = vwI * k; mid.height = vhI * k; }
-    mctx.imageSmoothingEnabled = false;
-    mctx.drawImage(buf, vxI, vyI, vwI, vhI, 0, 0, vwI * k, vhI * k);
+    const dsb = v.ws * dpr / RES, k = (window.__rdbg & 8) ? 1 : Math.max(1, Math.min(8, Math.ceil(dsb - 0.08)));
+    let src = buf;
+    if (k > 1) {
+      if (mid.width !== bw * k || mid.height !== bh * k) { mid.width = bw * k; mid.height = bh * k; }
+      mctx.imageSmoothingEnabled = false; mctx.clearRect(0, 0, mid.width, mid.height);
+      mctx.drawImage(buf, 0, 0, bw, bh, 0, 0, bw * k, bh * k); src = mid;
+    }
     c.imageSmoothingEnabled = true;
-    const DW = reg.w * scale, DH = reg.h * scale, X0 = ox + sx, Y0 = oy + sy;
-    c.drawImage(mid, (v.vx - vxI) * k, (v.vy - vyI) * k, v.vw * k, v.vh * k, X0, Y0, DW, DH);
+    const DW = W, DH = H, X0 = sx, Y0 = sy, KR = RES * k;
+    c.drawImage(src, (v.vx - vxI) * KR, (v.vy - vyI) * KR, v.vw * KR, v.vh * KR, X0, Y0, DW, DH);
     // lighting pass: additive soft lights in screen space
-    const ws = scale * cam.z, bx2s = x => X0 + (x - v.vx) * ws, by2s = y => Y0 + (y - v.vy) * ws;
+    const ws = v.ws, bx2s = x => X0 + (x - v.vx) * ws, by2s = y => Y0 + (y - v.vy) * ws;
     c.save(); c.beginPath(); c.rect(ox, oy, DW, DH); c.clip();
     const DBG = window.__rdbg || 0;
     // lights accumulate in a quarter-resolution buffer, then land in one additive blit
@@ -955,9 +1005,6 @@ const Render = (() => {
         const x = bx2s(frontier.x), y = by2s(frontier.y), w = frontier.w * ws, h = frontier.h * ws;
         c.setLineDash([6, 6]); c.lineDashOffset = -frame / 2; c.lineWidth = 2; c.strokeStyle = hexA('#b86cff', 0.75 * a);
         c.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w), Math.round(h)); c.setLineDash([]);
-        c.fillStyle = hexA('#07080f', 0.35 * a);
-        const X1 = x + w, Y1 = y + h;
-        c.fillRect(ox, oy, DW, y - oy); c.fillRect(ox, Y1, DW, oy + DH - Y1); c.fillRect(ox, y, x - ox, h); c.fillRect(X1, y, ox + DW - X1, h);
       }
     }
     // veterans waiting for a mutation: a bobbing badge above the tower
@@ -1010,7 +1057,7 @@ const Render = (() => {
     if (cam.z > 1.01) {
       const mw = 64, mh = mw * reg.h / reg.w, mx = W - mw - 8, my = H - mh - 8;
       c.fillStyle = 'rgba(7,8,15,0.7)'; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
-      c.drawImage(mapLayer, reg.x, reg.y, reg.w, reg.h, mx, my, mw, mh);
+      c.drawImage(mapLayer, reg.x * RES, reg.y * RES, reg.w * RES, reg.h * RES, mx, my, mw, mh);
       for (const cc of G.caches || []) { c.fillStyle = (frame >> 3) % 2 ? CACHE_PAL[cc.kind || 'normal'][3] : '#3a3020'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
@@ -1133,23 +1180,15 @@ const Render = (() => {
       g.fillStyle = hexA(c, 0.5); g.fillRect(4, 19, 26, 1); g.fillStyle = hexA(c, 0.22); g.fillRect(2, 20, 30, 1);
     }
     g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(9, 18, 16, 2);
-    const tmp = document.createElement('canvas'); tmp.width = tmp.height = 24;
-    const tg = tmp.getContext('2d'); tg.imageSmoothingEnabled = false;
-    tg.drawImage(baseSprite(el), 0, 0);
-    const top = topSprite(type, el, 0);
-    if (ROTATES[type]) { tg.save(); tg.translate(12, 12); tg.rotate(-0.6); tg.drawImage(top, -12, -12); tg.restore(); } else tg.drawImage(top, 0, 0);
-    if (locked) { g.globalAlpha = 0.9; g.drawImage(tinted('lk:' + type, tmp, '#151829'), 5, -3); g.globalAlpha = 1; }
-    else g.drawImage(tmp, 5, -3);
+    const ic = UNITS.icon(type, el);
+    if (locked) { g.globalAlpha = 0.9; g.drawImage(tintOf(ic, '#151829'), 2, -6, 30, 30); g.globalAlpha = 1; }
+    else g.drawImage(ic, 2, -6, 30, 30);
   }
   function towerIcon(type, canvas) {
+    if (!canvas.dataset.sized) { const cs = getComputedStyle(canvas); canvas.style.width = cs.width && cs.width !== 'auto' ? cs.width : canvas.width + 'px'; canvas.style.height = cs.height && cs.height !== 'auto' ? cs.height : canvas.height + 'px'; canvas.width = canvas.height = 60; canvas.dataset.sized = 1; }
     const g = canvas.getContext('2d'), el = TOWERS[type].el;
     g.imageSmoothingEnabled = false; g.clearRect(0, 0, canvas.width, canvas.height);
-    const tmp = document.createElement('canvas'); tmp.width = tmp.height = 24;
-    const tg = tmp.getContext('2d');
-    tg.drawImage(baseSprite(el), 0, 0);
-    const top = topSprite(type, el, 0);
-    if (ROTATES[type]) { tg.save(); tg.translate(12, 12); tg.rotate(-0.6); tg.imageSmoothingEnabled = false; tg.drawImage(top, -12, -12); tg.restore(); } else tg.drawImage(top, 0, 0);
-    g.drawImage(tmp, 0, 0, 24, 24, 0, 0, canvas.width, canvas.height);
+    g.drawImage(UNITS.icon(type, el), 0, 0);
   }
   // setup preview: the whole map dimmed, with the starting sector lit and outlined
   function preview_map(canvas, map, frac) {
@@ -1172,11 +1211,13 @@ const Render = (() => {
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
-    get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, markMap() { mapDirty = true; },
+    get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, get home() { return atHome; }, markMap() { mapDirty = true; },
     set onCam(f) { onCam = f; },
     tileToScreen,
     // draws a boss sprite, pixel-scaled, centred on a canvas (the boss intro card)
-    bossPortrait(id, cv) { const sp = bossSprite(id), g = cv.getContext('2d'), k = Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height));
+    bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
+      if (cv.width < sp.width * 2) { const cs = getComputedStyle(cv); cv.style.width = cs.width; cv.style.height = cs.height; cv.width = cv.height = sp.width * 2; }
+      const k = Math.max(1, Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height)));
       g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false; g.drawImage(sp, Math.round((cv.width - sp.width * k) / 2), Math.round((cv.height - sp.height * k) / 2), sp.width * k, sp.height * k); },
   };
 })();

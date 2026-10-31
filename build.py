@@ -1,7 +1,7 @@
 import pathlib
 root = pathlib.Path(__file__).parent
 src = root / 'src'
-js = '\n'.join((src / f).read_text() for f in ['data.js', 'sim.js', 'audio.js', 'render.js', 'ui.js'])
+js = '\n'.join((src / f).read_text() for f in ['data.js', 'sim.js', 'audio.js', 'art.js', 'units.js', 'render.js', 'ui.js'])
 html = (src / 'template.html').read_text().replace('/*__SCRIPT__*/', js)
 (root / 'dist').mkdir(exist_ok=True)
 (root / 'dist' / 'entropy.html').write_text(html)

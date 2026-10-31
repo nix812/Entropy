@@ -828,8 +828,8 @@ const UI = (() => {
       gesture.d = d; updateZoomBtn();
     } else if (gesture.kind === 'tap' || gesture.kind === 'pan') {
       gesture.moved += Math.abs(dx) + Math.abs(dy);
-      if (gesture.moved > 12 && Render.zoom > 1.01) gesture.kind = 'pan';
-      if (gesture.kind === 'pan') Render.panBy(dx, dy);
+      if (gesture.moved > 12) gesture.kind = 'pan';
+      if (gesture.kind === 'pan') { Render.panBy(dx, dy); updateZoomBtn(); }
     }
   }
   function canvasUp(e) {
@@ -893,7 +893,7 @@ const UI = (() => {
     Render.zoomAt((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS), e.deltaY < 0 ? 1.15 : 0.87);
     updateZoomBtn();
   }
-  function updateZoomBtn() { const b = $('#bZoom'); if (b) { b.hidden = Render.zoom <= 1.01; b.innerHTML = svgIcon('fit', 16) + 'Fit · ' + Render.zoom.toFixed(1) + '×'; } }
+  function updateZoomBtn() { const b = $('#bZoom'); if (b) { b.hidden = Render.home; b.innerHTML = svgIcon('fit', 16) + 'Fit · ' + Render.zoom.toFixed(1) + '×'; } }
   function fitCols() {
     // measure the playfield the game screen will have: app minus safe areas, the two thumb rails and the status bar
     let pr = document.getElementById('fitProbe');
