@@ -534,69 +534,82 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .hbtn { font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; background: var(--panel2); border: 0; height: 36px; min-width: 44px; padding: 0 11px; clip-path: var(--cut); box-shadow: inset 0 0 0 1px var(--line2); display: flex; align-items: center; justify-content: center; gap: 5px; position: relative; }
 .hbtn:active { filter: brightness(1.3); }
 #tree { padding-left: 0; padding-right: 0; z-index: 15; background: #06070d; }
-#tcv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
-#tbar { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; height: 52px; padding-left: max(16px, var(--sal)); padding-right: max(16px, var(--sar)); padding-block: 0;
-  background: linear-gradient(#06070d 70%, rgba(6, 7, 13, 0)); pointer-events: none; }
-#tbar .hbtn { height: 40px; }
-#tbar > * { pointer-events: auto; }
+#tbar { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; height: 52px; padding-left: max(16px, var(--sal)); padding-right: max(16px, var(--sar)); padding-block: 0; background: #06070d; box-shadow: 0 1px 0 var(--line); }
+#tbar .hbtn { height: 40px; padding: 0 9px; }
 #tbar h2 { font-size: 13px; }
-.tpts { font-family: var(--f-pix); font-size: 10px; color: var(--dim); display: flex; align-items: center; gap: 4px; }
+.tpts { font-family: var(--f-pix); font-size: 10px; color: var(--dim); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 .tpts b { font-family: var(--f-term); font-weight: 400; font-size: 22px; color: var(--ink); }
-.tpts.glow b { color: var(--core); }
+#tPts { color: var(--core); }
 #tTok b { color: var(--cryo); }
-#tAttr { display: flex; gap: 10px; font-family: var(--f-pix); font-size: 9px; color: var(--dim); }
-#tAttr b { font-family: var(--f-term); font-weight: 400; font-size: 18px; color: var(--ink); }
-#tinfo { position: absolute; z-index: 2; left: 50%; transform: translateX(-50%); bottom: max(8px, var(--sab)); width: min(560px, calc(100% - 32px)); background: rgba(12, 14, 28, 0.94); box-shadow: inset 0 0 0 1px var(--line2); padding: 8px 12px; }
-#tinfo .note { margin: 0; text-align: center; }
-#tinfo.hint { width: auto; padding: 5px 12px; background: rgba(12, 14, 28, 0.8); }
-#tinfo.hint .note { font-size: 16px; white-space: nowrap; }
-.ti { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 4px 14px; align-items: center; }
-.ti > div:first-child { display: flex; flex-direction: column; }
-.ti i { font-style: normal; font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
-.ti b { font-family: var(--f-pix); font-size: 12px; text-transform: uppercase; }
-.ti ul { margin: 0; padding-left: 16px; font-size: 16px; }
-.mopts { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
-.mopt { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; background: var(--panel2); border: 0; padding: 6px 9px; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); min-height: 40px; }
-.mopt b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--amber); }
-.mopt span { font-size: 16px; line-height: 1.05; }
-.mopt.on { box-shadow: inset 0 0 0 2px var(--amber); background: #1f1a14; }
-.mopt:disabled { opacity: 0.5; }
-.louts { display: flex; gap: 6px; }
-.rots { display: flex; gap: 6px; } .rots .btn { flex: 1; min-height: 40px; justify-content: center; }
-.lout { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--panel2); border: 0; padding: 6px 0; min-height: 48px; box-shadow: inset 0 0 0 1px var(--line2); color: #5f5d7a; }
-.lout span { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; }
-.lout.on { color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }
-#tinfo { max-height: calc(100% - 64px); overflow-y: auto; }
-#tinfo.hint { display: none; }
-#tregions { position: absolute; z-index: 2; left: max(12px, var(--sal)); right: max(12px, var(--sar)); bottom: max(8px, var(--sab)); display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
-#tregions::-webkit-scrollbar { display: none; }
-#tnav { position: absolute; z-index: 2; right: max(12px, var(--sar)); bottom: calc(max(8px, var(--sab)) + 46px); display: flex; flex-direction: column; gap: 6px; }
-body.tsel #tnav { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px); }
-.tnb { width: 48px; height: 46px; border: 0; padding: 4px 0 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: rgba(21, 25, 51, 0.92); color: #ffb03a; box-shadow: inset 0 0 0 1px #7a5418, inset 0 -3px 0 rgba(0, 0, 0, 0.35); clip-path: var(--cut); font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-.tnb svg { width: 18px; height: 18px; }
-.tnb:active { filter: brightness(1.4); }
-body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px); }
-.rgn { flex: 0 0 auto; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; min-height: 36px; padding: 0 11px; border: 0; background: rgba(21, 25, 51, 0.92); color: var(--c); box-shadow: inset 0 0 0 1px var(--c), inset 0 -3px 0 rgba(0, 0, 0, 0.35); clip-path: var(--cut); }
-.rgn:active { filter: brightness(1.4); }
-#tprof { position: absolute; z-index: 2; left: max(12px, var(--sal)); top: 56px; width: 196px; background: rgba(10, 12, 24, 0.9); box-shadow: inset 0 0 0 1px var(--line2); padding: 6px 8px 8px; }
-#tpcv { display: block; width: 180px; height: 150px; }
-#tpbar { font-size: 15px; }
-#tpbar .ob { position: relative; height: 8px; margin: 4px 0 2px; background: linear-gradient(90deg, #ff6a5a, #3a3f6a 50%, #59f0b4); }
-#tpbar .ob i { position: absolute; top: -3px; width: 3px; height: 14px; background: #fff; box-shadow: 0 0 0 1px #000; }
-#tpbar .obl { display: flex; justify-content: space-between; font-family: var(--f-pix); font-size: 8px; color: var(--dim); text-transform: uppercase; }
-#tpbar b { font-weight: 400; color: var(--ink); }
-#tbar .hbtn { padding: 0 9px; }
-#tView.on, #tProf.on { color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
-#tinfo:not(.hint) { left: auto; transform: none; right: max(12px, var(--sar)); top: 56px; bottom: max(8px, var(--sab)); width: min(330px, 44%); max-height: none; }
-#tinfo:not(.hint) .ti { grid-template-columns: minmax(0, 1fr); align-content: start; }
-#tinfo:not(.hint) .ti ul { padding-left: 14px; }
-.ta { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ta .note { margin: 0; text-align: left; }
-#tdrawer { position: absolute; z-index: 3; top: 52px; right: max(16px, var(--sar)); bottom: 8px; width: min(300px, 60%); background: rgba(12, 14, 28, 0.97); box-shadow: inset 0 0 0 1px var(--line2); padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; }
-.slot { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 6px; align-items: center; }
-.slot input { grid-column: 1 / -1; font: inherit; font-size: 17px; background: var(--panel2); color: var(--ink); border: 0; box-shadow: inset 0 0 0 1px var(--line2); padding: 5px 7px; -webkit-user-select: text; user-select: text; }
-.slot small { color: var(--dim); font-size: 15px; }
-.tot { margin: 0; padding-left: 16px; font-size: 16px; }
+/* v5.0 talents: tabs | tree | details */
+#tbody { position: absolute; top: 52px; left: max(8px, var(--sal)); right: max(8px, var(--sar)); bottom: max(6px, var(--sab)); display: grid; grid-template-columns: 150px minmax(0, 1fr) min(300px, 32%); gap: 10px; }
+#ttabs { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding: 8px 0; scrollbar-width: none; }
+#ttabs::-webkit-scrollbar { display: none; }
+.ttab { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; border: 0; background: var(--panel); padding: 5px 9px; min-height: 40px; box-shadow: inset 3px 0 0 var(--c, var(--line2)), inset 0 0 0 1px var(--line); }
+.ttab b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--c, var(--ink)); }
+.ttab small { font-size: 15px; color: var(--dim); }
+.ttab.on { background: #1a1e3a; box-shadow: inset 4px 0 0 var(--c, var(--amber)), inset 0 0 0 1px var(--c, var(--amber)); }
+.ttab.sum { margin-top: 6px; --c: var(--amber); }
+#tgrid { overflow-y: auto; padding: 8px 2px 12px; touch-action: pan-y; }
+.thead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 8px; }
+.thead b { font-family: var(--f-pix); font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--c, var(--amber)); }
+.thead span { color: var(--dim); font-size: 17px; }
+.thead em { font-style: normal; margin-left: auto; font-size: 16px; color: var(--ink); }
+.trow { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px; margin-bottom: 6px; }
+.trl { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.trl b { font-family: var(--f-pix); font-size: 12px; font-weight: 400; color: var(--ink); }
+.trl small { font-size: 13px; color: var(--dim); white-space: nowrap; }
+.trow.locked .trl b { color: var(--dim); }
+.trt { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+.ttile { position: relative; display: flex; min-width: 0; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); }
+.ttile .tbody { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto; gap: 1px 6px; align-items: center; text-align: left; border: 0; background: none; padding: 6px 8px 7px; }
+.ttile .tbody b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttile .tbody b em { font-style: normal; color: #ff9adf; }
+.ttile .tbody small { font-size: 15px; color: var(--dim); }
+.ttile .pips { grid-column: 1 / -1; display: flex; gap: 3px; }
+.ttile .pips i { width: 10px; height: 4px; background: #2a2f52; }
+.ttile .pips i.on { background: var(--c); }
+.ttile .td { grid-column: 1 / -1; font-size: 15px; line-height: 1.05; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ttile .tadd { flex: 0 0 40px; border: 0; background: rgba(89, 240, 180, 0.12); color: var(--core); font-family: var(--f-pix); font-size: 18px; box-shadow: inset 1px 0 0 var(--line2); }
+.ttile .tadd:active { background: rgba(89, 240, 180, 0.3); }
+.ttile.have { box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c); }
+.ttile.have .tbody b { color: var(--c); }
+.ttile.full { background: #171c38; }
+.ttile.locked { opacity: 0.45; }
+.ttile.sel { box-shadow: inset 0 0 0 2px var(--amber); }
+.ttile.cap { background: linear-gradient(180deg, #1d1a33, #141831); min-height: 64px; }
+.ttile.cap .tbody b { font-size: 11px; }
+.ttile.cap .td { -webkit-line-clamp: 3; color: #b9b6cc; }
+.ttile.cap.have { box-shadow: inset 0 0 0 2px var(--c); background: linear-gradient(180deg, #24213e, #1a1e3c); }
+.caprow .trl b { color: var(--warn); font-size: 14px; }
+.caprow .trt { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.tfoot { font-size: 15px; margin-top: 6px; }
+#tinfo { overflow-y: auto; padding: 10px 12px; margin: 8px 0; background: rgba(12, 14, 28, 0.94); box-shadow: inset 0 0 0 1px var(--line2); }
+.tinfo-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding-top: 10px; }
+.tinfo-empty b { font-family: var(--f-term); font-size: 44px; font-weight: 400; color: var(--core); line-height: 1; }
+.tinfo-empty span { font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; color: var(--dim); }
+.tinfo-t { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.tinfo-t em { font-style: normal; font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; color: var(--c); letter-spacing: 0.06em; }
+.tinfo-t b { font-family: var(--f-pix); font-size: 13px; text-transform: uppercase; }
+.tinfo-t small { font-size: 16px; color: var(--dim); }
+.tl { margin: 2px 0 6px; padding-left: 16px; font-size: 17px; }
+.tl.dim { color: var(--dim); }
+.tbtns { display: flex; gap: 8px; margin-top: 8px; }
+.tbtns .btn { flex: 1; min-height: 46px; justify-content: center; }
+.tbuilds { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line2); padding: 8px 10px; margin-bottom: 10px; }
+.tbuilds .lbl em { font-family: var(--f-term); font-size: 15px; font-style: normal; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+.tb { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) auto auto; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.tb b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; }
+.tb small { font-size: 15px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tsumcap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; background: var(--panel2); padding: 6px 9px; margin-bottom: 4px; box-shadow: inset 3px 0 0 var(--c); }
+.tsumcap b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--c); }
+.tsumcap small { font-size: 15px; color: var(--dim); }
+.tsumcap span { grid-column: 1 / -1; font-size: 16px; }
+.tsum { columns: 2; column-gap: 20px; margin: 4px 0 8px; padding-left: 16px; font-size: 16px; }
+.tbars div { display: grid; grid-template-columns: 110px minmax(0, 1fr) 30px; gap: 8px; align-items: center; font-size: 16px; margin: 2px 0; }
+.tbars i { display: block; height: 8px; background: var(--c); }
+.tbars b { font-weight: 400; text-align: right; }
+@media (max-width: 760px) { #tbody { grid-template-columns: 112px minmax(0, 1fr) min(240px, 34%); gap: 6px; } .ttab { padding: 4px 6px; } .ttab b { font-size: 9px; } .trt { grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); } .tsum { columns: 1; } #tbar { gap: 8px; } .tpts { font-size: 8px; } }
 
 /* ---------- rotate overlay ---------- */
 #rotate { display: none; }
@@ -614,6 +627,8 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 @media (max-height: 340px) { .rb { height: 38px; } .rb span { display: none; } .entg { height: 54px; } #bCall { height: 46px; } }
 
 
+/* v5.0 token reroll */
+.btn.tokbtn { box-shadow: inset 0 0 0 2px var(--cryo); color: #bff4ff; }
 /* v4.8 level tiers */
 .btn.primary.lvup { background: var(--tc, var(--amber)); color: #0b0b12; }
 .btn.primary.lvup small { color: rgba(11, 11, 18, 0.72); }
@@ -695,7 +710,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
       </div>
       <nav class="menu">
         <button class="btn nova" id="bNova" hidden>Supernova<small id="hNovaSub"></small></button>
-        <button class="btn" id="bWebH">Passive Web<em class="badge" id="hPts" hidden></em></button>
+        <button class="btn" id="bWebH">Talents<em class="badge" id="hPts" hidden></em></button>
         <button class="btn alt" id="bLaunch2" hidden>New Run</button>
         <button class="btn primary play" id="bLaunch">Play<small id="hPlaySub"></small></button>
       </nav>
@@ -724,7 +739,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
     </div>
     <div class="rail" id="railR">
       <button class="rb" id="bPause" aria-label="Pause" data-svg="pause"></button>
-      <button class="rb" id="bWeb" aria-label="Passive web"><i data-svg="web"></i><span>Web</span><em class="badge" id="webBadge" hidden></em></button>
+      <button class="rb" id="bWeb" aria-label="Talents"><i data-svg="web"></i><span>Talents</span><em class="badge" id="webBadge" hidden></em></button>
       <button class="rb" id="bStats" aria-label="Toggle stats"><i data-svg="stats"></i><span>Stats</span></button>
       <div class="spacer"></div>
       <button class="entg" id="bEnt" aria-label="Entropy gauge"><span class="ebar"><i id="entFill"></i></span><em id="entCount"></em><b id="entTxt">0%</b></button>
@@ -734,28 +749,17 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
   </section>
 
   <section id="tree" class="screen" hidden>
-    <canvas id="tcv"></canvas>
     <div id="tbar">
-      <h2>Passive Web</h2>
+      <h2>Talents</h2>
       <span class="tpts"><b id="tPts">0</b> points</span>
+      <span class="tpts" id="tCaps"><b>0/1</b> Capstones</span>
       <span class="tpts" id="tTok"><b>0</b> tokens</span>
       <div class="spacer"></div>
-      <button class="hbtn" data-tact="view" id="tView">3D</button>
-      <button class="hbtn" data-tact="profile" id="tProf">Profile</button>
-      <button class="hbtn" data-tact="totals">Totals</button>
-      <button class="hbtn doc" data-tact="docs" id="tDoc">Doctrine</button>
       <button class="hbtn" data-tact="builds">Builds</button>
+      <button class="hbtn" data-tact="reset" id="tReset">Reset</button>
       <button class="hbtn" data-tact="close" style="box-shadow: inset 0 0 0 1px var(--amber)">Done</button>
     </div>
-    <div id="tinfo"></div>
-    <div id="tprof" hidden><canvas id="tpcv"></canvas><div id="tpbar"></div></div>
-    <div id="tregions"></div>
-    <div id="tnav">
-      <button class="tnb" data-tact="undo" id="tUndo" aria-label="Undo the last allocation" hidden><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="currentColor" d="M5 2h2v2h5v1h1v1h1v5h-1v1h-1v1H6v-2h5v-1h1V7h-1V6H7v2H5V7H4V6H3V5h1V4h1z"/></svg><span>Undo</span></button>
-      <button class="tnb" data-tact="here" aria-label="Jump to your latest node"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="currentColor" d="M7 0h2v3H7zM7 13h2v3H7zM0 7h3v2H0zM13 7h3v2h-3zM5 3h6v1H5zM5 12h6v1H5zM3 5h1v6H3zM12 5h1v6h-1zM4 4h1v1H4zM11 4h1v1h-1zM4 11h1v1H4zM11 11h1v1h-1zM6 6h4v4H6z"/></svg><span>Here</span></button>
-      <button class="tnb" data-tact="center" aria-label="Recenter the web"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h5v2H2v3H0zM11 0h5v5h-2V2h-3zM0 11h2v3h3v2H0zM14 11h2v5h-5v-2h3zM7 7h2v2H7z"/></svg><span>Center</span></button>
-    </div>
-    <div id="tdrawer" hidden></div>
+    <div id="tbody"><nav id="ttabs"></nav><div id="tgrid"></div><aside id="tinfo"></aside></div>
   </section>
 
   <div id="modal" hidden></div>
@@ -767,7 +771,7 @@ body.tsel #tregions { right: calc(min(330px, 44%) + max(12px, var(--sar)) + 8px)
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.8.1';
+const VERSION = '5.0.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -857,10 +861,11 @@ const TOWERS = {
     blurb: 'Short-range cone. Applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
-  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.85, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.5, st: { mark: 0.15 }, unlock: 20,
+  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.7, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.2, // v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
+    st: { mark: 0.15 }, unlock: 20,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×5.5 damage', m: { rampMax: 5.5 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×3', m: { beams: 3, rampMax: 3 } }] },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×5 damage', m: { rampMax: 5 } },
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.8', m: { beams: 3, rampMax: 2.8 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
@@ -939,14 +944,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.8.1', title: 'Entropy 4.8.1 · Ten True Genres', items: [
-  ['Tower art stays clear', 'Level numbers no longer sit on the towers. Each tower has a thin line under it in its level colour, the selected tower shows its level below it, and a single arrow floats over the best next upgrade: your lowest-level tower you can afford (or, once everything is maxed, your cheapest Ascension).'],
-  ['Ten real genres', 'Ambient, Lo-fi Hip Hop, Trip Hop, Synthwave, House, Techno, Trance, Drum & Bass, Chiptune and Dub, each rebuilt from production research: its own tempo range, swing, drum patterns, chords, bass lines, instruments and song shape. Every genre has two or three flavours, from Deep House and Acid to One Drop and Game Boy.'],
-  ['Pieces with a shape', 'Dance genres build: intro, groove, a breakdown with a snare roll and riser, then the drop. Dub cuts instruments out and throws them into the echo. Ambient bells loop at lengths that never line up.'],
-  ['Knobs that do what they say', 'Energy runs from bare pads to every layer. Follow Battle lets the waves push it. Effects are relative to the genre (the middle tick is its own sound): Reverb, Echo, Tone, Tape & Vinyl, and Pump for the sidechain. A live Energy meter shows what the battle is doing.'],
-  ['Cleaner sliders', 'New chunky pixel sliders everywhere, with the value on the right.'],
-  ['Closer view', 'On a phone the field now opens closer (tiles at least 22 points across), framed around the core. Tap Map to see everything, then Fit to come back. Towers, enemies and lanes are bolder.'],
-  ['Tower levels you can read', 'One level number, with Ascensions counting on (LV 5 + 3 Ascensions = LV 8), coloured in bands of three: white, green, blue, purple, orange, then red from LV 16. The upgrade and Ascend buttons wear the colour of the level they lead to.'],
+const WHATS_NEW = { ver: '5.0.0', title: 'Entropy 5.0 · Clean Sheet', items: [
+  ['Talents replace the passive web', 'Seven short trees: Ballistics, Combustion, Voltaic, Cryogenics, Singularity, Bastion and Command. Each row opens after 5 points in its tree, and talents have ranks with real numbers. Every point you spend also adds +0.4% Damage to every tower. All your points are refunded: open Talents to spend them.'],
+  ['Capstones', 'Twenty points into a tree opens three play styles: pick one. Marksman, Glass Cannon, Wildfire, Conflagration, Circuit, Glacier, War Economy, Artisan, Gambler and more. Hold 1, then 2 from Level 50 and 3 from Level 100.'],
+  ['Recalibration tokens you\'ll use', 'Spend a token to reroll a tower\'s affixes for free, or to refund a talent mid-run (2 for a Capstone). The Captain\'s Chest now gives one too.'],
+  ['More gold late', 'Wave-clear bonus raised (25 + 6 per wave, was 20 + 4). From Wave 40 kill credits grow a little faster each wave. Pirate crates pay about 50% more and drop credits more often; the Captain\'s Chest always pays five crates\' worth.'],
+  ['Breach warning', 'When leaks start climbing, an alert names what is getting through and what counters it, before one bad wave ends the run.'],
+  ['Void Lens trimmed', 'Ramp ×3.2 (was ×3.5) and a little less base damage, Event Horizon ×5, Prism Split ×2.8. Five Lenses did 89% of the damage in a Wave 87 run; other towers matter again.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -1205,7 +1209,7 @@ const STAT_TXT = {
   superChill: () => 'Superconduct also Chills',
   napalmKill: () => 'Thermal kills leave burning ground for 2s', multiA: v => `Arc towers hit +${v} target`,
   freezeImmRed: v => `Enemies can be Frozen again ${v}% sooner`, markVoid: v => `Each Mark adds +${v}% Void damage taken`,
-  salvage: () => 'Kills grant +1 credit for every 10 waves reached',
+  salvage: () => 'Kills grant +1 credit for every 10 waves reached', vxpAll: v => `Veterans rank up ${v}% faster`,
   cLink: v => `Circuit: +${v}% more Attack Speed per wired neighbour`, cBolt: v => `Circuit: chain lightning deals +${v}% damage`,
   hPull: v => `Event Horizon: gravity wells pull ${v}% harder`, hWell: v => `Event Horizon: gravity wells reach ${v}% further`,
   aRank: v => `Artisan: +${v}% more Damage per Veteran rank`, aVxp: v => `Artisan: +${v}% Veteran XP`, gScore: v => `Gambler: +${v}% score`,
@@ -1223,107 +1227,6 @@ const SMALL_NAME = {
   affixLuck: 'Mutation', eliteDmg: 'Hunter', armorPen: 'Penetrator', frozenVuln: 'Brittle', knock: 'Recoil', xp: 'Insight',
 };
 
-const SECTORS = [
-  { id: 'K', name: 'Ballistics', col: '#efe6cf', attr: 'P', spine: [{ dmgK: 8 }, { critC: 3 }, { rateK: 6 }],
-    clusters: [
-      { name: 'Hollow Points', fx: { critSplash: 40, critM: 15 }, smalls: [{ critM: 10 }, { dmgK: 6 }, { critM: 10 }] },
-      { name: 'Rifling', fx: { fifthCrit: 1, rateK: 10 }, smalls: [{ rateK: 5 }, { range: 4 }, { rateK: 5 }] },
-      { name: 'Armor Piercer', fx: { shredStack: 3, armorPen: 30 }, smalls: [{ armorPen: 10 }, { eliteDmg: 6 }, { armorPen: 10 }] }],
-    mastery: { name: 'Ballistic Mastery', fx: { dmgK: 15 }, opts: [
-      { name: 'Overpenetration', fx: { pierceK: 1, pierceKeep: 1 } }, { name: 'Deadeye', fx: { critCK: 15, critMK: 50 } }, { name: 'Suppression', fx: { kSlow: 15 } }], smalls: [{ dmgK: 8 }, { critC: 3 }] },
-    keystone: { name: 'Glass Cannon Array', ks: 'glass', lines: ['+60% Damage', '−40% core max HP and shield'], smalls: [{ dmg: 5 }, { dmg: 5 }] } },
-  { id: 'T', name: 'Combustion', col: '#ff7b39', attr: 'P', spine: [{ dmgT: 8 }, { burnDmg: 10 }, { burnChance: 3 }],
-    clusters: [
-      { name: 'Accelerant', fx: { burnVuln: 20, burnDmg: 10 }, smalls: [{ burnDmg: 8 }, { burnChance: 3 }, { burnDmg: 8 }] },
-      { name: 'Flashpoint', fx: { burnBoom: 25, dmgT: 10 }, smalls: [{ dmgT: 6 }, { splash: 0.1 }, { dmgT: 6 }] },
-      { name: 'Chain Ignition', fx: { chainIgnite: 1, burnDur: 20 }, smalls: [{ burnDur: 10 }, { burnDmg: 8 }, { burnDur: 10 }] }],
-    mastery: { name: 'Pyre Mastery', fx: { dmgT: 15 }, opts: [
-      { name: 'Wildfire', fx: { burnSpread: 1 } }, { name: 'Inferno Core', fx: { infernoCore: 1 } }, { name: 'Heat Sink', fx: { heatSink: 1 } }], smalls: [{ dmgT: 8 }, { burnDmg: 10 }] },
-    keystone: { name: 'Conflagration', ks: 'conflag', lines: ['All damage becomes Thermal (Resonance unaffected)', '+50% Thermal Damage, +150% Burn damage. Burning enemies are 25% slower', 'Every 3rd Thermal hit on a burning enemy triggers Thermal Shock', 'Chill becomes Burn: cannot Chill or Freeze'], smalls: [{ dmgT: 6 }, { burnDmg: 8 }] } },
-  { id: 'A', name: 'Voltaic', col: '#ffe14d', attr: 'Tm', spine: [{ dmgA: 8 }, { rate: 4 }, { shockChance: 3 }],
-    clusters: [
-      { name: 'Capacitors', fx: { capacitor: 1, dmgA: 10 }, smalls: [{ dmgA: 6 }, { rateA: 4 }, { dmgA: 6 }] },
-      { name: 'Forked Lightning', fx: { chain: 1, chainKeep: 1 }, smalls: [{ shockChance: 4 }, { dmgA: 6 }, { shockChance: 4 }] },
-      { name: 'Overvolt', fx: { shockBurst: 15, shockEff: 25 }, smalls: [{ shockEff: 12 }, { rate: 3 }, { shockEff: 12 }] }],
-    mastery: { name: 'Voltaic Mastery', fx: { dmgA: 15 }, opts: [
-      { name: 'Static Field', fx: { shockLong: 1 } }, { name: 'Thunderstrike', fx: { thunder: 1 } }, { name: 'Overcharged', fx: { ovlFree: 1, overloadRad: 50 } }], smalls: [{ dmgA: 8 }, { rate: 4 }] },
-    keystone: { name: 'Overclocked Grid', ks: 'overgrid', lines: ['+40% Attack Speed', 'Attacks have a 3% chance to jam the tower for 1.5s'], smalls: [{ rate: 4 }, { rate: 4 }] } },
-  { id: 'C', name: 'Cryogenics', col: '#6ae2ff', attr: 'F', spine: [{ dmgC: 8 }, { chillPot: 8 }, { chillChance: 3 }],
-    clusters: [
-      { name: 'Deep Freeze', fx: { freezeAt: 1, freezeDur: 0.3 }, smalls: [{ chillPot: 8 }, { freezeDur: 0.15 }, { chillPot: 8 }] },
-      { name: 'Brittle', fx: { iceShards: 1, frozenVuln: 15 }, smalls: [{ frozenVuln: 8 }, { dmgC: 6 }, { frozenVuln: 8 }] },
-      { name: 'Frost Lattice', fx: { chillSplash: 1, dmgC: 10 }, smalls: [{ chillChance: 4 }, { range: 4 }, { chillChance: 4 }] }],
-    mastery: { name: 'Cryo Mastery', fx: { dmgC: 15 }, opts: [
-      { name: 'Long Winter', fx: { chillSlowDecay: 1 } }, { name: 'Cold Snap', fx: { coldSnap: 1 } }, { name: 'Glacial', fx: { glacial: 15 } }], smalls: [{ dmgC: 8 }, { chillPot: 8 }] },
-    keystone: { name: 'Absolute Zero', ks: 'abszero', lines: ['Chilled enemies take +50% damage', '−50% Thermal Damage'], smalls: [{ chillChance: 4 }, { dmgC: 6 }] } },
-  { id: 'V', name: 'Singularity', col: '#b86cff', attr: 'F', spine: [{ dmgV: 8 }, { markChance: 3 }, { eliteDmg: 6 }],
-    clusters: [
-      { name: 'Event Horizon', fx: { markSlow: 30, markMax: 3 }, smalls: [{ markChance: 3 }, { dmgV: 6 }, { markChance: 3 }] },
-      { name: 'Null Lens', fx: { rampKeep: 1, dmgV: 10 }, smalls: [{ dmgV: 6 }, { markChance: 4 }, { dmgV: 6 }] },
-      { name: 'Gravitic Pull', fx: { knock: 6, knockMark: 1 }, smalls: [{ knock: 1 }, { dmg: 3 }, { knock: 1 }] }],
-    mastery: { name: 'Void Mastery', fx: { dmgV: 15 }, opts: [
-      { name: 'Black Hole', fx: { blackHole: 1 } }, { name: 'Entropic Decay', fx: { markPerma: 1 } }, { name: 'Void Siphon', fx: { voidSiphon: 1 } }], smalls: [{ dmgV: 8 }, { markChance: 3 }] },
-    keystone: { name: 'Singularity', ks: 'singularity', lines: ['+100% Void Damage', '−30% all other damage'], smalls: [{ dmgV: 6 }, { dmgV: 6 }] } },
-  { id: 'E', name: 'Bastion', col: '#59f0b4', attr: 'I', spine: [{ coreHP: 12 }, { credits: 4 }, { shield: 6 }],
-    clusters: [
-      { name: 'Reinforced Core', fx: { shieldWave: 1, coreHP: 30, shieldRegen: 30 }, smalls: [{ coreHP: 10 }, { shieldRegen: 15 }, { coreHP: 10 }] },
-      { name: 'Logistics', fx: { sellPct: 85, costRed: 8 }, smalls: [{ costRed: 3 }, { credits: 4 }, { upgRed: 3 }] },
-      { name: 'Command Uplink', fx: { loadout: 1, abilCharge: 10 }, smalls: [{ abilPower: 8 }, { abilCharge: 5 }, { abilPower: 8 }] }],
-    mastery: { name: 'Bastion Mastery', fx: { coreHP: 20 }, opts: [
-      { name: 'Retaliation', fx: { coreDmg: 60, coreRate: 30, coreRange: 1 } }, { name: 'Compound Interest', fx: { interest: 2 } }, { name: 'Field Repairs', fx: { fieldRepair: 5 } }], smalls: [{ coreHP: 10 }, { shield: 6 }] },
-    keystone: { name: 'Diminishing Returns', ks: 'dimret', lines: ['+50% Credits from all sources', 'Each copy of a tower costs 12% more'], smalls: [{ credits: 4 }, { credits: 4 }] } },
-];
-const HYBRIDS = [
-  { name: 'Incendiary Rounds', fx: { burnCrit: 1, dmgK: 6, dmgT: 6 } },
-  { name: 'Plasma Coupling', fx: { ovlBurn: 1, overloadRad: 30 } },
-  { name: 'Superconductors', fx: { superChill: 1, superRad: 60 } },
-  { name: 'Stasis Theory', fx: { stasisDur: 3, chillVoid: 15 } },
-  { name: 'Storm Caller', fx: { stormFreq: 50, stormPow: 50 } },
-  { name: 'Lone Wolf', fx: { loneWolf: 35 } },
-];
-const ARC_KEYSTONES = {
-  2: { name: 'Prismatic Array', ks: 'prismatic', lines: ['Hits apply a random status', '−10% Damage'], smalls: [{ shockChance: 3 }, { chillChance: 3 }] },
-  4: { name: 'Chaos Engine', ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'], smalls: [{ affixLuck: 10 }, { affixLuck: 10 }] },
-  5: { name: 'Unbreakable', ks: 'unbreakable', lines: ['Survive a lethal hit at 50% HP, once per 10 waves', '−10% tower Damage'], smalls: [{ coreHP: 10 }, { shield: 8 }] },
-};
-
-// Outer spiral arms: one per sector, each ends in a new notable
-const ARMS = [
-  { name: 'Railgun Doctrine', fx: { pierceK: 1, dmgK: 10 } },
-  { name: 'Napalm Rain', fx: { napalmKill: 1, burnDmg: 10 } },
-  { name: 'Ion Lattice', fx: { multiA: 1, dmgA: 5 } },
-  { name: 'Hoarfrost', fx: { freezeImmRed: 60, chillPot: 10 } },
-  { name: 'Dark Matter', fx: { markVoid: 5, dmgV: 5 } },
-  { name: 'Salvage Drones', fx: { salvage: 1, credits: 4 } },
-];
-// Z-axis Orbits: rings of 3 satellites around the vertical axis. Each satellite affects the sector it faces; rotate the ring to retarget.
-const SECTOR_EL = ['K', 'T', 'A', 'C', 'V', 'E'];
-const ORBITS = {
-  zo1: { name: 'Zenith Orbit I', z: 150, col: '#9fd8ff', sats: [
-    { name: 'Amplifier', d: '+30% Damage for the faced element', k: 'dmg', v: 30, t: el => `+30% ${EL[el].name} Damage`, E: { coreDmg: 40 } },
-    { name: 'Accelerator', d: '+20% Attack Speed for the faced element', k: 'rate', v: 20, t: el => `+20% ${EL[el].name} Attack Speed`, E: { credits: 12 } },
-    { name: 'Catalyst', d: '+12% status chance for the faced element (Kinetic: Crit Chance)', k: 'status', v: 12, t: el => el === 'K' ? '+12% Kinetic Crit Chance' : `+12% chance to ${{ T: 'Burn', C: 'Chill', A: 'Shock', V: 'Mark' }[el]} for ${EL[el].name} towers`, E: { shield: 30 } }] },
-  zo2: { name: 'Zenith Orbit II', z: 330, col: '#9fd8ff', sats: [
-    { name: 'Focusing Lens', d: '+15% Range for the faced element', k: 'range', v: 15, t: el => `+15% ${EL[el].name} Range`, E: { coreRange: 1 } },
-    { name: 'Harmonic', d: 'Faced element towers count +1 Resonance', k: 'reson', v: 1, t: el => `${EL[el].name} towers count +1 Resonance`, E: { costRed: 6 } },
-    { name: 'Veteran Beacon', d: 'Faced element towers rank up 2× faster', k: 'vxp', v: 100, t: el => `${EL[el].name} towers rank up 2× faster`, E: { xp: 10 } }] },
-  no1: { name: 'Nadir Orbit I', z: -150, col: '#ff5fa8', sats: [
-    { name: 'Flux Anchor', d: '+40% Damage for the faced element, −8% all other damage', k: 'flux', v: 40, t: el => `+40% ${EL[el].name} Damage, −8% all other damage`, E: { credits: 20, dmg: -5 } },
-    { name: 'Storm Beacon', d: 'Storms of the faced element appear 3× as often', k: 'storm', v: 1, t: el => `${STORMS[{ K: 'static', T: 'solar', C: 'cryo', A: 'ion', V: 'void' }[el]].name}s appear 3× as often`, E: { stormPow: 25 } },
-    { name: 'Volatile Core', d: 'Faced element hits: 10% chance to deal ×4 damage', k: 'vol', v: 10, t: el => `${EL[el].name} hits: 10% chance to deal ×4 damage`, E: { coreDmg: 80 } }] },
-  no2: { name: 'Nadir Orbit II', z: -330, col: '#ff5fa8', sats: [
-    { name: 'Entropy Well', d: 'Kills by the faced element fill the Entropy gauge', k: 'ent', v: 1, t: el => `${EL[el].name} kills fill the Entropy gauge`, E: { abilCharge: 15 } },
-    { name: 'Rift Tap', d: 'Faced element: +6% Damage per active Anomaly', k: 'rift', v: 6, t: el => `+6% ${EL[el].name} Damage per active Anomaly`, E: { credits: 15 } },
-    { name: 'Event Lens', d: 'Combos triggered by the faced element deal +60%', k: 'combo', v: 60, t: el => `Combos triggered by ${EL[el].name} hits deal +60%`, E: { shieldRegen: 50 } }] },
-};
-const orbitRot = id => (typeof PROF !== 'undefined' && PROF && PROF.orbit && PROF.orbit[id]) || 0;
-const satSector = n => ((n.sat * 2 + orbitRot(n.orbit)) % 6 + 6) % 6;
-function satLines(n) {
-  const O = ORBITS[n.orbit], S = O.sats[n.sat], si = satSector(n), el = SECTOR_EL[si];
-  if (el === 'E') return [`Facing ${SECTORS[si].name}: ` + Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')];
-  return [`Facing ${SECTORS[si].name}: ${S.t(el)}`];
-}
-const WEB_SCALE = 1.3, WEB_VER = 3;
 // v4.2 Doctrines: a region's seal gives it a play style you can see on the field, with a real cost. Its notables, mastery,
 // keystone and arm only work (and can only be taken) once its seal is in. You hold a limited number of seals.
 // Indexed by sector. Sectors without an entry are still open, freeform regions (they become Doctrines later).
@@ -1353,145 +1256,92 @@ const DOCTRINES = {
     lines: ['The core grows a turret for every stack of banked credits (up to 8): +60% core Damage and +8% core Attack Speed each', 'The stack size grows with the wave, so keep banking', 'Towers cost 20% more'],
     smalls: [{ weStep: 6 }, { weTur: 10 }] },
 };
-const sealSlots = lvl => 1 + (lvl >= 75 ? 1 : 0) + (lvl >= 120 ? 1 : 0);
-const SEAL_NEXT = lvl => lvl < 75 ? 75 : lvl < 120 ? 120 : 0;
-function buildTree() {
-  const nodes = {}, edges = [];
-  const add = (id, x, y, kind, sector, name, fx, extra) => {
-    nodes[id] = Object.assign({ id, x, y, kind, sector, name, fx: fx || {}, adj: [] }, extra || {});
-    return nodes[id];
-  };
-  const link = (a, b) => { nodes[a].adj.push(b); nodes[b].adj.push(a); edges.push([a, b]); };
-  const pol = (r, deg) => { const a = deg * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; };
-  const smallName = fx => SMALL_NAME[Object.keys(fx)[0]] || 'Node';
-
-  // merged travel nodes: two old smalls folded into one, at 90% of their sum
-  const mf = (...fs) => { const o = {}; for (const f of fs) for (const k in f) o[k] = (o[k] || 0) + f[k]; for (const k in o) { const v = o[k] * (fs.length > 1 ? 0.9 : 1); o[k] = Math.abs(v) < 1 ? Math.round(v * 100) / 100 : Math.round(v); } return o; };
-  add('start', 0, 0, 'start', -1, 'Entropy Core', { P: 5, Tm: 5, F: 5, I: 5 });
-  SECTORS.forEach((S, i) => {
-    const a = -90 + i * 60, N = SECTORS[(i + 1) % 6], A8 = { [S.attr]: 8 };
-    let [x, y] = pol(80, a);
-    add(`g${i}`, x, y, 'small', i, `${S.name} Gate`, { [S.attr]: 6, xp: 2 });
-    link('start', `g${i}`);
-    [x, y] = pol(88, a + 30);
-    const mfx = {}; mfx[S.attr] = 5; mfx[N.attr] = (mfx[N.attr] || 0) + 5;
-    add(`m${i}`, x, y, 'small', i, 'Conduit', mfx);
-    // spine: four steps out from the gate
-    const DOC = DOCTRINES[i];
-    const spineFx = [A8, mf(S.spine[0], A8), Object.assign({}, S.spine[1], DOC ? DOC.smalls[0] : {}), mf(S.spine[2], A8, DOC ? DOC.smalls[1] : {})];
-    for (let j = 0; j < 4; j++) {
-      [x, y] = pol(140 + j * 80, a);
-      add(`s${i}_${j}`, x, y, 'small', i, smallName(spineFx[j]), spineFx[j]);
-      link(j === 0 ? `g${i}` : `s${i}_${j - 1}`, `s${i}_${j}`);
-    }
-    // clusters: spine -> two smalls -> notable, alternating sides so neighbours never meet
-    [[1, -1], [2, 1], [3, -1]].forEach(([j, side], ci) => {
-      const C = S.clusters[ci];
-      const [sx, sy] = pol(140 + j * 80, a), ar = a * Math.PI / 180;
-      const tx = -Math.sin(ar) * side, ty = Math.cos(ar) * side, rx = Math.cos(ar), ry = Math.sin(ar);
-      const p = `c${i}_${ci}`, fa = mf(C.smalls[0], C.smalls[2]), fb = C.smalls[1];
-      add(`${p}a`, sx + tx * 40, sy + ty * 40, 'small', i, smallName(fa), fa);
-      add(`${p}b`, sx + tx * 80 + rx * 14, sy + ty * 80 + ry * 14, 'small', i, smallName(fb), fb);
-      add(`${p}n`, sx + tx * 120, sy + ty * 120, 'notable', i, C.name, C.fx);
-      link(`s${i}_${j}`, `${p}a`); link(`${p}a`, `${p}b`); link(`${p}b`, `${p}n`);
-      if (DOC) nodes[`${p}n`].need = i;
-    });
-    // the Doctrine seal hangs off the first spine node
-    if (DOC) {
-      const [sx, sy] = pol(140, a), ar = a * Math.PI / 180;
-      add(`d${i}`, sx - Math.sin(ar) * 62, sy + Math.cos(ar) * 62, 'seal', i, `${DOC.name} Doctrine`, {}, { doctrine: i, ks: DOC.id, lines: DOC.lines });
-      link(`s${i}_0`, `d${i}`);
-    }
-    // keystone & mastery branches
-    const K = S.keystone, M = S.mastery;
-    [[K, -1, 'k', 'keystone'], [M, 1, 'x', 'mastery']].forEach(([D, sd, tag, kind]) => {
-      const fx = mf(D.smalls[0], D.smalls[1]);
-      [x, y] = pol(495, a + sd * 6);
-      add(`${tag}${i}_0`, x, y, 'small', i, smallName(fx), fx);
-      link(`s${i}_3`, `${tag}${i}_0`);
-      [x, y] = pol(580, a + sd * 11);
-      add(`${tag}${i}`, x, y, kind, i, D.name, D.fx || {}, D.ks ? { ks: D.ks, lines: D.lines } : D.opts ? { opts: D.opts } : null);
-      link(`${tag}${i}_0`, `${tag}${i}`);
-      if (DOC) nodes[`${tag}${i}`].need = i;
-    });
-  });
-  // ring of hybrids between sectors, plus three arc keystones
-  SECTORS.forEach((S, i) => {
-    const a = -90 + i * 60, n = (i + 1) % 6, N = SECTORS[n];
-    link(`g${i}`, `m${i}`); link(`m${i}`, `g${n}`);
-    let [x, y] = pol(455, a + 14);
-    add(`r${i}_0`, x, y, 'small', i, smallName(S.spine[0]), Object.assign({}, S.spine[0]));
-    [x, y] = pol(455, a + 46);
-    add(`r${i}_1`, x, y, 'small', n, smallName(N.spine[0]), Object.assign({}, N.spine[0]));
-    [x, y] = pol(470, a + 30);
-    add(`h${i}`, x, y, 'notable', i, HYBRIDS[i].name, HYBRIDS[i].fx, { hybrid: 1 });
-    link(`s${i}_3`, `r${i}_0`); link(`r${i}_0`, `h${i}`); link(`h${i}`, `r${i}_1`); link(`r${i}_1`, `s${n}_3`);
-    const AK = ARC_KEYSTONES[i];
-    if (AK) {
-      const fx = mf(AK.smalls[0], AK.smalls[1]);
-      [x, y] = pol(540, a + 30);
-      add(`e${i}_0`, x, y, 'small', i, smallName(fx), fx);
-      link(`h${i}`, `e${i}_0`);
-      [x, y] = pol(605, a + 30);
-      add(`e${i}`, x, y, 'keystone', i, AK.name, {}, { ks: AK.ks, lines: AK.lines });
-      link(`e${i}_0`, `e${i}`);
-    }
-  });
-  // outer spiral arms
-  SECTORS.forEach((S, i) => {
-    const a = -90 + i * 60, A8 = { [S.attr]: 8 };
-    const f0 = mf(S.spine[0], A8), f1 = mf(S.spine[1], A8);
-    let [x, y] = pol(670, a + 21);
-    add(`w${i}_0`, x, y, 'small', i, smallName(f0), f0); link(`x${i}`, `w${i}_0`);
-    [x, y] = pol(765, a + 34);
-    add(`w${i}_1`, x, y, 'small', i, smallName(f1), f1); link(`w${i}_0`, `w${i}_1`);
-    [x, y] = pol(850, a + 47);
-    add(`w${i}`, x, y, 'notable', i, ARMS[i].name, ARMS[i].fx, Object.assign({ arm: 1 }, DOCTRINES[i] ? { need: i } : {}));
-    link(`w${i}_1`, `w${i}`);
-  });
-  // the Z-axis: Zenith above the galactic plane, Nadir below
-  const col = (sign, tag, orbs, ks, smallFx, di) => {
-    const DOC = DOCTRINES[di];
-    if (DOC) { smallFx = smallFx.slice(); smallFx[1] = Object.assign({}, smallFx[1], DOC.smalls[0]); smallFx[3] = Object.assign({}, smallFx[3], DOC.smalls[1]); }
-    let prev = 'start', zi = 0;
-    const axis = (z, fx) => { const id = `${tag}${zi++}`; add(id, 0, 0, 'small', -2, smallName(fx), fx, { z, col: ORBITS[orbs[0]].col }); link(prev, id); prev = id; };
-    axis(sign * 70, smallFx[0]);
-    if (DOC) { add(`d${di}`, 110, 0, 'seal', -2, `${DOC.name} Doctrine`, {}, { z: sign * 70, col: ORBITS[orbs[0]].col, doctrine: di, ks: DOC.id, lines: DOC.lines }); link(`${tag}0`, `d${di}`); }
-    const need = DOC ? { need: di } : {};
-    orbs.forEach((oid, oi) => {
-      const O = ORBITS[oid];
-      add(oid, 0, 0, 'orbit', -2, O.name, {}, Object.assign({ z: O.z, col: O.col, orbitHub: oid }, need));
-      link(prev, oid); prev = oid;
-      O.sats.forEach((S, k) => { add(`${oid}_${k}`, 0, 0, 'sat', -2, S.name, {}, Object.assign({ z: O.z, col: O.col, orbit: oid, sat: k }, need)); link(oid, `${oid}_${k}`); });
-      axis(sign * (O.z + (oi ? 70 : 60)), smallFx[1 + oi * 2]);
-      if (!oi) axis(sign * (O.z + 120), smallFx[2]);
-    });
-    add(`${tag}k`, 0, 0, 'keystone', -2, ks.name, {}, Object.assign({ z: sign * 480, col: ORBITS[orbs[0]].col, ks: ks.ks, lines: ks.lines }, need));
-    link(prev, `${tag}k`);
-  };
-  col(1, 'za', ['zo1', 'zo2'], { name: 'Celestial Order', ks: 'celestial', lines: ['Towers roll 2 affixes per build and upgrade', 'Legendary affixes can no longer roll'] },
-    [{ F: 6, I: 4 }, { F: 8 }, { I: 8 }, { F: 6, Tm: 4 }], 6);
-  col(-1, 'na', ['no1', 'no2'], { name: 'Event Singularity', ks: 'singular', lines: ['Entropy fills 2× faster', 'Each Anomaly grants +10% score instead of +5%', 'You cannot Stabilize'] },
-    [{ P: 6, Tm: 4 }, { Tm: 8 }, { P: 8 }, { P: 6, F: 4 }], 7);
-  // spread the disk out for phone-sized tap targets
-  for (const id in nodes) { const n = nodes[id]; if (n.sector !== -2) { n.x *= WEB_SCALE; n.y *= WEB_SCALE; } }
-  // slight thickness so the disk reads as 3D when tilted
-  for (const id in nodes) { const n = nodes[id]; if (n.z === undefined) { const h = Math.sin(n.x * 12.9898 + n.y * 78.233) * 43758.5453; n.z = ((h - Math.floor(h)) - 0.5) * (n.kind === 'small' ? 26 : 16) * Math.min(1, Math.hypot(n.x, n.y) / 300); } }
-  nodes.start.z = 0;
-  return { nodes, edges, list: Object.values(nodes) };
+// ---------- v5.0 Talents: a clean sheet for the passive web ----------
+// Seven short trees, read top to bottom like a classic RPG talent tree. Each tree has four rows of talents with ranks, and a
+// Capstone row: pick one defining play style. Row r opens after 5 × r points in that tree; a Capstone needs 20. You can hold a
+// limited number of Capstones (capSlots), so a build is "two or three things you are really good at", not 180 small bonuses.
+// Talent effects use the same stat keys as before (STAT_TXT), so every mechanic from the old web still exists.
+const WEB_VER = 4;
+const TROW = 5, TCAP = 20;
+// every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall
+const TAL_PT_DMG = 0.4;
+const T_ = (id, name, max, fx, extra) => Object.assign({ id, name, max, fx }, extra || {});
+const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
+const TALENTS = [
+  { id: 'K', name: 'Ballistics', col: '#efe6cf', glyph: 'K', tag: 'Kinetic guns: crits that tear through armour',
+    rows: [
+      [T_('kDmg', 'Heavy Rounds', 5, { dmgK: 7 }), T_('kCrit', 'Precision', 5, { critC: 3 })],
+      [T_('kRate', 'Autoloader', 5, { rateK: 4 }), T_('kPen', 'Penetrator', 3, { armorPen: 10 })],
+      [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 3, { critM: 12 })],
+      [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 3, { shredStack: 1, eliteDmg: 4 })]],
+    caps: [CAP('marksman', 'Marksman', { ks: 'marksman', doc: 0 }), CAP('glass', 'Glass Cannon Array', { ks: 'glass', lines: ['+60% Damage', '−40% core max HP and shield'] }),
+      CAP('deadeye', 'Deadeye', { fx: { critCK: 15, critMK: 50, pierceK: 1, pierceKeep: 1 }, lines: ['+15% Crit Chance and +50% Crit Damage for Kinetic towers', 'Kinetic shots pierce one more enemy and lose no damage doing it'] })] },
+  { id: 'T', name: 'Combustion', col: '#ff7b39', glyph: 'T', tag: 'Thermal and Burn: set the swarm alight',
+    rows: [
+      [T_('tDmg', 'Accelerant', 5, { dmgT: 7 }), T_('tChance', 'Kindling', 5, { burnChance: 3 })],
+      [T_('tBurn', 'Fuel', 5, { burnDmg: 10 }), T_('tSplash', 'Blast Radius', 3, { splash: 0.1 })],
+      [T_('tBoom', 'Flashpoint', 1, { burnBoom: 25, dmgT: 8 }), T_('tVuln', 'Scorch', 3, { burnVuln: 7 })],
+      [T_('tChain', 'Chain Ignition', 1, { chainIgnite: 1, burnDur: 20 }), T_('tNapalm', 'Napalm', 1, { napalmKill: 1, burnDmg: 10 }), T_('tCrit', 'Incendiary Rounds', 1, { burnCrit: 1 })]],
+    caps: [CAP('wildfire', 'Wildfire', { ks: 'wildfire', doc: 1 }), CAP('conflag', 'Conflagration', { ks: 'conflag', lines: ['All damage becomes Thermal (Resonance unaffected)', '+50% Thermal Damage, +150% Burn damage. Burning enemies are 25% slower', 'Every 3rd Thermal hit on a burning enemy triggers Thermal Shock', 'Chill becomes Burn: cannot Chill or Freeze'] }),
+      CAP('pyre', 'Pyre', { fx: { burnSpread: 1, heatSink: 1 }, lines: ['Every second, Burn spreads to the nearest enemy within 1 tile', 'Thermal towers: +2% Attack Speed per Burning enemy, up to +40%'] })] },
+  { id: 'A', name: 'Voltaic', col: '#ffe14d', glyph: 'A', tag: 'Arc and speed: chains, shocks and overloads',
+    rows: [
+      [T_('aDmg', 'Voltage', 5, { dmgA: 7 }), T_('aRate', 'Cadence', 5, { rate: 3 })],
+      [T_('aShock', 'Static', 5, { shockChance: 3 }), T_('aDis', 'Discharge', 3, { rateA: 4 })],
+      [T_('aFork', 'Forked Lightning', 1, { chain: 1, chainKeep: 1 }), T_('aOver', 'Overvolt', 3, { shockEff: 12 })],
+      [T_('aCap', 'Capacitors', 1, { capacitor: 1, dmgA: 10 }), T_('aIon', 'Ion Lattice', 1, { multiA: 1 }), T_('aPlasma', 'Plasma Coupling', 1, { ovlBurn: 1, overloadRad: 30 })]],
+    caps: [CAP('circuit', 'Circuit', { ks: 'circuit', doc: 2 }), CAP('overgrid', 'Overclocked Grid', { ks: 'overgrid', lines: ['+40% Attack Speed', 'Attacks have a 3% chance to jam the tower for 1.5s'] }),
+      CAP('thunder', 'Thunderstrike', { fx: { thunder: 1, shockLong: 1, ovlFree: 1 }, lines: ['Every 6s, lightning strikes the toughest enemy on the map', 'Shock lasts 6s instead of 3s', 'Overload has no cooldown'] })] },
+  { id: 'C', name: 'Cryogenics', col: '#6ae2ff', glyph: 'C', tag: 'Chill and Freeze: slow them, then shatter them',
+    rows: [
+      [T_('cDmg', 'Frostbite', 5, { dmgC: 7 }), T_('cPot', 'Permafrost', 5, { chillPot: 10 })],
+      [T_('cChance', 'Frost', 5, { chillChance: 3 }), T_('cStill', 'Stillness', 3, { freezeDur: 0.1 })],
+      [T_('cDeep', 'Deep Freeze', 1, { freezeAt: 1, freezeDur: 0.3 }), T_('cBrittle', 'Brittle', 3, { frozenVuln: 8 })],
+      [T_('cLattice', 'Frost Lattice', 1, { chillSplash: 1, dmgC: 10 }), T_('cShards', 'Ice Shards', 1, { iceShards: 1 }), T_('cSuper', 'Superconductors', 1, { superChill: 1, superRad: 60 })]],
+    caps: [CAP('glacier', 'Glacier', { ks: 'glacier', doc: 3 }), CAP('abszero', 'Absolute Zero', { ks: 'abszero', lines: ['Chilled enemies take +50% damage', '−50% Thermal Damage'] }),
+      CAP('winter', 'Long Winter', { fx: { chillSlowDecay: 1, coldSnap: 1, glacial: 15 }, lines: ['Chill fades 3× slower', 'Shatter also Freezes enemies within 1 tile', 'Chilled enemies move an extra 15% slower'] })] },
+  { id: 'V', name: 'Singularity', col: '#b86cff', glyph: 'V', tag: 'Void and Marks: bend the road, collapse the strong',
+    rows: [
+      [T_('vDmg', 'Null', 5, { dmgV: 6 }), T_('vHunt', 'Hunter', 5, { eliteDmg: 5 })],
+      [T_('vMark', 'Mark', 5, { markChance: 3 }), T_('vKnock', 'Gravitic', 3, { knock: 2 })],
+      [T_('vLens', 'Null Lens', 1, { rampKeep: 1, dmgV: 8 }), T_('vSlow', 'Event Drag', 3, { markSlow: 10 })],
+      [T_('vDark', 'Dark Matter', 1, { markVoid: 5, markMax: 3 }), T_('vHole', 'Black Hole', 1, { blackHole: 1, collapse: 30 }), T_('vPull', 'Gravitic Pull', 1, { knockMark: 1, knock: 3 })]],
+    caps: [CAP('horizon', 'Event Horizon', { ks: 'horizon', doc: 4 }), CAP('singularity', 'Singularity', { ks: 'singularity', lines: ['+100% Void Damage', '−30% all other damage'] }),
+      CAP('decay', 'Entropic Decay', { fx: { markPerma: 1, voidSiphon: 1 }, lines: ['Marks never fade', 'Each Collapse fills the Entropy gauge'] })] },
+  { id: 'E', name: 'Bastion', col: '#59f0b4', glyph: 'E', tag: 'Core, shield and credits: the economy wins long runs',
+    rows: [
+      [T_('eHP', 'Hull Plating', 5, { coreHP: 12 }), T_('eCr', 'Salvage', 5, { credits: 4 })],
+      [T_('eShield', 'Barrier', 3, { shield: 8, shieldRegen: 15 }), T_('eCost', 'Supply Lines', 5, { costRed: 2, upgRed: 3 })],
+      [T_('eCore', 'Reinforced Core', 1, { shieldWave: 1, coreHP: 30 }), T_('eRepair', 'Field Repairs', 3, { fieldRepair: 2 })],
+      [T_('eInt', 'Compound Interest', 1, { interest: 2 }), T_('eRet', 'Retaliation', 1, { coreDmg: 60, coreRate: 30, coreRange: 1 }), T_('eDrones', 'Salvage Drones', 1, { salvage: 1 })]],
+    caps: [CAP('wareco', 'War Economy', { ks: 'wareco', doc: 5 }), CAP('dimret', 'Diminishing Returns', { ks: 'dimret', lines: ['+50% Credits from all sources', 'Each copy of a tower costs 12% more'] }),
+      CAP('unbreakable', 'Unbreakable', { ks: 'unbreakable', lines: ['Survive a lethal hit at 50% HP, once per 10 waves', '−10% tower Damage'] })] },
+  { id: 'X', name: 'Command', col: '#ff5fa8', glyph: 'X', tag: 'Abilities, veterans, luck and storms',
+    rows: [
+      [T_('xPow', 'Uplink', 5, { abilPower: 8 }), T_('xCharge', 'Telemetry', 5, { abilCharge: 5 })],
+      [T_('xLuck', 'Mutation', 3, { affixLuck: 10 }), T_('xXp', 'Insight', 3, { xp: 6 }), T_('xRange', 'Optics', 3, { range: 4 })],
+      [T_('xLoad', 'Loadout', 1, { loadout: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
+      [T_('xWolf', 'Lone Wolf', 1, { loneWolf: 35 }), T_('xStasis', 'Stasis Theory', 1, { stasisDur: 3, chillVoid: 15 }), T_('xVet', 'Field Promotion', 3, { vxpAll: 30 })]],
+    caps: [CAP('artisan', 'Artisan', { ks: 'artisan', doc: 6 }), CAP('gambler', 'Gambler', { ks: 'gambler', doc: 7 }),
+      CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'] })] },
+];
+// lookups: every talent and capstone by id, with its tree and row
+const TAL = {};
+for (const tr of TALENTS) {
+  tr.rows.forEach((row, r) => row.forEach(t => { t.tree = tr.id; t.row = r; TAL[t.id] = t; }));
+  for (const c of tr.caps) { c.tree = tr.id; c.row = 4; c.max = 1; TAL[c.id] = c; }
 }
-const TREE = buildTree();
-
-function nodeLines(n) {
-  const out = [];
-  if (n.sat !== undefined) return satLines(n);
-  if (n.orbitHub) return ['Unlocks 3 satellites. Each boosts the sector it faces.', 'Rotate the ring to change what they affect.'];
-  if (n.lines) out.push(...n.lines);
-  for (const k in n.fx) { const f = STAT_TXT[k]; if (f) out.push(f(n.fx[k])); }
-  return out;
+const TREE_BY_ID = Object.fromEntries(TALENTS.map(t => [t.id, t]));
+// v4.x Doctrine seals live on as Capstones (same ks flags, same field effects)
+const capSlots = lvl => 1 + (lvl >= 50 ? 1 : 0) + (lvl >= 100 ? 1 : 0);
+const CAP_NEXT = lvl => lvl < 50 ? 50 : lvl < 100 ? 100 : 0;
+// a talent's description at a given rank
+function talentLines(t, rank) {
+  if (t.cap) return t.lines || (t.doc !== undefined ? DOCTRINES[t.doc].lines : []);
+  const r = Math.max(1, rank || 1);
+  return Object.keys(t.fx).map(k => { const v = t.fx[k]; const txt = STAT_TXT[k]; if (!txt) return k; return typeof v === 'number' && v !== 1 ? txt(+(v * r).toFixed(2)) : txt(v); });
 }
 
-// XP curve
 const xpForLevel = L => Math.round(3000 + 250 * L + 3 * L * L);
 function levelFromXP(xp) {
   let L = 0, need = xpForLevel(0);
@@ -1551,22 +1401,6 @@ const LAWS = [
 ];
 const LAW_SCORE = 0.15, NOVA_SCORE = 0.1, NOVA_XP = 0.25;
 const novaLevelReq = n => Math.min(150, 60 + 10 * n);
-// Star Ranks: unlimited points into a finished constellation, with gentle diminishing returns
-const STARS = {
-  s0: { key: 'dmgK', a: 1.5 }, s1: { key: 'dmgT', a: 1.5 }, s2: { key: 'dmgA', a: 1.5 }, s3: { key: 'dmgC', a: 1.5 }, s4: { key: 'dmgV', a: 1.5 },
-  s5: { key: 'coreHP', a: 3 }, zen: { key: 'dmg', a: 0.8 }, nad: { key: 'rate', a: 0.6 },
-};
-const starTotal = (rid, n) => n > 0 ? STARS[rid].a * 20 * Math.log(1 + n / 20) : 0;
-const REGION_IDS = ['s0', 's1', 's2', 's3', 's4', 's5', 'zen', 'nad'];
-const REGION_NAME = { s0: 'The Archer', s1: 'The Phoenix', s2: 'The Thunderbolt', s3: 'The Crystal', s4: 'The Maw', s5: 'The Bulwark', zen: 'The Crown', nad: 'The Serpent' };
-function regionOf(n) { if (n.sector >= 0) return 's' + n.sector; if (n.sector === -2) return n.z > 0 ? 'zen' : 'nad'; return null; }
-const REGION_NODES = {};
-// a region counts as complete with all its open passives: seals and seal-locked nodes don't count (you can only hold a few seals)
-const REGION_ALL = {};
-for (const n of TREE.list) { const r = regionOf(n); if (!r) continue; (REGION_ALL[r] = REGION_ALL[r] || []).push(n.id); if (n.kind !== 'seal' && n.need === undefined) (REGION_NODES[r] = REGION_NODES[r] || []).push(n.id); }
-// a remnant keeps a sector's notables (clusters + arm) active forever, seal or not
-const remnantNodes = rid => REGION_ALL[rid].filter(id => TREE.nodes[id].kind === 'notable' && !TREE.nodes[id].hybrid);
-
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',
   'Last Light', 'Gravedigger', 'Little Sun', 'Night Shift', 'Paper Moon', 'Iron Psalm', 'Red Tide', 'Cold Comfort', 'Dead Reckoning',
@@ -1605,7 +1439,7 @@ const Hooks = {
 // ---------------- Profile (meta progression) ----------------
 function defaultProfile() {
   return {
-    v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
+    v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], tal: {}, caps: [], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
     seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
@@ -1617,155 +1451,125 @@ function defaultProfile() {
 let PROF = defaultProfile();
 
 const profLevel = () => levelFromXP(PROF.xp);
-const starSpent = () => { let t = 0; for (const k in PROF.stars || {}) t += PROF.stars[k] || 0; return t; };
-const pointsSpent = () => PROF.alloc.length - 1 + starSpent();
-function regionDone(rid, A) { A = A || allocSet(); return REGION_NODES[rid].every(id => A.has(id)); }
-const regionsDone = () => { const A = allocSet(); return REGION_IDS.filter(r => regionDone(r, A)); };
-function starBuy(rid, n) {
-  if (!regionDone(rid)) return 0;
-  n = Math.max(0, Math.min(n, pointsFree())); if (!n) return 0;
-  PROF.stars = PROF.stars || {}; PROF.stars[rid] = (PROF.stars[rid] || 0) + n;
-  if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return n;
-}
-function starRefund(rid, n) {
-  if (G && !G.over) return 0;
-  const have = (PROF.stars && PROF.stars[rid]) || 0; n = Math.min(n, have); if (!n) return 0;
-  PROF.stars[rid] = have - n; if (!PROF.stars[rid]) delete PROF.stars[rid];
-  Hooks.onChange('tree'); return n;
-}
-const novaReady = () => !PROF.runSnap && profLevel().level >= novaLevelReq(PROF.nova || 0) && regionsDone().length >= 3;
-function supernova(remnant, law) {
-  if (!novaReady()) return false;
-  if (remnant && !PROF.remnants.includes(remnant) && remnant[0] === 's' && regionDone(remnant)) PROF.remnants.push(remnant);
-  if (law && LAWS.some(L => L.id === law) && !PROF.laws.includes(law)) PROF.laws.push(law);
-  PROF.nova = (PROF.nova || 0) + 1;
-  PROF.xp = 0; PROF.alloc = ['start']; PROF.stars = {};
-  Hooks.onChange('tree');
-  return true;
-}
+// ---------- v5.0 Talents (see TALENTS in data.js) ----------
+// PROF.tal = { talentId: rank }, PROF.caps = [capstoneId, ...]. Remnants (from Supernova) are capstone ids that stay active forever
+// without a slot; legacy 'sN' remnants (the old web's sectors) keep that tree's one-point notables.
+const talRank = id => (PROF.tal && PROF.tal[id]) || 0;
+const capsHeld = () => (PROF.caps || []).filter(id => TAL[id]);
+const pointsSpent = () => { let t = 0; for (const k in PROF.tal || {}) if (TAL[k]) t += PROF.tal[k]; return t + capsHeld().length; };
 const pointsFree = () => profLevel().level - pointsSpent();
-const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
-
-function allocSet() { return new Set(PROF.alloc); }
-function treePathTo(id) {
-  const A = allocSet();
-  if (A.has(id)) return [];
-  const prev = {}, q = [];
-  for (const a of A) { prev[a] = null; q.push(a); }
-  while (q.length) {
-    const c = q.shift();
-    if (c === id) break;
-    for (const nb of TREE.nodes[c].adj) if (!(nb in prev)) { prev[nb] = c; q.push(nb); }
+// points spent in a tree, optionally only in rows above `row`
+function treePts(tid, belowRow) { let t = 0; for (const k in PROF.tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && (belowRow === undefined || T.row < belowRow)) t += PROF.tal[k]; } return t; }
+const rowNeed = r => r >= 4 ? TCAP : r * TROW;
+// why a talent can't take another rank right now ('' = it can)
+function talentBlock(id) {
+  const T = TAL[id]; if (!T) return 'none';
+  if (pointsFree() < 1) return 'points';
+  if (T.cap) {
+    if (capsHeld().includes(id) || (PROF.remnants || []).includes(id)) return 'have';
+    if (treePts(T.tree) < TCAP) return 'row';
+    if (capsHeld().length >= capSlots(profLevel().level)) return 'slots';
+    // Conflagration turns every Chill into Burn, so Capstones built on Chill and Freeze would do nothing beside it
+    for (const [a, b] of CAP_CONFLICTS) { const other = id === a ? b : id === b ? a : null; if (other && activeCaps().includes(other)) return 'conflict:' + other; }
+    return '';
   }
-  if (!(id in prev)) return null;
-  const path = []; let c = id;
-  while (c && !A.has(c)) { path.unshift(c); c = prev[c]; }
-  return path;
-}
-function treeOrphans(id) {
-  // nodes that would be cut off (including id) if id is removed
-  if (id === 'start') return null;
-  const A = allocSet(); A.delete(id);
-  const seen = new Set(['start']), q = ['start'];
-  while (q.length) { const c = q.shift(); for (const nb of TREE.nodes[c].adj) if (A.has(nb) && !seen.has(nb)) { seen.add(nb); q.push(nb); } }
-  const out = [id];
-  for (const a of A) if (!seen.has(a)) out.push(a);
-  // removing a seal also releases everything it locked
-  const n0 = TREE.nodes[id];
-  if (n0.kind === 'seal') for (const a of A) if (TREE.nodes[a].need === n0.doctrine && !out.includes(a)) out.push(a);
-  return out;
-}
-// why a node can't be taken right now ('' = fine): seal-locked nodes need their Doctrine seal; seals are limited
-// Conflagration turns every Chill into Burn, so nothing could ever Freeze: the Glacier Doctrine would do nothing
-const TREE_CONFLICTS = [['k1', 'd3']];
-function sealsHeld(list) { return (list || PROF.alloc).filter(id => TREE.nodes[id] && TREE.nodes[id].kind === 'seal').length; }
-function treeBlock(id, path) {
-  path = path || treePathTo(id) || [];
-  const A = allocSet(), want = new Set(path);
-  for (const pid of path) { const n = TREE.nodes[pid]; if (n.need !== undefined && !A.has('d' + n.need) && !want.has('d' + n.need)) return 'seal:' + n.need; }
-  const newSeals = path.filter(pid => TREE.nodes[pid].kind === 'seal').length;
-  if (newSeals && sealsHeld() + newSeals > sealSlots(profLevel().level)) return 'slots';
-  // pairs that cancel each other out are refused rather than quietly doing nothing
-  for (const [a, b] of TREE_CONFLICTS) if ((A.has(a) || want.has(a)) && (A.has(b) || want.has(b)) && (want.has(a) || want.has(b))) return 'conflict:' + (want.has(a) ? b : a);
+  if (talRank(id) >= T.max) return 'max';
+  if (treePts(T.tree, T.row) < rowNeed(T.row)) return 'row';
   return '';
 }
-function treeAllocate(id) {
-  const path = treePathTo(id);
-  if (!path || !path.length || path.length > pointsFree()) return false;
-  if (treeBlock(id, path)) return false;
-  const before = new Set(regionsDone());
-  PROF.alloc.push(...path);
+function talentAdd(id) {
+  if (talentBlock(id)) return false;
+  const T = TAL[id];
+  if (T.cap) PROF.caps = capsHeld().concat([id]);
+  else { PROF.tal = PROF.tal || {}; PROF.tal[id] = talRank(id) + 1; }
   if (G && !G.over) recomputeAll();
-  for (const r of regionsDone()) if (!before.has(r)) { Hooks.toast('CONSTELLATION COMPLETE', `${REGION_NAME[r]} · Star Ranks unlocked`, '#ffe9b0', 1); Hooks.sfx('levelup'); }
   Hooks.onChange('tree');
   return true;
 }
-function treeRefund(id) {
-  const orph = treeOrphans(id);
-  if (!orph) return false;
-  if (G && !G.over && !G.checkpoint) {
-    if (G.tokens < orph.length) return false;
-    G.tokens -= orph.length;
+// mid-run refunds cost Recalibration tokens (1 per rank, 2 for a Capstone); free between runs and at checkpoints
+const CAP_CONFLICTS = [['conflag', 'glacier'], ['conflag', 'abszero'], ['conflag', 'winter']];
+const refundCost = id => TAL[id] && TAL[id].cap ? 2 : 1;
+const refundFree = () => !(G && !G.over && !G.checkpoint);
+// would removing one rank of id leave a talent above it without the points its row needs?
+function talentCanRemove(id) {
+  const T = TAL[id]; if (!T) return 'none';
+  if (T.cap) { if (!capsHeld().includes(id)) return 'none'; }
+  else if (!talRank(id)) return 'none';
+  if (!T.cap) {
+    const tid = T.tree; PROF.tal[id]--;
+    let bad = '';
+    for (const k in PROF.tal) { const U = TAL[k]; if (U && U.tree === tid && PROF.tal[k] > 0 && treePts(tid, U.row) < rowNeed(U.row)) { bad = 'row'; break; } }
+    if (!bad && capsHeld().some(c => TAL[c].tree === tid) && treePts(tid) < TCAP) bad = 'cap';
+    PROF.tal[id]++;
+    if (bad) return bad;
   }
-  const rm = new Set(orph);
-  PROF.alloc = PROF.alloc.filter(a => !rm.has(a));
+  if (!refundFree() && G.tokens < refundCost(id)) return 'tokens';
+  return '';
+}
+function talentRemove(id) {
+  if (talentCanRemove(id)) return false;
+  if (!refundFree()) G.tokens -= refundCost(id);
+  const T = TAL[id];
+  if (T.cap) PROF.caps = capsHeld().filter(c => c !== id);
+  else { PROF.tal[id]--; if (!PROF.tal[id]) delete PROF.tal[id]; }
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return true;
 }
-function pruneAlloc(list) {
-  const want = new Set(list.filter(id => TREE.nodes[id])), seen = new Set(['start']), q = ['start'];
-  while (q.length) { const c = q.shift(); for (const nb of TREE.nodes[c].adj) if (want.has(nb) && !seen.has(nb)) { seen.add(nb); q.push(nb); } }
-  return ['start', ...list.filter(id => id !== 'start' && seen.has(id))];
-}
-// returns true when an older web layout was reset (points refunded)
+// clear every talent (free between runs and at checkpoints only)
+function talentReset() { if (!refundFree()) return false; PROF.tal = {}; PROF.caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
+// v5.0 clean sheet: older webs are reset with every point refunded
 function migrateWeb() {
   if (PROF.webV === WEB_VER) return false;
-  const had = (PROF.alloc || []).length > 1;
-  PROF.alloc = ['start']; PROF.webV = WEB_VER;
+  const had = (PROF.alloc || []).length > 1 || Object.keys(PROF.stars || {}).length > 0;
+  PROF.alloc = ['start']; PROF.stars = {}; PROF.orbit = {}; PROF.mastery = {}; PROF.tal = {}; PROF.caps = []; PROF.builds = [null, null, null, null, null];
+  PROF.webV = WEB_VER;
   return had;
 }
+function treeSaveBuild(slot, name) { PROF.builds[slot] = { name: name || `Build ${slot + 1}`, tal: Object.assign({}, PROF.tal || {}), caps: capsHeld().slice(), lvl: pointsSpent() }; Hooks.onChange('tree'); }
 function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
-  if (!b) return 'empty';
-  let valid = pruneAlloc(b.alloc);
-  // drop extra seals and anything whose seal isn't in the build
-  const slots = sealSlots(profLevel().level); let held = 0;
-  valid = valid.filter(id => { const n = TREE.nodes[id]; if (n.kind !== 'seal') return true; return ++held <= slots; });
-  const seals = new Set(valid.filter(id => TREE.nodes[id].kind === 'seal'));
-  valid = pruneAlloc(valid.filter(id => TREE.nodes[id].need === undefined || seals.has('d' + TREE.nodes[id].need)));
-  if (valid.length - 1 > profLevel().level) return 'points';
-  if (G && !G.over && !G.checkpoint) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
-  PROF.alloc = valid.includes('start') ? valid.slice() : ['start', ...valid];
+  if (!b || !b.tal) return 'empty';
+  let need = 0; for (const k in b.tal) if (TAL[k]) need += b.tal[k]; need += (b.caps || []).filter(c => TAL[c]).length;
+  if (need > profLevel().level) return 'points';
+  if (!refundFree()) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
+  // replay it rank by rank, row by row, so every gate is honoured
+  PROF.tal = {}; PROF.caps = [];
+  for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) PROF.tal[k] = Math.min(T.max, b.tal[k]); }
+  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(profLevel().level)) PROF.caps.push(c);
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return 'ok';
 }
+// Supernova: needs the level and two Capstones; keeps one held Capstone forever as a Remnant
+const novaReady = () => !PROF.runSnap && profLevel().level >= novaLevelReq(PROF.nova || 0) && capsHeld().length >= 2;
+function supernova(remnant, law) {
+  if (!novaReady()) return false;
+  if (remnant && capsHeld().includes(remnant) && !(PROF.remnants || []).includes(remnant)) PROF.remnants.push(remnant);
+  if (law && LAWS.some(L => L.id === law) && !PROF.laws.includes(law)) PROF.laws.push(law);
+  PROF.nova = (PROF.nova || 0) + 1;
+  PROF.xp = 0; PROF.tal = {}; PROF.caps = [];
+  Hooks.onChange('tree');
+  return true;
+}
+const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
+// the Capstones currently in force (held + remnants), as ks flags or fx bundles
+const activeCaps = () => [...new Set(capsHeld().concat((PROF.remnants || []).filter(r => TAL[r])))];
 
 function masteryPick(id) { const v = PROF.mastery && PROF.mastery[id]; return v === undefined ? 0 : v; }
 function loadoutList() { const L = (PROF.loadout || []).filter(k => ABIL_ORDER.includes(k)); return L.length ? L : ABIL_ORDER.slice(); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
+  // v5.0: alloc is ignored (kept in the signature for old callers); talents, Capstones and Remnants come from PROF
   const m = {}, ks = {};
   const orb = { dmg: {}, rate: {}, status: {}, range: {}, reson: {}, vxp: {}, flux: {}, storm: {}, vol: {}, ent: {}, rift: {}, combo: {} };
-  const all = new Set(alloc);
-  for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) all.add(id);
-  for (const r in PROF.stars || {}) if (STARS[r] && regionDone(r, new Set(alloc))) { const S = STARS[r]; m[S.key] = (m[S.key] || 0) + starTotal(r, PROF.stars[r]); }
-  const remSet = new Set(); for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) remSet.add(id);
-  for (const id of all) {
-    const n = TREE.nodes[id]; if (!n) continue;
-    if (n.need !== undefined && !all.has('d' + n.need) && !remSet.has(id)) continue; // seal-locked
-    if (n.kind === 'seal') { ks[n.ks] = 1; continue; }
-    if (n.sat !== undefined) {
-      const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)];
-      if (el === 'E') for (const k in S.E) m[k] = (m[k] || 0) + S.E[k];
-      else orb[S.k][el] = (orb[S.k][el] || 0) + S.v;
-      continue;
-    }
-    for (const k in n.fx) m[k] = (m[k] || 0) + n.fx[k];
-    if (n.ks) ks[n.ks] = 1;
-    if (n.opts) { const o = n.opts[masteryPick(id)]; if (o) for (const k in o.fx) m[k] = (m[k] || 0) + o.fx[k]; }
-  }
+  const add = fx => { for (const k in fx) m[k] = (m[k] || 0) + fx[k]; };
+  for (const id in PROF.tal || {}) { const T = TAL[id], r = PROF.tal[id]; if (!T || T.cap || !r) continue; for (const k in T.fx) m[k] = (m[k] || 0) + T.fx[k] * r; }
+  for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add(T.fx); }
+  // legacy remnants from the old web: that tree's one-point notables stay on
+  for (const r of PROF.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
+  if (m.vxpAll) for (const e of ELS) orb.vxp[e] = (orb.vxp[e] || 0) + m.vxpAll;
+  m.dmg = (m.dmg || 0) + pointsSpent() * TAL_PT_DMG;
   if (runMods) for (const k in runMods) m[k] = (m[k] || 0) + runMods[k];
   const g = k => m[k] || 0;
   const P = g('P'), Tm = g('Tm'), F = g('F'), I = g('I');
@@ -1815,7 +1619,8 @@ function computeMods(alloc, runMods) {
 // ---------------- Run state ----------------
 let G = null;
 const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * Math.pow(1.0011, (w - 1) * (w - 1));
-const crMult = w => 1.1 * (1 + 0.05 * (w - 1));
+// v5.0: after Wave 40 kill credits grow 1% faster per wave (Nic: late upgrades outpaced income as waves got longer)
+const crMult = w => 1.1 * (1 + 0.05 * (w - 1)) * (1 + Math.max(0, w - 40) * 0.01);
 const tIdx = (x, y) => y * COLS + x;
 const RESON_DMG = 0.08;
 const towerLabel = t => t.name ? `${TOWERS[t.type].name} "${t.name}"` : TOWERS[t.type].name;
@@ -2142,6 +1947,8 @@ function updateCaches(dt) {
     return;
   }
 }
+// v5.0 crate credits: 60 + 22 × wave (was 40 + 14 × wave), then the late-game kill-credit curve on top
+const crateCr = w => (60 + 22 * w) * (1 + Math.max(0, w - 40) * 0.01);
 function claimCache(c) {
   if (!c || !G.caches.includes(c)) return null;
   G.caches = G.caches.filter(o => o !== c);
@@ -2150,13 +1957,15 @@ function claimCache(c) {
   const w = Math.max(1, G.wave), roll = G.r() * 100, k2 = c.kind === 'cursed' ? 2 : 1;
   let msg;
   if (c.kind === 'gold') {
-    if (G.r() < 0.5) { G.legendQueue++; msg = 'Your next tower rolls a Legendary affix'; }
-    else { const v = Math.round((40 + 14 * w) * 3 * G.mods.credits), k = pick(G.r, ABIL_ORDER); G.credits += v; G.charges[k] = (G.charges[k] || 0) + 1; msg = `+${v} credits · +1 ${ABILITIES[k].name} charge`; }
+    // v5.0: the chest always pays credits (5 crates' worth), plus a Legendary or an ability charge
+    const v = Math.round(crateCr(w) * 5 * G.mods.credits); G.credits += v; G.tokens++;
+    if (G.r() < 0.5) { G.legendQueue++; msg = `+${v} credits · +1 token · your next tower rolls a Legendary affix`; }
+    else { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + 1; msg = `+${v} credits · +1 token · +1 ${ABILITIES[k].name} charge`; }
   }
-  else if (roll < 40) { const v = Math.round((40 + 14 * w) * G.mods.credits * k2); G.credits += v; msg = `+${v} credits`; }
-  else if (roll < 60) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + k2; msg = `+${k2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${k2 > 1 ? 's' : ''}`; }
+  else if (roll < 50) { const v = Math.round(crateCr(w) * G.mods.credits * k2); G.credits += v; msg = `+${v} credits`; }
+  else if (roll < 65) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + k2; msg = `+${k2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${k2 > 1 ? 's' : ''}`; }
   else if (roll < 75) { addEntropy(12 * k2); msg = `+${12 * k2} Entropy`; }
-  else if (roll < 90) { const v = Math.round(150 * w * k2); addScore(v); msg = `+${v} base score`; }
+  else if (roll < 85) { const v = Math.round(150 * w * k2); addScore(v); msg = `+${v} base score`; }
   else { G.tokens += k2; msg = `+${k2} Recalibration token${k2 > 1 ? 's' : ''}`; }
   if (c.kind === 'cursed') {
     // the price: an elite climbs out of a wormhole
@@ -2269,8 +2078,8 @@ function newRun(opts) {
     if (picks.length > 1) G.geneFit[geneKey(picks, el)] = { s: 2.4, n: 6 };
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
-  G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: (PROF.alloc || []).length,
-    ks: TREE.list.filter(n => (n.kind === 'keystone' || n.kind === 'seal') && (PROF.alloc || []).includes(n.id)).map(n => n.ks), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
+  G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
+    ks: activeCaps(), tal: Object.assign({}, PROF.tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
   return G;
 }
 
@@ -2457,10 +2266,11 @@ function upgradeTower(t, specIdx) {
   Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: RARITY[t.affixes[t.affixes.length - 1].tier].col });
   return true;
 }
-function rerollTower(t) {
+// v5.0: a Recalibration token pays for a reroll instead of credits
+function rerollTower(t, token) {
   const cost = rerollCost(t);
-  if (G.credits < cost) return false;
-  G.credits -= cost; t.rerolls++;
+  if (token) { if (G.tokens < 1) return false; G.tokens--; } else { if (G.credits < cost) return false; G.credits -= cost; }
+  t.rerolls++;
   t.affixes = t.affixes.map(a => a.tier === 4 ? a : null);
   const n = t.affixes.filter(a => a === null).length;
   t.affixes = t.affixes.filter(a => a);
@@ -3115,6 +2925,19 @@ function startWave() {
     }
   }
   G.spawnClock = 0; G.spawningDone = false;
+  // v5.0 breach warning: the core can sit at full health while a few leaks a wave are soaked by the shield, then die in one
+  // bad wave (Nic, Wave 87). When leaks climb, say so before the cliff, with what is getting through and what stops it
+  if (G.wave > 1 && G.leaksAtStart !== undefined) {
+    const lk = G.stats.leaks - G.leaksAtStart, prev = G.lastLeakN || 0; G.lastLeakN = lk;
+    if (lk >= 3 && (lk >= 6 || prev >= 3)) {
+      const now = G.leakBy || {}, was = G.leakSnap || {}, top = Object.keys(now).map(k => [k, now[k] - (was[k] || 0)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
+      let who = '', counter = '';
+      if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
+      Hooks.toast('BREACH WARNING', `${lk} got through last wave${who ? ', mostly ' + who : ''}. Your core's shield won't hold many more.${counter}`, '#ff4d6a', true);
+      rlog('breachWarn', { n: lk, who });
+    }
+  }
+  G.leakSnap = Object.assign({}, G.leakBy || {});
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
   lureAll();
@@ -3272,7 +3095,7 @@ function updateWaves(dt) {
   if (!G.queue.length) {
     G.spawningDone = true;
     G.next = G.af.timeDebt ? 6 : 13; // v4.7: 13 s between waves (was 10)
-    const bonus = Math.round((20 + G.wave * 4) * G.mods.credits * (G.ev.gold ? 2 : 1));
+    const bonus = Math.round((25 + G.wave * 6) * G.mods.credits * (G.ev.gold ? 2 : 1)); // v5.0: was 20 + 4 × wave
     G.credits += bonus;
     if (FX('interest')) { const it = Math.min(300, Math.floor(G.credits * FX('interest') / 100)); if (it > 0) { G.credits += it; Hooks.log(`Interest +${it} credits`, '#ffb03a'); } }
     if (FX('fieldRepair') && G.stats.leaks === (G.leaksAtStart || 0) && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * FX('fieldRepair') / 100);
@@ -7913,8 +7736,9 @@ const Save = (() => {
     const out = Object.assign(d, p);
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
     out.webV = p.webV || 1;
-    out.alloc = Array.isArray(p.alloc) ? p.alloc.filter(id => TREE.nodes[id]) : ['start'];
-    if (!out.alloc.includes('start')) out.alloc.unshift('start');
+    out.alloc = ['start'];
+    out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
+    out.caps = Array.isArray(p.caps) ? p.caps.filter(c => TAL[c] && TAL[c].cap) : [];
     if (!Array.isArray(out.builds) || out.builds.length !== 5) out.builds = [null, null, null, null, null];
     return out;
   }
@@ -7947,7 +7771,7 @@ const Save = (() => {
         try { remote = merge(JSON.parse(snap.data().json)); } catch (e) {}
         if (remote && (remote.updatedAt || 0) > (PROF.updatedAt || 0) && !(G && !G.over)) {
           PROF = remote;
-          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('PASSIVE WEB REBUILT', 'Doctrines have arrived. All your points are refunded: pick a play style', '#ffb03a'); queue(); }
+          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'); queue(); }
           try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
           UI.refreshAll();
         } else queue();
@@ -7983,10 +7807,10 @@ const UI = (() => {
     $('#hBest').textContent = PROF.bestWave || '—';
     const hp = $('#hPts'); hp.hidden = free <= 0; hp.textContent = free + ' pt' + (free === 1 ? '' : 's');
     $('#bWebH').classList.toggle('glow', free > 0);
-    const nv = PROF.nova || 0, done = regionsDone().length, req = novaLevelReq(nv), ready = novaReady();
+    const nv = PROF.nova || 0, done = capsHeld().length, req = novaLevelReq(nv), ready = novaReady();
     $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv;
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
-    $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 3 && L.level >= req ? 'Finish your run' : `${Math.min(done, 3)}/3 constellations · Lv ${req}`;
+    $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 2 && L.level >= req ? 'Finish your run' : `${Math.min(done, 2)}/2 Capstones · Lv ${req}`;
     const snap = PROF.runSnap;
     $('#bLaunch2').hidden = !snap;
     $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
@@ -8015,7 +7839,7 @@ const UI = (() => {
     const maxStart = Math.max(1, Math.floor((PROF.bestWave - 5) / 5) * 5);
     const starts = [1]; for (let w = 5; w <= maxStart; w += 5) starts.push(w);
     const sw = setup.startWave;
-    const credits = Math.round(320 + computeMods(PROF.alloc, null).startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
+    const credits = Math.round(320 + computeMods(null, null).startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
     const CH = CHAOS_LEVELS[setup.chaos];
     const f0 = stageFrac(CH.lanes.filter(w => w <= sw).length, CH.lanes.length), R0 = mapRegion(setup.map.core, f0);
     setup.frac = f0;
@@ -8260,9 +8084,9 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const ALERT_RE = /^(BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
-  const KEY_RE = /^(RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
+  const KEY_RE = /^(BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force) {
@@ -8533,7 +8357,7 @@ const UI = (() => {
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${t.lvl === 3 ? '' : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
@@ -8669,6 +8493,7 @@ const UI = (() => {
       else if (act === 'up') { if (!upgradeTower(t)) SFX.play('deny'); renderPanel(); }
       else if (act === 'spec') { if (!upgradeTower(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'reroll') { if (!rerollTower(t)) SFX.play('deny'); renderPanel(); }
+      else if (act === 'rerollTok') { if (!rerollTower(t, true)) SFX.play('deny'); renderPanel(); }
       else if (act === 'sell') { sellTower(t); closePanel(); }
       else if (act === 'oc') { if (!setOvercharge(t, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
       else if (act === 'vet') { if (!claimVet(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
@@ -8873,7 +8698,7 @@ const UI = (() => {
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
       bounty: G.stats.bounty || null, elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
-      keystones: TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name) };
+      keystones: activeCaps().map(id => TAL[id].name) };
   }
   function recapHTML(R) {
     const els = R.els, tot = Object.values(els).reduce((a, b) => a + b, 0) || 1, mvp = R.mvp;
@@ -8987,7 +8812,7 @@ const UI = (() => {
       ${G.hallRank >= 0 ? `<p class="amber">Hall of Fame #${G.hallRank + 1}!</p>` : ''}
       ${recapHTML(G.rec)}
       ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
-      ${pointsFree() > 0 ? `<p class="good">${pointsFree()} passive point${pointsFree() === 1 ? '' : 's'} available</p>` : ''}
+      ${pointsFree() > 0 ? `<p class="good">${pointsFree()} talent point${pointsFree() === 1 ? '' : 's'} to spend</p>` : ''}
       <div class="row logrow"><span class="note">Run log for analysis</span><button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button></div>
       <div class="foot"><button class="btn small" data-act="logCopy" title="Copy this run's log to paste into a chat">Copy log</button><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Passive Web</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
@@ -9210,17 +9035,12 @@ const UI = (() => {
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
-      ['XP', 'Score converts to XP. Each level grants 1 passive point.'],
-      ['Passive Web', 'Spend points on permanent bonuses. Open it anytime.'],
-      ['Doctrines', 'Seal a region to adopt its play style: Marksman (few huge guns), Wildfire (the road burns) or War Economy (banked credits arm the core). Each has a cost on the field. You hold 1 seal, 2 from level 75, 3 from level 120.'],
-      ['Notables', 'Larger nodes with a signature effect that changes how a build plays. In a Doctrine region they need its seal.'],
-      ['Masteries', 'Choose 1 of 3 effects. Swap freely between runs and at checkpoints.'],
-      ['Keystones', 'Powerful nodes with a drawback, on the outer rim and at the ends of the Z-axis.'],
-      ['Orbits', 'Rings above and below the galaxy. Each satellite boosts the sector it faces. Rotate to retarget.'],
-      ['Respec', 'Free between runs and at checkpoints. Otherwise costs Recalibration tokens.'],
-      ['Constellation', 'Each region of the web. Light every node in a region to finish it.'],
-      ['Star Ranks', 'Spend unlimited points in a finished constellation. Each rank adds a little less than the last.'],
-      ['Supernova', 'Finish 3 constellations and reach the required level to collapse your galaxy. You lose your level and web. You keep a Remnant, gain a Cosmic Law, and earn more score and XP from then on.'],
+      ['XP', 'Score converts to XP. Each level grants 1 talent point.'],
+      ['Talents', 'Seven trees of permanent bonuses. Each row opens after 5 points in its tree; 20 points reach its Capstones, play styles you pick one of. You hold 1 Capstone, 2 from Level 50, 3 from Level 100. Changes are free between runs and at checkpoints; mid-run they cost Recalibration tokens.'],
+      ['Capstones', 'Each tree ends in three play styles, for example Marksman (few huge guns), Wildfire (the road burns), War Economy (banked credits arm the core), Glass Cannon or Conflagration. Each changes how a run plays, often with a cost on the field.'],
+      ['Recalibration', 'Tokens from boss kills, Stabilize and pirate crates. Spend one to reroll a tower\'s affixes, or to refund a talent mid-run (2 for a Capstone).'],
+      ['Builds', 'Save up to five talent layouts and load one between runs (2 tokens mid-run).'],
+      ['Supernova', 'Hold 2 Capstones and reach the required level to collapse your galaxy. You lose your level and talents. You keep one Capstone as a Remnant (always on, no slot), gain a Cosmic Law, and earn more score and XP from then on.'],
       ['Remnant', "A finished sector you kept through a Supernova. Its notables stay active forever."],
       ['Cosmic Law', 'A permanent rule change picked at each Supernova. Every law adds score.'],
       ['Builds', 'Save up to 5 web layouts and swap between them.'],
@@ -9281,10 +9101,8 @@ const UI = (() => {
       { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
       { id: 'anom', name: 'Anomalies', rows: ANOMALIES.map(A => [A.name, `${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff']) },
-      { id: 'notable', name: 'Notables', rows: TREE.list.filter(n => n.kind === 'notable').map(n => [n.name, nodeLines(n).join('. ') + '.', n.sector >= 0 ? SECTORS[n.sector].col : '']) },
-      { id: 'mastery', name: 'Masteries', rows: TREE.list.filter(n => n.opts).flatMap(n => n.opts.map(o => [o.name, `${Object.keys(o.fx).map(k => STAT_TXT[k] ? STAT_TXT[k](o.fx[k]) : '').filter(Boolean).join('. ')}. <em>${esc(n.name)}</em>`, SECTORS[n.sector].col])) },
-      { id: 'orbit', name: 'Orbits', rows: Object.values(ORBITS).flatMap(O => O.sats.map(S => [S.name, `${S.d}. Facing Bastion instead: ${Object.keys(S.E).map(k => STAT_TXT[k](S.E[k])).join(', ')}. <em>${esc(O.name)}</em>`, O.col])) },
-      { id: 'ks', name: 'Keystones', rows: TREE.list.filter(n => n.kind === 'keystone').map(n => [n.name, n.lines.join('. ') + '.']) },
+      { id: 'talent', name: 'Talents', rows: TALENTS.flatMap(tr => tr.rows.flat().map(T => [T.name, `${talentLines(T, T.max).join('. ')}. <em>${esc(tr.name)} · ${T.max > 1 ? 'at ' + T.max + ' ranks' : 'one rank'}</em>`, tr.col])) },
+      { id: 'cap', name: 'Capstones', rows: TALENTS.flatMap(tr => tr.caps.map(T => [T.name, `${talentLines(T).join('. ')}. <em>${esc(tr.name)} Capstone</em>`, tr.col])) },
       { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
       { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · Unlocks at Wave ${D.unlock}</em>`, EL[D.el].col]; }) },
     ];
@@ -9333,22 +9151,22 @@ const UI = (() => {
     return PROF.novaOffer.laws;
   }
   function openNova() {
-    const F = novaFlow, nv = PROF.nova || 0, ready = novaReady(), done = regionsDone();
-    const rems = done.filter(r => r[0] === 's' && !PROF.remnants.includes(r));
+    const F = novaFlow, nv = PROF.nova || 0, ready = novaReady(), done = capsHeld();
+    const rems = done.filter(r => !PROF.remnants.includes(r));
     const head = `<div class="ch"><h2>Supernova${nv ? ' ' + roman(nv + 1) : ''}</h2><button class="x" data-act="close">✕</button></div>`;
     let body = '';
     if (F.step === 0) {
       const lawsHave = PROF.laws.map(id => LAWS.find(L => L.id === id)).filter(Boolean);
       body = `<p class="note">Collapse your galaxy and start a new one. It's harder, it's stranger, and it's worth more.</p>
-        <div class="nkeep"><div class="lose"><b>Reset</b>Level and XP<br>Passive web and Star Ranks</div>
-        <div class="keep"><b>Keep and gain</b>One Remnant: a finished constellation's notables, active forever<br>One Cosmic Law: +${Math.round(LAW_SCORE * 100)}% score, changes the rules<br>+${Math.round(NOVA_SCORE * 100)}% score and +${Math.round(NOVA_XP * 100)}% XP per Supernova</div></div>
-        ${PROF.remnants.length ? `<div class="lbl">Your Remnants</div><p class="note">${PROF.remnants.map(r => esc(REGION_NAME[r])).join(' · ')}</p>` : ''}
+        <div class="nkeep"><div class="lose"><b>Reset</b>Level and XP<br>Talents and Capstones</div>
+        <div class="keep"><b>Keep and gain</b>One Remnant: a Capstone you hold, active forever without a slot or points<br>One Cosmic Law: +${Math.round(LAW_SCORE * 100)}% score, changes the rules<br>+${Math.round(NOVA_SCORE * 100)}% score and +${Math.round(NOVA_XP * 100)}% XP per Supernova</div></div>
+        ${PROF.remnants.length ? `<div class="lbl">Your Remnants</div><p class="note">${PROF.remnants.map(r => esc(TAL[r] ? TAL[r].name : 'Old web: ' + (TALENTS[+r.slice(1)] || {}).name)).join(' · ')}</p>` : ''}
         ${lawsHave.length ? `<div class="lbl">Your Laws</div><p class="note">${lawsHave.map(L => esc(L.name)).join(' · ')}</p>` : ''}
-        <div class="lbl">Requirements</div><p class="note">${done.length >= 3 ? '✓' : '✗'} 3 finished constellations (${done.length}) · ${profLevel().level >= novaLevelReq(nv) ? '✓' : '✗'} Level ${novaLevelReq(nv)} · ${PROF.runSnap ? '✗ Finish or abandon your saved run' : '✓ No run in progress'}</p>
+        <div class="lbl">Requirements</div><p class="note">${done.length >= 2 ? '✓' : '✗'} 2 Capstones (${done.length}) · ${profLevel().level >= novaLevelReq(nv) ? '✓' : '✗'} Level ${novaLevelReq(nv)} · ${PROF.runSnap ? '✗ Finish or abandon your saved run' : '✓ No run in progress'}</p>
         <div class="ta"><button class="btn primary" data-act="novaNext" ${ready ? '' : 'disabled'}>${ready ? 'Begin' : 'Not ready yet'}</button></div>`;
     } else if (F.step === 1) {
-      body = `<div class="lbl">Choose a Remnant</div><p class="note">Its notables stay active in every galaxy from now on, without spending points.</p>
-        <div class="ncards">${rems.length ? rems.map(r => { const S = SECTORS[+r.slice(1)]; return `<button class="ncard ${F.remnant === r ? 'on' : ''}" style="--c:${S.col}" data-act="novaR" data-v="${r}"><b>${esc(REGION_NAME[r])}</b><small>${esc(S.name)}</small>${remnantNodes(r).map(id => `<span>${esc(TREE.nodes[id].name)}</span>`).join('')}</button>`; }).join('') : '<p class="note">No new constellation to keep. Finish another sector to earn a Remnant.</p>'}</div>
+      body = `<div class="lbl">Choose a Remnant</div><p class="note">It stays active in every galaxy from now on, without a Capstone slot or points.</p>
+        <div class="ncards">${rems.length ? rems.map(r => { const T = TAL[r], tr = TREE_BY_ID[T.tree]; return `<button class="ncard ${F.remnant === r ? 'on' : ''}" style="--c:${tr.col}" data-act="novaR" data-v="${r}"><b>${esc(T.name)}</b><small>${esc(tr.name)}</small>${talentLines(T).map(l => `<span>${esc(l)}</span>`).join('')}</button>`; }).join('') : '<p class="note">Every Capstone you hold is already a Remnant.</p>'}</div>
         <div class="ta"><button class="btn" data-act="novaBack">Back</button><button class="btn primary" data-act="novaNext" ${F.remnant || !rems.length ? '' : 'disabled'}>Next</button></div>`;
     } else if (F.step === 2) {
       const offers = novaOffers();
@@ -9368,13 +9186,13 @@ const UI = (() => {
   }
   function openArchive() {
     const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k); return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? '' : 'Wave ' + D.unlock}</em></div>`; }).join('');
-    const ks = TREE.list.filter(n => n.kind === 'keystone' && PROF.alloc.includes(n.id)).map(n => n.name);
+    const ks = activeCaps().map(id => TAL[id].name);
     const hrs = Math.floor(PROF.playTime / 3600), mins = Math.floor(PROF.playTime / 60) % 60;
     modal(`<div class="card"><div class="ch"><h2>Archive</h2><button class="x" data-act="close2">✕</button></div>
       <div class="setup-grid"><div class="col"><div class="lbl">Arsenal</div>${rows}</div>
       <div class="col">${hallHTML()}<div class="lbl">Record</div>
         <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best Wave<b>${PROF.bestWave || '—'}</b></span><span>Best Score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Time Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
-        <div class="lbl">Keystones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None allocated'}</p>
+        <div class="lbl">Capstones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None yet'}</p>
         ${codexHTML()}</div></div></div>`, 'archive');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
@@ -9555,7 +9373,7 @@ const UI = (() => {
     Hooks.toast = toast;
     Hooks.onDraft = opts => { closePanel(); openDraft(opts); };
     Hooks.onGameOver = () => { closePanel(); setTimeout(openGameOver, 900); };
-    Hooks.onLevel = (L, n) => { toast('LEVEL UP · ' + L, `+${n} passive point${n > 1 ? 's' : ''}`, '#59f0b4'); Save.save(); };
+    Hooks.onLevel = (L, n) => { toast('LEVEL UP · ' + L, `+${n} talent point${n > 1 ? 's' : ''}`, '#59f0b4'); Save.save(); };
     Hooks.onUnlock = k => { if (G) (G.unlocks || (G.unlocks = [])).push(k); if (panel && panel.kind === 'build') renderPanel(); };
     Hooks.onChange = () => { if (G && panel) renderPanel(); Save.save(); };
     Hooks.onSave = () => Save.save();
@@ -9584,658 +9402,129 @@ const UI = (() => {
   };
 })();
 
-// ---------------- Passive web view ----------------
+// ---------------- v5.0 Talents screen (replaces the 3D passive web) ----------------
+// Tree tabs on the left, the chosen tree's rows in the middle, the selected talent's details on the right. Tap a talent to see it,
+// tap + to add a rank (or double-tap the talent). Everything is plain DOM: it scrolls like any page on a phone.
 const Tree = (() => {
-  let cv, c, lb, lc, W = 0, H = 0, dpr = 1, open_ = false, cam = null, goal = null, sel = null, path = null;
-  const ptrs = new Map(); let pinch = null, dragMoved = 0, drawer = null, confirmWipe = false, frame = 0, shiftPan = false;
-  const R = { start: 15, small: 7, notable: 12, mastery: 14, keystone: 17, orbit: 13, sat: 11, seal: 15 };
-  const PD = 1800, ORB_R = 120, WS = WEB_SCALE, PILX = 1420;
-  const DEF = () => flatMode() ? { tx: 0, ty: 40, tz: 0, yaw: 0, pitch: 0.001, zoom: clamp(Math.min(W / 3200, H / 2300), 0.1, 1) } : { tx: 0, ty: 0, tz: 0, yaw: 0.35, pitch: 0.98, zoom: clamp(Math.min(W, H) / 1650, 0.16, 1) };
-  let cy_ = 1, sy_ = 0, cp_ = 1, sp_ = 0, camOX = 0, viewT = 1, profOn = false;
-  const flatMode = () => !PROF.settings || PROF.settings.webView !== '3d';
-  const orbView = {};
-  function camPrep() { cy_ = Math.cos(cam.yaw); sy_ = Math.sin(cam.yaw); cp_ = Math.cos(cam.pitch); sp_ = Math.sin(cam.pitch); }
-  // world (x right, y down the plane, z up) -> screen css px
-  function proj(x, y, z, o) {
-    x -= cam.tx; y -= cam.ty; z -= cam.tz;
-    const x1 = x * cy_ - y * sy_, y1 = x * sy_ + y * cy_;
-    const y2 = y1 * cp_ - z * sp_, z2 = y1 * sp_ + z * cp_;
-    const k = cam.zoom * PD / Math.max(300, PD - z2);
-    o.x = W / 2 + camOX + x1 * k; o.y = H / 2 + y2 * k; o.s = k; o.d = z2;
-    return o;
-  }
-  function satAngle(n) { const v = orbView[n.orbit] !== undefined ? orbView[n.orbit] : orbitRot(n.orbit); return (-90 + (n.sat * 2 + v) * 60) * Math.PI / 180; }
-  function pos3(n) { if (n.sat !== undefined) { const a = satAngle(n); return [Math.cos(a) * ORB_R, Math.sin(a) * ORB_R, n.z]; } return [n.x, n.y, n.z || 0]; }
-  // flat planning layout: the disk top-down, Zenith as a pillar on the right, Nadir on the left
-  function posFlat(n) {
-    if (n.sector !== -2) return [n.x, n.y, 0];
-    const side = n.z > 0 ? 1 : -1, px = side * PILX, py = 330 - Math.abs(n.z) * 1.45;
-    if (n.kind === 'seal') return [px + 150, py, 0];
-    if (n.sat !== undefined) { const a = satAngle(n); return [px + Math.cos(a) * ORB_R * 0.9, py + Math.sin(a) * ORB_R * 0.55, 0]; }
-    return [px, py, 0];
-  }
-  function npos(n) {
-    if (viewT >= 0.999) return posFlat(n);
-    if (viewT <= 0.001) return pos3(n);
-    const a = pos3(n), b = posFlat(n), t = viewT * viewT * (3 - 2 * viewT);
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-  }
-  // galaxy dust, generated once
-  let dust = null, bg = null;
-  function makeDust() {
-    let sd = 1337; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
-    const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5;
-    dust = [];
-    SECTORS.forEach((S, i) => {
-      const a0 = (-90 + i * 60) * Math.PI / 180;
-      for (let k = 0; k < 360; k++) {
-        const r = 90 + Math.pow(rnd(), 0.75) * 860 * WS, th = a0 + gauss() * 0.42 + 0.28 * Math.log(r / 90);
-        dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 26 * (1.1 - r / 1000), col: S.col, a: 0.18 + rnd() * 0.5, s: rnd() < 0.06 ? 2 : 1 });
-      }
-    });
-    for (let k = 0; k < 560; k++) { const r = Math.abs(gauss()) * 150, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 45, col: ['#fff2c8', '#ffb03a', '#ffffff', '#ffd27a'][k % 4], a: 0.25 + rnd() * 0.6, s: rnd() < 0.15 ? 2 : 1 }); }
-    for (let k = 0; k < 260; k++) { const r = 1250 + rnd() * 800, th = rnd() * 6.283; dust.push({ x: Math.cos(th) * r, y: Math.sin(th) * r, z: gauss() * 380, col: '#c9c6ff', a: 0.15 + rnd() * 0.35, s: 1 }); }
-    bg = []; for (let k = 0; k < 220; k++) bg.push({ x: rnd(), y: rnd(), p: 0.2 + rnd() * 0.8, a: 0.15 + rnd() * 0.5 });
-  }
+  let open_ = false, cur = 'K', sel = null, drawer = null, lastTap = { id: null, t: 0 }, confirmReset = false;
+  const el = id => document.getElementById(id);
+  const capName = id => TAL[id] ? TAL[id].name : id;
   function init() {
-    cv = $('#tcv'); c = cv.getContext('2d');
-    lb = document.createElement('canvas'); lc = lb.getContext('2d');
-    cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: (e.clientX / UIS), y: (e.clientY / UIS) }); dragMoved = 0; shiftPan = e.shiftKey || e.button === 2; goal = null; if (ptrs.size === 2) startPinch(); });
-    cv.addEventListener('contextmenu', e => e.preventDefault());
-    cv.addEventListener('pointermove', e => {
-      if (!ptrs.has(e.pointerId) || !cam) return;
-      const p = ptrs.get(e.pointerId), dx = (e.clientX / UIS) - p.x, dy = (e.clientY / UIS) - p.y;
-      p.x = (e.clientX / UIS); p.y = (e.clientY / UIS);
-      if (ptrs.size === 1) {
-        dragMoved += Math.abs(dx) + Math.abs(dy);
-        if (shiftPan || viewT > 0.5) panBy(dx, dy);
-        else { cam.yaw -= dx * 0.0065; cam.pitch = clamp(cam.pitch - dy * 0.005, 0.22, 1.38); }
-      } else if (ptrs.size === 2 && pinch) {
-        const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        cam.zoom = clamp(pinch.z * d / pinch.d, 0.12, 3);
-        panBy(mx - pinch.mx, my - pinch.my); pinch.mx = mx; pinch.my = my;
-        dragMoved += 20;
+    el('tree').addEventListener('click', e => {
+      const b = e.target.closest('[data-tact]'); if (!b) return;
+      const a = b.dataset.tact, v = b.dataset.v;
+      if (a === 'close') { close(); return; }
+      if (a === 'tab') { cur = v; sel = null; drawer = null; SFX.play('ui'); refresh(); el('tgrid').scrollTop = 0; return; }
+      if (a === 'sum') { cur = 'sum'; sel = null; drawer = null; SFX.play('ui'); refresh(); return; }
+      if (a === 'sel') {
+        const now = performance.now();
+        if (lastTap.id === v && now - lastTap.t < 350) { add(v); lastTap = { id: null, t: 0 }; return; }
+        lastTap = { id: v, t: now }; sel = v; SFX.play('ui'); refresh(); return;
       }
+      if (a === 'add') { sel = v; add(v); return; }
+      if (a === 'rem') { remove(v); return; }
+      if (a === 'builds') { drawer = drawer === 'builds' ? null : 'builds'; refresh(); return; }
+      if (a === 'reset') { if (!confirmReset) { confirmReset = true; refresh(); return; } confirmReset = false; if (talentReset()) { SFX.play('sell'); UI.toast('TALENTS RESET', 'Every point is back', '#ffb03a'); } refresh(); return; }
+      if (a === 'bsave') { treeSaveBuild(+v); Save.save(); UI.toast('BUILD SAVED', `Slot ${+v + 1}`, '#59f0b4'); refresh(); return; }
+      if (a === 'bload') { const r = treeLoadBuild(+v); if (r === 'ok') { SFX.play('upgrade'); UI.toast('BUILD LOADED', PROF.builds[+v].name, '#59f0b4'); } else UI.toast('CAN\'T LOAD', r === 'points' ? 'Not enough points for that build yet' : r === 'tokens' ? 'Loading a build mid-run costs 2 Recalibration tokens' : 'Empty slot', '#ff4d6a'); refresh(); return; }
     });
-    const up = e => {
-      if (!ptrs.has(e.pointerId)) return;
-      ptrs.delete(e.pointerId);
-      if (ptrs.size < 2) pinch = null;
-      if (ptrs.size === 0 && dragMoved < 10) tap((e.clientX / UIS), (e.clientY / UIS));
-    };
-    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); pinch = null; });
-    cv.addEventListener('wheel', e => { e.preventDefault(); if (cam) cam.zoom = clamp(cam.zoom * (e.deltaY < 0 ? 1.12 : 0.89), 0.12, 3); }, { passive: false });
-    $('#tree').addEventListener('click', e => { const b = e.target.closest('[data-tact]'); if (b && !b.disabled) action(b.dataset.tact, b); });
-    makeDust();
   }
-  function startPinch() { const [a, b] = [...ptrs.values()]; pinch = { d: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z: cam.zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
-  function panBy(dx, dy) {
-    camPrep();
-    const x1 = dx / cam.zoom, y1 = dy / cam.zoom / Math.max(0.35, cp_);
-    cam.tx = clamp(cam.tx - (x1 * cy_ + y1 * sy_), -1700, 1700); cam.ty = clamp(cam.ty - (-x1 * sy_ + y1 * cy_), -1400, 1400);
+  function add(id) {
+    const why = talentBlock(id);
+    if (why) { SFX.play('deny'); UI.toast('NOT YET', blockMsg(id, why), '#ff4d6a'); return; }
+    talentAdd(id); SFX.play(TAL[id].cap ? 'levelup' : 'upgrade');
+    if (TAL[id].cap) UI.toast('CAPSTONE', `${TAL[id].name} · ${TREE_BY_ID[TAL[id].tree].name}`, TREE_BY_ID[TAL[id].tree].col);
+    Save.save(); refresh();
   }
-  function resize() {
-    if (!cv) return;
-    const r = cv.getBoundingClientRect();
-    dpr = Math.min(3, window.devicePixelRatio || 1) * UIS;
-    W = r.width / UIS; H = r.height / UIS;
-    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    lb.width = Math.max(1, Math.ceil(W / 2)); lb.height = Math.max(1, Math.ceil(H / 2));
+  function remove(id) {
+    const why = talentCanRemove(id);
+    if (why) { SFX.play('deny'); UI.toast('CAN\'T REMOVE', why === 'tokens' ? `Refunding mid-run costs ${refundCost(id)} Recalibration token${refundCost(id) > 1 ? 's' : ''} (you have ${G ? G.tokens : 0})` : why === 'cap' ? 'Your Capstone needs 20 points in this tree' : why === 'row' ? 'A talent further down needs these points' : 'Nothing to remove', '#ff4d6a'); return; }
+    talentRemove(id); SFX.play('sell'); Save.save(); refresh();
+  }
+  function blockMsg(id, why) {
+    const T = TAL[id], tr = TREE_BY_ID[T.tree];
+    if (why === 'points') return 'No points left. You earn one each level';
+    if (why === 'max') return 'Already at its last rank';
+    if (why === 'have') return 'Already yours';
+    if (why === 'slots') { const n = CAP_NEXT(profLevel().level); return `You can hold ${capSlots(profLevel().level)} Capstone${capSlots(profLevel().level) > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
+    if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
+    if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
+    return 'Not available';
+  }
+  // ---- rendering ----
+  function rankPips(T, r) { if (T.max <= 1) return ''; let s = ''; for (let i = 0; i < T.max; i++) s += `<i class="${i < r ? 'on' : ''}"></i>`; return `<span class="pips">${s}</span>`; }
+  function tile(T, tr) {
+    const r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), canAdd = !why, locked = why === 'row', full = !T.cap && r >= T.max;
+    const rem = (PROF.remnants || []).includes(T.id);
+    const cls = ['ttile', T.cap ? 'cap' : '', r ? 'have' : '', locked ? 'locked' : '', full ? 'full' : '', sel === T.id ? 'sel' : ''].join(' ');
+    const desc = talentLines(T, Math.max(1, r)).join(' · ');
+    return `<div class="${cls}" style="--c:${tr.col}"><button class="tbody" data-tact="sel" data-v="${T.id}"><b>${esc(T.name)}${rem ? ' <em>Remnant</em>' : ''}</b>${T.cap ? '' : `<small>${r}/${T.max}</small>`}${rankPips(T, r)}<span class="td">${esc(desc)}</span></button>${canAdd ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Add a rank">+</button>` : ''}</div>`;
+  }
+  function treeHTML(tr) {
+    const pts = treePts(tr.id), rowsHTML = tr.rows.map((row, r) => {
+      const need = rowNeed(r), ok = pts >= need || treePts(tr.id, r) >= need;
+      return `<div class="trow ${ok ? '' : 'locked'}"><div class="trl"><b>${r + 1}</b>${r ? `<small>${need} pts</small>` : ''}</div><div class="trt">${row.map(T => tile(T, tr)).join('')}</div></div>`;
+    }).join('');
+    const capOk = pts >= TCAP;
+    return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${rowsHTML}
+      <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
+      <p class="note tfoot">Capstones change how you play. Pick one per tree; you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}.</p>`;
+  }
+  function sumHTML() {
+    const M = computeMods(null, null), lines = [];
+    const agg = {};
+    for (const id in PROF.tal || {}) { const T = TAL[id]; if (!T || T.cap) continue; for (const k in T.fx) agg[k] = (agg[k] || 0) + T.fx[k] * PROF.tal[id]; }
+    for (const k in agg) if (STAT_TXT[k]) lines.push(STAT_TXT[k](typeof agg[k] === 'number' && agg[k] !== 1 ? +agg[k].toFixed(2) : agg[k]));
+    const caps = activeCaps();
+    return `<div class="thead"><b>Your build</b><span>Everything your talents give you, in one place</span><em>${pointsSpent()} spent · ${pointsFree()} free</em></div>
+      <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(PROF.remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : '<p class="note">None yet. Spend 20 points in one tree to reach its Capstones.</p>'}
+      <div class="lbl">Bonuses</div><p class="note">Every point spent: +${TAL_PT_DMG}% Damage to all towers (now +${+(pointsSpent() * TAL_PT_DMG).toFixed(1)}%).</p>${lines.length ? `<ul class="tsum">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="note">No talents yet.</p>'}
+      <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / 26 * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
+  }
+  function infoHTML() {
+    if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after 5 points in that tree. Capstones open at 20. Every point also adds +${TAL_PT_DMG}% Damage to all towers.</p></div>`;
+    const T = TAL[sel], tr = TREE_BY_ID[T.tree], r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id);
+    const now = r ? talentLines(T, r) : null, next = !T.cap && r < T.max ? talentLines(T, r + 1) : null;
+    const rem = (PROF.remnants || []).includes(T.id);
+    return `<div class="tinfo-t" style="--c:${tr.col}"><em>${esc(tr.name)}${T.cap ? ' · Capstone' : ` · Row ${T.row + 1}`}</em><b>${esc(T.name)}</b>${T.cap ? `<small>${r ? (rem ? 'Remnant: always on' : 'Yours') : 'Not taken'}</small>` : `<small>Rank ${r} of ${T.max}</small>`}</div>
+      ${T.cap ? `<ul class="tl">${talentLines(T).map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : `${now ? `<div class="lbl">Now</div><ul class="tl">${now.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}${next ? `<div class="lbl">${r ? 'Next rank' : 'Rank 1'}</div><ul class="tl dim">${next.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}`}
+      ${why && why !== 'max' && why !== 'have' ? `<p class="note bad">${esc(blockMsg(T.id, why))}</p>` : ''}
+      <div class="tbtns">${!rem && (r > 0) ? `<button class="btn" data-tact="rem" data-v="${T.id}" ${rw && rw !== 'tokens' ? 'disabled' : ''}>Remove${refundFree() ? '' : `<small>${refundCost(T.id)} token${refundCost(T.id) > 1 ? 's' : ''}</small>`}</button>` : ''}
+      ${!why ? `<button class="btn primary" data-tact="add" data-v="${T.id}">${T.cap ? 'Take Capstone' : r ? 'Add rank' : 'Learn'}<small>1 point</small></button>` : ''}</div>`;
+  }
+  function buildsHTML() {
+    return `<div class="tbuilds"><div class="lbl">Builds <em>save a layout, load it later${refundFree() ? '' : ' (2 tokens mid-run)'}</em></div>${PROF.builds.map((b, i) => `<div class="tb"><b>${b && b.tal ? esc(b.name) : `Slot ${i + 1}`}</b><small>${b && b.tal ? `${b.lvl} pts · ${(b.caps || []).map(capName).map(esc).join(', ') || 'no Capstone'}` : 'empty'}</small><button class="btn small" data-tact="bsave" data-v="${i}">Save</button><button class="btn small" data-tact="bload" data-v="${i}" ${b && b.tal ? '' : 'disabled'}>Load</button></div>`).join('')}</div>`;
+  }
+  function refresh() {
+    if (!open_) return;
+    const lv = profLevel().level, free = pointsFree(), held = capsHeld().length, slots = capSlots(lv);
+    el('tPts').textContent = free;
+    el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
+    const tk = el('tTok'); tk.hidden = !(G && !G.over); if (G) tk.innerHTML = `<b>${G.tokens}</b> tokens`;
+    const rs = el('tReset'); rs.hidden = !refundFree(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
+    el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
+    el('tgrid').innerHTML = (drawer === 'builds' ? buildsHTML() : '') + (cur === 'sum' ? sumHTML() : treeHTML(TREE_BY_ID[cur] || TALENTS[0]));
+    el('tinfo').innerHTML = infoHTML();
+    document.body.classList.toggle('tsel', !!sel);
   }
   function open() {
-    if (G && !G.over) G.wasPaused = G.paused;
+    if (G && !G.over) { G.wasPaused = G.paused; G.paused = true; }
     UI.closePanel();
-    $('#tree').hidden = false; open_ = true; document.body.classList.add('webopen');
-    resize();
-    viewT = flatMode() ? 1 : 0;
-    if (!sel || !cam) cam = DEF();
-    renderRegions();
-    for (const k in ORBITS) { orbView[k] = orbitRot(k); delete orbView[k + '_t']; }
-    drawer = null;
-    refresh();
+    el('tree').hidden = false; open_ = true; document.body.classList.add('webopen');
+    if (cur !== 'sum' && !TREE_BY_ID[cur]) cur = 'K';
+    // open on the tree you've invested in most
+    if (!sel) { let best = cur, bp = -1; for (const tr of TALENTS) { const p = treePts(tr.id); if (p > bp) { bp = p; best = tr.id; } } if (bp > 0) cur = best; }
+    drawer = null; confirmReset = false; refresh();
   }
   function close() {
-    $('#tree').hidden = true; open_ = false; sel = null; path = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
+    el('tree').hidden = true; open_ = false; sel = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
+    if (G && !G.over) G.paused = !!G.wasPaused;
     UI.flushToasts();
     if (UI.screen === 'hangar') UI.renderHangar();
     Save.save();
   }
-  function tap(sx, sy) {
-    const r = cv.getBoundingClientRect(), px = sx - r.left / UIS, py = sy - r.top / UIS, o = {};
-    camPrep();
-    if (cA > 0.5) { let hb = null, hd = 1e9; for (const h of cHits) { const d = Math.hypot(h.x - px, h.y - py); if (d < h.r && d < hd) { hd = d; hb = h; } } if (hb) { SFX.play('ui'); flyTo(hb.rid); return; } }
-    selStar = null;
-    const A0 = new Set(PROF.alloc), cullR = cullRadius(), fs = focusSector(), cands = [];
-    for (const n of TREE.list) {
-      const [x, y, z] = npos(n);
-      if (nodeFade(n, x, y, z, cullR, fs, A0, n.id === sel || (path && path.includes(n.id))) < 0.3) continue; // hidden or faded back
-      proj(x, y, z, o);
-      const d = Math.hypot(o.x - px, o.y - py), hitR = Math.max(16, R[n.kind] * o.s + 9);
-      if (d >= hitR) continue;
-      // nearer to the eye wins in 3D; the next step from your build and the current path get a nudge
-      const next = !A0.has(n.id) && n.adj.some(x2 => A0.has(x2));
-      cands.push({ n, d, sc: d - o.d * 0.004 - (next ? 6 : 0) - (path && path.includes(n.id) ? 4 : 0) - (n.id === sel ? 8 : 0) });
-    }
-    cands.sort((a, b) => a.sc - b.sc);
-    const best = cands.length ? cands[0].n : null;
-    // two nodes under one finger: zoom in on the spot instead of guessing
-    if (cands.length > 1 && best.id !== sel && cands[1].sc - cands[0].sc < 5 && cands[0].d < 14 && cands[1].d < 14 && cam.zoom < 2.6) {
-      const [x, y, z] = npos(best); SFX.play('ui'); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85, zoom: Math.min(3, cam.zoom * 1.9) }; return;
-    }
-    if (best && sel === best.id) {
-      const p = treePathTo(best.id);
-      if (p && p.length && p.length <= pointsFree()) { if (allocWithUndo(best.id)) SFX.play('upgrade', {}); else { SFX.play('deny'); blockToast(best.id); } }
-    }
-    sel = best ? best.id : null;
-    path = sel ? treePathTo(sel) : null;
-    if (best) { SFX.play('ui'); const [x, y, z] = flatMode() ? posFlat(best) : pos3(best); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85 }; const zf = DEF().zoom * (flatMode() ? 2.6 : 2); if (cam.zoom < zf) goal.zoom = zf; }
-    refresh();
-  }
-  function inRun() { return !!(G && !G.over); }
-  function blockMsg(id) {
-    const r = treeBlock(id), lv = profLevel().level;
-    if (r.startsWith('seal:')) { const i = +r.slice(5); return `Needs the ${DOCTRINES[i].name} seal first`; }
-    if (r === 'slots') { const nx = SEAL_NEXT(lv); return `You hold ${sealsHeld()} of ${sealSlots(lv)} Doctrine seal${sealSlots(lv) > 1 ? 's' : ''}${nx ? `. Another opens at level ${nx}` : ''}. Refund one to switch`; }
-    if (r.startsWith('conflict:')) { const o = TREE.nodes[r.slice(9)]; return `Cancels out ${o ? o.name : 'another node'} you already hold: refund it first`; }
-    return '';
-  }
-  function blockToast(id) { const m = blockMsg(id); if (m) UI.toast('DOCTRINE', m, '#ffb03a', 1); }
-  function docHTML() {
-    const A = new Set(PROF.alloc), lv = profLevel().level, held = sealsHeld(), slots = sealSlots(lv), nx = SEAL_NEXT(lv);
-    const rows = Object.keys(DOCTRINES).map(k => {
-      const i = +k, D = DOCTRINES[i], pil = D.pillar, S = pil ? { col: pil === 'zen' ? '#9fd8ff' : '#ff5fa8' } : SECTORS[i], on = A.has('d' + i), pt = pil === 'zen' ? 'z' : 'n';
-      const ms = (pil ? [['Seal', 'd' + i], ['Orbit I', pt + 'o1'], ['Orbit II', pt + 'o2'], ['Keystone', pt + 'ak']] : [['Seal', 'd' + i], ['Notables', [0, 1, 2].map(c => `c${i}_${c}n`)], ['Mastery', 'x' + i], ['Keystone', 'k' + i], ['Arm', 'w' + i]]).map(([nm, id]) => {
-        if (Array.isArray(id)) { const h = id.filter(x => A.has(x)).length; return `<span class="${h === id.length ? 'on' : ''}">${nm} ${h}/${id.length}</span>`; }
-        return `<span class="${A.has(id) ? 'on' : ''}">${nm}${TREE.nodes[id].kind === 'keystone' ? ': ' + esc(TREE.nodes[id].name) : ''}</span>`; }).join('');
-      return `<div class="docrow ${on ? 'on' : ''}" style="--c:${S.col}"><b>${esc(D.name.toUpperCase())}</b><em>${esc(D.tag)}</em>
-        <ul>${D.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul><div class="ms">${ms}</div>
-        ${(() => { if (!on) return `<button class="btn small" data-tact="docgo" data-n="d${i}">Show seal</button>`;
-          const goals = (pil ? [pt + 'o1', pt + 'o2', pt + 'ak'] : ['c' + i + '_0n', 'c' + i + '_1n', 'c' + i + '_2n', 'x' + i, 'k' + i, 'w' + i]).filter(id => !A.has(id)).map(id => ({ id, p: treePathTo(id) })).filter(g => g.p && !treeBlock(g.id, g.p)).sort((a, b) => a.p.length - b.p.length);
-          return goals.length ? `<button class="btn small primary" data-tact="docgo" data-n="${goals[0].id}">Next: ${esc(TREE.nodes[goals[0].id].name)} · ${goals[0].p.length} pt${goals[0].p.length > 1 ? 's' : ''}</button>` : '<span class="note">Doctrine complete</span>'; })()}</div>`; }).join('');
-    return `<div class="ph"><b>Doctrines · ${held}/${slots} sealed</b><button class="x" data-tact="docs">✕</button></div>
-      <p class="note">${tipify(`A Doctrine changes how you play. Take its seal and its notables, mastery, keystone and arm open up. You can hold ${slots}${nx ? `; another seal opens at level ${nx}` : ''}. Refunds are free between runs.`)}</p>
-      ${rows}<p class="note">Hybrid notables between sectors and the three outer keystones stay open to everyone.</p>`;
-  }
-  function action(act, b) {
-    SFX.play('ui');
-    switch (act) {
-      case 'close': close(); break;
-      case 'undo': if (undo()) SFX.play('sell', {}); else SFX.play('deny'); break;
-      case 'alloc': if (allocWithUndo(sel)) { SFX.play('upgrade', {}); path = treePathTo(sel); } else { SFX.play('deny'); blockToast(sel); } refresh(); break;
-      case 'refund': if (treeRefund(sel)) { SFX.play('sell', {}); path = treePathTo(sel); } else SFX.play('deny'); refresh(); break;
-      case 'builds': drawer = drawer === 'builds' ? null : 'builds'; refresh(); break;
-      case 'docs': drawer = drawer === 'docs' ? null : 'docs'; refresh(); break;
-      case 'docgo': { const id = b.dataset.n, n = TREE.nodes[id]; drawer = null; sel = id; path = treePathTo(id); const [x, y, z] = flatMode() ? posFlat(n) : pos3(n); goal = { tx: x, ty: y, tz: flatMode() ? 0 : z * 0.85, zoom: Math.max(cam.zoom, DEF().zoom * (flatMode() ? 2.6 : 2)) }; refresh(); break; }
-      case 'totals': drawer = drawer === 'totals' ? null : 'totals'; refresh(); break;
-      case 'save': { const i = +b.dataset.v, inp = document.getElementById('bn' + i); PROF.builds[i] = { name: (inp && inp.value.trim()) || `Build ${i + 1}`, alloc: PROF.alloc.slice() }; Save.save(); UI.toast('BUILD SAVED', PROF.builds[i].name, '#59f0b4', 1); refresh(); break; }
-      case 'load': { const r = treeLoadBuild(+b.dataset.v); const msg = { ok: PROF.builds[+b.dataset.v] ? PROF.builds[+b.dataset.v].name : '', points: 'Not enough passive points', tokens: 'Requires 2 Recalibration tokens', empty: 'Slot is empty' }[r]; UI.toast(r === 'ok' ? 'BUILD LOADED' : 'CAN\'T LOAD', msg, r === 'ok' ? '#59f0b4' : '#ff4d6a', 1); sel = null; path = null; refresh(); break; }
-      case 'wipe': if (inRun()) return; if (!confirmWipe) { confirmWipe = true; refresh(); return; } PROF.alloc = ['start']; confirmWipe = false; sel = null; path = null; Save.save(); refresh(); break;
-      case 'center': sel = null; path = null; selStar = null; refresh(); goal = Object.assign(DEF(), flatMode() ? {} : { yaw: 0.35 }); break;
-      case 'view': PROF.settings.webView = flatMode() ? '3d' : 'flat'; Save.save(); goal = Object.assign(DEF(), { yaw: flatMode() ? 0 : 0.35 }); renderRegions(); break;
-      case 'profile': profOn = !profOn; renderProfile(); break;
-      case 'rgn': flyTo(b.dataset.v); break;
-      case 'here': flyHere(); break;
-      case 'star': { const v = b.dataset.v, n = v === 'max' ? pointsFree() : +v; if (starBuy(selStar, n)) { SFX.play('upgrade', {}); Save.save(); } refresh(); break; }
-      case 'starR': if (starRefund(selStar, +b.dataset.v)) Save.save(); refresh(); break;
-      case 'starX': selStar = null; refresh(); break;
-      case 'rotL': case 'rotR': rotateOrbit(act === 'rotR' ? 1 : -1); break;
-      case 'mopt': {
-        const n = TREE.nodes[sel], v = +b.dataset.v; if (!n || !n.opts || !PROF.alloc.includes(sel) || masteryPick(sel) === v) break;
-        if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); break; } G.tokens--; }
-        PROF.mastery[sel] = v; if (inRun()) recomputeAll(); SFX.play('upgrade', {}); Save.save(); refresh(); break;
-      }
-      case 'lout': {
-        const k = b.dataset.v; let L = loadoutList().slice();
-        if (L.includes(k)) { if (L.length > 1) L = L.filter(x => x !== k); else { SFX.play('deny'); break; } } else L.push(k);
-        PROF.loadout = ABIL_ORDER.filter(x => L.includes(x)); if (inRun()) recomputeAll(); Save.save(); refresh(); break;
-      }
-    }
-  }
-  function refresh() {
-    if (!open_) return;
-    if (sel) selStar = null;
-    renderRegions();
-    document.body.classList.toggle('tsel', !!sel || !!selStar);
-    if (profOn) renderProfile();
-    const free = pointsFree(), M = computeMods(PROF.alloc, null), a = M.attrs;
-    $('#tPts').textContent = free;
-    { const u = $('#tUndo'); if (u) u.hidden = !undoStack.some(p => p.length && p.every(x => PROF.alloc.includes(x))); }
-    $('#tPts').parentElement.classList.toggle('glow', free > 0);
-    $('#tTok').hidden = !inRun();
-    if (inRun()) $('#tTok').querySelector('b').textContent = G.tokens;
-
-    // info card
-    const info = $('#tinfo');
-    info.classList.toggle('hint', !sel && !selStar);
-    if (!sel && selStar) {
-      const rid = selStar, S = STARS[rid], rk = (PROF.stars && PROF.stars[rid]) || 0, col = rid[0] === 's' ? SECTORS[+rid.slice(1)].col : rid === 'zen' ? '#9fd8ff' : '#ff5fa8';
-      const tot = starTotal(rid, rk), nxt = starTotal(rid, rk + 1) - tot, t = STAT_TXT[S.key], f2 = v => Math.round(v * 10) / 10;
-      const rem = (PROF.remnants || []).includes(rid), canR = !inRun();
-      info.innerHTML = `<div class="ti tstar" style="--c:${col}"><div><i style="color:${col}">Star Rank</i><b>${esc(REGION_NAME[rid])}</b></div>
-        <div class="big">${rk}</div>
-        <ul><li>${rk ? esc(t(f2(tot))) : 'No ranks yet'}</li><li>Next rank: ${esc(t(f2(nxt)))}</li>${rem ? '<li>Remnant: its notables carry through every Supernova</li>' : ''}</ul>
-        <div class="srow"><button class="btn primary" data-tact="star" data-v="1" ${free ? '' : 'disabled'}>+1</button><button class="btn" data-tact="star" data-v="5" ${free >= 5 ? '' : 'disabled'}>+5</button><button class="btn" data-tact="star" data-v="max" ${free ? '' : 'disabled'}>All ${free}</button>${canR && rk ? `<button class="btn danger" data-tact="starR" data-v="1">−1</button>` : ''}</div>
-        <span class="note">${free ? '' : 'No free points. '}${canR ? 'Refunds are free between runs.' : 'Refund ranks between runs.'}</span>
-        <div class="ta"><button class="btn" data-tact="starX">Close</button></div></div>`;
-    } else if (!sel) { info.innerHTML = `<p class="note">Drag to rotate · pinch to zoom · two fingers to pan · tap a node twice to allocate</p>`; }
-    else {
-      const n = TREE.nodes[sel], allocd = PROF.alloc.includes(sel);
-      const kindName = { seal: 'Doctrine Seal', start: 'Galactic Core', small: n.sector === -2 ? (n.z > 0 ? 'Zenith' : 'Nadir') : 'Passive', notable: n.hybrid ? 'Hybrid Notable' : n.arm ? 'Arm Notable' : 'Notable', mastery: 'Mastery', keystone: n.sector === -2 ? (n.z > 0 ? 'Zenith Keystone' : 'Nadir Keystone') : 'Keystone', orbit: 'Orbit', sat: 'Satellite' }[n.kind];
-      const col = n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
-      let act = '';
-      if (n.kind === 'start') act = '<span class="note">Starting node</span>';
-      else if (!allocd) {
-        const p = treePathTo(sel);
-        if (!p) act = '<span class="note">Not connected</span>';
-        else { const bm = blockMsg(sel); act = bm ? `<span class="note lock">${esc(bm)}</span>` : `<button class="btn primary" data-tact="alloc" ${p.length > free ? 'disabled' : ''}>Allocate · ${p.length} point${p.length > 1 ? 's' : ''}</button>${p.length > free ? `<span class="note">${free} available</span>` : ''}`; }
-      } else {
-        const o = treeOrphans(sel) || [];
-        const paid = inRun() && !G.checkpoint;
-        const cost = paid ? ` · ${o.length} token${o.length > 1 ? 's' : ''}` : '';
-        act = `<button class="btn danger" data-tact="refund" ${paid && G.tokens < o.length ? 'disabled' : ''}>Refund${o.length > 1 ? ` ${o.length} nodes` : ''}${cost}</button>${paid ? `<span class="note">Costs Recalibration tokens. Free at checkpoints.</span>` : `<span class="note">${inRun() ? 'Free at this checkpoint' : 'Free between runs'}</span>`}`;
-      }
-      let extra = '';
-      if (n.opts) {
-        const cur = masteryPick(n.id), paid = inRun() && !G.checkpoint;
-        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Choose one' + (paid ? ' · changing costs 1 token' : '') : 'Allocate to choose one'}</div>${n.opts.map((o, i) => `<button class="mopt ${i === cur ? 'on' : ''}" data-tact="mopt" data-v="${i}" ${allocd && i !== cur && !(paid && G.tokens < 1) ? '' : i === cur ? '' : 'disabled'}><b>${esc(o.name)}</b><span>${Object.keys(o.fx).map(k => STAT_TXT[k] ? tipify(STAT_TXT[k](o.fx[k])) : '').filter(Boolean).join('. ')}</span></button>`).join('')}</div>`;
-      }
-      if (n.orbitHub) {
-        const O = ORBITS[n.id], paid = inRun() && !G.checkpoint;
-        extra = `<div class="mopts"><div class="lbl">${allocd ? 'Rotate to retarget' + (paid ? ' · 1 token per turn' : ' · free right now') : 'Allocate to power the ring'}</div>${O.sats.map((S2, k) => { const sn = TREE.nodes[n.id + '_' + k]; return `<div class="mopt ${PROF.alloc.includes(sn.id) ? 'on' : ''}"><b>${esc(S2.name)}</b><span>${tipify(satLines(sn)[0])}</span></div>`; }).join('')}${allocd ? `<div class="rots"><button class="btn" data-tact="rotL" ${paid && G.tokens < 1 ? 'disabled' : ''}>⟲ Rotate</button><button class="btn" data-tact="rotR" ${paid && G.tokens < 1 ? 'disabled' : ''}>Rotate ⟳</button></div>` : ''}</div>`;
-      }
-      if (n.need !== undefined) extra += `<div class="mopts"><span class="note ${PROF.alloc.includes('d' + n.need) ? '' : 'lock'}">${PROF.alloc.includes('d' + n.need) ? `Part of the ${esc(DOCTRINES[n.need].name)} Doctrine` : `Locked: needs the ${esc(DOCTRINES[n.need].name)} seal`}</span></div>`;
-      if (n.kind === 'seal') extra += `<div class="mopts"><span class="note">${esc(DOCTRINES[n.doctrine].tag)}. Opens this region's notables, mastery, keystone and arm. Seals held: ${sealsHeld()}/${sealSlots(profLevel().level)}.</span></div>`;
-      if (REM_SET().has(n.id)) extra += `<div class="mopts"><span class="note">Kept by your Remnant. Always active, even unallocated.</span></div>`;
-      if (n.sat !== undefined) extra = `<div class="mopts"><span class="note">Rotate ${esc(ORBITS[n.orbit].name)} to change which sector this faces.</span></div>`;
-      if (n.fx.loadout && allocd) {
-        const L = loadoutList();
-        extra = `<div class="mopts"><div class="lbl">Milestone loadout · ${L.length} of ${ABIL_ORDER.length} · +${(ABIL_ORDER.length - L.length) * 25}% ability power</div><div class="louts">${ABIL_ORDER.map(k => `<button class="lout ${L.includes(k) ? 'on' : ''}" data-tact="lout" data-v="${k}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span></button>`).join('')}</div></div>`;
-      }
-      info.innerHTML = `<div class="ti"><div><i style="color:${col}">${kindName}</i><b>${esc(n.name)}</b></div><ul>${nodeLines(n).map(l => `<li>${tipify(l)}</li>`).join('')}</ul>${extra}<div class="ta">${act}</div></div>`;
-    }
-    // drawer
-    const dr = $('#tdrawer');
-    dr.hidden = !drawer;
-    { const td = $('#tDoc'); if (td) { const on = Object.keys(DOCTRINES).filter(k => PROF.alloc.includes('d' + k)).map(k => DOCTRINES[k].name); td.textContent = on.length ? on.join(' + ') : 'Doctrine'; } }
-    if (drawer === 'docs') dr.innerHTML = docHTML();
-    else if (drawer === 'builds') {
-      dr.innerHTML = `<div class="ph"><b>Saved Builds</b><button class="x" data-tact="builds">✕</button></div>
-        ${PROF.builds.map((bd, i) => `<div class="slot"><input id="bn${i}" type="text" maxlength="20" placeholder="Build ${i + 1}" value="${bd ? esc(bd.name) : ''}"><small>${bd ? (bd.alloc.length - 1) + ' nodes' : 'Empty'}</small><button class="btn small" data-tact="save" data-v="${i}">Save</button><button class="btn small" data-tact="load" data-v="${i}" ${bd ? '' : 'disabled'}>Load</button></div>`).join('')}
-        <p class="note">${inRun() && !G.checkpoint ? 'Loading during a run costs 2 Recalibration tokens. Free at checkpoints.' : 'Loading is free right now.'}</p>
-        ${inRun() ? '' : `<button class="btn danger wide" data-tact="wipe">${confirmWipe ? 'Tap again to refund all nodes' : 'Reset Web'}</button>`}`;
-    } else if (drawer === 'totals') {
-      const raw = M.raw, lines = [];
-      lines.push(`+${Math.round((M.dmg - 1) * 100)}% Damage (incl. Power)`);
-      lines.push(`+${Math.round((M.rate - 1) * 100)}% Attack Speed (incl. Tempo)`);
-      lines.push(`+${Math.round((M.range - 1) * 100)}% Range (incl. Focus)`);
-      lines.push(`×${num1(M.stMult)} status chance (Focus)`);
-      lines.push(`Core: ${Math.round(M.coreHP)} HP, ${Math.round(M.shield)} shield (incl. Integrity)`);
-      for (const k in raw) if (!['P', 'Tm', 'F', 'I', 'dmg', 'rate', 'range', 'coreHP', 'shield'].includes(k) && STAT_TXT[k] && raw[k]) lines.push(STAT_TXT[k](Math.round(raw[k] * 100) / 100));
-      const ks = TREE.list.filter(n => n.ks && PROF.alloc.includes(n.id));
-      dr.innerHTML = `<div class="ph"><b>Totals</b><button class="x" data-tact="totals">✕</button></div>
-        ${ks.length ? `<div class="lbl">Keystones</div>${ks.map(n => `<p class="amber">${esc(n.name)}</p>`).join('')}` : ''}
-        <div class="lbl">Attributes</div><p class="note">Power ${a.P} · Tempo ${a.Tm} · Focus ${a.F} · Integrity ${a.I}</p>
-        <div class="lbl">Stats</div><ul class="tot">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`;
-    }
-  }
-  const PCAT = {
-    off: { name: 'Offense', col: '#ff6a5a' }, spd: { name: 'Speed', col: '#ffe14d' }, ctl: { name: 'Control', col: '#6ae2ff' },
-    def: { name: 'Defense', col: '#59f0b4' }, eco: { name: 'Economy', col: '#ffb03a' }, chs: { name: 'Chaos', col: '#d06cff' },
-  };
-  const CATW = {
-    dmg: ['off', 1], dmgK: ['off', 0.5], dmgT: ['off', 0.5], dmgC: ['off', 0.5], dmgA: ['off', 0.5], dmgV: ['off', 0.5], critC: ['off', 2], critM: ['off', 0.5], P: ['off', 1],
-    eliteDmg: ['off', 0.6], armorPen: ['off', 0.3], critSplash: ['off', 0.4], fifthCrit: ['off', 14], shredStack: ['off', 4], burnVuln: ['off', 1], burnBoom: ['off', 0.6],
-    capacitor: ['off', 14], chainKeep: ['off', 12], shockBurst: ['off', 1], markVoid: ['off', 3], rampKeep: ['off', 12], napalmKill: ['off', 12], burnCrit: ['off', 14],
-    pierceK: ['off', 10], pierceKeep: ['off', 10], critCK: ['off', 1], critMK: ['off', 0.3], burnDmg: ['off', 0.5], overload: ['off', 0.2], shatter: ['off', 0.2], collapse: ['off', 0.2],
-    coreDmg: ['off', 0.15], multiA: ['off', 14], loneWolf: ['off', 0.6], splash: ['off', 30], chain: ['off', 10], infernoCore: ['off', 14], ovlBurn: ['off', 10], ovlFree: ['off', 10],
-    rate: ['spd', 1], rateK: ['spd', 0.5], rateA: ['spd', 0.5], Tm: ['spd', 1], heatSink: ['spd', 14], coreRate: ['spd', 0.2], thunder: ['off', 14],
-    chillChance: ['ctl', 1], shockChance: ['ctl', 1], markChance: ['ctl', 1], burnChance: ['ctl', 0.6], chillPot: ['ctl', 0.4], freezeDur: ['ctl', 25], freezeAt: ['ctl', 15],
-    knock: ['ctl', 2], kSlow: ['ctl', 1], glacial: ['ctl', 1], markSlow: ['ctl', 0.5], coldSnap: ['ctl', 15], chillSplash: ['ctl', 12], stasisDur: ['ctl', 4], iceShards: ['ctl', 12],
-    range: ['ctl', 0.6], rangeKR: ['ctl', 0.4], F: ['ctl', 0.8], frozenVuln: ['ctl', 0.5], shockEff: ['ctl', 0.3], markMax: ['ctl', 3], chillSlowDecay: ['ctl', 12], shockLong: ['ctl', 12],
-    burnDur: ['ctl', 0.3], chainIgnite: ['ctl', 10], burnSpread: ['ctl', 12], knockMark: ['ctl', 8], freezeImmRed: ['ctl', 0.2], superChill: ['ctl', 10], superRad: ['ctl', 0.1], chillVoid: ['ctl', 0.6], blackHole: ['ctl', 12],
-    coreHP: ['def', 0.3], shield: ['def', 0.4], shieldRegen: ['def', 0.15], I: ['def', 1], shieldWave: ['def', 12], fieldRepair: ['def', 3], coreRange: ['def', 6],
-    credits: ['eco', 1], costRed: ['eco', 1.2], upgRed: ['eco', 1], startCredits: ['eco', 0.05], sellPct: ['eco', 0.12], interest: ['eco', 7], salvage: ['eco', 12], xp: ['eco', 0.6],
-    abilCharge: ['eco', 0.6], abilPower: ['eco', 0.4], loadout: ['eco', 10],
-    stormFreq: ['chs', 0.3], stormPow: ['chs', 0.3], affixLuck: ['chs', 0.3], voidSiphon: ['chs', 14], markPerma: ['ctl', 12], overloadRad: ['off', 0.1],
-  };
-  const KSW = { glass: { off: 40, def: -30 }, conflag: { off: 25, ctl: -10 }, overgrid: { spd: 30, chs: 10 }, abszero: { ctl: 30 }, singularity: { off: 30 }, dimret: { eco: 30 },
-    prismatic: { ctl: 20, chs: 10 }, chaos: { chs: 35 }, unbreakable: { def: 35 }, celestial: { off: 15, chs: -15 }, singular: { chs: 40 } };
-  const SATW = { dmg: 'off', rate: 'spd', status: 'ctl', range: 'ctl', reson: 'off', vxp: 'off', flux: 'off', storm: 'chs', vol: 'chs', ent: 'chs', rift: 'chs', combo: 'off' };
-  function nodeFx(n) {
-    if (n.sat !== undefined) { const S = ORBITS[n.orbit].sats[n.sat], el = SECTOR_EL[satSector(n)]; return el === 'E' ? S.E : null; }
-    const fx = Object.assign({}, n.fx);
-    if (n.opts) { const o = n.opts[masteryPick(n.id)]; if (o) for (const k in o.fx) fx[k] = (fx[k] || 0) + o.fx[k]; }
-    return fx;
-  }
-  function nodeWeights(n) {
-    const w = { off: 0, spd: 0, ctl: 0, def: 0, eco: 0, chs: 0 };
-    if (n.ks && KSW[n.ks]) for (const k in KSW[n.ks]) w[k] += KSW[n.ks][k];
-    if (n.sat !== undefined && SECTOR_EL[satSector(n)] !== 'E') { w[SATW[ORBITS[n.orbit].sats[n.sat].k]] += 18; return w; }
-    const fx = nodeFx(n) || {};
-    for (const k in fx) { const c = CATW[k]; if (c) w[c[0]] += fx[k] * c[1]; }
-    return w;
-  }
-  function nodeCat(n) { const w = nodeWeights(n); let best = null, bv = 0.01; for (const k in w) if (w[k] > bv) { bv = w[k]; best = k; } return best; }
-  function profileOf(alloc) {
-    const t = { off: 0, spd: 0, ctl: 0, def: 0, eco: 0, chs: 0 };
-    for (const id of alloc) { const n = TREE.nodes[id]; if (!n) continue; const w = nodeWeights(n); for (const k in t) t[k] += w[k]; }
-    return t;
-  }
-  function renderProfile() {
-    $('#tProf').classList.toggle('on', profOn);
-    const box = $('#tprof'); box.hidden = !profOn; if (!profOn) return;
-    const cvs = $('#tpcv'), d = Math.min(3, window.devicePixelRatio || 1); cvs.width = 180 * d; cvs.height = 150 * d;
-    const g = cvs.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, 180, 150);
-    const P = profileOf(PROF.alloc), keys = ['off', 'spd', 'ctl', 'def', 'eco', 'chs'], cx = 90, cy = 76, R0 = 50;
-    const val = k => Math.max(0, P[k]) / (Math.max(0, P[k]) + 70);
-    g.strokeStyle = '#2c3160'; g.lineWidth = 1;
-    for (const f of [0.33, 0.66, 1]) { g.beginPath(); keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; const x = cx + Math.cos(a) * R0 * f, y = cy + Math.sin(a) * R0 * f; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke(); }
-    g.beginPath(); keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3, r = R0 * Math.max(0.04, val(k)); const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
-    g.fillStyle = 'rgba(255,176,58,0.28)'; g.fill(); g.strokeStyle = '#ffb03a'; g.lineWidth = 1.5; g.stroke();
-    g.font = '8px Silkscreen, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    keys.forEach((k, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; g.fillStyle = PCAT[k].col; g.fillText(PCAT[k].name.toUpperCase(), cx + Math.cos(a) * (R0 + 16), cy + Math.sin(a) * (R0 + 12)); });
-    const off = P.off + P.spd * 0.7, def = P.def + P.ctl * 0.7, bal = (def - off) / Math.max(30, off + def);
-    const lean = Math.abs(bal) < 0.15 ? 'Balanced' : bal < 0 ? (bal < -0.5 ? 'All-in offense' : 'Leans offensive') : (bal > 0.5 ? 'Fortress' : 'Leans defensive');
-    const top = keys.slice().sort((a, b) => P[b] - P[a])[0];
-    $('#tpbar').innerHTML = `<div class="obl"><span>Offense</span><span>Defense</span></div><div class="ob"><i style="left:calc(${Math.round((bal + 1) * 50)}% - 1px)"></i></div><span><b>${lean}</b>${P[top] > 5 ? ` · strongest in ${PCAT[top].name}` : ''}</span>`;
-  }
-  const REM_SET = () => { const o = new Set(); for (const r of PROF.remnants || []) for (const id of remnantNodes(r)) o.add(id); return o; };
-  const REGIONS = () => [{ id: 'core', name: 'Core', col: '#ffb03a' }, ...SECTORS.map((S, i) => ({ id: 's' + i, name: S.name, col: S.col })), { id: 'zen', name: 'Zenith', col: '#9fd8ff' }, { id: 'nad', name: 'Nadir', col: '#ff5fa8' }];
-  function renderRegions() {
-    $('#tView').textContent = flatMode() ? '3D' : 'Flat';
-    const D = new Set(regionsDone());
-    $('#tregions').innerHTML = REGIONS().map(r => `<button class="rgn" data-tact="rgn" data-v="${r.id}" style="--c:${r.col}">${esc(r.name)}${D.has(r.id) ? `<em>${(PROF.stars && PROF.stars[r.id]) || 0}</em>` : ''}</button>`).join('');
-  }
-  function flyTo(id) {
-    const flat = flatMode(), z0 = DEF().zoom;
-    sel = null; path = null; selStar = REGION_IDS.includes(id) && regionDone(id) ? id : null; refresh();
-    if (id === 'core') { goal = Object.assign(DEF()); return; }
-    if (id === 'zen' || id === 'nad') {
-      const side = id === 'zen' ? 1 : -1;
-      goal = flat ? { tx: side * PILX, ty: 330 - 240 * 1.45, tz: 0, zoom: z0 * 3.4 } : { tx: 0, ty: 0, tz: side * 260, zoom: z0 * 1.7, pitch: 0.55 };
-      return;
-    }
-    const i = +id.slice(1), a = (-90 + i * 60) * Math.PI / 180;
-    goal = { tx: Math.cos(a) * 430 * WS, ty: Math.sin(a) * 430 * WS, tz: 0, zoom: z0 * (flat ? 3.2 : 2.3) };
-    if (!flat) { goal.yaw = Math.PI / 2 - a; goal.pitch = 0.9; }
-  }
-  // zoomed in, only nodes near the focus are drawn and tappable, so far-off nodes (in 3D, ones behind) can't steal taps
-  let visPos = null;
-  function cullRadius() { const zr = cam.zoom / DEF().zoom; if (zr < 1.4) return 1e9; return (flatMode() ? 2600 : 1500) / zr; }
-  // zoomed into a sector, other sectors fade back and the Zenith/Nadir pillars hide (3D), so taps land in the region you're looking at
-  function focusSector() { const zr = cam.zoom / DEF().zoom; if (zr < 1.8 || viewT < 0 || Math.hypot(cam.tx, cam.ty) < 260 || Math.abs(cam.tz) > 120) return -1; const a = Math.atan2(cam.ty, cam.tx) * 180 / Math.PI; return ((Math.round((a + 90) / 60) % 6) + 6) % 6; }
-  function nodeFade(n, x, y, z, cullR, fs, A0, keep) {
-    if (keep || A0.has(n.id)) return 1;
-    let f = clamp((cullR - Math.hypot(x - cam.tx, y - cam.ty, z - cam.tz)) / (cullR * 0.3), 0, 1);
-    if (fs >= 0) { if (n.sector === -2) f = flatMode() ? f : 0; else if (n.sector >= 0 && n.sector !== fs && !n.adj.some(x2 => TREE.nodes[x2].sector === fs)) f = Math.min(f, 0.18); }
-    return f;
-  }
-  // allocation history for Undo (this session)
-  const undoStack = [];
-  function allocWithUndo(id) { const p = treePathTo(id) || []; if (!treeAllocate(id)) return false; undoStack.push(p.slice()); if (undoStack.length > 30) undoStack.shift(); return true; }
-  function undo() {
-    while (undoStack.length) {
-      const p = undoStack.pop(); if (!p.length || !p.every(x => PROF.alloc.includes(x))) continue;
-      const orph = treeOrphans(p[0]) || [];
-      if (orph.some(x => !p.includes(x))) { UI.toast('CAN\'T UNDO', 'Later picks depend on it. Refund those first', '#ff4d6a', 1); undoStack.push(p); return false; }
-      if (treeRefund(p[0])) { sel = null; path = null; refresh(); return true; }
-      UI.toast('CAN\'T UNDO', 'Needs Recalibration tokens during a run', '#ff4d6a', 1); undoStack.push(p); return false;
-    }
-    return false;
-  }
-  const lastNode = () => { const a = PROF.alloc || []; for (let i = a.length - 1; i >= 0; i--) if (TREE.nodes[a[i]] && TREE.nodes[a[i]].kind !== 'start') return a[i]; return null; };
-  function flyHere() {
-    const id = lastNode();
-    if (!id) { flyTo('core'); return; }
-    const [x, y, z] = npos(TREE.nodes[id]), z0 = DEF().zoom;
-    hereT = 90;
-    goal = { tx: x, ty: y, tz: z * 0.85, zoom: Math.max(cam.zoom, z0 * 3.2) };
-  }
-  function rotateOrbit(dir) {
-    const n = TREE.nodes[sel]; if (!n || !n.orbitHub || !PROF.alloc.includes(sel)) return;
-    if (inRun() && !G.checkpoint) { if (G.tokens < 1) { SFX.play('deny'); UI.toast('CAN\'T ROTATE', 'Requires 1 Recalibration token', '#ff4d6a', 1); return; } G.tokens--; }
-    PROF.orbit = PROF.orbit || {};
-    PROF.orbit[sel] = ((orbitRot(sel) + dir) % 6 + 6) % 6;
-    orbView[sel + '_t'] = (orbView[sel + '_t'] !== undefined ? orbView[sel + '_t'] : orbView[sel]) + dir;
-    if (inRun()) recomputeAll();
-    SFX.play('reroll'); Save.save(); refresh();
-  }
-  // pixel helpers on the low-res buffer
-  const pxR = (x, y, w, h, col) => { lc.fillStyle = col; lc.fillRect(Math.round(x), Math.round(y), w, h); };
-  function pxDia(x, y, r, col) { lc.fillStyle = col; x = Math.round(x); y = Math.round(y); for (let dy = -r; dy <= r; dy++) { const hw = r - Math.abs(dy); lc.fillRect(x - hw, y + dy, hw * 2 + 1, 1); } }
-  function pxRing(x, y, r, col) { lc.fillStyle = col; x = Math.round(x); y = Math.round(y); const n = Math.max(8, Math.round(r * 6)); for (let k = 0; k < n; k++) { const a = k / n * 6.283; lc.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r), 1, 1); } }
-  function line(ax, ay, bx, by, col, w) { lc.strokeStyle = col; lc.lineWidth = w || 1; lc.beginPath(); lc.moveTo(Math.round(ax) + 0.5, Math.round(ay) + 0.5); lc.lineTo(Math.round(bx) + 0.5, Math.round(by) + 0.5); lc.stroke(); }
-
-  // constellations: one figure per region, stars light up as the region fills
-  const CONST = (() => {
-    const ring = (n, r, a0) => Array.from({ length: n }, (_, k) => [Math.cos(a0 + k / n * 6.283) * r, Math.sin(a0 + k / n * 6.283) * r]);
-    const flake = [[0, 0], ...ring(6, 0.45, Math.PI / 2), ...ring(6, 0.9, Math.PI / 2)];
-    const flakeL = []; for (let k = 0; k < 6; k++) flakeL.push([0, 1 + k], [1 + k, 7 + k], [1 + k, 1 + (k + 1) % 6]);
-    const spiral = [[0, 0]]; for (let k = 0; k < 10; k++) { const th = k * 0.78, r = 0.12 + k * 0.088; spiral.push([Math.cos(th) * r, Math.sin(th) * r]); }
-    const snake = []; for (let k = 0; k < 9; k++) { const t = k / 8; snake.push([Math.sin(t * Math.PI * 2.2) * 0.45, 0.85 - t * 1.7]); }
-    return {
-      K: { name: 'The Archer', pts: [[0, -0.85], [0, 0.9], [-0.16, 0.68], [0.16, 0.68], [-0.62, -0.2], [-0.46, 0.25], [0, 0.42], [0.46, 0.25], [0.62, -0.2], [0, -0.2]],
-        ln: [[0, 1], [1, 2], [1, 3], [4, 5], [5, 6], [6, 7], [7, 8], [4, 9], [9, 8]] },
-      T: { name: 'The Phoenix', pts: [[0, 0.8], [0, 0.45], [0, -0.2], [-0.4, 0.25], [-0.75, 0.6], [-0.95, 0.15], [0.4, 0.25], [0.75, 0.6], [0.95, 0.15], [-0.25, -0.7], [0, -0.92], [0.25, -0.7]],
-        ln: [[0, 1], [1, 2], [1, 3], [3, 4], [4, 5], [5, 2], [1, 6], [6, 7], [7, 8], [8, 2], [2, 9], [2, 10], [2, 11]] },
-      A: { name: 'The Thunderbolt', pts: [[0.35, 0.92], [-0.35, 0.02], [0, 0.02], [-0.3, -0.92], [0.42, 0.14], [0.06, 0.14], [-0.75, 0.55], [0.75, -0.45]],
-        ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]] },
-      C: { name: 'The Crystal', pts: flake, ln: flakeL },
-      V: { name: 'The Maw', pts: spiral, ln: spiral.slice(1).map((_, k) => [k, k + 1]) },
-      E: { name: 'The Bulwark', pts: [[-0.6, 0.72], [0, 0.88], [0.6, 0.72], [0.6, 0], [0.35, -0.52], [0, -0.88], [-0.35, -0.52], [-0.6, 0], [0, 0.5], [0, -0.45], [-0.35, 0.14], [0.35, 0.14]],
-        ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0], [8, 9], [10, 11]] },
-      zen: { name: 'The Crown', pts: [[-0.7, -0.45], [0.7, -0.45], [-0.75, 0.5], [-0.35, 0.05], [0, 0.75], [0.35, 0.05], [0.75, 0.5]],
-        ln: [[0, 1], [0, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 1]] },
-      nad: { name: 'The Serpent', pts: [...snake, [0.12, 1.0], [-0.12, 1.0]], ln: [...snake.slice(1).map((_, k) => [k, k + 1]), [0, 9], [0, 10]] },
-    };
-  })();
-  let cgeo = null, cA = 1, cHits = [], hereT = 0, selStar = null;
-  function constGeo() {
-    if (cgeo) return cgeo;
-    cgeo = [];
-    SECTORS.forEach((S, i) => {
-      const ns = TREE.list.filter(n => n.sector === i);
-      if (!ns.length) return;
-      let cx = 0, cy = 0; for (const n of ns) { cx += n.x; cy += n.y; } cx /= ns.length; cy /= ns.length;
-      const L = Math.hypot(cx, cy) || 1, ur = [cx / L, cy / L], ut = [-ur[1], ur[0]];
-      let er = 0, et = 0; for (const n of ns) { const dx = n.x - cx, dy = n.y - cy; er = Math.max(er, Math.abs(dx * ur[0] + dy * ur[1])); et = Math.max(et, Math.abs(dx * ut[0] + dy * ut[1])); }
-      cgeo.push({ rid: 's' + i, F: CONST[S.id], col: S.col, ids: ns.map(n => n.id), c: [ur[0] * 560 * WS, ur[1] * 560 * WS], sr: 235, plane: 1 });
-    });
-    for (const [key, side, col] of [['zen', 1, '#9fd8ff'], ['nad', -1, '#ff5fa8']]) {
-      const ns = TREE.list.filter(n => n.sector === -2 && Math.sign(n.z) === side);
-      if (ns.length) cgeo.push({ rid: key, F: CONST[key], col, ids: ns.map(n => n.id), side, plane: 0 });
-    }
-    return cgeo;
-  }
-  function drawConstellations(A, o) {
-    const out = []; cHits = [];
-    if (cA < 0.02) return out;
-    for (const g of constGeo()) {
-      const tot = g.ids.length, have = g.ids.filter(id => A.has(id)).length, full = g.ids.some(id => A.has(id) && TREE.nodes[id].kind === 'keystone');
-      const F = g.F, lit = full || have === tot ? F.pts.length : Math.round(have / tot * F.pts.length);
-      // world position of figure point (x across, y outward/up)
-      let W3;
-      if (g.plane) W3 = viewT > 0.5 ? (x, y) => [g.c[0] + x * g.sr, g.c[1] - y * g.sr, 0] : (x, y) => [g.c[0] + cy_ * x * g.sr * 0.8, g.c[1] - sy_ * x * g.sr * 0.8, 60 + (y + 1) * g.sr * 0.8];
-      else if (viewT > 0.5) { const px = g.side * PILX, py = 330 - 260 * 1.45; W3 = (x, y) => [px + x * 170, py - y * 240, 0]; }
-      else W3 = (x, y) => [cy_ * x * 150, -sy_ * x * 150, g.side * 600 + y * 150];
-      const sp = F.pts.map(([x, y]) => { const w = W3(x, y); proj(w[0], w[1], w[2], o); return { x: o.x / 2, y: o.y / 2, s: o.s }; });
-      lc.globalCompositeOperation = 'lighter';
-      for (const [a, b] of F.ln) {
-        const on = a < lit && b < lit;
-        lc.globalAlpha = (on ? 0.95 : 0.4) * cA; line(sp[a].x, sp[a].y, sp[b].x, sp[b].y, on ? g.col : '#7a80c0');
-      }
-      sp.forEach((p, k) => {
-        const on = k < lit, tw = 0.8 + 0.2 * Math.sin(frame / 14 + k * 1.7), cl = on ? g.col : '#c8ccf0';
-        lc.globalAlpha = cA * tw;
-        pxR(p.x - 1, p.y, 3, 1, cl); pxR(p.x, p.y - 1, 1, 3, cl);
-        if (on) { pxR(p.x, p.y, 1, 1, '#ffffff'); lc.globalAlpha = (full ? 0.5 : 0.3) * tw * cA; pxR(p.x - 2, p.y, 5, 1, g.col); pxR(p.x, p.y - 2, 1, 5, g.col); }
-      });
-      lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
-      const ctr = W3(0, 0); proj(ctr[0], ctr[1], ctr[2], o);
-      cHits.push({ rid: g.rid, x: o.x, y: o.y, r: Math.max(40, Math.hypot(sp[0].x * 2 - o.x, sp[0].y * 2 - o.y)) });
-      const top = W3(0, -1.2); proj(top[0], top[1], top[2], o);
-      const done = have === tot, rk = (PROF.stars && PROF.stars[g.rid]) || 0, rem = (PROF.remnants || []).includes(g.rid);
-      out.push({ x: o.x, y: o.y, name: F.name, txt: `${F.name.toUpperCase()}  ${done ? 'STAR ' + rk : have + '/' + tot}${rem ? '  · REMNANT' : ''}`, col: g.col, on: have > 0 || rem, full: full || done });
-    }
-    return out;
-  }
-  function draw() {
-    if (!open_ || !cam) return;
-    frame++;
-    // smooth camera glide to a tapped node, smooth orbit rotation
-    if (goal && !ptrs.size) {
-      const k = 0.12;
-      for (const f of ['tx', 'ty', 'tz', 'pitch', 'zoom']) if (goal[f] !== undefined) cam[f] += (goal[f] - cam[f]) * k;
-      if (goal.yaw !== undefined) { let d = goal.yaw - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); cam.yaw += d * k; }
-      const err = Math.abs((goal.tx ?? cam.tx) - cam.tx) + Math.abs((goal.ty ?? cam.ty) - cam.ty) + Math.abs((goal.tz ?? cam.tz) - cam.tz) + Math.abs((goal.zoom ?? cam.zoom) - cam.zoom) * 500 + Math.abs((goal.pitch ?? cam.pitch) - cam.pitch) * 300;
-      if (err < 0.5) goal = null;
-    }
-    const vt = flatMode() ? 1 : 0; viewT += (vt - viewT) * 0.12; if (Math.abs(vt - viewT) < 0.002) viewT = vt;
-    for (const k in ORBITS) { if (orbView[k + '_t'] !== undefined) { orbView[k] += (orbView[k + '_t'] - orbView[k]) * 0.15; if (Math.abs(orbView[k + '_t'] - orbView[k]) < 0.005) { orbView[k] = orbView[k + '_t']; } } }
-    camOX += ((sel ? -Math.min(330, W * 0.44) / 2 - 6 : 0) - camOX) * 0.15;
-    camPrep();
-    const RS = REM_SET();
-    const LW = lb.width, LH = lb.height, A = new Set(PROF.alloc), Pth = new Set(path || []), o = {}, o2 = {};
-    const sealOn = i => A.has('d' + i);
-    const allocatable = n => !A.has(n.id) && n.adj.some(x => A.has(x)) && !(n.need !== undefined && !sealOn(n.need)) && !(n.kind === 'seal' && sealsHeld() >= sealSlots(profLevel().level));
-    const pulse = (Math.sin(frame / 10) + 1) / 2;
-    lc.setTransform(1, 0, 0, 1, 0, 0);
-    lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
-    lc.fillStyle = '#04050a'; lc.fillRect(0, 0, LW, LH);
-    // far starfield with yaw parallax
-    for (const st of bg) { const x = ((st.x * LW + cam.yaw * 60 * st.p) % LW + LW) % LW, y = ((st.y * LH + cam.pitch * 30 * st.p) % LH + LH) % LH; lc.globalAlpha = st.a * (0.7 + 0.3 * Math.sin(frame / 30 + st.x * 50)); pxR(x, y, 1, 1, '#d8d6ff'); }
-    // galactic dust (additive)
-    lc.globalCompositeOperation = 'lighter';
-    for (const d of dust) {
-      proj(d.x, d.y, d.z, o);
-      const x = o.x / 2, y = o.y / 2; if (x < -2 || y < -2 || x > LW + 2 || y > LH + 2) continue;
-      lc.globalAlpha = d.a * Math.min(1, 0.55 + o.s * 0.8); lc.fillStyle = d.col; lc.fillRect(Math.round(x), Math.round(y), d.s, d.s);
-    }
-    lc.globalCompositeOperation = 'source-over'; lc.globalAlpha = 1;
-    // plane grid rings and the Z axis
-    for (const rr of [250 * WS, 500 * WS, 750 * WS]) { lc.globalAlpha = 0.16; let prev = null; for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.283; proj(Math.cos(a) * rr, Math.sin(a) * rr, 0, o); if (prev && k % 2) line(prev[0], prev[1], o.x / 2, o.y / 2, '#6a6fa8'); prev = [o.x / 2, o.y / 2]; } }
-    if (viewT < 0.5) {
-      lc.globalAlpha = 0.35 * (1 - viewT * 2); proj(0, 0, -520, o); proj(0, 0, 520, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, '#8a8fd0');
-      for (let z = -500; z <= 500; z += 50) { if (!z) continue; proj(0, 0, z, o); pxR(o.x / 2 - 1, o.y / 2, 3, 1, z > 0 ? '#9fd8ff' : '#ff5fa8'); }
-    } else {
-      // flat pillars for Zenith and Nadir
-      for (const side of [1, -1]) {
-        const colr = side > 0 ? '#9fd8ff' : '#ff5fa8';
-        lc.globalAlpha = 0.3 * (viewT * 2 - 1); proj(side * PILX, 330, 0, o); proj(side * PILX, 330 - 500 * 1.45, 0, o2); line(o.x / 2, o.y / 2, o2.x / 2, o2.y / 2, colr);
-        proj(side * PILX, 330 - 520 * 1.45 - 30, 0, o);
-        lc.globalAlpha = 1;
-      }
-    }
-    lc.globalAlpha = 1;
-    // orbit rings with sector ticks (hidden in 3D while zoomed into a sector)
-    if (!(viewT < 0.5 && focusSector() >= 0)) for (const k in ORBITS) {
-      const O = ORBITS[k], on = A.has(k), hub = npos(TREE.nodes[k]);
-      const fx = viewT > 0.5 ? 0.9 : 1, fy = viewT > 0.5 ? 0.55 : 1, rz = viewT > 0.5 ? 0 : O.z, cx0 = viewT > 0.5 ? hub[0] : 0, cy0 = viewT > 0.5 ? hub[1] : 0;
-      lc.globalAlpha = on ? 0.6 : 0.25; let prev = null;
-      for (let q = 0; q <= 48; q++) { const a = q / 48 * 6.283; proj(cx0 + Math.cos(a) * ORB_R * fx, cy0 + Math.sin(a) * ORB_R * fy, rz, o); if (prev) line(prev[0], prev[1], o.x / 2, o.y / 2, O.col); prev = [o.x / 2, o.y / 2]; }
-      lc.globalAlpha = 0.9;
-      SECTORS.forEach((S, i) => { const a = (-90 + i * 60) * Math.PI / 180; proj(cx0 + Math.cos(a) * (ORB_R + 14) * fx, cy0 + Math.sin(a) * (ORB_R + 14) * fy, rz, o); pxR(o.x / 2 - 1, o.y / 2 - 1, 2, 2, S.col); });
-      lc.globalAlpha = 1;
-    }
-    const zr = cam.zoom / DEF().zoom, cT = clamp((1.7 - zr) / 0.6, 0, 1); cA += (cT - cA) * 0.2;
-    const nodeDim = 1 - cA * 0.6;
-    const cLabels = drawConstellations(A, o);
-    // edges
-    const pos = {}; for (const n of TREE.list) { const [x, y, z] = npos(n); proj(x, y, z, o); pos[n.id] = { x: o.x / 2, y: o.y / 2, s: o.s, d: o.d, wz: z, wx: x, wy: y }; }
-    const cullR = cullRadius(), fs = focusSector(); for (const n of TREE.list) { const p = pos[n.id]; p.fade = nodeFade(n, p.wx, p.wy, p.wz, cullR, fs, A, n.id === sel || Pth.has(n.id)); p.vis = p.fade > 0.12; }
-    visPos = pos;
-    for (const [ai, bi] of TREE.edges) {
-      const a = TREE.nodes[ai], b = TREE.nodes[bi], pa = pos[ai], pb = pos[bi];
-      if (!pa.vis || !pb.vis) continue;
-      if ((pa.x < -20 && pb.x < -20) || (pa.x > LW + 20 && pb.x > LW + 20) || (pa.y < -20 && pb.y < -20) || (pa.y > LH + 20 && pb.y > LH + 20)) continue;
-      const both = A.has(ai) && A.has(bi);
-      const onPath = (Pth.has(ai) || A.has(ai)) && (Pth.has(bi) || A.has(bi)) && (Pth.has(ai) || Pth.has(bi));
-      const sc = b.col || a.col || (a.sector >= 0 ? SECTORS[a.sector] : SECTORS[Math.max(0, b.sector)]).col;
-      lc.globalAlpha = (both ? 1 : onPath ? 0.95 : 0.45) * (both || onPath ? 1 : nodeDim);
-      line(pa.x, pa.y, pb.x, pb.y, both ? sc : onPath ? '#ffb03a' : '#2c3160', both && (pa.s + pb.s) / 2 > 0.6 ? 2 : 1);
-    }
-    lc.globalAlpha = 1;
-    // drop lines from off-plane nodes to the disk (Elite map style)
-    for (const n of TREE.list) {
-      const p = pos[n.id]; if (!p.vis || viewT > 0.5 || Math.abs(p.wz) < 10 || (n.sector === -2 && n.sat === undefined)) continue;
-      proj(p.wx, p.wy, 0, o);
-      lc.globalAlpha = 0.35; line(p.x, p.y, o.x / 2, o.y / 2, n.col || '#5a5f9a');
-      lc.globalAlpha = 0.6; pxR(o.x / 2 - 1, o.y / 2, 3, 1, n.col || '#5a5f9a');
-    }
-    lc.globalAlpha = 1;
-    // nodes, far to near
-    const order = TREE.list.slice().sort((a, b) => pos[a.id].d - pos[b.id].d);
-    for (const n of order) {
-      const p = pos[n.id]; if (!p.vis || p.x < -10 || p.x > LW + 10 || p.y < -10 || p.y > LH + 10) continue;
-      const col = profOn ? (PCAT[nodeCat(n)] || {}).col || '#6a6f9a' : n.col || (n.sector >= 0 ? SECTORS[n.sector].col : '#ffb03a');
-      const on = A.has(n.id) || RS.has(n.id), can = allocatable(n), onP = Pth.has(n.id);
-      const r = Math.max(1, Math.round(R[n.kind] * p.s / 2));
-      lc.globalAlpha = (viewT < 0.5 ? clamp(1.25 - Math.hypot(p.wx - cam.tx, p.wy - cam.ty, p.wz - cam.tz) / 1400, 0.35, 1) : 1) * (on || onP ? 1 : nodeDim) * p.fade;
-      const fill = on ? col : '#0b0d1c', edge = on ? '#ffffff' : onP ? '#ffb03a' : can ? (pulse > 0.5 ? '#ffb03a' : '#7a5418') : sh2(col);
-      if (n.kind === 'small') { pxR(p.x - r, p.y - r, r * 2 + 1, r * 2 + 1, edge); if (r > 1) pxR(p.x - r + 1, p.y - r + 1, r * 2 - 1, r * 2 - 1, fill); }
-      else if (n.kind === 'keystone') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); if (on) pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
-      else if (n.kind === 'mastery') { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, Math.max(0, r - 1), fill); pxRing(p.x, p.y, r + 3, on ? col : sh2(col)); }
-      else if (n.kind === 'seal') { pxRing(p.x, p.y, r + 5, on ? '#ffffff' : sh2(col)); pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); pxRing(p.x, p.y, r + 2, on ? col : sh2(col)); pxR(p.x - 1, p.y - Math.max(2, r >> 1), 3, Math.max(4, r), on ? '#ffffff' : col); }
-      else if (n.kind === 'start') { pxDia(p.x, p.y, r + 2, '#ffe9b0'); pxDia(p.x, p.y, r, '#ffb03a'); pxR(p.x - 1, p.y - 1, 3, 3, '#ffffff'); }
-      else if (n.kind === 'orbit') { pxRing(p.x, p.y, r + 1, edge); pxRing(p.x, p.y, r, edge); pxDia(p.x, p.y, Math.max(1, r - 3), on ? col : '#151933'); }
-      else { pxDia(p.x, p.y, r + 1, edge); pxDia(p.x, p.y, r, fill); if (n.kind === 'sat' || n.kind === 'notable') pxRing(p.x, p.y, r + 2, on ? col : sh2(col)); }
-      lc.globalAlpha = 1;
-      if (on && r >= 2) { lc.globalCompositeOperation = 'lighter'; lc.globalAlpha = 0.25; pxDia(p.x, p.y, r + 3, col); lc.globalAlpha = 1; lc.globalCompositeOperation = 'source-over'; }
-    }
-    // blit pixel buffer
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    c.imageSmoothingEnabled = false;
-    c.drawImage(lb, 0, 0, LW * 2, LH * 2);
-    // hi-res overlay: selection + labels
-    if (sel && pos[sel]) { const p = pos[sel], r = R[TREE.nodes[sel].kind] * p.s + 7; c.beginPath(); c.arc(p.x * 2, p.y * 2, r, 0, 6.283); c.strokeStyle = '#ffffff'; c.lineWidth = 1.5; c.setLineDash([4, 4]); c.lineDashOffset = -frame / 3; c.stroke(); c.setLineDash([]); }
-    { const hid = lastNode(); if (hid && pos[hid]) { const p = pos[hid], r = R[TREE.nodes[hid].kind] * p.s + 5 + (Math.sin(frame / 8) + 1) * 2; c.beginPath(); c.arc(p.x * 2, p.y * 2, r, 0, 6.283); c.strokeStyle = '#ffb03a'; c.globalAlpha = 0.85; c.lineWidth = 1.5; c.stroke();
-      if (hereT > 0) { hereT--; const k = 1 - hereT / 90; c.beginPath(); c.arc(p.x * 2, p.y * 2, r + k * 60, 0, 6.283); c.globalAlpha = 1 - k; c.lineWidth = 2; c.stroke(); }
-      c.globalAlpha = 1; } }
-    const labels = [];
-    for (const n of TREE.list) {
-      const p = pos[n.id], rr = R[n.kind] * p.s;
-      if (!p.vis || p.fade < 0.5) continue;
-      if (n.kind === 'small' ? rr < 7.5 : rr < 3) continue;
-      if (cA > 0.5 && sel !== n.id && n.kind !== 'start') continue;
-      const on = A.has(n.id), pri = (sel === n.id ? 100 : 0) + (on ? 20 : 0) + ({ keystone: 50, seal: 55, mastery: 30, notable: 25, orbit: 35, sat: 22, start: 60, small: 0 }[n.kind]) + (Pth.has(n.id) ? 10 : 0) + p.d * 0.01;
-      labels.push({ n, x: p.x * 2, y: p.y * 2 + rr + 5, pri, on });
-    }
-    labels.sort((a, b) => b.pri - a.pri);
-    const placed = [];
-    c.textAlign = 'center'; c.textBaseline = 'top';
-    for (const L of labels) {
-      const n = L.n, fs = n.kind === 'small' ? 10 : n.kind === 'keystone' || n.kind === 'seal' ? 12 : 11;
-      c.font = `${fs}px Silkscreen, monospace`;
-      const txt = n.name.toUpperCase(), w = c.measureText(txt).width + 6, h = fs + 4;
-      const box = { x0: L.x - w / 2, x1: L.x + w / 2, y0: L.y - 2, y1: L.y + h };
-      if (box.y0 < 52 || box.y1 > H || box.x1 < 0 || box.x0 > W) continue;
-      if (placed.some(q => q.x0 < box.x1 && q.x1 > box.x0 && q.y0 < box.y1 && q.y1 > box.y0)) continue;
-      placed.push(box);
-      c.fillStyle = 'rgba(4,5,10,0.72)'; c.fillRect(box.x0, box.y0, w, h);
-      c.fillStyle = L.on ? '#ffffff' : n.kind === 'keystone' || n.kind === 'seal' ? '#ffb03a' : n.col && (n.kind === 'orbit' || n.kind === 'sat') ? n.col : '#a9a7c4';
-      c.fillText(txt, L.x, L.y);
-    }
-    c.font = '12px Silkscreen, monospace';
-    for (const L of cLabels) {
-      c.globalAlpha = cA;
-      const w = c.measureText(L.txt).width + 8, box = { x0: L.x - w / 2, x1: L.x + w / 2, y0: L.y - 8, y1: L.y + 8 };
-      if (box.y0 < 52 || box.y1 > H - 40 || box.x1 < 0 || box.x0 > W) continue;
-      if (placed.some(q => q.x0 < box.x1 && q.x1 > box.x0 && q.y0 < box.y1 && q.y1 > box.y0)) continue;
-      placed.push(box);
-      c.globalAlpha = cA * (L.full ? 1 : L.on ? 0.9 : 0.6); c.fillStyle = L.on ? L.col : '#a9a7c4'; c.textBaseline = 'middle';
-      c.fillText(L.txt, L.x, L.y); c.globalAlpha = 1; c.textBaseline = 'top';
-    }
-    c.globalAlpha = 1;
-  }
-  const sh2Cache = {};
-  function sh2(col) { if (sh2Cache[col]) return sh2Cache[col]; const v = parseInt(col.slice(1), 16), r = (v >> 16 & 255) * 0.42, g = (v >> 8 & 255) * 0.42, b = (v & 255) * 0.5; return (sh2Cache[col] = `rgb(${r | 0},${g | 0},${b | 0})`); }
-  function select(id) { const n = TREE.nodes[id]; if (!n) return; if (!cam) cam = DEF(); sel = id; path = treePathTo(id); const [x, y, z] = npos(n); cam.tx = x; cam.ty = y; cam.tz = z * 0.85; goal = null; refresh(); }
-  // test hooks
-  const _screen = id => { const n = TREE.nodes[id]; if (!n || !cam) return null; camPrep(); const [x, y, z] = npos(n), o = {}; proj(x, y, z, o); return { x: o.x, y: o.y }; };
-  const _visCount = () => visPos ? Object.values(visPos).filter(p => p.vis).length : -1;
-  const _dbg = () => ({ fs: focusSector(), zr: cam.zoom / DEF().zoom, tx: cam.tx, ty: cam.ty, tz: cam.tz, pil: TREE.list.filter(n => n.sector === -2 && visPos[n.id].vis).length });
-  return { init, open, close, resize, draw, refresh, select, get isOpen() { return open_; }, _screen, _visCount, _dbg, _sel: () => sel };
+  function select(id) { if (TAL[id]) { cur = TAL[id].tree; sel = id; refresh(); } }
+  return { init, open, close, resize() {}, draw() {}, refresh, select, get isOpen() { return open_; }, _sel: () => sel, _cur: () => cur };
 })();
 
 // ---------------- Main loop ----------------
@@ -10243,7 +9532,7 @@ const Tree = (() => {
   const loaded = Save.loadLocal();
   if (loaded) PROF = loaded;
   const webReset = migrateWeb();
-  if (webReset) { Save.save(); setTimeout(() => UI.toast('PASSIVE WEB REBUILT', 'Doctrines have arrived. All your points are refunded: pick a play style', '#ffb03a'), 900); }
+  if (webReset) { Save.save(); setTimeout(() => UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'), 900); }
   Render.init($('#cv'));
   Render.onCam = () => UI.zoomChanged && UI.zoomChanged();
   Tree.init();
