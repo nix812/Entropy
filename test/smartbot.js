@@ -72,6 +72,12 @@ for (let run = OFF; run < OFF + runs; run++) {
       for (const e of G._bl || []) if (e.dead && !e._logged) { e._logged = 1; console.log(`BOSS w${e._w} ${e.boss} life=${(t - e._t0).toFixed(1)}s fire=${(G.time - (e._hit0 || G.time)).toFixed(1)}s road=${(e.d / e.L.len).toFixed(2)} ${e.hp > 0 ? "LEAKED" : "killed"} ph=${e.phase} hp=${Math.round(e.maxHp)} pw=${Math.round(G.power || 0)} pw0=${Math.round(e._pw0 || 0)} pot=${Math.round(e._pot || 0)} ${Object.entries(G.dbgBoss).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => k + ':' + Math.round(v / e.maxHp * 100) + '%').join(' ')}`); G.dbgBoss = {}; }
     }
     while (q.length) q.shift()();
+    // TTK=1: track how far down the road each enemy gets before it dies (vaporized early vs a real threat)
+    if (process.env.TTK) {
+      const seen = G._ttkSeen || (G._ttkSeen = new Map()), now = new Set();
+      for (const e of G.enemies) if (!e.dead && e.L && !e.pirate) { now.add(e.id); const r = seen.get(e.id); const fr = e.d / e.L.len; if (r) { r.fr = Math.max(r.fr, fr); } else seen.set(e.id, { type: e.boss ? 'boss' : e.type, el: e.elite && e.elite.length ? 1 : 0, w: G.wave, fr, t0: t }); }
+      for (const [id, r] of seen) if (!now.has(id)) { (G._ttk || (G._ttk = [])).push({ type: r.type, el: r.el, w: r.w, fr: r.fr, life: t - r.t0 }); seen.delete(id); }
+    }
     met.minCore = Math.min(met.minCore, G.core.hp / G.core.max);
     if (G.wave !== lastWave) { lastWave = G.wave; met.creditsAtWave.push(G.credits);
       if (process.env.WAVELOG) console.log(`W${G.wave} core=${Math.round(G.core.hp)}/${Math.round(G.core.max)} cr=${Math.round(G.credits)} grid=${S.gridUsed()}/${S.gridCap()} leaks=${G.stats.leaks} genes=${(() => { const c = {}; let n = 0; for (const q of G.queue.concat(G.enemies)) if (q.genes) { n++; for (const g of q.genes) c[g] = (c[g] || 0) + 1; } return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + Math.round(v / n * 100)).join(","); })()} fly=${G.enemies.filter(e => e.fly).length}/${G.enemies.length} towers=${G.towers.map(t => t.type.slice(0, 4) + t.lvl).join(',')}`);
@@ -167,6 +173,12 @@ for (let run = OFF; run < OFF + runs; run++) {
       break;
     }
     met.maxCredits = Math.max(met.maxCredits, G.credits);
+  }
+  if (process.env.TTK && G._ttk) {
+    const band = w => w <= 10 ? '01-10' : w <= 25 ? '11-25' : w <= 45 ? '26-45' : w <= 65 ? '46-65' : '66+';
+    const B = {};
+    for (const r of G._ttk) { const k = band(r.w) + ' ' + (r.type === 'boss' ? 'boss' : r.el ? 'elite' : r.type); const o = B[k] || (B[k] = { n: 0, early: 0, mid: 0, late: 0, life: 0 }); o.n++; o.life += r.life; if (r.fr < 0.2) o.early++; else if (r.fr < 0.75) o.mid++; else o.late++; }
+    for (const k of Object.keys(B).sort()) { const o = B[k]; if (o.n < 5) continue; console.log(`TTK ${k.padEnd(18)} n=${String(o.n).padStart(5)} died<20%: ${(o.early / o.n * 100).toFixed(0).padStart(3)}%  20-75%: ${(o.mid / o.n * 100).toFixed(0).padStart(3)}%  >75%/leak: ${(o.late / o.n * 100).toFixed(0).padStart(3)}%  avg life ${(o.life / o.n).toFixed(1)}s`); }
   }
   if (process.env.ASLOG) console.log('ASSAULTS w' + G.wave + ' ' + ((G.stats.assaults || {}).list || []).map(a => `W${a.w}:${a.leaked}/${a.n}${a.won ? "+" : "X"}x${a.hpx}[${(a.genes || []).join(',')}]`).join(' '));
   if (process.env.DUMP) for (const tw of G.towers) console.log('T', tw.type, 'L' + tw.lvl, 'A' + tw.asc, 'R' + tw.rank, 'inv', tw.invested, 'dmg', Math.round(tw.dmgDone), 'kills', tw.kills, 'at', tw.x, tw.y, tw.affixes.map(a => a.id + a.tier).join(','));
