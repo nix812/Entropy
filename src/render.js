@@ -1052,27 +1052,30 @@ const RES = 2;
       c.fillStyle = '#ffd84a'; c.fillRect(x - cw / 2, y - u * 1.5, cw, u * 2); for (const dx of [-cw / 2, -u / 2, cw / 2 - u]) c.fillRect(x + dx, y - 3 * u, u, 2 * u);
       e._crown.forEach((col, i) => { c.fillStyle = col; c.fillRect(x - (n * 2 * u - u) / 2 + i * 2 * u, y - u, u, u); });
     }
-    // v4.8 level badges: the tower's level (LV 1-5 plus Ascensions) on a plate in its tier colour (bands of 3: white, green, blue,
-    // purple, orange, red), amber top stripe once specialized. An arrow in the next level's tier colour sits in the other corner when
-    // you can afford it (for Ascensions only on the cheapest one, so a late-game bank doesn't light up the whole field)
-    { const tpx = TILE * ws, cr = G.credits, ascMin = G.towers.reduce((m, t) => t.lvl >= MAX_LV ? Math.min(m, upgradeCost(t)) : m, Infinity),
-        big = tpx >= 17, bs = Math.round(clamp(tpx * 0.42, 11, 17));
-      c.font = `${bs - 3}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    // v4.8.1 level display, kept off the tower art (Nic: the badges hid the sprites):
+    //  - every tower: a thin tier-coloured line under its tile (white, green, blue, purple, orange, red in bands of 3 levels)
+    //  - the selected tower: its level number on a plate below the tile
+    //  - one arrow, floating above the tile: the lowest-level tower you can afford to upgrade (cheapest wins a tie); when every
+    //    tower is maxed, the cheapest affordable Ascension. It points at the best next upgrade, not at everything you could buy
+    { const tpx = TILE * ws, cr = G.credits, big = tpx >= 17;
+      let best = null, bl = Infinity, bc = Infinity;
+      if (!G.over) for (const t of G.towers) { const c0 = upgradeCost(t); if (cr < c0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } }
       for (const t of G.towers) {
-        const n = towerLevel(t), col = lvTier(n).col, x = Math.round(bx2s(t.x * TILE)), y = Math.round(by2s(t.y * TILE + TILE));
-        if (!big) { c.fillStyle = '#090b16'; c.fillRect(x, y - 6, 6, 6); c.fillStyle = col; c.fillRect(x + 1, y - 5, 4, 4); continue; }
-        const pw = n >= 10 ? Math.round(bs * 1.45) : bs;
-        c.fillStyle = '#090b16'; c.fillRect(x, y - bs - 2, pw + 2, bs + 2); c.fillStyle = col; c.fillRect(x + 1, y - bs - 1, pw, bs);
-        c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(x + 1, y - bs - 1, pw, 1); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(x + 1, y - 2, pw, 1);
-        c.fillStyle = '#0b0b12'; c.fillText(String(n), x + 1 + pw / 2 + 0.5, y - 1 - bs / 2 + 0.5);
-        if (t.spec) { c.fillStyle = PAL.amber; c.fillRect(x + 1, y - bs - 1, pw, 2); }
-        const cost = upgradeCost(t);
-        if (!G.over && cr >= cost && (t.lvl < MAX_LV || cost === ascMin)) {
-          const aw = Math.max(7, bs - 2), ax = Math.round(bx2s(t.x * TILE + TILE)) - aw - 1, ay = y - aw - 1 + (frame % 30 < 15 ? 0 : -1), nc = lvTier(n + 1).col;
-          c.fillStyle = '#090b16'; c.beginPath(); c.moveTo(ax + aw / 2, ay - 1.5); c.lineTo(ax + aw + 1.5, ay + aw * 0.58); c.lineTo(ax + aw * 0.72, ay + aw * 0.58); c.lineTo(ax + aw * 0.72, ay + aw + 1); c.lineTo(ax + aw * 0.28, ay + aw + 1); c.lineTo(ax + aw * 0.28, ay + aw * 0.58); c.lineTo(ax - 1.5, ay + aw * 0.58); c.closePath(); c.fill();
-          c.fillStyle = frame % 30 < 20 ? nc : '#ffffff';
-          c.beginPath(); c.moveTo(ax + aw / 2, ay); c.lineTo(ax + aw, ay + aw * 0.55); c.lineTo(ax + aw * 0.64, ay + aw * 0.55); c.lineTo(ax + aw * 0.64, ay + aw); c.lineTo(ax + aw * 0.36, ay + aw); c.lineTo(ax + aw * 0.36, ay + aw * 0.55); c.lineTo(ax, ay + aw * 0.55); c.closePath(); c.fill();
-        }
+        const n = towerLevel(t), col = lvTier(n).col, x0 = bx2s(t.x * TILE), x1 = bx2s(t.x * TILE + TILE), y = Math.round(by2s(t.y * TILE + TILE)), w = x1 - x0, lw = Math.max(2, Math.round(tpx / 12));
+        c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x0 + w * 0.18) - 1, y - lw - 1, Math.round(w * 0.64) + 2, lw + 2);
+        c.fillStyle = col; c.fillRect(Math.round(x0 + w * 0.18), y - lw, Math.round(w * 0.64), lw);
+        if (t.spec) { c.fillStyle = PAL.amber; c.fillRect(Math.round(x0 + w * 0.18), y - lw, Math.max(2, Math.round(w * 0.1)), lw); }
+      }
+      if (selTower && G.towers.includes(selTower) && big) {
+        const t = selTower, n = towerLevel(t), bs = Math.round(clamp(tpx * 0.42, 12, 18)), pw = Math.round(bs * (n >= 10 ? 1.9 : 1.55)), x = Math.round(bx2s(t.cx * TILE)) - pw / 2, y = Math.round(by2s(t.y * TILE + TILE)) + 3;
+        c.font = `${bs - 4}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillStyle = '#090b16'; c.fillRect(x - 1, y - 1, pw + 2, bs + 2); c.fillStyle = lvTier(n).col; c.fillRect(x, y, pw, bs);
+        c.fillStyle = '#0b0b12'; c.fillText('LV' + n, x + pw / 2 + 0.5, y + bs / 2 + 0.5);
+      }
+      if (best && big) {
+        const t = best, aw = Math.round(clamp(tpx * 0.36, 9, 15)), ax = Math.round(bx2s(t.cx * TILE)) - aw / 2, ay = Math.round(by2s(t.y * TILE)) - aw - 4 - (frame % 30 < 15 ? 0 : 2) - (t.pending > 0 ? 16 : 0), nc = lvTier(towerLevel(t) + 1).col;
+        const arrow = (o, k) => { c.beginPath(); c.moveTo(ax + aw / 2, ay - o); c.lineTo(ax + aw + o, ay + aw * 0.55 + o * k); c.lineTo(ax + aw * 0.68 + o * k, ay + aw * 0.55 + o * k); c.lineTo(ax + aw * 0.68 + o * k, ay + aw + o); c.lineTo(ax + aw * 0.32 - o * k, ay + aw + o); c.lineTo(ax + aw * 0.32 - o * k, ay + aw * 0.55 + o * k); c.lineTo(ax - o, ay + aw * 0.55 + o * k); c.closePath(); c.fill(); };
+        c.fillStyle = '#090b16'; arrow(1.5, 0.5); c.fillStyle = frame % 30 < 20 ? nc : '#ffffff'; arrow(0, 0);
       }
     }
     // veterans waiting for a mutation: a bobbing badge above the tower

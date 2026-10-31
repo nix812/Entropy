@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.8.0';
+const VERSION = '4.8.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -172,7 +172,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.8.0', title: 'Entropy 4.8 · Ten True Genres', items: [
+const WHATS_NEW = { ver: '4.8.1', title: 'Entropy 4.8.1 · Ten True Genres', items: [
+  ['Tower art stays clear', 'Level numbers no longer sit on the towers. Each tower has a thin line under it in its level colour, the selected tower shows its level below it, and a single arrow floats over the best next upgrade: your lowest-level tower you can afford (or, once everything is maxed, your cheapest Ascension).'],
   ['Ten real genres', 'Ambient, Lo-fi Hip Hop, Trip Hop, Synthwave, House, Techno, Trance, Drum & Bass, Chiptune and Dub, each rebuilt from production research: its own tempo range, swing, drum patterns, chords, bass lines, instruments and song shape. Every genre has two or three flavours, from Deep House and Acid to One Drop and Game Boy.'],
   ['Pieces with a shape', 'Dance genres build: intro, groove, a breakdown with a snare roll and riser, then the drop. Dub cuts instruments out and throws them into the echo. Ambient bells loop at lengths that never line up.'],
   ['Knobs that do what they say', 'Energy runs from bare pads to every layer. Follow Battle lets the waves push it. Effects are relative to the genre (the middle tick is its own sound): Reverb, Echo, Tone, Tape & Vinyl, and Pump for the sidechain. A live Energy meter shows what the battle is doing.'],
