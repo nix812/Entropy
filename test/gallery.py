@@ -15,7 +15,7 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append('PAGEERROR ' + str(e)))
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'ERR_FILE' not in m.text and 'TUNNEL' not in m.text else None)
     pg.goto('file://' + str(out / 'page.html')); pg.wait_for_timeout(500)
-    pg.evaluate('() => { PROF.bestWave = 60; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 5; PROF.seenVer = VERSION; PROF.settings.shake = false; }')
+    pg.evaluate('() => { PROF.bestWave = 60; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 5; PROF.seenVer = VERSION; PROF.settings.shake = false; PROF.settings.briefings = "brief"; }')
     pg.click('#bLaunch'); pg.wait_for_timeout(200)
     pg.click('[data-act=launch]'); pg.wait_for_timeout(500)
     pg.evaluate('''() => { if (UI.closeModal) UI.closeModal(); document.querySelector('#toasts').style.display = 'none';

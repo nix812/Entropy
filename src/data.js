@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.6.0';
+const VERSION = '4.6.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,11 +167,10 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.6.0', title: 'Entropy 4.6 · Drift', items: [
-  ['A score that writes itself', 'The soundtrack is now Drift, a generative composer that plays live as you do. It picks a style, a key and a chord progression, writes a melody and slowly varies it, then moves to a related key and a new piece. No two runs sound the same.'],
-  ['Five moods', 'Drift (pads and glass), Lofi (electric piano and a dusty beat), Glass (plucked arpeggios), Tide (a gentle synth pulse) and Nocturne (a slow waltz of broken chords). Calm moments lean ambient, busy ones lean groovy.'],
-  ['It follows the battle', 'Layers fade in as the field gets busier: bass, keys, hats, drums, melody, sparkles. Bosses steer the next piece into a minor key. It stays chill throughout.'],
-  ['Pick your tempo', 'Settings > Music Tempo sets the average beat, from 56 to 100 BPM. Each piece sits a little above or below it, and the action still nudges it.'],
+const WHATS_NEW = { ver: '4.6.1', title: 'Entropy 4.6.1 · Quieter Skies', items: [
+  ['Boss briefings pause the game', 'When a boss arrives, or a bounty is posted, the game stops on a card until you tap Fight. Settings > Briefings: Pause, Brief (the old slow-motion card) or Off.'],
+  ['A cleaner top bar', 'The chips above the field are sorted by what matters most, and never get cut off. Anything that doesn\'t fit sits behind a +N chip that opens the Field Report: every chip in full, with what each event does.'],
+  ['Fewer popups if you want them', 'Settings > Notifications: All, Key (only Red Alert, wormholes, assaults, Maelstroms, checkpoints and pirates) or Off. Feedback to your own taps always shows.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {

@@ -218,7 +218,7 @@ const UI = (() => {
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave;
-    if (!snap && G.wanted) setTimeout(() => { if (G && screen === 'game' && G.wanted) wantedPoster(); }, 2600);
+    if (!snap && G.wanted && briefMode() !== 'off') setTimeout(() => { if (G && screen === 'game' && G.wanted) wantedPoster(briefMode() === 'pause'); }, 2600);
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
@@ -232,9 +232,17 @@ const UI = (() => {
   }
 
   // v4.4 Most Wanted: the run's bounty poster
-  function wantedPoster() {
+  function wantedPoster(card) {
     const Wd = G && G.wanted; if (!Wd) return;
     const M = WANTED_MODS.find(m => m.id === Wd.mod);
+    if (card && !modalOpen && !Tree.isOpen) {
+      G.paused = true; G.briefing = true;
+      modal(`<div class="card narrow brief wanted"><div class="ch"><h2>Most Wanted</h2><span class="note">Wave ${Wd.w}</span></div>
+        <p class="wname">${esc(Wd.name)}</p><p class="note">Wanted for ${esc(Wd.crime)}.</p>${M ? `<p>${tipify(M.desc)}.</p>` : ''}
+        <p class="amber">Reward: ${fmt(Wd.bounty)} credits and a Legendary schematic${M && M.loaded ? " (double, plus a Captain's Chest)" : ''}.</p>
+        <div class="foot"><span class="note">Tap the Wanted chip any time to see this again</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
+      return;
+    }
     toast('MOST WANTED', `${Wd.name} · Wave ${Wd.w} · wanted for ${Wd.crime}. ${M ? M.desc + '. ' : ''}Reward: ${fmt(Wd.bounty)} credits and a Legendary schematic${M && M.loaded ? ' (double, plus a Captain\'s Chest)' : ''}`, '#ffd84a', true);
   }
   // ---------- HUD ----------
@@ -338,12 +346,16 @@ const UI = (() => {
     if (G.laneWarn) chips.unshift(`<span class="evchip warn ${G.laneWarn === 1 ? 'bad' : 'storm'}" style="--c:#d6a6ff">${G.laneWarn === 1 ? 'Wormhole opens next wave' : 'Wormhole opens in ' + G.laneWarn + ' waves'}</span>`);
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
+    // order by what you need to act on first; anything that doesn't fit goes behind a "+N" chip (the Field Report)
+    const prio = h => /evchip warn/.test(h) ? 0 : /next bad">Boss/.test(h) ? 1 : /data-wanted/.test(h) ? 2 : /evchip next">Next/.test(h) ? 3 : /data-evo/.test(h) ? 4 : /evchip (bad|good)"/.test(h) ? 5 : /storm/.test(h) ? 6 : /next (bad|good)/.test(h) ? 7 : 8;
+    chips.sort((a, b) => prio(a) - prio(b));
+    chipList = chips;
     const html = chips.join('');
     const pwEl = $('#pw'); if (pwEl) { const u = gridUsed(), c = gridCap(), tx = `${u}/${c}`; if (pwEl.textContent !== tx) pwEl.textContent = tx; pwEl.parentNode.classList.toggle('full', u >= c);
       // spare power during a wave is wasted: the counter pulses, and a tap puts it on your best tower (Nic never used Overcharge)
       pwEl.parentNode.classList.toggle('spare', c - u >= 1 && !G.spawningDone && G.wave >= 4 && !!topTower()); }
     const ch = $('#chips');
-    if (ch.dataset.h !== html) { ch.innerHTML = html; ch.dataset.h = html; }
+    if (ch.dataset.h !== html || ch.dataset.w !== String(ch.clientWidth)) { ch.innerHTML = html; ch.dataset.h = html; ch.dataset.w = String(ch.clientWidth); fitChips(ch); }
     if (hudFull) renderDps();
     renderFeed();
     liveRefreshPanel();
@@ -351,6 +363,22 @@ const UI = (() => {
     const boss = !!(G.bossAlive && !G.bossAlive.dead);
     SFX.music.setIntensity(0.2 + Math.min(0.3, G.wave / 70) + Math.min(0.22, G.enemies.length / 90) + (boss ? 0.25 : 0) + (G.storms.some(s => s.mael) ? 0.12 : 0) - (G.paused ? 0.15 : 0));
     SFX.music.setMood(boss ? 'boss' : 'calm');
+  }
+  let chipList = [];
+  function fitChips(ch) {
+    const kids = [...ch.children]; if (!kids.length) return;
+    const W = ch.clientWidth; let x = 0, hidden = 0;
+    for (const k of kids) { x += k.offsetWidth + 5; if (x > W - (hidden || kids.indexOf(k) < kids.length - 1 ? 46 : 0)) { k.hidden = true; hidden++; } }
+    if (hidden) { const m = document.createElement('span'); m.className = 'evchip more'; m.dataset.more = '1'; m.textContent = '+' + hidden; ch.appendChild(m); }
+  }
+  // the Field Report: every chip in full, one per line, with what each event does
+  function openReport() {
+    if (!G) return;
+    const rows = chipList.map(h => { const m = /title="([^"]*)"/.exec(h); return `<div class="rrow">${h.replace(/ title="[^"]*"/, '')}${m ? `<span>${m[1]}</span>` : ''}</div>`; }).join('');
+    G.paused = true;
+    modal(`<div class="card narrow report"><div class="ch"><h2>Field Report</h2><span class="note">Wave ${G.wave}</span><button class="x" data-act="resume" aria-label="Close">✕</button></div>
+      <div class="rlist">${rows || '<p class="note">Nothing to report.</p>'}</div>
+      <div class="foot">${geneCap(G.wave) > 0 ? '<button class="btn" data-act="evoR">Swarm DNA</button>' : ''}${G.wanted && !G.wanted.done ? '<button class="btn" data-act="wantR">Most Wanted</button>' : ''}<button class="btn primary" data-act="resume">Continue</button></div></div>`);
   }
   function renderDps() {
     const list = G.towers.filter(t => t.s.kind !== 'support' && t.s.kind !== 'eco').sort((a, b) => b.dps - a.dps).slice(0, 6);
@@ -366,13 +394,17 @@ const UI = (() => {
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
   const ALERT_RE = /^(STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|PASSIVE WEB REBUILT|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
+  const KEY_RE = /^(RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force) {
     const key = title + '|' + body, now = performance.now();
     if (toastSeen[key] !== undefined && now - toastSeen[key] < 4000) return;
     toastSeen[key] = now;
-    const kind = screen !== 'game' ? (TIP_RE.test(title) ? 'tip' : 'alert') : toastKind(title);
+    let kind = screen !== 'game' ? (TIP_RE.test(title) ? 'tip' : 'alert') : toastKind(title);
+    // Settings > Notifications: Key keeps only the cards you must react to; Off keeps none (tips answering your own taps stay)
+    const nm = PROF.settings.notes || 'all';
+    if (screen === 'game' && !force && kind === 'alert' && (nm === 'off' || (nm === 'key' && !KEY_RE.test(title)))) { feed(title, body, col, true); return; }
     if (/^SWARM EVOLVES/.test(title)) dnaPulse = now + 9000;
     if (kind === 'feed') { feed(title, body, col); return; }
     if (kind === 'tip') { flashTip(title, body, col); return; }
@@ -418,15 +450,27 @@ const UI = (() => {
   function renderFeed() {
     const l = $('#log'); if (!l) return;
     const now = performance.now();
-    const show = hudFull ? feedLines.slice(-6) : feedLines.filter(x => !x.quiet && !x.minor && now - x.t < 7000).slice(-3);
+    const nm = PROF.settings.notes || 'all';
+    const show = hudFull ? feedLines.slice(-6) : nm !== 'all' ? [] : feedLines.filter(x => !x.quiet && !x.minor && now - x.t < 7000).slice(-3);
     const html = show.map(x => `<div class="fl ${!hudFull && now - x.t > 5500 ? 'old' : ''}" style="--c:${x.col || '#c9c6bc'}">${x.title ? `<b>${esc(feedTitle(x.title))}</b> ` : ''}${esc(x.body || '')}${x.n > 1 ? ` <i>×${x.n}</i>` : ''}</div>`).join('');
     if (html !== feedH) { l.innerHTML = html; feedH = html; }
   }
   // boss arrival: a portrait card and a moment of slow motion, so every boss gets its entrance
   let bossT = null;
+  const briefMode = () => PROF.settings.briefings || 'pause';
   function bossIntro(e, B) {
     const box = $('#bossIntro'); if (!box) return;
     const first = !PROF.codex.bosses[B.id];
+    if (briefMode() === 'off') { log(`${B.name} incoming`, '#ff4d6a'); return; }
+    if (briefMode() === 'pause' && !modalOpen && !Tree.isOpen && screen === 'game') {
+      const tag = e.wanted ? `Most Wanted · ${(WANTED_MODS.find(m => m.id === e.wanted) || { name: '' }).name} · ${fmt(G.wanted ? G.wanted.bounty * (e.wantedLoaded ? 2 : 1) : 0)} bounty` : first ? 'New boss · first encounter' : B.odd ? 'Boss?!' : 'Boss incoming';
+      closePanel(); G.paused = true; G.briefing = true;
+      modal(`<div class="card narrow brief boss"><div class="bwrap"><canvas width="112" height="112"></canvas><div class="bi"><em>${esc(tag)}</em><h3>${esc(B.name)}</h3>${e.bossTitle ? `<p class="ttl">${esc(e.bossTitle)}</p>` : ''}<p class="desc">${tipify(B.desc)}</p>
+        <p class="ph">${esc(B.id === 'gloop' ? 'Pop it. Then pop the pieces.' : `Phase II at 66% and a final phase at 33%: each time it unleashes ${BOSS_POWER[B.id] || 'its power'}.`)} If it reaches your core, the run is over.</p></div></div>
+        <div class="foot"><span class="note">Change this in Settings · Briefings</span><button class="btn primary" data-act="brief">Fight</button></div></div>`, 'brief');
+      Render.bossPortrait(B.id, $('#modal canvas'));
+      log(`${B.name} incoming`, '#ff4d6a'); return;
+    }
     box.querySelector('em').textContent = e.wanted ? `MOST WANTED · ${(WANTED_MODS.find(m => m.id === e.wanted) || { name: '' }).name.toUpperCase()} · ${fmt(G.wanted ? G.wanted.bounty * (e.wantedLoaded ? 2 : 1) : 0)} BOUNTY` : first ? 'NEW BOSS · FIRST ENCOUNTER' : B.odd ? 'BOSS?!' : 'BOSS INCOMING';
     box.querySelector('h3').textContent = B.name;
     box.querySelector('.ttl').textContent = e.bossTitle || '';
@@ -1111,6 +1155,9 @@ const UI = (() => {
       ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
       <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
       <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
+      <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
+      <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
+      <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
       <div class="set"><span>Damage Numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
       <div class="set"><span>Screen Shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
@@ -1354,6 +1401,9 @@ const UI = (() => {
     SFX.play('ui');
     switch (act) {
       case 'close': closeModal(); break;
+      case 'brief': closeModal(); if (G) { G.paused = false; G.briefing = false; } break;
+      case 'evoR': closeModal(); if (G) G.paused = false; openEvo(); break;
+      case 'wantR': closeModal(); if (G) G.paused = false; wantedPoster(true); break;
       case 'hall': openHall(+b.dataset.v); break;
       case 'hallBack': openArchive(); break;
       case 'novaNext': novaFlow.step++; openNova(); break;
@@ -1406,6 +1456,8 @@ const UI = (() => {
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'uis': PROF.settings.uiScale = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v; Save.save(); UI.fitVV(); openSettings(); break;
+      case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
+      case 'notes': PROF.settings.notes = b.dataset.v; Save.save(); renderFeed(); openSettings(); break;
       case 'nums': PROF.settings.dmgNums = !PROF.settings.dmgNums; Render.nums = PROF.settings.dmgNums; Save.save(); openSettings(); break;
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;
       case 'wipe': if (!confirmReset) { confirmReset = true; openSettings(); return; } PROF = defaultProfile(); Save.save(); closeModal(); renderHangar(); toast('PROGRESS RESET', 'All progress erased', '#ff4d6a'); break;
@@ -1425,7 +1477,7 @@ const UI = (() => {
     $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
-    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#pw').parentNode.onclick = () => {
       if (!G || G.over) return; SFX.play('ui');
       const free = gridFree(), T = topTower();

@@ -195,7 +195,21 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 #bCall:disabled { opacity: 1; color: #5a5470; box-shadow: inset 0 0 0 1px var(--line); }
 #bCall:disabled span { color: #5a5470; }
 #webBadge[hidden] { display: none; }
-#chips { flex: 1; display: flex; gap: 5px; overflow-x: auto; min-width: 0; scrollbar-width: none; touch-action: pan-x; }
+#chips { flex: 1; display: flex; gap: 5px; overflow: hidden; min-width: 0; }
+.evchip { flex: 0 0 auto; }
+.evchip.more { color: var(--ink); background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); cursor: pointer; pointer-events: auto; }
+.card.report .rlist { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px; }
+.card.report .rrow { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.card.report .rrow span:not(.evchip) { font-size: 15px; color: var(--dim); }
+.card.brief .bwrap { display: flex; gap: 14px; align-items: center; }
+.card.brief canvas { width: 112px; height: 112px; flex: none; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(255,51,85,0.5)); }
+.card.brief .bi { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.card.brief em { font-style: normal; font-family: var(--f-pix); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #ff3355; }
+.card.brief h3 { margin: 0; font-family: var(--f-pix); font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+.card.brief .ttl { margin: 0; color: #ff9aac; font-size: 16px; } .card.brief .desc { margin: 0; font-size: 17px; line-height: 1.15; } .card.brief .ph { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.15; }
+.card.brief.boss { box-shadow: inset 0 0 0 2px #ff3355, 0 0 40px rgba(255,51,85,0.3); width: min(560px, 100%); }
+.card.brief.wanted { box-shadow: inset 0 0 0 2px #ffd84a; } .card.brief .wname { font-family: var(--f-pix); font-size: 15px; color: #ffd84a; margin: 2px 0; }
+.card.brief .foot .note { margin-right: auto; font-size: 14px; }
 #chips::-webkit-scrollbar { display: none; }
 .evchip { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; padding: 5px 6px; white-space: nowrap; box-shadow: inset 0 0 0 1px currentColor; }
 .evchip.bad { color: #ff8a9c; } .evchip.good { color: var(--core); } .evchip.storm { color: var(--c); }

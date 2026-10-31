@@ -17,7 +17,7 @@ with sync_playwright() as p:
     pg.goto('file://' + str(root / 'test' / 'out' / 'page.html'))
     pg.add_style_tag(content=':root{--sal:%spx!important;--sar:%spx!important;--sab:%spx!important}' % tuple(SAFE)); pg.wait_for_timeout(500)
     pg.screenshot(path=str(out / f'{tag}01_hangar_new.png'))
-    pg.evaluate('() => { PROF.bestWave = 34; PROF.xp = 160000; PROF.runs = 6; PROF.bestScore = 412000; PROF.seenHelp = true; PROF.runSnap = null; UI.renderHangar(); }')
+    pg.evaluate('() => { PROF.bestWave = 34; PROF.xp = 160000; PROF.runs = 6; PROF.bestScore = 412000; PROF.seenHelp = true; PROF.settings.briefings = "brief"; PROF.runSnap = null; UI.renderHangar(); }')
     pg.wait_for_timeout(200)
     pg.screenshot(path=str(out / f'{tag}02_hangar_vet.png'))
     pg.click('#bLaunch'); pg.wait_for_timeout(250)
