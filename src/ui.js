@@ -882,12 +882,15 @@ const UI = (() => {
     SFX.init();
     $('#cv').setPointerCapture && $('#cv').setPointerCapture(e.pointerId);
     ptrs.set(e.pointerId, { x: (e.clientX / UIS), y: (e.clientY / UIS), sx: (e.clientX / UIS), sy: (e.clientY / UIS) });
+    // v5.0.1 mouse: right or middle button drags the map straight away; a right click without a drag cancels (see canvasUp)
+    if (e.pointerType === 'mouse' && (e.button === 1 || e.button === 2)) { e.preventDefault(); gesture = { kind: 'pan', moved: 0, btn: e.button }; $('#cv').style.cursor = 'grabbing'; return; }
     if (ptrs.size === 1) gesture = { kind: 'tap', moved: 0 };
     else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; gesture = { kind: 'pinch', d: Math.max(20, Math.hypot(a.x - b.x, a.y - b.y)) }; }
   }
   function canvasMove(e) {
     const r = $('#cv').getBoundingClientRect();
     if (G && G.aimAbility) Render.aim = Render.screenToTile((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS));
+    if (e.pointerType === 'mouse' && G && !gesture) hoverAt(e, r);
     const p = ptrs.get(e.pointerId); if (!p || !gesture) return;
     const dx = (e.clientX / UIS) - p.x, dy = (e.clientY / UIS) - p.y;
     p.x = (e.clientX / UIS); p.y = (e.clientY / UIS);
@@ -898,12 +901,25 @@ const UI = (() => {
     } else if (gesture.kind === 'tap' || gesture.kind === 'pan') {
       gesture.moved += Math.abs(dx) + Math.abs(dy);
       if (gesture.moved > 12) gesture.kind = 'pan';
-      if (gesture.kind === 'pan') { Render.panBy(dx, dy); updateZoomBtn(); }
+      if (gesture.kind === 'pan') { Render.panBy(dx, dy); updateZoomBtn(); if (e.pointerType === 'mouse') $('#cv').style.cursor = 'grabbing'; }
     }
+  }
+  // v5.0.1 mouse hover: faint corners on the tile under the cursor, a range ring on towers, and a pointer cursor on anything you can click
+  function hoverAt(e, r) {
+    const p = Render.screenToTile((e.clientX - r.left) / UIS, (e.clientY - r.top) / UIS), tx = Math.floor(p.x), ty = Math.floor(p.y);
+    const inside = G.region && inRegion(tx, ty, G.region);
+    Render.hover = inside ? { x: tx, y: ty } : null;
+    const live = inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheAt(tx, ty));
+    $('#cv').style.cursor = G.aimAbility ? 'crosshair' : live ? 'pointer' : 'default';
   }
   function canvasUp(e) {
     const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId);
     if (!gesture || !p) return;
+    if (gesture.btn !== undefined) { // right or middle button
+      const g = gesture; gesture = null; $('#cv').style.cursor = 'default';
+      if (g.btn === 2 && g.moved <= 12) mouseCancel();
+      return;
+    }
     if (gesture.kind === 'pinch') { if (ptrs.size === 0) gesture = null; return; }
     const g = gesture; gesture = null;
     if (g.kind !== 'tap' || g.moved > 12 || !G || G.over) return;
@@ -959,8 +975,16 @@ const UI = (() => {
   function canvasWheel(e) {
     e.preventDefault();
     const r = $('#cv').getBoundingClientRect();
-    Render.zoomAt((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS), e.deltaY < 0 ? 1.15 : 0.87);
+    // v5.0.1: scale by how far the wheel moved, so trackpads (small deltas, pinch = ctrl+wheel) zoom smoothly and mouse notches still step
+    const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, k = Math.exp(-clamp(dy, -120, 120) * (e.ctrlKey ? 0.01 : 0.0012));
+    Render.zoomAt((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS), k);
     updateZoomBtn();
+  }
+  // right click: cancel whatever is in progress (aiming an ability, placing a beacon), otherwise close the open panel
+  function mouseCancel() {
+    if (!G) return;
+    if (G.aimAbility) { G.aimAbility = null; Render.aim = null; updateHud(); SFX.play('ui'); return; }
+    if (panel) { closePanel(); SFX.play('ui'); }
   }
   function updateZoomBtn() { const b = $('#bZoom'); if (b) { const close = Render.homeZoom > 1.05; b.hidden = Render.home && !close; b.innerHTML = svgIcon('fit', 16) + (Render.home ? 'Map' : 'Fit · ' + (Render.zoom / Render.homeZoom).toFixed(1) + '×'); } }
   function fitCols() {
@@ -1322,6 +1346,7 @@ const UI = (() => {
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan. Tap Fit to reset the view.'],
+      ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V abilities, Space pause, 1–3 speed, Esc close.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
       ['Burn', 'Deals damage over time.'],
@@ -1672,8 +1697,24 @@ const UI = (() => {
       if (screen !== 'game' || !G) return;
       if (e.key === ' ') { e.preventDefault(); if (modalOpen === 'pause') modalAction('resume'); else if (!modalOpen) openPause(); }
       if (e.key >= '1' && e.key <= '3') { G.speed = +e.key; updateHud(); }
-      if (e.key === 'Escape') closePanel();
+      if (e.key === 'Escape') { if (G.aimAbility) mouseCancel(); else closePanel(); }
+      // v5.0.1 keyboard for mouse players: pan, zoom, map, next wave, talents, upgrade, abilities
+      if (modalOpen || Tree.isOpen || e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase(), P = 70;
+      const pan = { arrowleft: [P, 0], a: [P, 0], arrowright: [-P, 0], d: [-P, 0], arrowup: [0, P], w: [0, P], arrowdown: [0, -P], s: [0, -P] }[k];
+      if (pan) { e.preventDefault(); Render.panBy(pan[0], pan[1]); updateZoomBtn(); return; }
+      const L = Render.layout;
+      if (k === '=' || k === '+') { Render.zoomAt(L.W / 2, L.H / 2, 1.2); updateZoomBtn(); return; }
+      if (k === '-' || k === '_') { Render.zoomAt(L.W / 2, L.H / 2, 1 / 1.2); updateZoomBtn(); return; }
+      if (k === 'f') { $('#bZoom').hidden ? Render.overview() : $('#bZoom').click(); updateZoomBtn(); return; }
+      if (k === 'n') { $('#bCall').click(); return; }
+      if (k === 't') { SFX.play('ui'); Tree.open(); return; }
+      if (k === 'u' && panel && panel.kind === 'tower') { const b = $('#panel [data-act=up]'); if (b && !b.disabled) b.click(); else SFX.play('deny'); return; }
+      const ab = { z: 0, x: 1, c: 2, v: 3 }[k];
+      if (ab !== undefined) { const b = document.querySelector(`[data-abil="${ABIL_ORDER[ab]}"]`); if (b && !b.hidden && !b.disabled) b.click(); return; }
     });
+    $('#cv').addEventListener('contextmenu', e => e.preventDefault());
+    $('#cv').addEventListener('pointerleave', () => { Render.hover = null; });
     // hooks
     Hooks.sfx = (n, a) => { SFX.play(n, a); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view

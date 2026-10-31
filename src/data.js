@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.0.0';
+const VERSION = '5.0.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,7 +173,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.0.0', title: 'Entropy 5.0 · Clean Sheet', items: [
+const WHATS_NEW = { ver: '5.0.1', title: 'Entropy 5.0.1 · Clean Sheet', items: [
+  ['Mouse and keyboard', 'Playing on a computer now works properly: hover shows the tile and a tower\'s range, the wheel (or a trackpad pinch) zooms smoothly, any button drags the map, right-click closes a panel or cancels an aim. Keys: WASD or arrows pan, + and − zoom, F map, N next wave, T talents, U upgrade, Z X C V abilities.'],
   ['Talents replace the passive web', 'Seven short trees: Ballistics, Combustion, Voltaic, Cryogenics, Singularity, Bastion and Command. Each row opens after 5 points in its tree, and talents have ranks with real numbers. Every point you spend also adds +0.4% Damage to every tower. All your points are refunded: open Talents to spend them.'],
   ['Capstones', 'Twenty points into a tree opens three play styles: pick one. Marksman, Glass Cannon, Wildfire, Conflagration, Circuit, Glacier, War Economy, Artisan, Gambler and more. Hold 1, then 2 from Level 50 and 3 from Level 100.'],
   ['Recalibration tokens you\'ll use', 'Spend a token to reroll a tower\'s affixes for free, or to refund a talent mid-run (2 for a Capstone). The Captain\'s Chest now gives one too.'],

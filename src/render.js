@@ -20,7 +20,7 @@ const RES = 2;
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0;
   let scan = null, scanPat = null;
-  let selTile = null, selTower = null, preview = null, aimPos = null;
+  let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
 
@@ -1007,6 +1007,15 @@ const RES = 2;
     if (preview) ringS((preview.x + 0.5) * TILE, (preview.y + 0.5) * TILE, preview.range * TILE, preview.col, 0.9, 1.5, 0.09);
     if (G.selCore) ringS(G.core.x * TILE, G.core.y * TILE, (G.core.s ? G.core.s.range : 3) * TILE, PAL.core, 0.75, 1.5, 0.05);
     if (G.aimAbility && aimPos) ringS(aimPos.x * TILE, aimPos.y * TILE, 1.7 * TILE, PAL.amber, 1, 2, 0.12);
+    // v5.0.1 mouse: the tile under the cursor gets faint corners; a hovered tower shows its range
+    if (hoverTile && !(selTile && selTile.x === hoverTile.x && selTile.y === hoverTile.y) && G && !G.over) {
+      const x = bx2s(hoverTile.x * TILE), y = by2s(hoverTile.y * TILE), w = TILE * ws, L = Math.max(3, w * 0.22);
+      c.strokeStyle = 'rgba(255,255,255,0.45)'; c.lineWidth = 1.5; c.beginPath();
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const px = x + dx * w, py = y + dy * w, sx2 = dx ? -1 : 1, sy2 = dy ? -1 : 1; c.moveTo(px, py + sy2 * L); c.lineTo(px, py); c.lineTo(px + sx2 * L, py); }
+      c.stroke();
+      const ht = G.towerAt && G.towerAt[hoverTile.y * COLS + hoverTile.x];
+      if (ht && ht !== selTower && ht.s) { const r = (ht.effRange || ht.s.range) * TILE; if (r > 0) ringS(ht.cx * TILE, ht.cy * TILE, r, EL[ht.s.el].col, 0.4, 1, 0.03); }
+    }
     if (selTile) {
       const x = bx2s(selTile.x * TILE), y = by2s(selTile.y * TILE), w = TILE * ws, L = Math.max(4, w * 0.28), cc = frame % 30 < 20 ? PAL.amber : '#b07a20';
       c.strokeStyle = cc; c.lineWidth = 2; c.beginPath();
@@ -1281,7 +1290,7 @@ const RES = 2;
   }
   return {
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
-    set sel(v) { selTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
+    set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
     get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, get home() { return atHome; }, get homeZoom() { return homeZ(); }, overview, markMap() { mapDirty = true; },
     set onCam(f) { onCam = f; },

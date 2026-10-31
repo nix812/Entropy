@@ -794,6 +794,7 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 5.0.1 | Mouse and keyboard: hover corners, range ring and cursor (`hoverAt`, `Render.hover`), right/middle-drag pan, right-click cancels (`mouseCancel`), proportional wheel and trackpad zoom, keys WASD/arrows, +/−, F, N, T, U, Z X C V. Test: `test/mouseshot.py` |
 | 5.0 | Clean Sheet (4.13): seven Talent trees with Capstones replace the passive web; late income and pirate rewards up; token rerolls; breach warning; Void Lens trimmed; bot and tests for talents |
 | 4.8.1 | Level badges off the tower art: tier line under each tower, number only when selected, one best-upgrade arrow |
 | 4.8 | Drift Studio II (4.12): ten researched genres with flavours, Grids-style drum maps, voicing rules, motif melodies, dance/dub/ambient forms, sidechain, relative FX, genre verification test; closer default camera with Map toggle; bolder sprites and lanes; one tower level number in white→red tiers; pixel sliders |
