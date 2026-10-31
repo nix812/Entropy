@@ -375,6 +375,7 @@ const UNITS = (() => {
   function wormSeg() { return get('bs:wseg', () => raster([P(S.dome(0, 0, 26, 20), 0, ramp('#7a2ec4', 0.6), { d: (x, y) => (Math.abs(x) < 1.4 ? -1.5 : 0) }), P(S.ell(0, -8, 18, 8, 6), 14, ramp('#9a5ae0', 0.7))].concat([-1, 1].map(s => P(S.box(s * 28 - 3, -4, s * 28 + 3, 14, 4, 1), 0, ramp('#e8d8ff', 0.8)))), 66, 66, 0)); }
   function meat() { return get('bs:meat', () => raster([P(S.dome(0, 0, 11, 10), 0, ramp('#8a3a1a', 0.6), { d: (x, y) => nz(x * 2, y * 2) * 0.9 }), P(S.ell(2, -6, 6, 3, 3), 10, ramp('#d8281a', 0.7))], 28, 28, 0)); }
 
+  const CORE_SC = 1.4; // v4.7: the base reads as the heart of the map, 40% larger
   // ---------- the core: a reactor drum with eight fuel cells around a living green heart ----------
   function core(spin, hurt) {
     const ai = idxOf(spin), h = hurt ? 1 : 0;
@@ -384,13 +385,13 @@ const UNITS = (() => {
         parts.push(P(S.rbox(cx - 4, cy - 4, cx + 4, cy + 4, 2, 5, 2), 8, ramp('#1f6b55', 0.6), { e: (x, y) => Math.hypot(x - cx, y - cy) < 2.2 ? (k % 2 ? '#b8ffe6' : G0) : null })); }
       parts.push(P(S.ring(0, 0, 13, 17, 0), 9, ramp('#2a8a70', 0.6)));
       parts.push(P(S.dome(0, 0, 13, 13), 8, ramp(h ? '#ff6f8a' : G0, 1), { e: (x, y, t) => t >= 4 ? (h ? '#ffd0d8' : '#e6fff6') : null }));
-      return raster(parts, 72, 72, angOf(ai));
+      return raster(parts, 72, 72, angOf(ai), { sc: CORE_SC });
     });
   }
   function coreGun(el, ang) {
     const ai = idxOf(ang);
     return get(`cgun:${el}:${ai}`, () => { const c = EL[el].col; return raster([P(S.tube(10, 32, -3.5, 2.4, 0), 18, GUNM, { d: stripes(5, 1) }), P(S.tube(10, 32, 3.5, 2.4, 0), 18, GUNM, { d: stripes(5, 1) }),
-      P(S.box(28, -6.5, 33, 6.5, 4, 1.5), 18, ramp(c), { e: (x) => x > 31.5 ? mix(c, '#ffffff', 0.5) : null }), P(S.box(6, -7, 14, 7, 5, 2), 16, HULL)], 76, 76, angOf(ai)); });
+      P(S.box(28, -6.5, 33, 6.5, 4, 1.5), 18, ramp(c), { e: (x) => x > 31.5 ? mix(c, '#ffffff', 0.5) : null }), P(S.box(6, -7, 14, 7, 5, 2), 16, HULL)], 76, 76, angOf(ai), { sc: CORE_SC }); });
   }
   function pirate(gold) {
     return get('pship:' + (gold ? 1 : 0), () => {

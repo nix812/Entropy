@@ -8,7 +8,10 @@ const ENEMY_COL = {
 };
 
 const Render = (() => {
-  const RES = 2;
+  // the Marksman sight line is for direct-fire towers only; area towers (Cryo, Gravity Well, Arc Coil) and lobbed shots (Missile, Mortar) don't point
+const LV_COL = [null, '#8b8aa8', '#59f0b4', '#5ea9ff', '#c07cff', '#ffd84a'];
+const SIGHTED = { bullet: 1, rail: 1, beam: 1, cone: 1 };
+const RES = 2;
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
   const cam = { z: 1, x: 0, y: 0 };
@@ -525,7 +528,7 @@ const Render = (() => {
       case 'lens': { const k = Math.min(1, (t.ramp || 0) / 3.5); if (k > 0.05) D(b, cx, cy, 1 + Math.round(k * 2), hexA('#ffffff', 0.4 + 0.5 * k)); break; }
     }
     if (t.asc) { b.strokeStyle = hexA('#ff8a2a', 0.55 + 0.3 * Math.sin(frame / 8)); b.lineWidth = 1; b.strokeRect(X + 0.5, Y + 0.5, 23, 23); }
-    for (let i = 0; i < t.lvl; i++) R(b, X + 4 + i * 3, Y + 20, 2, 2, i >= 3 && t.spec ? PAL.amber : '#9aa3d6');
+    // v4.7: the level now reads as a numbered badge in the overlay (drawn crisp at any zoom), see LV_COL
     let best = -1; for (const a of t.affixes) if (a.tier < 4 && a.tier > best) best = a.tier;
     if (best >= 1) { R(b, X + 18, Y + 2, 4, 4, '#090b16'); R(b, X + 19, Y + 3, 2, 2, RARITY[best].col); }
     if (t.affixes.some(a => a.tier === 4)) R(b, X + 18, Y + 7, 2, 2, RARITY[4].col);
@@ -537,7 +540,7 @@ const Render = (() => {
     if (t.disabled > 0) for (let i = 0; i < 14; i++) R(b, X + 2 + Math.random() * 19, Y + 2 + Math.random() * 19, 2, 1, i % 2 ? '#ffffff' : '#5a5a7a');
     if (G.mods.ks.circuit && t.wires && t.wires.length) { for (const o of t.wires) if (o.id > t.id || (o.id === undefined && o.x + o.y * 1000 > t.x + t.y * 1000)) { const live = t.chain && t.chain.m.length >= 4; b.strokeStyle = live ? (frame % 20 < 10 ? 'rgba(255,225,77,0.85)' : 'rgba(255,240,170,0.6)') : 'rgba(255,225,77,0.4)'; b.lineWidth = 1; b.beginPath(); b.moveTo(X + 12, Y + 12); b.lineTo(o.x * TILE + 12, o.y * TILE + 12); b.stroke(); } }
     if (t.hot && G.mods.ks.wildfire && frame % 6 < 4) { for (let k = 0; k < 3; k++) { const hx = X + 5 + ((frame >> 2) * 7 + k * 6) % 14, hy = Y + 2 - ((frame + k * 5) % 8); P(b, hx, hy, k % 2 ? '#ff9a3c' : '#ffd28a'); } }
-    if (G.mods.ks.marksman && t.s && canOvercharge(t) && t.aimT !== undefined && G.time - t.aimT < 0.7 && t.angle !== undefined) { const L = (t.effRange || t.s.range || 2) * TILE; b.strokeStyle = 'rgba(255,77,106,0.35)'; b.lineWidth = 1; b.beginPath(); b.moveTo(X + 12, Y + 12); b.lineTo(X + 12 + Math.cos(t.angle) * L, Y + 12 + Math.sin(t.angle) * L); b.stroke(); P(b, Math.round(X + 12 + Math.cos(t.angle) * L), Math.round(Y + 12 + Math.sin(t.angle) * L), '#ff4d6a'); }
+    if (G.mods.ks.marksman && t.s && SIGHTED[TOWERS[t.type].kind] && t.aimT !== undefined && G.time - t.aimT < 0.7 && t.angle !== undefined) { const L = (t.effRange || t.s.range || 2) * TILE; b.strokeStyle = 'rgba(255,77,106,0.35)'; b.lineWidth = 1; b.beginPath(); b.moveTo(X + 12, Y + 12); b.lineTo(X + 12 + Math.cos(t.angle) * L, Y + 12 + Math.sin(t.angle) * L); b.stroke(); P(b, Math.round(X + 12 + Math.cos(t.angle) * L), Math.round(Y + 12 + Math.sin(t.angle) * L), '#ff4d6a'); }
     if (G.wave > 1 && idleWaves(t) >= 2) { // sleeping: two little pixel Zs drift up from the corner
       const zc = '#9fb3c8';
       for (let k = 0; k < 2; k++) { const ph = ((frame >> 2) + k * 12) % 24, zx = X + 1 + k * 4, zy = Y + 6 - (ph >> 2) - k * 3; if (ph > 20) continue; R(b, zx, zy, 3, 1, zc); R(b, zx + 1, zy + 1, 1, 1, zc); R(b, zx, zy + 2, 3, 1, zc); }
@@ -571,18 +574,20 @@ const Render = (() => {
       parts.push({ x: X + Math.cos(an) * rr, y: Y + Math.sin(an) * rr, vx: -Math.cos(an) * rr * 2.4, vy: -Math.sin(an) * rr * 2.4, life: 0.4, max: 0.4, col: pending ? '#b86cff' : '#ff86b0', s: 2 });
     }
   }
+  let coreKick = 0;
   function drawCore() {
     const c = G.core, X = c.x * TILE, Y = c.y * TILE, pulse = (Math.sin(frame / 10) + 1) / 2;
-    b.fillStyle = 'rgba(2,3,10,0.45)'; b.beginPath(); b.ellipse(X + 1.5, Y + 3, 18, 16, 0, 0, 6.283); b.fill();
+    b.fillStyle = 'rgba(2,3,10,0.45)'; b.beginPath(); b.ellipse(X + 2, Y + 4, 25, 22, 0, 0, 6.283); b.fill();
     const hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
-    blit(UNITS.core(frame / 70, hurt), X, Y);
+    const kick = coreKick; coreKick = Math.max(0, coreKick - 0.06); // a hit makes the reactor flinch and flare red
+    blit(UNITS.core(frame / 70, hurt || kick > 0.35), X, Y, 1 - 0.07 * kick * Math.sin(kick * 9));
     D(b, X, Y, 1 + Math.round(pulse * 2), hexA('#ffffff', 0.35 + 0.4 * pulse));
     const el = c.s ? c.s.el : c.el, a = c.angle || 0;
     blit(UNITS.coreGun(el, a), X, Y);
     { const wt = typeof warTier === 'function' ? warTier() : 0; // War Economy: a turret per stack of banked credits
-      for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 22, ty = Y + Math.sin(a2) * 22; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
-    if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.25 + 0.5 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 20, 0, 6.283); b.stroke(); }
-    if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, 18, 0, 6.283); b.stroke(); }
+      for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 30, ty = Y + Math.sin(a2) * 30; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
+    if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.25 + 0.5 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 28, 0, 6.283); b.stroke(); }
+    if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, 25, 0, 6.283); b.stroke(); }
   }
   function drawEnemy(e) {
     const X = e.x * TILE, Y = e.y * TILE, st = e.st;
@@ -613,9 +618,20 @@ const Render = (() => {
     if (e.gen) k *= e.gen === 1 ? 0.67 : 0.45;
     if (e.genes && e.genes.includes('bulk')) k *= 1.3;
     if (e.mite) k *= 0.7;
+    const elite = e.elite.length && !e.boss && !e.pirate, eCols = e.elite.length ? e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).col) : null;
+    if (elite) k *= 1.22; // v4.7: elites stand a size up from their kin
     const su = (s.u || 1) * k, sw = s.width * su, hw = sw / 2, hh = s.height * su / 2;
     b.fillStyle = e.fly ? 'rgba(0,0,0,0.3)' : 'rgba(2,3,10,0.4)';
     b.beginPath(); b.ellipse(X + 1, e.fly ? Y + 4 : y + hh * 0.55, hw * 0.75, Math.max(1.5, hh * (e.fly ? 0.25 : 0.4)), 0, 0, 6.283); b.fill();
+    if (elite && !cloaked) {
+      // v4.7 elite read: a turning sigil on the ground in the affix colour, then a glowing rim around the body
+      const gy = e.fly ? Y + 4 : y + hh * 0.55, rx = hw * 1.05 + 3, ry = Math.max(3, rx * 0.42), rot = frame / 40;
+      b.fillStyle = hexA(eCols[0], 0.16 + 0.06 * Math.sin(frame / 6)); b.beginPath(); b.ellipse(X, gy, rx, ry, 0, 0, 6.283); b.fill();
+      b.strokeStyle = hexA(eCols[0], 0.8); b.lineWidth = 1.5; b.beginPath(); b.ellipse(X, gy, rx, ry, 0, 0, 6.283); b.stroke();
+      b.fillStyle = eCols[0]; for (let i = 0; i < 6; i++) { const a = rot + i * 1.0472; b.fillRect(X + Math.cos(a) * rx - 1, gy + Math.sin(a) * ry - 1, 2, 2); }
+      const rim = tintOf(s, eCols[0]), gw = sw * 1.2, gh = hh * 2 * 1.2;
+      b.globalAlpha = 0.55 + 0.3 * Math.sin(frame / 5 + e.wob); b.drawImage(rim, Math.round((X - gw / 2) * RES) / RES, Math.round((y - gh / 2) * RES) / RES, gw, gh); b.globalAlpha = 1;
+    }
     if (cloaked) b.globalAlpha = 0.25;
     if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
     else if (e.boss) { const fl = Math.cos(e._ha) < -0.3; b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); if (fl && !e.burrowT) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
@@ -633,7 +649,9 @@ const Render = (() => {
     if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
     if (e.wanted && !cloaked) { b.strokeStyle = hexA('#ffd84a', 0.6 + 0.35 * Math.sin(frame / 5)); b.lineWidth = 2; b.setLineDash([5, 4]); b.lineDashOffset = frame / 2; b.beginPath(); b.arc(X, y, hw + 8, 0, 6.283); b.stroke(); b.setLineDash([]); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
-    if (e.elite.length && !cloaked) {
+    e._hh = hh; e._crown = elite && !cloaked ? eCols : null; // the crown is drawn in the overlay pass, above every unit
+    if (false) {
+    } else if (e.elite.length && !cloaked) {
       const ec = ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, r = hw + 4;
       b.strokeStyle = hexA(ec, frame % 12 < 9 ? 0.9 : 0.4); b.lineWidth = 2; b.setLineDash([3, 3]); b.lineDashOffset = -frame / 2;
       b.beginPath(); b.arc(X, y, r, 0, 6.283); b.stroke(); b.setLineDash([]);
@@ -656,6 +674,7 @@ const Render = (() => {
     for (let i = 0; i < Math.min(st.mark, 6); i++) R(b, X - 7 + i * 3, y + hh + 2, 2, 2, EL.V.col);
     if (!cloaked && (e.hp < e.maxHp || e.shield > 0) && !e.boss) {
       const w = Math.max(12, Math.round(sw)), hr = Math.max(0, e.hp / e.maxHp);
+      if (elite) R(b, X - w / 2 - 1, y - hh - 5, w + 2, 4, '#ffd84a');
       R(b, X - w / 2, y - hh - 4, w, 2, '#2a0010'); R(b, X - w / 2, y - hh - 4, Math.max(1, Math.round(w * hr)), 2, hr > 0.5 ? '#ff7c9c' : '#ff3355');
       if (e.shield > 0) R(b, X - w / 2, y - hh - 6, Math.max(1, Math.round(w * Math.min(1, e.shield / e.maxHp))), 1, '#8ab6ff');
     }
@@ -1013,6 +1032,33 @@ const Render = (() => {
         c.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w), Math.round(h)); c.setLineDash([]);
       }
     }
+    // v4.7 elite crowns: gold, one gem per affix, drawn above everything so a crowd can't bury them
+    for (const e of G.enemies) if (e._crown && !e.dead) {
+      const x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - (e.fly ? 7 : 0) - (e._hh || 6) - 4)), u = clamp(Math.round(ws * 1.1), 2, 4), n = e._crown.length, cw = (5 + n * 2) * u;
+      c.fillStyle = '#090b16'; c.fillRect(x - cw / 2 - u, y - 4 * u, cw + 2 * u, 5 * u);
+      c.fillStyle = '#ffd84a'; c.fillRect(x - cw / 2, y - u * 1.5, cw, u * 2); for (const dx of [-cw / 2, -u / 2, cw / 2 - u]) c.fillRect(x + dx, y - 3 * u, u, 2 * u);
+      e._crown.forEach((col, i) => { c.fillStyle = col; c.fillRect(x - (n * 2 * u - u) / 2 + i * 2 * u, y - u, u, u); });
+    }
+    // v4.7 level badges: a coloured plate with the level in the tower's lower-left corner (grey 1 -> green -> blue -> purple -> gold 5,
+    // orange A1, A2... once Ascended), a pulsing green arrow when you can afford its next level, and an orange arrow on the cheapest
+    // affordable Ascension (only the cheapest, so a late-game bank doesn't light up every tower). Zoomed far out it shrinks to a dot
+    { const tpx = TILE * ws, cr = G.credits, ascMin = G.towers.reduce((m, t) => t.lvl >= MAX_LV ? Math.min(m, upgradeCost(t)) : m, Infinity), big = tpx >= 18, bs = Math.round(clamp(tpx * 0.3, 9, 13));
+      c.font = `${bs - 3}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      for (const t of G.towers) {
+        const asc = t.asc > 0, col = asc ? '#ff8a2a' : LV_COL[Math.min(t.lvl, 5)] || LV_COL[1], x = Math.round(bx2s(t.x * TILE + 1)), y = Math.round(by2s(t.y * TILE + TILE - 1));
+        if (!big) { c.fillStyle = '#090b16'; c.fillRect(x - 1, y - 5, 5, 5); c.fillStyle = col; c.fillRect(x, y - 4, 3, 3); continue; }
+        const pw = asc ? Math.round(bs * 1.6) : bs;
+        c.fillStyle = '#090b16'; c.fillRect(x - 1, y - bs - 1, pw + 2, bs + 2); c.fillStyle = col; c.fillRect(x, y - bs, pw, bs);
+        c.fillStyle = t.lvl <= 1 && !asc ? '#f2efe6' : '#0b0b12'; c.fillText(asc ? 'A' + t.asc : String(t.lvl), x + pw / 2 + 0.5, y - bs / 2 + 0.5);
+        if (t.spec) { c.fillStyle = PAL.amber; c.fillRect(x, y - bs, pw, 2); }
+        if (!G.over && cr >= upgradeCost(t) && (t.lvl < MAX_LV || upgradeCost(t) === ascMin)) { // affordable: green up-arrow for a level, orange once it's an Ascension
+          const aw = Math.max(5, bs - 3), ax = Math.round(bx2s(t.x * TILE + TILE - 1)) - aw, ay = y - aw + (frame % 30 < 15 ? 0 : -1), up = t.lvl < MAX_LV;
+          c.fillStyle = '#090b16'; c.fillRect(ax - 1, ay - 1, aw + 2, aw + 2);
+          c.fillStyle = up ? (frame % 30 < 20 ? '#59f0b4' : '#b8ffe6') : (frame % 30 < 20 ? '#ff8a2a' : '#ffd0a0');
+          c.beginPath(); c.moveTo(ax + aw / 2, ay); c.lineTo(ax + aw, ay + aw * 0.55); c.lineTo(ax + aw * 0.68, ay + aw * 0.55); c.lineTo(ax + aw * 0.68, ay + aw); c.lineTo(ax + aw * 0.32, ay + aw); c.lineTo(ax + aw * 0.32, ay + aw * 0.55); c.lineTo(ax, ay + aw * 0.55); c.closePath(); c.fill();
+        }
+      }
+    }
     // veterans waiting for a mutation: a bobbing badge above the tower
     c.font = '10px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
     for (const t of G.towers) if (t.pending > 0) {
@@ -1120,7 +1166,7 @@ const Render = (() => {
       case 'emp': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: d.r * TILE, life: 0.4, max: 0.4, col: '#ffe14d', w: 3 }); burst(T2P(d.x), T2P(d.y), 10, '#ffffff', 40 * K, 0.25); break;
       case 'freeze': burst(T2P(d.x), T2P(d.y), 12, '#d8f8ff', 25 * K, 0.4); break;
       case 'implode': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE, r1: 0, life: 0.6, max: 0.6, col: '#b86cff', fill: 1, w: 3 }); for (let i = 0; i < 40; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; parts.push({ x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr, vx: -Math.cos(a) * rr * 2, vy: -Math.sin(a) * rr * 2, life: 0.45, max: 0.45, col: '#d6a6ff', s: 2 }); } break;
-      case 'leak': flashes.push({ col: '#ff3355', life: d.boss ? 0.6 : 0.25, max: d.boss ? 0.6 : 0.25, a: d.boss ? 0.45 : 0.2 }); shakeAt(d.boss ? 10 : 4, d.boss ? 0.6 : 0.2); burst(T2P(d.x), T2P(d.y), 18, '#ff3355', 50 * K, 0.5); break;
+      case 'leak': coreKick = d.boss ? 1 : Math.max(coreKick, 0.6); rings.push({ x: d.x * TILE, y: d.y * TILE, r0: 14, r1: d.boss ? 70 : 42, life: 0.4, max: 0.4, col: '#ff3355', w: d.boss ? 4 : 2.5 }); flashes.push({ col: '#ff3355', life: d.boss ? 0.6 : 0.25, max: d.boss ? 0.6 : 0.25, a: d.boss ? 0.45 : 0.2 }); shakeAt(d.boss ? 10 : 4, d.boss ? 0.6 : 0.2); burst(T2P(d.x), T2P(d.y), 18, '#ff3355', 50 * K, 0.5); break;
       case 'strike': lines.push({ pts: [{ x: T2P(d.x), y: -10 }, { x: T2P(d.x), y: T2P(d.y) }], life: 0.6, max: 0.6, col: '#ffe9b0', core: 1, w: 6 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 1.7 * TILE, r1: 2, life: 0.6, max: 0.6, col: '#ffe9b0', w: 3 }); break;
       case 'nova': flashes.push({ col: '#b86cff', life: 0.6, max: 0.6, a: 0.5 }); rings.push({ x: G.core.x * TILE, y: G.core.y * TILE, r0: 4, r1: BW, life: 0.7, max: 0.7, col: '#d6a6ff', w: 4 }); break;
       case 'stasis': flashes.push({ col: '#6ae2ff', life: 0.5, max: 0.5, a: 0.4 }); break;

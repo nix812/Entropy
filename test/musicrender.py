@@ -1,22 +1,25 @@
 """Renders the generative score offline with an intensity curve and reports loudness over time and the pieces it wrote.
-usage: python3 musicrender.py [seconds] [seed-tag]  -> test/out/music_<tag>.mp3 (+ .wav), music_<tag>_rms.png"""
-import pathlib, base64, wave, sys, mkpage, math, subprocess, array
+usage: python3 musicrender.py [seconds] [tag] [studio-config-json]  -> test/out/music_<tag>.mp3 (+ .wav), music_<tag>_rms.png"""
+import json, pathlib, base64, wave, sys, mkpage, math, subprocess, array
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent
 out = root / 'test' / 'out'
 secs = int(sys.argv[1]) if len(sys.argv) > 1 else 240
 tag = sys.argv[2] if len(sys.argv) > 2 else 'a'
+cfg = sys.argv[3] if len(sys.argv) > 3 else 'null'  # optional Studio config JSON, e.g. '{"custom":true,"genres":["techno"]}'
 mkpage.mk()
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page()
     pg.goto('file://' + str(out / 'page.html')); pg.wait_for_timeout(300)
-    res = pg.evaluate('''async (secs) => {
+    res = pg.evaluate('''async ([secs, cfg]) => {
       const sr = 44100, oc = new OfflineAudioContext(2, sr * (secs + 4), sr);
-      SFX.offlineCtx(oc);
+      SFX.offlineCtx(oc); if (cfg) SFX.music.setConfig(cfg);
       // calm menu, a run that builds, a boss, then easing off
       const curve = x => x < 0.2 ? 0.15 : x < 0.55 ? 0.15 + (x - 0.2) / 0.35 * 0.5 : x < 0.75 ? 0.92 : 0.4;
-      SFX.music.setMood('calm');
-      SFX.music.renderAhead(secs, x => { SFX.music.setMood(x >= 0.55 && x < 0.75 ? 'boss' : 'calm'); return curve(x); });
+      SFX.music.setMood('calm'); SFX.music.start();
+      // stream the score in as the render runs (suspend every 0.25 s), the way the game schedules it live; scheduling it all up
+      // front makes Chrome pull every future voice on every block and the render goes quadratic
+      for (let t = 0; t < secs; t += 0.25) oc.suspend(t).then(() => { const x = t / secs; SFX.music.setMood(x >= 0.55 && x < 0.75 ? 'boss' : 'calm'); SFX.music.setIntensity(curve(x)); for (let k = 0; k < 6; k++) SFX.music.schedule(t + 0.5); oc.resume(); });
       const buf = await oc.startRendering();
       const L = buf.getChannelData(0), R = buf.getChannelData(1), n = L.length, i16 = new Int16Array(n * 2);
       let pk = 0;
@@ -24,7 +27,7 @@ with sync_playwright() as p:
       const rms = []; for (let s0 = 0; s0 + sr <= n; s0 += sr) { let a = 0; for (let i = s0; i < s0 + sr; i++) a += L[i] * L[i] + R[i] * R[i]; rms.push(Math.sqrt(a / (2 * sr))); }
       let str = ''; const u8 = new Uint8Array(i16.buffer); for (let i = 0; i < u8.length; i += 32768) str += String.fromCharCode.apply(null, u8.subarray(i, i + 32768));
       return { wav: btoa(str), peak: pk, rms, log: SFX.music.log };
-    }''', secs)
+    }''', [secs, json.loads(cfg)])
     b.close()
 raw = base64.b64decode(res['wav'])
 wp = out / f'music_{tag}.wav'

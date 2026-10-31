@@ -10,7 +10,7 @@ function defaultProfile() {
   return {
     v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
-    settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true },
+    settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
     seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
     mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
@@ -1659,8 +1659,11 @@ function updateWaves(dt) {
     }
     // v4.4: while a boss is still walking, the swarm hangs back: the countdown runs at a third speed, for up to 45 s (BOSS_HOLD)
     const bossUp = G.enemies.some(e => e.boss && !e.gen && !e.dead);
-    if (bossUp && (G.bossHold = (G.bossHold || 0) + dt) < BOSS_HOLD) G.next -= dt / 3; else G.next -= dt;
-    if (G.next <= 0) { G.bossHold = 0; startWave(); }
+    // v4.7: and while the last wave is still on the field in numbers, the countdown runs at half speed (up to 12 s), so waves
+    // stop piling into each other. Calling the wave early skips all of this, for the bonus
+    const crowd = !bossUp && G.enemies.reduce((n, e) => n + (!e.dead && !e.gen ? 1 : 0), 0) > 6 && (G.lagHold = (G.lagHold || 0) + dt) < 12;
+    if (bossUp && (G.bossHold = (G.bossHold || 0) + dt) < BOSS_HOLD) G.next -= dt / 3; else G.next -= crowd ? dt / 2 : dt;
+    if (G.next <= 0) { G.bossHold = 0; G.lagHold = 0; startWave(); }
     return;
   }
   G.spawnClock += dt;
@@ -1671,7 +1674,7 @@ function updateWaves(dt) {
   }
   if (!G.queue.length) {
     G.spawningDone = true;
-    G.next = G.af.timeDebt ? 5 : 10;
+    G.next = G.af.timeDebt ? 6 : 13; // v4.7: 13 s between waves (was 10)
     const bonus = Math.round((20 + G.wave * 4) * G.mods.credits * (G.ev.gold ? 2 : 1));
     G.credits += bonus;
     if (FX('interest')) { const it = Math.min(300, Math.floor(G.credits * FX('interest') / 100)); if (it > 0) { G.credits += it; Hooks.log(`Interest +${it} credits`, '#ffb03a'); } }

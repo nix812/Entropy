@@ -429,202 +429,334 @@ const SFX = (() => {
     for (let i = 0; i < len; i++) { if (i % 6 === 0) v = Math.random() * 2 - 1; e[i] = v; }
   }
 
-  // ================= v4.6 DRIFT: the generative soundtrack =================
-  // A small composer that never stops writing. Calm by design: 60-84 BPM, extended chords (7ths, 9ths) with smooth voice
-  // leading, melodies biased toward chord tones, and loops that slowly mutate instead of repeating.
-  //  - a PIECE is a style + key + mode + tempo + progression + motif. It runs 4 phrases of 8 bars (A, A', B, A''), then the
-  //    composer modulates to a related key and starts the next piece, with the pad bridging the seam (horizontal resequencing)
-  //  - within a piece, layers fade in and out with the game's intensity (vertical layering): pads and bass always, then keys,
-  //    hats, drums, melody, arpeggios and sparkles as the action climbs. Boss fights darken the next piece, not the volume
-  //  - five styles: Drift (ambient pads and glass), Lofi (electric piano and a dusty beat), Glass (plucked arpeggios),
-  //    Tide (a gentle synthwave pulse) and Nocturne (a slow, piano-like waltz of broken chords)
+  // ================= v4.7 DRIFT STUDIO: the generative soundtrack =================
+  // A small composer that never stops writing. Default mode is the calm score the game shipped with (Chill, following the
+  // battle). Custom mode is the Studio: pick genres, energy, tempo per genre, how much it follows the battle, a six-channel
+  // mix and four effects, and save the pieces you like (a piece is fully described by its seed, style, key and mode).
+  //  - a PIECE is a genre + style + key + mode + tempo + progression + two motifs, named from its seed ("Velvet Orbit").
+  //    32 bars: phrases A, A', B (second motif, thinner drums), A''; then the next piece (horizontal resequencing)
+  //  - layers fade in with intensity (vertical layering): pads and bass, keys, hats, drums, melody, arps, sparkles
+  //  - chords are stacked thirds (7ths, 9ths) voice-led into E3-D5; melodies snap to chord tones on strong beats
   const Music = (() => {
-    let timer = null, nextT = 0, intensity = 0.15, targetI = 0.15, scene = 'menu', mood = 'calm', running = false, baseBpm = 72;
-    let mIn = null, mRev = null, crackle = null, L = {};
+    let timer = null, nextT = 0, intensity = 0.15, targetI = 0.15, scene = 'menu', mood = 'calm', running = false;
+    let mIn = null, mRev = null, revRet = null, echoIn = null, echoD = null, echoFb = null, warmLP = null, vinylG = null, outAn = null, CH = {}, AN = {}, L = {};
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
-    const R = Math.random, pick = a => a[Math.floor(R() * a.length)], chance = p => R() < p;
+    let R = Math.random;
+    const pick = a => a[Math.floor(R() * a.length)], chance = p => R() < p;
     const sstep = (x, a, b) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-    const MODES = { ionian: [0, 2, 4, 5, 7, 9, 11], dorian: [0, 2, 3, 5, 7, 9, 10], aeolian: [0, 2, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11], mixolydian: [0, 2, 4, 5, 7, 9, 10] };
-    // progressions as scale degrees (0 = I). Each chord lasts 1 or 2 bars.
+    const NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+    const MODES = { ionian: [0, 2, 4, 5, 7, 9, 11], dorian: [0, 2, 3, 5, 7, 9, 10], aeolian: [0, 2, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11], mixolydian: [0, 2, 4, 5, 7, 9, 10], phrygian: [0, 1, 3, 5, 7, 8, 10] };
+    const MODE_NAME = { ionian: 'major', dorian: 'dorian', aeolian: 'minor', lydian: 'lydian', mixolydian: 'mixolydian', phrygian: 'phrygian' };
+    // progressions as scale degrees (0 = I). Each chord lasts the style's `bars`.
     const PROGS = {
-      ionian: [[1, 4, 0, 0], [0, 5, 1, 4], [3, 2, 1, 0], [0, 3, 0, 3], [3, 4, 2, 5], [0, 2, 3, 3]],
-      dorian: [[0, 3, 0, 3], [0, 6, 3, 0], [0, 4, 3, 0], [0, 0, 6, 6]],
-      aeolian: [[0, 5, 2, 6], [0, 3, 6, 2], [5, 6, 0, 0], [0, 5, 3, 4], [0, 6, 5, 6]],
+      ionian: [[1, 4, 0, 0], [0, 5, 1, 4], [3, 2, 1, 0], [0, 3, 0, 3], [3, 4, 2, 5], [0, 2, 3, 3], [0, 4, 5, 3]],
+      dorian: [[0, 3, 0, 3], [0, 6, 3, 0], [0, 4, 3, 0], [0, 0, 6, 6], [0, 2, 3, 6]],
+      aeolian: [[0, 5, 2, 6], [0, 3, 6, 2], [5, 6, 0, 0], [0, 5, 3, 4], [0, 6, 5, 6], [0, 0, 5, 6]],
       lydian: [[0, 1, 0, 1], [0, 1, 6, 2], [0, 0, 1, 1]],
       mixolydian: [[0, 6, 3, 0], [0, 3, 6, 0], [0, 0, 6, 3]],
+      phrygian: [[0, 1, 0, 1], [0, 6, 1, 0], [0, 0, 1, 6]],
     };
+    // genres: their natural tempo and the styles they draw from
+    const GENRES = {
+      chill: { name: 'Chill', bpm: 72, styles: ['drift', 'nocturne', 'glass', 'lofi', 'tide'], col: '#59f0b4', trim: 1.1, blurb: 'Pads, glass, lo-fi keys, a slow waltz' },
+      synthwave: { name: 'Synthwave', bpm: 104, styles: ['neon', 'outrun'], col: '#ff5fa8', trim: 1, blurb: 'Neon arps, gated drums, a driving bass' },
+      techno: { name: 'Techno', bpm: 124, styles: ['acid', 'deep'], col: '#6ae2ff', trim: 0.92, blurb: 'Four on the floor, acid lines, dub stabs' },
+      chiptune: { name: 'Chiptune', bpm: 132, styles: ['nes', 'arcade'], col: '#ffe14d', trim: 1.5, blurb: 'Pulse waves, triangle bass, noise drums' },
+      dub: { name: 'Dub', bpm: 76, styles: ['dub', 'steppers'], col: '#ff9a3c', trim: 0.88, blurb: 'Deep bass, offbeat skank, long echoes' },
+    };
+    // style recipes. hard: 0 calm .. 1 driving. bpm: offset from the genre tempo. Instrument kinds are dispatched below.
     const STYLES = {
-      // bpm: offset from the player's chosen average tempo (Settings > Music Tempo, default 72)
-      drift: { bpm: [-8, -3], bars: 2, modes: ['lydian', 'ionian', 'dorian'], swing: 0, calm: 1 },
-      nocturne: { bpm: [-9, -5], bars: 2, modes: ['aeolian', 'dorian', 'ionian'], swing: 0, calm: 1, meter: 3 },
-      glass: { bpm: [-3, 2], bars: 2, modes: ['lydian', 'ionian', 'mixolydian', 'dorian'], swing: 0, calm: 0.6 },
-      lofi: { bpm: [0, 6], bars: 1, modes: ['dorian', 'ionian', 'aeolian'], swing: 0.58, calm: 0.3 },
-      tide: { bpm: [4, 9], bars: 2, modes: ['aeolian', 'dorian', 'mixolydian'], swing: 0, calm: 0 },
+      drift: { name: 'Drift', genre: 'chill', hard: 0, bpm: [-8, -3], bars: 2, modes: ['lydian', 'ionian', 'dorian'], pad: 'warm', bass: 'long', keys: null, arp: 'pluckHi', lead: 'bell', kit: null },
+      nocturne: { name: 'Nocturne', genre: 'chill', hard: 0.05, bpm: [-9, -5], bars: 2, meter: 3, modes: ['aeolian', 'dorian', 'ionian'], pad: 'warm', bass: 'long', keys: 'broken', arp: null, lead: 'keys', kit: null },
+      glass: { name: 'Glass', genre: 'chill', hard: 0.3, bpm: [-3, 2], bars: 2, modes: ['lydian', 'ionian', 'mixolydian', 'dorian'], pad: 'warm', bass: 'pattern', keys: null, arp: 'pluck', lead: 'bell', kit: null },
+      lofi: { name: 'Lofi', genre: 'chill', hard: 0.55, bpm: [0, 6], bars: 1, swing: 0.58, modes: ['dorian', 'ionian', 'aeolian'], pad: 'warm', bass: 'pattern', keys: 'rhodes', arp: null, lead: 'pulse', kit: 'lofi' },
+      tide: { name: 'Tide', genre: 'chill', hard: 0.7, bpm: [4, 9], bars: 2, modes: ['aeolian', 'dorian', 'mixolydian'], pad: 'warm', bass: 'pattern', keys: 'rhodes', arp: 'pulse', lead: 'pulse', kit: 'tide' },
+      neon: { name: 'Neon', genre: 'synthwave', hard: 0.5, bpm: [-6, 0], bars: 2, modes: ['aeolian', 'dorian'], pad: 'saw', bass: 'octave', keys: null, arp: 'pulse16', lead: 'saw', kit: 'synth' },
+      outrun: { name: 'Outrun', genre: 'synthwave', hard: 0.85, bpm: [2, 8], bars: 1, modes: ['aeolian', 'phrygian', 'dorian'], pad: 'saw', bass: 'drive16', keys: 'stab', arp: 'pulse16', lead: 'saw', kit: 'synth16' },
+      acid: { name: 'Acid', genre: 'techno', hard: 0.9, bpm: [0, 6], bars: 2, modes: ['aeolian', 'phrygian', 'dorian'], pad: 'dark', bass: 'acid', keys: 'stab', arp: null, lead: 'bleep', kit: 'techno' },
+      deep: { name: 'Deep', genre: 'techno', hard: 0.6, bpm: [-6, -1], bars: 2, modes: ['dorian', 'aeolian', 'mixolydian'], pad: 'warm', bass: 'rumble', keys: 'dubstab', arp: null, lead: 'bleep', kit: 'deep' },
+      nes: { name: 'Overworld', genre: 'chiptune', hard: 0.75, bpm: [0, 8], bars: 1, modes: ['ionian', 'mixolydian', 'dorian'], pad: 'none', bass: 'chip', keys: 'chiparp', arp: null, lead: 'chip', kit: 'chip' },
+      arcade: { name: 'Save Room', genre: 'chiptune', hard: 0.3, bpm: [-34, -24], bars: 2, modes: ['ionian', 'lydian', 'aeolian'], pad: 'chip', bass: 'chipLong', keys: 'chiparp', arp: null, lead: 'chip', kit: 'chipsoft' },
+      dub: { name: 'One Drop', genre: 'dub', hard: 0.4, bpm: [-4, 2], bars: 2, swing: 0.55, modes: ['aeolian', 'dorian', 'mixolydian'], pad: 'warm', bass: 'dub', keys: 'skank', arp: null, lead: 'melodica', kit: 'onedrop' },
+      steppers: { name: 'Steppers', genre: 'dub', hard: 0.7, bpm: [2, 8], bars: 2, swing: 0.55, modes: ['aeolian', 'dorian'], pad: 'warm', bass: 'dub', keys: 'skank', arp: null, lead: 'melodica', kit: 'steppers' },
     };
-    let P = null; // the current piece
+    const ADJ = ['Velvet', 'Quiet', 'Neon', 'Distant', 'Slow', 'Golden', 'Hollow', 'Paper', 'Silver', 'Midnight', 'Soft', 'Static', 'Lucid', 'Amber', 'Cobalt', 'Drifting', 'Tidal', 'Glass', 'Faded', 'Electric', 'Patient', 'Low', 'Warm', 'Lost', 'Small', 'Gentle', 'Broken', 'Endless', 'Orbital', 'Sleepy'];
+    const NOUN = ['Orbit', 'Harbor', 'Signal', 'Comet', 'Lantern', 'Tide', 'Nebula', 'Circuit', 'Garden', 'Satellite', 'Echo', 'Horizon', 'Engine', 'Reef', 'Window', 'Arcade', 'Moth', 'Wavelength', 'Meadow', 'Relay', 'Aurora', 'Kettle', 'Highway', 'Lighthouse', 'Sunday', 'Pixel', 'Station', 'Current', 'Afterglow', 'Static'];
+    // the Studio settings. Default mode ignores everything except the Chill tempo.
+    const DEF = { custom: false, genres: ['chill'], energy: 0.35, follow: 1, bpm: { chill: 72, synthwave: 104, techno: 124, chiptune: 132, dub: 76 },
+      mix: { pads: 1, keys: 1, arp: 1, bass: 1, drums: 1, lead: 1 }, mute: {}, fx: { reverb: 0.55, echo: 0.35, warmth: 0.5, vinyl: 0.35 }, favs: [], favOnly: false };
+    const CHN = ['pads', 'keys', 'arp', 'bass', 'drums', 'lead'];
+    let cfg = JSON.parse(JSON.stringify(DEF));
+    let P = null, lastStyle = '', lastGenre = '', bar = 0, s16 = 0, voicing = null, root = 50, forceNext = null, favIdx = 0;
     const pieceLog = [];
-    let lastStyle = '', bar = 0, s16 = 0, voicing = null, root = 50;
-    function newPiece() {
-      // style: calm moments favour the ambient styles, busy ones the groovier ones, and never the same style twice running
-      const k = intensity, w = {};
-      for (const [id, S] of Object.entries(STYLES)) w[id] = id === lastStyle ? 0.05 : 0.25 + Math.abs(1 - Math.abs(S.calm - (1 - k))) * 1.2;
-      if (scene === 'menu') { w.tide = 0.05; w.lofi *= 0.6; }
-      if (mood === 'boss') { w.drift = w.nocturne = 0.05; }
-      let tot = 0; for (const id in w) tot += w[id]; let r = R() * tot, style = 'drift'; for (const id in w) { r -= w[id]; if (r <= 0) { style = id; break; } }
-      const S = STYLES[style];
-      let mode = pick(S.modes); if (mood === 'boss') mode = pick(['aeolian', 'dorian']);
-      // keys walk: a fourth up, a whole step down, or a relative shift; kept between D and A so nothing gets shrill or muddy
-      if (P) { root += pick([5, -2, 2, -5, 7, 0, 3, -3]); while (root > 57) root -= 12; while (root < 46) root += 12; } else root = pick([48, 50, 52, 53, 55, 57]);
-      const prog = pick(PROGS[mode]);
-      const bpm = baseBpm + S.bpm[0] + R() * (S.bpm[1] - S.bpm[0]);
-      lastStyle = style; pieceLog.push({ style, mode, root, bpm: Math.round(bpm), t: ctx ? +(nextT || 0).toFixed(1) : 0, i: +intensity.toFixed(2) });
-      P = { style, S, mode, prog, bpm, meter: S.meter || 4, scale: MODES[mode], spb: 60 / bpm, phrase: 0, motif: makeMotif(S), motifB: makeMotif(S), arpPat: pick([[0, 1, 2, 3], [0, 2, 1, 3], [0, 1, 2, 3, 2, 1], [0, 2, 3, 1], [3, 2, 1, 0]]), keysPat: makeKeys(S), drum: makeDrums(S), bassPat: pick([[0], [0, 0.5], [0, 0.75], [0, 0.625]]) };
+    const live = () => cfg.custom ? cfg : { ...DEF, bpm: { ...DEF.bpm, chill: cfg.bpm.chill }, mix: DEF.mix, mute: {}, fx: DEF.fx };
+    // the intensity the arrangement reads: the battle (scaled by Follow) plus the Energy knob
+    const effI = () => { const c = live(); return Math.max(0, Math.min(1, c.follow * intensity + (1 - c.follow) * 0.45 + (c.energy - 0.35) * 0.65)); };
+
+    function chooseGenre() {
+      const g = live().genres.filter(x => GENRES[x]); if (!g.length) return 'chill';
+      const pool = g.length > 1 ? g.filter(x => x !== lastGenre) : g; return pool[Math.floor(Math.random() * pool.length)];
+    }
+    function chooseStyle(genre) {
+      const ids = GENRES[genre].styles, E = effI(), tgt = Math.max(0, Math.min(1, E * 0.85 + (live().energy - 0.35) * 0.5)), w = {};
+      for (const id of ids) w[id] = (id === lastStyle && ids.length > 1 ? 0.05 : 1) * (0.2 + (1 - Math.abs(STYLES[id].hard - tgt)) * 1.3);
+      if (scene === 'menu' && genre === 'chill') { w.tide *= 0.1; w.lofi *= 0.6; }
+      if (mood === 'boss' && genre === 'chill') { w.drift *= 0.05; w.nocturne *= 0.05; }
+      let tot = 0; for (const id in w) tot += w[id]; let r = Math.random() * tot; for (const id in w) { r -= w[id]; if (r <= 0) return id; } return ids[0];
+    }
+    function newPiece(force) {
+      if (!force && cfg.custom && cfg.favOnly && cfg.favs.length) { force = cfg.favs[favIdx % cfg.favs.length]; favIdx++; }
+      const style = force && STYLES[force.style] ? force.style : chooseStyle(chooseGenre()), S = STYLES[style], genre = S.genre;
+      let mode = force && force.mode ? force.mode : S.modes[Math.floor(Math.random() * S.modes.length)];
+      if (!force && mood === 'boss') mode = genre === 'techno' ? ['aeolian', 'phrygian'][Math.floor(Math.random() * 2)] : ['aeolian', 'dorian'][Math.floor(Math.random() * 2)];
+      if (force && force.root) root = force.root;
+      else if (P) { root += [5, -2, 2, -5, 7, 0, 3, -3][Math.floor(Math.random() * 8)]; while (root > 57) root -= 12; while (root < 46) root += 12; }
+      else root = [48, 50, 52, 53, 55, 57][Math.floor(Math.random() * 6)];
+      const seed = force && force.seed !== undefined ? force.seed : (Math.random() * 4294967296) >>> 0;
+      R = mulberry32(seed); // everything below is reproducible from the seed
+      const prog = pick(PROGS[mode] || PROGS.aeolian), bOff = S.bpm[0] + R() * (S.bpm[1] - S.bpm[0]);
+      const name = pick(ADJ) + ' ' + pick(NOUN);
+      lastStyle = style; lastGenre = genre;
+      P = { style, S, genre, mode, prog, bOff, seed, name, meter: S.meter || 4, scale: MODES[mode], motif: makeMotif(S), motifB: makeMotif(S),
+        arpPat: pick([[0, 1, 2, 3], [0, 2, 1, 3], [0, 1, 2, 3, 2, 1], [0, 2, 3, 1], [3, 2, 1, 0]]), keysPat: makeKeys(S), drum: makeDrums(S), bassPat: pick([[0], [0, 0.5], [0, 0.75], [0, 0.625]]),
+        acid: makeAcid(), dubLine: makeDub(), forced: !!force };
+      P.bpm = pieceBpm(); P.spb = 60 / P.bpm; tempoNow = 0;
+      if (mIn) mIn.gain.setTargetAtTime(0.62 * (GENRES[genre].trim || 1), ctx.currentTime, 0.5); // loudness matched per genre by offline render (RMS, brightness-weighted)
+      if (echoD) echoD.delayTime.setTargetAtTime(Math.min(1.5, P.spb * 0.75), ctx.currentTime, 0.2);
+      pieceLog.push({ name, genre, style, mode, root, bpm: Math.round(P.bpm), t: +(nextT || 0).toFixed(1), i: +effI().toFixed(2) });
+      if (pieceLog.length > 50) pieceLog.shift();
       bar = 0; s16 = 0;
     }
-    // a motif: 16 eighth-note steps over two bars, as scale-degree moves (a random walk) with rests. It mutates on repeat.
+    const pieceBpm = () => (live().bpm[P.genre] || GENRES[P.genre].bpm) + P.bOff * (GENRES[P.genre].bpm / 72);
     function makeMotif(S) {
-      const m = []; let d = pick([0, 2, 4]), dens = S.calm > 0.7 ? 0.28 : 0.42;
+      const m = []; let d = pick([0, 2, 4]), dens = S.hard < 0.2 ? 0.28 : S.genre === 'chiptune' ? 0.55 : 0.42;
       for (let i = 0; i < 16; i++) { const strong = i % 4 === 0; if (chance(strong ? dens + 0.2 : dens * 0.7)) { d += pick([-2, -1, -1, 1, 1, 2, 0]); d = Math.max(-2, Math.min(9, d)); m.push({ d, len: pick([1, 1, 2, 2, 3]) }); } else m.push(null); }
       if (m.every(x => !x)) m[0] = { d: 2, len: 2 };
       return m;
     }
     function mutate(m) { const c = m.map(x => x && { ...x }); const i = Math.floor(R() * 16); if (c[i]) { if (chance(0.5)) c[i].d += pick([-1, 1]); else c[i] = null; } else c[i] = { d: pick([0, 2, 4]), len: 1 }; return c; }
-    // keys comping rhythm in 16ths within a bar (lofi Rhodes stabs, nocturne broken chords)
     function makeKeys(S) {
       if (S.meter === 3) return [0, 4, 8];
+      if (S.keys === 'skank') return [4, 12];
+      if (S.keys === 'dubstab') return pick([[6], [14], [6, 14], [10]]);
+      if (S.keys === 'stab') return pick([[0], [10], [6, 14], [0, 10]]);
       return pick([[0, 6, 10], [0, 7], [2, 6, 10, 14], [0, 3, 8, 11], [0, 10]]);
     }
-    function makeDrums(S) {
-      return { kick: pick([[0, 8], [0, 7, 10], [0, 10], [0, 6, 8]]), snare: [4, 12], hat: pick([[0, 2, 4, 6, 8, 10, 12, 14], [2, 6, 10, 14], [0, 2, 3, 4, 6, 8, 10, 11, 12, 14]]) };
-    }
-    // chord tones for a degree: stacked thirds from the mode (root, 3rd, 5th, 7th, 9th)
+    function makeDrums(S) { return { kick: pick([[0, 8], [0, 7, 10], [0, 10], [0, 6, 8]]), hat: pick([[0, 2, 4, 6, 8, 10, 12, 14], [2, 6, 10, 14], [0, 2, 3, 4, 6, 8, 10, 11, 12, 14]]) }; }
+    // a 303-style line: 16 steps of (note, accent, slide)
+    function makeAcid() { const n = [0, 0, 12, 0, 7, 10, 0, 3, 0, 12, 5, 0, -2, 0, 7, 12]; return Array.from({ length: 16 }, (_, i) => chance(i % 4 === 0 ? 0.9 : 0.55) ? { n: pick(n), acc: chance(0.3), slide: chance(0.2) } : null); }
+    // a dub bass phrase: scale degrees with rests, one bar, repeated
+    function makeDub() { return Array.from({ length: 16 }, (_, i) => i === 0 ? { d: 0, len: 3 } : chance(i % 4 === 0 ? 0.6 : i % 2 === 0 ? 0.35 : 0.1) ? { d: pick([0, 0, 2, 4, 4, 5, 7, -1]), len: pick([1, 2, 2, 3]) } : null); }
     function chordPCs(deg) { const sc = P.scale; return [0, 2, 4, 6, 8].map(k => sc[(deg + k) % 7] + 12 * Math.floor((deg + k) / 7)); }
-    // voice leading: put each chord tone in the octave closest to the previous voicing, inside E3-D5
     function voice(deg) {
       const pcs = chordPCs(deg).slice(1).map(p => root + p), out = [];
       const prev = voicing || [root + 7, root + 12, root + 16];
       for (const p of pcs) { let best = p, bd = 99; for (const o of [-24, -12, 0, 12]) { const n = p + o; if (n < 52 || n > 74) continue; const d = Math.min(...prev.map(q => Math.abs(q - n))); if (d < bd) { bd = d; best = n; } } out.push(best); }
       voicing = [...new Set(out)].sort((a, b) => a - b); return voicing;
     }
-    // scale degree -> midi near a centre
     function degToMidi(deg, centre) { const sc = P.scale, o = Math.floor(deg / 7), m = root + sc[((deg % 7) + 7) % 7] + 12 * o; let n = m; while (n < centre - 6) n += 12; while (n > centre + 7) n -= 12; return n; }
 
     // ---------------- instruments ----------------
-    const ctxT = () => ctx;
-    function vca(t, a, d, r, peak, dest) { const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); if (d > 0) g.gain.setTargetAtTime(peak * 0.0001, t + a, d / 4); g.connect(dest); return g; }
+    function vca(t, a, d, peak, dest) { const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); if (d > 0) g.gain.setTargetAtTime(peak * 0.0001, t + a, d / 4); g.connect(dest); return g; }
     function oscN(type, f, t, end, dest, det) { const o = ctx.createOscillator(); if (typeof type === 'number') o.setPeriodicWave(pulseWave(type)); else o.type = type; o.frequency.value = f; o.detune.value = (det || 0) + (R() * 8 - 4); o.connect(dest); o.start(t); o.stop(end); return o; }
-    function pad(notes, t, dur, lv, bright) {
-      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.7;
-      f.frequency.setValueAtTime(350, t); f.frequency.linearRampToValueAtTime(700 + 1400 * bright, t + dur * 0.45); f.frequency.linearRampToValueAtTime(420, t + dur + 1.5);
-      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lv, t + Math.min(2.2, dur * 0.35)); g.gain.setValueAtTime(lv, t + dur * 0.7); g.gain.linearRampToValueAtTime(0.0001, t + dur + 1.8);
+    function send(node, amt) { if (!echoIn || amt <= 0) return; const s = ctx.createGain(); s.gain.value = amt; node.connect(s); s.connect(echoIn); }
+    function pad(notes, t, dur, lv, bright, kind) {
+      if (kind === 'none') return;
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = kind === 'saw' ? 1.2 : 0.7;
+      const top = kind === 'dark' ? 500 + 600 * bright : kind === 'saw' ? 1200 + 2600 * bright : kind === 'chip' ? 3000 : 700 + 1400 * bright;
+      f.frequency.setValueAtTime(kind === 'chip' ? 3000 : 350, t); f.frequency.linearRampToValueAtTime(top, t + dur * 0.45); f.frequency.linearRampToValueAtTime(kind === 'chip' ? 2500 : 420, t + dur + 1.5);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lv, t + Math.min(kind === 'chip' ? 0.05 : 2.2, dur * 0.35)); g.gain.setValueAtTime(lv, t + dur * 0.7); g.gain.linearRampToValueAtTime(0.0001, t + dur + (kind === 'chip' ? 0.2 : 1.8));
       f.connect(g); g.connect(L.pad);
-      for (const n of notes) { oscN('sawtooth', mtof(n), t, t + dur + 2, f, -7); oscN('sawtooth', mtof(n), t, t + dur + 2, f, 7); oscN('triangle', mtof(n - 12), t, t + dur + 2, f, 0); }
+      for (const n of notes) {
+        if (kind === 'chip') { oscN('triangle', mtof(n), t, t + dur + 0.4, f); continue; }
+        const det = kind === 'saw' ? 12 : 7;
+        oscN('sawtooth', mtof(n), t, t + dur + 2, f, -det); oscN('sawtooth', mtof(n), t, t + dur + 2, f, det); oscN('triangle', mtof(n - 12), t, t + dur + 2, f, 0);
+      }
     }
-    function bass(n, t, dur, lv) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 380; f.connect(vca(t, 0.02, dur * 0.9, 0, lv, L.bass)); oscN('sine', mtof(n), t, t + dur + 0.4, f); oscN('triangle', mtof(n), t, t + dur + 0.4, f).detune.value = 3; }
-    function keys(n, t, lv, dec) { // FM electric piano: a mellow body and a short tine
-      const g = vca(t, 0.004, dec || 2.2, 0, lv, L.keys), car = ctx.createOscillator(), m1 = ctx.createOscillator(), mg = ctx.createGain(), m2 = ctx.createOscillator(), mg2 = ctx.createGain(), f = mtof(n);
+    function bassTone(n, t, dur, lv, kind) {
+      if (kind === 'saw') { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 3; f.frequency.setValueAtTime(900, t); f.frequency.setTargetAtTime(260, t, 0.06); f.connect(vca(t, 0.004, dur, lv * 0.75, L.bass)); oscN('sawtooth', mtof(n), t, t + dur + 0.3, f); oscN('sine', mtof(n), t, t + dur + 0.3, f); return; }
+      if (kind === 'tri') { const g = vca(t, 0.003, dur * 0.7, lv * 1.4, L.bass); oscN('triangle', mtof(n), t, t + dur + 0.2, g); return; }
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = kind === 'dub' ? 260 : 380; f.connect(vca(t, 0.02, dur * 0.9, lv * (kind === 'dub' ? 1.15 : 1), L.bass)); oscN('sine', mtof(n), t, t + dur + 0.4, f); oscN('triangle', mtof(n), t, t + dur + 0.4, f).detune.value = 3;
+    }
+    function acid303(st, n, t, sp16, lv) { // resonant saw with a snappy filter envelope; accents open it further
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 9 + 5 * live().energy;
+      const peak = (st.acc ? 2600 : 1400) * (0.6 + effI() * 0.8);
+      f.frequency.setValueAtTime(peak, t); f.frequency.setTargetAtTime(220, t, st.acc ? 0.09 : 0.05);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lv * (st.acc ? 0.7 : 0.45), t + 0.004); g.gain.setTargetAtTime(0.0001, t + sp16 * (st.slide ? 1.9 : 0.8), 0.03);
+      f.connect(g); g.connect(L.bass); send(g, 0.15);
+      const o = oscN('sawtooth', mtof(n), t, t + sp16 * 2.2, f); if (st.slide) o.frequency.setTargetAtTime(mtof(n + 12), t + sp16 * 0.5, 0.04);
+    }
+    function keys(n, t, lv, dec) { // FM electric piano
+      const g = vca(t, 0.004, dec || 2.2, lv, L.keys), car = ctx.createOscillator(), m1 = ctx.createOscillator(), mg = ctx.createGain(), m2 = ctx.createOscillator(), mg2 = ctx.createGain(), f = mtof(n);
       car.frequency.value = f; car.detune.value = R() * 6 - 3; m1.frequency.value = f; m2.frequency.value = f * 14;
       mg.gain.setValueAtTime(f * 1.6, t); mg.gain.setTargetAtTime(f * 0.25, t, 0.25); mg2.gain.setValueAtTime(f * 0.5, t); mg2.gain.setTargetAtTime(0.01, t, 0.02);
       m1.connect(mg); mg.connect(car.frequency); m2.connect(mg2); mg2.connect(car.frequency); car.connect(g);
       const e = t + (dec || 2.2) + 0.3; for (const o of [car, m1, m2]) { o.start(t); o.stop(e); }
     }
-    function pluck(n, t, lv) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 2; f.frequency.setValueAtTime(3200, t); f.frequency.setTargetAtTime(380, t, 0.09); f.connect(vca(t, 0.003, 0.9, 0, lv, L.arp)); oscN('triangle', mtof(n), t, t + 1, f); oscN('sawtooth', mtof(n), t, t + 1, f, 5); }
-    function bell(n, t, lv) { const g = vca(t, 0.003, 3, 0, lv, L.spark), car = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(), f = mtof(n); car.frequency.value = f; m.frequency.value = f * 3.5; mg.gain.setValueAtTime(f * 1.2, t); mg.gain.setTargetAtTime(f * 0.05, t, 0.5); m.connect(mg); mg.connect(car.frequency); car.connect(g); car.start(t); m.start(t); car.stop(t + 3.4); m.stop(t + 3.4); }
-    function lead(n, t, dur, lv) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1900; const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lv, t + 0.03); g.gain.setTargetAtTime(lv * 0.6, t + 0.03, dur * 0.4); g.gain.setTargetAtTime(0.0001, t + dur, 0.12); f.connect(g); g.connect(L.lead);
-      const o = oscN(0.25, mtof(n), t, t + dur + 0.6, f), lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(mtof(n) * 0.006, t + 0.35); lfo.connect(lg); lg.connect(o.frequency); lfo.start(t); lfo.stop(t + dur + 0.6);
-      oscN('sine', mtof(n + 12), t, t + dur + 0.6, (() => { const q = ctx.createGain(); q.gain.value = 0.25; q.connect(f); return q; })()); }
-    function arpN(n, t, lv) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 3; f.frequency.setValueAtTime(900 + 1600 * intensity, t); f.frequency.setTargetAtTime(500, t, 0.08); f.connect(vca(t, 0.002, 0.35, 0, lv, L.arp)); oscN(0.125, mtof(n), t, t + 0.4, f); }
-    function noiseHit(t, ft, fq, q, dur, lv, dest) { const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = noiseBuf; f.type = ft; f.frequency.value = fq; f.Q.value = q; g.gain.setValueAtTime(lv, t); g.gain.setTargetAtTime(0.0001, t, dur / 4); s.connect(f); f.connect(g); g.connect(dest); s.start(t, R() * 1.5); s.stop(t + dur + 0.05); }
-    function kick(t, lv) { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12); g.gain.setValueAtTime(lv, t); g.gain.setTargetAtTime(0.0001, t, 0.07); o.connect(g); g.connect(L.drums); o.start(t); o.stop(t + 0.4); }
-    function snare(t, lv) { noiseHit(t, 'bandpass', 1800, 0.8, 0.16, lv, L.drums); const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(160, t + 0.05); g.gain.setValueAtTime(lv * 0.5, t); g.gain.setTargetAtTime(0.0001, t, 0.02); o.connect(g); g.connect(L.drums); o.start(t); o.stop(t + 0.15); }
-    function hat(t, lv, open) { noiseHit(t, 'highpass', 7500, 0.7, open ? 0.18 : 0.05, lv, L.drums); }
-
-    // ---------------- the scheduler ----------------
-    function busFor() {
-      // the music chain: layers -> warm lowpass -> gentle glue -> music bus, with a long hall send
-      mIn = ctx.createGain(); mIn.gain.value = 0.62; // sits about 4 dB under the effects tiers
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7500; lp.Q.value = 0.5;
-      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -22; comp.ratio.value = 2.5; comp.knee.value = 12; comp.attack.value = 0.02; comp.release.value = 0.3;
-      mIn.connect(lp); lp.connect(comp); comp.connect(synthOut());
-      const conv = ctx.createConvolver(); conv.buffer = impulse(4.2, 0.22); const rg = ctx.createGain(); rg.gain.value = 0.55; mRev = ctx.createGain(); mRev.connect(conv); conv.connect(rg); rg.connect(lp);
-      const lay = (v, rev) => { const g = ctx.createGain(); g.gain.value = v; g.connect(mIn); if (rev) { const s = ctx.createGain(); s.gain.value = rev; g.connect(s); s.connect(mRev); } return g; };
-      L = { pad: lay(0.05, 0.9), bass: lay(0.3, 0.05), keys: lay(0.075, 0.5), arp: lay(0.05, 0.6), spark: lay(0.035, 1.1), lead: lay(0.05, 0.6), drums: lay(0.22, 0.12) };
-      // vinyl: soft hiss with sparse crackle, under everything
-      const len = ctx.sampleRate * 3, vb = ctx.createBuffer(1, len, ctx.sampleRate), d = vb.getChannelData(0);
-      for (let i = 0; i < len; i++) { d[i] = (R() * 2 - 1) * 0.015; if (R() < 0.00035) d[i] += (R() < 0.5 ? -1 : 1) * (0.25 + R() * 0.5); }
-      crackle = ctx.createBufferSource(); crackle.buffer = vb; crackle.loop = true; const vf = ctx.createBiquadFilter(); vf.type = 'bandpass'; vf.frequency.value = 3000; vf.Q.value = 0.4;
-      const vg = ctx.createGain(); vg.gain.value = 0.12; crackle.connect(vf); vf.connect(vg); vg.connect(mIn); crackle.start();
+    function stab(notes, t, lv, echo) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 2; f.frequency.setValueAtTime(2400 + 1800 * effI(), t); f.frequency.setTargetAtTime(500, t, 0.07); const g = vca(t, 0.003, 0.35, lv, L.keys); f.connect(g); send(g, echo || 0); for (const n of notes) { oscN('sawtooth', mtof(n), t, t + 0.5, f, -6); oscN('sawtooth', mtof(n), t, t + 0.5, f, 6); } }
+    function skank(notes, t, lv) { const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 0.8; const g = vca(t, 0.002, 0.13, lv, L.keys); f.connect(g); send(g, 0.55); for (const n of notes) { oscN(0.25, mtof(n + 12), t, t + 0.2, f); oscN('triangle', mtof(n), t, t + 0.2, f); } }
+    function chipNote(n, t, dur, lv, duty, dest) { const g = ctx.createGain(); g.gain.setValueAtTime(lv, t); g.gain.setValueAtTime(lv * 0.7, t + dur * 0.5); g.gain.linearRampToValueAtTime(0.0001, t + dur); g.connect(dest); oscN(duty, mtof(n), t, t + dur + 0.02, g); }
+    function pluck(n, t, lv) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 2; f.frequency.setValueAtTime(3200, t); f.frequency.setTargetAtTime(380, t, 0.09); f.connect(vca(t, 0.003, 0.9, lv, L.arp)); oscN('triangle', mtof(n), t, t + 1, f); oscN('sawtooth', mtof(n), t, t + 1, f, 5); }
+    function bell(n, t, lv) { const g = vca(t, 0.003, 3, lv, L.spark), car = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(), f = mtof(n); car.frequency.value = f; m.frequency.value = f * 3.5; mg.gain.setValueAtTime(f * 1.2, t); mg.gain.setTargetAtTime(f * 0.05, t, 0.5); m.connect(mg); mg.connect(car.frequency); car.connect(g); car.start(t); m.start(t); car.stop(t + 3.4); m.stop(t + 3.4); }
+    function lead(n, t, dur, lv, kind) {
+      const f = ctx.createBiquadFilter(); f.type = kind === 'melodica' ? 'bandpass' : 'lowpass'; f.frequency.value = kind === 'saw' ? 2600 : kind === 'melodica' ? 1400 : kind === 'chip' ? 6000 : 1900; f.Q.value = kind === 'melodica' ? 0.9 : 0.7;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(lv, t + (kind === 'chip' ? 0.004 : 0.03)); g.gain.setTargetAtTime(lv * 0.6, t + 0.03, dur * 0.4); g.gain.setTargetAtTime(0.0001, t + dur, kind === 'chip' ? 0.03 : 0.12); f.connect(g); g.connect(L.lead);
+      send(g, kind === 'saw' ? 0.35 : kind === 'melodica' ? 0.5 : kind === 'chip' ? 0.12 : 0.2);
+      const vibD = kind === 'chip' ? 0.15 : 0.35, vib = (o) => { const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = kind === 'chip' ? 6.5 : 5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(mtof(n) * (kind === 'chip' ? 0.01 : 0.006), t + vibD); lfo.connect(lg); lg.connect(o.frequency); lfo.start(t); lfo.stop(t + dur + 0.6); };
+      if (kind === 'saw') { vib(oscN('sawtooth', mtof(n), t, t + dur + 0.6, f, -8)); vib(oscN('sawtooth', mtof(n), t, t + dur + 0.6, f, 8)); return; }
+      if (kind === 'melodica') { vib(oscN(0.25, mtof(n), t, t + dur + 0.6, f, -5)); oscN('square', mtof(n), t, t + dur + 0.6, f, 5); return; }
+      vib(oscN(kind === 'chip' ? 0.25 : 0.25, mtof(n), t, t + dur + 0.6, f));
+      if (kind !== 'chip') oscN('sine', mtof(n + 12), t, t + dur + 0.6, (() => { const q = ctx.createGain(); q.gain.value = 0.25; q.connect(f); return q; })());
     }
-    const lvl = (thr) => sstep(intensity, thr - 0.12, thr + 0.12); // a layer's level fades in across ±0.12 around its threshold
+    function bleep(n, t, lv) { const g = vca(t, 0.002, 0.25, lv, L.lead); send(g, 0.45); oscN('sine', mtof(n), t, t + 0.3, g); oscN(0.125, mtof(n + 12), t, t + 0.12, (() => { const q = ctx.createGain(); q.gain.value = 0.3; q.connect(g); return q; })()); }
+    function arpN(n, t, lv) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 3; f.frequency.setValueAtTime(900 + 1600 * effI(), t); f.frequency.setTargetAtTime(500, t, 0.08); const g = vca(t, 0.002, 0.35, lv, L.arp); f.connect(g); send(g, 0.2); oscN(0.125, mtof(n), t, t + 0.4, f); }
+    function noiseHit(t, ft, fq, q, dur, lv, dest, lofi) { const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = lofi ? noiseLo : noiseBuf; f.type = ft; f.frequency.value = fq; f.Q.value = q; g.gain.setValueAtTime(lv, t); g.gain.setTargetAtTime(0.0001, t, dur / 4); s.connect(f); f.connect(g); g.connect(dest); s.start(t, R() * 1.5); s.stop(t + dur + 0.05); return g; }
+    function kick(t, lv, hard) { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(hard ? 150 : 110, t); o.frequency.exponentialRampToValueAtTime(hard ? 46 : 42, t + (hard ? 0.09 : 0.12)); g.gain.setValueAtTime(lv, t); g.gain.setTargetAtTime(0.0001, t, hard ? 0.09 : 0.07); o.connect(g); g.connect(L.drums); o.start(t); o.stop(t + 0.5); if (hard) noiseHit(t, 'highpass', 3000, 0.7, 0.01, lv * 0.25, L.drums); }
+    function snare(t, lv, gated) { const g = noiseHit(t, 'bandpass', gated ? 1500 : 1800, 0.8, gated ? 0.24 : 0.16, lv, L.drums); if (gated) { const s = ctx.createGain(); s.gain.value = 0.9; g.connect(s); s.connect(mRev); } const o = ctx.createOscillator(), og = ctx.createGain(); o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(160, t + 0.05); og.gain.setValueAtTime(lv * 0.5, t); og.gain.setTargetAtTime(0.0001, t, 0.02); o.connect(og); og.connect(L.drums); o.start(t); o.stop(t + 0.15); }
+    function clap(t, lv) { for (const d of [0, 0.011, 0.022]) noiseHit(t + d, 'bandpass', 1200, 1.2, d === 0.022 ? 0.14 : 0.02, lv, L.drums); }
+    function hat(t, lv, open) { noiseHit(t, 'highpass', 7500, 0.7, open ? 0.2 : 0.05, lv, L.drums); }
+    function rim(t, lv) { noiseHit(t, 'bandpass', 3200, 6, 0.04, lv, L.drums); const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 520; g.gain.setValueAtTime(lv * 0.5, t); g.gain.setTargetAtTime(0.0001, t, 0.012); o.connect(g); g.connect(L.drums); send(g, 0.4); o.start(t); o.stop(t + 0.08); }
+    function chipDrum(t, kind, lv) { if (kind === 'k') { const o = ctx.createOscillator(), g = ctx.createGain(); o.setPeriodicWave(pulseWave(0.25)); o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.06); g.gain.setValueAtTime(lv * 0.9, t); g.gain.setTargetAtTime(0.0001, t, 0.035); o.connect(g); g.connect(L.drums); o.start(t); o.stop(t + 0.15); } else noiseHit(t, kind === 's' ? 'lowpass' : 'highpass', kind === 's' ? 5000 : 8000, 0.5, kind === 's' ? 0.12 : 0.03, lv * (kind === 's' ? 0.9 : 0.45), L.drums, true); }
+
+    // ---------------- the music chain ----------------
+    function busFor() {
+      // channels (faders) -> mix -> warmth lowpass -> glue compressor -> music bus. A hall and a tempo-synced echo are sends.
+      mIn = ctx.createGain(); mIn.gain.value = 0.62;
+      warmLP = ctx.createBiquadFilter(); warmLP.type = 'lowpass'; warmLP.Q.value = 0.5; warmLP.frequency.value = 7500;
+      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -22; comp.ratio.value = 2.5; comp.knee.value = 12; comp.attack.value = 0.02; comp.release.value = 0.3;
+      outAn = ctx.createAnalyser(); outAn.fftSize = 256; outAn.smoothingTimeConstant = 0.75;
+      mIn.connect(warmLP); warmLP.connect(comp); comp.connect(synthOut()); comp.connect(outAn);
+      const conv = ctx.createConvolver(); conv.buffer = impulse(4.2, 0.22); revRet = ctx.createGain(); revRet.gain.value = 0.55; mRev = ctx.createGain(); mRev.connect(conv); conv.connect(revRet); revRet.connect(warmLP);
+      // echo: a dotted-eighth delay with a darkening feedback loop
+      echoIn = ctx.createGain(); echoD = ctx.createDelay(2); echoD.delayTime.value = 0.6; echoFb = ctx.createGain(); echoFb.gain.value = 0.35;
+      const eLP = ctx.createBiquadFilter(); eLP.type = 'lowpass'; eLP.frequency.value = 2200; const eHP = ctx.createBiquadFilter(); eHP.type = 'highpass'; eHP.frequency.value = 250;
+      echoIn.connect(echoD); echoD.connect(eLP); eLP.connect(eHP); eHP.connect(echoFb); echoFb.connect(echoD); eHP.connect(mIn); const es = ctx.createGain(); es.gain.value = 0.25; eHP.connect(es); es.connect(mRev);
+      for (const c of CHN) { CH[c] = ctx.createGain(); CH[c].connect(mIn); AN[c] = ctx.createAnalyser(); AN[c].fftSize = 256; CH[c].connect(AN[c]); }
+      const lay = (v, ch, rev) => { const g = ctx.createGain(); g.gain.value = v; g.connect(CH[ch]); if (rev) { const s = ctx.createGain(); s.gain.value = rev; g.connect(s); s.connect(mRev); } return g; };
+      L = { pad: lay(0.05, 'pads', 0.9), bass: lay(0.3, 'bass', 0.05), keys: lay(0.075, 'keys', 0.5), arp: lay(0.05, 'arp', 0.6), spark: lay(0.035, 'lead', 1.1), lead: lay(0.05, 'lead', 0.6), drums: lay(0.22, 'drums', 0.12) };
+      const len = ctx.sampleRate * 3, vb = ctx.createBuffer(1, len, ctx.sampleRate), d = vb.getChannelData(0);
+      for (let i = 0; i < len; i++) { d[i] = (Math.random() * 2 - 1) * 0.015; if (Math.random() < 0.00035) d[i] += (Math.random() < 0.5 ? -1 : 1) * (0.25 + Math.random() * 0.5); }
+      const cr = ctx.createBufferSource(); cr.buffer = vb; cr.loop = true; const vf = ctx.createBiquadFilter(); vf.type = 'bandpass'; vf.frequency.value = 3000; vf.Q.value = 0.4;
+      vinylG = ctx.createGain(); vinylG.gain.value = 0.12; cr.connect(vf); vf.connect(vinylG); vinylG.connect(mIn); cr.start();
+      applyMix();
+    }
+    function applyMix() {
+      if (!mIn) return;
+      const c = live(), t = ctx.currentTime;
+      for (const k of CHN) CH[k].gain.setTargetAtTime(c.mute && c.mute[k] ? 0 : (c.mix[k] === undefined ? 1 : c.mix[k]), t, 0.05);
+      revRet.gain.setTargetAtTime(c.fx.reverb, t, 0.1);
+      echoFb.gain.setTargetAtTime(Math.min(0.72, c.fx.echo * 0.8), t, 0.1);
+      warmLP.frequency.setTargetAtTime(15000 - c.fx.warmth * 10500, t, 0.1);
+      vinylG.gain.setTargetAtTime(c.fx.vinyl * 0.35, t, 0.1);
+    }
+    const lvl = (thr) => sstep(effI(), thr - 0.12, thr + 0.12);
+    function drums(kit, tt, s16, dl, hl, inB, sp16) {
+      const E = live().energy;
+      if (kit === 'lofi') { if (P.drum.hat.includes(s16) && hl > 0.05) hat(tt, 0.18 * hl * (s16 % 4 === 0 ? 1 : 0.7)); if (dl > 0.05) { if (P.drum.kick.includes(s16)) kick(tt, 0.9 * dl); if (s16 === 4 || s16 === 12) snare(tt, 0.35 * dl); } return; }
+      if (kit === 'tide') { if (s16 % 2 === 0 && hl > 0.05) hat(tt, 0.16 * hl, s16 % 8 === 4); if (dl > 0.05 && (s16 === 0 || s16 === 8)) kick(tt, 0.85 * dl); return; }
+      if (kit === 'synth' || kit === 'synth16') {
+        if ((kit === 'synth16' || E > 0.6 ? true : s16 % 2 === 0) && hl > 0.05) hat(tt, 0.13 * hl * (s16 % 2 ? 0.6 : 1));
+        if (dl > 0.05) { if (kit === 'synth16' ? s16 % 4 === 0 : (s16 === 0 || s16 === 8 || (E > 0.7 && s16 === 10))) kick(tt, 0.95 * dl, true); if (s16 === 4 || s16 === 12) snare(tt, 0.42 * dl, true); }
+        return;
+      }
+      if (kit === 'techno' || kit === 'deep') {
+        const deep = kit === 'deep';
+        if (dl > 0.05 && s16 % 4 === 0) kick(tt, (deep ? 0.8 : 1) * dl, true);
+        if (hl > 0.05) { if (s16 % 4 === 2) hat(tt, 0.2 * hl, !deep); if (E > 0.45 && s16 % 2 === 1) hat(tt, 0.07 * hl); if (deep && s16 % 2 === 0) noiseHit(tt, 'bandpass', 6500, 1.5, 0.05, 0.07 * hl, L.drums); }
+        if (dl > 0.3 && (s16 === 4 || s16 === 12)) { if (deep) { if (s16 === 12) rim(tt, 0.25 * dl); } else clap(tt, 0.4 * dl); }
+        return;
+      }
+      if (kit === 'chip' || kit === 'chipsoft') {
+        const soft = kit === 'chipsoft';
+        if (hl > 0.05 && s16 % (soft ? 4 : 2) === 0) chipDrum(tt, 'h', hl);
+        if (dl > 0.05) { if (soft ? s16 === 0 : (s16 === 0 || s16 === 8 || (E > 0.6 && s16 === 6))) chipDrum(tt, 'k', dl); if (soft ? s16 === 8 : (s16 === 4 || s16 === 12)) chipDrum(tt, 's', dl); }
+        return;
+      }
+      if (kit === 'onedrop' || kit === 'steppers') {
+        if (hl > 0.05 && s16 % 2 === 0) hat(tt, 0.11 * hl * (s16 % 4 ? 0.6 : 1));
+        if (dl > 0.05) { if (kit === 'steppers' ? s16 % 4 === 0 : s16 === 8) kick(tt, 0.85 * dl); if (s16 === 8) rim(tt, 0.32 * dl); if (bar % 8 === 7 && s16 >= 12 && s16 % 1 === 0) snare(tt, (0.12 + 0.05 * (s16 - 12)) * dl); }
+      }
+    }
     function scheduleStep(t) {
       const st = P.S, meter = P.meter, perBar = meter * 4, sp16 = P.spb / 4;
+      if (P.skip && s16 === 0) { newPiece(forceNext); forceNext = null; return scheduleStep(t); }
       const chordLen = st.bars, ci = Math.floor(bar / chordLen) % P.prog.length, deg = P.prog[ci], firstOfChord = bar % chordLen === 0 && s16 === 0;
       const sw = st.swing && s16 % 2 === 1 ? (st.swing - 0.5) * 2 * sp16 : 0, tt = t + sw;
-      const phrase = Math.floor(bar / 8), inB = phrase === 2, lastBar = bar === 31;
-      const I = intensity;
+      const phrase = Math.floor(bar / 8), inB = phrase === 2, lastBar = bar === 31, E = effI();
       if (firstOfChord) {
         const v = voice(deg), dur = chordLen * perBar * sp16;
-        pad(v, t, dur, 0.9 * (inB ? 1.15 : 1) * (st.calm > 0.5 ? 1.15 : 1), 0.35 + I * 0.5);
+        pad(v, t, dur, 0.9 * (inB ? 1.15 : 1) * (st.hard < 0.2 ? 1.15 : 1), 0.35 + E * 0.5, st.pad);
         P.cur = { deg, v, rootN: root + chordPCs(deg)[0] - 12 };
         while (P.cur.rootN > 47) P.cur.rootN -= 12; while (P.cur.rootN < 36) P.cur.rootN += 12;
       }
       const C = P.cur; if (!C) return;
-      // bass: root (and sometimes the fifth) on a simple pattern; long and soft in the calm styles
-      const bLv = 0.55 + 0.45 * lvl(0.25);
-      if (s16 === 0 || (st.calm < 0.7 && P.bassPat.some(b => Math.round(b * perBar) === s16) && lvl(0.3) > 0.2)) {
-        const n = s16 === 0 ? C.rootN : C.rootN + (chance(0.5) ? 7 : 12);
-        bass(n, tt, st.calm > 0.7 ? perBar * sp16 * 0.95 : sp16 * pick([3, 4, 6]), bLv);
-      }
-      // keys: Rhodes comping (lofi, tide, glass), broken chords (nocturne). Busier with intensity.
-      if (st.calm < 1 || P.style === 'nocturne') {
-        const kl = P.style === 'nocturne' ? 1 : lvl(0.15);
-        if (kl > 0.05 && P.keysPat.includes(s16)) {
-          if (P.style === 'nocturne') { const order = [C.rootN + 12, ...C.v]; const idx = s16 / 4; keys(order[idx % order.length] + (idx ? 0 : 0), tt, 0.9, 2.6); if (s16 === 0) keys(C.v[C.v.length - 1] + 12, tt + sp16 * 6, 0.35, 2); }
-          else for (const n of C.v) keys(n, tt + R() * 0.015, kl * (0.6 + 0.4 * R()), P.style === 'lofi' ? 1.2 : 2.2);
+      // ---- bass ----
+      const bLv = 0.55 + 0.45 * lvl(0.25), bk = st.bass;
+      if (bk === 'long') { if (s16 === 0) bassTone(C.rootN, tt, perBar * sp16 * 0.95, bLv); }
+      else if (bk === 'pattern') { if (s16 === 0 || (P.bassPat.some(b => Math.round(b * perBar) === s16) && lvl(0.3) > 0.2)) bassTone(s16 === 0 ? C.rootN : C.rootN + (chance(0.5) ? 7 : 12), tt, sp16 * pick([3, 4, 6]), bLv); }
+      else if (bk === 'octave') { if (s16 % 2 === 0) bassTone(C.rootN + (s16 % 4 === 2 ? 12 : 0), tt, sp16 * 1.6, bLv, 'saw'); }
+      else if (bk === 'drive16') { if (lvl(0.3) > 0.1 || s16 % 4 === 0) bassTone(C.rootN + (s16 % 8 === 6 ? 12 : 0), tt, sp16 * 0.85, bLv * (s16 % 4 === 0 ? 1 : 0.75), 'saw'); }
+      else if (bk === 'acid') { const a = P.acid[s16 % 16]; if (a && (lvl(0.2) > 0.1 || s16 % 4 === 0)) acid303(a, C.rootN + 12 + a.n, tt, sp16, bLv); }
+      else if (bk === 'rumble') { if (s16 % 4 === 2) bassTone(C.rootN, tt, sp16 * 1.6, bLv); }
+      else if (bk === 'chip') { if (s16 % 2 === 0) bassTone(C.rootN + [0, 12, 7, 12][(s16 / 2) % 4], tt, sp16 * 1.7, bLv, 'tri'); }
+      else if (bk === 'chipLong') { if (s16 % 4 === 0) bassTone(C.rootN + (s16 === 8 ? 7 : 0), tt, sp16 * 3.5, bLv, 'tri'); }
+      else if (bk === 'dub') { const d = P.dubLine[s16 % 16]; if (d) bassTone(degToMidi(C.deg + d.d, 40), tt, sp16 * d.len * 1.6, bLv * 1.1, 'dub'); }
+      // ---- keys ----
+      const kk = st.keys;
+      if (kk) {
+        const kl = kk === 'broken' ? 1 : lvl(kk === 'skank' ? 0.12 : 0.15);
+        if (kk === 'chiparp') { if (kl > 0.05) for (const h of [0, 0.5]) { const notes = [C.v[0], C.v[1] || C.v[0] + 4, C.v[2] || C.v[0] + 7]; chipNote(notes[(s16 * 2 + (h ? 1 : 0)) % notes.length] + 12, tt + h * sp16, sp16 * 0.48, 1.1 * kl, 0.125, L.keys); } }
+        else if (kl > 0.05 && P.keysPat.includes(s16)) {
+          if (kk === 'broken') { const order = [C.rootN + 12, ...C.v]; const idx = s16 / 4; keys(order[idx % order.length], tt, 0.9, 2.6); if (s16 === 0) keys(C.v[C.v.length - 1] + 12, tt + sp16 * 6, 0.35, 2); }
+          else if (kk === 'rhodes') { for (const n of C.v) keys(n, tt + R() * 0.015, kl * (0.6 + 0.4 * R()), st.name === 'Lofi' ? 1.2 : 2.2); }
+          else if (kk === 'stab') stab(C.v, tt, 0.55 * kl, 0.25);
+          else if (kk === 'dubstab') stab(C.v.map(n => n + 12), tt, 0.4 * kl, 0.7);
+          else if (kk === 'skank') skank(C.v, tt, 0.55 * kl);
         }
       }
-      // arpeggio: glass plucks always; tide's pulse arp from mid intensity
-      if (P.style === 'glass' || (P.style === 'tide' && lvl(0.35) > 0.05) || (P.style === 'drift' && lvl(0.55) > 0.05 && s16 % 4 === 0)) {
-        const every = P.style === 'tide' ? 1 : 2;
-        if (s16 % every === 0) { const pat = P.arpPat, k = (s16 / every + bar * 3) % pat.length, notes = [...C.v, C.v[0] + 12]; const n = notes[pat[k] % notes.length] + (P.style === 'glass' ? 12 : 0);
-          if (P.style === 'tide') arpN(n, tt, 0.8 * lvl(0.35)); else pluck(n, tt, 0.7 * (P.style === 'glass' ? 0.7 + 0.3 * lvl(0.3) : lvl(0.55))); }
+      // ---- arpeggios ----
+      const ak = st.arp;
+      if (ak) {
+        const gate = ak === 'pluck' ? 0.7 + 0.3 * lvl(0.3) : ak === 'pluckHi' ? lvl(0.55) : lvl(ak === 'pulse16' ? 0.3 : 0.35);
+        const every = ak === 'pulse16' ? 1 : ak === 'pulse' ? 1 : ak === 'pluckHi' ? 4 : 2;
+        if (gate > 0.05 && s16 % every === 0) {
+          const k = (s16 / every + bar * 3) % P.arpPat.length, notes = [...C.v, C.v[0] + 12], n = notes[P.arpPat[k] % notes.length];
+          if (ak === 'pluck' || ak === 'pluckHi') pluck(n + 12, tt, 0.7 * gate); else arpN(n + (ak === 'pulse16' ? 12 : 0), tt, 0.8 * gate);
+        }
       }
-      // drums: lofi and tide only, entering with intensity. Breakdowns (phrase B) thin them out; the last bar drops them.
-      if ((P.style === 'lofi' || P.style === 'tide') && !lastBar) {
-        const dl = lvl(0.42) * (inB ? 0.5 : 1), hl = lvl(0.3);
-        if (P.drum.hat.includes(s16) && hl > 0.05) hat(tt, 0.18 * hl * (s16 % 4 === 0 ? 1 : 0.7), P.style === 'tide' && s16 % 8 === 4);
-        if (dl > 0.05) { if (P.drum.kick.includes(s16)) kick(tt, 0.9 * dl); if (P.drum.snare.includes(s16) && P.style === 'lofi') snare(tt, 0.35 * dl); if (P.style === 'tide' && (s16 === 4 || s16 === 12)) hat(tt, 0.2 * dl, true); }
-      }
-      // melody: the motif on eighth notes, harmonised to the chord; A' and A'' mutate it, B uses a second motif
-      const ml = lvl(P.style === 'nocturne' || P.style === 'drift' ? 0.35 : 0.5);
+      // ---- drums ----
+      if (st.kit && !lastBar) drums(st.kit, tt, s16, lvl(st.kit === 'techno' || st.kit === 'synth16' ? 0.25 : 0.42) * (inB ? 0.5 : 1), lvl(0.3), inB, sp16);
+      // ---- melody ----
+      const lk = st.lead, ml = lvl(st.hard < 0.2 ? 0.35 : lk === 'bleep' ? 0.55 : 0.5);
       if (s16 % 2 === 0 && ml > 0.05 && !(phrase === 0 && bar < 2)) {
         const mot = inB ? P.motifB : P.motif, i = ((bar % 2) * 8 + s16 / 2) % 16, ev = mot[i];
         if (ev) {
           let d = C.deg + ev.d;
           if (i % 4 === 0) { const tones = [0, 2, 4].map(k => C.deg + k); d = tones.reduce((a, b) => Math.abs(b - d) < Math.abs(a - d) ? b : a); }
           const n = degToMidi(d, 72), dur = ev.len * sp16 * 2;
-          if (P.style === 'drift' || P.style === 'glass') bell(n + 12, tt, 0.8 * ml); else if (P.style === 'nocturne') keys(n + 12, tt, 0.75 * ml, 2.4); else lead(n, tt, dur, 0.85 * ml);
+          if (lk === 'bell') bell(n + 12, tt, 0.8 * ml); else if (lk === 'keys') keys(n + 12, tt, 0.75 * ml, 2.4);
+          else if (lk === 'bleep') { if (chance(0.55)) bleep(n + 12, tt, 0.6 * ml); }
+          else lead(n + (lk === 'chip' ? 12 : 0), tt, lk === 'chip' ? Math.min(dur, sp16 * 2) : dur, (lk === 'chip' ? 1.05 : 0.85) * ml, lk);
         }
       }
-      // sparkles: a high bell on chord tones now and then
-      if (s16 % 4 === 2 && chance(0.06 + 0.12 * lvl(0.65))) bell(pick(C.v) + 24, tt + R() * 0.05, 0.5);
-      // advance
+      // ---- sparkles ----
+      if (s16 % 4 === 2 && chance(0.06 + 0.12 * lvl(0.65)) && st.genre !== 'chiptune') bell(pick(C.v) + 24, tt + R() * 0.05, 0.5);
       s16++;
       if (s16 >= perBar) {
         s16 = 0; bar++;
         if (bar % 8 === 0 && bar < 32) { if (phrase === 0 || phrase === 2) P.motif = mutate(mutate(P.motif)); }
-        if (bar >= 32) newPiece();
+        if (bar >= 32) newPiece(forceNext), forceNext = null;
       }
     }
+    let tempoNow = 0;
+    function liveSpb() { const c = live(), want = Math.max(48, P.bpm * (1 + (intensity - 0.4) * 0.22 * c.follow + (c.energy - 0.35) * 0.08)); tempoNow = tempoNow ? tempoNow + (want - tempoNow) * 0.02 : want; P.spb = 60 / tempoNow; return P.spb; }
     function schedule(horizon) {
       if (!ctx || !P) return;
       intensity += (targetI - intensity) * 0.04;
-      if (nextT < ctx.currentTime - 0.4) nextT = ctx.currentTime + 0.05; // after a background pause: pick up from now
+      if (nextT < ctx.currentTime - 0.4) nextT = ctx.currentTime + 0.05;
       const until = (horizon !== undefined ? horizon : ctx.currentTime + 0.3);
       while (nextT < until) { const t = nextT; scheduleStep(t); nextT += liveSpb() / 4; }
     }
-    let tempoNow = 0;
-    function liveSpb() { const want = Math.max(48, P.bpm + (intensity - 0.4) * 18); tempoNow = tempoNow ? tempoNow + (want - tempoNow) * 0.02 : want; P.spb = 60 / tempoNow; return P.spb; }
     function start() {
       if (running || !ctx) return; running = true;
       if (!mIn) busFor();
@@ -632,18 +764,47 @@ const SFX = (() => {
       nextT = ctx.currentTime + 0.1;
       if (!offline) timer = setInterval(() => schedule(), 100);
     }
+    function meterOf(an) { if (!an) return 0; const a = new Float32Array(an.fftSize); an.getFloatTimeDomainData(a); let s = 0; for (const v of a) s += v * v; return Math.sqrt(s / a.length); }
     return {
-      start, schedule,
+      start, schedule, GENRES, STYLES, CHN, DEF,
       setIntensity(v) { targetI = clamp(v, 0, 1); },
       setScene(s) { scene = s; },
       setMood(m) { mood = m; },
-      setBaseBpm(v) { baseBpm = clamp(+v || 72, 50, 110); if (P) P.bpm = baseBpm + P.S.bpm[0] + (P.S.bpm[1] - P.S.bpm[0]) / 2; },
-      // tests: write `seconds` of music ahead into an offline context, stepping intensity along a curve
+      setBaseBpm(v) { cfg.bpm.chill = clamp(+v || 72, 50, 110); if (P) P.bpm = pieceBpm(); },
+      // studio config: merged over the defaults; changes apply live
+      get config() { return cfg; },
+      setConfig(c) { const d = JSON.parse(JSON.stringify(DEF)); cfg = Object.assign(d, c || {}); cfg.bpm = Object.assign(d.bpm, (c && c.bpm) || {}); cfg.mix = Object.assign(d.mix, (c && c.mix) || {}); cfg.fx = Object.assign(d.fx, (c && c.fx) || {}); cfg.mute = (c && c.mute) || {}; cfg.favs = (c && c.favs) || []; applyMix(); if (P) P.bpm = pieceBpm(); },
+      apply() { applyMix(); if (P) P.bpm = pieceBpm(); },
+      skip(force) { if (!P) return; forceNext = force || null; P.skip = true; },
+      save() { if (!P) return null; if (cfg.favs.some(f => f.seed === P.seed)) return null; const f = { seed: P.seed, style: P.style, mode: P.mode, root, name: P.name, genre: P.genre, at: Date.now() }; cfg.favs.unshift(f); if (cfg.favs.length > 40) cfg.favs.pop(); return f; },
+      isSaved() { return !!(P && cfg.favs.some(f => f.seed === P.seed)); },
+      meters() { const o = {}; for (const c of CHN) o[c] = meterOf(AN[c]); return o; },
+      spectrum(arr) { if (outAn) outAn.getByteFrequencyData(arr); },
       renderAhead(seconds, curve) { start(); const step = 0.1; for (let t = 0; t < seconds; t += step) { if (curve) targetI = curve(t / seconds); intensity += (targetI - intensity) * 0.3; const h = t + step; while (nextT < h) { const tt = nextT; scheduleStep(tt); nextT += liveSpb() / 4; } } },
       get log() { return pieceLog; },
-      get piece() { return P && { style: P.style, mode: P.mode, root, bpm: Math.round(P.bpm), now: Math.round(tempoNow), bar }; },
+      get piece() { return P && { name: P.name, genre: P.genre, genreName: GENRES[P.genre].name, style: P.style, styleName: P.S.name, mode: P.mode, key: NOTE[root % 12] + ' ' + MODE_NAME[P.mode], root, bpm: Math.round(P.bpm), now: Math.round(tempoNow), bar, bars: 32, seed: P.seed, saved: cfg.favs.some(f => f.seed === P.seed), energy: +effI().toFixed(2) }; },
     };
   })();
 
   return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, get ready() { return !!ctx; } };
+})();
+
+// ---------- v4.7 haptics: a buzz when the core takes a hit ----------
+// Android and other browsers with the Vibration API get real patterns. iOS Safari has no vibration API; on iOS 17.4 to 26.4 a
+// hidden <input switch> toggled by its label plays the system haptic tick (Apple closed this in 26.5), so that is best effort.
+const Haptics = (() => {
+  let lbl = null, last = 0;
+  const on = () => !(typeof PROF !== 'undefined' && PROF.settings && PROF.settings.haptics === false);
+  function sw() {
+    if (lbl) return lbl;
+    lbl = document.createElement('label'); lbl.setAttribute('aria-hidden', 'true');
+    lbl.style.cssText = 'position:fixed;left:-200px;top:0;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none';
+    const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1; lbl.appendChild(i); document.body.appendChild(lbl); return lbl;
+  }
+  function buzz(pat, ticks, force) {
+    if (!force && !on()) return; const now = performance.now(); if (now - last < 140) return; last = now;
+    try { if (navigator.vibrate) { navigator.vibrate(pat); return; } } catch (e) {}
+    try { const l = sw(); l.click(); for (let k = 1; k < ticks; k++) setTimeout(() => l.click(), k * 110); } catch (e) {}
+  }
+  return { leak: () => buzz(30, 1), big: () => buzz([70, 50, 110], 3), tap: f => buzz(15, 1, f), get native() { return !!navigator.vibrate; } };
 })();

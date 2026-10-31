@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.6.1';
+const VERSION = '4.7.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,10 +167,15 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.6.1', title: 'Entropy 4.6.1 · Quieter Skies', items: [
-  ['Boss briefings pause the game', 'When a boss arrives, or a bounty is posted, the game stops on a card until you tap Fight. Settings > Briefings: Pause, Brief (the old slow-motion card) or Off.'],
-  ['A cleaner top bar', 'The chips above the field are sorted by what matters most, and never get cut off. Anything that doesn\'t fit sits behind a +N chip that opens the Field Report: every chip in full, with what each event does.'],
-  ['Fewer popups if you want them', 'Settings > Notifications: All, Key (only Red Alert, wormholes, assaults, Maelstroms, checkpoints and pirates) or Off. Feedback to your own taps always shows.'],
+const WHATS_NEW = { ver: '4.7.0', title: 'Entropy 4.7 · Music Studio', items: [
+  ['Music Studio', 'A new screen (the note button on the main menu, Pause, or Settings) for the generative soundtrack. Default keeps the calm score that follows the battle. Touch anything and it becomes yours.'],
+  ['Five genres', 'Chill, Synthwave, Techno, Chiptune and Dub, twelve styles between them. Pick one, mix several, or Shuffle all; every piece gets its own name, key and tempo.'],
+  ['Mix it yourself', 'Energy, how closely it follows the battle, a tempo for each genre, a six-channel mixer with live meters (tap a name to mute), plus Reverb, Echo, Warmth and Vinyl.'],
+  ['Save the ones you love', 'Tap Save while a piece plays to keep it. Play saved pieces any time, or play only your saved pieces.'],
+  ['Clearer battlefield', 'Elites are bigger, glow in their affix colour, stand on a turning sigil and wear a gold crown with a gem per affix. Tower levels show as coloured numbered badges (grey 1 to gold 5, orange A1+ once Ascended), with a green arrow when you can afford the next level and an orange one on your cheapest affordable Ascension. The core is 40% bigger.'],
+  ['Haptics', 'A buzz when enemies hit the core (Settings > Haptics). Works on Android; on iPhone it depends on your iOS version.'],
+  ['Breathing room', 'A little longer between waves (13 s, was 10), and the countdown slows while the last wave is still on the field in numbers. Calling a wave early still pays the bonus.'],
+  ['Small fixes', 'Area towers no longer draw a Marksman sight line.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {

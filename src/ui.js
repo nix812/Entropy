@@ -19,6 +19,7 @@ const ICONS = {
   help: ['..#####..', '.##...##.', '......##.', '.....##..', '....##...', '....##...', '.........', '....##...', '....##...'],
   gear: ['...#.#...', '.#######.', '.##...##.', '##.....##', '.#..#..#.', '##.....##', '.##...##.', '.#######.', '...#.#...'],
   overdrive: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#.#.#.#.#', '#.#...#.#', '#..###..#', '.#.....#.', '..#####..'],
+  music: ['...######', '...######', '...#....#', '...#....#', '...#....#', '.###..###', '####.####', '####.####', '.##...##.'],
   fit: ['###...###', '#.......#', '#.......#', '.........', '.........', '.........', '#.......#', '#.......#', '###...###'],
 };
 function svgIcon(name, size) {
@@ -986,6 +987,7 @@ const UI = (() => {
       ${G.anoms.length ? `<div class="lbl">Anomalies</div><div class="anlist">${G.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>` : ''}
       <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
       <button class="btn" data-act="help">How to Play</button>
+      <button class="btn" data-act="studio">Music Studio</button>
       <button class="btn" data-act="settings">Settings</button>
       <button class="btn" data-act="exit">Save &amp; Quit</button>
       <button class="btn danger" data-act="abandon">${confirmAbandon ? 'Tap again to confirm' : 'End Run'}</button></div></div>`, 'pause');
@@ -1150,11 +1152,13 @@ const UI = (() => {
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
       <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
       <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
+      <div class="set"><span>Music Studio <em class="dim">genres, mixer, saved pieces</em></span><button class="chip on" style="--c:#ff5fa8" data-act="studioS">Open</button></div>
       <label class="set"><span>Music Tempo <em id="bpmV" class="dim">${S.bpm || 72} BPM</em></span><input id="setBpm" type="range" min="56" max="100" step="2" value="${S.bpm || 72}"></label>
       <p class="note tempo">The average tempo. Each piece sits a little above or below it, and the action still nudges it up and down.</p>
       ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
       <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
       <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
+      <div class="set"><span>Haptics <em class="dim">buzz when the core is hit</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.haptics !== false) === v ? 'on' : ''}" data-act="haptic" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
       <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
@@ -1163,13 +1167,128 @@ const UI = (() => {
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
       ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
       ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
-      <p class="note credits">Music: Drift, a generative score written live as you play. No two runs sound the same.</p>
+      <p class="note credits">Music: Drift, a generative score written live as you play, in five genres. No two runs sound the same.</p>
       <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div>
       <div class="row"><p class="note">${lastLogText() ? 'Last run log' : 'No run log yet'}</p>${lastLogText() ? '<button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button>' : ''}</div></div>`, 'settings');
     $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
     const bp = $('#setBpm'); if (bp) { bp.oninput = () => { PROF.settings.bpm = +bp.value; $('#bpmV').textContent = bp.value + ' BPM'; SFX.music.setBaseBpm(+bp.value); }; bp.onchange = () => Save.save(); }
+  }
+  // ---------- v4.7 Music Studio: shape the generative score ----------
+  // Default plays the calm score that follows the battle. Touching any control switches to Custom (copying the current values),
+  // so nobody has to touch it, and anybody can. Everything persists in PROF.settings.studio (it is SFX.music.config).
+  let studioRaf = 0, studioBack = null;
+  const ST_FX = [['reverb', 'Reverb', 'Space around everything'], ['echo', 'Echo', 'Tempo-synced repeats'], ['warmth', 'Warmth', 'Rounds off the top end'], ['vinyl', 'Vinyl', 'Dust and crackle']];
+  const ST_CH = [['pads', 'Pads'], ['keys', 'Keys'], ['arp', 'Arps'], ['bass', 'Bass'], ['drums', 'Drums'], ['lead', 'Lead']];
+  const studioCfg = () => SFX.music.config;
+  function studioTouch() { const c = studioCfg(); if (!c.custom) { const D = JSON.parse(JSON.stringify(SFX.music.DEF)); Object.assign(c, { genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx, favOnly: false }); c.custom = true; /* what you see in Default is what you start from */ SFX.music.apply(); const m = $('#stMode'); if (m) m.outerHTML = studioModeHTML(); } }
+  const studioModeHTML = () => { const c = studioCfg(); return `<div class="chips" id="stMode"><button class="chip ${c.custom ? '' : 'on'}" data-act="stMode" data-v="0">Default</button><button class="chip ${c.custom ? 'on' : ''}" data-act="stMode" data-v="1">Custom</button></div>`; };
+  function studioSave() { PROF.settings.studio = studioCfg(); PROF.settings.bpm = studioCfg().bpm.chill; Save.save(); }
+  function openStudio(from) {
+    SFX.init(); studioBack = from || studioBack;
+    if (G && !G.over) G.paused = true;
+    const M = SFX.music, c = M.config, live = c.custom ? c : M.DEF, G5 = M.GENRES, p = M.piece || {};
+    const gen = Object.keys(G5), allOn = gen.every(g => c.genres.includes(g));
+    const vis = c.custom ? c : { ...M.DEF, bpm: { ...M.DEF.bpm, chill: c.bpm.chill } };
+    const tg = p.genre || 'chill';
+    const slider = (id, lab, v, min, max, step, sub) => `<label class="set st"><span>${lab}${sub ? ` <em class="dim" id="${id}V">${sub}</em>` : ''}</span><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}"></label>`;
+    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2>${studioModeHTML()}<button class="x" data-act="stClose" aria-label="Close">✕</button></div>
+      <div class="stnow">
+        <canvas id="stViz" width="240" height="72"></canvas>
+        <div class="stinfo"><span class="lbl" id="stGen">${esc(p.genreName || '')} · ${esc(p.styleName || '')}</span><b id="stName">${esc(p.name || '…')}</b>
+          <span class="note" id="stKey">${esc(p.key || '')} · ${p.now || p.bpm || ''} BPM</span><div class="stbar"><i id="stBar"></i></div></div>
+        <div class="stbtns"><button class="btn small" data-act="stSkip">Skip<small>new piece</small></button><button class="btn small ${p.saved ? 'saved' : ''}" id="stSaveB" data-act="stSave">${p.saved ? '♥ Saved' : '♡ Save'}<small>keep this one</small></button></div>
+      </div>
+      <p class="note stdesc">${c.custom ? 'Custom: your mix. Any change applies live, mid-piece.' : 'Default: the calm score that follows the battle. Touch anything below to make it yours.'}</p>
+      <div class="lbl stl">Genres <em class="dim">pick any mix; the composer moves between them</em></div>
+      <div class="chips stgen">${gen.map(g => `<button class="chip ${(c.custom ? c.genres : ['chill']).includes(g) ? 'on' : ''}" style="--c:${G5[g].col}" data-act="stGenre" data-v="${g}"><b>${G5[g].name}</b><small>${G5[g].bpm}</small></button>`).join('')}<button class="chip ${c.custom && allOn ? 'on' : ''}" data-act="stGenre" data-v="all"><b>Shuffle</b><small>all</small></button></div>
+      <p class="note stblurb" id="stBlurb">${(c.custom ? c.genres : ['chill']).map(g => `<span style="color:${G5[g].col}">${G5[g].name}</span> ${G5[g].blurb.toLowerCase()}`).join(' · ')}</p>
+      <div class="stgrid">
+        <div class="stcol">
+          <div class="lbl stl">Feel</div>
+          ${slider('stEnergy', 'Energy', vis.energy, 0, 1, 0.01, vis.energy < 0.25 ? 'sleepy' : vis.energy < 0.5 ? 'easy' : vis.energy < 0.75 ? 'lively' : 'driving')}
+          ${slider('stFollow', 'Follow the Battle', vis.follow, 0, 1, 0.01, Math.round(vis.follow * 100) + '%')}
+          <div class="lbl stl">Tempo <em class="dim">per genre; the battle still nudges it</em></div>
+          ${gen.map(g => slider('stBpm_' + g, `<span style="color:${G5[g].col}">${G5[g].name}</span>`, vis.bpm[g], Math.round(G5[g].bpm * 0.72), Math.round(G5[g].bpm * 1.25), 1, vis.bpm[g] + ' BPM')).join('')}
+        </div>
+        <div class="stcol">
+          <div class="lbl stl">Mixer <em class="dim">drag a fader, tap a name to mute</em></div>
+          <div class="mixer">${ST_CH.map(([k, l]) => `<div class="fch" data-ch="${k}"><div class="fader" data-ch="${k}"><i class="fmeter"></i><i class="ffill" style="height:${Math.round((vis.mix[k] / 1.25) * 100)}%"></i><i class="fknob" style="bottom:${Math.round((vis.mix[k] / 1.25) * 100)}%"></i></div><button class="fmute ${vis.mute && vis.mute[k] ? 'm' : ''}" data-act="stMute" data-v="${k}">${l}</button></div>`).join('')}</div>
+          <div class="lbl stl">Effects</div>
+          ${ST_FX.map(([k, l]) => slider('stFx_' + k, l, vis.fx[k], 0, 1, 0.01, Math.round(vis.fx[k] * 100) + '%')).join('')}
+        </div>
+      </div>
+      <div class="lbl stl">Saved Pieces <em class="dim">${c.favs.length ? c.favs.length + ' kept' : 'tap Save while one plays'}</em></div>
+      ${c.favs.length ? `<div class="set"><span>Play saved pieces only</span><button class="chip ${c.favOnly ? 'on' : ''}" data-act="stFavOnly">${c.favOnly ? 'On' : 'Off'}</button></div>
+      <div class="stfavs">${c.favs.map((f, i) => `<div class="stfav" style="--c:${(G5[f.genre] || G5.chill).col}"><b>${esc(f.name)}</b><span class="dim">${(G5[f.genre] || G5.chill).name} · ${esc(M.STYLES[f.style] ? M.STYLES[f.style].name : '')}</span><button class="btn small" data-act="stPlay" data-v="${i}">Play</button><button class="btn small danger" data-act="stDel" data-v="${i}" aria-label="Remove">✕</button></div>`).join('')}</div>` : ''}
+      <div class="foot"><button class="btn" data-act="stReset">Reset Studio</button><button class="btn primary" data-act="stClose">Done</button></div></div>`, 'studio');
+    // sliders
+    const bind = (id, fn, label) => { const el = $('#' + id); if (!el) return; el.oninput = () => { studioTouch(); fn(+el.value); const v = $('#' + id + 'V'); if (v && label) v.textContent = label(+el.value); SFX.music.apply(); }; el.onchange = studioSave; };
+    bind('stEnergy', v => c.energy = v, v => v < 0.25 ? 'sleepy' : v < 0.5 ? 'easy' : v < 0.75 ? 'lively' : 'driving');
+    bind('stFollow', v => c.follow = v, v => Math.round(v * 100) + '%');
+    for (const g of gen) bind('stBpm_' + g, v => c.bpm[g] = v, v => v + ' BPM');
+    for (const [k] of ST_FX) bind('stFx_' + k, v => c.fx[k] = v, v => Math.round(v * 100) + '%');
+    // faders: drag anywhere on the track
+    for (const f of document.querySelectorAll('#modal .fader')) {
+      const k = f.dataset.ch, set = ev => { const r = f.getBoundingClientRect(), v = clamp(1 - (ev.clientY - r.top) / r.height, 0, 1) * 1.25; studioTouch(); c.mix[k] = Math.round(v * 100) / 100; f.querySelector('.ffill').style.height = (v / 1.25 * 100) + '%'; f.querySelector('.fknob').style.bottom = (v / 1.25 * 100) + '%'; SFX.music.apply(); };
+      f.onpointerdown = ev => { ev.preventDefault(); f.setPointerCapture(ev.pointerId); set(ev); f.onpointermove = set; };
+      f.onpointerup = f.onpointercancel = () => { f.onpointermove = null; studioSave(); };
+      f.ondblclick = () => { studioTouch(); c.mix[k] = 1; SFX.music.apply(); studioSave(); openStudio(); };
+    }
+    cancelAnimationFrame(studioRaf); studioLoop();
+  }
+  function studioLoop() {
+    if (modalOpen !== 'studio') return;
+    const M = SFX.music, p = M.piece, cv = $('#stViz');
+    if (cv && p) {
+      const x = cv.getContext('2d'), W = cv.width, H = cv.height, arr = new Uint8Array(128), col = M.GENRES[p.genre].col;
+      M.spectrum(arr); x.clearRect(0, 0, W, H);
+      const n = 30, bw = W / n;
+      for (let i = 0; i < n; i++) {
+        const lo = Math.floor(Math.pow(i / n, 1.7) * 100), hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1) / n, 1.7) * 100)); let v = 0; for (let k = lo; k < hi; k++) v = Math.max(v, arr[k]);
+        const h = Math.round(v / 255 * (H - 4) / 4) * 4;
+        for (let y = 0; y < h; y += 4) { x.fillStyle = y > H * 0.7 ? '#ffffff' : col; x.globalAlpha = 0.35 + 0.65 * (y / H); x.fillRect(Math.round(i * bw) + 1, H - y - 4, Math.max(2, Math.round(bw) - 2), 3); }
+      }
+      x.globalAlpha = 1;
+      const nm = $('#stName'); if (nm && nm.textContent !== p.name) { nm.textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.styleName; const sb = $('#stSaveB'); if (sb) { sb.classList.toggle('saved', p.saved); sb.firstChild.textContent = p.saved ? '♥ Saved' : '♡ Save'; } $('.card.studio').style.setProperty('--gc', col); }
+      const ky = $('#stKey'); if (ky) ky.textContent = p.key + ' · ' + p.now + ' BPM';
+      const br = $('#stBar'); if (br) br.style.width = (p.bar / p.bars * 100) + '%';
+      const mt = M.meters();
+      for (const f of document.querySelectorAll('#modal .fader')) { const v = Math.min(1, Math.sqrt(mt[f.dataset.ch] || 0) * 2.6); f.firstChild.style.height = Math.round(v * 100) + '%'; }
+    }
+    studioRaf = requestAnimationFrame(studioLoop);
+  }
+  function studioAction(act, b) {
+    const M = SFX.music, c = M.config;
+    switch (act) {
+      case 'stMode': { const on = b.dataset.v === '1'; c.custom = on; if (on && !c.genres.length) c.genres = ['chill']; M.apply(); studioSave(); openStudio(); return true; }
+      case 'stGenre': {
+        studioTouch();
+        const g = b.dataset.v, all = Object.keys(M.GENRES);
+        if (g === 'all') c.genres = all.every(x => c.genres.includes(x)) ? ['chill'] : all.slice();
+        else if (c.genres.includes(g)) { if (c.genres.length > 1) c.genres = c.genres.filter(x => x !== g); }
+        else c.genres = c.genres.concat([g]);
+        M.apply(); studioSave();
+        // a newly picked genre should be heard right away
+        if (g !== 'all' && c.genres.includes(g) && M.piece && M.piece.genre !== g) M.skip();
+        else if (M.piece && !c.genres.includes(M.piece.genre)) M.skip();
+        openStudio(); return true;
+      }
+      case 'stMute': studioTouch(); c.mute[b.dataset.v] = !c.mute[b.dataset.v]; b.classList.toggle('m', !!c.mute[b.dataset.v]); M.apply(); studioSave(); return true;
+      case 'stSkip': M.skip(); SFX.play('ui'); return true;
+      case 'stSave': { const f = M.save(); if (f) { studioSave(); toast('PIECE SAVED', f.name, '#ff5fa8'); openStudio(); } return true; }
+      case 'stPlay': { const f = c.favs[+b.dataset.v]; if (f) { M.skip(f); toast('UP NEXT', f.name + ' · from the top of the next bar', '#ff5fa8'); } return true; }
+      case 'stDel': c.favs.splice(+b.dataset.v, 1); if (!c.favs.length) c.favOnly = false; studioSave(); openStudio(); return true;
+      case 'stFavOnly': studioTouch(); c.favOnly = !c.favOnly; studioSave(); if (c.favOnly) M.skip(); openStudio(); return true;
+      case 'stReset': { const favs = c.favs, chill = c.bpm.chill; M.setConfig({ favs, bpm: { chill } }); PROF.settings.studio = M.config; studioSave(); M.skip(); openStudio(); return true; }
+      case 'stClose': { cancelAnimationFrame(studioRaf); const back = studioBack; studioBack = null; closeModal();
+        if (back === 'settings') { if (G && !G.over && screen === 'game') modalFrom = 'pause'; openSettings(); }
+        else if (back === 'pause' && G && !G.over && screen === 'game') openPause();
+        else if (G && !G.over && screen === 'game') G.paused = false;
+        return true; }
+    }
+    return false;
   }
   const GUIDE = [
     { id: 'basics', name: 'Basics', rows: [
@@ -1398,6 +1517,7 @@ const UI = (() => {
       <p class="note">Anomalies ${an}/${ANOMALIES.length} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
   }
   function modalAction(act, b) {
+    if (act.startsWith('st') && studioAction(act, b)) return;
     SFX.play('ui');
     switch (act) {
       case 'close': closeModal(); break;
@@ -1423,6 +1543,8 @@ const UI = (() => {
       case 'htab': openHelp(b.dataset.v); break;
       case 'dcat': dictCat = b.dataset.v; openHelp(); break;
       case 'settings': if (modalOpen === 'pause') modalFrom = 'pause'; openSettings(); break;
+      case 'studio': openStudio('pause'); break;
+      case 'studioS': openStudio('settings'); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); abandonRun(); break;
       case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } takeBoon(o); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
@@ -1449,13 +1571,14 @@ const UI = (() => {
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
           P.runSnap = null; PROF = P; Save.save(); closeModal(); renderHangar(); Tree.refresh();
           SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
-  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setBaseBpm(PROF.settings.bpm || 72);
+  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
           toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');
         } catch (e) { toast('INVALID CODE', 'Make sure the full code was pasted', '#ff4d6a', 1); }
         break;
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'uis': PROF.settings.uiScale = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v; Save.save(); UI.fitVV(); openSettings(); break;
+      case 'haptic': PROF.settings.haptics = b.dataset.v === '1'; Save.save(); if (PROF.settings.haptics) Haptics.tap(true); openSettings(); break;
       case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
       case 'notes': PROF.settings.notes = b.dataset.v; Save.save(); renderFeed(); openSettings(); break;
       case 'nums': PROF.settings.dmgNums = !PROF.settings.dmgNums; Render.nums = PROF.settings.dmgNums; Save.save(); openSettings(); break;
@@ -1509,6 +1632,7 @@ const UI = (() => {
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
     $('#bSettings').onclick = () => { SFX.init(); SFX.play('ui'); openSettings(); };
     $('#bHelp').onclick = () => { SFX.init(); SFX.play('ui'); openHelp(); };
+    $('#bStudio').onclick = () => { SFX.init(); SFX.play('ui'); openStudio('hangar'); };
     $('#bRotate').onclick = () => document.body.classList.add('portrait-ok');
     document.addEventListener('pointerdown', () => SFX.init(), { once: true });
     document.addEventListener('gesturestart', e => e.preventDefault());
@@ -1538,7 +1662,7 @@ const UI = (() => {
       if (e.key === 'Escape') closePanel();
     });
     // hooks
-    Hooks.sfx = (n, a) => SFX.play(n, a);
+    Hooks.sfx = (n, a) => { SFX.play(n, a); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view
     SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; });
     Hooks.fx = (t, d) => Render.fx(t, d);
@@ -2250,7 +2374,7 @@ const Tree = (() => {
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900);
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
-  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setBaseBpm(PROF.settings.bpm || 72);
+  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)
   // and reload onto it from the main menu, never mid-run

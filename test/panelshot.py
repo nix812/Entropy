@@ -12,7 +12,7 @@ with sync_playwright() as p:
     pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=2, has_touch=True)
     pg.on('pageerror', lambda e: errs.append('PAGEERROR ' + str(e)))
     pg.goto('file://' + str(out / 'page.html')); pg.wait_for_timeout(400)
-    pg.evaluate('() => { PROF.bestWave = 60; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 5; PROF.seenVer = VERSION; }')
+    pg.evaluate('() => { PROF.bestWave = 60; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 5; PROF.seenVer = VERSION; PROF.settings.briefings = "brief"; }')
     pg.click('#bLaunch'); pg.wait_for_timeout(200); pg.click('[data-act=launch]'); pg.wait_for_timeout(400)
     pg.evaluate('''() => { if (UI.closeModal) UI.closeModal(); document.querySelector('#toasts').style.display = 'none'; G.credits = 50000; G.wave = 40; G.paused = true;
       const spots = []; for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (canBuildAt(x, y) && inRegion(x, y, G.region)) spots.push([x, y]);

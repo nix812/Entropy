@@ -14,7 +14,7 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append('PAGEERROR ' + str(e)))
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'TUNNEL' not in m.text else None)
     pg.goto('file://' + str(out / 'page.html')); pg.wait_for_timeout(500)
-    pg.evaluate('() => { PROF.bestWave = 40; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 3; PROF.seenVer = VERSION; }')
+    pg.evaluate('() => { PROF.bestWave = 40; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 3; PROF.seenVer = VERSION; PROF.settings.briefings = "brief"; }')
     pg.click('#bLaunch'); pg.wait_for_timeout(200)
     pg.click('[data-act=launch]'); pg.wait_for_timeout(400)
     pg.evaluate('() => { const m = document.querySelector("#modal"); if (m && !m.hidden) UI.closeModal && UI.closeModal(); G.credits = 50000; G.paused = true; }')

@@ -79,11 +79,12 @@ const ART = (() => {
   // parts: [{ f, z, r: ramp, d?: (lx, ly) => tone delta, e?: (lx, ly) => hex | null (emissive), k?: steepness }]
   function raster(parts, W, H, ang, opt) {
     opt = opt || {};
+    const sc = opt.sc || 1; if (sc !== 1) { W = Math.round(W * sc); H = Math.round(H * sc); } // sc: render the design larger, at full detail
     const cx = W / 2, cy = H / 2, ca = Math.cos(ang || 0), sa = Math.sin(ang || 0), n = W * H;
     const hm = new Float32Array(n).fill(-1e9), pid = new Int16Array(n).fill(-1), lx = new Float32Array(n), ly = new Float32Array(n);
     const ox = opt.ox || 0, oy = opt.oy || 0;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const dx = x + 0.5 - cx - ox, dy = y + 0.5 - cy - oy, X = dx * ca + dy * sa, Y = -dx * sa + dy * ca, i = y * W + x;
+      const dx = (x + 0.5 - cx) / sc - ox, dy = (y + 0.5 - cy) / sc - oy, X = dx * ca + dy * sa, Y = -dx * sa + dy * ca, i = y * W + x;
       lx[i] = X; ly[i] = Y;
       let best = -1, bh = -1e9;
       for (let k = 0; k < parts.length; k++) { const F = parts[k].f, bb = F.bb; if (bb && (X < bb[0] - 0.5 || X > bb[2] + 0.5 || Y < bb[1] - 0.5 || Y > bb[3] + 0.5)) continue; const h = F(X, Y); if (h >= 0 && parts[k].z + h > bh) { bh = parts[k].z + h; best = k; } }
