@@ -874,8 +874,15 @@ const UI = (() => {
     const cc = cacheAt(tx, ty);
     if (cc) { const kind = cc.kind, m = claimCache(cc); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
     SFX.play('ui');
-    if (tx === G.map.core.x && ty === G.map.core.y) return openCore();
+    const isCore = tx === G.map.core.x && ty === G.map.core.y;
     const t = G.towerAt[tIdx(tx, ty)];
+    // with a panel open, tapping empty ground (or the selected tile again) dismisses it;
+    // towers and the core still switch straight to their own panel
+    if (panel) {
+      const selHere = Render.sel && Render.sel.x === tx && Render.sel.y === ty;
+      if (selHere || (!isCore && !t)) { closePanel(); return; }
+    }
+    if (isCore) return openCore();
     if (t) return openTower(t);
     if (canBuildAt(tx, ty)) return openBuild(tx, ty);
     closePanel();
@@ -1099,7 +1106,7 @@ const UI = (() => {
   }
   const GUIDE = [
     { id: 'basics', name: 'Basics', rows: [
-      ['Build', 'Tap an empty tile, choose a tower, then tap it again to build.'],
+      ['Build', 'Tap an empty tile, choose a tower, then tap it again to build. With a panel open, tap empty ground to close it.'],
       ['Power', `Every tower draws 1 power. You start with ${GRID.base} and gain 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes are free. When the grid is full, the game is about making the towers you have count.`],
       ['Overcharge', `Tap a tower to spend spare power on it: +${OVERCHARGE.dmg * 100}% Damage per point, up to ${OVERCHARGE.max}. Free to move at any time, even mid-wave. When power sits unused during a wave, the power counter pulses: tap it to Overcharge your best tower in one go.`],
       ['Evolution', 'From Wave 8 the swarm evolves. Enemies that get furthest pass on their traits (Plating, Wings, Haste, Shell...), so whatever your defence handles worst spreads. The next-wave chips show what is spreading; tap one to see its counter, then adapt.'],
