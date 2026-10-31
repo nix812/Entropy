@@ -512,6 +512,11 @@ Nic gave the session full creative control: review, bug hunt, balance sweep, the
   - **Chain:**
     - Channels (meters) → sidechain gain `scG` (all but drums; `duck()` on every kick) → `sweepLP` (filter sweeps for `filterLoop` flavours) → `mIn` → tape wow/flutter delay → 5-bit crush blend → `toneLP` → `toneHS` shelf → `trimG` (per-genre loudness trim) → glue compressor.
     - Sends: two crossfaded convolvers sized per genre (`revS`), a gated-reverb path for synthwave snares, and a ping-pong echo timed to `div` beats.
+  - **CPU.** Measure with `test/perfcheck.py [secs] [genres]` (Chrome offline render time ÷ audio time at energy 0.85; v4.8 measures 0.15–0.42×, about where 4.7 sat). The savings that got it there:
+    - only the active reverb convolver is fed (the other is disconnected after the crossfade)
+    - the gated-reverb convolver and the crusher are patched in only when used
+    - closed hats are filtered noise (the six-square metal is kept for open hats)
+    - plucks use one saw
   - **Tests.** `Music.debug = true` logs every note event `[t, role, inst, midi, vel, bar, step, genre/flav, chordDeg]`. `test/genrecheck.py [secs] [genre or genre/flav,...] [--knobs] [--mp3]` checks each flavour against the spec (grid, tempo, diatonic share, LUFS, centroid) and that each knob moves the audio. `musicrender.py` still works for battle curves.
 - **Studio UI** (`openStudio` in ui.js):
   - 10 genre chips plus Shuffle; tempo sliders for the selected genres only; Energy/Follow with a live Energy meter; five relative FX with a middle tick; section name (Intro/Groove/Breakdown/Drop/Dub version).
@@ -675,6 +680,8 @@ The expanding sector made every level a little easier, because the compact early
 29. **Sprite generation cost:** a turret heading is 1–4 ms, a boss frame ~35 ms, an enemy frame 1–2 ms. Never call `ART.get` for many new keys inside one frame; use `getB` with a stand-in or queue with `warm`.
 31. **Offline music renders must stream.** Scheduling minutes of notes into an OfflineAudioContext up front makes every future voice get pulled on every block (quadratic). Use `oc.suspend(t)` steps, as `musicrender.py` does. Live play schedules 0.3 s ahead and is fine.
 32. **Overlay badges are drawn in screen space** (`bx2s`/`by2s`), not the world buffer; anything that must stay on top of units (crowns, level badges, the ! mutation badge) goes there.
+33. **Music CPU:** every ConvolverNode with an input keeps costing CPU even when its return gain is 0, and long IRs cost more. Feed only what plays (see 4.12), and run `perfcheck.py` after adding voices.
+34. **`setConfig` must merge into fresh defaults** (`D2`), not into `d` after `Object.assign(d, c)`: that already replaced `d.fx` with the caller's partial object, which silently dropped the other FX keys (non-finite AudioParam errors).
 26. **Don't edit `src/data.js` or `src/sim.js` while `par.sh` batches are running**: every bot process loads the source fresh, so a batch started after the edit measures the new code (and a syntax error kills the rest of the sweep).
 
 ---

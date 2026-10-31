@@ -73,7 +73,7 @@ with sync_playwright() as p:
     if only: flavs = [f for f in flavs if f in only or f.split('/')[0] in only]
     for gf in flavs:
         g, f = gf.split('/')
-        cfg = { 'custom': True, 'genres': [g], 'energy': 0.62, 'follow': 0 }
+        cfg = { 'custom': True, 'genres': [g], 'energy': float(__import__('os').environ.get('ENERGY', 0.62)), 'follow': 0 }
         r, a = render(pg, cfg, { 'genre': g, 'flav': f, 'seed': 12345 }, f'{g}_{f}')
         ev = [e for e in r['ev'] if e[7] == gf]
         pc = r['piece'] or {}

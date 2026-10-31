@@ -468,12 +468,12 @@ const SFX = (() => {
         blurb: 'Drifting pads, bells on loops that never line up, no beat',
         flavours: {
           drift: { name: 'Drift', hard: 0, modes: ['lydian', 'ionian', 'mixolydian'], loops: [C([0, 1], [], 4), C([0, 3, 0, 4], [], 2), C([0], [], 8), C([0, 5, 3, 0], [], 2)] },
-          glass: { name: 'Glass', hard: 0.3, modes: ['ionian', 'lydian', 'dorian'], arp: { kind: 'glass', rate: 4, oct: 2, lv: 0.2 }, loops: [C([0, 3], [], 2), C([5, 3, 0, 4], [], 2), C([0, 4, 5, 3], [], 2)] },
-          nocturne: { name: 'Nocturne', hard: 0.15, modes: ['aeolian', 'dorian'], keys: { kind: 'piano', rhythm: 'broken', lv: 0 }, loops: [C([0, 5, 2, 6], [], 2), C([0, 3, 0, 4], [], 2), C([0, 6, 5, 6], [], 2)] },
+          glass: { name: 'Glass', hard: 0.3, ftrim: 0.85, modes: ['ionian', 'lydian', 'dorian'], arp: { kind: 'glass', rate: 4, oct: 2, lv: 0.2 }, loops: [C([0, 3], [], 2), C([5, 3, 0, 4], [], 2), C([0, 4, 5, 3], [], 2)] },
+          nocturne: { name: 'Nocturne', hard: 0.15, ftrim: 0.72, modes: ['aeolian', 'dorian'], keys: { kind: 'piano', rhythm: 'broken', lv: 0 }, loops: [C([0, 5, 2, 6], [], 2), C([0, 3, 0, 4], [], 2), C([0, 6, 5, 6], [], 2)] },
         },
         ext: 4, voicing: 'open', drums: { K: '3000000000000000', P: '2002002002002000' }, kit: 'soft',
         bass: { kind: 'sub', line: 'long', lv: 0.15 }, pad: { kind: 'warm', lv: 0 }, keys: null, arp: null,
-        lead: { kind: 'bell', grammar: 'drone', scale: 'pentmajor', lv: 0.25, oct: 79 }, mix: { rev: 0.95, revS: 7, echo: 0.35, div: 1.5, fb: 0.45, side: 0, tone: 12000, tape: 0.15, crackle: 0, pump: 0 } },
+        lead: { kind: 'bell', grammar: 'drone', scale: 'pentmajor', lv: 0.25, oct: 79 }, mix: { rev: 1.05, revS: 5.5, echo: 0.35, div: 1.5, fb: 0.45, side: 0, tone: 12000, tape: 0.15, crackle: 0, pump: 0 } },
       lofi: { trim: 1.1, name: 'Lo-fi Hip Hop', short: 'Lo-fi', col: '#ffb877', bpm: [70, 80, 90], swing: 0.58, human: 12, form: 'song', keyR: [45, 52],
         blurb: 'Dusty swung drums, jazz chords on a warm Rhodes, tape wobble and crackle',
         flavours: {
@@ -533,8 +533,8 @@ const SFX = (() => {
       trance: { trim: 0.66, name: 'Trance', col: '#9a8cff', bpm: [128, 138, 142], swing: 0.5, human: 0, form: 'trance', keyR: [42, 49],
         blurb: 'Rolling offbeat bass, gated supersaw chords, a long breakdown and a snare-roll build',
         flavours: {
-          uplifting: { name: 'Uplifting', hard: 0.8, modes: ['aeolian'], loops: [C([0, 5, 2, 6]), C([5, 6, 0, 0]), C([0, 3, 5, 4], ['m', 'm', 'M', 'm']), C([0, 6, 5, 4], ['m', 'M', 'M', 'M'])] },
-          progressive: { name: 'Progressive', hard: 0.45, filterLoop: 1, modes: ['aeolian', 'dorian'], bpmX: 0.94, bass: { kind: 'saw', line: 'offbeat' }, keys: { kind: 'pluck', rhythm: 'trancepluck', lv: 0.2 }, loops: [C([0, 5], [], 2), C([0, 5, 2, 6], [], 2), C([0, 3], [], 2)] },
+          uplifting: { name: 'Uplifting', hard: 0.8, ftrim: 0.85, modes: ['aeolian'], loops: [C([0, 5, 2, 6]), C([5, 6, 0, 0]), C([0, 3, 5, 4], ['m', 'm', 'M', 'm']), C([0, 6, 5, 4], ['m', 'M', 'M', 'M'])] },
+          progressive: { name: 'Progressive', hard: 0.45, ftrim: 1.25, filterLoop: 1, modes: ['aeolian', 'dorian'], bpmX: 0.94, bass: { kind: 'saw', line: 'offbeat' }, keys: { kind: 'pluck', rhythm: 'trancepluck', lv: 0.2 }, loops: [C([0, 5], [], 2), C([0, 5, 2, 6], [], 2), C([0, 3], [], 2)] },
         },
         ext: 3, voicing: 'pad', kit: '909',
         drums: { K: '9000900090009000', O: '0080008000800080', H: '3434343434343434', C: '0000700000007000' },
@@ -555,8 +555,8 @@ const SFX = (() => {
         blurb: 'NES pulse leads, triangle bass and kick, noise drums, chords as fast arpeggios',
         flavours: {
           nes: { name: 'NES', hard: 0.75, modes: ['ionian', 'mixolydian', 'aeolian'], loops: [C([0, 5, 3, 4]), C([0, 4, 5, 3]), C([0, 3, 4, 0]), C([5, 6, 0, 0], ['M', 'M', 'M', 'M']), C([0, 5, 6, 0])] },
-          gameboy: { name: 'Game Boy', hard: 0.5, modes: ['dorian', 'aeolian', 'ionian'], bpmX: 0.85, lead: { duty: 0.125 }, bass: { kind: 'wave', line: 'chip' }, loops: [C([0, 6, 5, 6]), C([0, 3, 0, 4]), C([0, 5, 3, 4])] },
-          saveroom: { name: 'Save Room', hard: 0.15, modes: ['ionian', 'lydian'], bpmX: 0.62, drums: { K: '9000000000000000', S: '0000000090000000', H: '0000600000006000' }, bass: { kind: 'tri', line: 'long' }, loops: [C([0, 3], [], 2), C([0, 5, 3, 4], [], 2)] },
+          gameboy: { name: 'Game Boy', hard: 0.5, ftrim: 1.45, modes: ['dorian', 'aeolian', 'ionian'], bpmX: 0.85, lead: { duty: 0.125 }, bass: { kind: 'wave', line: 'chip' }, loops: [C([0, 6, 5, 6]), C([0, 3, 0, 4]), C([0, 5, 3, 4])] },
+          saveroom: { name: 'Save Room', hard: 0.15, ftrim: 0.85, modes: ['ionian', 'lydian'], bpmX: 0.62, drums: { K: '9000000000000000', S: '0000000090000000', H: '0000600000006000' }, bass: { kind: 'tri', line: 'long' }, loops: [C([0, 3], [], 2), C([0, 5, 3, 4], [], 2)] },
         },
         ext: 3, voicing: 'triad', kit: 'chip',
         drums: { K: '9000000090700000', S: '0000900000009000', H: '6040604060406040' },
@@ -795,10 +795,10 @@ const SFX = (() => {
     function clap(t, v) { for (const d of [0, 0.009, 0.019]) nhit(t + d, 'bandpass', 1200, 1.1, d === 0.019 ? 0.16 : 0.012, v * 0.7, L.drums); const g = nhit(t + 0.019, 'bandpass', 1300, 1, 0.2, v * 0.25, L.drums); sendFx(g, 0.3, 0); }
     function hat(t, v, H, open) {
       const dest = L.drums, dec = (open ? (H && H.dec) || 0.22 : (H && H.dec) || 0.04), hp = (H && H.hp) || 7500;
-      if (H && H.metal) {
+      if (H && H.metal && open) { // metallic six-square cymbal for open hats; closed hats use filtered noise (cheaper, and short enough not to tell)
         const bp = lp(10000, 1, null, 'bandpass'), hpf = lp(hp, 0.7, null, 'highpass'), g = ctx.createGain();
         g.gain.setValueAtTime(v * 0.35, t); g.gain.setTargetAtTime(0.0001, t, dec / 3.5); bp.connect(hpf); hpf.connect(g); g.connect(dest);
-        for (const f of (open ? METAL : METAL.slice(1, 5))) osc('square', f * 1.5, t, t + dec * 2 + 0.05, bp, 0);
+        for (const f of METAL) osc('square', f * 1.5, t, t + dec * 2 + 0.05, bp, 0);
       } else nhit(t, 'highpass', hp, 0.7, dec, v * 0.45, dest, KITS[P.S.kit].lofi);
     }
     function ride(t, v) { const g = ctx.createGain(), bp = lp(5200, 0.8, null, 'bandpass'); g.gain.setValueAtTime(v * 0.12, t); g.gain.setTargetAtTime(0.0001, t, 0.15); bp.connect(g); g.connect(L.drums); for (const f of METAL) osc('square', f * 2.2, t, t + 0.7, bp, 0); nhit(t, 'highpass', 9000, 0.7, 0.3, v * 0.08, L.drums); }
@@ -870,7 +870,7 @@ const SFX = (() => {
     }
     function organ(ns, t, v, dur) { for (const n of ns) { evlog('keys', 'organ', t, n, v); const g = vca(t, 0.004, dur, v * 0.32, L.keys); for (const [h, a] of [[1, 1], [2, 0.5], [3, 0.3], [4, 0.22]]) osc('sine', mtof(n) * h, t, t + dur + 0.3, gainN(a, g)); nhit(t, 'bandpass', mtof(n) * 6, 2, 0.008, v * 0.08, g); sendFx(g, 0.25, 0.2); } }
     function skank(ns, t, v) { for (const n of ns) evlog('keys', 'skank', t, n, v); const fl = lp(1400, 0.8, null, 'bandpass'), g = vca(t, 0.002, 0.12, v * 0.6, L.keys); fl.connect(g); for (const n of ns) { osc(0.25, mtof(n), t, t + 0.2, fl); osc('triangle', mtof(n), t, t + 0.2, fl); } sendFx(g, 0.5, 0.75); }
-    function pluck(n, t, v, dest, role) { evlog(role || 'arp', 'pluck', t, n, v); const fl = lp(1, 2.4, vca(t, 0.002, 0.45, v, dest || L.arp)); fl.frequency.setValueAtTime(1200 + 4000 * effE(), t); fl.frequency.setTargetAtTime(420, t, 0.07); osc('sawtooth', mtof(n), t, t + 0.6, fl, -6); osc('sawtooth', mtof(n), t, t + 0.6, fl, 6); }
+    function pluck(n, t, v, dest, role) { evlog(role || 'arp', 'pluck', t, n, v); const fl = lp(1, 2.4, vca(t, 0.002, 0.45, v, dest || L.arp)); fl.frequency.setValueAtTime(1200 + 4000 * effE(), t); fl.frequency.setTargetAtTime(420, t, 0.07); osc('sawtooth', mtof(n), t, t + 0.5, fl, 0); }
     function chipNote(n, t, dur, v, duty, dest, role) { evlog(role, 'chip', t, n, v); const g = ctx.createGain(); g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v * 0.75, t + Math.min(dur * 0.5, 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + dur); g.connect(dest); osc(duty, mtof(n), t, t + dur + 0.02, g); }
     // gated supersaw chord: one sustained 3-voice stack per note, chopped by the trance gate pattern
     function gateChord(ns, t, sp16, bars, v) {
@@ -934,15 +934,15 @@ const SFX = (() => {
       crushWS = ctx.createWaveShaper(); { const n = 4096, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i * 2 / n - 1; c[i] = Math.round(x * 31) / 31; } crushWS.curve = c; }
       crushMix = gainN(0); cleanMix = gainN(1);
       toneLP = lp(15000, 0.5); toneHS = ctx.createBiquadFilter(); toneHS.type = 'highshelf'; toneHS.frequency.value = 3200; toneHS.gain.value = 0;
-      wowD.connect(cleanMix); wowD.connect(crushWS); crushWS.connect(crushMix); cleanMix.connect(toneLP); crushMix.connect(toneLP);
+      wowD.connect(cleanMix); crushWS.connect(crushMix); cleanMix.connect(toneLP); crushMix.connect(toneLP); // the crusher is only patched in when Tape is high (CPU)
       comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 2.5; comp.knee.value = 12; comp.attack.value = 0.015; comp.release.value = 0.25;
       outAn = ctx.createAnalyser(); outAn.fftSize = 256; outAn.smoothingTimeConstant = 0.75;
       trimG = gainN(1, comp); toneLP.connect(toneHS); toneHS.connect(trimG); comp.connect(synthOut()); comp.connect(outAn);
       revSend = ctx.createGain(); revRet = gainN(0.5, toneLP);
       revA = ctx.createConvolver(); revB = ctx.createConvolver(); revAG = gainN(1, revRet); revBG = gainN(0, revRet); revA.connect(revAG); revB.connect(revBG);
-      const rhp = lp(200, 0.7, null, 'highpass'); revSend.connect(rhp); rhp.connect(revA); rhp.connect(revB); revA.buffer = impulse(3, 0.25);
+      revHP = lp(200, 0.7, null, 'highpass'); revSend.connect(revHP); revHP.connect(revA); revA.buffer = impulse(3, 0.25); // only the active reverb is fed (CPU)
       // gated reverb for the synthwave snare: a short bright room cut by a gate opened on each snare
-      gateConv = ctx.createGain(); const gc = ctx.createConvolver(); gc.buffer = impulse(2.2, 0.5); gateG = gainN(0); gateConv.connect(gc); gc.connect(gateG); gateG.connect(toneLP);
+      gateConv = ctx.createGain(); gateCv = ctx.createConvolver(); gateCv.buffer = impulse(2.2, 0.5); gateG = gainN(0); gateCv.connect(gateG); gateG.connect(toneLP); // patched in for gated kits only
       // ping-pong echo
       echoIn = ctx.createGain(); echoL = ctx.createDelay(3); echoR = ctx.createDelay(3); echoFb = gainN(0.35); echoRet = gainN(0.6);
       const ehp = lp(220, 0.7, null, 'highpass'), elp = lp(3500, 0.7);
@@ -958,7 +958,7 @@ const SFX = (() => {
       const cr = ctx.createBufferSource(); cr.buffer = vb; cr.loop = true; vinylG = gainN(0); cr.connect(lp(2500, 0.5, vinylG, 'highpass')); vinylG.connect(toneLP); cr.start();
       const hs = ctx.createBufferSource(); hs.buffer = noiseBuf; hs.loop = true; hissG = gainN(0); hs.connect(lp(5000, 0.4, hissG, 'bandpass')); hissG.connect(toneLP); hs.start();
     }
-    let P_flG = null, sweepLP = null, trimG = null, toneHS = null;
+    let P_flG = null, sweepLP = null, trimG = null, toneHS = null, revHP = null, gateCv = null, crushOn = false, gateOn = false;
     function applyGenreMix(newGenre) {
       if (!mIn || !P) return;
       const c = live(), M = P.S.mix, t = ctx.currentTime, k = (x, d, span) => fxK(x, d, span);
@@ -966,8 +966,10 @@ const SFX = (() => {
       // reverb size per genre: crossfade to the other convolver when the genre's size changes
       const want = Math.max(0.5, M.revS || 2), key = want.toFixed(1);
       if (newGenre && P._revKey !== key) {
-        const to = revUse ? revA : revB, toG = revUse ? revAG : revBG, fromG = revUse ? revBG : revAG; to.buffer = impulse(want, want > 4 ? 0.18 : 0.28);
+        const to = revUse ? revA : revB, from = revUse ? revB : revA, toG = revUse ? revAG : revBG, fromG = revUse ? revBG : revAG; to.buffer = impulse(want, want > 4 ? 0.18 : 0.28);
+        try { revHP.connect(to); } catch (e) {}
         toG.gain.setTargetAtTime(1, t, 0.4); fromG.gain.setTargetAtTime(0, t, 0.4); revUse = 1 - revUse; P._revKey = key;
+        if (!offline) setTimeout(() => { try { revHP.disconnect(from); } catch (e) {} }, 2500); else try { revHP.disconnect(from); } catch (e) {}
       }
       revRet.gain.setTargetAtTime(k(c.fx.reverb, M.rev, 0.9), t, 0.15);
       const ech = k(c.fx.echo, M.echo, 0.6); echoIn.gain.setTargetAtTime(ech > 0.01 ? 1 : 0, t, 0.1); echoRet.gain.setTargetAtTime(Math.min(1.4, ech), t, 0.1);
@@ -980,9 +982,11 @@ const SFX = (() => {
       // tape and vinyl: wow (pitch drift), flutter, 5-bit crush blend, crackle and hiss
       const tape = Math.min(1.4, k(c.fx.tape, M.tape, 0.6)), crk = Math.min(1.4, k(c.fx.tape, M.crackle, 0.5));
       wowG.gain.setTargetAtTime(0.0024 * tape, t, 0.2); P_flG.gain.setTargetAtTime(0.00012 * tape, t, 0.2);
+      const wantCrush = tape > 0.75; if (wantCrush !== crushOn) { crushOn = wantCrush; try { if (wantCrush) wowD.connect(crushWS); else wowD.disconnect(crushWS); } catch (e) {} }
+      const wantGate = (KITS[P.S.kit] || {}).S && KITS[P.S.kit].S.gated; if (!!wantGate !== gateOn) { gateOn = !!wantGate; try { if (gateOn) gateConv.connect(gateCv); else gateConv.disconnect(gateCv); } catch (e) {} }
       crushMix.gain.setTargetAtTime(Math.max(0, tape - 0.75) * 0.6, t, 0.2); cleanMix.gain.setTargetAtTime(1 - Math.max(0, tape - 0.75) * 0.35, t, 0.2);
       vinylG.gain.setTargetAtTime(crk * 0.28, t, 0.2); hissG.gain.setTargetAtTime(crk * 0.012, t, 0.2);
-      trimG.gain.setTargetAtTime(GENRES[P.g].trim || 1, t, 0.3);
+      trimG.gain.setTargetAtTime((GENRES[P.g].trim || 1) * (GENRES[P.g].flavours[P.f].ftrim || 1), t, 0.3);
     }
     // a voice's density from effective energy and the phrase: fires when the step's level >= 10 - density*10
     function density(vk) {
