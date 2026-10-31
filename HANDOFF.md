@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 4.3.0 · October 29, 2026**
+**Version at handoff: 4.4.0 · October 30, 2026**
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -15,7 +15,7 @@ This document has everything a new session needs to keep working on it: where th
 | **Live game (Home Screen app)** | https://nix812.github.io/Entropy/ — Nic plays this from an iPhone Home Screen icon (Safari → Share → Add to Home Screen). It runs fullscreen. |
 | **Claude artifact copy** | https://claude.ai/artifact/RXpFeihcddkscRg4GaHNe9 (private to Nic). Publish `dist/entropy.html` to this same URL. |
 | **GitHub repo** | `nix812/Entropy` (public). **`main`** = the built site that GitHub Pages serves. **`source`** = the full source tree, build script, tests and this handoff. |
-| **Source zip** | `entropy-source-v3.2.1.zip`, sent alongside this document. It has the same content as the `source` branch. |
+| **Source zip** | `entropy-source-v4.4.0.zip`, sent alongside this document. It has the same content as the `source` branch (minus `dist/`). |
 | **Music** | `audio/bgm-menu.mp3` and `audio/bgm-battle.mp3`, committed on `main` and published as artifact files. They are byte-identical to Elemental Clash's tracks: **"Attention" (freesound.org/s/568005) and "Bosch's Garden" (freesound.org/s/647212), both by kjartan_abel.** EC's settings credited them as CC BY 4.0, but kjartan_abel's Freesound profile says most of his music is CC BY-SA 4.0; check each track's page before any commercial release. Either way, commercial use is allowed with credit. Entropy credits both in Settings (since 4.0.1). EC never recorded which file is which track. **Never mention Elemental Clash in the UI.** The setting is just "Soundtrack: Composed / Generative". |
 
 ### Getting the code in a new session
@@ -158,7 +158,7 @@ Publish `dist/entropy.html` to the existing URL above.
 | Pulse Blaster | 60 | 1 | |
 | Rail Lance | 110 | 1 | |
 | Cryo Emitter | 75 | 1 | |
-| **Snare Beacon** | 75 | 4 | Kind `snare`. Netted fliers take +20% damage (v2.0, in `hit()`). Fliers whose straight line passes within the lure range (3.5) detour through the beacon, get held 0.8 s, and are slowed 50% inside the net (radius 1.3). Catches 8 fliers per wave. Bosses are affected less. Building one mid-wave re-routes fliers already in the air. |
+| **Snare Beacon** | 75 | 4 | Kind `snare`. Netted fliers take +20% damage (v2.0, in `hit()`). Fliers whose straight line passes within the lure range (3.5) detour through the beacon, get held 0.8 s, and are slowed 50% inside the net (radius 1.3). Catches 8 fliers per wave. Bosses and pirate skiffs are never lured (v4.4). Building one mid-wave re-routes fliers already in the air. |
 | Swarm Missile | 120 | 5 | |
 | Relay Pylon | 100 | 8 | Support. Range 2.6, +18% damage, +12% rate (v2.0). |
 | Arc Coil | 100 | 10 | |
@@ -281,6 +281,26 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
 - **Balance (12 seeds, Normal):** 60 points: assaults off 78.5 median, on (bot without refit) 83, on (bot with refit) 73 — within the bot's noise, and the refit bot's crude swaps are the weak link, not the assault. 0 points with all towers locked to their unlock waves (`par.sh 12 0 1 1 1`): off 42.5, on 43.5. Bots break 85–95% of assaults; the losses come late. Sizing tried: `ASEC` 45 cost about 6 waves at 60 points; 100+ made early assaults unbeatable for weak defences. Before `hpBase`, even 200× HP assaults were cleared by on-death chains. Lens ramps up on tanky targets, so it is the natural assault answer; watch that.
 - **Tests:** `v40notif.py`, `v40assault.py`. `test/harness.js` now passes the whole `process.env` into the VM; before, only `NOGA` reached the sim, so env knobs were silently ignored. New knobs: `NOASSAULT=1` (sim), `ASEC`, `ACNT` (sim), `NOREFIT=1` (bot), `ASLOG=1` (bot prints each assault: wave, leaked/n, won, hpx, genes). The bot answers an announced assault during refit by swapping its weakest non-answers for counters, and moves damage off a warded element.
 
+### 4.3g v4.4 "Most Wanted" (Fable session, October 30 2026)
+Nic gave the session full creative control: review, bug hunt, balance sweep, then 2–3 bold features. The design review is in section 11.
+- **Most Wanted (`planWanted`, `claimBounty`, `WANTED_MODS`, `WANTED_FOR`):** every run posts a bounty on one boss. `newRun` picks a boss unlocked by wave `w = max(20, first boss wave ≥ startWave + 10)` and a mutation: Colossal (×1.6 HP, ×1.5 size, ×0.8 speed), Twin (two copies at 60% HP, 3 s apart via `setTimeoutSim`; the bounty pays on the second kill), Hasted (×1.35 speed, ×0.75 HP), Armored (`armorAll` 0.3), Spectral (cloaks 2 s every 7 s, `e.wcloak`), Loaded (×1.1 HP, double bounty, drops a Captain's Chest where it dies). `nextBoss` forces the boss onto wave `w`; `spawnBoss` applies the mod (`e.wanted` = mod id). Bounty = `60 × w × CH.cr` credits + `legendQueue++`. The crime line (`WANTED_FOR`) is the joke: the Auditor is wanted for tax evasion. UI: an alert poster 2.6 s into the run and from the `Wanted · W20` chip between waves, "MOST WANTED · COLOSSAL · 1200 BOUNTY" on the intro card, a gold dashed ring on the boss (Colossal draws ×1.5), "Bounty claimed" in the recap. `G.wanted` is snapshotted; `G.stats.bounty` holds the name.
+- **The Black Market (`MARKET`, `MARKET_ITEMS`, `marketEnsure`, `marketBuy`, `marketPlaceNode`):** the late-game credit sink (Nic banked 25–60k with nothing to buy). The Score button now opens the **Exchange** panel: the trader's 3 items on top, Cash In below. Stock `n = floor(wave / 10)`, so it restocks after every boss wave; the stock is drawn from its own RNG (`seed ^ n`) so opening the panel never touches `G.r`. Each item sells once per stock, price `base × (1 + 0.11 × wave)`. Items: Forbidden Schematic (next 2 towers Legendary), Stolen Blueprint (unlocks the next locked tower for the run, `G.runUnlocks`; `towerUnlocked` reads it), Boss Bribe (`G.bossBribe`: next boss spawns at 70%), Node Beacon (`G.placing = 'beacon'`, tap a tile → `marketPlaceNode`; tap the core to cancel for a refund; max 2 per run), Ability Crate (+1 of each), Recalibration Kit (+2 tokens), Fake Star Map (`geneFit`/`geneExp` wiped, a pending assault warning cancelled and `assaultNext` +3), Mutagen Vial (every tower gains an affix), Battle Medal (top tower +1 Veteran rank), Spare Overdrive (only offered after Overdrive was used). Logged as `market`; `G.market` (stock, bought, beacons, spent) and `runUnlocks`, `bossBribe`, `placing` are snapshotted. The HUD tag under Score says "Market".
+- **Spare power:** when `gridFree() ≥ 1` during a wave (from Wave 4) the power counter pulses (`.hs.pwr.spare`); tapping it puts the spare points on `topTower()` and opens its panel. Nic's logs showed he never used Overcharge.
+- **Red Alert / Last Stand** and the rest of the boss fairness work: section 4.4.
+- **Bugs fixed (regression tests in `test/fixes.js`):**
+  1. Strain Assaults never happened in runs started past the first assault wave (`assaultNext` stayed in the past). `assaultTick` now catches up, and an assault that converted nothing reschedules.
+  2. Pirate skiffs were lured by Snare Beacons (the lure ran before `e.pirate` was set) and vanished at the core. `spawnEnemy` gets `q.pirate`.
+  3. A resumed Daily picked up the profile's Cosmic Laws. `resumeRun` clears them (and `G.goldAt` is saved, so a boss wave can't drop two chests).
+  4. Marksman scaled the whole grid by 0.6, so a reactor expansion or assault reward could round to +0. Only the wave-grown capacity is scaled now.
+  5. A wave saved mid-assault replayed without the strain and then resolved on stale counts. `resumeRun` puts a live assault back to `warn`.
+  6. Help and Settings opened from Pause unpaused the game on ✕. `modalFrom` returns them to Pause.
+  7. `Tree.action` had two `case 'center'` branches; the live one never cleared the selection.
+  8. Conflagration + Glacier (legal at level 75) silently bricked Glacier. `TREE_CONFLICTS` makes `treeBlock` return `conflict:<id>` with a message.
+  9. The Wormhole Worm could surface inside the core (section 4.4).
+  10. `#tip` overlapped the region chips in the web (`body.webopen`).
+  11. `test/doctrine.js`'s Circuit test depended on the map seed; it now builds a 2×2 block.
+- **Tests:** `test/fixes.js` (19 checks), `test/v44shot.py` (market, beacon placement, snapshot, spare-power tap, Red Alert and its ×2.5, Most Wanted chip/poster/intro, Pause → Help → Pause), `test/sweep.sh` (one-line batch summaries with per-seed killers).
+
 ### 4.3b Core affixes (v1.16)
 - Every Weapon or Shield upgrade rolls one affix with the tower rarity odds (`rollTier`, shared with towers). The pool is every attack-tower affix plus core-only ones, weighted 3× (`CORE_AFFIX_W`):
 
@@ -324,6 +344,15 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
   - `BOSS_HPX` floor: ×3 at wave 10, ×3.5 at 20, ×3 at 40, ×2 from 60.
   - Why: bot logs showed `G.power` at spawn reads 8–10× below in-fight DPS early, because small waves never let towers fire flat out. Half of `potentialDps()` (from tower stats: damage, rate, buffs, crit, boss damage, beam ramp) tracks in-fight DPS early. Late, measured power wins, because combos and multipliers the estimate can't see take over.
   - Result at 80 points: waves 10–40 bosses take 25–37 s of fire (it was 4–24 s), runs the same length. Gloop base HP 30→42 (no phases, splits fast).
+- **v4.4 boss fairness (a breach is lethal, so every boss must be a fight, not a coin flip):**
+  - Bosses always take the **longest open road** (`genWave`). A boss on a fresh 15-tile wormhole lane reached the core in 25 s.
+  - **Flying bosses skim the road** (`spawnBoss` uses `lane`, never `lane.fly`). They still fly: Flame, Gravity Well and ice jams can't touch them, and `lure()` skips bosses. The straight line often crossed no tower; 3 of 12 fresh bot runs died to the Wave 10 Hive Queen.
+  - **Firepower is capped**: `bossFire()` = `max(0.5 × potentialDps, min(G.power, 2 × potentialDps))`. Measured peak power includes crowd damage (splash, Collapse's %-max-HP on packs, combos) that a lone boss never takes; one Wave 40 whale was sized at 18M HP. Assault sizing uses the same function.
+  - **Early floor lowered**: `BOSS_HPX` ×2 at Wave 10 and ×2.5 at 20 (was 3 / 3.5; `BHX10`/`BHX20` env knobs). The floor ignored firepower, so fresh profiles lost 7 runs in 12 to the Wave 10–20 boss.
+  - **The swarm hangs back**: while a gen-0 boss is on the field the next wave's countdown runs at a third speed, for up to `BOSS_HOLD` = 45 s (`G.bossHold`).
+  - **Red Alert** (`RED_ALERT = { tiles: 8, coreDmg: 2.5, coreRate: 1.6 }`): a boss within 8 tiles of the core (`e.redAlert`, once per boss) raises an alert card, sirens and shake; `G.redAlert` is true while such a boss lives; `hit()` multiplies core damage against it by 2.5 and `updateCore` fires 1.6× as fast. Render: red field tint and a throbbing frame, "RED ALERT ·" on the boss bar. Logged as `redAlert`.
+  - **Wormhole Worm**: `wormSurface` keeps the same share of the road when it switches lanes (it used to keep the old distance, which on a shorter lane dropped it into the core = instant game over), hops 3–6% (was 4–9%) and never surfaces past 70%.
+  - Result (12 seeds, fresh profile with locked towers, bots): median Wave 22 → 51, early boss deaths 6 → 0. See section 6.
 - **Boss health history:** v2.1 tried a bigger fixed curve (up to ×7); it barely moved fight length for strong builds, which is why v2.2 went adaptive.
 - **Collapse vs bosses:** the combo's max-HP part is 3% for normal enemies but 0.4% for bosses. At 3% it fired about once a second under Void Lens and killed bosses regardless of their health.
 - **Measuring bosses:** `BOSSLOG=1 node test/smartbot.js 1 60 1 1 60` prints each boss's life, time under fire, how far down the road it died, and the top damage sources (from `G.dbgBoss`, collected in `hit()` only when set). `test/bossttk.js` is a controlled version (a set budget of L3 towers against a lone boss).
@@ -472,6 +501,9 @@ Nic (v2.3): tower choice felt irrelevant; two splash towers at the gate plus mas
 | `bench.js` | Damage per 100 credits for every tower, level and spec against a single target, a pack and a stream. |
 | `monkey.py MINUTES [W H seed]` | Plays the real page with random taps, panel buttons, zooms, reloads, snapshots and wave jumps, checking invariants (finite numbers, one core tile, `towerAt` in sync, no stalls). Prints page errors with stack lines, problems, and where the time went. Screens land in `test/audit/monkey_*`. CPU-starved runs can report false stalls; it now needs 4 s of frozen sim time, and its report includes frame counts so a starved page is easy to spot. |
 | `odbtn.py [W H tag]` | Overdrive rail button: locked, ready, armed, released, used. |
+| `sweep.sh LABEL N points chaos startWave bestWave` | v4.4. Runs `par.sh` and prints one line: median, mean, range, runs ended by a boss (and how many by Wave 30), assaults won/total, every wave reached, and `wave:killer` per seed. Env knobs (`DOC`, `FORCE`, `NOGA`…) pass through. The session's whole sweep is `bash test/sweep.sh … > file` in a loop; 12 seeds take 3–4 minutes on 2 cores. |
+| `fixes.js` | v4.4 regression suite (19 checks): assault scheduling on late starts, pirate skiffs vs Snare, Daily resume without Laws, Marksman reactor rounding, mid-assault resume, Glacier/Conflagration conflict, Most Wanted (plan, forced wave, twins, resume). |
+| `v44shot.py [W H tag]` | v4.4: Exchange panel with the Black Market, a purchase, Node Beacon placement by tap, snapshot carries the market, spare-power pulse and one-tap Overcharge, Red Alert (and the ×2.5 core multiplier), Most Wanted chip, poster and intro card, Help from Pause returns to Pause. |
 | `v43doc.py [W H tag]` | v4.3 Doctrines: drawer with all 8, Zenith seal, Circuit wires / Glacier jam / Horizon wells on the field. |
 | `v40notif.py [W H tag]` | v4.0 notification channels: alert card, tip, corner feed fading. |
 | `v40assault.py [W H tag]` | v4.0 Strain Assault: first-time intro, chip, free refit on Sell, live chip and aura, broken outcome. |
@@ -568,6 +600,12 @@ The expanding sector made every level a little easier, because the compact early
 18. **Damage based on max HP must be reduced for bosses**, or boss health stops mattering. Every other max-HP effect uses about 0.3× for bosses; Collapse had none until v2.1. Check new effects with `BOSSLOG`.
 19. **Harness env:** the sim reads env knobs through the VM's `process.env`, which `harness.js` must pass in. It used to pass only `NOGA`, so other knobs did nothing in bot runs.
 20. **Never inflate an enemy's max HP without `hpBase`:** on-death effects scale with the victim's max HP and will chain through the pack.
+21. **`spawnEnemy` lures fliers before the caller can mark them.** Anything that must not be lured (pirates, bosses) is flagged through `q` (`q.pirate`) or checked inside `lure()` (`e.boss`), never by setting a field on the returned enemy.
+22. **An enemy's `d` is only meaningful on its own lane.** When moving an enemy to another lane (the worm), convert through the road fraction; copying `d` onto a shorter lane puts it at the core.
+23. **`G.power` is a peak of crowd damage.** Anything sized from it (bosses, assaults) must go through `bossFire()`, which caps it at twice the stat-based potential.
+24. **Scheduled waves must catch up.** Anything keyed to "wave N" (`assaultNext`) must handle runs that start after N or skip it; otherwise it silently never fires again.
+25. **Bots are not deterministic between runs** (boon picks and some cosmetics use `Math.random`), so a seed that died once may survive the next time. Trace with `BOSSLOG=1 WAVELOG=1` on several seeds, and compare batch medians, not single runs.
+26. **Don't edit `src/data.js` or `src/sim.js` while `par.sh` batches are running**: every bot process loads the source fresh, so a batch started after the edit measures the new code (and a syntax error kills the rest of the sweep).
 
 ---
 
@@ -582,7 +620,12 @@ The expanding sector made every level a little easier, because the compact early
 ---
 
 ## 9. Backlog and ideas discussed
-- **Open threads as of 4.3 (October 30, 2026):**
+- **Open threads as of 4.4 (October 30, 2026):**
+  - **Nic has not played 4.4 yet.** First things to hear about: whether the Black Market prices feel right (section 11.4), whether Red Alert reads, and whether the Most Wanted bounty is worth chasing. His run logs now carry `market`, `wanted`, `bounty` and `redAlert` entries.
+  - **Early-game feel after the boss changes:** bots say Wave 10–20 bosses are now killable on a fresh profile (0 early boss deaths in 12). If Nic finds bosses too soft, raise `BHX10`/`BHX20` (2 / 2.5) before touching `BOSS_SECS`.
+  - **Quackzilla and Phase Wraith** had their hp budgets cut (17, 22) because they cross the road in ~40 s against Behemoth's ~95 s. Worth a `BOSSLOG` check that they still reach phase II against a 60-point bot.
+  - **Twin bosses** (Most Wanted) are two lethal breaches at once; if Nic reports a twin death as unfair, make the second twin spawn 8 s later or at 50%.
+- **Open threads carried from 4.3:**
   - **More music:** Nic wants more tracks by kjartan_abel. Freesound is blocked from the workspace; Nic plans to add `freesound.org` and `cdn.freesound.org` to his allowed domains (claude.ai Settings → Capabilities). Then fetch the public previews (no login), check each track page's licence (his profile says most are CC BY-SA 4.0; EC credited CC BY 4.0), commit to `main` as `audio/bgm-battle-2..6.mp3` / `bgm-menu-2..6.mp3` (no code change needed), attach to the artifact with `files`, and add each to the Settings credit line. Candidates: battle "Aube Électronique", "Snabba Ladda", "Project Nine – Time is of the Essence"; menu "Homage", "Duality". Nic may instead attach files himself.
   - **Early boss deaths:** since 4.1 a breach ends the run, and every 12-seed bot batch loses 1–3 runs to the wave 10–30 boss. Decide whether that's fair (warning, counterplay) or needs an early-boss HP cut / a first-breach grace.
   - **Doctrine feedback pending from Nic:** Wildfire overheat (−25%) is the first knob if it feels weak; Artisan is the bot's strongest.
@@ -631,9 +674,45 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 4.4 | "Most Wanted" (4.3g): a bounty boss with a mutation every run; the Black Market in the Exchange panel; Red Alert / Last Stand; boss fairness (longest road, flying bosses skim it, capped firepower, lower early floor, the swarm hangs back, worm fix); spare-power pulse with one-tap Overcharge; 11 bug fixes; balance sweep recorded in section 6 |
 | 4.3 | Doctrines phase 2 (4.6a): Circuit, Glacier, Event Horizon, Artisan, Gambler; Zenith/Nadir seals gate their orbits and keystones |
 | 4.2.1 | Passive Web usability (4.6b): zoomed-in culling and region focus, crowded taps zoom in, Undo, Doctrine next-goal button |
 | 4.2 | Doctrines phase 1 (see 4.6a): seals, Marksman, Wildfire, War Economy, Doctrine drawer and meters, full point refund (`WEB_VER = 3`) |
 | 4.1 | Boss HP `BOSS_SECS` ×0.65 before Wave 45 and ×0.8 after, because breaches now kill (bots, 60 points: lethal breach at 4.0 HP dropped the median 72 → 51; ×0.8 everywhere gave 80 but a third of runs died to wave 20–40 bosses; ×0.65 gave 63.5 with no early boss deaths). Assault `secs` 40. The swarm values a Thermal Ward ×0.45 under Conflagration (Nic's log: every assault was Ward-Thermal). Assaults force-resolve 2 waves on. Bosses drawn 1.5× (`BOSS_SCALE` in render.js; hit size 1.15, Gloop splits 0.85/0.6; titan plates, cat eyes and worm segments scaled). A non-split boss reaching the core is an instant game over in `leak()` (bypasses shields and Unbreakable); Gloop splits still breach for 12%/6% |
 | 4.0.1 | Music credits in Settings (kjartan_abel, Freesound) |
 | 4.0 | Strain Assaults: the swarm reads your defence, telegraphs a counter-strain a wave ahead, free refit, broken (+1 power) or entrenched. Notifications split into alerts, tips and a corner feed. Overcharge 3 × 35%. Idle-tower Zs, relocation coverage, Arc shield fix under Conflagration, log genes and leaks |
+
+## 11. Design review (v4.4 session)
+Written by the Fable session as a lead designer joining cold. Keep it current; strike items as they are addressed.
+
+### 11.1 What makes it special
+1. The swarm answers back. Genes bred from your failures, assaults that read your towers and tell you why. No other TD does this; it is the identity.
+2. Tower count is a resource (power grid), so the game is about making towers count (Overcharge, nodes, placement) instead of spam.
+3. Bosses sized to your damage with phases and a lethal breach: every boss is a fight with stakes.
+4. A map that moves: expanding sector, wormholes from any side, core relocation, pirates dropping loot.
+5. Build depth: affixes, veterans, specializations, Doctrines, Laws, with a dictionary wired into every line of text.
+6. The humour lands: oddball bosses, pirate lines, the Auditor.
+
+### 11.2 What is unfinished or confusing (player's eye)
+- Currency overload on the first run: credits, power, score, Entropy, tokens, charges, XP, veteran XP, reactor. How to Play is a wall. (Not fixed this session; a guided first run is the single biggest missing feature.)
+- Overcharge is invisible. Spare power sits unused for whole runs (Nic never used it). The HUD only shows "8/11". *(4.4: the counter pulses when power is spare mid-wave; a tap Overcharges the top tower.)*
+- The lethal breach is fair only if the player sees it coming. Before 4.4 a boss walked the last stretch in silence. *(4.4: Red Alert and Last Stand.)*
+- Bosses were unfair for weak builds: the fixed HP floor (×3 at Wave 10) ignored your firepower. Fresh profiles died to the Wave 10/20 boss in 7 of 12 bot runs. *(4.4: floor lowered, firepower capped, bosses on the longest road, fliers skim it; 0 of 12 after.)*
+- Storms are weather you can't use: a random +40% to one element drifting around. Only Storm Caller/Magnet players notice.
+- Late game money has nowhere to go (Nic banks 25–60k). Cash In is the only sink and it is boring. *(4.4: the Black Market.)*
+- Doctrine + keystone conflicts could brick a build silently (Conflagration removes Chill, so Glacier never freezes). *(4.4: refused with a message.)*
+
+### 11.3 Systems that fight each other
+- Conflagration vs Glacier: Chill→Burn means no Freeze, Glacier does nothing. (4.4 refuses the pair.)
+- Marksman (grid ×0.6) vs Circuit (needs 4+ adjacent towers): legal at level 75, pulls in opposite directions. Left as a real choice.
+- Absolute Zero (−50% Thermal) vs Wildfire/Conflagration: weak, not broken.
+- Assaults read your Doctrine every time (Wings vs Wildfire/Glacier, Brood vs Marksman/Artisan). Committing to a Doctrine means the same counter-strain returns; the ×0.4 after a broken strain keeps it from being every assault.
+- The next wave starts while the boss is still walking (10 s after spawning ends), so the Wave 10 boss fight and Wave 11 overlap. Intentional pressure, but it is why "wave 11" shows as the death wave for a Wave 10 breach.
+- Core relocation happens only at checkpoints, when the field is clear, and the bot never uses it; most players will not either. It needs a reason (Power Node on the way) to be worth the tap.
+
+### 11.4 Where the next session should go
+1. **A guided first run.** The single biggest gap. Ten waves with one new idea per wave (build, power, Overcharge, the DNA chip, the Exchange), replacing the How to Play wall for new players.
+2. **Storms a player can use.** Let the player steer or pop a storm (tap a storm to spend a token: it parks over your towers for 20 s), or tie storm colour to a build choice.
+3. **Relocation needs a lure.** Show a Power Node or a shorter-road win in the checkpoint banner, or let the Black Market sell a free relocation.
+4. **Watch the Black Market's prices against Nic's logs** (`market` entries): if he still banks 20k+, raise `MARKET.price` growth or add a repeatable item (a credits-for-score-multiplier gamble).
+5. **Most Wanted** can grow: a second poster after Wave 50, mods that change behaviour (a Worm that hunts Forges), a leaderboard line for bounties claimed.

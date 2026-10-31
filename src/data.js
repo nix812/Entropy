@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.3.0';
+const VERSION = '4.4.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,14 +167,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.3.0', title: 'Entropy 4.3 · Every Region a Doctrine', items: [
-  ['Circuit (Voltaic)', 'Towers next to each other wire up and fire faster. Chains of 4+ throw lightning every 4s. But if one tower in a chain is knocked out, the whole chain stalls.'],
-  ['Glacier (Cryogenics)', 'A Frozen enemy becomes an ice block and everything behind it piles up. All towers deal 10% less damage.'],
-  ['Event Horizon (Singularity)', 'Kills open small gravity wells that drag enemies back, and fully Marked enemies get yanked back down the road. Enemies move 12% faster.'],
-  ['Artisan (Zenith)', 'Veterans rank up twice as fast and hit harder with every rank; rerolls are half price. Rookie towers deal 20% less.'],
-  ['Gambler (Nadir)', 'Every wave flips a coin for an extra event, good or bad (always good on boss waves). +25% score, and Entropy fills faster.'],
-  ['All 8 regions', 'Every region now has a seal. The Doctrine panel in the Passive Web compares them all and points you at your next goal.'],
-  ['From 4.2', 'Doctrines, an easier Passive Web with Undo, Marksman, Wildfire and War Economy.']
+const WHATS_NEW = { ver: '4.4.0', title: 'Entropy 4.4 · Most Wanted', items: [
+  ['Most Wanted', 'Every run posts a bounty on one boss: Colossal, Twin, Hasted, Armored, Spectral or Loaded. It is announced at the start and lands on a boss wave you know in advance. Bring it in for credits and a Legendary.'],
+  ['The Black Market', 'Tap Score to open the Exchange. A pirate trader stocks three items, restocked after every boss: a stolen tower blueprint, a boss bribe, a Node Beacon that plants a Power Node where you tap, a fake star map that resets the swarm\'s memory, and more. Prices climb with the wave.'],
+  ['Red Alert', 'A boss within 8 tiles of the core sounds the alarm. The field goes red and the core enters Last Stand: ×2.5 damage against that boss. Stasis, Strike and Overcharge now.'],
+  ['Fairer bosses', 'Bosses always take the longest road and flying bosses skim it instead of cutting across empty ground. Early boss health is lower, boss health can no longer balloon from crowd damage, and the next wave hangs back while a boss is on the field. Bots on a fresh profile went from dying at Wave 22 to Wave 51.'],
+  ['Spare power', 'When power sits unused during a wave the counter pulses. Tap it to Overcharge your best tower in one go.'],
+  ['Fixes', 'Strain Assaults now happen in runs started at later waves. Pirate skiffs ignore Snare Beacons. Resumed Dailies no longer carry Cosmic Laws. Marksman no longer rounds reactor expansions away. Help and Settings opened from Pause return to Pause. The Wormhole Worm can no longer surface inside the core. Glacier and Conflagration refuse each other instead of cancelling out.']
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -277,10 +276,12 @@ function strainName(type, genes, el) {
   for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) { const c = STRAIN_COMBO[g[i] + '+' + g[j]]; if (c) { const rest = g.filter((x, k) => k !== i && k !== j).map(x => x === 'ward' ? WARD_ADJ[el] || 'Warded' : GENE_ADJ[x]); return (rest.length ? rest.join(' ') + ' ' : '') + c + ' ' + sp; } }
   return g.map(x => x === 'ward' ? WARD_ADJ[el] || 'Warded' : GENE_ADJ[x]).join(' ') + ' ' + sp;
 }
+// v4.4: hp is also the fight-time budget (boss HP = firepower × seconds × hp/38). Fast bosses reach the core in ~40 s (duck, wraith) against ~95 s for
+// Behemoth, so their hp is set lower to keep the required fire density about the same (hp / road seconds ≈ 0.4 for most).
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
-  { id: 'wraith', name: 'Phase Wraith', hp: 30, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks' },
+  { id: 'wraith', name: 'Phase Wraith', hp: 22, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks' },
   { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'Disables nearby towers' },
   { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
   // oddballs: random stand-ins on boss waves
@@ -290,7 +291,7 @@ const BOSSES = [
     titles: ['The Unbothered', 'Lord of the Leftovers', 'It Came From The Fridge', 'Mostly Water'] },
   { id: 'whale', odd: 1, tip: 'Flies, heals allies', name: 'Space Whale', hp: 58, spd: 0.32, fly: 1, size: 2, desc: 'Flies. Its song heals every enemy nearby',
     titles: ['Singer of the Deep Void', 'Big Blue', 'Krill Enthusiast', 'Just Passing Through'] },
-  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'Quackzilla', hp: 24, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
+  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'Quackzilla', hp: 17, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
     titles: ['Bath Time Is Over', 'The Rubber Reckoning', 'Squeaks When Hit', 'Unsinkable'] },
   { id: 'fsm', odd: 1, tip: 'Flies, seizes towers', name: 'Flying Spaghetti Monster', hp: 40, spd: 0.5, fly: 1, size: 2, desc: 'Flies. Noodly appendages seize towers. Drops meatballs',
     titles: ['His Noodly Appendage', 'Al Dente', 'Touched By Marinara', 'Pastafarian Prophecy'] },

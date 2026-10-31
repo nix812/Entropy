@@ -2096,7 +2096,8 @@ function swallowTower(e, t) {
   Hooks.fx('swallow', { x1: t.cx, y1: t.cy, x2: e.x, y2: e.y }); Hooks.sfx('crack');
 }
 function wormSurface(e) {
-  const frac = Math.min(0.75, e.d / e.L.len + 0.04 + G.r() * 0.05); // never pops up right on top of the core
+  // v4.4: smaller hops (3–6% of the road, was 4–9%) and it never surfaces past 70%: with a lethal breach the old worm was the deadliest boss by far
+  const frac = Math.min(0.7, e.d / e.L.len + 0.03 + G.r() * 0.03);
   const lanes = G.map.lanes.filter(L => !L.openWave);
   if (lanes.length > 1 && G.r() < 0.35) e.L = pick(G.r, lanes);
   // the same share of the road on whichever lane it surfaces in (keeping the old distance on a shorter lane dropped it into the core)
