@@ -9,7 +9,7 @@ const ENEMY_COL = {
 
 const Render = (() => {
   // the Marksman sight line is for direct-fire towers only; area towers (Cryo, Gravity Well, Arc Coil) and lobbed shots (Missile, Mortar) don't point
-const LV_COL = [null, '#8b8aa8', '#59f0b4', '#5ea9ff', '#c07cff', '#ffd84a'];
+const TW_K = 1.12, EN_K = 1.15; // v4.8 sprite scale-up (towers still sit inside their tile)
 const SIGHTED = { bullet: 1, rail: 1, beam: 1, cone: 1 };
 const RES = 2;
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
@@ -393,7 +393,7 @@ const RES = 2;
         continue;
       }
       if (t === 1 || t === 4) {
-        R(m, X, Y, TILE, TILE, '#251c3d');
+        R(m, X, Y, TILE, TILE, '#2b2048');
         for (let k = 0; k < 14; k++) { m.fillStyle = k % 3 === 0 ? '#2f254c' : k % 3 === 1 ? '#1f1834' : '#2a2045'; m.fillRect(X + ((d * (k + 3) * 7) % 48) / 2, Y + ((d * (k + 5) * 11) % 48) / 2, 0.5, 0.5); }
         continue;
       }
@@ -423,16 +423,16 @@ const RES = 2;
       if (L.openWave) continue;
       L.tiles.forEach((p, k) => {
         const X = p.x * TILE, Y = p.y * TILE;
-        if (!isP(p.x, p.y - 1)) { R(m, X, Y, TILE, 2, '#4a3a78'); R(m, X, Y + 2, TILE, 1, '#5d4a92'); }
-        if (!isP(p.x, p.y + 1)) { R(m, X, Y + TILE - 2, TILE, 2, '#0d0a18'); R(m, X, Y + TILE - 3, TILE, 1, '#3a2d5e'); }
-        if (!isP(p.x - 1, p.y)) { R(m, X, Y, 2, TILE, '#4a3a78'); R(m, X + 2, Y, 1, TILE, '#5d4a92'); }
-        if (!isP(p.x + 1, p.y)) { R(m, X + TILE - 2, Y, 2, TILE, '#0d0a18'); R(m, X + TILE - 3, Y, 1, TILE, '#3a2d5e'); }
+        if (!isP(p.x, p.y - 1)) { R(m, X, Y, TILE, 2, '#5a46a0'); R(m, X, Y + 2, TILE, 1, '#8a6ee0'); }
+        if (!isP(p.x, p.y + 1)) { R(m, X, Y + TILE - 2, TILE, 2, '#0d0a18'); R(m, X, Y + TILE - 3, TILE, 1, '#5a46a0'); }
+        if (!isP(p.x - 1, p.y)) { R(m, X, Y, 2, TILE, '#5a46a0'); R(m, X + 2, Y, 1, TILE, '#8a6ee0'); }
+        if (!isP(p.x + 1, p.y)) { R(m, X + TILE - 2, Y, 2, TILE, '#0d0a18'); R(m, X + TILE - 3, Y, 1, TILE, '#5a46a0'); }
         if (!isP(p.x, p.y - 1)) R(m, X, Y + 3, TILE, 3, 'rgba(6,4,14,0.28)');
         if (!isP(p.x - 1, p.y)) R(m, X + 3, Y, 3, TILE, 'rgba(6,4,14,0.22)');
         const nx = L.tiles[k + 1];
         if (nx && k % 2 === 0) {
           const dx = nx.x - p.x, dy = nx.y - p.y, cx = X + 12, cy = Y + 12;
-          for (let s = -4; s <= 4; s++) { const a = Math.abs(s); R(m, cx + dx * (2 - a * 0.75) - dy * s, cy + dy * (2 - a * 0.75) + dx * s, 2, 2, '#4d3d80'); }
+          for (let s = -4; s <= 4; s++) { const a = Math.abs(s); R(m, cx + dx * (2 - a * 0.75) - dy * s, cy + dy * (2 - a * 0.75) + dx * s, 2, 2, '#6650a8'); }
         }
       });
     }
@@ -509,15 +509,15 @@ const RES = 2;
   }
   function drawTower(t) {
     const X = t.x * TILE, Y = t.y * TILE, D0 = TOWERS[t.type], el = t.s ? t.s.el : D0.el, c = EL[el].col, cx = X + 12, cy = Y + 12;
-    blit(UNITS.base(el), cx, cy);
+    blit(UNITS.base(el), cx, cy, TW_K);
     const firing = t.flash > 0 || (t.aimT !== undefined && G.time - t.aimT < 0.25) || (t.beamTargets && t.beamTargets.length);
     const anim = { rk: t.flash > 0.03 ? 1 : 0, ld: t.type === 'missile' ? t.cd < 0.45 : 0,
       ph: t.type === 'forge' ? (frame >> 4) % 2 : (t.spec === 1 && t.type === 'pulse' && firing) || t.type === 'flame' && firing ? (frame >> 1) % 3 : 0 };
     const sp = UNITS.SPIN[t.type], ang = UNITS.ROT[t.type] ? (t.angle === undefined ? -1.57 : t.angle) : sp ? frame / 60 * sp * (t.disabled > 0 ? 0 : 1) + t.id : 0;
     if (t._wk !== el + (t.spec || 0)) { t._wk = el + (t.spec || 0); UNITS.warmTower(t.type, el, t.spec || 0); }
     const top = UNITS.top(t.type, el, t.spec || 0, ang, anim);
-    b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 11, 10, 0, 0, 6.283); b.fill();
-    blit(top, cx, cy - (t.type === 'pylon' && (frame >> 5) % 2 ? 0.5 : 0));
+    b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 12, 11, 0, 0, 6.283); b.fill();
+    blit(top, cx, cy - (t.type === 'pylon' && (frame >> 5) % 2 ? 0.5 : 0), TW_K);
     if (UNITS.ROT[t.type] && t.flash > 0.04 && t.type !== 'missile') { const a = t.angle || 0, L = t.type === 'rail' ? 13 : t.type === 'emp' ? 8 : 11.5; D(b, cx + Math.cos(a) * L, cy + Math.sin(a) * L, t.type === 'flame' ? 2 : 1.5, '#ffffff'); }
     // live details
     switch (t.type) {
@@ -527,8 +527,8 @@ const RES = 2;
       case 'forge': if (frame % 9 === 0) parts.push({ x: cx + 5, y: cy - 6, vx: (Math.random() - 0.5) * 3, vy: -9, life: 0.9, max: 0.9, col: '#5a5470', s: 2 }); break;
       case 'lens': { const k = Math.min(1, (t.ramp || 0) / 3.5); if (k > 0.05) D(b, cx, cy, 1 + Math.round(k * 2), hexA('#ffffff', 0.4 + 0.5 * k)); break; }
     }
-    if (t.asc) { b.strokeStyle = hexA('#ff8a2a', 0.55 + 0.3 * Math.sin(frame / 8)); b.lineWidth = 1; b.strokeRect(X + 0.5, Y + 0.5, 23, 23); }
-    // v4.7: the level now reads as a numbered badge in the overlay (drawn crisp at any zoom), see LV_COL
+    if (t.asc) { b.strokeStyle = hexA(lvTier(towerLevel(t)).col, 0.55 + 0.3 * Math.sin(frame / 8)); b.lineWidth = 1; b.strokeRect(X + 0.5, Y + 0.5, 23, 23); }
+    // v4.7: the level now reads as a numbered badge in the overlay (drawn crisp at any zoom), see the v4.8 badge pass
     let best = -1; for (const a of t.affixes) if (a.tier < 4 && a.tier > best) best = a.tier;
     if (best >= 1) { R(b, X + 18, Y + 2, 4, 4, '#090b16'); R(b, X + 19, Y + 3, 2, 2, RARITY[best].col); }
     if (t.affixes.some(a => a.tier === 4)) R(b, X + 18, Y + 7, 2, 2, RARITY[4].col);
@@ -618,6 +618,7 @@ const RES = 2;
     if (e.gen) k *= e.gen === 1 ? 0.67 : 0.45;
     if (e.genes && e.genes.includes('bulk')) k *= 1.3;
     if (e.mite) k *= 0.7;
+    if (!e.boss) k *= EN_K; // v4.8: units a size up so they read at phone zoom
     const elite = e.elite.length && !e.boss && !e.pirate, eCols = e.elite.length ? e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).col) : null;
     if (elite) k *= 1.22; // v4.7: elites stand a size up from their kin
     const su = (s.u || 1) * k, sw = s.width * su, hw = sw / 2, hh = s.height * su / 2;
@@ -720,7 +721,19 @@ const RES = 2;
     const vy = vh >= by1 - by0 ? (by0 + by1 - vh) / 2 : clamp(cam.y - vh / 2, by0, by1 - vh);
     return { vx, vy, vw, vh, ws };
   }
-  function resetCam() { cam.z = 1; cam.x = reg.x + reg.w / 2; cam.y = reg.y + reg.h / 2; atHome = true; }
+  // v4.8 home view: zoom 1 fits the sector, but on a phone that leaves tiles ~13 px. Home instead guarantees MIN_TILE screen px per
+  // tile and frames the sector around the core (the core always stays in view); pinch out or the Map button shows everything.
+  const MIN_TILE = 22;
+  const homeZ = () => Math.max(1, MIN_TILE / (TILE * scale));
+  function homeAim() {
+    const z = homeZ(), vw = W / (scale * z), vh = H / (scale * z), m = TILE * 3.5, cx = reg.x + reg.w / 2, cy = reg.y + reg.h / 2;
+    if (!G || !G.core) return { x: cx, y: cy };
+    const kx = G.core.x * TILE, ky = G.core.y * TILE;
+    return { x: vw - 2 * m > 0 ? clamp(cx, kx - vw / 2 + m, kx + vw / 2 - m) : kx, y: vh - 2 * m > 0 ? clamp(cy, ky - vh / 2 + m, ky + vh / 2 - m) : ky };
+  }
+  function goHome() { cam.z = homeZ(); const a = homeAim(); cam.x = a.x; cam.y = a.y; clampCam(); }
+  function resetCam() { goHome(); atHome = true; }
+  function overview() { cam.z = 1; cam.x = reg.x + reg.w / 2; cam.y = reg.y + reg.h / 2; clampCam(); atHome = false; }
   // follow G.region: snap on a new run, otherwise pull the camera back over a few seconds
   const easeIO = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   function updateRegion() {
@@ -741,7 +754,7 @@ const RES = 2;
       if (k >= 1) { Object.assign(reg, B); regAnim = null; }
     }
     fit();
-    if (atHome) { cam.z = 1; cam.x = reg.x + reg.w / 2; cam.y = reg.y + reg.h / 2; }
+    if (atHome) goHome();
   }
   function clampCam() { const v = view(); cam.x = v.vx + v.vw / 2; cam.y = v.vy + v.vh / 2; }
   function screenToBuf(sx, sy) { const v = view(); return { x: v.vx + sx / v.ws, y: v.vy + sy / v.ws }; }
@@ -1039,23 +1052,26 @@ const RES = 2;
       c.fillStyle = '#ffd84a'; c.fillRect(x - cw / 2, y - u * 1.5, cw, u * 2); for (const dx of [-cw / 2, -u / 2, cw / 2 - u]) c.fillRect(x + dx, y - 3 * u, u, 2 * u);
       e._crown.forEach((col, i) => { c.fillStyle = col; c.fillRect(x - (n * 2 * u - u) / 2 + i * 2 * u, y - u, u, u); });
     }
-    // v4.7 level badges: a coloured plate with the level in the tower's lower-left corner (grey 1 -> green -> blue -> purple -> gold 5,
-    // orange A1, A2... once Ascended), a pulsing green arrow when you can afford its next level, and an orange arrow on the cheapest
-    // affordable Ascension (only the cheapest, so a late-game bank doesn't light up every tower). Zoomed far out it shrinks to a dot
-    { const tpx = TILE * ws, cr = G.credits, ascMin = G.towers.reduce((m, t) => t.lvl >= MAX_LV ? Math.min(m, upgradeCost(t)) : m, Infinity), big = tpx >= 18, bs = Math.round(clamp(tpx * 0.3, 9, 13));
+    // v4.8 level badges: the tower's level (LV 1-5 plus Ascensions) on a plate in its tier colour (bands of 3: white, green, blue,
+    // purple, orange, red), amber top stripe once specialized. An arrow in the next level's tier colour sits in the other corner when
+    // you can afford it (for Ascensions only on the cheapest one, so a late-game bank doesn't light up the whole field)
+    { const tpx = TILE * ws, cr = G.credits, ascMin = G.towers.reduce((m, t) => t.lvl >= MAX_LV ? Math.min(m, upgradeCost(t)) : m, Infinity),
+        big = tpx >= 17, bs = Math.round(clamp(tpx * 0.42, 11, 17));
       c.font = `${bs - 3}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
       for (const t of G.towers) {
-        const asc = t.asc > 0, col = asc ? '#ff8a2a' : LV_COL[Math.min(t.lvl, 5)] || LV_COL[1], x = Math.round(bx2s(t.x * TILE + 1)), y = Math.round(by2s(t.y * TILE + TILE - 1));
-        if (!big) { c.fillStyle = '#090b16'; c.fillRect(x - 1, y - 5, 5, 5); c.fillStyle = col; c.fillRect(x, y - 4, 3, 3); continue; }
-        const pw = asc ? Math.round(bs * 1.6) : bs;
-        c.fillStyle = '#090b16'; c.fillRect(x - 1, y - bs - 1, pw + 2, bs + 2); c.fillStyle = col; c.fillRect(x, y - bs, pw, bs);
-        c.fillStyle = t.lvl <= 1 && !asc ? '#f2efe6' : '#0b0b12'; c.fillText(asc ? 'A' + t.asc : String(t.lvl), x + pw / 2 + 0.5, y - bs / 2 + 0.5);
-        if (t.spec) { c.fillStyle = PAL.amber; c.fillRect(x, y - bs, pw, 2); }
-        if (!G.over && cr >= upgradeCost(t) && (t.lvl < MAX_LV || upgradeCost(t) === ascMin)) { // affordable: green up-arrow for a level, orange once it's an Ascension
-          const aw = Math.max(5, bs - 3), ax = Math.round(bx2s(t.x * TILE + TILE - 1)) - aw, ay = y - aw + (frame % 30 < 15 ? 0 : -1), up = t.lvl < MAX_LV;
-          c.fillStyle = '#090b16'; c.fillRect(ax - 1, ay - 1, aw + 2, aw + 2);
-          c.fillStyle = up ? (frame % 30 < 20 ? '#59f0b4' : '#b8ffe6') : (frame % 30 < 20 ? '#ff8a2a' : '#ffd0a0');
-          c.beginPath(); c.moveTo(ax + aw / 2, ay); c.lineTo(ax + aw, ay + aw * 0.55); c.lineTo(ax + aw * 0.68, ay + aw * 0.55); c.lineTo(ax + aw * 0.68, ay + aw); c.lineTo(ax + aw * 0.32, ay + aw); c.lineTo(ax + aw * 0.32, ay + aw * 0.55); c.lineTo(ax, ay + aw * 0.55); c.closePath(); c.fill();
+        const n = towerLevel(t), col = lvTier(n).col, x = Math.round(bx2s(t.x * TILE)), y = Math.round(by2s(t.y * TILE + TILE));
+        if (!big) { c.fillStyle = '#090b16'; c.fillRect(x, y - 6, 6, 6); c.fillStyle = col; c.fillRect(x + 1, y - 5, 4, 4); continue; }
+        const pw = n >= 10 ? Math.round(bs * 1.45) : bs;
+        c.fillStyle = '#090b16'; c.fillRect(x, y - bs - 2, pw + 2, bs + 2); c.fillStyle = col; c.fillRect(x + 1, y - bs - 1, pw, bs);
+        c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(x + 1, y - bs - 1, pw, 1); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(x + 1, y - 2, pw, 1);
+        c.fillStyle = '#0b0b12'; c.fillText(String(n), x + 1 + pw / 2 + 0.5, y - 1 - bs / 2 + 0.5);
+        if (t.spec) { c.fillStyle = PAL.amber; c.fillRect(x + 1, y - bs - 1, pw, 2); }
+        const cost = upgradeCost(t);
+        if (!G.over && cr >= cost && (t.lvl < MAX_LV || cost === ascMin)) {
+          const aw = Math.max(7, bs - 2), ax = Math.round(bx2s(t.x * TILE + TILE)) - aw - 1, ay = y - aw - 1 + (frame % 30 < 15 ? 0 : -1), nc = lvTier(n + 1).col;
+          c.fillStyle = '#090b16'; c.beginPath(); c.moveTo(ax + aw / 2, ay - 1.5); c.lineTo(ax + aw + 1.5, ay + aw * 0.58); c.lineTo(ax + aw * 0.72, ay + aw * 0.58); c.lineTo(ax + aw * 0.72, ay + aw + 1); c.lineTo(ax + aw * 0.28, ay + aw + 1); c.lineTo(ax + aw * 0.28, ay + aw * 0.58); c.lineTo(ax - 1.5, ay + aw * 0.58); c.closePath(); c.fill();
+          c.fillStyle = frame % 30 < 20 ? nc : '#ffffff';
+          c.beginPath(); c.moveTo(ax + aw / 2, ay); c.lineTo(ax + aw, ay + aw * 0.55); c.lineTo(ax + aw * 0.64, ay + aw * 0.55); c.lineTo(ax + aw * 0.64, ay + aw); c.lineTo(ax + aw * 0.36, ay + aw); c.lineTo(ax + aw * 0.36, ay + aw * 0.55); c.lineTo(ax, ay + aw * 0.55); c.closePath(); c.fill();
         }
       }
     }
@@ -1264,7 +1280,7 @@ const RES = 2;
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
-    get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, get home() { return atHome; }, markMap() { mapDirty = true; },
+    get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, get home() { return atHome; }, get homeZoom() { return homeZ(); }, overview, markMap() { mapDirty = true; },
     set onCam(f) { onCam = f; },
     tileToScreen,
     // draws a boss sprite, pixel-scaled, centred on a canvas (the boss intro card)

@@ -29,7 +29,11 @@ function svgIcon(name, size) {
   const w = Math.max(...rows.map(q => q.length));
   return `<svg class="svgi" viewBox="0 0 ${w} 9" ${size ? `style="width:${size}px;height:${size}px"` : ''} aria-hidden="true">${r}</svg>`;
 }
+// v4.8 pixel sliders: fill the track up to the thumb
+function paintRange(el) { const lo = +el.min || 0, hi = +el.max || 1; el.style.setProperty('--p', ((+el.value - lo) / (hi - lo) * 100) + '%'); }
+document.addEventListener('input', e => { if (e.target && e.target.type === 'range') paintRange(e.target); }, true);
 function hydrateIcons(root) {
+  for (const r of (root || document).querySelectorAll('input[type=range]')) paintRange(r);
   for (const el of (root || document).querySelectorAll('[data-svg]')) {
     const svg = svgIcon(el.dataset.svg);
     if (el.tagName === 'I') el.outerHTML = svg; else el.innerHTML = svg;
@@ -385,7 +389,7 @@ const UI = (() => {
     const list = G.towers.filter(t => t.s.kind !== 'support' && t.s.kind !== 'eco').sort((a, b) => b.dps - a.dps).slice(0, 6);
     const max = Math.max(1, ...list.map(t => t.dps), G.core.dps || 0);
     const total = G.towers.reduce((a, t) => a + t.dps, 0);
-    $('#dps').innerHTML = `<div class="dh">DPS <b>${fmt(total)}</b></div>` + list.map(t => `<div class="drow"><span>${esc(TOWERS[t.type].name)} ${t.lvl}</span><i style="width:${Math.round(t.dps / max * 100)}%;background:${EL[t.s.el].col}"></i><b>${fmt(t.dps)}</b></div>`).join('');
+    $('#dps').innerHTML = `<div class="dh">DPS <b>${fmt(total)}</b></div>` + list.map(t => `<div class="drow"><span>${esc(TOWERS[t.type].name)} <em style="color:${lvTier(towerLevel(t)).col};font-style:normal">${towerLevel(t)}</em></span><i style="width:${Math.round(t.dps / max * 100)}%;background:${EL[t.s.el].col}"></i><b>${fmt(t.dps)}</b></div>`).join('');
   }
   const toastHeld = [], toastSeen = {};
   // v4.0 notifications, three channels so the centre of the screen stays clear:
@@ -650,9 +654,9 @@ const UI = (() => {
     const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' ? '' :
       `<div class="lbl">Target</div><div class="modes">${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${{ first: 'First', last: 'Last', strong: 'Strong', close: 'Near' }[m]}</button>`).join('')}</div>`;
     let up = '';
-    if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide" data-act="up" ${costBtn(c)}>Upgrade · ${fmt(c)}<small>LV ${t.lvl + 1}: ${s.kind === 'snare' ? 'more catches, longer hold, wider net' : s.kind === 'support' ? 'stronger boost' : s.kind === 'eco' ? 'more income' : 'more Damage'}, new affix</small></button>`; }
+    if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide lvup" style="${tierStyle(t.lvl + 1)}" data-act="up" ${costBtn(c)}>Upgrade to LV ${t.lvl + 1} · ${fmt(c)}<small>${s.kind === 'snare' ? 'more catches, longer hold, wider net' : s.kind === 'support' ? 'stronger boost' : s.kind === 'eco' ? 'more income' : 'more Damage'}, new affix</small></button>`; }
     else if (t.lvl === 3) { const c = upgradeCost(t); up = `<div class="lbl">Specialize · ${fmt(c)}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${costBtn(c)}><b>${esc(sp.name)}</b><span>${tipify(sp.desc)}</span></button>`).join('')}</div>`; }
-    else { const c = upgradeCost(t); up = `<button class="btn primary wide asc" data-act="up" ${costBtn(c)}>Ascend · ${fmt(c)}<small>A${(t.asc || 0) + 1}: ×1.3 Damage, new affix</small></button>`; }
+    else { const c = upgradeCost(t); up = `<button class="btn primary wide asc lvup" style="${tierStyle(towerLevel(t) + 1)}" data-act="up" ${costBtn(c)}>Ascend to LV ${towerLevel(t) + 1} · ${fmt(c)}<small>${lvTier(towerLevel(t) + 1).name} · ×1.3 Damage, new affix</small></button>`; }
     let vet = '';
     if (t.pending > 0) {
       const o = vetOffer(t);
@@ -664,7 +668,7 @@ const UI = (() => {
     const combat = !(s.kind === 'eco' || s.kind === 'support' || s.kind === 'snare');
     const vbar = combat ? `<div class="vrow"><span class="lbl">${t.rank ? 'Veteran ' + roman(t.rank) : 'Rookie'}</span><div class="xpbar"><i style="width:${pct(clamp((t.vxp - prevVet) / Math.max(1, nextVet - prevVet), 0, 1))}"></i></div></div>` : '';
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
-    const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}LV ${t.lvl}${t.asc ? ' · A' + t.asc : ''}${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
+    const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${t.lvl === 3 ? '' : up}
       <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button><button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
@@ -906,7 +910,7 @@ const UI = (() => {
     // double-tap: zoom in on that spot, or back out to the full map
     if (lastTap && now - lastTap.t < 330 && Math.hypot(sx - lastTap.x, sy - lastTap.y) < 30) {
       lastTap = null; closePanel();
-      if (Render.zoom < 1.5) Render.zoomAt(sx, sy, 2.2 / Render.zoom); else Render.resetCam();
+      if (Render.zoom < Render.homeZoom * 1.4) Render.zoomAt(sx, sy, Math.max(1.6, 2.2 / Render.zoom)); else Render.resetCam();
       updateZoomBtn(); SFX.play('ui'); return;
     }
     lastTap = { t: now, x: sx, y: sy };
@@ -956,7 +960,7 @@ const UI = (() => {
     Render.zoomAt((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS), e.deltaY < 0 ? 1.15 : 0.87);
     updateZoomBtn();
   }
-  function updateZoomBtn() { const b = $('#bZoom'); if (b) { b.hidden = Render.home; b.innerHTML = svgIcon('fit', 16) + 'Fit · ' + Render.zoom.toFixed(1) + '×'; } }
+  function updateZoomBtn() { const b = $('#bZoom'); if (b) { const close = Render.homeZoom > 1.05; b.hidden = Render.home && !close; b.innerHTML = svgIcon('fit', 16) + (Render.home ? 'Map' : 'Fit · ' + (Render.zoom / Render.homeZoom).toFixed(1) + '×'); } }
   function fitCols() {
     // measure the playfield the game screen will have: app minus safe areas, the two thumb rails and the status bar
     let pr = document.getElementById('fitProbe');
@@ -1147,6 +1151,8 @@ const UI = (() => {
       <div class="foot">${mode === 'copy' ? '<button class="btn primary" data-act="xclip">Copy</button>' : '<button class="btn primary" data-act="xload">Import</button>'}</div></div>`, 'settings');
     const ta = $('#xcode'); if (mode === 'copy') { ta.focus(); ta.select(); }
   }
+  // v4.8: buttons that raise a level wear the colour of the tier they lead to
+  const tierStyle = n => { const T = lvTier(n); return `--tc:${T.col}`; };
   function openSettings() {
     const S = PROF.settings;
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
@@ -1154,7 +1160,7 @@ const UI = (() => {
       <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
       <div class="set"><span>Music Studio <em class="dim">genres, mixer, saved pieces</em></span><button class="chip on" style="--c:#ff5fa8" data-act="studioS">Open</button></div>
       <label class="set"><span>Music Tempo <em id="bpmV" class="dim">${S.bpm || 72} BPM</em></span><input id="setBpm" type="range" min="56" max="100" step="2" value="${S.bpm || 72}"></label>
-      <p class="note tempo">The average tempo. Each piece sits a little above or below it, and the action still nudges it up and down.</p>
+      <p class="note tempo">The tempo of the Default mix. In the Music Studio each genre has its own.</p>
       ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
       <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
       <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
@@ -1167,7 +1173,7 @@ const UI = (() => {
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
       ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
       ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
-      <p class="note credits">Music: Drift, a generative score written live as you play, in five genres. No two runs sound the same.</p>
+      <p class="note credits">Music: Drift, a generative score written live as you play, in ten genres. No two runs sound the same.</p>
       <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div>
       <div class="row"><p class="note">${lastLogText() ? 'Last run log' : 'No run log yet'}</p>${lastLogText() ? '<button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button>' : ''}</div></div>`, 'settings');
     $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
@@ -1175,61 +1181,65 @@ const UI = (() => {
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
     const bp = $('#setBpm'); if (bp) { bp.oninput = () => { PROF.settings.bpm = +bp.value; $('#bpmV').textContent = bp.value + ' BPM'; SFX.music.setBaseBpm(+bp.value); }; bp.onchange = () => Save.save(); }
   }
-  // ---------- v4.7 Music Studio: shape the generative score ----------
-  // Default plays the calm score that follows the battle. Touching any control switches to Custom (copying the current values),
-  // so nobody has to touch it, and anybody can. Everything persists in PROF.settings.studio (it is SFX.music.config).
+  // ---------- v4.8 Music Studio: ten genres, shaped live ----------
+  // Default plays the calm mix (Ambient, Lo-fi, Trip Hop) and follows the battle. Touching any control switches to Custom,
+  // starting from the default values, so nobody has to touch it and anybody can. Everything persists in PROF.settings.studio
+  // (it is SFX.music.config). FX knobs are relative to the genre: the middle tick is the genre's own sound.
   let studioRaf = 0, studioBack = null;
-  const ST_FX = [['reverb', 'Reverb', 'Space around everything'], ['echo', 'Echo', 'Tempo-synced repeats'], ['warmth', 'Warmth', 'Rounds off the top end'], ['vinyl', 'Vinyl', 'Dust and crackle']];
+  const ST_FX = [['reverb', 'Reverb'], ['echo', 'Echo'], ['tone', 'Tone'], ['tape', 'Tape & Vinyl'], ['pump', 'Pump']];
   const ST_CH = [['pads', 'Pads'], ['keys', 'Keys'], ['arp', 'Arps'], ['bass', 'Bass'], ['drums', 'Drums'], ['lead', 'Lead']];
+  const energyWord = v => v < 0.15 ? 'Still' : v < 0.4 ? 'Chill' : v < 0.7 ? 'Groove' : 'Peak';
+  const fxWord = v => v < 0.02 ? 'Off' : Math.abs(v - 0.5) < 0.03 ? 'Genre' : (v < 0.5 ? '−' : '+') + Math.round(Math.abs(v - 0.5) * 200) + '%';
   const studioCfg = () => SFX.music.config;
-  function studioTouch() { const c = studioCfg(); if (!c.custom) { const D = JSON.parse(JSON.stringify(SFX.music.DEF)); Object.assign(c, { genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx, favOnly: false }); c.custom = true; /* what you see in Default is what you start from */ SFX.music.apply(); const m = $('#stMode'); if (m) m.outerHTML = studioModeHTML(); } }
+  function studioTouch() { const c = studioCfg(); if (!c.custom) { const D = JSON.parse(JSON.stringify(SFX.music.DEF)); Object.assign(c, { genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx, favOnly: false }); c.custom = true; /* what you see in Default is what you start from */ SFX.music.apply(); const m = $('#stMode'); if (m) m.outerHTML = studioModeHTML(); const d = $('#stDesc'); if (d) d.textContent = studioDesc(); } }
   const studioModeHTML = () => { const c = studioCfg(); return `<div class="chips" id="stMode"><button class="chip ${c.custom ? '' : 'on'}" data-act="stMode" data-v="0">Default</button><button class="chip ${c.custom ? 'on' : ''}" data-act="stMode" data-v="1">Custom</button></div>`; };
-  function studioSave() { PROF.settings.studio = studioCfg(); PROF.settings.bpm = studioCfg().bpm.chill; Save.save(); }
+  const studioDesc = () => studioCfg().custom ? 'Custom: your mix. Every change applies live, mid-piece.' : 'Default: the calm mix of Ambient, Lo-fi and Trip Hop, following the battle. Touch anything to make it yours.';
+  function studioSave() { PROF.settings.studio = studioCfg(); Save.save(); }
   function openStudio(from) {
     SFX.init(); studioBack = from || studioBack;
     if (G && !G.over) G.paused = true;
-    const M = SFX.music, c = M.config, live = c.custom ? c : M.DEF, G5 = M.GENRES, p = M.piece || {};
-    const gen = Object.keys(G5), allOn = gen.every(g => c.genres.includes(g));
-    const vis = c.custom ? c : { ...M.DEF, bpm: { ...M.DEF.bpm, chill: c.bpm.chill } };
-    const tg = p.genre || 'chill';
-    const slider = (id, lab, v, min, max, step, sub) => `<label class="set st"><span>${lab}${sub ? ` <em class="dim" id="${id}V">${sub}</em>` : ''}</span><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}"></label>`;
+    const M = SFX.music, c = M.config, G5 = M.GENRES, ids = M.GENRE_IDS, p = M.piece || {};
+    const vis = c.custom ? c : Object.assign({}, M.DEF, { favs: c.favs });
+    const sel = c.custom ? c.genres : M.DEF.genres, allOn = c.custom && ids.every(g => c.genres.includes(g));
+    const tg = p.genre && G5[p.genre] ? p.genre : 'lofi';
+    const slider = (id, lab, v, min, max, step, out, mid) => `<label class="set st"><span>${lab}</span><span class="rng${mid ? ' mid' : ''}"><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}"></span><output id="${id}V">${out}</output></label>`;
     modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2>${studioModeHTML()}<button class="x" data-act="stClose" aria-label="Close">✕</button></div>
       <div class="stnow">
         <canvas id="stViz" width="240" height="72"></canvas>
-        <div class="stinfo"><span class="lbl" id="stGen">${esc(p.genreName || '')} · ${esc(p.styleName || '')}</span><b id="stName">${esc(p.name || '…')}</b>
-          <span class="note" id="stKey">${esc(p.key || '')} · ${p.now || p.bpm || ''} BPM</span><div class="stbar"><i id="stBar"></i></div></div>
+        <div class="stinfo"><span class="lbl" id="stGen">${esc(p.genreName || '')} · ${esc(p.flavName || '')}</span><b id="stName">${esc(p.name || '…')}</b>
+          <span class="note" id="stKey">${esc(p.key || '')} · ${p.now || p.bpm || ''} BPM</span>
+          <div class="stbar"><i id="stBar"></i></div><span class="stsec"><em id="stSec">${esc(p.section || '')}</em><span>Energy now <i class="emeter"><i id="stE"></i></i></span></span></div>
         <div class="stbtns"><button class="btn small" data-act="stSkip">Skip<small>new piece</small></button><button class="btn small ${p.saved ? 'saved' : ''}" id="stSaveB" data-act="stSave">${p.saved ? '♥ Saved' : '♡ Save'}<small>keep this one</small></button></div>
       </div>
-      <p class="note stdesc">${c.custom ? 'Custom: your mix. Any change applies live, mid-piece.' : 'Default: the calm score that follows the battle. Touch anything below to make it yours.'}</p>
-      <div class="lbl stl">Genres <em class="dim">pick any mix; the composer moves between them</em></div>
-      <div class="chips stgen">${gen.map(g => `<button class="chip ${(c.custom ? c.genres : ['chill']).includes(g) ? 'on' : ''}" style="--c:${G5[g].col}" data-act="stGenre" data-v="${g}"><b>${G5[g].name}</b><small>${G5[g].bpm}</small></button>`).join('')}<button class="chip ${c.custom && allOn ? 'on' : ''}" data-act="stGenre" data-v="all"><b>Shuffle</b><small>all</small></button></div>
-      <p class="note stblurb" id="stBlurb">${(c.custom ? c.genres : ['chill']).map(g => `<span style="color:${G5[g].col}">${G5[g].name}</span> ${G5[g].blurb.toLowerCase()}`).join(' · ')}</p>
+      <p class="note stdesc" id="stDesc">${studioDesc()}</p>
+      <div class="lbl stl">Genres <em class="dim">pick any mix; each piece is one genre, the next can be another</em></div>
+      <div class="stgen">${ids.map(g => `<button class="chip ${sel.includes(g) ? 'on' : ''}" style="--c:${G5[g].col}" data-act="stGenre" data-v="${g}"><b>${G5[g].short || G5[g].name}</b><small>${G5[g].bpm[1]}</small></button>`).join('')}<button class="chip ${allOn ? 'on' : ''}" data-act="stGenre" data-v="all"><b>Shuffle</b><small>all ten</small></button></div>
+      <p class="note stblurb" id="stBlurb"><span style="color:${G5[tg].col}">${esc(G5[tg].name)}</span> ${esc(G5[tg].blurb.toLowerCase())}. Flavours: ${Object.values(G5[tg].flavours).map(f => esc(f.name)).join(', ')}.</p>
       <div class="stgrid">
         <div class="stcol">
           <div class="lbl stl">Feel</div>
-          ${slider('stEnergy', 'Energy', vis.energy, 0, 1, 0.01, vis.energy < 0.25 ? 'sleepy' : vis.energy < 0.5 ? 'easy' : vis.energy < 0.75 ? 'lively' : 'driving')}
-          ${slider('stFollow', 'Follow the Battle', vis.follow, 0, 1, 0.01, Math.round(vis.follow * 100) + '%')}
-          <div class="lbl stl">Tempo <em class="dim">per genre; the battle still nudges it</em></div>
-          ${gen.map(g => slider('stBpm_' + g, `<span style="color:${G5[g].col}">${G5[g].name}</span>`, vis.bpm[g], Math.round(G5[g].bpm * 0.72), Math.round(G5[g].bpm * 1.25), 1, vis.bpm[g] + ' BPM')).join('')}
+          ${slider('stEnergy', 'Energy', vis.energy, 0, 1, 0.01, energyWord(vis.energy))}
+          ${slider('stFollow', 'Follow Battle', vis.follow, 0, 1, 0.01, Math.round(vis.follow * 100) + '%')}
+          <p class="note sthint">Energy sets how full the music is, from bare pads to every layer, and picks calmer or harder flavours. Follow lets the battle push it up in big waves and back down between them.</p>
+          <div class="lbl stl">Tempo <em class="dim">for your genres; the battle still nudges it</em></div>
+          ${sel.map(g => slider('stBpm_' + g, `<span style="color:${G5[g].col}">${esc(G5[g].short || G5[g].name)}</span>`, vis.bpm[g] || G5[g].bpm[1], G5[g].bpm[0], G5[g].bpm[2], 1, (vis.bpm[g] || G5[g].bpm[1]) + ' BPM')).join('')}
         </div>
         <div class="stcol">
           <div class="lbl stl">Mixer <em class="dim">drag a fader, tap a name to mute</em></div>
           <div class="mixer">${ST_CH.map(([k, l]) => `<div class="fch" data-ch="${k}"><div class="fader" data-ch="${k}"><i class="fmeter"></i><i class="ffill" style="height:${Math.round((vis.mix[k] / 1.25) * 100)}%"></i><i class="fknob" style="bottom:${Math.round((vis.mix[k] / 1.25) * 100)}%"></i></div><button class="fmute ${vis.mute && vis.mute[k] ? 'm' : ''}" data-act="stMute" data-v="${k}">${l}</button></div>`).join('')}</div>
-          <div class="lbl stl">Effects</div>
-          ${ST_FX.map(([k, l]) => slider('stFx_' + k, l, vis.fx[k], 0, 1, 0.01, Math.round(vis.fx[k] * 100) + '%')).join('')}
+          <div class="lbl stl">Effects <em class="dim">the middle tick is the genre's own sound</em></div>
+          ${ST_FX.map(([k, l]) => slider('stFx_' + k, l, vis.fx[k], 0, 1, 0.01, fxWord(vis.fx[k]), 1)).join('')}
         </div>
       </div>
       <div class="lbl stl">Saved Pieces <em class="dim">${c.favs.length ? c.favs.length + ' kept' : 'tap Save while one plays'}</em></div>
       ${c.favs.length ? `<div class="set"><span>Play saved pieces only</span><button class="chip ${c.favOnly ? 'on' : ''}" data-act="stFavOnly">${c.favOnly ? 'On' : 'Off'}</button></div>
-      <div class="stfavs">${c.favs.map((f, i) => `<div class="stfav" style="--c:${(G5[f.genre] || G5.chill).col}"><b>${esc(f.name)}</b><span class="dim">${(G5[f.genre] || G5.chill).name} · ${esc(M.STYLES[f.style] ? M.STYLES[f.style].name : '')}</span><button class="btn small" data-act="stPlay" data-v="${i}">Play</button><button class="btn small danger" data-act="stDel" data-v="${i}" aria-label="Remove">✕</button></div>`).join('')}</div>` : ''}
+      <div class="stfavs">${c.favs.map((f, i) => `<div class="stfav" style="--c:${(G5[f.genre] || G5.lofi).col}"><b>${esc(f.name)}</b><span class="dim">${esc((G5[f.genre] || G5.lofi).name)} · ${esc(M.flavName(f.genre, f.flav))}</span><button class="btn small" data-act="stPlay" data-v="${i}">Play</button><button class="btn small danger" data-act="stDel" data-v="${i}" aria-label="Remove">✕</button></div>`).join('')}</div>` : ''}
       <div class="foot"><button class="btn" data-act="stReset">Reset Studio</button><button class="btn primary" data-act="stClose">Done</button></div></div>`, 'studio');
-    // sliders
     const bind = (id, fn, label) => { const el = $('#' + id); if (!el) return; el.oninput = () => { studioTouch(); fn(+el.value); const v = $('#' + id + 'V'); if (v && label) v.textContent = label(+el.value); SFX.music.apply(); }; el.onchange = studioSave; };
-    bind('stEnergy', v => c.energy = v, v => v < 0.25 ? 'sleepy' : v < 0.5 ? 'easy' : v < 0.75 ? 'lively' : 'driving');
+    bind('stEnergy', v => c.energy = v, energyWord);
     bind('stFollow', v => c.follow = v, v => Math.round(v * 100) + '%');
-    for (const g of gen) bind('stBpm_' + g, v => c.bpm[g] = v, v => v + ' BPM');
-    for (const [k] of ST_FX) bind('stFx_' + k, v => c.fx[k] = v, v => Math.round(v * 100) + '%');
-    // faders: drag anywhere on the track
+    for (const g of ids) bind('stBpm_' + g, v => c.bpm[g] = v, v => v + ' BPM');
+    for (const [k] of ST_FX) bind('stFx_' + k, v => c.fx[k] = v, fxWord);
     for (const f of document.querySelectorAll('#modal .fader')) {
       const k = f.dataset.ch, set = ev => { const r = f.getBoundingClientRect(), v = clamp(1 - (ev.clientY - r.top) / r.height, 0, 1) * 1.25; studioTouch(); c.mix[k] = Math.round(v * 100) / 100; f.querySelector('.ffill').style.height = (v / 1.25 * 100) + '%'; f.querySelector('.fknob').style.bottom = (v / 1.25 * 100) + '%'; SFX.music.apply(); };
       f.onpointerdown = ev => { ev.preventDefault(); f.setPointerCapture(ev.pointerId); set(ev); f.onpointermove = set; };
@@ -1251,9 +1261,17 @@ const UI = (() => {
         for (let y = 0; y < h; y += 4) { x.fillStyle = y > H * 0.7 ? '#ffffff' : col; x.globalAlpha = 0.35 + 0.65 * (y / H); x.fillRect(Math.round(i * bw) + 1, H - y - 4, Math.max(2, Math.round(bw) - 2), 3); }
       }
       x.globalAlpha = 1;
-      const nm = $('#stName'); if (nm && nm.textContent !== p.name) { nm.textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.styleName; const sb = $('#stSaveB'); if (sb) { sb.classList.toggle('saved', p.saved); sb.firstChild.textContent = p.saved ? '♥ Saved' : '♡ Save'; } $('.card.studio').style.setProperty('--gc', col); }
+      const nm = $('#stName');
+      if (nm && nm.textContent !== p.name) {
+        nm.textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.flavName;
+        const sb = $('#stSaveB'); if (sb) { sb.classList.toggle('saved', p.saved); sb.firstChild.textContent = p.saved ? '♥ Saved' : '♡ Save'; }
+        const card = $('.card.studio'); if (card) card.style.setProperty('--gc', col);
+        const G0 = M.GENRES[p.genre], bl = $('#stBlurb'); if (bl) bl.innerHTML = `<span style="color:${col}">${esc(G0.name)}</span> ${esc(G0.blurb.toLowerCase())}. Flavours: ${Object.values(G0.flavours).map(f => esc(f.name)).join(', ')}.`;
+      }
       const ky = $('#stKey'); if (ky) ky.textContent = p.key + ' · ' + p.now + ' BPM';
       const br = $('#stBar'); if (br) br.style.width = (p.bar / p.bars * 100) + '%';
+      const se = $('#stSec'); if (se) se.textContent = p.section;
+      const en = $('#stE'); if (en) en.style.width = Math.round(M.energyNow * 100) + '%';
       const mt = M.meters();
       for (const f of document.querySelectorAll('#modal .fader')) { const v = Math.min(1, Math.sqrt(mt[f.dataset.ch] || 0) * 2.6); f.firstChild.style.height = Math.round(v * 100) + '%'; }
     }
@@ -1262,26 +1280,26 @@ const UI = (() => {
   function studioAction(act, b) {
     const M = SFX.music, c = M.config;
     switch (act) {
-      case 'stMode': { const on = b.dataset.v === '1'; c.custom = on; if (on && !c.genres.length) c.genres = ['chill']; M.apply(); studioSave(); openStudio(); return true; }
+      case 'stMode': { const on = b.dataset.v === '1'; c.custom = on; if (on && !c.genres.length) c.genres = M.DEF.genres.slice(); M.apply(); studioSave(); if (M.piece && !(on ? c.genres : M.DEF.genres).includes(M.piece.genre)) M.skip(); openStudio(); return true; }
       case 'stGenre': {
         studioTouch();
-        const g = b.dataset.v, all = Object.keys(M.GENRES);
-        if (g === 'all') c.genres = all.every(x => c.genres.includes(x)) ? ['chill'] : all.slice();
+        const g = b.dataset.v, all = M.GENRE_IDS;
+        if (g === 'all') c.genres = all.every(x => c.genres.includes(x)) ? M.DEF.genres.slice() : all.slice();
         else if (c.genres.includes(g)) { if (c.genres.length > 1) c.genres = c.genres.filter(x => x !== g); }
         else c.genres = c.genres.concat([g]);
         M.apply(); studioSave();
         // a newly picked genre should be heard right away
-        if (g !== 'all' && c.genres.includes(g) && M.piece && M.piece.genre !== g) M.skip();
+        if (g !== 'all' && c.genres.includes(g) && M.piece && M.piece.genre !== g) M.skip({ genre: g });
         else if (M.piece && !c.genres.includes(M.piece.genre)) M.skip();
         openStudio(); return true;
       }
       case 'stMute': studioTouch(); c.mute[b.dataset.v] = !c.mute[b.dataset.v]; b.classList.toggle('m', !!c.mute[b.dataset.v]); M.apply(); studioSave(); return true;
       case 'stSkip': M.skip(); SFX.play('ui'); return true;
       case 'stSave': { const f = M.save(); if (f) { studioSave(); toast('PIECE SAVED', f.name, '#ff5fa8'); openStudio(); } return true; }
-      case 'stPlay': { const f = c.favs[+b.dataset.v]; if (f) { M.skip(f); toast('UP NEXT', f.name + ' · from the top of the next bar', '#ff5fa8'); } return true; }
+      case 'stPlay': { const f = c.favs[+b.dataset.v]; if (f) { M.skip(f); toast('UP NEXT', f.name + ' · from the next bar', '#ff5fa8'); } return true; }
       case 'stDel': c.favs.splice(+b.dataset.v, 1); if (!c.favs.length) c.favOnly = false; studioSave(); openStudio(); return true;
       case 'stFavOnly': studioTouch(); c.favOnly = !c.favOnly; studioSave(); if (c.favOnly) M.skip(); openStudio(); return true;
-      case 'stReset': { const favs = c.favs, chill = c.bpm.chill; M.setConfig({ favs, bpm: { chill } }); PROF.settings.studio = M.config; studioSave(); M.skip(); openStudio(); return true; }
+      case 'stReset': { const favs = c.favs, calmBpm = c.calmBpm; M.setConfig({ favs, calmBpm }); PROF.settings.studio = M.config; studioSave(); M.skip(); openStudio(); return true; }
       case 'stClose': { cancelAnimationFrame(studioRaf); const back = studioBack; studioBack = null; closeModal();
         if (back === 'settings') { if (G && !G.over && screen === 'game') modalFrom = 'pause'; openSettings(); }
         else if (back === 'pause' && G && !G.over && screen === 'game') openPause();
@@ -1597,7 +1615,7 @@ const UI = (() => {
     cv.addEventListener('pointerup', canvasUp);
     cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); if (!ptrs.size) gesture = null; });
     cv.addEventListener('wheel', canvasWheel, { passive: false });
-    $('#bZoom').onclick = () => { SFX.play('ui'); Render.resetCam(); updateZoomBtn(); };
+    $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
     $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });

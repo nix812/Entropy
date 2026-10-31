@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.7.0';
+const VERSION = '4.8.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -107,6 +107,11 @@ const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil
 const LV_DMG = [0, 1, 1.65, 2.6, 4.1, 6.4];
 const LV_COST = [0, 1, 0.8, 1.2, 2.0, 3.0];
 const MAX_LV = 5;
+// v4.8 one level number: LV 1-5, then each Ascension adds a level (LV 5 + A3 = LV 8). Colour tiers in bands of 3, white to red.
+const LV_TIERS = [{ max: 3, name: 'Common', col: '#ecebe4' }, { max: 6, name: 'Uncommon', col: '#3ee06a' }, { max: 9, name: 'Rare', col: '#4aa3ff' },
+  { max: 12, name: 'Epic', col: '#b86cff' }, { max: 15, name: 'Legendary', col: '#ff8a2a' }, { max: Infinity, name: 'Mythic', col: '#ff3048' }];
+const towerLevel = t => (t.lvl || 1) + (t.asc || 0);
+const lvTier = n => LV_TIERS.find(x => n <= x.max);
 
 // ---------- Affixes ----------
 const RARITY = [
@@ -167,15 +172,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.7.0', title: 'Entropy 4.7 · Music Studio', items: [
-  ['Music Studio', 'A new screen (the note button on the main menu, Pause, or Settings) for the generative soundtrack. Default keeps the calm score that follows the battle. Touch anything and it becomes yours.'],
-  ['Five genres', 'Chill, Synthwave, Techno, Chiptune and Dub, twelve styles between them. Pick one, mix several, or Shuffle all; every piece gets its own name, key and tempo.'],
-  ['Mix it yourself', 'Energy, how closely it follows the battle, a tempo for each genre, a six-channel mixer with live meters (tap a name to mute), plus Reverb, Echo, Warmth and Vinyl.'],
-  ['Save the ones you love', 'Tap Save while a piece plays to keep it. Play saved pieces any time, or play only your saved pieces.'],
-  ['Clearer battlefield', 'Elites are bigger, glow in their affix colour, stand on a turning sigil and wear a gold crown with a gem per affix. Tower levels show as coloured numbered badges (grey 1 to gold 5, orange A1+ once Ascended), with a green arrow when you can afford the next level and an orange one on your cheapest affordable Ascension. The core is 40% bigger.'],
-  ['Haptics', 'A buzz when enemies hit the core (Settings > Haptics). Works on Android; on iPhone it depends on your iOS version.'],
-  ['Breathing room', 'A little longer between waves (13 s, was 10), and the countdown slows while the last wave is still on the field in numbers. Calling a wave early still pays the bonus.'],
-  ['Small fixes', 'Area towers no longer draw a Marksman sight line.'],
+const WHATS_NEW = { ver: '4.8.0', title: 'Entropy 4.8 · Ten True Genres', items: [
+  ['Ten real genres', 'Ambient, Lo-fi Hip Hop, Trip Hop, Synthwave, House, Techno, Trance, Drum & Bass, Chiptune and Dub, each rebuilt from production research: its own tempo range, swing, drum patterns, chords, bass lines, instruments and song shape. Every genre has two or three flavours, from Deep House and Acid to One Drop and Game Boy.'],
+  ['Pieces with a shape', 'Dance genres build: intro, groove, a breakdown with a snare roll and riser, then the drop. Dub cuts instruments out and throws them into the echo. Ambient bells loop at lengths that never line up.'],
+  ['Knobs that do what they say', 'Energy runs from bare pads to every layer. Follow Battle lets the waves push it. Effects are relative to the genre (the middle tick is its own sound): Reverb, Echo, Tone, Tape & Vinyl, and Pump for the sidechain. A live Energy meter shows what the battle is doing.'],
+  ['Cleaner sliders', 'New chunky pixel sliders everywhere, with the value on the right.'],
+  ['Closer view', 'On a phone the field now opens closer (tiles at least 22 points across), framed around the core. Tap Map to see everything, then Fit to come back. Towers, enemies and lanes are bolder.'],
+  ['Tower levels you can read', 'One level number, with Ascensions counting on (LV 5 + 3 Ascensions = LV 8), coloured in bands of three: white, green, blue, purple, orange, then red from LV 16. The upgrade and Ascend buttons wear the colour of the level they lead to.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
