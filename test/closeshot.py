@@ -24,7 +24,7 @@ with sync_playwright() as p:
     spots = pg.evaluate('''() => { const a = [], W = Render.layout.W; for (let y = 1; y < ROWS - 1; y++) for (let x = 0; x < COLS; x++) {
       if (!canBuildAt(x, y) || !inRegion(x, y, G.region)) continue; const s = Render.tileToScreen(x + 0.5, y + 0.5); if (s.x < W * 0.6 || s.x > W * 0.9) continue; const r = document.querySelector('#cv').getBoundingClientRect(); if (document.elementFromPoint(r.left + s.x * UIS, r.top + (s.y - 22) * UIS) !== document.querySelector('#cv') || document.elementFromPoint(r.left + s.x * UIS, r.top + s.y * UIS) !== document.querySelector('#cv')) continue; a.push([x, y]); } return a; }''')
     def tap(xy):
-        pg.evaluate('() => { const t = document.querySelector("#toasts"); if (t) t.innerHTML = ""; }')
+        pg.evaluate('() => { const t = document.querySelector("#toasts"); if (t) t.style.display = "none"; }')
         sx, sy = pg.evaluate(pos, xy)
         cov = pg.evaluate('([x, y]) => { const e = document.elementFromPoint(x, y); return e === document.querySelector("#cv") ? null : (e.id || e.className || e.tagName) + " in " + (e.closest("[id]") || {}).id; }', [sx, sy])
         check(cov is None, f'tile {xy} is covered by {cov}')

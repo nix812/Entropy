@@ -343,6 +343,16 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 #tdrawer > .ph:first-child { position: sticky; top: -9px; margin: -9px -9px 0; padding: 9px 9px 6px; background: rgb(12, 14, 28); z-index: 3; }
 @keyframes pin { from { opacity: 0; } }
 .ph { display: flex; align-items: center; gap: 8px; }
+.ph.tabbed { flex-wrap: wrap; row-gap: 6px; }
+.ptabs { flex: 0 0 100%; display: flex; gap: 4px; }
+.ptabs .chip { flex: 1; min-height: 30px; padding: 4px 6px; font-size: 9px; letter-spacing: 0.08em; }
+.ph.tabbed .pt { flex: 1 1 0; min-width: 0; }
+.ph.tabbed .pt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel .pfoot { gap: 5px; padding-top: 6px; padding-bottom: 8px; }
+.panel .pfoot .btn { min-height: 40px; padding-block: 6px; }
+.panel .pfoot .row2 .btn { min-height: 34px; }
+.ptabs .chip i { font-style: normal; font-family: var(--f-term); font-size: 14px; margin-left: 6px; opacity: 0.75; }
+.sg.mini { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ph b { font-family: var(--f-pix); font-size: 12px; text-transform: uppercase; }
 .ph small { font-size: 15px; color: var(--dim); }
 .pt { display: flex; flex-direction: column; min-width: 0; }

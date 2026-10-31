@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.4.1';
+const VERSION = '4.5.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,14 +167,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.4.1', title: 'Entropy 4.4 · Most Wanted', items: [
-  ['Most Wanted', 'Every run posts a bounty on one boss: Colossal, Twin, Hasted, Armored, Spectral or Loaded. It is announced at the start and lands on a boss wave you know in advance. Bring it in for credits and a Legendary.'],
-  ['The Black Market', 'Tap Score to open the Exchange. A pirate trader stocks three items, restocked after every boss: a stolen tower blueprint, a boss bribe, a Node Beacon that plants a Power Node where you tap, a fake star map that resets the swarm\'s memory, and more. Prices climb with the wave.'],
-  ['Red Alert', 'A boss within 8 tiles of the core sounds the alarm. The field goes red and the core enters Last Stand: ×2.5 damage against that boss. Stasis, Strike and Overcharge now.'],
-  ['Fairer bosses', 'Bosses always take the longest road and flying bosses skim it instead of cutting across empty ground. Early boss health is lower, boss health can no longer balloon from crowd damage, and the next wave hangs back while a boss is on the field. Bots on a fresh profile went from dying at Wave 22 to Wave 51.'],
-  ['Spare power', 'When power sits unused during a wave the counter pulses. Tap it to Overcharge your best tower in one go.'],
-  ['Easier to close', 'Panel and window headers stay pinned while you scroll, so the close button is always in reach. With a panel open, tap empty ground to close it; tap a tower or the core to switch to it.'],
-  ['Fixes', 'Strain Assaults now happen in runs started at later waves. Pirate skiffs ignore Snare Beacons. Resumed Dailies no longer carry Cosmic Laws. Marksman no longer rounds reactor expansions away. Help and Settings opened from Pause return to Pause. The Wormhole Worm can no longer surface inside the core. Glacier and Conflagration refuse each other instead of cancelling out.']
+const WHATS_NEW = { ver: '4.5.0', title: 'Entropy 4.5 · High Definition', items: [
+  ['Redrawn at double resolution', 'Every tower, enemy, boss, the core and the pirate skiffs are new art at twice the detail, lit from one direction. Turrets are re-rendered at every heading, so they stay crisp as they track.'],
+  ['Everything moves', 'Beetles scuttle, Skimmers beat their wings and enemies turn to face where they are going. Launchers show when they are loaded, Gatlings spin, radar dishes sweep, bosses breathe, and Mr. Whiskers actually closes his eyes.'],
+  ['Bigger on the field', 'Enemies are about 30% larger. Missiles, mortar shells, tracers and smoke are redrawn.'],
+  ['Pull the camera back', 'Pinch out past your sector to see the whole map, with unrevealed ground veiled. Drag to pan at any zoom. Fit brings you home.'],
+  ['Tower menus with tabs', 'Tower and core menus open on Actions: upgrades, Overcharge, targeting, Reactor +1 and sell, all without scrolling. Affixes and stats live under Details. With the grid full, the build menu offers the reactor straight away.'],
+  ['Easier to close', 'Menu headers stay pinned while you scroll. With a menu open, tap empty ground to close it; tap a tower or the core to switch to it.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {

@@ -59,8 +59,19 @@ const ART = (() => {
     gem: (cx, cy, rx, ry, h) => (x, y) => { const q = Math.abs(x - cx) / rx + Math.abs(y - cy) / ry; return q > 1 ? -1 : (1 - q) * h; },
     hexgem: (cx, cy, r, h) => (x, y) => { const dx = Math.abs(x - cx), dy = Math.abs(y - cy), q = Math.max(dx * 0.866 + dy * 0.5, dy) / r; return q > 1 ? -1 : (1 - q * 0.7) * h; },
   };
-  const max = (...fs) => (x, y) => { let m = -1; for (const f of fs) { const v = f(x, y); if (v > m) m = v; } return m; };
-  const cut = (f, g) => (x, y) => g(x, y) >= 0 ? -1 : f(x, y);
+  // bounding boxes let the rasterizer skip parts that cannot cover a pixel
+  const bbF = (f, bb) => (f.bb = bb, f);
+  const BB = {
+    dome: (cx, cy, r) => [cx - r, cy - r, cx + r, cy + r], puck: (cx, cy, r) => [cx - r, cy - r, cx + r, cy + r],
+    box: (x0, y0, x1, y1) => [x0, y0, x1, y1], rbox: (x0, y0, x1, y1) => [x0, y0, x1, y1],
+    tube: (x0, x1, cy, r) => [x0, cy - r, x1, cy + r], ring: (cx, cy, r0, r1) => [cx - r1, cy - r1, cx + r1, cy + r1],
+    poly: pts => [Math.min(...pts.map(p => p[0])), Math.min(...pts.map(p => p[1])), Math.max(...pts.map(p => p[0])), Math.max(...pts.map(p => p[1]))],
+    ell: (cx, cy, rx, ry) => [cx - rx, cy - ry, cx + rx, cy + ry], gem: (cx, cy, rx, ry) => [cx - rx, cy - ry, cx + rx, cy + ry], hexgem: (cx, cy, r) => [cx - r, cy - r, cx + r, cy + r],
+  };
+  for (const k of Object.keys(BB)) { const mk = S[k]; S[k] = (...a) => bbF(mk(...a), BB[k](...a)); }
+  const max = (...fs) => { const f = (x, y) => { let m = -1; for (const g of fs) { const v = g(x, y); if (v > m) m = v; } return m; };
+    if (fs.every(g => g.bb)) f.bb = [Math.min(...fs.map(g => g.bb[0])), Math.min(...fs.map(g => g.bb[1])), Math.max(...fs.map(g => g.bb[2])), Math.max(...fs.map(g => g.bb[3]))]; return f; };
+  const cut = (f, g) => { const h = (x, y) => g(x, y) >= 0 ? -1 : f(x, y); h.bb = f.bb; return h; };
 
   // ---------- rasterizer ----------
   const L = (() => { const v = [-0.52, -0.7, 0.9], n = Math.hypot(...v); return v.map(a => a / n); })();
@@ -75,7 +86,7 @@ const ART = (() => {
       const dx = x + 0.5 - cx - ox, dy = y + 0.5 - cy - oy, X = dx * ca + dy * sa, Y = -dx * sa + dy * ca, i = y * W + x;
       lx[i] = X; ly[i] = Y;
       let best = -1, bh = -1e9;
-      for (let k = 0; k < parts.length; k++) { const h = parts[k].f(X, Y); if (h >= 0 && parts[k].z + h > bh) { bh = parts[k].z + h; best = k; } }
+      for (let k = 0; k < parts.length; k++) { const F = parts[k].f, bb = F.bb; if (bb && (X < bb[0] - 0.5 || X > bb[2] + 0.5 || Y < bb[1] - 0.5 || Y > bb[3] + 0.5)) continue; const h = F(X, Y); if (h >= 0 && parts[k].z + h > bh) { bh = parts[k].z + h; best = k; } }
       if (best >= 0) { hm[i] = bh; pid[i] = best; }
     }
     const out = new Uint8ClampedArray(n * 4), tone = new Int8Array(n).fill(-1);
@@ -123,8 +134,13 @@ const ART = (() => {
   }
   // ---------- cache with a background warm-up queue ----------
   const cache = new Map(), queue = [];
-  function get(key, make) { let c = cache.get(key); if (!c) { c = make(); cache.set(key, c); } return c; }
+  let spent = 0;
+  function get(key, make) { let c = cache.get(key); if (!c) { const t0 = performance.now(); c = make(); spent += performance.now() - t0; cache.set(key, c); } return c; }
+  // budgeted: when this frame has already spent its sprite budget, hand back a stand-in and finish the real one later
+  function getB(key, make, standIn) { const c = cache.get(key); if (c) return c; if (spent > 5) { const s = standIn(); if (s) { warm(key, make); return s; } } return get(key, make); }
+  function frameStart() { spent = 0; }
+  function has(key) { return cache.get(key); }
   function warm(key, make) { if (!cache.has(key)) queue.push([key, make]); }
-  function idle(budgetMs) { const t0 = performance.now(); while (queue.length && performance.now() - t0 < budgetMs) { const [k, m] = queue.shift(); if (!cache.has(k)) cache.set(k, m()); } }
-  return { RES: RESA, raster, paintOver, S, max, cut, ramp, mix, rgb, STEEL, DARKSTEEL, BRASS, RUST, get, warm, idle, cacheSize: () => cache.size };
+  function idle(budgetMs) { const t0 = performance.now(); while (queue.length && performance.now() - t0 < budgetMs) { const [k, m] = queue.shift(); if (!cache.has(k)) cache.set(k, m()); } spent += performance.now() - t0; }
+  return { RES: RESA, raster, paintOver, S, max, cut, ramp, mix, rgb, STEEL, DARKSTEEL, BRASS, RUST, get, getB, has, frameStart, warm, idle, queued: () => queue.length, cacheSize: () => cache.size };
 })();

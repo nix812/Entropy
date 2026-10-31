@@ -108,13 +108,17 @@ const UNITS = (() => {
       if (v === 1) for (let k = 0; k < 6; k++) { const an = k / 6 * 6.283; parts.push(P(S.gem(Math.cos(an) * 15, Math.sin(an) * 15, 2.5, 2.5, 9), 3, ramp(c, 0.9))); }
       return parts;
     },
-    pylon(c, v, a) {
+    pylon(c, v, a) { // relay mast: tripod struts, a tall spine, radar dishes sweeping round, a beacon on top
       const hex = []; for (let k = 0; k < 6; k++) { const an = k / 6 * 6.283; hex.push([Math.cos(an) * 15, Math.sin(an) * 15]); }
-      const parts = [P(S.poly(hex, 6, 3), 0, HULL, { e: glow(c, (x, y) => Math.abs(Math.hypot(x, y) - 10) < 0.8 && (Math.floor(Math.atan2(y, x) * 3) % 2 === 0)) }),
-        P(S.puck(0, 0, 5, 14, 2), 5, GUN), P(S.ring(0, 0, 9, 13, 0), 18, ramp(c, 0.8), { d: (x, y) => (x > 0 && Math.abs(y) < 3 ? -2 : 0) })];
-      parts.push(P(S.dome(0, 0, 3.5, 4), 20, ramp('#ffffff', 1), { e: () => mix(c, '#ffffff', 0.6) }));
-      if (v === 1) parts.push(P(S.ring(0, 0, 14, 16.5, 0), 12, ramp(c, 0.8)));
-      if (v === 2) for (const s of [-1, 1]) parts.push(P(S.box(-2, s * 15 - 2, 2, s * 15 + 2, 10, 1), 2, GUN));
+      const parts = [P(S.poly(hex, 5, 3), 0, HULL, { e: glow(c, (x, y) => Math.abs(Math.hypot(x, y) - 11.5) < 0.8 && (Math.floor(Math.atan2(y, x) * 3) % 2 === 0)) })];
+      for (let k = 0; k < 3; k++) { const an = k / 3 * 6.283 + 0.5, ex = Math.cos(an) * 15, ey = Math.sin(an) * 15, nx = -Math.sin(an) * 1.6, ny = Math.cos(an) * 1.6;
+        parts.push(P(S.poly([[nx, ny], [ex + nx, ey + ny], [ex - nx, ey - ny], [-nx, -ny]], 4, 1), 5, GUNM)); }
+      parts.push(P(S.puck(0, 0, 4.5, 16, 1.5), 5, GUN, { d: (x, y) => 0 }));
+      const nd = (v || 0) + 1;
+      for (let k = 0; k < nd; k++) { const an = k / nd * 6.283;
+        parts.push(P((x, y) => { const X = x * Math.cos(an) + y * Math.sin(an), Y = -x * Math.sin(an) + y * Math.cos(an); const r = Math.hypot(X - 3, Y); return X < 4 || r < 8 || r > 15 || Math.abs(Y) > 9 ? -1 : 2 + (r - 8) * 0.5; }, 17, ramp(mix(c, '#c8d0f0', 0.5), 0.8), { e: (x, y) => null }));
+        parts.push(P((x, y) => { const X = x * Math.cos(an) + y * Math.sin(an), Y = -x * Math.sin(an) + y * Math.cos(an); return X < 0 || X > 9 || Math.abs(Y) > 1.2 ? -1 : 2; }, 19, GUN)); }
+      parts.push(P(S.dome(0, 0, 3.6, 4), 22, ramp(c, 1), { e: (x, y) => Math.hypot(x + 1, y + 1) < 1.4 ? '#ffffff' : null }));
       return parts;
     },
     forge(c, v, a) {
@@ -149,7 +153,8 @@ const UNITS = (() => {
   function top(type, el, spec, ang, anim) {
     const ai = idxOf(ang), rk = anim.rk ? 1 : 0, ph = anim.ph || 0, ld = anim.ld ? 1 : 0;
     const key = `tt:${type}:${el}:${spec}:${ai}:${rk}:${ph}:${ld}`;
-    return get(key, () => raster(TOP[type](EL[el].col, spec || 0, { rk, ph, ld }), 60, 60, angOf(ai)));
+    return ART.getB(key, () => raster(TOP[type](EL[el].col, spec || 0, { rk, ph, ld }), 60, 60, angOf(ai)), () => {
+      for (let d = 0; d <= NA / 2; d++) for (const a2 of [(ai + d) % NA, (ai - d + NA) % NA]) for (const k of [`tt:${type}:${el}:${spec}:${a2}:${rk}:${ph}:${ld}`, `tt:${type}:${el}:${spec}:${a2}:0:0:${ld}`, `tt:${type}:${el}:${spec}:${a2}:0:0:1`, `tt:${type}:${el}:${spec}:${a2}:0:0:0`]) { const c = ART.has(k); if (c) return c; } return null; });
   }
   // build-menu card / icon art: one composite at a fixed heading
   function icon(type, el) {
@@ -229,7 +234,8 @@ const UNITS = (() => {
   function enemy(type, ang, fr) {
     if (!ENEMY[type]) return null;
     const ai = ((Math.round(ang / (Math.PI * 2) * EA) % EA) + EA) % EA, f = fr & 3, sz = ESZ[type];
-    return get(`en:${type}:${ai}:${f}`, () => raster(ENEMY[type](ENEMY_COL[type], f), sz, sz, ai / EA * Math.PI * 2));
+    const mk = (a2, f2) => () => raster(ENEMY[type](ENEMY_COL[type], f2), sz, sz, a2 / EA * Math.PI * 2);
+    return ART.getB(`en:${type}:${ai}:${f}`, mk(ai, f), () => { for (let d = 0; d <= EA / 2; d++) for (const a2 of [(ai + d) % EA, (ai - d + EA) % EA]) for (const f2 of [f, 0, 1, 2, 3]) { const c = ART.has(`en:${type}:${a2}:${f2}`); if (c) return c; } return null; });
   }
   // ---------- bosses: 72 world units (144 px), two-frame idle animation, drawn facing right and flipped by heading ----------
   const nz = (x, y) => Math.sin(x * 0.71 + Math.sin(y * 0.53) * 2.1) * Math.cos(y * 0.67 - x * 0.19) ; // soft organic texture
@@ -383,8 +389,8 @@ const UNITS = (() => {
   }
   function coreGun(el, ang) {
     const ai = idxOf(ang);
-    return get(`cgun:${el}:${ai}`, () => { const c = EL[el].col; return raster([P(S.tube(10, 34, -3.5, 2.4, 0), 18, GUN, { d: stripes(5, 1) }), P(S.tube(10, 34, 3.5, 2.4, 0), 18, GUN, { d: stripes(5, 1) }),
-      P(S.box(30, -6.5, 36, 6.5, 4, 1.5), 18, ramp(c), { e: (x) => x > 34.5 ? mix(c, '#ffffff', 0.5) : null }), P(S.box(6, -7, 14, 7, 5, 2), 16, GUNM)], 76, 76, angOf(ai)); });
+    return get(`cgun:${el}:${ai}`, () => { const c = EL[el].col; return raster([P(S.tube(10, 32, -3.5, 2.4, 0), 18, GUNM, { d: stripes(5, 1) }), P(S.tube(10, 32, 3.5, 2.4, 0), 18, GUNM, { d: stripes(5, 1) }),
+      P(S.box(28, -6.5, 33, 6.5, 4, 1.5), 18, ramp(c), { e: (x) => x > 31.5 ? mix(c, '#ffffff', 0.5) : null }), P(S.box(6, -7, 14, 7, 5, 2), 16, HULL)], 76, 76, angOf(ai)); });
   }
   function pirate(gold) {
     return get('pship:' + (gold ? 1 : 0), () => {
@@ -399,8 +405,18 @@ const UNITS = (() => {
     });
   }
 
+  // ---------- projectiles ----------
+  function missile(el, ang) {
+    const ai = ((Math.round(ang / (Math.PI * 2) * 16) % 16) + 16) % 16;
+    return get(`pm:${el}:${ai}`, () => { const c = EL[el].col; return raster([P(S.tube(-6, 5, 0, 2.2, 0), 2, ramp('#d8d0c8', 0.8)), P(S.ell(5, 0, 3, 2.2, 2), 2, ramp(c, 0.9)),
+      P(S.poly([[-6, -1], [-9, -4.5], [-4, -1]], 2, 1), 0, ramp('#8a8296')), P(S.poly([[-6, 1], [-9, 4.5], [-4, 1]], 2, 1), 0, ramp('#8a8296'))], 22, 22, ai / 16 * Math.PI * 2); });
+  }
+  function shell(el) { return get('psh:' + el, () => raster([P(S.dome(0, 0, 4.5, 4), 0, ramp('#4a4836', 0.6), { e: (x, y) => Math.abs(x) < 1 || Math.abs(y) < 1 ? EL[el].col : null })], 12, 12, 0)); }
+
+  function warmEnemies() { for (const id of Object.keys(BOSS_ART)) for (const f of [0, 1]) ART.warm(`bs:${id}:${f}:0`, () => raster(BOSS_ART[id](f, 0), 148, 148, 0)); ART.warm('bs:cat:0:1', () => raster(BOSS_ART.cat(0, 1), 148, 148, 0)); ART.warm('bs:cat:1:1', () => raster(BOSS_ART.cat(1, 1), 148, 148, 0));
+    for (const ty of Object.keys(ENEMY)) for (let f = 0; f < 4; f++) for (let i = 0; i < EA; i++) ART.warm(`en:${ty}:${i}:${f}`, () => raster(ENEMY[ty](ENEMY_COL[ty], f), ESZ[ty], ESZ[ty], i / EA * Math.PI * 2)); }
   function warmTower(type, el, spec) {
     if (ROT[type]) for (let i = 0; i < NA; i++) for (const rk of [0, 1]) ART.warm(`tt:${type}:${el}:${spec}:${i}:${rk}:0:${type === 'missile' ? 1 : 0}`, () => raster(TOP[type](EL[el].col, spec || 0, { rk, ph: 0, ld: type === 'missile' ? 1 : 0 }), 60, 60, angOf(i)));
   }
-  return { base, top, icon, enemy, boss, wormSeg, meat, core, coreGun, pirate, warmTower, ROT, SPIN, NA, ESZ };
+  return { base, top, icon, enemy, boss, wormSeg, meat, core, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
 })();
