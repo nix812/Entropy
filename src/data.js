@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.5.1';
+const VERSION = '4.6.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,12 +167,11 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.5.1', title: 'Entropy 4.5.1 · Sound Pass', items: [
-  ['Every sound rebuilt', 'Retro voices, modern mix. Each sound is layered: a crisp attack, a body, and a low thump for the heavy hits, with shared room and hall reverbs. Sounds come from where they happen on screen, and anything off-screen is quieter and duller.'],
-  ['A voice for every tower', 'Light guns sit high and heavy ones low, so a full board stays readable. The Void Lens now hums and climbs in pitch as its beams charge. Snare Beacons zip when they catch a flier.'],
-  ['Hits and kills you can hear', 'Crits ring, Plating clanks and shields ping. Each enemy type dies with its own sound, and rapid kills climb in pitch.'],
-  ['A cleaner mix', 'When many towers fire at once each shot plays a little quieter, and every sound has a voice limit. Big moments like a boss arriving, a Nova, an Orbital Strike or a breach briefly pull everything else down so they land.'],
-  ['Low hull warning', 'Below 35% hull, a heartbeat starts. It speeds up as the hull falls.'],
+const WHATS_NEW = { ver: '4.6.0', title: 'Entropy 4.6 · Drift', items: [
+  ['A score that writes itself', 'The soundtrack is now Drift, a generative composer that plays live as you do. It picks a style, a key and a chord progression, writes a melody and slowly varies it, then moves to a related key and a new piece. No two runs sound the same.'],
+  ['Five moods', 'Drift (pads and glass), Lofi (electric piano and a dusty beat), Glass (plucked arpeggios), Tide (a gentle synth pulse) and Nocturne (a slow waltz of broken chords). Calm moments lean ambient, busy ones lean groovy.'],
+  ['It follows the battle', 'Layers fade in as the field gets busier: bass, keys, hats, drums, melody, sparkles. Bosses steer the next piece into a minor key. It stays chill throughout.'],
+  ['Pick your tempo', 'Settings > Music Tempo sets the average beat, from 56 to 100 BPM. Each piece sits a little above or below it, and the action still nudges it.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {

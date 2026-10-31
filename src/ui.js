@@ -347,7 +347,10 @@ const UI = (() => {
     if (hudFull) renderDps();
     renderFeed();
     liveRefreshPanel();
-    SFX.music.setIntensity(0.25 + Math.min(0.45, G.wave / 60) + (G.bossAlive ? 0.35 : 0) + (G.storms.some(s => s.mael) ? 0.2 : 0));
+    // the score follows the action: the run's depth, how busy the field is right now, bosses and Maelstroms
+    const boss = !!(G.bossAlive && !G.bossAlive.dead);
+    SFX.music.setIntensity(0.2 + Math.min(0.3, G.wave / 70) + Math.min(0.22, G.enemies.length / 90) + (boss ? 0.25 : 0) + (G.storms.some(s => s.mael) ? 0.12 : 0) - (G.paused ? 0.15 : 0));
+    SFX.music.setMood(boss ? 'boss' : 'calm');
   }
   function renderDps() {
     const list = G.towers.filter(t => t.s.kind !== 'support' && t.s.kind !== 'eco').sort((a, b) => b.dps - a.dps).slice(0, 6);
@@ -1102,8 +1105,9 @@ const UI = (() => {
     const S = PROF.settings;
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
       <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
-      <div class="set"><span>Soundtrack</span><div class="chips"><button class="chip ${!S.soundtrack || S.soundtrack === 'ec' ? 'on' : ''}" data-act="strack" data-v="ec">Composed</button><button class="chip ${S.soundtrack === 'mix' ? 'on' : ''}" data-act="strack" data-v="mix">Mixed</button><button class="chip ${S.soundtrack === 'synth' ? 'on' : ''}" data-act="strack" data-v="synth">Generative</button></div></div>
       <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
+      <label class="set"><span>Music Tempo <em id="bpmV" class="dim">${S.bpm || 72} BPM</em></span><input id="setBpm" type="range" min="56" max="100" step="2" value="${S.bpm || 72}"></label>
+      <p class="note tempo">The average tempo. Each piece sits a little above or below it, and the action still nudges it up and down.</p>
       ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
       <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
       <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
@@ -1112,12 +1116,13 @@ const UI = (() => {
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
       ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
       ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
-      <p class="note credits">Music: "Attention" and "Bosch's Garden" by kjartan_abel (freesound.org/s/568005 and /s/647212), Creative Commons licence. Thank you!</p>
+      <p class="note credits">Music: Drift, a generative score written live as you play. No two runs sound the same.</p>
       <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div>
       <div class="row"><p class="note">${lastLogText() ? 'Last run log' : 'No run log yet'}</p>${lastLogText() ? '<button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button>' : ''}</div></div>`, 'settings');
     $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
+    const bp = $('#setBpm'); if (bp) { bp.oninput = () => { PROF.settings.bpm = +bp.value; $('#bpmV').textContent = bp.value + ' BPM'; SFX.music.setBaseBpm(+bp.value); }; bp.onchange = () => Save.save(); }
   }
   const GUIDE = [
     { id: 'basics', name: 'Basics', rows: [
@@ -1394,7 +1399,7 @@ const UI = (() => {
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
           P.runSnap = null; PROF = P; Save.save(); closeModal(); renderHangar(); Tree.refresh();
           SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
-  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec');
+  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setBaseBpm(PROF.settings.bpm || 72);
           toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');
         } catch (e) { toast('INVALID CODE', 'Make sure the full code was pasted', '#ff4d6a', 1); }
         break;
@@ -2193,7 +2198,7 @@ const Tree = (() => {
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900);
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
-  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec');
+  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)
   // and reload onto it from the main menu, never mid-run
