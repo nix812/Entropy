@@ -138,6 +138,7 @@ function computeMods(alloc, runMods) {
   // legacy remnants from the old web: that tree's one-point notables stay on
   for (const r of PROF.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
   if (m.vxpAll) for (const e of ELS) orb.vxp[e] = (orb.vxp[e] || 0) + m.vxpAll;
+  m.dmg = (m.dmg || 0) + pointsSpent() * TAL_PT_DMG;
   if (runMods) for (const k in runMods) m[k] = (m[k] || 0) + runMods[k];
   const g = k => m[k] || 0;
   const P = g('P'), Tm = g('Tm'), F = g('F'), I = g('I');

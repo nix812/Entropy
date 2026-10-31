@@ -527,6 +527,36 @@ Nic gave the session full creative control: review, bug hunt, balance sweep, the
   - Lanes are brighter, with a lit inner edge.
   - Level display (4.8.1, overlay pass): a thin tier-coloured line under every tower, the level number only under the selected tower, and one arrow above the best next upgrade (lowest affordable level, cheapest tie; else the cheapest affordable Ascension). It uses `towerLevel(t)` = lvl + asc and `lvTier(n)` (`LV_TIERS` in data.js: white 1–3, green 4–6, blue 7–9, purple 10–12, orange 13–15, red 16+). Upgrade/Ascend buttons use the next level's tier colour (`tierStyle`, class `.lvup`), and the panel header shows a coloured `.lvtag`. Test: `test/tiershot.py`.
 
+### 4.13 v5.0 Clean Sheet: Talents, economy, breach warning (October 31 2026)
+- **Why:** Nic never used a Recalibration token because the 183-node web was too complex. He asked for a clean sheet with fewer nodes, a simple layout, real rewards and defining capstones, plus a look at late-game gold, pirate rewards and tokens. His Wave 87 log also showed 5 Void Lenses doing 89% of the damage, and a core that sat at full health right up to a one-wave death.
+- **Talents** (`TALENTS`, `TAL`, `TREE_BY_ID`, `talentLines` in data.js; `talentBlock/Add/CanRemove/Remove/Reset`, `treePts`, `capsHeld`, `activeCaps`, `treeSaveBuild/LoadBuild`, `migrateWeb` in sim.js):
+  - **Trees.** 7 trees (K T A C V E X) of 4 rows. Row r needs `5 × r` points spent in earlier rows of that tree (`rowNeed`); Capstones need 20 (`TCAP`).
+  - **Ranks.** Talents have `max` ranks, and their `fx` scale linearly with rank.
+  - **Capstones.** Each tree has 3 (`cap: 1`): either a `ks` flag (the old keystones and Doctrines: same flags, same field code) or an `fx` bundle. `capSlots(level)` = 1, 2 from level 50, 3 from 100. `CAP_CONFLICTS` stops Conflagration sitting beside Glacier, Absolute Zero or Long Winter.
+  - **Global bonus.** Every point spent adds `TAL_PT_DMG` (0.4%) damage, so any build is a power gain (the bot specialises badly, and players notice it too).
+  - **Profile.** `PROF.tal = { id: rank }`, `PROF.caps = [ids]`. Remnants (Supernova) are capstone ids, always on and without a slot. Legacy `sN` remnants give that tree's one-rank talents.
+  - **Supernova** needs 2 Capstones plus the level, and keeps one held Capstone as a Remnant.
+  - **Migration.** `WEB_VER = 4` resets older webs and refunds everything (toast "TALENTS ARRIVE").
+  - **Removed.** Orbits, Star Ranks, constellations, masteries, seals, `TREE`. `M.orb` is still returned (empty), and `vxpAll` (Field Promotion) fills `orb.vxp` for every element.
+- **Talents screen** (`Tree` module in ui.js, plain DOM; the API is unchanged: open/close/isOpen/refresh/select):
+  - Layout: tree tabs plus "Your Build" on the left, rows and tiles in the middle (tap = info, + or double-tap = add), details on the right with Learn/Add/Remove.
+  - Builds drawer with 5 slots. Reset is free between runs and at checkpoints.
+  - Mid-run refunds cost tokens: 1 per rank, 2 per Capstone.
+  - CSS lives under `#tbody`/`.ttile`. Test: `test/talentshot.py [W H]`.
+- **Economy:**
+  - `crMult(w)` × (1 + 1% per wave past 40).
+  - Wave-clear bonus 25 + 6w (was 20 + 4w).
+  - Crates: `crateCr(w)` = (60 + 22w) × the same late factor; the credits roll is 50% (was 40%).
+  - The Captain's Chest always pays 5 crates' worth plus a token, then a Legendary or an ability charge.
+- **Tokens:** `rerollTower(t, true)` spends a token instead of credits; the tower panel shows "Reroll · 1 token" when you have one.
+- **Breach warning** (`startWave`): if a wave leaked 3+ and either it leaked 6+ or the wave before it also leaked 3+, an alert names the main leaker (from `G.leakBy` deltas) and its gene counter. Log key `breachWarn`. It is on the Key notifications list.
+- **Void Lens:** dmg 1.7 (was 1.85), ramp ×3.2 (was 3.5), Event Horizon ×5 (was 5.5), Prism ×2.8 (was 3).
+- **Bot** (`smartbot.js`): fills trees in a seeded order, row by row, and takes a Capstone when one opens (`CAP=id` forces one, `NOCAP=1` never takes one).
+  - `par.sh` temp files carry the PID, so two batches can run at once.
+  - Run balance batches from a frozen copy of `src` (pitfall 26).
+  - `test/balsum.py` summarises par output: median, Lens share, bank, ascensions.
+- **Balance** (12 seeds, Normal, COLS 48, bots; median wave): see the version table entry for the numbers measured this session.
+
 ## 5. Profile (`PROF`) fields worth knowing
 `v, webV, xp, alloc[], builds[5], bestWave, bestScore, runs, seenVer (last version whose What's New was closed; the popup shows once per version for returning players), kills, playTime, settings{sfx, music, soundtrack, hud, dmgNums, shake, webView, uiScale}, seenHelp, zoomHint, runSnap, lastSetup, codex, mastery{}, loadout[], orbit{}, nova, remnants[], laws[], stars{}, hall[], novaOffer, daily, updatedAt`
 

@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.8.1';
+const VERSION = '5.0.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -90,11 +90,11 @@ const TOWERS = {
     blurb: 'Short-range cone. Applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
-  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.6, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.0, // v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
+  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.7, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.2, // v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
     st: { mark: 0.15 }, unlock: 20,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×4.6 damage', m: { rampMax: 4.6 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.6', m: { beams: 3, rampMax: 2.6 } }] },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×5 damage', m: { rampMax: 5 } },
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.8', m: { beams: 3, rampMax: 2.8 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
@@ -173,14 +173,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.8.1', title: 'Entropy 4.8.1 · Ten True Genres', items: [
-  ['Tower art stays clear', 'Level numbers no longer sit on the towers. Each tower has a thin line under it in its level colour, the selected tower shows its level below it, and a single arrow floats over the best next upgrade: your lowest-level tower you can afford (or, once everything is maxed, your cheapest Ascension).'],
-  ['Ten real genres', 'Ambient, Lo-fi Hip Hop, Trip Hop, Synthwave, House, Techno, Trance, Drum & Bass, Chiptune and Dub, each rebuilt from production research: its own tempo range, swing, drum patterns, chords, bass lines, instruments and song shape. Every genre has two or three flavours, from Deep House and Acid to One Drop and Game Boy.'],
-  ['Pieces with a shape', 'Dance genres build: intro, groove, a breakdown with a snare roll and riser, then the drop. Dub cuts instruments out and throws them into the echo. Ambient bells loop at lengths that never line up.'],
-  ['Knobs that do what they say', 'Energy runs from bare pads to every layer. Follow Battle lets the waves push it. Effects are relative to the genre (the middle tick is its own sound): Reverb, Echo, Tone, Tape & Vinyl, and Pump for the sidechain. A live Energy meter shows what the battle is doing.'],
-  ['Cleaner sliders', 'New chunky pixel sliders everywhere, with the value on the right.'],
-  ['Closer view', 'On a phone the field now opens closer (tiles at least 22 points across), framed around the core. Tap Map to see everything, then Fit to come back. Towers, enemies and lanes are bolder.'],
-  ['Tower levels you can read', 'One level number, with Ascensions counting on (LV 5 + 3 Ascensions = LV 8), coloured in bands of three: white, green, blue, purple, orange, then red from LV 16. The upgrade and Ascend buttons wear the colour of the level they lead to.'],
+const WHATS_NEW = { ver: '5.0.0', title: 'Entropy 5.0 · Clean Sheet', items: [
+  ['Talents replace the passive web', 'Seven short trees: Ballistics, Combustion, Voltaic, Cryogenics, Singularity, Bastion and Command. Each row opens after 5 points in its tree, and talents have ranks with real numbers. Every point you spend also adds +0.4% Damage to every tower. All your points are refunded: open Talents to spend them.'],
+  ['Capstones', 'Twenty points into a tree opens three play styles: pick one. Marksman, Glass Cannon, Wildfire, Conflagration, Circuit, Glacier, War Economy, Artisan, Gambler and more. Hold 1, then 2 from Level 50 and 3 from Level 100.'],
+  ['Recalibration tokens you\'ll use', 'Spend a token to reroll a tower\'s affixes for free, or to refund a talent mid-run (2 for a Capstone). The Captain\'s Chest now gives one too.'],
+  ['More gold late', 'Wave-clear bonus raised (25 + 6 per wave, was 20 + 4). From Wave 40 kill credits grow a little faster each wave. Pirate crates pay about 50% more and drop credits more often; the Captain\'s Chest always pays five crates\' worth.'],
+  ['Breach warning', 'When leaks start climbing, an alert names what is getting through and what counters it, before one bad wave ends the run.'],
+  ['Void Lens trimmed', 'Ramp ×3.2 (was ×3.5) and a little less base damage, Event Horizon ×5, Prism Split ×2.8. Five Lenses did 89% of the damage in a Wave 87 run; other towers matter again.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {
@@ -493,28 +492,30 @@ const DOCTRINES = {
 // Talent effects use the same stat keys as before (STAT_TXT), so every mechanic from the old web still exists.
 const WEB_VER = 4;
 const TROW = 5, TCAP = 20;
+// every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall
+const TAL_PT_DMG = 0.4;
 const T_ = (id, name, max, fx, extra) => Object.assign({ id, name, max, fx }, extra || {});
 const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
 const TALENTS = [
   { id: 'K', name: 'Ballistics', col: '#efe6cf', glyph: 'K', tag: 'Kinetic guns: crits that tear through armour',
     rows: [
-      [T_('kDmg', 'Heavy Rounds', 5, { dmgK: 5 }), T_('kCrit', 'Precision', 5, { critC: 2 })],
-      [T_('kRate', 'Autoloader', 5, { rateK: 3 }), T_('kPen', 'Penetrator', 3, { armorPen: 10 })],
+      [T_('kDmg', 'Heavy Rounds', 5, { dmgK: 7 }), T_('kCrit', 'Precision', 5, { critC: 3 })],
+      [T_('kRate', 'Autoloader', 5, { rateK: 4 }), T_('kPen', 'Penetrator', 3, { armorPen: 10 })],
       [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 3, { critM: 12 })],
       [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 3, { shredStack: 1, eliteDmg: 4 })]],
     caps: [CAP('marksman', 'Marksman', { ks: 'marksman', doc: 0 }), CAP('glass', 'Glass Cannon Array', { ks: 'glass', lines: ['+60% Damage', '−40% core max HP and shield'] }),
       CAP('deadeye', 'Deadeye', { fx: { critCK: 15, critMK: 50, pierceK: 1, pierceKeep: 1 }, lines: ['+15% Crit Chance and +50% Crit Damage for Kinetic towers', 'Kinetic shots pierce one more enemy and lose no damage doing it'] })] },
   { id: 'T', name: 'Combustion', col: '#ff7b39', glyph: 'T', tag: 'Thermal and Burn: set the swarm alight',
     rows: [
-      [T_('tDmg', 'Accelerant', 5, { dmgT: 5 }), T_('tChance', 'Kindling', 5, { burnChance: 3 })],
-      [T_('tBurn', 'Fuel', 5, { burnDmg: 8 }), T_('tSplash', 'Blast Radius', 3, { splash: 0.1 })],
+      [T_('tDmg', 'Accelerant', 5, { dmgT: 7 }), T_('tChance', 'Kindling', 5, { burnChance: 3 })],
+      [T_('tBurn', 'Fuel', 5, { burnDmg: 10 }), T_('tSplash', 'Blast Radius', 3, { splash: 0.1 })],
       [T_('tBoom', 'Flashpoint', 1, { burnBoom: 25, dmgT: 8 }), T_('tVuln', 'Scorch', 3, { burnVuln: 7 })],
       [T_('tChain', 'Chain Ignition', 1, { chainIgnite: 1, burnDur: 20 }), T_('tNapalm', 'Napalm', 1, { napalmKill: 1, burnDmg: 10 }), T_('tCrit', 'Incendiary Rounds', 1, { burnCrit: 1 })]],
     caps: [CAP('wildfire', 'Wildfire', { ks: 'wildfire', doc: 1 }), CAP('conflag', 'Conflagration', { ks: 'conflag', lines: ['All damage becomes Thermal (Resonance unaffected)', '+50% Thermal Damage, +150% Burn damage. Burning enemies are 25% slower', 'Every 3rd Thermal hit on a burning enemy triggers Thermal Shock', 'Chill becomes Burn: cannot Chill or Freeze'] }),
       CAP('pyre', 'Pyre', { fx: { burnSpread: 1, heatSink: 1 }, lines: ['Every second, Burn spreads to the nearest enemy within 1 tile', 'Thermal towers: +2% Attack Speed per Burning enemy, up to +40%'] })] },
   { id: 'A', name: 'Voltaic', col: '#ffe14d', glyph: 'A', tag: 'Arc and speed: chains, shocks and overloads',
     rows: [
-      [T_('aDmg', 'Voltage', 5, { dmgA: 5 }), T_('aRate', 'Cadence', 5, { rate: 2 })],
+      [T_('aDmg', 'Voltage', 5, { dmgA: 7 }), T_('aRate', 'Cadence', 5, { rate: 3 })],
       [T_('aShock', 'Static', 5, { shockChance: 3 }), T_('aDis', 'Discharge', 3, { rateA: 4 })],
       [T_('aFork', 'Forked Lightning', 1, { chain: 1, chainKeep: 1 }), T_('aOver', 'Overvolt', 3, { shockEff: 12 })],
       [T_('aCap', 'Capacitors', 1, { capacitor: 1, dmgA: 10 }), T_('aIon', 'Ion Lattice', 1, { multiA: 1 }), T_('aPlasma', 'Plasma Coupling', 1, { ovlBurn: 1, overloadRad: 30 })]],
@@ -522,7 +523,7 @@ const TALENTS = [
       CAP('thunder', 'Thunderstrike', { fx: { thunder: 1, shockLong: 1, ovlFree: 1 }, lines: ['Every 6s, lightning strikes the toughest enemy on the map', 'Shock lasts 6s instead of 3s', 'Overload has no cooldown'] })] },
   { id: 'C', name: 'Cryogenics', col: '#6ae2ff', glyph: 'C', tag: 'Chill and Freeze: slow them, then shatter them',
     rows: [
-      [T_('cDmg', 'Frostbite', 5, { dmgC: 5 }), T_('cPot', 'Permafrost', 5, { chillPot: 8 })],
+      [T_('cDmg', 'Frostbite', 5, { dmgC: 7 }), T_('cPot', 'Permafrost', 5, { chillPot: 10 })],
       [T_('cChance', 'Frost', 5, { chillChance: 3 }), T_('cStill', 'Stillness', 3, { freezeDur: 0.1 })],
       [T_('cDeep', 'Deep Freeze', 1, { freezeAt: 1, freezeDur: 0.3 }), T_('cBrittle', 'Brittle', 3, { frozenVuln: 8 })],
       [T_('cLattice', 'Frost Lattice', 1, { chillSplash: 1, dmgC: 10 }), T_('cShards', 'Ice Shards', 1, { iceShards: 1 }), T_('cSuper', 'Superconductors', 1, { superChill: 1, superRad: 60 })]],
@@ -530,7 +531,7 @@ const TALENTS = [
       CAP('winter', 'Long Winter', { fx: { chillSlowDecay: 1, coldSnap: 1, glacial: 15 }, lines: ['Chill fades 3× slower', 'Shatter also Freezes enemies within 1 tile', 'Chilled enemies move an extra 15% slower'] })] },
   { id: 'V', name: 'Singularity', col: '#b86cff', glyph: 'V', tag: 'Void and Marks: bend the road, collapse the strong',
     rows: [
-      [T_('vDmg', 'Null', 5, { dmgV: 4 }), T_('vHunt', 'Hunter', 5, { eliteDmg: 4 })],
+      [T_('vDmg', 'Null', 5, { dmgV: 6 }), T_('vHunt', 'Hunter', 5, { eliteDmg: 5 })],
       [T_('vMark', 'Mark', 5, { markChance: 3 }), T_('vKnock', 'Gravitic', 3, { knock: 2 })],
       [T_('vLens', 'Null Lens', 1, { rampKeep: 1, dmgV: 8 }), T_('vSlow', 'Event Drag', 3, { markSlow: 10 })],
       [T_('vDark', 'Dark Matter', 1, { markVoid: 5, markMax: 3 }), T_('vHole', 'Black Hole', 1, { blackHole: 1, collapse: 30 }), T_('vPull', 'Gravitic Pull', 1, { knockMark: 1, knock: 3 })]],
