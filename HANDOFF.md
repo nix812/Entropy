@@ -423,7 +423,7 @@ Nic gave the session full creative control: review, bug hunt, balance sweep, the
   - **Circuit (`ks.circuit`):** `recomputeAuras` wires attack towers in the 8 neighbouring tiles (`t.wires`), +8% (+`cLink`) attack speed per wire (max 4), and groups them into `G.chains` (`{ m, t }`). In `updateTowers`, a chain with a member disabled by something else (`disabled > 0 && !stalled`) stalls the rest for 0.8 s (`stalled` flag stops the cascade). Chains of 4+ throw a bolt every 4 s at the toughest enemy in any member's reach: 2 s of Σ(dmg × rate) × (1 + `cBolt`%), Arc, `abil`. Wires draw in render (brighter when the chain is 4+).
   - **Glacier (`ks.glacier`):** `M.dmg × 0.8`. In `updateEnemies`, per lane, ground non-boss enemies sorted by distance: a Frozen one is a wall; anyone within 0.55 tiles behind a wall gets `e.jammed` (speed 0) and becomes the next wall. Smalls reuse `freezeDur` and `frozenVuln`.
   - **Event Horizon (`ks.horizon`):** enemies ×1.12 speed. Every kill pushes a well `{x, y, r 1.2 (+hWell%), t 0.6}` into `G.wells` (max 24); wells pull ground non-boss enemies back 2.6 tiles/s (+`hPull`%). Hitting max Marks yanks a ground non-boss enemy back 1.5 tiles once (`e.yanked`).
-  - **Artisan (`ks.artisan`):** `grantVxp` ×2 (+`aVxp`%); `towerStats` × (1 + (0.06 + `aRank`%) × rank), or ×0.8 at rank 0, for attack towers; `rerollCost` ×0.5.
+  - **Artisan (`ks.artisan`):** `grantVxp` ×2 (+`aVxp`%); `towerStats` × (1 + (0.05 + `aRank`%) × rank), or ×0.75 at rank 0, for attack towers (4.4 trim; was 0.06 / ×0.8); `rerollCost` ×0.5.
   - **Gambler (`ks.gambler`):** `rollEvents` adds one extra random event from Wave 2 (`from ≤ w + 10`); `gamblerScore()` = +25% (+`gScore`%) folded into `G.scoreMult` (newRun and stabilize); `addEntropy` ×1.25.
   - **Balance (12 seeds, 60 points, Normal, bot forced into each; no Doctrine = 58):** Marksman 65.5, Wildfire 55, War Economy 60, Circuit 56.5, Glacier 58.5 (at −20% damage it was 49, so −10%), Event Horizon 66, Artisan 71.5, Gambler 55.5 (when its extra event could be bad on boss waves it was 31; now a fair coin, always good on boss waves). Artisan is the strongest for the bot because it ranks towers anyway; Wildfire and Circuit depend on placement the bot doesn't do. Every batch has a few runs killed by early bosses (lethal breach), worth a look in a balance sweep.
   - Swarm reads: Shell vs Circuit, Wings vs Glacier, Bulk vs Event Horizon, Brood vs Artisan. `#docbar` meters for each. Hybrids and the three arc keystones stay open to everyone.
@@ -527,6 +527,23 @@ Nic gave the session full creative control: review, bug hunt, balance sweep, the
 | `expandshot.py [W H chaos]` | Triggers a wormhole detection and screenshots the zoom-out (`x03_expand_*.png`), then jumps to the full map (`x04_full.png`). |
 | `bossshot.py`, `constshot.py`, `navshot.py`, `novashot.py`, `snareshot.py`, `tipshot.py`, `webshot.py` | Focused screenshot scripts for each feature. |
 
+**v4.4.0 balance** (12 seeds each, bots, COLS=48, `test/sweep.sh`; median wave, with the 4.3.0 baseline measured at the start of the session in brackets where it exists). Bots are not deterministic (pitfall 25); treat ±5 waves as noise.
+
+| Batch | v4.4 median (mean) | Boss deaths of 12 (≤ Wave 30) | 4.3.0 |
+|---|---|---|---|
+| Fresh profile, 0 points, towers locked | **51** (44.8) | 3 (0) | 22 (22.8), 7 (6) |
+| Normal, 0 points, all towers unlocked | 41 (38.0) | 3 (1) | 32 (31.3), 9 (5) |
+| Normal, 60 points | **71** (70.3) | 1 (0) | 61 (49.3), 6 (2) |
+| Calm 0 / 60 points | 57 / 72 | 4 (2) / 3 (0) | 32 / — |
+| Unstable 0 / 60 points | 44 / 68 | 4 (1) / 0 | 21 / — |
+| Pandemonium 0 / 60 points | 34 / 61 | 2 (0) / 2 (1) | 22 / — |
+
+The two Calm Wave-10 deaths were both Quackzilla, which crosses a Calm road in about 40 s against Behemoth's 95 s; its hp budget (and the Phase Wraith's) was cut after this batch (24 → 17, 30 → 22). Normal 0 points reads lower than the fresh profile because an unlocked bot buys Gravity Wells and Lenses at Wave 1.
+
+Doctrines (60 points, Normal, bot forced into each; the bot builds a random mix next to the road, so placement Doctrines read low): none 61 · Marksman 73 · Wildfire 63 · Circuit 61 · Glacier 62 · Event Horizon 70 · War Economy 72 · **Artisan 77** · Gambler 65. No Doctrine is a trap (all ≥ none). Artisan was trimmed after this batch (rank bonus 6% → 5%, rookies −20% → −25%) and re-measured at **73** (range 61–97, 3 late boss deaths, none before Wave 30), level with Marksman and War Economy; War Economy reads high because the bot banks credits late, which is exactly what the Doctrine rewards.
+
+Towers as a backbone (`FORCE`, half the build one tower, 0 points, Normal): Pulse 51 · Rail 48 · EMP 47 · Missile 46 · Lens 43 · Cryo 41 · Flame 35 · Coil 28 · Gravity 23, against 41 for the mixed plan. Control towers failing as a backbone is by design (Coil is for shields and crowds, Gravity can't hit air); Lens fell from the top because the lower boss floors make a dedicated boss killer matter less early. Late-game damage per credit still has Lens far ahead (5× average at Wave 77 in one 60-point run, with Pulse, Cryo, Coil and Flame at 0.1×), so Lens remains the late-game backbone by design.
+
 **v3.0.0 balance** (12 seeds each, Normal, bots that answer evolution; median wave, v2.3 in brackets):
 
 | Profile | v3.0 | v2.3 |
@@ -628,7 +645,7 @@ The expanding sector made every level a little easier, because the compact early
 - **Open threads carried from 4.3:**
   - **More music:** Nic wants more tracks by kjartan_abel. Freesound is blocked from the workspace; Nic plans to add `freesound.org` and `cdn.freesound.org` to his allowed domains (claude.ai Settings → Capabilities). Then fetch the public previews (no login), check each track page's licence (his profile says most are CC BY-SA 4.0; EC credited CC BY 4.0), commit to `main` as `audio/bgm-battle-2..6.mp3` / `bgm-menu-2..6.mp3` (no code change needed), attach to the artifact with `files`, and add each to the Settings credit line. Candidates: battle "Aube Électronique", "Snabba Ladda", "Project Nine – Time is of the Essence"; menu "Homage", "Duality". Nic may instead attach files himself.
   - **Early boss deaths:** since 4.1 a breach ends the run, and every 12-seed bot batch loses 1–3 runs to the wave 10–30 boss. Decide whether that's fair (warning, counterplay) or needs an early-boss HP cut / a first-breach grace.
-  - **Doctrine feedback pending from Nic:** Wildfire overheat (−25%) is the first knob if it feels weak; Artisan is the bot's strongest.
+  - **Doctrine feedback pending from Nic:** Wildfire overheat (−25%) is the first knob if it feels weak; Artisan (73 after the 4.4 trim), Marksman (73) and War Economy (72) are the bot's strongest.
   - **Nic's habits from his logs:** never uses Overcharge; banks 25–60k credits late with a full grid (War Economy is the answer offered); used Conflagration in 4.0.
   - **Fable experiment:** Nic may run one Fable session with a broad prompt (full review, bug hunt, balance sweep with bots, then 2–3 bold features of its own). If a later session sees big unexplained changes, that's where they came from; the version table and commits say what changed.
   - **Selling the game:** honest take given: worth trying on itch.io first ($2–3); blockers are a first-run tutorial, a name/trademark check on "Entropy", and confirming the music licences. iOS needs a wrapper and Apple's $99/yr account; Steam is $100 per game.

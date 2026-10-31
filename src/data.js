@@ -571,7 +571,7 @@ const DOCTRINES = {
     lines: ['Every kill opens a small gravity well that drags nearby enemies back down the road', 'Enemies at max Marks are yanked back 1.5 tiles (once each)', 'Enemies move 12% faster'],
     smalls: [{ hPull: 15 }, { hWell: 15 }] },
   6: { id: 'artisan', name: 'Artisan', tag: 'Craft a few legends', counter: 'brood', pillar: 'zen',
-    lines: ['Veterans rank up 2× faster and gain +6% Damage per rank', 'Rerolls cost 50% less', 'Towers without a Veteran rank deal 20% less damage'],
+    lines: ['Veterans rank up 2× faster and gain +5% Damage per rank', 'Rerolls cost 50% less', 'Towers without a Veteran rank deal 25% less damage'],
     smalls: [{ aRank: 2 }, { aVxp: 20 }] },
   7: { id: 'gambler', name: 'Gambler', tag: 'Every wave is a dice roll', counter: '', pillar: 'nad',
     lines: ['Every wave from Wave 2 flips a coin for an extra event: good or bad (always good on boss waves)', 'Score +25%', 'The Entropy gauge fills 25% faster'],

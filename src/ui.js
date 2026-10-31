@@ -327,7 +327,7 @@ const UI = (() => {
       if (G.mods.ks.circuit) { const ch = G.chains || [], big = ch.reduce((a, c) => Math.max(a, c.m.length), 0); parts.push(`<span class="circ">Chains <b>${ch.length}</b><i>longest ${big}${big >= 4 ? ' · lightning' : ' · need 4'}</i></span>`); }
       if (G.mods.ks.glacier) { const j = G.enemies.filter(e => e.jammed).length; parts.push(`<span class="ice">Ice jam <b>${j}</b><i>held</i></span>`); }
       if (G.mods.ks.horizon) parts.push(`<span class="hor">Gravity wells <b>${(G.wells || []).length}</b></span>`);
-      if (G.mods.ks.artisan) { const at = G.towers.filter(t => canOvercharge(t)), v = at.filter(t => t.rank > 0).length; parts.push(`<span class="art">Veterans <b>${v}/${at.length}</b><i>rookies −20%</i></span>`); }
+      if (G.mods.ks.artisan) { const at = G.towers.filter(t => canOvercharge(t)), v = at.filter(t => t.rank > 0).length; parts.push(`<span class="art">Veterans <b>${v}/${at.length}</b><i>rookies −25%</i></span>`); }
       if (G.mods.ks.gambler) parts.push(`<span class="gam">Gambler <b>×${num1(G.scoreMult || 1)}</b><i>score</i></span>`);
       const h = parts.join(''); if (db && db.dataset.h !== h) { db.innerHTML = h; db.dataset.h = h; db.hidden = !h; }
     }

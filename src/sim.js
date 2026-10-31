@@ -963,7 +963,7 @@ function towerStats(t) {
   s.ground = !!D.ground;
   const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
   if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
-  if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.06 + FX('aRank') / 100) * t.rank : 0.8;
+  if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.05 + FX('aRank') / 100) * t.rank : 0.75; // v4.4: 6%/−20% measured 16 waves above no Doctrine (bots); trimmed
   return s;
 }
 function recomputeAuras() {
