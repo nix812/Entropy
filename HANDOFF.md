@@ -555,7 +555,15 @@ Nic gave the session full creative control: review, bug hunt, balance sweep, the
   - `par.sh` temp files carry the PID, so two batches can run at once.
   - Run balance batches from a frozen copy of `src` (pitfall 26).
   - `test/balsum.py` summarises par output: median, Lens share, bank, ascensions.
-- **Balance** (12 seeds, Normal, COLS 48, bots; median wave): see the version table entry for the numbers measured this session.
+- **Balance** (12 seeds each, Normal, COLS 48, bots, start 1, best 80; `test/out/bal/*.txt`, read with `balsum.py`):
+
+| Build | 60 points: median wave | 60 points: Lens share | 96 points: median wave | 96 points: Lens share |
+|---|---|---|---|---|
+| 4.8.1 old web | 65 | 41% | 70 | 43% |
+| 5.0 first cut (row-1 ranks smaller, no per-point damage, Lens dmg 1.6, ramp ×3.0) | 55.5 | 15% | 66.5 | 31% |
+| **5.0 shipped** | **62** | **23%** | **71** | **37%** |
+
+  The bot spreads into random trees and builds a mixed arsenal, so element-only talents undersell for it. That is why `TAL_PT_DMG` exists. Rail and EMP now carry many runs; Lens still tops runs where it gets built early. One 96-point seed reached Wave 127 with Lens at 96%, so watch Singularity plus Lens.
 
 ## 5. Profile (`PROF`) fields worth knowing
 `v, webV, xp, alloc[], builds[5], bestWave, bestScore, runs, seenVer (last version whose What's New was closed; the popup shows once per version for returning players), kills, playTime, settings{sfx, music, soundtrack, hud, dmgNums, shake, webView, uiScale}, seenHelp, zoomHint, runSnap, lastSetup, codex, mastery{}, loadout[], orbit{}, nova, remnants[], laws[], stars{}, hall[], novaOffer, daily, updatedAt`
@@ -786,6 +794,7 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 5.0 | Clean Sheet (4.13): seven Talent trees with Capstones replace the passive web; late income and pirate rewards up; token rerolls; breach warning; Void Lens trimmed; bot and tests for talents |
 | 4.8.1 | Level badges off the tower art: tier line under each tower, number only when selected, one best-upgrade arrow |
 | 4.8 | Drift Studio II (4.12): ten researched genres with flavours, Grids-style drum maps, voicing rules, motif melodies, dance/dub/ambient forms, sidechain, relative FX, genre verification test; closer default camera with Map toggle; bolder sprites and lanes; one tower level number in white→red tiers; pixel sliders |
 | 4.7 | Music Studio (4.10): five genres, twelve styles, seeded named pieces, energy/follow/per-genre tempo, six-channel mixer with meters, FX, saved pieces; elites, tower level badges and a bigger core (4.11); haptics; longer wave gap; AoE towers lose the sight line. Tests: `studioshot.py`, `eliteshot.py` |
