@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '4.5.0';
+const VERSION = '4.5.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -167,13 +167,12 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '4.5.0', title: 'Entropy 4.5 · High Definition', items: [
-  ['Redrawn at double resolution', 'Every tower, enemy, boss, the core and the pirate skiffs are new art at twice the detail, lit from one direction. Turrets are re-rendered at every heading, so they stay crisp as they track.'],
-  ['Everything moves', 'Beetles scuttle, Skimmers beat their wings and enemies turn to face where they are going. Launchers show when they are loaded, Gatlings spin, radar dishes sweep, bosses breathe, and Mr. Whiskers actually closes his eyes.'],
-  ['Bigger on the field', 'Enemies are about 30% larger. Missiles, mortar shells, tracers and smoke are redrawn.'],
-  ['Pull the camera back', 'Pinch out past your sector to see the whole map, with unrevealed ground veiled. Drag to pan at any zoom. Fit brings you home.'],
-  ['Tower menus with tabs', 'Tower and core menus open on Actions: upgrades, Overcharge, targeting, Reactor +1 and sell, all without scrolling. Affixes and stats live under Details. With the grid full, the build menu offers the reactor straight away.'],
-  ['Easier to close', 'Menu headers stay pinned while you scroll. With a menu open, tap empty ground to close it; tap a tower or the core to switch to it.'],
+const WHATS_NEW = { ver: '4.5.1', title: 'Entropy 4.5.1 · Sound Pass', items: [
+  ['Every sound rebuilt', 'Retro voices, modern mix. Each sound is layered: a crisp attack, a body, and a low thump for the heavy hits, with shared room and hall reverbs. Sounds come from where they happen on screen, and anything off-screen is quieter and duller.'],
+  ['A voice for every tower', 'Light guns sit high and heavy ones low, so a full board stays readable. The Void Lens now hums and climbs in pitch as its beams charge. Snare Beacons zip when they catch a flier.'],
+  ['Hits and kills you can hear', 'Crits ring, Plating clanks and shields ping. Each enemy type dies with its own sound, and rapid kills climb in pitch.'],
+  ['A cleaner mix', 'When many towers fire at once each shot plays a little quieter, and every sound has a voice limit. Big moments like a boss arriving, a Nova, an Orbital Strike or a breach briefly pull everything else down so they land.'],
+  ['Low hull warning', 'Below 35% hull, a heartbeat starts. It speeds up as the hull falls.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 const PIRATE_LINES = {

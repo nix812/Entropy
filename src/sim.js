@@ -2024,7 +2024,7 @@ function updateEnemies(dt) {
       const t = e.lureT;
       if (G.towerAt[tIdx(t.x, t.y)] !== t) e.lureT = null;
       else if (dist2(e.x, e.y, t.cx, t.cy) <= t.s.netR * t.s.netR) {
-        if (!e.netted) { e.netted = 1; e.netHold = t.s.hold * (e.boss ? 0.3 : 1); Hooks.fx('net', { x: e.x, y: e.y }); }
+        if (!e.netted) { e.netted = 1; e.netHold = t.s.hold * (e.boss ? 0.3 : 1); Hooks.fx('net', { x: e.x, y: e.y }); Hooks.sfx('net', e); }
         netK = 1 - t.s.netSlow * (e.boss ? 0.4 : 1);
       }
     }
@@ -2257,7 +2257,8 @@ function hit(e, dmg, el, src, o) {
   const res = e.res[el] || 0;
   mult *= 1 - res;
   // Plating (v3.0): blunts every hit except piercing fire: Rail, Void Lens beams, damage over time and abilities
-  if (e.armor && !(o.dot || o.abil || (src && src.s && (src.s.kind === 'rail' || src.s.kind === 'beam' || src.s.shred)))) mult *= 1 - clamp(e.armor * (1 - M.armorPen), 0, 0.7);
+  let blunt = false;
+  if (e.armor && !(o.dot || o.abil || (src && src.s && (src.s.kind === 'rail' || src.s.kind === 'beam' || src.s.shred)))) { mult *= 1 - clamp(e.armor * (1 - M.armorPen), 0, 0.7); blunt = e.armor * (1 - M.armorPen) > 0.25; }
   if (e.armorAll) mult *= 1 - e.armorAll;
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2;
@@ -2282,7 +2283,7 @@ function hit(e, dmg, el, src, o) {
   if (e.shield > 0) {
     const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
     const a = Math.min(e.shield, amt * sk); e.shield -= a; amt -= a / sk;
-    if (amt <= 0) { e.hitFlash = 0.08; if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
+    if (amt <= 0) { e.hitFlash = 0.08; if (!o.dot) Hooks.sfx('hitshield', e); if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
   const dealt = Math.min(e.hp, amt);
   if (G.dbgBoss && e.boss) { if (!e._hit0) e._hit0 = G.time; const k = o.combo || (o.abil ? 'ability' : o.dot ? 'dot' : src && src.type ? src.type : src === G.core ? 'core' : 'other'); G.dbgBoss[k] = (G.dbgBoss[k] || 0) + dealt; }
@@ -2290,7 +2291,7 @@ function hit(e, dmg, el, src, o) {
   if (e.boss && !e.gen && e.boss !== 'gloop' && e.phase < BOSS_PHASES.length && e.hp < e.maxHp * BOSS_PHASES[e.phase]) bossPhase(e);
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
   if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; src.lastFireW = G.wave; }
-  if (!o.dot) e.hitFlash = 0.08;
+  if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt ? 'hitarmor' : 'hit', e); }
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
   if (e.hp <= 0) { kill(e, src, o); return dealt; }
   if (el === 'K' && src && src.s && FX('kSlow')) e.kSlowT = 1;
@@ -2308,7 +2309,7 @@ function combo(e, name, col) {
   PROF.codex.combos[name] = (PROF.codex.combos[name] || 0) + 1;
   if (G.entWaveCombo < 4) { G.entWaveCombo += 0.05; addEntropy(0.05); }
   Hooks.fx('combo', { x: e.x, y: e.y, name, col });
-  Hooks.sfx('combo', name);
+  Hooks.sfx('combo', { n: name, x: e.x, y: e.y });
 }
 function applyStatuses(e, dmg, el, src, o) {
   const M = G.mods, s = src.s, st = e.st, r = G.r;
@@ -2366,7 +2367,7 @@ function applyStatuses(e, dmg, el, src, o) {
     if (s.shatterField) { e.shatterT = 2; e.shatterV = s.shatterField; }
     if (st.chill >= (FX('freezeAt') ? 4 : 5) && st.freezeImm <= 0) {
       st.frozen = (1 + s.freezeBonus) * (e.boss ? 0.4 : 1); st.freezeImm = st.frozen + 2.5 * (1 - FX('freezeImmRed') / 100); st.chill = 0;
-      Hooks.fx('freeze', { x: e.x, y: e.y }); Hooks.sfx('freeze');
+      Hooks.fx('freeze', { x: e.x, y: e.y }); Hooks.sfx('freeze', e);
     }
   }
   if (shockP > 0 && r() < shockP) {

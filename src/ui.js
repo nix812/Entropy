@@ -1482,6 +1482,8 @@ const UI = (() => {
     });
     // hooks
     Hooks.sfx = (n, a) => SFX.play(n, a);
+    // where on screen a sound happens: -1 left … 1 right, and whether it is in view
+    SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; });
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
@@ -1506,6 +1508,12 @@ const UI = (() => {
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
     if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen) { closePanel(); openDraft(G.draft); }
     if (G && G.reloc && !canRelocate()) endReloc();
+    // continuous sounds: the Void Lens hum and the low-hull heartbeat
+    const live = screen === 'game' && G && !G.over && !G.paused && !modalOpen && !Tree.isOpen;
+    let nb = 0, rk = 0;
+    if (live) for (const t of G.towers) if (t.beamTargets && t.beamTargets.length && t.disabled <= 0) { nb++; rk = Math.max(rk, (t.ramp || 0) / (t.s.rampMax || 3.5)); }
+    SFX.beams(nb, rk);
+    SFX.danger(live && G.core.hp < G.core.max * 0.35 ? 1 - G.core.hp / (G.core.max * 0.35) : 0, dt);
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
