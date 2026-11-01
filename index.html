@@ -296,6 +296,8 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
 #watchbar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 12px; background: rgba(7,8,15,0.88); box-shadow: inset 0 0 0 1px #b86cff; white-space: nowrap; max-width: 90%; }
 #watchbar em { font-style: normal; font-family: var(--f-pix); font-size: 9px; color: #b86cff; letter-spacing: 1px; text-transform: uppercase; } #watchbar b { font-weight: 400; font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
 body.watching #abils, body.watching #bCall, body.watching #bWeb, body.watching #bCash { pointer-events: none; opacity: 0.5; }
+#dtestBadge { position: absolute; left: 8px; bottom: 8px; z-index: 6; padding: 3px 8px; background: rgba(7,8,15,0.9); box-shadow: inset 0 0 0 1px var(--amber); color: var(--amber); font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; pointer-events: none; }
+body.novig #stage::after { display: none; }
 .rb.ghost { visibility: hidden; }
 .hs.cashbtn.nomkt .cashtag { display: none; }
 .chip.locked { opacity: 0.45; box-shadow: inset 0 0 0 1px var(--line2); } .chip.locked small { display: block; font-size: 8px; color: var(--dim); margin-top: 2px; }
@@ -855,6 +857,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
       <div id="panel" class="panel" hidden></div>
       <div id="etip" hidden></div>
       <div id="ticker" hidden></div>
+      <div id="dtestBadge" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
@@ -892,7 +895,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.3.0';
+const VERSION = '5.3.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1065,14 +1068,15 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.3.0', title: 'Entropy 5.3 · The Hunt', items: [
+const WHATS_NEW = { ver: '5.3.1', title: 'Entropy 5.3 · The Hunt', items: [
+  ['Display test (5.3.1)', 'Hunting the thin white lines on iPhone: Settings · Display test switches off one layer at a time. Tap it, close Settings, look at the field, and tell me which number makes the lines go away.'],
   ['Bounties win runs', 'Every run posts a bounty: a named boss with a mutation and a price on its head. Bring it in and the run is a win. Then choose: Extract to end it there and bank half again in XP, or Push on at a higher score multiplier (×1.25 per bounty pushed past) toward the next bounty 20 waves later. Fall before you extract and the bonus is lost. The bounty sits in the top bar the whole run.'],
   ['Your Nemesis', 'Whatever ends a run comes back for you. If a strain did it, the next run\'s swarm starts already carrying its genes and it leads your first Strain Assault; if a boss did it, it takes your next bounty, mutated. Beat it for a double bounty. Lose to it again and it ranks up. It waits on the main menu.'],
   ['Daily Hunt', 'One map, one bounty and one Nemesis for everyone, every tower open, and the same 40 talent points each (build them from the Daily Hunt card, separate from your own talents), so the ladder is about play. Your first run of the day is the ranked one. Every input is recorded: watch your ranked run back, or copy a hunt code a friend can paste in and watch, tap for tap.'],
   ['Exact resume', 'Close the app mid Daily Hunt and it picks up at the exact moment you left, not the start of the wave.'],
   ['Main menu', 'Your Nemesis, trophies (bounties, extractions, Nemeses beaten) and today\'s Hunt sit under your level.'],
   ['Chaos ladder', 'Extract once on a Chaos level to open the next one (reaching Wave 20 or 30 still works). Supernova now needs level 40 to start (was 60).'],
-  ['Graphics switches', 'Settings has Glow (soft lighting) and Pixel scaling (Sharp or Simple). If you see thin lines across the field on iPhone, try turning each off and tell me which one clears them.'],
+  ['Graphics switches', 'Settings has Glow (soft lighting) and Pixel scaling (Sharp or Simple).'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
@@ -6954,7 +6958,7 @@ const Render = (() => {
 const TW_K = 1.12, EN_K = 1.15; // v4.8 sprite scale-up (towers still sit inside their tile)
 const SIGHTED = { bullet: 1, rail: 1, beam: 1, cone: 1 };
 const RES = 2;
-  const R_ = { glow: true, sharp: true }; // v5.3 graphics switches (Settings · Glow, Pixel scaling)
+  const R_ = { glow: true, sharp: true, dtest: 0 }; // dtest: v5.3.1 display test (1 no scanlines, 2 no world blit, 3 canvas hidden, 4 no vignette, 5 2x resolution) // v5.3 graphics switches (Settings · Glow, Pixel scaling)
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
   const cam = { z: 1, x: 0, y: 0 };
@@ -7931,7 +7935,7 @@ const RES = 2;
     }
     c.imageSmoothingEnabled = true;
     const DW = W, DH = H, X0 = sx, Y0 = sy, KR = RES * k;
-    c.drawImage(src, (v.vx - vxI) * KR, (v.vy - vyI) * KR, v.vw * KR, v.vh * KR, X0, Y0, DW, DH);
+    if (R_.dtest !== 2) c.drawImage(src, (v.vx - vxI) * KR, (v.vy - vyI) * KR, v.vw * KR, v.vh * KR, X0, Y0, DW, DH);
     // lighting pass: additive soft lights in screen space
     const ws = v.ws, bx2s = x => X0 + (x - v.vx) * ws, by2s = y => Y0 + (y - v.vy) * ws;
     c.save(); c.beginPath(); c.rect(ox, oy, DW, DH); c.clip();
@@ -8159,7 +8163,7 @@ const RES = 2;
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
     if (!scanPat) scanPat = c.createPattern(scan, 'repeat');
-    c.fillStyle = scanPat; c.fillRect(0, 0, W, H);
+    if (R_.dtest !== 1) { c.fillStyle = scanPat; c.fillRect(0, 0, W, H); }
   }
 
   // ---------- fx hook ----------
@@ -8262,7 +8266,7 @@ const RES = 2;
   }
   function resize() {
     const r = cv.parentElement.getBoundingClientRect();
-    dpr = Math.min(3, window.devicePixelRatio || 1) * UIS;
+    dpr = Math.min(R_.dtest === 5 ? 2 : 3, window.devicePixelRatio || 1) * UIS;
     W = Math.max(1, r.width / UIS); H = Math.max(1, r.height / UIS);
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -8317,7 +8321,7 @@ const RES = 2;
     g.setLineDash([]);
   }
   return {
-    set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; },
+    set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; }, get dtest() { return R_.dtest; }, set dtest(v) { R_.dtest = v; resize(); },
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
@@ -9865,6 +9869,14 @@ const UI = (() => {
   }
   // v4.8: buttons that raise a level wear the colour of the tier they lead to
   const tierStyle = n => { const T = lvTier(n); return `--tc:${T.col}`; };
+  // v5.3.1 display test: switches off one suspect at a time for the iPhone white-lines bug. The badge on the field says which
+  const DTEST = ['Off (normal)', '1 · No scanlines', '2 · No map image', '3 · Canvas hidden', '4 · No vignette', '5 · Lower resolution'];
+  function applyDtest() {
+    const d = Render.dtest, cv = $('#cv');
+    cv.style.visibility = d === 3 ? 'hidden' : '';
+    document.body.classList.toggle('novig', d === 4);
+    const tb = $('#dtestBadge'); tb.hidden = !d; tb.textContent = 'Display test ' + DTEST[d];
+  }
   function openSettings() {
     const S = PROF.settings;
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
@@ -9879,6 +9891,7 @@ const UI = (() => {
       <div class="set"><span>Haptics <em class="dim">buzz when the core is hit</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.haptics !== false) === v ? 'on' : ''}" data-act="haptic" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Glow <em class="dim">soft lighting on the field</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.glow !== false) === v ? 'on' : ''}" data-act="gfx" data-k="glow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Pixel scaling <em class="dim">Sharp is crisper; Simple is lighter work</em></span><div class="chips">${[[true, 'Sharp'], [false, 'Simple']].map(([v, l]) => `<button class="chip ${(S.sharp !== false) === v ? 'on' : ''}" data-act="gfx" data-k="sharp" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
+      <div class="set"><span>Display test <em class="dim">for the white-lines bug: tap, then look at the field</em></span><div class="chips"><button class="chip ${Render.dtest ? 'on' : ''}" data-act="dtest">${DTEST[Render.dtest]}</button></div></div>
       <div class="set"><span>Boss slow-down <em class="dim">drop to 1× when a boss arrives</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.autoSlow !== false) === v ? 'on' : ''}" data-act="autoslow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
@@ -10318,6 +10331,7 @@ const UI = (() => {
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'uis': PROF.settings.uiScale = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v; Save.save(); UI.fitVV(); openSettings(); break;
+      case 'dtest': { Render.dtest = (Render.dtest + 1) % DTEST.length; applyDtest(); openSettings(); break; }
       case 'gfx': PROF.settings[b.dataset.k] = b.dataset.v === '1'; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false; Save.save(); openSettings(); break;
       case 'autoslow': PROF.settings.autoSlow = b.dataset.v === '1'; Save.save(); openSettings(); break;
       case 'haptic': PROF.settings.haptics = b.dataset.v === '1'; Save.save(); if (PROF.settings.haptics) Haptics.tap(true); openSettings(); break;
