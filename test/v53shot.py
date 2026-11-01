@@ -59,7 +59,9 @@ with sync_playwright() as p:
     ok('profile talents untouched by the Hunt build', pg.evaluate('() => !PROF.tal[TALENTS[0].rows[0][0].id] && PROF.huntBuild.tal[TALENTS[0].rows[0][0].id] === 5'))
     pg.evaluate('() => document.querySelector("[data-tact=close]").click()'); pg.wait_for_timeout(400)
     ok('back on the Daily Hunt card with the build', pg.evaluate('() => /5\\/40/.test(document.querySelector("#modal").textContent)'))
-    pg.click('[data-act=launchDaily]'); pg.wait_for_timeout(800)
+    pg.click('[data-act=launchDaily]'); pg.wait_for_timeout(300)
+    ok('unspent Hunt points are asked about first', pg.evaluate('() => /Unspent Points/.test(document.querySelector("#modal").textContent) && !G'))
+    pg.click('[data-act=launchDaily][data-v=anyway]'); pg.wait_for_timeout(800)
     ok('the Hunt run uses the Hunt build and opens every tower', pg.evaluate('() => !!G.huntBuild && pointsSpent() === 5 && towerUnlocked("grav") && talentBlock(TALENTS[1].rows[0][0].id) === "locked"'))
     # play a little through act, then save, reload and resume exactly
     pg.evaluate('''() => { const L = G.map.lanes[0]; let n = 0; for (const p0 of L.tiles) { for (const [dx, dy] of [[1,0],[0,1]]) if (n < 4 && canBuildAt(p0.x + dx, p0.y + dy)) { if (window.act('build', ['pulse','cryo','rail','pulse'][n], p0.x + dx, p0.y + dy)) n++; } } G.speed = 3; }''')

@@ -1946,7 +1946,17 @@ const UI = (() => {
       case 'chLock': SFX.play('deny'); toast(CHAOS_LEVELS[+b.dataset.v].name.toUpperCase(), `Opens when you extract once on ${CHAOS_LEVELS[+b.dataset.v - 1].name}, or reach Wave ${CHAOS_GATE[+b.dataset.v]}`, '#8a8fa8', true, 'tip'); break;
       case 'reroll': rerollMap(); renderSetup(); break;
       case 'launch': launch(); break;
-      case 'launchDaily': launch(); break;
+      case 'launchDaily': { // v5.4.1: unspent Hunt points are asked about before the run starts (the build locks once it does)
+        const hb = huntBuildProf(); let sp = 0; for (const k in hb.tal) if (TAL[k]) sp += hb.tal[k]; sp += (hb.caps || []).filter(c => TAL[c]).length;
+        const left = HUNT.pts - sp;
+        if (left > 0 && b.dataset.v !== 'anyway') {
+          SFX.play('ui');
+          modal(`<div class="card narrow"><div class="ch"><h2>Unspent Points</h2><span class="note">Daily Hunt</span></div>
+            <p>${left === HUNT.pts ? `Your Hunt build is empty: all ${HUNT.pts} talent points are waiting.` : `${left} of your ${HUNT.pts} Hunt talent points ${left === 1 ? 'is' : 'are'} unspent.`} The build locks when the run starts.</p>
+            <div class="foot"><button class="btn" data-act="launchDaily" data-v="anyway">Start anyway</button><button class="btn primary" data-act="huntBuild">Spend them</button></div></div>`, 'confirm');
+          break;
+        }
+        launch(); break; }
       case 'mode': setup.mode = b.dataset.v; if (setup.mode === 'std') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
       case 'help': if (modalOpen === 'pause') modalFrom = 'pause'; openHelp(); break;
