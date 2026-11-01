@@ -953,7 +953,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.5.1';
+const VERSION = '5.5.2';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -6473,6 +6473,7 @@ const SFX = (() => {
         if (pauseG) { const g = pauseG.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.05); if (!paused && !held) g.setValueAtTime(1, t + 0.33); }
       },
       get spec() { return P ? specOf() : null; },
+      get queued() { return forceNext; },
       get editing() { return editing; }, set editing(v) { editing = !!v; },
       get sndGen() { return sndGen; },
       setName(n) { if (P && n) { P.name = String(n).slice(0, 32); if (hist.length) hist[hist.length - 1].name = P.name; } },
@@ -9975,6 +9976,7 @@ const UI = (() => {
     return body;
   }
   function modal(html, kind) {
+    if (modalOpen === 'studio' && kind !== 'studio' && stInCompose) { stInCompose = false; leaveCompose(); }
     const m = $('#modal');
     m.innerHTML = html; m.hidden = false; modalOpen = kind || 'modal';
     for (const c of m.querySelectorAll(':scope > .card')) frameBox(c, 'ch', 'foot', 'cbody');
@@ -9982,6 +9984,7 @@ const UI = (() => {
     hydrateIcons(m);
   }
   function closeModal() {
+    if (modalOpen === 'studio' && stInCompose) { stInCompose = false; leaveCompose(); }
     $('#modal').hidden = true; $('#modal').innerHTML = ''; modalOpen = null; modalFrom = null; confirmAbandon = false; confirmReset = false;
     document.body.classList.remove('modal-open');
     flushToasts();
@@ -10449,17 +10452,18 @@ const UI = (() => {
   }
   // Compose is its own room: the radio stops when you walk in, your song loops while you work, and the radio comes back when you leave
   const cpSpec = d => ({ genre: d.genre, flav: d.flav, seed: d.seed >>> 0, name: d.name, comp: d, start: 8 });
+  function stPlayNow(force) { const M = SFX.music; if (M.paused || M.held) { M.setPaused(false); if (M.held) M.setHold(false); M.jump(force || null); } else M.skip(force || undefined); }
   function enterCompose() {
-    const M = SFX.music, c = studioCfg(), p = M.piece; stOverArm = false;
+    const M = SFX.music, c = studioCfg(), p = M.piece; stOverArm = false; M.setPaused(false); // in Compose, pause is the song's stop
     stRadio = p && !p.comp ? M.spec : stRadio; M.editing = true;
     if (c.draft) { M.setHold(false); M.jump(cpSpec(c.draft)); } else M.setHold(true);
   }
   function leaveCompose() {
-    const M = SFX.music; M.editing = false; M.setHold(false);
+    const M = SFX.music; M.editing = false; M.setHold(false); M.setPaused(false);
     M.jump(stRadio ? Object.assign({}, stRadio, { start: 0 }) : null); stRadio = null;
   }
   function cpApply(rerender) { // the draft changed: save it and hear it
-    const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose'; if (M.held) M.setHold(false); M.compose(c.draft);
+    const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose'; if (M.held || M.paused) { M.setHold(false); M.setPaused(false); if (!(M.piece && M.piece.comp)) { M.jump(cpSpec(c.draft)); } else M.compose(c.draft); } else M.compose(c.draft);
     if (rerender === 'grid') { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); } else if (rerender) openStudio();
   }
   // ---- the card ----
@@ -10539,7 +10543,7 @@ const UI = (() => {
       case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; SFX.play('ui'); openStudio(); return true;
       case 'stVibe': {
         studioTouch(); const v = ST_VIBES.find(x => x[0] === b.dataset.v); c.genres = (v[2] || M.GENRE_IDS).slice(); c.favOnly = false;
-        M.apply(); studioSave(); if (M.piece && !c.genres.includes(M.piece.genre)) M.skip(); openStudio(); return true;
+        M.apply(); studioSave(); if (M.piece && !c.genres.includes(M.piece.genre)) stPlayNow(); openStudio(); return true;
       }
       case 'stGenre': {
         studioTouch();
@@ -10548,14 +10552,14 @@ const UI = (() => {
         else c.genres = c.genres.concat([g]);
         M.apply(); studioSave();
         // a newly picked genre should be heard right away
-        if (c.genres.includes(g) && M.piece && M.piece.genre !== g) M.skip({ genre: g });
-        else if (M.piece && !c.genres.includes(M.piece.genre)) M.skip();
+        if (c.genres.includes(g) && M.piece && M.piece.genre !== g) stPlayNow({ genre: g });
+        else if (M.piece && !c.genres.includes(M.piece.genre)) stPlayNow();
         openStudio(); return true;
       }
-      case 'stPlayG': { const g = b.dataset.v; M.skip({ genre: g }); toast('UP NEXT', M.GENRES[g].name + ' · from the next bar', M.GENRES[g].col); return true; }
+      case 'stPlayG': { const g = b.dataset.v; stPlayNow({ genre: g }); toast('UP NEXT', M.GENRES[g].name + ' · from the next bar', M.GENRES[g].col); return true; }
       case 'stMute': studioTouch(); c.mute[b.dataset.v] = !c.mute[b.dataset.v]; b.classList.toggle('m', !!c.mute[b.dataset.v]); M.apply(); studioSave(); return true;
-      case 'stSkip': M.skip(); SFX.play('ui'); return true;
-      case 'stBack': { const n = M.back(); if (n) toast('BACK TO', n + ' · from the next bar', '#ff5fa8'); return true; }
+      case 'stSkip': stPlayNow(); SFX.play('ui'); return true;
+      case 'stBack': { const wasQuiet = M.paused || M.held; const n = M.back(); if (n && wasQuiet) stPlayNow(M.queued); if (n) toast('BACK TO', n + ' · from the next bar', '#ff5fa8'); return true; }
       case 'stPause': M.setPaused(!M.paused); return true;
       case 'stRepeat': M.repeat = !M.repeat; toast(M.repeat ? 'REPEAT ON' : 'REPEAT OFF', M.repeat ? 'This piece plays again when it ends' : 'A new piece follows this one', '#ff5fa8'); return true;
       case 'stKeep': {
@@ -10563,15 +10567,15 @@ const UI = (() => {
         else { const f = M.save(); if (f) toast('KEPT', f.name + ' · with your sound settings', '#ff5fa8'); }
         studioSave(); if (stTab === 'listen') openStudio(); return true;
       }
-      case 'stPlay': { const f = c.favs[+b.dataset.v]; if (f) { M.skip(f); toast('UP NEXT', f.name + ' · from the next bar', '#ff5fa8'); } return true; }
+      case 'stPlay': { const f = c.favs[+b.dataset.v]; if (f) { stPlayNow(f); toast('UP NEXT', f.name + ' · from the next bar', '#ff5fa8'); } return true; }
       case 'stRen': stEdit = +b.dataset.v; openStudio(); return true;
       case 'stDel': { const i = +b.dataset.v; if (stDelArm !== i) { stDelArm = i; openStudio(); return true; } stDelArm = -1; c.favs.splice(i, 1); if (!c.favs.length) c.favOnly = false; studioSave(); openStudio(); return true; }
       case 'stShare': { const f = c.favs[+b.dataset.v]; if (f) trackCode(f).then(code => { copyText(code); toast('TRACK CODE COPIED', `Send it to a friend: Music Studio › Add a code plays ${f.name} for them`, '#ff5fa8', true, 'tip'); }); return true; }
       case 'stPaste': stPaste = !stPaste; openStudio(); if (stPaste) { const i = $('#stCode'); if (i) i.focus(); } return true;
-      case 'stCodeGo': { const v = ($('#stCode') || {}).value || ''; readTrackCode(v).then(f => { if (!f) { toast('TRACK CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } const t = M.addTrack(f); if (t) { stPaste = false; studioSave(); M.skip(t); toast('TRACK ADDED', t.name + ' · playing from the next bar', '#ff5fa8'); openStudio(); } }); return true; }
+      case 'stCodeGo': { const v = ($('#stCode') || {}).value || ''; readTrackCode(v).then(f => { if (!f) { toast('TRACK CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } const t = M.addTrack(f); if (t) { stPaste = false; studioSave(); stPlayNow(t); toast('TRACK ADDED', t.name + ' · playing from the next bar', '#ff5fa8'); openStudio(); } }); return true; }
       case 'stEditT': { const f = c.favs[+b.dataset.v]; if (f && f.comp) { c.draft = Object.assign(JSON.parse(JSON.stringify(f.comp)), { name: f.name }); stTab = 'compose'; studioSave(); M.editing = true; M.compose(c.draft); openStudio(); } return true; }
-      case 'stFavOnly': studioTouch(); c.favOnly = !c.favOnly; studioSave(); if (c.favOnly) M.skip(); openStudio(); return true;
-      case 'stReset': { const keepK = { favs: c.favs, calmBpm: c.calmBpm, draft: c.draft, composer: c.composer }; M.setConfig(keepK); PROF.settings.studio = M.config; studioSave(); M.skip(); openStudio(); return true; }
+      case 'stFavOnly': studioTouch(); c.favOnly = !c.favOnly; studioSave(); if (c.favOnly) stPlayNow(); openStudio(); return true;
+      case 'stReset': { const keepK = { favs: c.favs, calmBpm: c.calmBpm, draft: c.draft, composer: c.composer }; M.setConfig(keepK); PROF.settings.studio = M.config; studioSave(); stPlayNow(); openStudio(); return true; }
       case 'stViz': { // the hidden door: five taps on the visualizer
         if (c.composer) return true;
         const now = performance.now(); stTaps = stTaps.filter(t => now - t < 2500); stTaps.push(now);
