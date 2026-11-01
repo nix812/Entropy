@@ -3,7 +3,7 @@
 **Version at handoff: 5.4.2 · November 1, 2026**
 
 ### Start here (state at 5.3.0)
-- **Live:** 5.4.1 on GitHub Pages (`main`); 5.4.2 (new hangar backdrop) is on `source` waiting for Nic's OK to deploy. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
+- **Live:** 5.4.2 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
 - **Nov 1 build cycle:** a Fable design review (doc "Entropy Design Review" in the Project) found the game had no reason to start the next run. 5.2 First Hour (Threat Board, boss slow-down, first runs pay, fresh profiles see less) and 5.3 **The Hunt** (bounty win line with Extract/Push, Nemesis, Daily Hunt with a fixed build, input recording, exact replay and resume). Details in 4.15 and the version table.
 - **The sim is replayable (5.3).** Every player action goes through `act(name, ...args)` (sim.js `ACTS`): stamped with `G.tick`, appended to `G.inputs`. `newRun(G.recOpts)` + the inputs reproduce a run bit for bit (`test/replay.js`). **Any new player action must be an `ACTS` entry called through `window.act` from ui.js**, never a direct sim call or a direct write to `G`, or replays and Daily resume break (pitfall 39).
 - **Read first:** section 2 (build, deploy, commit conventions), 4.15 (The Hunt), 7 (pitfalls, especially 26, 35–39), 8 (working with Nic).
