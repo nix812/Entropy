@@ -296,6 +296,9 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
 #watchbar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 12px; background: rgba(7,8,15,0.88); box-shadow: inset 0 0 0 1px #b86cff; white-space: nowrap; max-width: 90%; }
 #watchbar em { font-style: normal; font-family: var(--f-pix); font-size: 9px; color: #b86cff; letter-spacing: 1px; text-transform: uppercase; } #watchbar b { font-weight: 400; font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
 body.watching #abils, body.watching #bCall, body.watching #bWeb, body.watching #bCash { pointer-events: none; opacity: 0.5; }
+.card.vets .vhead { display: flex; gap: 10px; align-items: center; margin: 4px 0 6px; } .card.vets .vhead canvas { width: 32px; height: 32px; image-rendering: pixelated; }
+.card.vets .vhead b { display: block; font-family: var(--f-pix); font-weight: 400; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #ffe14d; } .card.vets .vhead small { font-size: 15px; color: var(--dim); }
+.card.vets .vet { display: grid; gap: 6px; } .card.vets .affs.mini { opacity: 0.8; margin-bottom: 4px; }
 .rb.ghost { visibility: hidden; }
 .hs.cashbtn.nomkt .cashtag { display: none; }
 .chip.locked { opacity: 0.45; box-shadow: inset 0 0 0 1px var(--line2); } .chip.locked small { display: block; font-size: 8px; color: var(--dim); margin-top: 2px; }
@@ -892,7 +895,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.3.3';
+const VERSION = '5.3.4';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1065,7 +1068,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.3.3', title: 'Entropy 5.3 · The Hunt', items: [
+const WHATS_NEW = { ver: '5.3.4', title: 'Entropy 5.3 · The Hunt', items: [
+  ['Veteran Picks (5.3.4)', 'Tap the "veterans ready" chip to go through every waiting mutation in one place: each tower\'s card, its three choices, then straight on to the next. Show on map jumps to the tower, Next tower skips, Later closes. The game pauses while you choose.'],
   ['Rounds land (5.3.3)', 'A bullet whose target dies on the way now flies on to where it fell and sparks out there, instead of vanishing mid-air. No change to damage.'],
   ['White lines fixed (5.3.2)', 'The three thin white lines across the field on iPhone came from the faint retro scanlines, drawn as a repeating texture that Safari stitched badly. They are now drawn as plain stripes. Thanks for running the display test.'],
   ['Bounties win runs', 'Every run posts a bounty: a named boss with a mutation and a price on its head. Bring it in and the run is a win. Then choose: Extract to end it there and bank half again in XP, or Push on at a higher score multiplier (×1.25 per bounty pushed past) toward the next bounty 20 waves later. Fall before you extract and the bonus is lost. The bounty sits in the top bar the whole run.'],
@@ -9754,6 +9758,23 @@ const UI = (() => {
     return `<div class="why"><b>Why</b><span>${n} got through in Wave ${G.wave}, mostly ${esc(nm)}${gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''} (${top[1]}).</span>${beat ? `<span class="good">Beat it: ${tipify(beat)}</span>` : ''}</div>`;
   }
   // ---------- v5.3 The Hunt: the choice after a bounty, hunt codes, and watching a recorded run ----------
+  // v5.3.4 Veteran Picks: the "veterans ready" chip walks through every tower with a mutation waiting, one card at a time
+  const vetFlow = { ix: 0, n: 0 };
+  const vetsReady = () => G ? G.towers.filter(t => t.pending > 0) : [];
+  function showOnMap(t) { openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); }
+  function openVets() {
+    const rd = vetsReady();
+    if (!rd.length) { closeModal(); if (G && !G.over) G.paused = false; if (vetFlow.n) toast('VETERANS', `${vetFlow.n} mutation${vetFlow.n === 1 ? '' : 's'} picked. Every veteran is up to date`, '#ffe14d', true, 'tip'); vetFlow.n = 0; return; }
+    vetFlow.ix = ((vetFlow.ix % rd.length) + rd.length) % rd.length;
+    const t = rd[vetFlow.ix], o = vetOffer(t), left = rd.reduce((a, x) => a + x.pending, 0);
+    closePanel(); G.paused = true;
+    modal(`<div class="card narrow vets"><div class="ch"><h2>Veteran Picks</h2><span class="note">Tower ${vetFlow.ix + 1} of ${rd.length} · ${left} pick${left === 1 ? '' : 's'} waiting</span><button class="x" data-act="vetDone" aria-label="Close">✕</button></div>
+      <div class="vhead"><canvas class="ico" width="32" height="32" data-ico="${t.type}"></canvas><div><b>${esc(towerLabel(t))}</b><small>${towerLabel(t) !== TOWERS[t.type].name ? esc(TOWERS[t.type].name) + ' · ' : ''}LV ${towerLevel(t)} · ${tipify('Veteran')} ${roman(t.rank)}${t.pending > 1 ? ` · ${t.pending} picks here` : ''} · choose a mutation</small></div></div>
+      <div class="vet">${o.map((a, i) => `<button class="aff pickable" data-act="vpick" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</button>`).join('')}</div>
+      ${t.affixes.length ? `<div class="lbl">Already has</div><div class="affs mini">${t.affixes.map(affixHTML).join('')}</div>` : ''}
+      <div class="foot"><button class="btn" data-act="vetMap">Show on map</button>${rd.length > 1 ? '<button class="btn" data-act="vetSkip">Next tower</button>' : ''}<button class="btn" data-act="vetDone">Later</button></div></div>`, 'vets');
+    for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
+  }
   function openHunt() {
     const C = G.huntChoice; if (!C) return;
     const xp = Math.round(G.xpEarned * HUNT.extractXp), m2 = 1 + HUNT.pushScore * ((G.pushes || 0) + 1);
@@ -10288,6 +10309,10 @@ const UI = (() => {
       case 'studioS': openStudio('settings'); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); window.act('abandon'); break;
+      case 'vpick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('vet', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; if (!(t.pending > 0)) { const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; } openVets(); break; }
+      case 'vetSkip': vetFlow.ix++; openVets(); break;
+      case 'vetMap': { const t = vetsReady()[vetFlow.ix]; closeModal(); G.paused = false; vetFlow.n = 0; if (t) showOnMap(t); break; }
+      case 'vetDone': closeModal(); if (G && !G.over) G.paused = false; vetFlow.n = 0; break;
       case 'extract': closeModal(); window.act('extract'); break;
       case 'push': closeModal(); if (window.act('push')) { G.paused = false; SFX.play('levelup'); } break;
       case 'huntBuild': closeModal(); Tree.open('hunt'); break;
@@ -10355,7 +10380,7 @@ const UI = (() => {
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = window.act('cpResume', G.cpT); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = window.act('call'); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openThreat(); };
     $('#ticker').onclick = e => { if (!e.target.closest('.tkb')) return; SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
-    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-threat]') || e.target.closest('[data-evo]')) { SFX.play('ui'); openThreat(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-threat]') || e.target.closest('[data-evo]')) { SFX.play('ui'); openThreat(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { SFX.play('ui'); vetFlow.ix = 0; openVets(); return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#pw').parentNode.onclick = () => {
       if (!G || G.over) return; SFX.play('ui');
       const free = gridFree(), T = topTower();
