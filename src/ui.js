@@ -1525,14 +1525,6 @@ const UI = (() => {
   }
   // v4.8: buttons that raise a level wear the colour of the tier they lead to
   const tierStyle = n => { const T = lvTier(n); return `--tc:${T.col}`; };
-  // v5.3.1 display test: switches off one suspect at a time for the iPhone white-lines bug. The badge on the field says which
-  const DTEST = ['Off (normal)', '1 · No scanlines', '2 · No map image', '3 · Canvas hidden', '4 · No vignette', '5 · Lower resolution'];
-  function applyDtest() {
-    const d = Render.dtest, cv = $('#cv');
-    cv.style.visibility = d === 3 ? 'hidden' : '';
-    document.body.classList.toggle('novig', d === 4);
-    const tb = $('#dtestBadge'); tb.hidden = !d; tb.textContent = 'Display test ' + DTEST[d];
-  }
   function openSettings() {
     const S = PROF.settings;
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
@@ -1547,7 +1539,6 @@ const UI = (() => {
       <div class="set"><span>Haptics <em class="dim">buzz when the core is hit</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.haptics !== false) === v ? 'on' : ''}" data-act="haptic" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Glow <em class="dim">soft lighting on the field</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.glow !== false) === v ? 'on' : ''}" data-act="gfx" data-k="glow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Pixel scaling <em class="dim">Sharp is crisper; Simple is lighter work</em></span><div class="chips">${[[true, 'Sharp'], [false, 'Simple']].map(([v, l]) => `<button class="chip ${(S.sharp !== false) === v ? 'on' : ''}" data-act="gfx" data-k="sharp" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Display test <em class="dim">for the white-lines bug: tap, then look at the field</em></span><div class="chips"><button class="chip ${Render.dtest ? 'on' : ''}" data-act="dtest">${DTEST[Render.dtest]}</button></div></div>
       <div class="set"><span>Boss slow-down <em class="dim">drop to 1× when a boss arrives</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.autoSlow !== false) === v ? 'on' : ''}" data-act="autoslow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
@@ -1987,7 +1978,6 @@ const UI = (() => {
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'uis': PROF.settings.uiScale = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v; Save.save(); UI.fitVV(); openSettings(); break;
-      case 'dtest': { Render.dtest = (Render.dtest + 1) % DTEST.length; applyDtest(); openSettings(); break; }
       case 'gfx': PROF.settings[b.dataset.k] = b.dataset.v === '1'; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false; Save.save(); openSettings(); break;
       case 'autoslow': PROF.settings.autoSlow = b.dataset.v === '1'; Save.save(); openSettings(); break;
       case 'haptic': PROF.settings.haptics = b.dataset.v === '1'; Save.save(); if (PROF.settings.haptics) Haptics.tap(true); openSettings(); break;
