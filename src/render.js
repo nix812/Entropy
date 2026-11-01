@@ -13,7 +13,7 @@ const Render = (() => {
 const TW_K = 1.12, EN_K = 1.15; // v4.8 sprite scale-up (towers still sit inside their tile)
 const SIGHTED = { bullet: 1, rail: 1, beam: 1, cone: 1 };
 const RES = 2;
-  const R_ = { glow: true, sharp: true }; // v5.3 graphics switches (Settings · Glow, Pixel scaling)
+  const R_ = { glow: true, sharp: true, dtest: 0 }; // dtest: v5.3.1 display test (1 no scanlines, 2 no world blit, 3 canvas hidden, 4 no vignette, 5 2x resolution) // v5.3 graphics switches (Settings · Glow, Pixel scaling)
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
   const cam = { z: 1, x: 0, y: 0 };
@@ -990,7 +990,7 @@ const RES = 2;
     }
     c.imageSmoothingEnabled = true;
     const DW = W, DH = H, X0 = sx, Y0 = sy, KR = RES * k;
-    c.drawImage(src, (v.vx - vxI) * KR, (v.vy - vyI) * KR, v.vw * KR, v.vh * KR, X0, Y0, DW, DH);
+    if (R_.dtest !== 2) c.drawImage(src, (v.vx - vxI) * KR, (v.vy - vyI) * KR, v.vw * KR, v.vh * KR, X0, Y0, DW, DH);
     // lighting pass: additive soft lights in screen space
     const ws = v.ws, bx2s = x => X0 + (x - v.vx) * ws, by2s = y => Y0 + (y - v.vy) * ws;
     c.save(); c.beginPath(); c.rect(ox, oy, DW, DH); c.clip();
@@ -1218,7 +1218,7 @@ const RES = 2;
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
     if (!scanPat) scanPat = c.createPattern(scan, 'repeat');
-    c.fillStyle = scanPat; c.fillRect(0, 0, W, H);
+    if (R_.dtest !== 1) { c.fillStyle = scanPat; c.fillRect(0, 0, W, H); }
   }
 
   // ---------- fx hook ----------
@@ -1321,7 +1321,7 @@ const RES = 2;
   }
   function resize() {
     const r = cv.parentElement.getBoundingClientRect();
-    dpr = Math.min(3, window.devicePixelRatio || 1) * UIS;
+    dpr = Math.min(R_.dtest === 5 ? 2 : 3, window.devicePixelRatio || 1) * UIS;
     W = Math.max(1, r.width / UIS); H = Math.max(1, r.height / UIS);
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -1376,7 +1376,7 @@ const RES = 2;
     g.setLineDash([]);
   }
   return {
-    set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; },
+    set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; }, get dtest() { return R_.dtest; }, set dtest(v) { R_.dtest = v; resize(); },
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },

@@ -283,6 +283,8 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
 #watchbar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 12px; background: rgba(7,8,15,0.88); box-shadow: inset 0 0 0 1px #b86cff; white-space: nowrap; max-width: 90%; }
 #watchbar em { font-style: normal; font-family: var(--f-pix); font-size: 9px; color: #b86cff; letter-spacing: 1px; text-transform: uppercase; } #watchbar b { font-weight: 400; font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
 body.watching #abils, body.watching #bCall, body.watching #bWeb, body.watching #bCash { pointer-events: none; opacity: 0.5; }
+#dtestBadge { position: absolute; left: 8px; bottom: 8px; z-index: 6; padding: 3px 8px; background: rgba(7,8,15,0.9); box-shadow: inset 0 0 0 1px var(--amber); color: var(--amber); font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; pointer-events: none; }
+body.novig #stage::after { display: none; }
 .rb.ghost { visibility: hidden; }
 .hs.cashbtn.nomkt .cashtag { display: none; }
 .chip.locked { opacity: 0.45; box-shadow: inset 0 0 0 1px var(--line2); } .chip.locked small { display: block; font-size: 8px; color: var(--dim); margin-top: 2px; }
@@ -839,6 +841,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
       <div id="panel" class="panel" hidden></div>
       <div id="etip" hidden></div>
       <div id="ticker" hidden></div>
+      <div id="dtestBadge" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>

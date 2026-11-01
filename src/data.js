@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.3.0';
+const VERSION = '5.3.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,14 +173,15 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.3.0', title: 'Entropy 5.3 · The Hunt', items: [
+const WHATS_NEW = { ver: '5.3.1', title: 'Entropy 5.3 · The Hunt', items: [
+  ['Display test (5.3.1)', 'Hunting the thin white lines on iPhone: Settings · Display test switches off one layer at a time. Tap it, close Settings, look at the field, and tell me which number makes the lines go away.'],
   ['Bounties win runs', 'Every run posts a bounty: a named boss with a mutation and a price on its head. Bring it in and the run is a win. Then choose: Extract to end it there and bank half again in XP, or Push on at a higher score multiplier (×1.25 per bounty pushed past) toward the next bounty 20 waves later. Fall before you extract and the bonus is lost. The bounty sits in the top bar the whole run.'],
   ['Your Nemesis', 'Whatever ends a run comes back for you. If a strain did it, the next run\'s swarm starts already carrying its genes and it leads your first Strain Assault; if a boss did it, it takes your next bounty, mutated. Beat it for a double bounty. Lose to it again and it ranks up. It waits on the main menu.'],
   ['Daily Hunt', 'One map, one bounty and one Nemesis for everyone, every tower open, and the same 40 talent points each (build them from the Daily Hunt card, separate from your own talents), so the ladder is about play. Your first run of the day is the ranked one. Every input is recorded: watch your ranked run back, or copy a hunt code a friend can paste in and watch, tap for tap.'],
   ['Exact resume', 'Close the app mid Daily Hunt and it picks up at the exact moment you left, not the start of the wave.'],
   ['Main menu', 'Your Nemesis, trophies (bounties, extractions, Nemeses beaten) and today\'s Hunt sit under your level.'],
   ['Chaos ladder', 'Extract once on a Chaos level to open the next one (reaching Wave 20 or 30 still works). Supernova now needs level 40 to start (was 60).'],
-  ['Graphics switches', 'Settings has Glow (soft lighting) and Pixel scaling (Sharp or Simple). If you see thin lines across the field on iPhone, try turning each off and tell me which one clears them.'],
+  ['Graphics switches', 'Settings has Glow (soft lighting) and Pixel scaling (Sharp or Simple).'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
