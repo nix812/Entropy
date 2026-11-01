@@ -141,7 +141,7 @@ const UI = (() => {
   // ---------- Setup ----------
   function openSetup() {
     const ls = PROF.lastSetup || { startWave: 1, chaos: 1 };
-    setup.chaos = ls.chaos ?? 1;
+    setup.chaos = ls.chaos ?? 1; if (!chaosUnlocked(setup.chaos)) setup.chaos = 1;
     const maxStart = Math.max(1, Math.floor((PROF.bestWave - 5) / 5) * 5);
     setup.startWave = Math.min(ls.startWave || 1, maxStart);
     if (setup.startWave !== 1 && setup.startWave % 5) setup.startWave = 1;
@@ -172,7 +172,7 @@ const UI = (() => {
             <div class="chips wrap">${starts.map(w => `<button class="chip ${w === sw ? 'on' : ''}" data-act="sw" data-v="${w}">${w}</button>`).join('')}</div>
             <p class="note">${starts.length === 1 ? 'Reach Wave 10 to unlock later starts.' : sw === 1 ? 'Later starts skip early waves and grant bonus credits.' : `${fmt(credits)} starting credits. Tougher enemies, bigger rewards.`}</p>
             <div class="lbl">Chaos</div>
-            <div class="chips">${CHAOS_LEVELS.map((c, i) => `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>`).join('')}</div>
+            <div class="chips">${CHAOS_LEVELS.map((c, i) => chaosUnlocked(i) ? `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>` : `<button class="chip locked" data-act="chLock" data-v="${i}">${c.name}<small>Best W${CHAOS_GATE[i]}</small></button>`).join('')}</div>
             <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite}${CH.cr ? ` · Credits ×${CH.cr}` : ""} · <b class="amber">Score ×${CH.score}</b></p>
             <p class="note">${tipify('Evolution')}: ${esc(CH.evo ? CH.evo.desc : '')}</p>
             <p class="note">Sector ${R0.x1 - R0.x0}×${R0.y1 - R0.y0} → ${COLS}×${ROWS} · ${CH.lanes.length} wormholes${CH.lanes[0] <= 1 ? ', one at start' : ''}</p>
@@ -229,7 +229,7 @@ const UI = (() => {
     }
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
-    G.unlocks = []; G.bestAtStart = PROF.bestWave;
+    G.unlocks = []; G.bestAtStart = PROF.bestWave; G.fresh = freshProfile();
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
@@ -310,6 +310,7 @@ const UI = (() => {
     else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); }
     updateHud();
   }
+  const marketShut = () => !!(G && G.fresh && G.wave < 10);
   function buildAbilityBar() {
     $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Overdrive">${svgIcon('overdrive')}<span>Overdrive</span></button>` +
       ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt"></em><i class="cdf"></i></button>`).join('');
@@ -335,10 +336,10 @@ const UI = (() => {
     cb.querySelector('b').textContent = G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '';
     $('#cpBanner').hidden = !G.checkpoint || !!G.reloc;
     if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); $('#cpBanner').querySelector('span').textContent = cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'; $('#cpFill').style.width = pct(cpb.f); }
-    $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash'));
+    $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
     const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
     { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Overdrive') : 'W' + OD_WAVE;
-      ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready);
+      ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready); ob.classList.toggle('ghost', !!G.fresh && !ready && !G.odUsed);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
     // v5.1: every ability keeps its place on the rail. Empty ones dim and fill as they recharge; offline ones show their wave
     for (const k of ABIL_ORDER) {
@@ -355,7 +356,7 @@ const UI = (() => {
       btn.classList.toggle('live', left > 0);
       let db = btn.querySelector('.dur'); if (!db) { db = document.createElement('i'); db.className = 'dur'; btn.appendChild(db); }
       db.style.width = left > 0 ? pct(clamp(left / mxl, 0, 1)) : '0%';
-      btn.classList.toggle('locked', !on); btn.classList.toggle('empty', on && n <= 0);
+      btn.classList.toggle('locked', !on); btn.classList.toggle('empty', on && n <= 0); btn.classList.toggle('ghost', !!G.fresh && !on);
       const mx = on ? abilCdMax(k) : 1, cd = G.abilCd ? G.abilCd[k] : 0, filling = on && n < slots && cd > 0;
       btn.querySelector('.cdf').style.width = filling ? pct(clamp(1 - cd / mx, 0, 1)) : '0%';
       btn.classList.toggle('aim', G.aimAbility === k);
@@ -378,21 +379,12 @@ const UI = (() => {
       const P = G.prep;
       if (P.boss) chips.push(`<span class="evchip next bad">Boss ${P.boss.odd ? "???" : esc(P.boss.name)}</span>`);
       if (G.wanted && G.wantedTold && !G.wanted.done && G.wanted.w > G.wave) chips.push(`<span class="evchip wanted" data-wanted="1">Wanted · W${G.wanted.w}</span>`);
-      for (const [g, v] of Object.entries(P.genes || {}).filter(([g, v]) => v >= 0.2).sort((a, b) => b[1] - a[1]).slice(0, 3))
-        chips.push(`<span class="evchip gene" data-gene="${g}" style="--c:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</span>`);
-      chips.push(`<span class="evchip next">Next: ${P.total} enemies${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
-      for (const k of P.heads || []) chips.push(`<span class="evchip head" data-ehead="${k}">${esc(ENEMIES[k].name)} ×${P.counts[k]}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
-    if (!(G.spawningDone && G.prep) && geneCap(G.wave) > 0) {
-      const gs = Object.entries(geneShares()).filter(([g, v]) => v >= 0.15).sort((a, b) => b[1] - a[1]).slice(0, 2);
-      chips.unshift(`<span class="evchip dna${performance.now() < dnaPulse ? ' pulse' : ''}" data-evo="1">DNA${gs.length ? ' · ' + gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : ' · stable'}</span>`);
-    }
-    // assault banner (top of the field): warn shows the strain's genes, live shows what's left and the leak budget
-    const AS = G.assault, asb = $('#asbar'); let asH = '';
-    if (AS && AS.state === 'warn') asH = `<b>STRAIN ASSAULT · WAVE ${AS.w}</b><span>${AS.genes.map(g => `<i style="color:${GENES[g].col}">${GENES[g].name}${g === 'ward' && AS.el ? ' ' + EL[AS.el].name : ''}</i>`).join(' · ')}</span><em>${G.refit ? 'Selling is free' : ''}</em>`;
-    else if (AS && AS.state === 'live') { const left = AS.n - AS.killed - AS.leaked, lim = assaultLimit(AS); asH = `<b>${esc(AS.name)}</b><span>${left} left</span><em class="${AS.leaked > lim ? 'lost' : ''}">Leaks ${AS.leaked}/${lim}</em>`; }
-    if (asb) { const on = !!asH && !(G.bossAlive && !G.bossAlive.dead); if (asb.dataset.h !== asH) { asb.innerHTML = asH; asb.dataset.h = asH; } if (asb.hidden === on) asb.hidden = !on; document.body.classList.toggle('asbar', on); }
+    // v5.2 threat board: one chip says what is coming and what the swarm is doing (next wave, new and headline enemies, DNA, Strain Assault).
+    // Tap it for the full board. Replaces the separate Next / headline / gene / DNA chips and the assault banner
+    { const th = threatChip(); if (th) chips.push(th); }
+    { const asb = $('#asbar'); if (asb && !asb.hidden) { asb.hidden = true; document.body.classList.remove('asbar'); } }
     { // Doctrine meters, bottom right of the field
       const db = $('#docbar'), parts = [];
       if (G.mods.ks.wildfire) parts.push(`<span class="heat">Road heat <b>${Math.round(G.heat * 100)}%</b><i>/${Math.round(wildHeatCap() * 100)}</i></span>`);
@@ -414,7 +406,7 @@ const UI = (() => {
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
     // order by what you need to act on first; anything that doesn't fit goes behind a "+N" chip (the Field Report)
-    const prio = h => /evchip warn/.test(h) ? 0 : /next bad">Boss/.test(h) ? 1 : /data-wanted/.test(h) ? 2 : /evchip next">Next/.test(h) || /evchip head/.test(h) ? 3 : /data-evo/.test(h) ? 4 : /evchip (bad|good)"/.test(h) ? 5 : /storm/.test(h) ? 6 : /next (bad|good)/.test(h) ? 7 : 8;
+    const prio = h => /evchip warn/.test(h) ? 0 : /next bad">Boss/.test(h) ? 1 : /data-threat/.test(h) ? 2 : /data-wanted/.test(h) ? 3 : /evchip (bad|good)"/.test(h) ? 5 : /storm/.test(h) ? 6 : /next (bad|good)/.test(h) ? 7 : 8;
     chips.sort((a, b) => prio(a) - prio(b));
     chipList = chips;
     const html = chips.join('');
@@ -431,6 +423,58 @@ const UI = (() => {
     SFX.music.setIntensity(0.2 + Math.min(0.3, G.wave / 70) + Math.min(0.22, G.enemies.length / 90) + (boss ? 0.25 : 0) + (G.storms.some(s => s.mael) ? 0.12 : 0) - (G.paused ? 0.15 : 0));
     SFX.music.setMood(boss ? 'boss' : 'calm');
   }
+  // ---------- v5.2 Threat board ----------
+  const geneTxt = (g, el) => GENES[g].name + (g === 'ward' && el ? ' ' + EL[el].name : '');
+  function threatChip() {
+    const A = G.assault, pulse = performance.now() < dnaPulse ? ' pulse' : '';
+    if (A && A.state === 'live') { const left = A.n - A.killed - A.leaked, lim = assaultLimit(A);
+      return `<span class="evchip threat hot live${A.leaked > lim ? ' lost' : ''}" data-threat="1"><b>Assault</b> ${left} left · leaks ${A.leaked}/${lim}</span>`; }
+    const parts = [];
+    let hot = false;
+    if (A && A.state === 'warn') { hot = true; parts.push(`<b>Assault W${A.w}</b>`, A.genes.map(g => `<i style="color:${GENES[g].col}">${esc(geneTxt(g, A.el))}</i>`).join(' ')); }
+    if (G.spawningDone && G.prep) {
+      const P = G.prep;
+      if (!hot) parts.push(`<b>W${P.w}</b> ${P.total} enemies${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}`);
+      for (const k of P.fresh || []) parts.push(`<i class="new">New ${esc(ENEMIES[k].name)}</i>`);
+      const hd = (P.heads || []).filter(k => !(P.fresh || []).includes(k))[0]; if (hd && !hot) parts.push(`${esc(ENEMIES[hd].name)} ×${P.counts[hd]}`);
+      if (!hot) { const top = Object.entries(P.genes || {}).filter(([g, v]) => v >= 0.2).sort((a, b) => b[1] - a[1])[0]; if (top) parts.push(`<i style="color:${GENES[top[0]].col}">${GENES[top[0]].name} ${Math.round(top[1] * 100)}%</i>`); }
+    } else if (!hot && geneCap(G.wave) > 0) {
+      const gs = Object.entries(geneShares()).filter(([g, v]) => v >= 0.15).sort((a, b) => b[1] - a[1]).slice(0, 2);
+      parts.push('<b>Swarm</b>', gs.length ? gs.map(([g, v]) => `<i style="color:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</i>`).join(' ') : 'stable');
+    }
+    if (!parts.length) return '';
+    return `<span class="evchip threat${hot ? ' hot' : ''}${pulse}" data-threat="1">${parts.join(' · ').replace('</b> · ', '</b> ')}</span>`;
+  }
+  function openThreat() {
+    if (!G) return;
+    if (!G.over) G.paused = true;
+    const P = G.spawningDone ? G.prep : null, A = G.assault, cap = geneCap(G.wave);
+    const sec = [];
+    if (P) {
+      const kinds = Object.entries(P.counts).sort((a, b) => b[1] - a[1]);
+      sec.push(`<div class="lbl">Next · Wave ${P.w} · ${P.total} enemies${P.fly ? ' · ' + P.fly + ' flying' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}${P.boss ? ' · Boss ' + (P.boss.odd ? '???' : esc(P.boss.name)) : ''}</div>
+        <div class="thlist">${kinds.map(([k, n]) => { const D = ENEMIES[k], head = (P.heads || []).includes(k), nw = (P.fresh || []).includes(k);
+          return `<div class="threv${head || nw ? ' head' : ''}"><canvas width="36" height="36" data-eico="${k}"></canvas><b>${esc(D.name)} ×${n}${nw ? ' <i class="new">New</i>' : head ? ' <i>Headline</i>' : ''}</b><span>${tipify(D.desc)}. <u>Beat it: ${tipify(D.beat)}</u></span></div>`; }).join('')}</div>`);
+      if (P.list.length) sec.push(`<p class="note">${P.list.map(E => `<b class="${E.good ? 'good' : 'bad'}">${esc(E.name)}</b>: ${esc(E.desc || '')}`).join(' · ')}</p>`);
+    } else sec.push(`<div class="lbl">Wave ${G.wave} in progress · ${G.queue.length + G.enemies.length} left</div>`);
+    if (A && A.state !== 'done') {
+      const live = A.state === 'live', lim = live ? assaultLimit(A) : null;
+      sec.push(`<div class="lbl bad">Strain Assault · Wave ${A.w}${live ? ' · in progress' : ''}</div><h3 class="asname">${esc(A.name)}</h3>
+        <div class="evlist">${A.genes.map(g => { const D = GENES[g]; return `<div class="evrow"><b style="color:${D.col}">${esc(geneTxt(g, A.el))}</b><div></div><em></em><span>${esc(g === 'ward' && A.el ? `Resists ${EL[A.el].name} by 50%` : D.desc)} · <u>Counter: ${esc(g === 'ward' && A.el ? `anything but ${EL[A.el].name}` : D.counter)}</u></span></div>`; }).join('')}</div>
+        ${A.why && A.why.length ? `<ul class="aswhy">${A.why.map(x => `<li>${esc(x[0].toUpperCase() + x.slice(1))}</li>`).join('')}</ul>` : ''}
+        <p class="note hl">${live ? `${A.n - A.killed - A.leaked} of ${A.n} left · ${A.leaked} leaked of ${lim} allowed. Hold it and it breaks: +1 power and a bounty.` : tipify(`Selling is free until Wave ${A.w} starts. Swap towers for the counters above. Let few enough through and the strain breaks: +1 power and a bounty.`)}</p>`);
+    }
+    if (cap > 0) {
+      const R = readDefence(Math.max(G.wave, 1)).slice(0, 2);
+      sec.push(`<div class="lbl">Swarm DNA · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(A && A.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</div>
+        ${R.length ? `<ul class="aswhy">${R.map(x => `<li><b style="color:${GENES[x.g].col};font-weight:400">${GENES[x.g].name}${x.el ? ' · ' + EL[x.el].name : ''}</b>: ${esc(x.why)}</li>`).join('')}</ul>` : ''}
+        <div class="evlist">${evoRowsHTML()}</div>`);
+    } else sec.push(`<p class="note">${tipify(`The swarm starts to evolve at Wave ${evoCfg().start}: whatever your defence handles worst spreads through it.`)}</p>`);
+    modal(`<div class="card evo threat"><div class="ch"><h2>Threat Board</h2><span class="note">Wave ${G.wave || 0} · ${esc(G.CH.name)}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      ${sec.join('')}
+      <div class="foot">${G.wanted && !G.wanted.done ? '<button class="btn" data-act="wantR">Most Wanted</button>' : ''}<button class="btn primary" data-act="close2">Back</button></div></div>`, 'evo');
+    for (const cv of document.querySelectorAll('#modal canvas[data-eico]')) Render.enemyIcon(cv.dataset.eico, cv);
+  }
   let chipList = [];
   function fitChips(ch) {
     const kids = [...ch.children]; if (!kids.length) return;
@@ -446,7 +490,7 @@ const UI = (() => {
     modal(`<div class="card narrow report"><div class="ch"><h2>Field Report</h2><span class="note">Wave ${G.wave}</span><button class="x" data-act="resume" aria-label="Close">✕</button></div>
       <div class="rlist">${rows || '<p class="note">Nothing to report.</p>'}</div>
       ${noteLog.length ? `<div class="lbl">Recent notices</div><div class="nlog">${noteLog.slice().reverse().map(n => `<div style="--c:${n.col || '#c9c6bc'}"><b>${esc(n.title)}</b><span>${esc(n.body || '')}</span><i>W${n.w}</i></div>`).join('')}</div>` : ''}
-      <div class="foot">${geneCap(G.wave) > 0 ? '<button class="btn" data-act="evoR">Swarm DNA</button>' : ''}${G.wanted && !G.wanted.done ? '<button class="btn" data-act="wantR">Most Wanted</button>' : ''}<button class="btn primary" data-act="resume">Continue</button></div></div>`);
+      <div class="foot"><button class="btn" data-act="evoR">Threat Board</button>${G.wanted && !G.wanted.done ? '<button class="btn" data-act="wantR">Most Wanted</button>' : ''}<button class="btn primary" data-act="resume">Continue</button></div></div>`);
   }
   function renderDps() {
     const list = G.towers.filter(t => t.s.kind !== 'support' && t.s.kind !== 'eco').sort((a, b) => b.dps - a.dps).slice(0, 6);
@@ -1246,10 +1290,10 @@ const UI = (() => {
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
   }
-  // ---------- Hall of Fame: best three runs by score, with their summaries ----------
+  // ---------- Hall of Fame: best three runs by wave reached (then score), with their summaries ----------
   function hallAdd(R) {
-    if (!(R.score > 0)) return -1;
-    PROF.hall = (PROF.hall || []).concat([R]).sort((a, b) => b.score - a.score).slice(0, 3);
+    if (!(R.score > 0) || R.wave < 10) return -1; // v5.2: a Wave 3 run is not a Hall of Fame run
+    PROF.hall = (PROF.hall || []).concat([R]).sort((a, b) => b.wave - a.wave || b.score - a.score).slice(0, 3);
     const i = PROF.hall.indexOf(R); return i;
   }
   const runMode = R => R.daily ? 'Daily' : (CHAOS_LEVELS[R.chaos] || {}).name || '';
@@ -1257,7 +1301,7 @@ const UI = (() => {
   function hallHTML() {
     const H = PROF.hall || [];
     if (!H.length) return `<div class="lbl">Hall of Fame</div><p class="note">Finish a run to claim a spot.</p>`;
-    return `<div class="lbl">Hall of Fame</div><div class="hall">${H.map((R, i) => `<button class="hrow" data-act="hall" data-v="${i}"><em>#${i + 1}</em><span><b>${fmt(R.score)}</b><small>Wave ${R.wave} · ${esc(runMode(R))}${R.strain ? ' · vs ' + esc(R.strain.name) : ''}${R.nova ? ' · Supernova ' + R.nova : ''} · ${esc(runDate(R))}</small></span>${R.mvp ? `<canvas class="ico" width="20" height="20" data-ico="${R.mvp.type}"></canvas>` : ''}</button>`).join('')}</div>`;
+    return `<div class="lbl">Hall of Fame</div><div class="hall">${H.map((R, i) => `<button class="hrow" data-act="hall" data-v="${i}"><em>#${i + 1}</em><span><b>Wave ${R.wave}</b><small>${fmt(R.score)} · ${esc(runMode(R))}${R.strain ? ' · vs ' + esc(R.strain.name) : ''}${R.nova ? ' · Supernova ' + R.nova : ''} · ${esc(runDate(R))}</small></span>${R.mvp ? `<canvas class="ico" width="20" height="20" data-ico="${R.mvp.type}"></canvas>` : ''}</button>`).join('')}</div>`;
   }
   function openHall(i) {
     const R = (PROF.hall || [])[i]; if (!R) return openArchive();
@@ -1395,6 +1439,7 @@ const UI = (() => {
       <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
       <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Haptics <em class="dim">buzz when the core is hit</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.haptics !== false) === v ? 'on' : ''}" data-act="haptic" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
+      <div class="set"><span>Boss slow-down <em class="dim">drop to 1× when a boss arrives</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.autoSlow !== false) === v ? 'on' : ''}" data-act="autoslow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
       <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
@@ -1768,7 +1813,7 @@ const UI = (() => {
     switch (act) {
       case 'close': closeModal(); break;
       case 'brief': closeModal(); if (G) { G.paused = false; G.briefing = false; } break;
-      case 'evoR': closeModal(); if (G) G.paused = false; openEvo(); break;
+      case 'evoR': closeModal(); if (G) G.paused = false; openThreat(); break;
       case 'wantR': closeModal(); if (G) G.paused = false; wantedPoster(true); break;
       case 'hall': openHall(+b.dataset.v); break;
       case 'hallBack': openArchive(); break;
@@ -1780,6 +1825,7 @@ const UI = (() => {
       case 'close2': { const back = modalFrom; closeModal(); if (back === 'pause' && G && !G.over && screen === 'game') { openPause(); break; } if (G && !G.over && screen === 'game') G.paused = false; break; }
       case 'sw': setup.startWave = +b.dataset.v; renderSetup(); break;
       case 'ch': setup.chaos = +b.dataset.v; rerollMap(); renderSetup(); break;
+      case 'chLock': SFX.play('deny'); toast(CHAOS_LEVELS[+b.dataset.v].name.toUpperCase(), `Opens when your best wave reaches ${CHAOS_GATE[+b.dataset.v]}`, '#8a8fa8', true, 'tip'); break;
       case 'reroll': rerollMap(); renderSetup(); break;
       case 'launch': launch(); break;
       case 'launchDaily': launch(); break;
@@ -1824,6 +1870,7 @@ const UI = (() => {
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'uis': PROF.settings.uiScale = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v; Save.save(); UI.fitVV(); openSettings(); break;
+      case 'autoslow': PROF.settings.autoSlow = b.dataset.v === '1'; Save.save(); openSettings(); break;
       case 'haptic': PROF.settings.haptics = b.dataset.v === '1'; Save.save(); if (PROF.settings.haptics) Haptics.tap(true); openSettings(); break;
       case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
       case 'notes': PROF.settings.notes = b.dataset.v; Save.save(); renderFeed(); openSettings(); break;
@@ -1848,9 +1895,9 @@ const UI = (() => {
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
-    $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
+    $('#asbar').onclick = () => { SFX.play('ui'); openThreat(); };
     $('#ticker').onclick = e => { if (!e.target.closest('.tkb')) return; SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
-    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-threat]') || e.target.closest('[data-evo]')) { SFX.play('ui'); openThreat(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#pw').parentNode.onclick = () => {
       if (!G || G.over) return; SFX.play('ui');
       const free = gridFree(), T = topTower();
@@ -1861,8 +1908,8 @@ const UI = (() => {
       if (free >= 1) toast('SPARE POWER', `${free} unused. Tap a tower and raise its Overcharge: +${Math.round(OVERCHARGE.dmg * 100)}% Damage per point`, '#59f0b4');
       else toast('POWER', `Every tower draws 1 power; Overcharge draws more. Capacity grows 1 every ${GRID.perWaves} waves, or expand the reactor from the core panel`, '#59f0b4');
     };
-    $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
-    $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; updateHud(); };
+    $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (marketShut()) { toast('EXCHANGE', 'The Black Market and Cash In open at Wave 10. Score comes from kills', '#8a8fa8', true, 'tip'); return; } if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
+    $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; G.speedWas = 0; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
     $('#bWeb').onclick = () => { SFX.play('ui'); Tree.open(); };
     $('#bPause').onclick = () => { SFX.play('ui'); openPause(); };
@@ -1910,7 +1957,7 @@ const UI = (() => {
     window.addEventListener('keydown', e => {
       if (screen !== 'game' || !G) return;
       if (e.key === ' ') { e.preventDefault(); if (modalOpen === 'pause') modalAction('resume'); else if (!modalOpen) openPause(); }
-      if (e.key >= '1' && e.key <= '3') { G.speed = +e.key; updateHud(); }
+      if (e.key >= '1' && e.key <= '3') { G.speed = +e.key; G.speedWas = 0; updateHud(); }
       if (e.key === 'Escape') { if (G.aimAbility) mouseCancel(); else closePanel(); }
       // v5.0.1 keyboard for mouse players: pan, zoom, map, next wave, talents, upgrade, abilities
       if (modalOpen || Tree.isOpen || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1961,6 +2008,11 @@ const UI = (() => {
     if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());
     onboardingTick();
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
+    // v5.2: fast-forward is safe to leave on. A boss arriving (or reaching Red Alert) drops the game to 1×; the old speed comes back when it falls.
+    // Speeding up again by hand during the fight is respected
+    if (bossOn && !G.over) { const b = G.bossAlive, key = b.id + (G.redAlert ? 'r' : '');
+      if (G.speed > 1 && G.slowKey !== key && PROF.settings.autoSlow !== false) { G.slowKey = key; G.speedWas = Math.max(G.speedWas || 0, G.speed); G.speed = 1; toast('SPEED 1×', G.redAlert ? 'Red Alert: the boss is at your gate' : 'Boss on the field. Your speed comes back when it falls', '#ffb03a', true, 'tip'); updateHud(); } }
+    else if (G && !G.over && G.speedWas && screen === 'game') { if (G.speed === 1) { G.speed = G.speedWas; toast(`SPEED ${G.speed}×`, 'Boss down', '#59f0b4', true, 'tip'); } G.speedWas = 0; G.slowKey = null; updateHud(); }
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
     if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen) { closePanel(); openDraft(G.draft); }
@@ -1977,7 +2029,7 @@ const UI = (() => {
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0,
     get screen() { return screen; }, get modalOpen() { return modalOpen; },
     // test hooks (test/uiaudit.py opens every screen through these)
-    _dbg: { openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
+    _dbg: { openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
   };
 })();
 

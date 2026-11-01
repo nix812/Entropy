@@ -129,6 +129,11 @@ function supernova(remnant, law) {
   Hooks.onChange('tree');
   return true;
 }
+// v5.2: higher Chaos levels open as you prove yourself (Unstable at best Wave 20, Pandemonium at 30). v5.3 adds extractions
+const CHAOS_GATE = [0, 0, 20, 30];
+const chaosUnlocked = i => i <= 1 || (PROF.bestWave || 0) >= CHAOS_GATE[i];
+// a profile still learning the game (best wave under 10): locked controls stay out of sight until they come online
+const freshProfile = () => (PROF.bestWave || 0) < 10;
 const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
 // the Capstones currently in force (held + remnants), as ks flags or fx bundles
 const activeCaps = () => [...new Set(capsHeld().concat((PROF.remnants || []).filter(r => TAL[r])))];
@@ -1312,7 +1317,7 @@ function prepareWave(w) {
   for (const k of Object.keys(counts)) if (!met[k]) {
     met[k] = 1;
     if (!seen[k]) { seen[k] = 1; if (ENEMIES[k].from >= 3) Hooks.newEnemy && Hooks.newEnemy(k, w); }
-    else if (ENEMIES[k].from >= 18 && w <= ENEMIES[k].from + 1) Hooks.toast('NEW ENEMY · WAVE ' + w, `${ENEMIES[k].name}: ${ENEMIES[k].desc}. Beat it: ${ENEMIES[k].beat}`, '#ff4d6a', true);
+    else if (ENEMIES[k].from >= 18 && w <= ENEMIES[k].from + 1) (G.prep.fresh || (G.prep.fresh = [])).push(k); // v5.2: shown on the threat board, not as an alert
   }
   // announce a trait when it takes hold (35%+), again only after it has faded below 20%
   const told = G.geneTold || (G.geneTold = {});

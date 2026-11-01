@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.1.4';
+const VERSION = '5.2.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,25 +173,14 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.1.4', title: 'Entropy 5.1 · Know Your Enemy', items: [
-  ['Cleaner screens', 'Every menu and side panel now has a fixed header and footer around a scrolling middle, so nothing drifts or leaves a band across the text while you scroll (the New Run screen did). Close buttons stay in the corner, card borders stay whole, and a tall footer (the core on a small phone) scrolls with the panel instead of squashing it. The notice line no longer blocks taps on the field: tap its LOG button to read past notices.'],
-  ['Core Hull', 'A new core upgrade for late money: each level adds 12% max hull and cuts the damage every leak does by 5% (10 levels). Banked credits now buy breathing room.'],
-  ['Tides tamed', 'Elite Tide adds fewer elites and a wave can never be more than 60% elite (late Elite Tides made almost every enemy an elite). Swarm Tide brings 60% more enemies instead of double. The two never land together.'],
-  ['Scan when it counts', 'With cloaked enemies on the field and a charge ready, the Scan button lights up, and the notice line says so now and then.'],
-  ['Quieter notices', 'No more cards over the battlefield. Notices run along one slim line under the top bar, one at a time; long ones slide across instead of being cut off. Only run-ending news (Red Alert, Boss Halfway, Breach Warning) cuts in, with a red flash at the screen edge. News that already has a place on screen (the Strain Assault strip, storm and DNA chips) no longer repeats as a notice. Tap the line, or the +N chip, to read the last 30.'],
-  ['Ability timers', 'Frenzy, Stasis and Scan count down on their buttons while they run (seconds left, and a bar that drains along the top). Using one again while it runs adds its time, up to three uses\' worth, instead of restarting it.'],
-  ['Abilities on cooldowns', 'Every ability now recharges on its own timer into a charge slot, so the late game no longer runs dry. Crates, chests, bosses and milestones still give extra charges, and those stack with no cap. Buttons keep their place on the rail; empty ones dim and fill as they recharge.'],
-  ['New: Sensor Sweep', 'A fifth ability (Scan, from Wave 7). Reveals cloaked enemies, Marks everything for +15% damage taken, and puts a reticle on the biggest threat. Short cooldown. Key B on a computer.'],
-  ['Command Uplink', 'A new core upgrade: each level cuts ability cooldowns 5%. Level 3: Strike hits twice. Level 6: Stasis leaves enemies slowed. Level 9: Nova pulses again. Command talents add Reserve Cells (extra charge slots), Telemetry now cuts cooldowns, and the new Tactician Capstone links your abilities.'],
-  ['Know your enemy', 'Tap or hover any enemy: HP, what it does, what beats it, its genes and statuses. Each wave now leans on a headline enemy (amber chip). The Dictionary shows every enemy\'s sprite. Menders draw heal beams, Aegis shields crack, armour goes tink, cloakers shimmer.'],
-  ['Four new enemies', 'From Wave 18: the Reflector (bolts, beams and chains glance off), the Carrier (a flying mothership that drops drones), the Sapper (knocks a tower out for 4s) and the Leech (steals credits if it reaches the core). Each is announced a wave ahead.'],
-  ['A ramp, not a cliff', 'Enemy health builds more through Waves 20 to 50 and climbs less steeply after 40, so the late game gets harder steadily instead of all at once.'],
-  ['Storms you can read', 'Towers a storm boosts wear its colour. A tower\'s panel lists every live condition with numbers (storms, Blackout, EMP, Frenzy, outages). Knocked-out towers say why (EMP, SAPPED). Tap a storm chip for its effects and how many of your towers it touches.'],
-  ['Fewer taps', 'Crates next to one of your towers collect themselves. One "veterans ready" chip replaces the ! on every tower. Notices never cut off mid-sentence.'],
-  ['Pirates with names', 'Skiffs fly slower, carry a named captain, show their flight path and target, and announce themselves with a jingle.'],
-  ['First run', 'No wall of rules: glowing tiles show where to build, and each system introduces itself in two lines the first time it shows up. Credits piling up get a nudge, a boss halfway to the core gets an alarm, and the death screen says why you lost and what beats it.'],
-  ['Fixes', 'One Capstone per tree (a second one in the same tree is refunded). The breach warning names what got through. The Strain screen counts shield damage, so Arc Coils show up. Death screen buttons tidied. A tap on a panel can no longer be swallowed by a refresh, and the Sell button never slides under your finger.'],
-] };
+const WHATS_NEW = { ver: '5.2.0', title: 'Entropy 5.2 · The First Hour', items: [
+  ['Threat Board', 'One chip in the top bar now says what is coming: the next wave, new and headline enemies, the swarm\'s strongest gene, and a Strain Assault when one is on its way (it turns red). Tap it for the full board: every enemy in the next wave with what beats it, the assault and how it read you, and the swarm\'s DNA. It replaces the separate Next, headline, gene and DNA chips and the assault banner.'],
+  ['Fast-forward stays on', 'When a boss arrives, or reaches Red Alert, the game drops to 1× so you can deal with it. Your speed comes back when it falls. Speed up again by hand any time; turn it off in Settings · Boss slow-down.'],
+  ['First runs pay', 'The first two levels cost much less XP, so a first run that ends around Wave 10 earns a talent point. Your own level may tick up by one.'],
+  ['Less on screen at first', 'On a new profile, abilities stay off the rail until they come online, the Exchange opens at Wave 10, and Unstable and Pandemonium open at best Wave 20 and 30. Veterans see everything as before.'],
+  ['Hall of Fame', 'Ranked by wave reached, then score, and a run needs Wave 10 to make it.'],
+  ['Fixes', 'The "Beat it" line on enemy and boss cards no longer breaks into columns.'],
+]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
 const PIRATE_CAPTAINS = ['Captain Rustbeard', 'Black Static', 'Mad Mags Vortex', 'One-Eye Orrin', 'Calico Jett', 'Nebula Nell', 'Scurvy Quasar', 'Red Ronin Rook', 'Dread Pixel Pete', 'Salty Sal Saturn'];
@@ -606,7 +595,8 @@ function talentLines(t, rank) {
   return Object.keys(t.fx).map(k => { const v = t.fx[k]; const txt = STAT_TXT[k]; if (!txt) return k; return typeof v === 'number' && v !== 1 ? txt(+(v * r).toFixed(2)) : txt(v); });
 }
 
-const xpForLevel = L => Math.round(3000 + 250 * L + 3 * L * L);
+// v5.2: the first two levels are cheap so a first run that dies around Wave 10 still earns a talent point
+const xpForLevel = L => L === 0 ? 800 : L === 1 ? 1600 : Math.round(3000 + 250 * L + 3 * L * L);
 function levelFromXP(xp) {
   let L = 0, need = xpForLevel(0);
   while (xp >= need) { xp -= need; L++; need = xpForLevel(L); }
