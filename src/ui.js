@@ -2351,23 +2351,8 @@ const Tree = (() => {
     Save.save(); if (Save.flushNow) Save.flushNow();
     updTo = null; setTimeout(() => location.reload(), 900);
   }, 1000);
-  // hangar backdrop
-  const bg = $('#bgfx'), bc = bg.getContext('2d');
-  let bt = 0;
-  const stars = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), p: Math.random() * 6.28, c: ['#59f0b4', '#ffb03a', '#b86cff', '#6ae2ff', '#ff4d6a'][Math.floor(Math.random() * 5)] }));
-  function drawBg(dt) {
-    bt += dt;
-    const r = bg.getBoundingClientRect();
-    if (bg.width !== Math.round(r.width / 4) || bg.height !== Math.round(r.height / 4)) { bg.width = Math.max(1, Math.round(r.width / 4)); bg.height = Math.max(1, Math.round(r.height / 4)); }
-    bc.fillStyle = 'rgba(7,8,15,0.35)'; bc.fillRect(0, 0, bg.width, bg.height);
-    const cx = bg.width * 0.72, cy = bg.height * 0.5;
-    for (let a = 0; a < 3; a++) for (let k = 0; k < 40; k++) {
-      const rr = k * Math.min(bg.width, bg.height) / 70, an = bt * 0.4 + a * 2.09 + k * 0.18;
-      bc.fillStyle = ['#b86cff', '#ff4d6a', '#ffb03a'][a] + '88';
-      bc.fillRect(Math.round(cx + Math.cos(an) * rr), Math.round(cy + Math.sin(an) * rr), 1, 1);
-    }
-    for (const s of stars) { s.p += dt * 2; if (Math.sin(s.p) > 0.6) { bc.fillStyle = s.c; bc.fillRect(Math.floor(s.x * bg.width), Math.floor(s.y * bg.height), 1, 1); } }
-  }
+  // hangar backdrop (v5.5: HangarFX in render.js)
+  const bg = $('#bgfx'); const drawBg = dt => HangarFX.draw(bg, dt);
   let last = performance.now(), acc = 0;
   const STEP = 1 / 30;
   function frame(ts) {
