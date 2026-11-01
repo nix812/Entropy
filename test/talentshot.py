@@ -32,7 +32,7 @@ with sync_playwright() as p:
     pg.evaluate('() => document.querySelector("#tgrid").scrollTop = 9999'); pg.wait_for_timeout(100)
     pg.dblclick('.ttile.cap [data-tact=sel][data-v=glass]'); pg.wait_for_timeout(200)
     check(pg.evaluate('() => capsHeld().includes("glass")'), 'double-tap capstone')
-    check(pg.evaluate('() => talentBlock("marksman")') in ('slots', ''), 'slot rule')
+    check(pg.evaluate('() => talentBlock("marksman")') == 'tree', 'one Capstone per tree')
     pg.click('[data-tact=sel][data-v=kLeth]'); pg.wait_for_timeout(150)
     pg.screenshot(path=str(out / f'tal_tree_{W}.png'))
     # removing a row-1 rank that a row-3 talent needs is refused

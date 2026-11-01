@@ -100,8 +100,11 @@ for (let run = OFF; run < OFF + runs; run++) {
       if (G.charges.strike > 0 && (alive > 14 || G.bossAlive)) { const tg = G.bossAlive || lead; S.useAbility('strike', tg.x, tg.y); }
       if (G.charges.nova > 0 && alive > 25) S.useAbility('nova');
       if (G.charges.stasis > 0 && ((G.bossAlive && G.bossAlive.d / G.bossAlive.L.len > 0.6) || G.core.hp / G.core.max < 0.4)) S.useAbility('stasis');
-      if (G.charges.overclock > 0 && G.bossAlive) S.useAbility('overclock');
+      if (G.charges.overclock > 0 && (G.bossAlive || alive > 30)) S.useAbility('overclock');
+      if (G.charges.scan > 0 && !(G.scanT > 0) && (G.enemies.some(e => e.cloaked) || G.bossAlive || alive > 20)) S.useAbility('scan');
     }
+    // v5.1 Command Uplink: a level every ~8 waves when there's spare cash (NOUPLINK=1 skips)
+    if (!process.env.NOUPLINK && S.coreUplinkCost && (G.core.uLvl || 0) < Math.min(9, Math.floor(G.wave / 7)) && G.credits > S.coreUplinkCost() * 2.5) S.coreUpgrade('uplink');
     // repair
     if (G.core.hp / G.core.max < 0.45 && G.credits > S.coreRepairCost()) S.coreUpgrade('repair');
     // call early if field is clear

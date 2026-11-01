@@ -180,6 +180,29 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .rb.on { box-shadow: inset 0 0 0 1px var(--cryo); color: var(--cryo); }
 .abil { color: var(--warn); }
 .abil.aim { background: var(--amber); color: #1a1004; box-shadow: none; }
+/* v5.1 Know Your Enemy */
+.ehp { position: relative; height: 18px; background: #2a0a12; box-shadow: inset 0 0 0 1px #5a1424; margin: 2px 0 6px; }
+.ehp i { position: absolute; inset: 0 auto 0 0; background: var(--bad); }
+.ehp span { position: relative; display: block; text-align: center; font-size: 16px; line-height: 18px; color: #fff; text-shadow: 1px 1px 0 #000; font-variant-numeric: tabular-nums; }
+.etag { font-style: normal; color: var(--dim); white-space: nowrap; }
+.etag.bad { color: var(--bad); }
+canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background: var(--panel2); }
+#etip { position: absolute; z-index: 6; pointer-events: none; max-width: 220px; background: rgba(7, 8, 15, 0.94); box-shadow: inset 0 0 0 1px var(--line2); padding: 5px 8px; }
+#etip[hidden] { display: none; }
+#etip b { display: block; font-family: var(--f-pix); font-weight: 400; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); }
+#etip span { display: block; font-size: 15px; line-height: 1.15; color: var(--ink); }
+.ecard { text-align: left; }
+.ecard .erow { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; align-items: center; }
+.card.ecard .erow canvas { width: 88px !important; height: 88px !important; image-rendering: pixelated; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); }
+.ecard p { margin: 0 0 6px; }
+.dict b canvas.dico { width: 22px; height: 22px; image-rendering: pixelated; vertical-align: middle; margin-right: 6px; }
+.abil .cdf { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--warn); pointer-events: none; }
+.abil.empty, .abil.locked { color: #6a6584; }
+.abil.empty svg, .abil.locked svg { opacity: 0.45; }
+.abil.locked { box-shadow: inset 0 0 0 1px var(--line); }
+.abil .cnt.extra { color: var(--amber); }
+.abil.ping { animation: aping 0.6s steps(3) 1; }
+@keyframes aping { 0% { box-shadow: inset 0 0 0 2px var(--warn), 0 0 14px var(--warn); } 100% { box-shadow: inset 0 0 0 1px var(--line2); } }
 .abil.aim span, .abil.aim .cnt { color: #1a1004; }
 .rb.od { color: var(--core); }
 .rb.od.dim { opacity: 0.45; color: var(--dim); }
@@ -197,6 +220,17 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 #webBadge[hidden] { display: none; }
 #chips { flex: 1; display: flex; gap: 5px; overflow: hidden; min-width: 0; }
 .evchip { flex: 0 0 auto; }
+.why { display: flex; flex-direction: column; gap: 3px; background: var(--panel); box-shadow: inset 3px 0 0 var(--bad); padding: 6px 10px; margin: 6px 0; text-align: left; }
+.why b { font-family: var(--f-pix); font-weight: 400; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bad); }
+.why span { font-size: 16px; line-height: 1.2; }
+.why span.good { color: var(--good); }
+.evchip.ready { cursor: pointer; pointer-events: auto; }
+.evchip.storm.tap { cursor: pointer; pointer-events: auto; }
+.conds { display: flex; flex-direction: column; gap: 3px; margin: 2px 0; }
+.conds:empty { display: none; }
+.conds span:not(.lbl) { font-size: 15px; line-height: 1.15; background: var(--panel); padding: 3px 7px; box-shadow: inset 3px 0 0 var(--line2); }
+.conds span.good { color: var(--good); } .conds span.bad { color: #ff8a9c; }
+.evchip.head { color: var(--amber); box-shadow: inset 0 0 0 1px #6a4a18; cursor: pointer; pointer-events: auto; }
 .evchip.more { color: var(--ink); background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); cursor: pointer; pointer-events: auto; }
 .card.report .rlist { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px; }
 .card.report .rrow { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
@@ -302,7 +336,7 @@ body.webopen #tip { bottom: calc(var(--sab, 0px) + 58px); } /* clear the region 
 #log, #dps { display: none; position: absolute; pointer-events: none; z-index: 3; font-size: 14px; }
 body.hudfull #dps { display: block; }
 #log { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; left: 6px; bottom: 6px; max-width: min(340px, 38%); font-size: 14px; }
-#log .fl { background: rgba(7, 8, 15, 0.78); padding: 1px 6px; line-height: 1.2; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #c9c6bc; box-shadow: inset 2px 0 0 var(--c); animation: tin 0.2s; transition: opacity 1.4s; }
+#log .fl { background: rgba(7, 8, 15, 0.78); padding: 1px 6px; line-height: 1.2; max-width: 100%; white-space: normal; color: #c9c6bc; box-shadow: inset 2px 0 0 var(--c); animation: tin 0.2s; transition: opacity 1.4s; }
 #log .fl b { color: var(--c); font-weight: 400; }
 #log .fl i { color: var(--dim); font-style: normal; }
 #log .fl.old { opacity: 0; }
@@ -719,6 +753,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
       <div id="docbar" hidden></div>
       <div id="dps"></div>
       <div id="panel" class="panel" hidden></div>
+      <div id="etip" hidden></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">

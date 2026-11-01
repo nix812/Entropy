@@ -70,3 +70,36 @@ S.kill(bosses[1], null, {}); ok(G.credits > cr0 && G.legendQueue === lq0 + 1 && 
 // snapshot
 S.snapshotNow(); const snap3 = JSON.parse(JSON.stringify(S.PROF.runSnap)); const G2 = S.resumeRun(snap3);
 ok(G2.wanted && G2.wanted.done, 'wanted state survives a resume');
+
+// v5.0.2: one Capstone per tree, and older saves holding two are tidied with the point back
+prof(200, 60); S.newRun({ seed: 5, chaos: 1 });
+ok(cap('abszero'), 'Absolute Zero taken');
+ok(S.talentBlock('winter') === 'tree', `a second Cryogenics Capstone is refused (${S.talentBlock('winter')})`);
+S.PROF.caps.push('winter'); const dropped = S.tidyCaps();
+ok(dropped.length === 1 && dropped[0] === 'winter' && S.capsHeld().length === 1, 'tidyCaps drops the extra and keeps the first');
+
+// v5.0.2: the breach warning names what got through
+prof(0, 60); G = S.newRun({ seed: 9, chaos: 1 }); S.startWave(); S.startWave();
+const toasts = []; const oldT = S.Hooks.toast; S.Hooks.toast = (a, b) => toasts.push(a + ' ' + b);
+G.leaksAtStart = G.stats.leaks; G.lastLeakN = 3;
+for (let i = 0; i < 6; i++) { const e = S.spawnEnemy('tank', {}); e.d = e.L.len; S.leak(e); }
+G.core.hp = G.core.max; S.startWave();
+S.Hooks.toast = oldT;
+const bw = toasts.find(t => t.startsWith('BREACH WARNING'));
+ok(bw && /Juggernaut/.test(bw), `breach warning names the leaker: ${bw}`);
+
+// v5.1: abilities come online by wave, recharge on a cooldown into slots, loot stacks above them
+prof(0, 60); G = S.newRun({ seed: 3, chaos: 1 });
+ok(S.abilOnline('strike') && !S.abilOnline('stasis'), 'only Orbital Strike is online at the start');
+for (let w = 0; w < 12; w++) S.startWave();
+ok(['strike', 'nova', 'stasis', 'overclock', 'scan'].every(S.abilOnline), 'every ability online by Wave 12');
+G.charges.stasis = 0; G.abilCd.stasis = 1; G.paused = false; G.enemies = []; G.queue = [];
+for (let i = 0; i < 40; i++) S.updateAbils(0.05);
+ok(G.charges.stasis === 1, `stasis recharged into its slot (${G.charges.stasis})`);
+for (let i = 0; i < 4000; i++) S.updateAbils(0.05);
+ok(G.charges.stasis === 1, 'a full slot does not overfill');
+G.charges.stasis += 5; ok(G.charges.stasis === 6, 'loot charges stack above the slot');
+const cd0 = S.abilCdMax('strike'); G.credits = 1e7; for (let i = 0; i < 12; i++) S.coreUpgrade('uplink');
+ok(G.core.uLvl === 9 && S.abilCdMax('strike') < cd0 * 0.6, `Command Uplink LV ${G.core.uLvl}: Strike ${cd0}s -> ${S.abilCdMax('strike').toFixed(1)}s`);
+const e0 = S.spawnEnemy('phantom', {}); e0.cloaked = true; G.charges.scan = 1;
+ok(S.useAbility('scan') && e0.scanned > 0 && G.scanThreat, 'Scan Marks and picks a threat');

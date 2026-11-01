@@ -37,6 +37,7 @@ function talentBlock(id) {
   if (T.cap) {
     if (capsHeld().includes(id) || (PROF.remnants || []).includes(id)) return 'have';
     if (treePts(T.tree) < TCAP) return 'row';
+    if (capsHeld().some(c => TAL[c] && TAL[c].tree === T.tree)) return 'tree'; // v5.0.2: one Capstone per tree
     if (capsHeld().length >= capSlots(profLevel().level)) return 'slots';
     // Conflagration turns every Chill into Burn, so Capstones built on Chill and Freeze would do nothing beside it
     for (const [a, b] of CAP_CONFLICTS) { const other = id === a ? b : id === b ? a : null; if (other && activeCaps().includes(other)) return 'conflict:' + other; }
@@ -95,6 +96,13 @@ function migrateWeb() {
   PROF.webV = WEB_VER;
   return had;
 }
+// v5.0.2: one Capstone per tree. Older saves could hold two from the same tree; keep the first, the point comes back
+function tidyCaps() {
+  const seen = {}, keep = [], drop = [];
+  for (const c of capsHeld()) { const T = TAL[c]; if (!T) continue; if (seen[T.tree]) drop.push(c); else { seen[T.tree] = 1; keep.push(c); } }
+  if (drop.length) PROF.caps = keep;
+  return drop;
+}
 function treeSaveBuild(slot, name) { PROF.builds[slot] = { name: name || `Build ${slot + 1}`, tal: Object.assign({}, PROF.tal || {}), caps: capsHeld().slice(), lvl: pointsSpent() }; Hooks.onChange('tree'); }
 function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
@@ -105,7 +113,7 @@ function treeLoadBuild(slot) {
   // replay it rank by rank, row by row, so every gate is honoured
   PROF.tal = {}; PROF.caps = [];
   for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) PROF.tal[k] = Math.min(T.max, b.tal[k]); }
-  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(profLevel().level)) PROF.caps.push(c);
+  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(profLevel().level) && !capsHeld().some(h => TAL[h].tree === TAL[c].tree)) PROF.caps.push(c);
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return 'ok';
@@ -126,7 +134,37 @@ const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !
 const activeCaps = () => [...new Set(capsHeld().concat((PROF.remnants || []).filter(r => TAL[r])))];
 
 function masteryPick(id) { const v = PROF.mastery && PROF.mastery[id]; return v === undefined ? 0 : v; }
-function loadoutList() { const L = (PROF.loadout || []).filter(k => ABIL_ORDER.includes(k)); return L.length ? L : ABIL_ORDER.slice(); }
+// v5.1 abilities: cooldowns fill charge slots; loot charges stack on top without limit
+const abilOnline = k => !!(G.abilOn && G.abilOn[k]);
+function abilPool() { const L = ABIL_ORDER.filter(abilOnline); return L.length ? L : ['strike']; }
+function abilSlots() { return 1 + (G.mods.abilSlots || 0); }
+function uplinkHas(id) { const m = UPLINK.mods.find(x => x.id === id); return !!(m && G.core && (G.core.uLvl || 0) >= m.lv); }
+function abilCdMax(k) { return ABILITIES[k].cd * G.mods.abilCharge * (1 - UPLINK.cd / 100 * ((G.core && G.core.uLvl) || 0)); }
+// a charge from a crate, chest, boss or milestone (Quartermaster doubles it). Returns the ability it went to
+function lootCharge(k, n) { k = k || pick(G.r, abilPool()); n = (n || 1) * (FX('quarter') ? 2 : 1); G.charges[k] = (G.charges[k] || 0) + n; return k; }
+function abilOnlineCheck(w) {
+  for (const k of ABIL_ORDER) if (!abilOnline(k) && w >= ABILITIES[k].from) {
+    G.abilOn[k] = 1; G.charges[k] = Math.max(G.charges[k] || 0, 1); G.abilCd[k] = abilCdMax(k);
+    if (w > Math.max(1, G.startWave)) Hooks.toast(`${ABILITIES[k].name.toUpperCase()} ONLINE`, `${ABILITIES[k].desc} Recharges every ${Math.round(abilCdMax(k))}s`, '#ffe14d', true);
+    rlog('abilOn', { id: k });
+  }
+}
+function updateAbils(dt) {
+  if (!G.abilCd) G.abilCd = {};
+  const slots = abilSlots();
+  for (const k of ABIL_ORDER) {
+    if (!abilOnline(k)) continue;
+    const mx = abilCdMax(k);
+    if ((G.charges[k] || 0) >= slots) { G.abilCd[k] = mx; continue; }
+    if (G.abilCd[k] === undefined || G.abilCd[k] > mx) G.abilCd[k] = mx;
+    G.abilCd[k] -= dt;
+    if (G.abilCd[k] <= 0) { G.charges[k] = (G.charges[k] || 0) + 1; G.abilCd[k] = mx; Hooks.abilReady && Hooks.abilReady(k); }
+  }
+  if (G.scanT > 0) { G.scanT -= dt; if (G.scanT <= 0) G.scanThreat = null; }
+  if (G.scanThreat && G.scanThreat.dead) G.scanThreat = null;
+}
+// Sensor Sweep's pick: the enemy most likely to cost you the run
+function threatScore(e) { const prog = e.L && e.L.len ? e.d / e.L.len : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
   // v5.0: alloc is ignored (kept in the signature for old callers); talents, Capstones and Remnants come from PROF
@@ -158,7 +196,7 @@ function computeMods(alloc, runMods) {
     credits: 1 + g('credits') / 100, startCredits: g('startCredits'),
     coreHP: 100 + g('coreHP') + I * 1.5, shield: 20 + g('shield') + I * 0.4, shieldRegen: 1 + g('shieldRegen') / 100,
     coreDmg: 1 + g('coreDmg') / 100, coreRate: 1 + g('coreRate') / 100, coreRange: g('coreRange'),
-    abilCharge: Math.max(0.4, 1 - g('abilCharge') / 100), abilPower: 1 + g('abilPower') / 100, stasisDur: g('stasisDur'),
+    abilCharge: Math.max(0.4, 1 - g('abilCharge') / 100), abilSlots: g('abilSlots'), abilPower: 1 + g('abilPower') / 100, stasisDur: g('stasisDur'),
     stormFreq: 1 + g('stormFreq') / 100, stormPow: 1 + g('stormPow') / 100, affixLuck: g('affixLuck') / 100,
     shatter: 1 + g('shatter') / 100, overload: 1 + g('overload') / 100, overloadRad: 1 + g('overloadRad') / 100,
     superRad: 1 + g('superRad') / 100, collapse: 1 + g('collapse') / 100,
@@ -168,7 +206,6 @@ function computeMods(alloc, runMods) {
   };
   M.fx = m; M.orb = orb;
   if (m.infernoCore) { M.burnDmg *= 2; M.burnDur *= 0.6; }
-  if (m.loadout) M.abilPower += 0.25 * (ABIL_ORDER.length - loadoutList().length);
   if (ks.glass) { M.dmg *= 1.6; M.coreHP *= 0.6; M.shield *= 0.6; }
   if (ks.conflag) { M.burnDmg *= 2.5; M.el.T *= 1.5; }
   if (ks.overgrid) M.rate *= 1.4;
@@ -187,7 +224,13 @@ function computeMods(alloc, runMods) {
 
 // ---------------- Run state ----------------
 let G = null;
-const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * Math.pow(1.0011, (w - 1) * (w - 1));
+// v5.1: the late curve is a ramp, not a cliff. Up to Wave 40 as before; past it the steepening term accelerates half as fast
+// (per-wave growth had reached +30% by Wave 80), and Waves 20-50 gain up to +20% so pressure builds through the middle of a
+// run, where enemies used to melt
+const ENVN0 = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
+const hpQ = w => w <= 40 ? Math.pow(1.0011, (w - 1) * (w - 1)) : Math.pow(1.0011, 1521 + 78 * (w - 40) + ENVN0('HPQ', 0.5) * (w - 40) * (w - 40));
+const hpMid = w => { const k = Math.min(1, Math.max(0, (w - 20) / 30)); return 1 + ENVN0('HPMID', 0.2) * k * k * (3 - 2 * k); };
+const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * hpQ(w) * hpMid(w);
 // v5.0: after Wave 40 kill credits grow 1% faster per wave (Nic: late upgrades outpaced income as waves got longer)
 const crMult = w => 1.1 * (1 + 0.05 * (w - 1)) * (1 + Math.max(0, w - 40) * 0.01);
 const tIdx = (x, y) => y * COLS + x;
@@ -481,10 +524,12 @@ function spawnThief(c) {
   const a = { x: fromLeft ? R.x0 - 1.5 : R.x1 + 1.5, y: y0 }, m = { x: c.x + 0.5, y: c.y + 0.5 }, z = { x: fromLeft ? R.x1 + 1.5 : R.x0 - 1.5, y: clamp(m.y + (G.r() - 0.5) * 8, R.y0 + 0.5, R.y1 - 0.5) };
   const L = prepLane([a, m, z]);
   const e = spawnEnemy('pirate', { L, pirate: 1, hpm: hpMult(Math.max(1, G.wave)) * (G.CH.hp || 1) });
-  e.pirate = { cache: c, grabD: L.cum[1], got: false };
+  const cap = pick(G.r, PIRATE_CAPTAINS);
+  e.pirate = { cache: c, grabD: L.cum[1], got: false, captain: cap };
   c.thief = e;
-  Hooks.toast('PIRATES', 'A skiff is after your salvage. Shoot it down', '#ff4d6a');
-  pirateSay('thief', a.x, a.y, 0.5);
+  Hooks.toast('PIRATES', `${cap}'s skiff is after your salvage. Shoot it down for a bounty, or grab the crate first`, '#ff4d6a');
+  Hooks.sfx('pirate', { x: a.x, y: a.y });
+  Hooks.fx('say', { x: a.x, y: a.y - 0.6, t: pick(G.r, PIRATE_LINES.thief) });
   return e;
 }
 function updateCaches(dt) {
@@ -493,7 +538,9 @@ function updateCaches(dt) {
   for (const c of G.caches) {
     if (c.thief && !c.thief.dead) continue; // the loot waits for the thief
     c.t -= dt;
-    if (c.t < 8 && !c.thiefRolled) { c.thiefRolled = true; if (G.wave >= 5 && G.r() < 0.25) spawnThief(c); }
+    if (c.t < 12 && !c.thiefRolled) { c.thiefRolled = true; if (G.wave >= 5 && G.r() < 0.25) spawnThief(c); }
+    // v5.2: a normal crate next to one of your towers is collected for you
+    if (c.kind !== 'gold' && c.kind !== 'cursed' && !c.auto && c.t < CACHE_LIFE - 1.2) { c.auto = 1; if (G.towers.some(t => Math.abs(t.x - c.x) <= 1 && Math.abs(t.y - c.y) <= 1)) { const m = claimCache(c); if (m) { Hooks.toast('SALVAGE', m + ' · collected by a tower next to it', '#ffe14d'); Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5, kind: 'normal' }); } } }
   }
   if (G.caches.some(c => c.t <= 0)) G.caches = G.caches.filter(c => c.t > 0);
   if (G.wave < 3 || G.spawningDone) return;
@@ -529,10 +576,10 @@ function claimCache(c) {
     // v5.0: the chest always pays credits (5 crates' worth), plus a Legendary or an ability charge
     const v = Math.round(crateCr(w) * 5 * G.mods.credits); G.credits += v; G.tokens++;
     if (G.r() < 0.5) { G.legendQueue++; msg = `+${v} credits · +1 token · your next tower rolls a Legendary affix`; }
-    else { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + 1; msg = `+${v} credits · +1 token · +1 ${ABILITIES[k].name} charge`; }
+    else { const k = lootCharge(); msg = `+${v} credits · +1 token · +${FX('quarter') ? 2 : 1} ${ABILITIES[k].name} charge`; }
   }
   else if (roll < 50) { const v = Math.round(crateCr(w) * G.mods.credits * k2); G.credits += v; msg = `+${v} credits`; }
-  else if (roll < 65) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + k2; msg = `+${k2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${k2 > 1 ? 's' : ''}`; }
+  else if (roll < 65) { const k = lootCharge(null, k2), n2 = k2 * (FX('quarter') ? 2 : 1); msg = `+${n2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${n2 > 1 ? 's' : ''}`; }
   else if (roll < 75) { addEntropy(12 * k2); msg = `+${12 * k2} Entropy`; }
   else if (roll < 85) { const v = Math.round(150 * w * k2); addScore(v); msg = `+${v} base score`; }
   else { G.tokens += k2; msg = `+${k2} Recalibration token${k2 > 1 ? 's' : ''}`; }
@@ -596,7 +643,7 @@ function newRun(opts) {
     map: genMap(r), towers: [], towerAt: {}, enemies: [], projs: [], zones: [], storms: [],
     wave: 0, queue: [], spawnClock: 0, next: 18, spawningDone: true,
     credits: 0, score: 0, xpEarned: 0, kills: 0, lvlStart: profLevel().level,
-    charges: { strike: 1, nova: 0, stasis: 0, overclock: 0 }, aimAbility: null,
+    charges: { strike: 1, nova: 0, stasis: 0, overclock: 0, scan: 0 }, abilCd: {}, abilOn: { strike: 1 }, aimAbility: null, scanT: 0,
     runMods: {}, mods: null, tokens: 2, legendQueue: 0, rerollDisc: false,
     nextMs: 0, msIdx: 0, ev: {}, evList: [], evT: {}, overclockT: 0, stasisT: 0,
     stormT: 50, lanesOpened: 0, laneWaves: CHAOS_LEVELS[chaos].lanes.slice(), laneWarn: null, rows: ROWS,
@@ -612,7 +659,7 @@ function newRun(opts) {
   G.scoreMult = 1 + G.af.score + gamblerScore();
   const M = G.mods, sw = G.startWave;
   G.core = { x: G.map.core.x + 0.5, y: G.map.core.y + 0.5, hp: M.coreHP * G.af.coreHPx, max: M.coreHP * G.af.coreHPx, shield: M.shield, smax: M.shield,
-    sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
+    sinceHit: 99, wLvl: 1, sLvl: 1, uLvl: 0, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
   setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
@@ -626,8 +673,9 @@ function newRun(opts) {
     genExtraLane(r); G.lanesOpened++;
     if (grew) placeNodes(1, G.region, P0);
   }
-  G.nextMs = Math.round(1500 * M.abilCharge * Math.pow(1.5, 0));
+  G.nextMs = 1500;
   if (sw > 1) { G.nextMs = Math.round(G.nextMs * Math.pow(1.4, Math.floor(sw / 4))); G.tokens += Math.floor(sw / 10); }
+  abilOnlineCheck(sw);
   G.next = sw > 1 ? 25 : 18;
   PROF.runs++;
   if (opts.daily) {
@@ -1057,6 +1105,38 @@ function stormAt(x, y) {
   }
   return res;
 }
+// v5.1 storm transparency: what a storm does, in words, and which of your towers it touches
+function stormEffects(s) {
+  const pow = G.mods.stormPow, out = [];
+  if (s.mael) { out.push(`+${Math.round(75 * pow)}% Damage for every tower`, 'enemies inside move 30% faster'); return out; }
+  const amp = (s.types.length > 1 ? 1.25 : 1) * pow;
+  for (const ty of s.types) { const S = STORMS[ty]; out.push(`+${Math.round(40 * amp)}% ${EL[S.el].name} Damage`); if (ty === 'cryo') out.push(`enemies slowed ${Math.round(15 * amp)}%`); if (ty === 'void') out.push(`enemies take +${Math.round(10 * amp)}% damage`); if (ty === 'static') out.push('−15% Range'); }
+  out.push('enemies inside move 12% faster');
+  return out;
+}
+function stormTowers(s) { return G.towers.filter(t => dist2(t.cx, t.cy, s.x, s.y) <= s.r * s.r); }
+function stormInfo(s) {
+  const tw = stormTowers(s), els = s.mael ? ELS : s.types.map(ty => STORMS[ty].el);
+  return { fx: stormEffects(s), n: tw.length, boosted: tw.filter(t => t.s && els.includes(t.s.el)).length };
+}
+// every live modifier on one tower, with numbers: storms, events, abilities, heat, outages
+function towerConditions(t) {
+  const out = [], ev = G.ev || {}, s = t.s || {};
+  if (t.disabled > 0) out.push({ t: `${t.disCause || 'Offline'}: knocked out for ${Math.ceil(t.disabled)}s`, bad: 1 });
+  for (const st of G.storms) if (dist2(t.cx, t.cy, st.x, st.y) <= st.r * st.r) {
+    const pow = G.mods.stormPow, amp = (st.types.length > 1 ? 1.25 : 1) * pow, bits = [];
+    if (st.mael) bits.push(`+${Math.round(75 * pow)}% Damage`);
+    else for (const ty of st.types) { if (STORMS[ty].el === s.el) bits.push(`+${Math.round(40 * amp)}% Damage`); if (ty === 'static') bits.push('−15% Range'); }
+    out.push({ t: `${stormName(st)}: ${bits.length ? bits.join(', ') : `no effect on ${EL[s.el] ? EL[s.el].name : 'this'} towers`}`, col: st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, bad: bits.some(b => b.startsWith('−')) && !bits.some(b => b.startsWith('+')) });
+  }
+  if (ev.blackout) out.push({ t: 'Blackout: −20% Range', bad: 1 });
+  if (ev.overcharge) out.push({ t: 'Overcharge event: +30% Attack Speed', good: 1 });
+  if (ev.emp) out.push({ t: 'EMP Storm: 2 random towers shut down every 5s', bad: 1 });
+  if (G.overclockT > 0) out.push({ t: `Frenzy: +100% Attack Speed for ${Math.ceil(G.overclockT)}s`, good: 1 });
+  if (t.hot && G.mods.ks.wildfire) out.push({ t: 'Overheated (Wildfire): −25% Attack Speed', bad: 1 });
+  if (G.flux && G.flux.el === s.el) out.push({ t: `Flux: ${EL[s.el].name} ×2 Damage`, good: 1 });
+  return out;
+}
 function spawnStorm(types, x, y, vx, vy) {
   const s = { id: G.eid++, types, x, y, vx, vy, r: 3 + G.r() * 1.2, life: 30 + G.r() * 15, age: 0, mael: false, spawnT: 0, rot: 0 };
   G.storms.push(s);
@@ -1216,7 +1296,14 @@ function prepareWave(w) {
   }
   for (const k in genes) { genes[k] = ng ? genes[k] / ng : 0; if (genes[k] > ((G.stats.peakGene || {}).v || 0)) G.stats.peakGene = { g: k, v: genes[k], w }; }
   G.geneHist = (G.geneHist || []).concat([{ w, g: Object.assign({}, genes) }]).slice(-12);
-  G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length, genes };
+  G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length, genes, heads: (g.heads || []).filter(k => counts[k]) };
+  // v5.1: a new kind of enemy is announced during the countdown before it lands; the first time ever, with a card
+  const seen = PROF.codex.enemies || (PROF.codex.enemies = {}), met = G.metEnemy || (G.metEnemy = {});
+  for (const k of Object.keys(counts)) if (!met[k]) {
+    met[k] = 1;
+    if (!seen[k]) { seen[k] = 1; if (ENEMIES[k].from >= 3) Hooks.newEnemy && Hooks.newEnemy(k, w); }
+    else if (ENEMIES[k].from >= 18 && w <= ENEMIES[k].from + 1) Hooks.toast('NEW ENEMY · WAVE ' + w, `${ENEMIES[k].name}: ${ENEMIES[k].desc}. Beat it: ${ENEMIES[k].beat}`, '#ff4d6a', true);
+  }
   // announce a trait when it takes hold (35%+), again only after it has faded below 20%
   const told = G.geneTold || (G.geneTold = {});
   if (!(G.assault && G.assault.w === w)) for (const k of GENE_IDS) {
@@ -1294,7 +1381,14 @@ function genWave(w, ev) {
   let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)) * (G.CH.count || 1));
   let hpm = hpMult(w) * (1 + (af.hpx || 0)) * (G.CH.hp || 1);
   if (ev.swarm) { count *= 2; hpm *= 0.55; }
-  const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w);
+  const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && ENEMIES[k].w > 0);
+  // v5.1 headline threats: each wave leans on one enemy (two from Wave 25), so you can see what it is and answer it.
+  // A type that has just arrived always headlines its first wave
+  const heads = [], fresh = types.filter(k => ENEMIES[k].from === w && w > 1);
+  const pool = types.filter(k => k !== 'drone' && !fresh.includes(k));
+  heads.push(...fresh.slice(0, 2));
+  while (heads.length < (w >= 25 ? 2 : 1) && pool.length) heads.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+  const HEAD_W = 3;
   let eliteP = clamp((w - 4) * 0.012, 0, 0.45) * G.CH.elite + (ev.elite ? 0.5 : 0) + (af.elite || 0);
   const affN = 1 + (w >= 25) + (w >= 50) + (w >= 80);
   const interval = Math.max(0.3, 0.8 - w * 0.008);
@@ -1315,7 +1409,7 @@ function genWave(w, ev) {
   };
   let n = 0;
   while (n < count) {
-    const type = wpick(r, types, k => ENEMIES[k].w * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1));
+    const type = wpick(r, types, k => ENEMIES[k].w * (heads.includes(k) ? HEAD_W : 1) * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1));
     const lane = laneFor();
     const grp = ENEMIES[type].group || 1;
     for (let g = 0; g < grp; g++) {
@@ -1343,7 +1437,7 @@ function genWave(w, ev) {
     q.sort((a, b) => a.t - b.t);
     A.n = n + extra;
   }
-  return { queue: q, rift };
+  return { queue: q, rift, heads };
 }
 // ===================== v4.0: STRAIN ASSAULTS (the swarm's move) =====================
 // Every few waves the swarm reads your defence (whose damage killed it these last waves), picks the genes that beat it,
@@ -1378,7 +1472,8 @@ function readDefence(w, jitter) {
   const pierce = sh('rail') + sh('lens') + sh('flame') * 0.5 + sh('missile') * 0.25;
   add('plating', (0.35 - pierce) * 1.6, `only ${pc(pierce)} of your fire pierces armour`);
   const arc = (I.el.A || 0) / (etot || 1);
-  add('shell', (0.15 - arc) * 3, arc < 0.02 ? 'you have no Arc damage to pop shields' : `only ${pc(arc)} Arc damage to pop shields`);
+  const arcT = G.towers.filter(t => TOWERS[t.type] && TOWERS[t.type].el === 'A').length;
+  add('shell', (0.15 - arc) * 3, !arcT ? 'you have no Arc towers to pop shields' : arc < 0.02 ? `your ${arcT} Arc tower${arcT > 1 ? 's' : ''} barely land a hit` : `only ${pc(arc)} of your damage is Arc, which pops shields`);
   const grd = sh('flame') + sh('grav');
   add('wings', (grd - 0.2) * 2, `${pc(grd)} of your damage can't hit air`);
   const att = G.towers.filter(t => canOvercharge(t)).length || 1, slows = G.towers.filter(t => t.type === 'cryo' || t.type === 'grav' || t.type === 'emp' || t.type === 'snare').length;
@@ -1475,6 +1570,7 @@ function startWave() {
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
+  abilOnlineCheck(w);
   if (!G.prep || G.prep.w !== w) prepareWave(w);
   const P = G.prep; G.prep = null;
   G.ev = P.ev; G.evList = P.list; G.evT = { emp: 5, meteor: 1.2, phase: 4 };
@@ -1499,14 +1595,14 @@ function startWave() {
   if (G.wave > 1 && G.leaksAtStart !== undefined) {
     const lk = G.stats.leaks - G.leaksAtStart, prev = G.lastLeakN || 0; G.lastLeakN = lk;
     if (lk >= 3 && (lk >= 6 || prev >= 3)) {
-      const now = G.leakBy || {}, was = G.leakSnap || {}, top = Object.keys(now).map(k => [k, now[k] - (was[k] || 0)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
+      const now = G.leakWave || {}, top = Object.keys(now).map(k => [k, now[k]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
       let who = '', counter = '';
       if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
       Hooks.toast('BREACH WARNING', `${lk} got through last wave${who ? ', mostly ' + who : ''}. Your core's shield won't hold many more.${counter}`, '#ff4d6a', true);
       rlog('breachWarn', { n: lk, who });
     }
   }
-  G.leakSnap = Object.assign({}, G.leakBy || {});
+  G.leakWave = {}; // v5.0.2: own per-wave tally (leakBy is cleared by the wave log, which left 'who' empty)
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
   lureAll();
@@ -1599,7 +1695,7 @@ function marketBuy(id) {
     case 'blueprint': { const k = nextLockedTower(); if (!k) return null; (G.runUnlocks || (G.runUnlocks = [])).push(k); msg = `${TOWERS[k].name} unlocked for this run`; Hooks.onUnlock(k); break; }
     case 'bribe': G.bossBribe = 1; break;
     case 'beacon': G.placing = 'beacon'; msg = 'Tap an empty tile to plant the Power Node'; break;
-    case 'crate': for (const k of ABIL_ORDER) G.charges[k] = (G.charges[k] || 0) + 1; break;
+    case 'crate': for (const k of abilPool()) lootCharge(k); break;
     case 'tokens': G.tokens += 2; break;
     case 'starmap': G.geneFit = {}; G.geneExp = {}; if (G.assault && G.assault.state === 'warn') { G.assault = null; G.refit = false; } if (G.assaultNext != null) G.assaultNext += 3; break;
     case 'mutagen': for (const t of G.towers) { t.affixes.push(rollAffix(t)); t.s = towerStats(t); } recomputeAuras(); break;
@@ -1997,14 +2093,27 @@ function updateEnemies(dt) {
     e.timer -= dt;
     if (e.type === 'medic' && e.timer <= 0) {
       e.timer = 1;
-      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * (o.boss ? 0.005 : 0.04));
-      Hooks.fx('heal', { x: e.x, y: e.y });
+      const healed = [];
+      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) { if (o.hp < o.maxHp) healed.push({ x: o.x, y: o.y }); o.hp = Math.min(o.maxHp, o.hp + o.maxHp * (o.boss ? 0.005 : 0.04)); }
+      Hooks.fx('heal', { x: e.x, y: e.y, to: healed.slice(0, 5) });
     }
     if (e.type === 'shielder' && e.timer <= 0) {
       e.timer = 5;
-      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) o.shield = Math.max(o.shield, o.maxHp * (o.boss ? 0.04 : 0.25));
-      Hooks.fx('shieldpulse', { x: e.x, y: e.y });
+      const sh = [];
+      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) { sh.push({ x: o.x, y: o.y }); o.shield = Math.max(o.shield, o.maxHp * (o.boss ? 0.04 : 0.25)); }
+      Hooks.fx('shieldpulse', { x: e.x, y: e.y, to: sh.slice(0, 5) });
     }
+    // v5.1 new enemies
+    if (e.type === 'carrier') { e.dropT = (e.dropT === undefined ? 2.5 : e.dropT) - dt;
+      if (e.dropT <= 0 && !e.cloaked) { e.dropT = CARRIER.every;
+        for (let i = 0; i < CARRIER.n; i++) { const m = spawnEnemy('drone', { fromPt: { x: e.x + (i ? 0.35 : -0.35), y: e.y + 0.2 }, hpm: hpBase(e) * CARRIER.hp / ENEMIES.drone.hp }); m.fly = true; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); m.leak = 3; }
+        Hooks.fx('drop', { x: e.x, y: e.y }); } }
+    if (e.type === 'sapper') { e.sapCD = (e.sapCD || 0) - dt;
+      if (e.sapCD <= 0 && !(st.stun > 0) && !(st.frozen > 0) && !(G.stasisT > 0)) {
+        let tg = null, bd = SAPPER.range * SAPPER.range;
+        for (const t of G.towers) { if (t.disabled > 0) continue; const d = dist2(t.cx, t.cy, e.x, e.y); if (d < bd) { bd = d; tg = t; } }
+        if (tg) { e.sapCD = SAPPER.cd; tg.disabled = Math.max(tg.disabled, SAPPER.dur); tg.disCause = 'SAPPED'; Hooks.fx('sap', { x1: e.x, y1: e.y, x2: tg.cx, y2: tg.cy }); Hooks.sfx('crack', e);
+          if (!G.sapTold || G.time - G.sapTold > 20) { G.sapTold = G.time; Hooks.log(`A Sapper knocked out your ${TOWERS[tg.type].name} for ${SAPPER.dur}s`, '#ff4d6a'); } } } }
     if (e.elite.includes('blink') && e.timer <= 0 && !e.boss) { e.timer = 5; e.d += 1.5; Hooks.fx('blink', { x: e.x, y: e.y }); }
     if (e.boss) bossBehavior(e, dt);
     if (ev.phase) { e.timer2 -= dt; if (e.timer2 <= 0) { e.timer2 = 4; if (G.r() < 0.3 && !e.boss) { e.d += 1; Hooks.fx('blink', { x: e.x, y: e.y }); } } }
@@ -2029,6 +2138,7 @@ function updateEnemies(dt) {
       if (G.af.groundSlow && !e.fly) spd *= 1 - G.af.groundSlow;
       if (M.ks.horizon) spd *= 1.12;
       if (e.jammed) spd = 0;
+      if (G.dragT > 0) spd *= e.boss ? 0.8 : 0.6; // Uplink Undertow: leaving Stasis is slow going
       spd *= netK;
       if (G.slime && G.slime.length && e.boss !== 'snail') for (const p of G.slime) if (p.L === e.L && Math.abs(p.d - e.d) < 0.4) { spd *= 1.4; break; }
       e.slow = 1 - spd / e.spd;
@@ -2043,24 +2153,27 @@ function updateEnemies(dt) {
         if (P.cache && G.caches.includes(P.cache)) { G.caches = G.caches.filter(o => o !== P.cache); Hooks.toast('LOOT STOLEN', 'Shoot the skiff down to get it back', '#ff4d6a'); Hooks.fx('cacheClaim', { x: e.x, y: e.y, kind: 'cursed' }); pirateSay('thief', e.x, e.y, 0.6); }
         else P.cache = null;
       }
-      if (e.d >= e.L.len - 0.05) { e.dead = true; if (P.got && P.cache) Hooks.log('Pirates escaped with the salvage', '#ff4d6a'); }
+      if (e.d >= e.L.len - 0.05) { e.dead = true; if (P.got && P.cache) Hooks.log(`${P.captain || 'Pirates'} escaped with the salvage`, '#ff4d6a'); }
       continue;
     }
     // Red Alert (v4.4): a boss closing on the core is called out once, and the core goes to Last Stand against it
     if (e.boss && !e.gen && !e.redAlert && !e.dead) {
       const rem = e.L.len - e.d;
+      // v5.3: a first, earlier alarm at the halfway mark while there's still time to answer
+      if (!e.halfTold && e.d >= e.L.len * 0.5 && e.hp > e.maxHp * 0.3) { e.halfTold = 1; Hooks.toast('BOSS HALFWAY', `${e.bossName} is halfway to your core with ${Math.round(e.hp / e.maxHp * 100)}% HP. If it reaches the core the run ends: slow it, Scan it, Strike it`, '#ff4d6a', true); Hooks.sfx('bosswarn'); }
       if (rem <= RED_ALERT.tiles) { e.redAlert = 1; rlog('redAlert', { id: e.boss, hp: +(e.hp / e.maxHp).toFixed(2) }); Hooks.toast('RED ALERT', `${e.bossName} is ${Math.max(1, Math.ceil(rem))} tiles from the core. Last Stand: core shells hit it ×${RED_ALERT.coreDmg}. Stasis, Strike and Overcharge now`, '#ff4d6a', true); Hooks.sfx('bosswarn'); Hooks.fx('shake', { v: 6 }); Hooks.log(`Red Alert: ${e.bossName} at the gate`, '#ff4d6a'); }
     }
     if (e.d >= e.L.len - 0.05) leak(e);
   }
   G.redAlert = G.enemies.some(e => e.boss && e.redAlert && !e.dead);
   if (G.stasisT > 0) G.stasisT -= dt;
+  if (G.dragT > 0) G.dragT -= dt;
   if (G.slime && G.slime.length) { for (const p of G.slime) p.t -= dt; G.slime = G.slime.filter(p => p.t > 0); }
   G.enemies = G.enemies.filter(e => !e.dead);
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
   // reveal cloak near pylons
   if (G.pylons && G.pylons.length) for (const e of G.enemies) if (e.cloaked) for (const p of G.pylons) if (dist2(e.x, e.y, p.cx, p.cy) <= p.s.range * p.s.range) { e.revealed = 0.3; break; }
-  for (const e of G.enemies) if (e.revealed > 0) e.revealed -= dt;
+  for (const e of G.enemies) { if (e.revealed > 0) e.revealed -= dt; if (e.scanned > 0) { e.scanned -= dt; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.2); } }
 }
 const PHASE_LINES = { behemoth: ['RRRAAARGH', 'THE GROUND SHAKES'], queen: ['RISE, MY BROOD', 'SKREEEEE'], wraith: ['you cannot hold me', 'between, beyond'],
   overmind: ['YOUR MACHINES ARE MINE', 'SILENCE.'], titan: ['*CRACK*', 'UNSTOPPABLE'], cat: ['HSSSS', '*zoomies*'], whale: ['OOOOOOOOO', 'the deep remembers'],
@@ -2153,7 +2266,7 @@ function bossBehavior(e, dt) {
       e.timer2 -= 1;
       if (e.timer2 <= 0) { e.timer2 = 12; e.napT = 3; e.armorAll = 0.6; Hooks.fx('say', { x: e.x, y: e.y, t: 'zzz' }); Hooks.log('Mr. Whiskers is napping. Do not disturb.', '#ff9a3c'); break; }
       if (big) { // the zoomies: swats every tower nearby
-        for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 3.5 * 3.5) { t.disabled = Math.max(t.disabled, 3); Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.7 }); }
+        for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 3.5 * 3.5) { t.disabled = Math.max(t.disabled, 3); t.disCause = 'EMP'; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.7 }); }
         e.d += 1.5; Hooks.sfx('meow'); break;
       }
       if (e.timer2 % 5 === 0) {
@@ -2204,9 +2317,10 @@ function leak(e) {
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
   G.stats.leaks++;
   G.stats.lastLeak = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type;
-  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; }
+  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; (G.leakWave || (G.leakWave = {}))[lk] = (G.leakWave[lk] || 0) + 1; }
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
+  if (e.type === 'leech' && G.credits > 0) { const st2 = Math.round(Math.min(G.credits * LEECH.share, LEECH.cap(w))); G.credits -= st2; G.stats.leeched = (G.stats.leeched || 0) + st2; Hooks.fx('coin', { x: c.x, y: c.y - 0.6, v: -st2 }); if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech made off with ${st2} credits. They take more the more you bank`, '#ffb03a'); } }
   // v4.1: a boss that reaches the core ends the run outright (shields and Unbreakable don't save you). Gloop's splits still breach for a share
   if (e.boss && !e.gen) {
     Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
@@ -2252,6 +2366,9 @@ function hit(e, dmg, el, src, o) {
   let blunt = false;
   if (e.armor && !(o.dot || o.abil || (src && src.s && (src.s.kind === 'rail' || src.s.kind === 'beam' || src.s.shred)))) { mult *= 1 - clamp(e.armor * (1 - M.armorPen), 0, 0.7); blunt = e.armor * (1 - M.armorPen) > 0.25; }
   if (e.armorAll) mult *= 1 - e.armorAll;
+  // v5.1 Reflector: bolts, beams and chains glance off
+  let glance = false;
+  if (e.refl && !o.dot && !o.abil && src && src.s && (src.s.kind === 'bullet' || src.s.kind === 'beam' || src.s.kind === 'chain')) { mult *= 1 - e.refl; glance = true; }
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2;
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
@@ -2269,12 +2386,15 @@ function hit(e, dmg, el, src, o) {
     if (src.s.slowd && e.slow > 0.05) mult *= 1 + src.s.slowd;
     if (src.isolated && M.loneWolf) mult *= 1 + M.loneWolf;
   }
+  if (e.scanned > 0) mult *= 1 + SCAN.mark / 100; // Sensor Sweep's Mark
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
   if (src === G.core && e.redAlert && e.boss) mult *= RED_ALERT.coreDmg; // Last Stand: the core unloads on a boss at its gate
   let amt = dmg * mult;
   if (e.shield > 0) {
     const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
-    const a = Math.min(e.shield, amt * sk); e.shield -= a; amt -= a / sk;
+    const a = Math.min(e.shield, amt * sk), had = e.shield; e.shield -= a; amt -= a / sk;
+    if (had > 0 && e.shield <= 0.01) { e.shield = 0; Hooks.fx('shieldbreak', { x: e.x, y: e.y }); } // v5.1 tell: the shield cracks
+    if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += a; // v5.0.2: shield damage counts, so Arc's real work shows up
     if (amt <= 0) { e.hitFlash = 0.08; if (!o.dot) Hooks.sfx('hitshield', e); if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
   const dealt = Math.min(e.hp, amt);
@@ -2283,7 +2403,8 @@ function hit(e, dmg, el, src, o) {
   if (e.boss && !e.gen && e.boss !== 'gloop' && e.phase < BOSS_PHASES.length && e.hp < e.maxHp * BOSS_PHASES[e.phase]) bossPhase(e);
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
   if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; src.lastFireW = G.wave; }
-  if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt ? 'hitarmor' : 'hit', e); }
+  if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt || glance ? 'hitarmor' : 'hit', e);
+    if ((blunt || glance) && (e.pingT || 0) < G.time) { e.pingT = G.time + 0.25; Hooks.fx(glance ? 'glance' : 'ping', { x: e.x, y: e.y, sx: src && src.cx, sy: src && src.cy }); } }
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
   if (e.hp <= 0) { kill(e, src, o); return dealt; }
   if (el === 'K' && src && src.s && FX('kSlow')) e.kSlowT = 1;
@@ -2384,12 +2505,11 @@ function addScore(v) {
   if (G.score >= G.nextMs) milestone();
 }
 function milestone() {
-  const k = pick(G.r, FX('loadout') ? loadoutList() : ABIL_ORDER);
-  G.charges[k]++;
+  const k = lootCharge();
   const B = pick(G.r, MILESTONE_BUFFS);
   G.runMods[B.k] = (G.runMods[B.k] || 0) + B.v;
   G.msIdx++;
-  G.nextMs = Math.round(G.nextMs * 1.5 + 600 * G.mods.abilCharge);
+  G.nextMs = Math.round(G.nextMs * 1.5 + 600);
   recomputeAll();
   Hooks.toast('MILESTONE', `+1 ${ABILITIES[k].name} · ${B.t}`, '#ffe14d');
   Hooks.sfx('milestone');
@@ -2409,7 +2529,7 @@ function kill(e, src, o) {
     G.credits += bounty;
     let msg = `+${bounty} bounty`;
     if (P.cache) { if (!G.caches.includes(P.cache)) G.caches.push(P.cache); const m = claimCache(P.cache); if (m) msg += ' · ' + m; }
-    Hooks.toast('PIRATE DOWN', msg, '#ffe14d');
+    Hooks.toast('PIRATE DOWN', `${P.captain ? P.captain + ' shot down · ' : ''}${msg}`, '#ffe14d');
     G.stats.pirates = (G.stats.pirates || 0) + 1;
   }
   const M = G.mods;
@@ -2470,7 +2590,8 @@ function kill(e, src, o) {
   if (bossDown) {
     G.tokens++; G.stats.bossKills++; addEntropy(15);
     PROF.codex.bosses[e.boss] = (PROF.codex.bosses[e.boss] || 0) + 1;
-    Hooks.log(`${e.gen ? 'Gloop' : e.bossName} defeated · +1 Recalibration token`, '#59f0b4');
+    const bk = lootCharge();
+    Hooks.log(`${e.gen ? 'Gloop' : e.bossName} defeated · +1 Recalibration token · +${FX('quarter') ? 2 : 1} ${ABILITIES[bk].short} charge`, '#59f0b4');
     if (!G.draft) { // one boon pick at a time
       const opts = []; const pool = BOONS.slice();
       for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
@@ -2485,7 +2606,7 @@ function takeBoon(b) {
   if (b.m) for (const k in b.m) G.runMods[k] = (G.runMods[k] || 0) + b.m[k];
   switch (b.special) {
     case 'core': G.core.hpBonus = (G.core.hpBonus || 0) + 0.25; break;
-    case 'tokens': G.tokens += 2; G.charges[pick(G.r, ABIL_ORDER)]++; break;
+    case 'tokens': G.tokens += 2; lootCharge(); break;
     case 'legend': G.legendQueue += 3; break;
     case 'mutate': for (const t of G.towers) t.affixes.push(rollAffix(t)); break;
     case 'reroll': G.rerollDisc = true; break;
@@ -2555,7 +2676,7 @@ function updateTowers(dt) {
     G.power = Math.max(tot, (G.power || 0) * 0.995);
   }
   // EMP storm event
-  if (ev.emp) { G.evT.emp -= dt; if (G.evT.emp <= 0) { G.evT.emp = 5; const att = G.towers.filter(t => t.s.kind !== 'eco'); for (let i = 0; i < 2 && att.length; i++) { const t = att.splice(Math.floor(G.r() * att.length), 1)[0]; t.disabled = 3; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.8 }); } Hooks.sfx('emp'); } }
+  if (ev.emp) { G.evT.emp -= dt; if (G.evT.emp <= 0) { G.evT.emp = 5; const att = G.towers.filter(t => t.s.kind !== 'eco'); for (let i = 0; i < 2 && att.length; i++) { const t = att.splice(Math.floor(G.r() * att.length), 1)[0]; t.disabled = 3; t.disCause = 'EMP'; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.8 }); } Hooks.sfx('emp'); } }
   if (G.overclockT > 0) G.overclockT -= dt;
   if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} deals ×2`, EL[G.flux.el].col); } }
   let burning = 0;
@@ -2588,7 +2709,7 @@ function updateTowers(dt) {
     t.flash = Math.max(0, t.flash - dt);
     const s = t.s;
     if (s.kind === 'support' || s.kind === 'eco' || s.kind === 'snare') continue;
-    if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) t.stalled = false; t.ramp = 0; t.beamTargets = null; continue; }
+    if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) { t.stalled = false; t.disCause = null; } t.ramp = 0; t.beamTargets = null; continue; }
     const sw = stormAt(t.cx, t.cy);
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
@@ -2910,6 +3031,7 @@ function coreStats() {
   };
 }
 const coreWeaponCost = () => Math.round(120 * Math.pow(1.75, G.core.wLvl - 1));
+const coreUplinkCost = () => Math.round(UPLINK.base * Math.pow(UPLINK.growth, G.core.uLvl || 0));
 const coreShieldCost = () => Math.round(100 * Math.pow(1.65, G.core.sLvl - 1));
 const coreRepairCost = () => Math.round(40 + 14 * G.wave);
 function coreUpgrade(kind) {
@@ -2917,6 +3039,9 @@ function coreUpgrade(kind) {
   let rolled = null;
   if (kind === 'weapon') { const k = coreWeaponCost(); if (c.wLvl >= 12 || G.credits < k) return false; G.credits -= k; c.wLvl++; rolled = rollCoreAffix(c); }
   else if (kind === 'shield') { const k = coreShieldCost(); if (c.sLvl >= 10 || G.credits < k) return false; G.credits -= k; c.sLvl++; rolled = rollCoreAffix(c); }
+  else if (kind === 'uplink') { const k = coreUplinkCost(); if ((c.uLvl || 0) >= UPLINK.max || G.credits < k) return false; G.credits -= k; c.uLvl = (c.uLvl || 0) + 1;
+    for (const a of ABIL_ORDER) if (G.abilCd[a] > abilCdMax(a)) G.abilCd[a] = abilCdMax(a);
+    const m = UPLINK.mods.find(x => x.lv === c.uLvl); if (m) Hooks.toast('UPLINK · ' + m.name.toUpperCase(), m.desc, '#ffe14d', true); }
   else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; c.hp = Math.min(c.max, c.hp + c.max * 0.35); }
   if (rolled) { c.affixes.push(rolled); coreAffSum(c); recomputeAll(); if (kind === 'shield') c.shield = c.smax; }
   Hooks.sfx('upgrade', {});
@@ -3064,23 +3189,41 @@ function useAbility(k, x, y) {
   if (!G.charges[k] || G.charges[k] <= 0) return false;
   const M = G.mods, w = Math.max(1, G.wave);
   G.charges[k]--; rlog('abil', { id: k });
+  // Tactician: every use takes 30% off the other abilities' cooldowns
+  if (M.ks.tactician) for (const o of ABIL_ORDER) if (o !== k && G.abilCd[o] > 0) G.abilCd[o] *= 0.7;
   switch (k) {
-    case 'strike':
-      Hooks.fx('strike', { x, y });
-      Hooks.sfx('strikecharge');
-      setTimeoutSim(0.6, () => {
+    case 'strike': {
+      const boom = () => {
         Hooks.fx('boom', { x, y, r: 1.7, col: '#ffe9b0', big: 1 }); Hooks.sfx('strike'); Hooks.fx('shake', { v: 6 });
         for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, x, y) <= 1.7 * 1.7) hit(e, 30 * hpMult(w) * 4.5 * M.abilPower, 'K', null, { noStatus: 1, abil: 1 });
-      });
+      };
+      Hooks.fx('strike', { x, y });
+      Hooks.sfx('strikecharge');
+      setTimeoutSim(0.6, boom);
+      if (uplinkHas('double')) setTimeoutSim(1.3, () => { Hooks.fx('strike', { x, y }); setTimeoutSim(0.35, boom); });
       break;
-    case 'nova':
-      Hooks.fx('nova', {}); Hooks.sfx('nova'); Hooks.fx('shake', { v: 4 });
-      for (const e of G.enemies.slice()) if (!e.dead) hit(e, e.hp * (e.boss ? 0.1 : 0.35) * M.abilPower + 6 * hpMult(w), 'V', null, { noStatus: 1, abil: 1 });
+    }
+    case 'nova': {
+      const pulse = f => { Hooks.fx('nova', {}); Hooks.sfx('nova'); Hooks.fx('shake', { v: 4 });
+        for (const e of G.enemies.slice()) if (!e.dead) hit(e, (e.hp * (e.boss ? 0.1 : 0.35) * M.abilPower + 6 * hpMult(w)) * f, 'V', null, { noStatus: 1, abil: 1 }); };
+      pulse(1);
+      if (uplinkHas('echo')) setTimeoutSim(1.5, () => pulse(0.5));
       break;
+    }
     case 'stasis':
       G.stasisT = (4 + M.stasisDur) * Math.min(1.5, M.abilPower);
+      if (uplinkHas('drag')) G.dragT = G.stasisT + 4;
       Hooks.fx('stasis', {}); Hooks.sfx('stasis');
       break;
+    case 'scan': {
+      G.scanT = SCAN.dur * Math.min(1.5, M.abilPower);
+      let top = null, ts = 0;
+      for (const e of G.enemies) if (!e.dead) { e.scanned = G.scanT; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.3); const sc = threatScore(e); if (sc > ts) { ts = sc; top = e; } }
+      G.scanThreat = top;
+      Hooks.fx('scan', { x: G.core.x, y: G.core.y }); Hooks.sfx('scan');
+      if (top) Hooks.scanned && Hooks.scanned(top);
+      break;
+    }
     case 'overclock':
       G.overclockT = 8 * Math.min(1.5, M.abilPower);
       Hooks.fx('overclock', {}); Hooks.sfx('overclock');
@@ -3103,6 +3246,7 @@ function simStep(dt) {
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
+  updateAbils(dt);
   updateLinkBeams(dt);
   updateCaches(dt);
 }
@@ -3137,9 +3281,9 @@ function snapshotRun(waveNum) {
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
-    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
+    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, uLvl: G.core.uLvl || 0, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
-    charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
+    charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -3179,7 +3323,8 @@ function resumeRun(S) {
   G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
   // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
   if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
-  G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
+  G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.uLvl = S.core.uLvl || 0;
+  G.abilCd = Object.assign({}, S.abilCd || {}); G.abilOn = Object.assign({ strike: 1 }, S.abilOn || {}); for (const k of ABIL_ORDER) G.charges[k] = G.charges[k] || 0; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
   G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;

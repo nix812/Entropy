@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.0.1';
+const VERSION = '5.1.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,16 +173,22 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.0.1', title: 'Entropy 5.0.1 · Clean Sheet', items: [
-  ['Mouse and keyboard', 'Playing on a computer now works properly: hover shows the tile and a tower\'s range, the wheel (or a trackpad pinch) zooms smoothly, any button drags the map, right-click closes a panel or cancels an aim. Keys: WASD or arrows pan, + and − zoom, F map, N next wave, T talents, U upgrade, Z X C V abilities.'],
-  ['Talents replace the passive web', 'Seven short trees: Ballistics, Combustion, Voltaic, Cryogenics, Singularity, Bastion and Command. Each row opens after 5 points in its tree, and talents have ranks with real numbers. Every point you spend also adds +0.4% Damage to every tower. All your points are refunded: open Talents to spend them.'],
-  ['Capstones', 'Twenty points into a tree opens three play styles: pick one. Marksman, Glass Cannon, Wildfire, Conflagration, Circuit, Glacier, War Economy, Artisan, Gambler and more. Hold 1, then 2 from Level 50 and 3 from Level 100.'],
-  ['Recalibration tokens you\'ll use', 'Spend a token to reroll a tower\'s affixes for free, or to refund a talent mid-run (2 for a Capstone). The Captain\'s Chest now gives one too.'],
-  ['More gold late', 'Wave-clear bonus raised (25 + 6 per wave, was 20 + 4). From Wave 40 kill credits grow a little faster each wave. Pirate crates pay about 50% more and drop credits more often; the Captain\'s Chest always pays five crates\' worth.'],
-  ['Breach warning', 'When leaks start climbing, an alert names what is getting through and what counters it, before one bad wave ends the run.'],
-  ['Void Lens trimmed', 'Ramp ×3.2 (was ×3.5) and a little less base damage, Event Horizon ×5, Prism Split ×2.8. Five Lenses did 89% of the damage in a Wave 87 run; other towers matter again.'],
+const WHATS_NEW = { ver: '5.1.0', title: 'Entropy 5.1 · Know Your Enemy', items: [
+  ['Abilities on cooldowns', 'Every ability now recharges on its own timer into a charge slot, so the late game no longer runs dry. Crates, chests, bosses and milestones still give extra charges, and those stack with no cap. Buttons keep their place on the rail; empty ones dim and fill as they recharge.'],
+  ['New: Sensor Sweep', 'A fifth ability (Scan, from Wave 7). Reveals cloaked enemies, Marks everything for +15% damage taken, and puts a reticle on the biggest threat. Short cooldown. Key B on a computer.'],
+  ['Command Uplink', 'A new core upgrade: each level cuts ability cooldowns 5%. Level 3: Strike hits twice. Level 6: Stasis leaves enemies slowed. Level 9: Nova pulses again. Command talents add Reserve Cells (extra charge slots), Telemetry now cuts cooldowns, and the new Tactician Capstone links your abilities.'],
+  ['Know your enemy', 'Tap or hover any enemy: HP, what it does, what beats it, its genes and statuses. Each wave now leans on a headline enemy (amber chip). The Dictionary shows every enemy\'s sprite. Menders draw heal beams, Aegis shields crack, armour goes tink, cloakers shimmer.'],
+  ['Four new enemies', 'From Wave 18: the Reflector (bolts, beams and chains glance off), the Carrier (a flying mothership that drops drones), the Sapper (knocks a tower out for 4s) and the Leech (steals credits if it reaches the core). Each is announced a wave ahead.'],
+  ['A ramp, not a cliff', 'Enemy health builds more through Waves 20 to 50 and climbs less steeply after 40, so the late game gets harder steadily instead of all at once.'],
+  ['Storms you can read', 'Towers a storm boosts wear its colour. A tower\'s panel lists every live condition with numbers (storms, Blackout, EMP, Frenzy, outages). Knocked-out towers say why (EMP, SAPPED). Tap a storm chip for its effects and how many of your towers it touches.'],
+  ['Fewer taps', 'Crates next to one of your towers collect themselves. One "veterans ready" chip replaces the ! on every tower. Notices never cut off mid-sentence.'],
+  ['Pirates with names', 'Skiffs fly slower, carry a named captain, show their flight path and target, and announce themselves with a jingle.'],
+  ['First run', 'No wall of rules: glowing tiles show where to build, and each system introduces itself in two lines the first time it shows up. Credits piling up get a nudge, a boss halfway to the core gets an alarm, and the death screen says why you lost and what beats it.'],
+  ['Fixes', 'One Capstone per tree (a second one in the same tree is refunded). The breach warning names what got through. The Strain screen counts shield damage, so Arc Coils show up. Death screen buttons tidied. A tap on a panel can no longer be swallowed by a refresh, and the Sell button never slides under your finger.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
+// v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
+const PIRATE_CAPTAINS = ['Captain Rustbeard', 'Black Static', 'Mad Mags Vortex', 'One-Eye Orrin', 'Calico Jett', 'Nebula Nell', 'Scurvy Quasar', 'Red Ronin Rook', 'Dread Pixel Pete', 'Salty Sal Saturn'];
 const PIRATE_LINES = {
   normal: ['Yarr!', 'Special delivery', "That's not ours", 'Tell no one', 'Insurance fraud!', 'Fell off a freighter', 'No refunds', 'Arr, butterfingers', 'Keep the change', 'Dropping the evidence', 'This never happened', 'Free sample!', 'Mind the paint', 'Totally legal cargo', 'Ye saw nothing', 'Express shipping'],
   cursed: ['Heh heh heh', 'Totally safe', 'Open it. Go on.', 'Do NOT shake', "Don't mind the noises", 'Our gift to you'],
@@ -237,18 +243,28 @@ const CURSES = [
 ];
 
 // ---------- Enemies ----------
+// v5.1 Know Your Enemy: every enemy says what it does (desc) and what beats it (beat). Four late enemies arrive from Wave 18,
+// each announced the wave before it lands
 const ENEMIES = {
-  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit' },
-  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups' },
-  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully' },
-  flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc' },
-  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death' },
-  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically. Weak to Void' },
-  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies' },
-  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies. Resists Kinetic' },
-  pirate: { name: 'Pirate Skiff', hp: 70, spd: 2.6, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core' },
-  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'Flies. Spawned by a Maelstrom' },
+  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit', beat: 'Anything. They add up in numbers' },
+  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups', beat: 'Splash: Swarm Missile, Flamethrower, Arc Coil' },
+  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully', beat: 'Rail Lance, Void Lens or Burn' },
+  flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc', beat: 'Arc, Pulse, Rail. Flame and Gravity can\'t reach it' },
+  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash to clean up the Swarmers it bursts into' },
+  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'Relay Pylon or Sensor Sweep to reveal it; Void hits it hard' },
+  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first: Rail or Strike. Burn stops all healing' },
+  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 2.5×' },
+  reflector: { name: 'Reflector', hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flamethrower, EMP Mortar' },
+  carrier:  { name: 'Carrier', hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, drops: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air (Rail, Missile, Pulse) before it unloads' },
+  sapper:   { name: 'Sapper', hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, sap: 1, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your line' },
+  leech:    { name: 'Leech', hp: 55, spd: 1.35, cr: 8, leak: 2, from: 30, w: 2.5, leech: 1, desc: 'Steals credits if it reaches the core, more the more you have banked', beat: 'Anything that kills it before the core. Spend what you bank' },
+  pirate: { name: 'Pirate Skiff', hp: 70, spd: 1.5, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core', beat: 'Anti-air before it escapes' },
+  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'Flies. Spawned by a Maelstrom', beat: 'Arc and anti-air' },
 };
+// v5.1: the drone a Carrier drops (a flying Drone, smaller)
+const CARRIER = { every: 4.5, n: 2, hp: 0.1 };
+const SAPPER = { range: 1.6, dur: 4, cd: 7 };
+const LEECH = { share: 0.1, cap: w => 60 + 18 * w };
 // what each boss's empowered ability does at a phase change (shown in the phase toast and the intro card)
 const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', wraith: 'a long phase-jump', overmind: 'a massive EMP',
   titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once',
@@ -351,13 +367,22 @@ const EVENTS = [
 ];
 
 // ---------- Abilities ----------
+// v5.1: abilities recharge on a cooldown into charge slots (1 each, more from Command talents). Charges from crates, chests
+// and bosses stack on top with no limit. `from`: the wave an ability comes online, so a new player meets them one at a time
 const ABILITIES = {
-  strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap a target. Heavy area damage.', target: 1 },
-  nova: { name: 'Entropy Nova', key: 'NOV', short: 'Nova', desc: 'All enemies lose 35% HP (Bosses 10%).' },
-  stasis: { name: 'Stasis Field', key: 'STS', short: 'Stasis', desc: 'Freezes all enemies for 4s.' },
-  overclock: { name: 'Frenzy', key: 'FRZ', short: 'Frenzy', desc: '+100% Attack Speed for 8s.' },
+  strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap a target. Heavy area damage.', target: 1, cd: 45, from: 1 },
+  nova: { name: 'Entropy Nova', key: 'NOV', short: 'Nova', desc: 'All enemies lose 35% HP (Bosses 10%).', cd: 210, from: 12 },
+  stasis: { name: 'Stasis Field', key: 'STS', short: 'Stasis', desc: 'Freezes all enemies for 4s.', cd: 110, from: 4 },
+  overclock: { name: 'Frenzy', key: 'FRZ', short: 'Frenzy', desc: '+100% Attack Speed for 8s.', cd: 90, from: 9 },
+  scan: { name: 'Sensor Sweep', key: 'SCN', short: 'Scan', desc: 'Reveals cloaked enemies for 8s, Marks everything it sweeps (+15% damage taken) and flags the biggest threat.', cd: 30, from: 7 },
 };
-const ABIL_ORDER = ['strike', 'nova', 'stasis', 'overclock'];
+const ABIL_ORDER = ['strike', 'nova', 'stasis', 'overclock', 'scan'];
+const SCAN = { dur: 8, mark: 15 };
+// v5.1 Command Uplink: a core upgrade line. Every level cuts ability cooldowns; milestone levels change how abilities work
+const UPLINK = { max: 9, cd: 5, base: 160, growth: 1.55, mods: [
+  { lv: 3, id: 'double', name: 'Double Tap', desc: 'Orbital Strike hits the same spot twice' },
+  { lv: 6, id: 'drag', name: 'Undertow', desc: 'Enemies leave Stasis slowed 40% for 4s' },
+  { lv: 9, id: 'echo', name: 'Nova Echo', desc: 'Entropy Nova pulses again 1.5s later at half strength' }] };
 const MILESTONE_BUFFS = [
   { k: 'dmg', v: 4, t: '+4% Damage' }, { k: 'rate', v: 4, t: '+4% Attack Speed' },
   { k: 'range', v: 3, t: '+3% Range' }, { k: 'critC', v: 2, t: '+2% Crit Chance' },
@@ -407,7 +432,7 @@ const STAT_TXT = {
   upgRed: v => `−${v}% upgrade cost`, credits: v => `+${v}% Credits`, startCredits: v => `+${v} starting credits`,
   coreHP: v => `+${v} core HP`, shield: v => `+${v} core shield`, shieldRegen: v => `+${v}% shield regen`,
   coreDmg: v => `+${v}% core Damage`, coreRate: v => `+${v}% core Attack Speed`, coreRange: v => `+${v} core Range`,
-  abilCharge: v => `−${v}% score needed per ability charge`, abilPower: v => `+${v}% ability power`,
+  abilCharge: v => `−${v}% ability cooldowns`, abilPower: v => `+${v}% ability power`, abilSlots: v => `+${v} charge slot${v > 1 ? 's' : ''} for every ability`,
   stasisDur: v => `+${v}s Stasis duration`, stormFreq: v => `+${v}% storm frequency`, stormPow: v => `+${v}% storm effects`,
   affixLuck: v => `+${v}% affix rarity`, shatter: v => `+${v}% Shatter damage`, overload: v => `+${v}% Overload damage`,
   overloadRad: v => `+${v}% Overload radius`, superRad: v => `+${v}% Superconduct radius`, collapse: v => `+${v}% Collapse damage`,
@@ -433,7 +458,7 @@ const STAT_TXT = {
   knockMark: () => 'Knockbacks also apply 2 Marks', blackHole: () => 'Collapse radius ×2 and pulls enemies back further',
   markPerma: () => 'Marks never fade', voidSiphon: () => 'Each Collapse fills the Entropy gauge',
   shieldWave: () => 'Core shield fully recharges at the start of each wave', sellPct: v => `Selling refunds ${v}%`,
-  loadout: () => 'Choose which abilities milestones can grant. +25% ability power for each one left out',
+  quarter: () => 'Ability charges from crates, chests, bosses and milestones come in pairs',
   interest: v => `Earn ${v}% interest on banked credits each wave (max 300)`, fieldRepair: v => `Waves with no leaks repair ${v}% core HP`,
   burnCrit: () => 'Kinetic hits on Burning enemies always crit', ovlBurn: () => 'Overload applies Burn to every enemy it hits',
   superChill: () => 'Superconduct also Chills',
@@ -453,7 +478,7 @@ const SMALL_NAME = {
   P: 'Power', Tm: 'Tempo', F: 'Focus', I: 'Integrity', burnDmg: 'Accelerant', burnChance: 'Kindling', chillChance: 'Frost',
   shockChance: 'Static', markChance: 'Null', burnDur: 'Smolder', chillPot: 'Permafrost', freezeDur: 'Stillness',
   shockEff: 'Voltage', splash: 'Blast Radius', costRed: 'Supply Lines', upgRed: 'Toolchain', credits: 'Salvage',
-  coreHP: 'Hull Plating', shield: 'Barrier', shieldRegen: 'Capacitance', abilPower: 'Uplink', abilCharge: 'Telemetry',
+  coreHP: 'Hull Plating', shield: 'Barrier', shieldRegen: 'Capacitance', abilPower: 'Uplink', abilCharge: 'Telemetry', abilSlots: 'Reserve Cells',
   affixLuck: 'Mutation', eliteDmg: 'Hunter', armorPen: 'Penetrator', frozenVuln: 'Brittle', knock: 'Recoil', xp: 'Insight',
 };
 
@@ -550,10 +575,11 @@ const TALENTS = [
     rows: [
       [T_('xPow', 'Uplink', 5, { abilPower: 8 }), T_('xCharge', 'Telemetry', 5, { abilCharge: 5 })],
       [T_('xLuck', 'Mutation', 3, { affixLuck: 10 }), T_('xXp', 'Insight', 3, { xp: 6 }), T_('xRange', 'Optics', 3, { range: 4 })],
-      [T_('xLoad', 'Loadout', 1, { loadout: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
+      [T_('xCell', 'Reserve Cells', 2, { abilSlots: 1 }), T_('xLoad', 'Quartermaster', 1, { quarter: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
       [T_('xWolf', 'Lone Wolf', 1, { loneWolf: 35 }), T_('xStasis', 'Stasis Theory', 1, { stasisDur: 3, chillVoid: 15 }), T_('xVet', 'Field Promotion', 3, { vxpAll: 30 })]],
     caps: [CAP('artisan', 'Artisan', { ks: 'artisan', doc: 6 }), CAP('gambler', 'Gambler', { ks: 'gambler', doc: 7 }),
-      CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'] })] },
+      CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'] }),
+      CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 25 }, lines: ['Using an ability takes 30% off every other ability\'s cooldown', '+25% ability power'] })] },
 ];
 // lookups: every talent and capstone by id, with its tree and row
 const TAL = {};

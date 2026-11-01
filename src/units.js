@@ -223,13 +223,40 @@ const UNITS = (() => {
       parts.push(P(S.poly([[6, -12], [11, -6], [11, 6], [6, 12], [3, 6], [3, -6]], 6, 2.5), 5, ramp(c, 0.85), { d: (x, y) => (Math.abs(y) < 0.7 || Math.abs(Math.abs(y) - 6) < 0.6 ? -1 : 0), e: (x, y) => (x > 9.2 && Math.abs(y) < 2 && f % 2) ? '#ffffff' : null }));
       return parts;
     },
+    // v5.1 late enemies
+    reflector(c, f) { // Reflector: a mirrored prism on short legs; a glint runs across its facets
+      const parts = [], st = f % 2 ? 1.2 : -1.2;
+      for (const s of [-1, 1]) for (const k of [-1, 1]) parts.push(P(S.box(k * 5 - 1 + st * s * k, Math.min(s * 4, s * 10), k * 5 + 1 + st * s * k, Math.max(s * 4, s * 10), 2, 1), 0, ramp('#1a2236')));
+      parts.push(P(S.gem(0, 0, 13, 10, 10), 2, ramp(c, 0.95), { d: (x, y) => (Math.abs(x - y * 0.6 - (f * 3 - 4)) < 1.4 ? 2 : 0), e: (x, y) => Math.abs(x - y * 0.6 - (f * 4 - 6)) < 0.8 ? '#ffffff' : null }));
+      return parts;
+    },
+    carrier(c, f) { // Carrier: a flying mothership with a glowing drone bay and twin engines
+      const parts = [P(S.ell(0, 0, 21, 9, 6), 4, ramp(c, 0.55), { d: (x) => (Math.abs(((x + 40) % 8) - 4) < 0.6 ? -1.2 : 0) }),
+        P(S.rbox(-8, -5, 8, 5, 3, 4, 2), 9, ramp(mix(c, '#2a0a14', 0.4), 0.6), { e: (x, y) => (Math.abs(y) < 1.6 && Math.abs(x) < 6 && f % 2) ? '#ffe14d' : null }),
+        P(S.poly([[21, 0], [13, -4], [13, 4]], 5, 2), 8, ramp(mix(c, '#ffffff', 0.25)))];
+      for (const s of [-1, 1]) { parts.push(P(S.poly([[-6, s * 8], [-14, s * 17], [-18, s * 15], [-12, s * 7]], 3, 2), 3, ramp(mix(c, '#3a0a1a', 0.3), 0.6))); parts.push(P(S.ell(-20, s * 4, 3, 2, 3), 4, ramp('#ffb03a'), { e: () => f % 2 ? '#ffe14d' : '#ffb03a' })); }
+      return parts;
+    },
+    sapper(c, f) { // Sapper: a crawler hauling a charge with a blinking red light
+      const parts = [], st = [0, 1, 0, -1][f] * 1.5;
+      for (const s of [-1, 1]) for (const k of [-1, 1]) { const x0 = k * 4, x1 = x0 + st * s * k + k * 2; parts.push(P(S.poly([[x0 - 1, s * 3], [x0 + 1, s * 3], [x1 + 1, s * 9], [x1 - 1, s * 9]], 2, 1), 0, ramp('#2a1608', 0.5))); }
+      parts.push(P(S.ell(-1, 0, 7, 5.5, 5), 2, ramp(c, 0.6)));
+      parts.push(P(S.dome(-3, 0, 4.4, 5), 6, ramp('#3a3446', 0.7), { e: (x, y) => Math.hypot(x + 3, y) < 1.5 ? (f % 2 ? '#ff3355' : '#5a1020') : null }));
+      parts.push(P(S.dome(6.5, 0, 3, 3), 3, ramp(mix(c, '#2a1608', 0.4)), { e: (x, y) => Math.hypot(x - 7.5, y) < 1 ? '#ffffff' : null }));
+      return parts;
+    },
+    leech(c, f) { // Leech: a segmented slug, its belly glowing with stolen credits
+      const parts = [];
+      for (let i = 3; i >= 0; i--) { const x = 6 - i * 4.5, y = Math.sin(f * 1.57 + i) * 1.4, r = 5.2 - i * 0.6; parts.push(P(S.dome(x, y, r, 5 - i * 0.6), 0, ramp(i ? mix(c, '#3a1a08', 0.22 * i) : c, 0.75), { e: (xx, yy) => (i === 0 && Math.hypot(xx - 9, yy - y) < 1.4) ? '#2a0a04' : (Math.hypot(xx - x, yy - y) < 1.2 && (f + i) % 2 ? '#fff4c0' : null) })); }
+      return parts;
+    },
     voidling(c, f) { // a void bat
       const w = [9, 6, 3, 6][f];
       return [P(S.poly([[7, 0], [-1, -w - 2], [-4, -2], [-7, 0], [-4, 2], [-1, w + 2]], 3, 3), 0, ramp(c, 0.8)),
         P(S.gem(1, 0, 4, 3, 6), 2, ramp('#2a1050', 0.8), { e: (x, y) => Math.hypot(x - 2, y) < 1.1 ? '#ffffff' : null })];
     },
   };
-  const ESZ = { drone: 42, swarmer: 24, tank: 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30 };
+  const ESZ = { drone: 42, swarmer: 24, tank: 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30, reflector: 36, carrier: 58, sapper: 32, leech: 34 };
   const EA = 16;
   function enemy(type, ang, fr) {
     if (!ENEMY[type]) return null;

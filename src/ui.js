@@ -15,6 +15,7 @@ const ICONS = {
   nova: ['#...#...#', '.#..#..#.', '..#.#.#..', '...###...', '####.####', '...###...', '..#.#.#..', '.#..#..#.', '#...#...#'],
   stasis: ['#########', '.#.....#.', '..#...#..', '...#.#...', '....#....', '...#.#...', '..#.#.#..', '.#.###.#.', '#########'],
   overclock: ['.....###.', '....###..', '...###...', '..######.', '....###..', '...###...', '..##.....', '.##......', '#........'],
+  scan: ['..#####..', '.#.....#.', '#...#...#', '#..#.#..#', '#.#.#.#.#', '#..#.##.#', '#...#..##', '.#.....##', '..#####.#'],
   archive: ['#########', '#########', '.........', '.#######.', '.#.....#.', '.#.###.#.', '.#.....#.', '.#######.', '.........'],
   help: ['..#####..', '.##...##.', '......##.', '.....##..', '....##...', '....##...', '.........', '....##...', '....##...'],
   gear: ['...#.#...', '.#######.', '.##...##.', '##.....##', '.#..#..#.', '##.....##', '.##...##.', '.#######.', '...#.#...'],
@@ -54,6 +55,10 @@ const Save = (() => {
     out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
     out.caps = Array.isArray(p.caps) ? p.caps.filter(c => TAL[c] && TAL[c].cap) : [];
     if (!Array.isArray(out.builds) || out.builds.length !== 5) out.builds = [null, null, null, null, null];
+    // v5.1: a veteran has met the first eight enemies already; only the newcomers get an introduction card
+    out.codex = Object.assign(defaultProfile().codex, out.codex || {});
+    if (!out.seenSys && (out.bestWave || 0) >= 15) out.seenSys = { storm: 1, crate: 1, vet: 1 };
+    if (!out.codex.enemies) { out.codex.enemies = {}; if ((out.bestWave || 0) >= 12) for (const k in ENEMIES) if (ENEMIES[k].from <= 12) out.codex.enemies[k] = 1; }
     return out;
   }
   function loadLocal() { try { const s = localStorage.getItem(KEY); return s ? merge(JSON.parse(s)) : null; } catch (e) { return null; } }
@@ -85,6 +90,7 @@ const Save = (() => {
         try { remote = merge(JSON.parse(snap.data().json)); } catch (e) {}
         if (remote && (remote.updatedAt || 0) > (PROF.updatedAt || 0) && !(G && !G.over)) {
           PROF = remote;
+          tidyCaps();
           if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'); queue(); }
           try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
           UI.refreshAll();
@@ -224,7 +230,6 @@ const UI = (() => {
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave;
-    if (!snap && G.wanted && briefMode() !== 'off') setTimeout(() => { if (G && screen === 'game' && G.wanted) wantedPoster(briefMode() === 'pause'); }, 2600);
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
@@ -234,7 +239,45 @@ const UI = (() => {
     updateHud(true);
     Save.save();
     try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
-    if (!PROF.seenHelp) { PROF.seenHelp = true; openHelp(); }
+    // v5.3: no wall of rules on the first run. Glowing tiles show where to build; How to Play waits in the pause menu
+    if (!PROF.seenHelp) { PROF.seenHelp = true; setTimeout(() => toast('WELCOME', 'Enemies walk the road to your core. Tap a glowing tile beside it to build a tower. How to Play is in the pause menu', '#59f0b4', true, 'alert'), 900); }
+    G.wantedTold = !!snap || briefMode() === 'off';
+    G.hints = !snap && (PROF.bestWave || 0) < 10 && G.wave <= 1 ? buildHints() : null; Render.hints = G.hints;
+  }
+  // v5.3 first run: the three spots that cover the most road near the start of the main lane
+  function buildHints() {
+    const R = G.region, L = G.map.lanes[0], road = L.tiles.slice(0, Math.ceil(L.tiles.length * 0.7)), out = [];
+    const score = (x, y) => road.reduce((a, p) => a + (Math.hypot(p.x - x, p.y - y) <= 2.6 ? 1 : 0), 0);
+    const cands = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) cands.push({ x, y, s: score(x, y) });
+    cands.sort((a, b) => b.s - a.s);
+    for (const c of cands) { if (out.length >= 3) break; if (out.every(o => Math.abs(o.x - c.x) + Math.abs(o.y - c.y) >= 4)) out.push(c); }
+    return out;
+  }
+  // v5.3 one-time intro cards: each system says what it is the first time it shows up, in two lines
+  function introCard(key, title, body) {
+    const S = PROF.seenSys || (PROF.seenSys = {}); if (S[key]) return false;
+    if (modalOpen || Tree.isOpen || (G && G.draft)) return false;
+    S[key] = 1; Save.save();
+    if (briefMode() !== 'pause') { toast(title.toUpperCase(), body, '#6ae2ff', true, 'alert'); return true; }
+    closePanel(); G.paused = true; G.briefing = true;
+    modal(`<div class="card narrow brief intro"><div class="bi"><em>New</em><h3>${esc(title)}</h3><p class="desc">${tipify(body)}</p></div>
+      <div class="foot"><span class="note">Change this in Settings · Briefings</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
+    return true;
+  }
+  let nudgeW = -99;
+  function onboardingTick() {
+    if (!G || G.over || screen !== 'game' || modalOpen) return;
+    if (G.hints && (G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
+    if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
+    if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.')) return;
+    if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.')) return;
+    if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the "veterans ready" chip at the top to pick each one a mutation.')) return;
+    if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.')) return;
+    // credits piling up: say so once in a while, with what to do about it
+    if (G.spawningDone && G.wave >= 6 && G.wave - nudgeW >= 8 && G.towers.length) {
+      const cheap = Math.min(...G.towers.map(t => upgradeCost(t))), lim = Math.max(900, cheap * 4, 250 * G.wave);
+      if (G.credits > lim) { nudgeW = G.wave; toast('CREDITS PILING UP', `${fmt(G.credits)} credits banked. Spend them: the arrow marks your best upgrade, or build, or expand the reactor${G.wave >= 28 ? '. Leeches steal from big banks' : ''}`, '#ffb03a', false, 'alert'); }
+    }
   }
 
   // v4.4 Most Wanted: the run's bounty poster
@@ -269,7 +312,7 @@ const UI = (() => {
   }
   function buildAbilityBar() {
     $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Overdrive">${svgIcon('overdrive')}<span>Overdrive</span></button>` +
-      ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}" hidden>${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt">0</em></button>`).join('');
+      ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt"></em><i class="cdf"></i></button>`).join('');
   }
   function updateHud(force) {
     if (!G) return;
@@ -279,9 +322,9 @@ const UI = (() => {
     $('#hptxt').textContent = `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`;
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
     $('#cr').textContent = fmt(G.credits);
-    $('#wave').textContent = G.wave;
+    $("#wave").textContent = G.wave || "—";
     const cpWait = G.spawningDone && cpPending();
-    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`;
+    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `next in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`;
     $('#score').textContent = fmt(G.score);
     const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint && !cpWait;
     const cb = $('#bCall');
@@ -297,11 +340,19 @@ const UI = (() => {
     { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Overdrive') : 'W' + OD_WAVE;
       ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
+    // v5.1: every ability keeps its place on the rail. Empty ones dim and fill as they recharge; offline ones show their wave
     for (const k of ABIL_ORDER) {
-      const n = G.charges[k], btn = document.querySelector(`[data-abil="${k}"]`);
+      const n = G.charges[k] || 0, btn = document.querySelector(`[data-abil="${k}"]`);
       if (!btn) continue;
-      btn.querySelector('.cnt').textContent = n > 1 ? n : '';
-      btn.hidden = n <= 0;
+      const on = abilOnline(k), slots = abilSlots(), cnt = btn.querySelector('.cnt'), lab = btn.querySelector('span');
+      const ct = on && (n > 1 || n > slots) ? String(n) : '';
+      if (cnt.textContent !== ct) cnt.textContent = ct;
+      cnt.classList.toggle('extra', n > slots);
+      const lt = on ? ABILITIES[k].short : 'W' + ABILITIES[k].from;
+      if (lab.textContent !== lt) lab.textContent = lt;
+      btn.classList.toggle('locked', !on); btn.classList.toggle('empty', on && n <= 0);
+      const mx = on ? abilCdMax(k) : 1, cd = G.abilCd ? G.abilCd[k] : 0, filling = on && n < slots && cd > 0;
+      btn.querySelector('.cdf').style.width = filling ? pct(clamp(1 - cd / mx, 0, 1)) : '0%';
       btn.classList.toggle('aim', G.aimAbility === k);
     }
     const free = pointsFree();
@@ -318,10 +369,11 @@ const UI = (() => {
     if (G.spawningDone && G.prep) {
       const P = G.prep;
       if (P.boss) chips.push(`<span class="evchip next bad">Boss ${P.boss.odd ? "???" : esc(P.boss.name)}</span>`);
-      if (G.wanted && !G.wanted.done && G.wanted.w > G.wave) chips.push(`<span class="evchip wanted" data-wanted="1">Wanted · W${G.wanted.w}</span>`);
+      if (G.wanted && G.wantedTold && !G.wanted.done && G.wanted.w > G.wave) chips.push(`<span class="evchip wanted" data-wanted="1">Wanted · W${G.wanted.w}</span>`);
       for (const [g, v] of Object.entries(P.genes || {}).filter(([g, v]) => v >= 0.2).sort((a, b) => b[1] - a[1]).slice(0, 3))
         chips.push(`<span class="evchip gene" data-gene="${g}" style="--c:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</span>`);
-      chips.push(`<span class="evchip next">Next ${P.total}${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
+      chips.push(`<span class="evchip next">Next: ${P.total} enemies${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
+      for (const k of P.heads || []) chips.push(`<span class="evchip head" data-ehead="${k}">${esc(ENEMIES[k].name)} ×${P.counts[k]}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
     if (!(G.spawningDone && G.prep) && geneCap(G.wave) > 0) {
@@ -346,14 +398,15 @@ const UI = (() => {
       const h = parts.join(''); if (db && db.dataset.h !== h) { db.innerHTML = h; db.dataset.h = h; db.hidden = !h; }
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
+    { const rdy = G.towers.filter(t => t.pending > 0).length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} veteran${rdy > 1 ? 's' : ''} ready</span>`); }
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
-    for (const s of G.storms) chips.push(`<span class="evchip storm" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}</span>`);
+    for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
     G.laneWarn = null; for (const L of G.map.lanes) if (L.openWave) { const d = L.openWave - G.wave; if (d >= 1 && (!G.laneWarn || d < G.laneWarn)) G.laneWarn = d; }
     if (G.laneWarn) chips.unshift(`<span class="evchip warn ${G.laneWarn === 1 ? 'bad' : 'storm'}" style="--c:#d6a6ff">${G.laneWarn === 1 ? 'Wormhole opens next wave' : 'Wormhole opens in ' + G.laneWarn + ' waves'}</span>`);
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
     // order by what you need to act on first; anything that doesn't fit goes behind a "+N" chip (the Field Report)
-    const prio = h => /evchip warn/.test(h) ? 0 : /next bad">Boss/.test(h) ? 1 : /data-wanted/.test(h) ? 2 : /evchip next">Next/.test(h) ? 3 : /data-evo/.test(h) ? 4 : /evchip (bad|good)"/.test(h) ? 5 : /storm/.test(h) ? 6 : /next (bad|good)/.test(h) ? 7 : 8;
+    const prio = h => /evchip warn/.test(h) ? 0 : /next bad">Boss/.test(h) ? 1 : /data-wanted/.test(h) ? 2 : /evchip next">Next/.test(h) || /evchip head/.test(h) ? 3 : /data-evo/.test(h) ? 4 : /evchip (bad|good)"/.test(h) ? 5 : /storm/.test(h) ? 6 : /next (bad|good)/.test(h) ? 7 : 8;
     chips.sort((a, b) => prio(a) - prio(b));
     chipList = chips;
     const html = chips.join('');
@@ -398,16 +451,16 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
-  const KEY_RE = /^(BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
+  const KEY_RE = /^(BOSS HALFWAY|NEW ENEMY|BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
-  function toast(title, body, col, force) {
+  function toast(title, body, col, force, as) {
     const key = title + '|' + body, now = performance.now();
     if (toastSeen[key] !== undefined && now - toastSeen[key] < 4000) return;
     toastSeen[key] = now;
-    let kind = screen !== 'game' ? (TIP_RE.test(title) ? 'tip' : 'alert') : toastKind(title);
+    let kind = as || (screen !== 'game' ? (TIP_RE.test(title) ? 'tip' : 'alert') : toastKind(title));
     // Settings > Notifications: Key keeps only the cards you must react to; Off keeps none (tips answering your own taps stay)
     const nm = PROF.settings.notes || 'all';
     if (screen === 'game' && !force && kind === 'alert' && (nm === 'off' || (nm === 'key' && !KEY_RE.test(title)))) { feed(title, body, col, true); return; }
@@ -464,6 +517,17 @@ const UI = (() => {
   // boss arrival: a portrait card and a moment of slow motion, so every boss gets its entrance
   let bossT = null;
   const briefMode = () => PROF.settings.briefings || 'pause';
+  // v5.1: the first time you meet an enemy, a short card says what it is and what beats it (queued if something is open)
+  const enemyCards = []; let readyIx = -1;
+  function enemyCard(k) {
+    const D = ENEMIES[k]; if (!D) return;
+    if (briefMode() === 'off' || screen !== 'game') { toast('NEW ENEMY · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ff4d6a', true); return; }
+    if (modalOpen || Tree.isOpen || (G && G.draft)) { if (!enemyCards.includes(k)) enemyCards.push(k); return; }
+    closePanel(); if (G && !G.over) { G.paused = true; G.briefing = true; }
+    modal(`<div class="card narrow brief ecard"><div class="erow"><canvas width="88" height="88" data-eico="${k}"></canvas><div class="bi"><em>New enemy · next wave</em><h3>${esc(D.name)}</h3><p class="desc">${tipify(D.desc)}.</p><p class="ph good">Beat it: ${tipify(D.beat)}</p></div></div>
+      <div class="foot"><span class="note">Tap any enemy on the field to inspect it</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
+    const cv = $('#modal canvas[data-eico]'); if (cv) Render.enemyIcon(k, cv);
+  }
   function bossIntro(e, B) {
     const box = $('#bossIntro'); if (!box) return;
     const first = !PROF.codex.bosses[B.id];
@@ -502,7 +566,7 @@ const UI = (() => {
   function closePanel() {
     panel = null; pick = null;
     $('#panel').hidden = true;
-    Render.sel = null; Render.selT = null; Render.prev = null;
+    Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
     document.body.classList.remove('panel-l', 'panel-r');
   }
@@ -516,14 +580,22 @@ const UI = (() => {
     document.body.classList.toggle('panel-r', !left);
     renderPanel();
   }
+  // v5.0.2: a re-render between finger-down and finger-up swallowed the tap (Nic: two Sell taps did nothing while a veteran
+  // rank or affix changed mid-fight). While a finger is on the panel, re-renders wait until it lifts
+  let panelHeld = false, panelDirty = false;
   function renderPanel() {
     if (!panel) return;
+    if (panelHeld) { panelDirty = true; return; }
+    panelDirty = false;
     const el = $('#panel');
     if (panel.kind === 'build') el.innerHTML = buildPanelHTML();
     else if (panel.kind === 'tower') el.innerHTML = towerPanelHTML(panel.t);
     else if (panel.kind === 'core') el.innerHTML = corePanelHTML();
     else if (panel.kind === 'cash') el.innerHTML = cashPanelHTML();
     else if (panel.kind === 'reloc') el.innerHTML = relocPanelHTML();
+    else if (panel.kind === 'enemy') el.innerHTML = enemyPanelHTML(panel.e);
+    for (const cv of el.querySelectorAll('canvas[data-eico]')) Render.enemyIcon(cv.dataset.eico, cv);
+    for (const cv of el.querySelectorAll('canvas[data-bico]')) Render.bossPortrait(cv.dataset.bico, cv);
     for (const cv of el.querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
     for (const cv of el.querySelectorAll('canvas[data-card]')) Render.towerCard(cv.dataset.card, cv, !!cv.dataset.lock);
     liveRefreshPanel();
@@ -670,11 +742,12 @@ const UI = (() => {
     const vbar = combat ? `<div class="vrow"><span class="lbl">${t.rank ? 'Veteran ' + roman(t.rank) : 'Rookie'}</span><div class="xpbar"><i style="width:${pct(clamp((t.vxp - prevVet) / Math.max(1, nextVet - prevVet), 0, 1))}"></i></div></div>` : '';
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
-    const foot = `<div class="pfoot">${t.lvl === 3 ? '' : up}
+    const foot = `<div class="pfoot">${t.lvl === 3 ? `<button class="btn wide lvup" disabled>Choose a Specialization<small>${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'}</small></button>` : up}
       <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
+      ${condHTML(t)}
       ${idle}
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
@@ -683,20 +756,27 @@ const UI = (() => {
     return `${head}
       ${t.lvl === 3 ? up : ''}
       ${vet}
+      ${condHTML(t)}
       ${idle}
       ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · +${Math.round((OVERCHARGE.dmg + FX('msOc') / 100) * 100)}% per step · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${ocFree(t) ? `<span class="note">Marksman: +${ocFree(t)} free</span>` : ''}${Array.from({ length: ocMax() + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n}` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
       ${!canOvercharge(t) && !modes ? `<div class="sg mini">${stats.replace(/^<div class="sg">|<\/div>.*$/gs, '')}</div>` : ''}
       ${foot}`;
   }
+  // v5.1: every live modifier on this tower in one place (Nic: storms weren't transparent)
+  function condHTML(t) {
+    const C = towerConditions(t);
+    return `<div class="conds" data-live="conds" data-sig="${esc(C.map(c => c.t).join('|'))}">${C.length ? `<span class="lbl">Conditions</span>${C.map(c => `<span class="${c.bad ? 'bad' : c.good ? 'good' : ''}"${c.col ? ` style="box-shadow:inset 3px 0 0 ${c.col}"` : ''}>${esc(c.t)}</span>`).join('')}` : ''}</div>`;
+  }
   function corePanelHTML() {
     const c = G.core, s = coreStats();
     const wc = coreWeaponCost(), sc = coreShieldCost(), rc = coreRepairCost();
     const nextMod = CORE_MODULES.find(m => m.lv === c.wLvl + 1);
     const mods = `<div class="cmods">${CORE_MODULES.map(m => `<span class="${c.wLvl >= m.lv ? 'on' : ''}"><b>${c.wLvl >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>`;
-    const head = `<div class="ph tabbed"><div class="pt"><b>Core Battery</b><small>Battery LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(c.affixes.length ? c.affixes.length : '')}</div>`;
+    const head = `<div class="ph tabbed"><div class="pt"><b>Core Battery</b><small>Battery LV ${c.wLvl} · Shield LV ${c.sLvl}${c.uLvl ? ' · Uplink LV ' + c.uLvl : ''}</small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(c.affixes.length ? c.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= CORE_GUN.maxLv ? 'disabled' : costBtn(wc)}>${c.wLvl >= CORE_GUN.maxLv ? 'Battery · Max' : `Upgrade Battery · ${fmt(wc)}<small>${nextMod ? `LV ${nextMod.lv}: unlocks ${esc(nextMod.name)}` : '+50% Damage, +Range, new affix'}</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}</div>
+      ${(() => { const u = c.uLvl || 0, nm = UPLINK.mods.find(m => m.lv > u); return `<button class="btn wide" data-act="cu" ${u >= UPLINK.max ? 'disabled' : costBtn(coreUplinkCost())}>${u >= UPLINK.max ? 'Command Uplink · Max' : `Command Uplink ${u + 1} · ${fmt(coreUplinkCost())}`}<small>${u >= UPLINK.max ? `−${UPLINK.cd * u}% ability cooldowns` : `−${UPLINK.cd}% ability cooldowns${nm ? ` · LV ${nm.lv}: ${esc(nm.name)}` : ''}`}</small></button>`; })()}
       <div class="row2"><button class="btn" data-act="reactor" ${costBtn(reactorCost())}>Reactor +1 · ${fmt(reactorCost())}</button>${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
     if ((panel.tab || 'act') === 'act') return `${head}
       <div class="sg mini"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>${tipify('Power')}<b>${gridUsed()}/${gridCap()}</b></span></div>
@@ -708,6 +788,8 @@ const UI = (() => {
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
       <div class="sts">${tipify(`Shells hit whatever is closest to reaching the core · Blast ${num1(s.splash)}`)}</div>
       ${mods}
+      <div class="lbl">Command Uplink · LV ${c.uLvl || 0}/${UPLINK.max} · −${UPLINK.cd * (c.uLvl || 0)}% cooldowns</div>
+      <div class="cmods">${UPLINK.mods.map(m => `<span class="${(c.uLvl || 0) >= m.lv ? 'on' : ''}"><b>${(c.uLvl || 0) >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
       <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Overdrive: used on Wave ${G.odUsed}` : odReady() ? 'Overdrive: ready · release it from the left rail. One board clear this run' : `Overdrive: unlocks at Wave ${OD_WAVE} · once per run`)}</div>
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
@@ -766,8 +848,14 @@ const UI = (() => {
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const d = el.querySelector('[data-live="dps"]'); if (d) d.textContent = fmt(t.dps);
+      const cd = el.querySelector('[data-live="conds"]'); if (cd && !panelHeld) { const sg = towerConditions(t).map(c => c.t).join('|'); if (cd.dataset.sig !== sg) cd.outerHTML = condHTML(t); }
       const k = el.querySelector('[data-live="kills"]'); if (k) k.textContent = t.kills;
     }
+    if (panel.kind === 'enemy') { const e = panel.e, b = el.querySelector('[data-live="ehpbar"]'); if (b) b.style.width = pct(clamp(e.hp / e.maxHp, 0, 1));
+      const h = el.querySelector('[data-live="ehp"]'); if (h) h.textContent = `${fmt(Math.max(0, e.hp))} / ${fmt(e.maxHp)} HP`;
+      const pg = el.querySelector('[data-live="eprog"]'); if (pg && e.L && e.L.len) pg.textContent = Math.round(e.d / e.L.len * 100) + '%';
+      const sig = [e.st.burn ? 1 : 0, e.st.chill, e.st.frozen > 0 ? 1 : 0, e.st.shock > 0 ? 1 : 0, e.st.mark, e.scanned > 0 ? 1 : 0, e.shield > 0 ? 1 : 0, e.phase || 0].join(':');
+      if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; } panel.sig = sig; return; }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; el.innerHTML = cashPanelHTML(); } return; }
     if (panel.kind === 'core') {
       const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0);
@@ -829,6 +917,7 @@ const UI = (() => {
       if (act === 'cel') { G.core.el = b.dataset.v; renderPanel(); }
       else if (act === 'cw') { if (!coreUpgrade('weapon')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cs') { if (!coreUpgrade('shield')) SFX.play('deny'); renderPanel(); }
+      else if (act === 'cu') { if (!coreUpgrade('uplink')) SFX.play('deny'); renderPanel(); updateHud(); }
       else if (act === 'cr') { if (!coreUpgrade('repair')) SFX.play('deny'); renderPanel(); }
       else if (act === 'crr') { if (!rerollCore()) SFX.play('deny'); renderPanel(); }
       else if (act === 'od') {
@@ -871,6 +960,44 @@ const UI = (() => {
     pick = null; Render.prev = null;
     openPanel({ kind: 'build', x, y });
   }
+  // ---------- v5.1 Know Your Enemy: tap (or hover) any enemy to see what it is, what it does and what beats it ----------
+  function enemyAt(p, rad) {
+    let best = null, bd = (rad || 0.6) * (rad || 0.6);
+    for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0)) || e.burrowT > 0) continue; const ey = e.y - (e.fly ? 0.3 : 0), r = e.boss ? 1.4 : 1, d = dist2(e.x, ey, p.x, p.y) / (r * r); if (d < bd) { bd = d; best = e; } }
+    return best;
+  }
+  function enemyInfo(e) {
+    const B = e.boss ? BOSSES.find(b => b.id === e.boss) : null, D = ENEMIES[e.type] || {};
+    return { name: e.boss ? e.bossName : D.name || e.type, desc: B ? B.desc : D.desc, beat: B ? (B.tip || 'Single-target damage, Stasis and Strike. A boss that reaches the core ends the run') : D.beat };
+  }
+  function enemyPanelHTML(e) {
+    const I = enemyInfo(e), st = e.st || {};
+    const tags = [];
+    if (e.boss) tags.push(`<span class="etag bad">Boss${e.phase ? ' · phase ' + (e.phase + 1) : ''}</span>`);
+    if (e.fly) tags.push('<span class="etag">Flying</span>');
+    if (e.armor) tags.push(`<span class="etag">Plated ${Math.round(e.armor * 100)}%</span>`);
+    for (const [k, v] of Object.entries(e.res || {})) if (v) tags.push(`<span class="etag" style="color:${EL[k].col}">${v > 0 ? 'Resists' : 'Weak to'} ${EL[k].name} ${Math.round(Math.abs(v) * 100)}%</span>`);
+    const sts = [];
+    if (st.burn) sts.push('<span style="color:#ff7b39">Burning</span>'); if (st.frozen > 0) sts.push('<span style="color:#bff4ff">Frozen</span>'); else if (st.chill > 0) sts.push(`<span style="color:#9ad8ff">Chilled ${st.chill}</span>`);
+    if (st.shock > 0) sts.push('<span style="color:#ffe14d">Shocked</span>'); if (st.mark > 0) sts.push(`<span style="color:#b86cff">Marked ${st.mark}</span>`); if (e.scanned > 0) sts.push('<span style="color:#7dffb0">Scanned +15%</span>');
+    if (e.shield > 0) sts.push(`<span style="color:#7fd4ff">Shield ${fmt(e.shield)}</span>`);
+    const elites = (e.elite || []).map(id => ELITE_AFFIXES.find(a => a.id === id)).filter(Boolean);
+    const genes = (e.genes || []).filter(g => GENES[g]);
+    const prog = e.L && e.L.len ? Math.round(e.d / e.L.len * 100) : 0;
+    return `<div class="ph"><canvas class="ico eico" width="32" height="32" ${e.boss ? `data-bico="${e.boss}"` : `data-eico="${e.pirate ? 'pirate' : e.type}"`}></canvas><div class="pt"><b>${esc(I.name)}</b><small>${tags.join(' ') || 'Ground'}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
+      <div class="ehp"><i data-live="ehpbar" style="width:${pct(clamp(e.hp / e.maxHp, 0, 1))}"></i><span data-live="ehp">${fmt(Math.max(0, e.hp))} / ${fmt(e.maxHp)} HP</span></div>
+      <div class="sg mini"><span>Speed<b>${num1(e.spd)}</b></span><span>Road<b data-live="eprog">${prog}%</b></span><span>Bounty<b>${fmt(Math.round(e.cr * G.mods.credits))}</b></span></div>
+      <div class="sts">${tipify(I.desc || '')}</div>
+      ${I.beat ? `<div class="sts good">Beat it: ${tipify(I.beat)}</div>` : ''}
+      ${elites.length ? `<div class="lbl">Elite</div>${elites.map(A => `<div class="sts" style="box-shadow:inset 3px 0 0 ${A.col}"><b style="color:${A.col};font-weight:400">${esc(A.name)}</b> · ${esc(A.desc)}</div>`).join('')}` : ''}
+      ${genes.length ? `<div class="lbl">Genes</div>${genes.map(g => `<div class="sts" style="box-shadow:inset 3px 0 0 ${GENES[g].col}"><b style="color:${GENES[g].col};font-weight:400">${GENES[g].name}${g === 'ward' && e.gel ? ' · ' + EL[e.gel].name : ''}</b> · ${esc(GENES[g].desc)} · <u>Counter: ${esc(GENES[g].counter)}</u></div>`).join('')}` : ''}
+      <div class="sts" data-live="ests">${sts.join(' · ') || 'No statuses'}</div>`;
+  }
+  function openEnemy(e) {
+    Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = e; G.selCore = false;
+    const p = { kind: 'enemy', e, x: Math.floor(e.x), y: Math.floor(e.y) };
+    openPanel(p);
+  }
   function openCore() {
     Render.sel = { x: G.map.core.x, y: G.map.core.y }; Render.selT = null; Render.prev = null; G.selCore = true;
     openPanel({ kind: 'core', x: G.map.core.x, y: G.map.core.y });
@@ -909,7 +1036,13 @@ const UI = (() => {
     const p = Render.screenToTile((e.clientX - r.left) / UIS, (e.clientY - r.top) / UIS), tx = Math.floor(p.x), ty = Math.floor(p.y);
     const inside = G.region && inRegion(tx, ty, G.region);
     Render.hover = inside ? { x: tx, y: ty } : null;
-    const live = inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheAt(tx, ty));
+    const en = !G.towerAt[tIdx(tx, ty)] ? enemyAt(p) : null;
+    Render.hoverE = en;
+    const tip = $('#etip');
+    if (en) { const I = enemyInfo(en); tip.innerHTML = `<b>${esc(I.name)}</b><span>${esc(I.beat ? 'Beat it: ' + I.beat : I.desc || '')}</span>`; tip.hidden = false;
+      const sr = $('#stage').getBoundingClientRect(), x = e.clientX - sr.left, y = e.clientY - sr.top; tip.style.left = Math.round(Math.min(sr.width - 230, x + 14) / UIS) + 'px'; tip.style.top = Math.round(Math.max(0, y - 46) / UIS) + 'px'; }
+    else tip.hidden = true;
+    const live = en || inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheAt(tx, ty));
     $('#cv').style.cursor = G.aimAbility ? 'crosshair' : live ? 'pointer' : 'default';
   }
   function canvasUp(e) {
@@ -958,9 +1091,10 @@ const UI = (() => {
     if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
     const cc = cacheAt(tx, ty);
     if (cc) { const kind = cc.kind, m = claimCache(cc); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
-    SFX.play('ui');
     const isCore = tx === G.map.core.x && ty === G.map.core.y;
     const t = G.towerAt[tIdx(tx, ty)];
+    if (!isCore && !t) { const en = enemyAt(p); if (en) { SFX.play('ui'); if (panel && panel.kind === 'enemy' && panel.e === en) { closePanel(); return; } openEnemy(en); return; } }
+    SFX.play('ui');
     // with a panel open, tapping empty ground (or the selected tile again) dismisses it;
     // towers and the core still switch straight to their own panel
     if (panel) {
@@ -1139,6 +1273,16 @@ const UI = (() => {
       <div class="newslist">${N.items.map(([h, t]) => `<div><b>${esc(h)}</b><span>${tipify(t)}</span></div>`).join('')}</div>
       <div class="foot"><button class="btn primary" data-act="newsDone">Let's go</button></div></div>`, 'news');
   }
+  // v5.3: the death screen says why, and what would have stopped it
+  function lossWhyHTML() {
+    if (G.stats.bossBreach) return `<div class="why"><b>Why</b><span>${esc(G.stats.bossBreach)} reached the core. A boss at the core ends the run, whatever your shield.</span><span class="good">Next time: slow it (Cryo, Gravity Well, Stasis), Scan it for +15% damage taken, and put single-target fire on it (Rail Lance, Void Lens). Upgrade the core's Command Uplink for faster Stasis.</span></div>`;
+    const L = G.leakWave || {}, top = Object.entries(L).sort((a, b) => b[1] - a[1])[0];
+    if (!top) return '';
+    const n = Object.values(L).reduce((a, b) => a + b, 0), [ty, ...gs] = top[0].split('+'), D = ENEMIES[ty];
+    const nm = D ? D.name : ty.replace('boss:', ''), g0 = gs.find(g => GENES[g]);
+    const beat = g0 ? GENES[g0].counter : D && D.beat;
+    return `<div class="why"><b>Why</b><span>${n} got through in Wave ${G.wave}, mostly ${esc(nm)}${gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''} (${top[1]}).</span>${beat ? `<span class="good">Beat it: ${tipify(beat)}</span>` : ''}</div>`;
+  }
   function openGameOver() {
     const L = profLevel(), gained = L.level - G.lvlStart;
     const best = G.wave > (G.bestAtStart || 0);
@@ -1146,13 +1290,14 @@ const UI = (() => {
     Save.save();
     modal(`<div class="card over"><div class="ch"><h2 class="bad">Core Destroyed</h2><span class="note">${G.daily ? 'Daily Challenge' : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>Levels<b>+${gained}</b></span></div>
+      ${lossWhyHTML()}
       ${G.daily ? `<p class="void">Today's best: Wave ${PROF.daily ? PROF.daily.best : G.wave}</p>` : best ? '<p class="amber">New best wave!</p>' : `<p class="note">Best: Wave ${PROF.bestWave}</p>`}
       ${G.hallRank >= 0 ? `<p class="amber">Hall of Fame #${G.hallRank + 1}!</p>` : ''}
       ${recapHTML(G.rec)}
       ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
       ${pointsFree() > 0 ? `<p class="good">${pointsFree()} talent point${pointsFree() === 1 ? '' : 's'} to spend</p>` : ''}
       <div class="row logrow"><span class="note">Run log for analysis</span><button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button></div>
-      <div class="foot"><button class="btn small" data-act="logCopy" title="Copy this run's log to paste into a chat">Copy log</button><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Passive Web</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
+      <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Talents</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
   const fsOK = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
@@ -1346,7 +1491,7 @@ const UI = (() => {
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan. Tap Fit to reset the view.'],
-      ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V abilities, Space pause, 1–3 speed, Esc close.'],
+      ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V B abilities, Space pause, 1–3 speed, Esc close.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
       ['Burn', 'Deals damage over time.'],
@@ -1357,13 +1502,16 @@ const UI = (() => {
     ], combos: true },
     { id: 'run', name: 'In a Run', rows: [
       ['Affixes', 'Random bonuses: Common, Magic, Rare, Legendary. Curses are negative.'],
-      ['Veterans', 'Towers rank up from kills. A ! means a mutation is ready.'],
+      ['Veterans', 'Towers rank up from kills. When one has a mutation to pick, a "veterans ready" chip appears at the top: tap it to jump there.'],
       ['Ascend', 'Max-level towers can Ascend for ×1.3 Damage.'],
       ['Entropy', 'Fills as you fight. When full, draw an Anomaly or Stabilize.'],
       ['Storms', 'Boost one element. Storms merge; 3 types form a Maelstrom.'],
       ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned 2 waves ahead.'],
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
-      ['Abilities', 'Earned from score milestones. Shown on the left.'],
+      ['Abilities', 'The left rail. Each ability comes online at its wave and recharges on its own timer (the bar under it fills). Crates, chests, bosses and milestones add extra charges on top, with no cap. Command talents and the core\'s Command Uplink cut cooldowns and add charge slots.'],
+      ['Sensor Sweep', `Scan: reveals cloaked enemies for ${SCAN.dur}s, Marks everything it sweeps (+${SCAN.mark}% damage taken) and flags the biggest threat with a reticle. Short cooldown.`],
+      ['Know your enemy', 'Tap (or hover) any enemy to see its HP, what it does and what beats it. Each wave leans on a headline enemy, shown as an amber chip. New enemies are announced the wave before they land.'],
+      ['Command Uplink', `A core upgrade line: −${UPLINK.cd}% ability cooldowns per level. ${UPLINK.mods.map(m => `LV ${m.lv} ${m.name}: ${m.desc}`).join('. ')}.`],
       ['Bosses', 'Every 10 waves, always on the longest road (flying bosses skim it). Drop a boon and a Recalibration token. If one reaches your core, the run ends, so watch the Red Alert.'],
       ['Red Alert', `A boss within ${RED_ALERT.tiles} tiles of the core: sirens, the field turns red and the core goes to Last Stand, hitting it ×${RED_ALERT.coreDmg}. That is the moment for Stasis, a Strike or a burst of Overcharge.`],
       ['Black Market', 'Tap Score to open the Exchange: Cash In, plus a pirate trader with 3 items in stock (a Legendary for your next towers, a bribe for the boss, a stolen blueprint...). Prices climb with the wave; new stock after every boss.'],
@@ -1404,7 +1552,7 @@ const UI = (() => {
         ['Crit', 'Critical hit. Deals bonus Crit Damage.'], ['Ramp', 'Beam damage that grows while it holds one target.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
         ['Specialization', 'A permanent fork chosen at LV 3.'], ['Veteran', 'Rank earned from kills. Each rank offers a mutation.'], ['Mutation', 'An affix you choose when a tower ranks up.'],
         ['Ascend', 'Upgrade past max level for ×1.3 Damage and a new affix.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
-        ['Milestone', 'Score threshold. Grants an ability charge and a small bonus.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
+        ['Milestone', 'Score threshold. Grants an extra ability charge and a small bonus.'], ['Conditions', 'In a tower\'s panel: every live modifier on it (storms, events, Frenzy, outages) with numbers.'], ['Headline', 'The enemy a wave leans on. Amber chip in the top bar; tap it for what beats it.'], ['IDLE', 'Tag on a tower that hasn\'t fired for two waves. Move it to where the enemies are.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
@@ -1430,7 +1578,7 @@ const UI = (() => {
         ...AFFIXES.map(A => [A.t(affRange(A)), `Common range · ${P[A.pool]}`]) ] },
       { id: 'legend', name: 'Legendaries', rows: LEGENDARIES.map(L => [L.name, `${L.t()}. ${P[L.pool]}.`, RARITY[3].col]) },
       { id: 'curse', name: 'Curses', rows: CURSES.map(C => [C.t(), 'Curse', RARITY[4].col]) },
-      { id: 'enemy', name: 'Enemies', rows: Object.values(ENEMIES).map(E => [E.name, E.desc + '.', '#ff8a9c']) },
+      { id: 'enemy', name: 'Enemies', rows: Object.entries(ENEMIES).map(([k, E]) => [E.name, `${esc(E.desc)}. <em>Beat it: ${esc(E.beat || '')}${E.from < 999 ? ` · from Wave ${E.from}` : ''}</em>`, '#ff8a9c', k]) },
       { id: 'genes', name: 'Evolution', rows: GENE_IDS.map(g => [GENES[g].name, `${GENES[g].desc}. Counter: ${GENES[g].counter}.`, GENES[g].col]) },
       { id: 'elite', name: 'Elite Affixes', rows: ELITE_AFFIXES.map(E => [E.name, E.desc + '.', E.col]) },
       { id: 'boss', name: 'Bosses', rows: BOSSES.map(B => [B.name, B.desc + '.', '#ff4d6a']) },
@@ -1449,7 +1597,7 @@ const UI = (() => {
   function dictHTML() {
     const cats = dictData(), q = dictQ.trim().toLowerCase();
     const strip = h => h.replace(/<[^>]+>/g, '');
-    const row = r => `<b style="--c:${r[2] || ''}">${esc(r[0])}</b><span>${r[1].includes('<') ? r[1] : esc(r[1])}</span>`;
+    const row = r => `<b style="--c:${r[2] || ''}">${r[3] ? `<canvas class="dico" width="22" height="22" data-eico="${r[3]}"></canvas>` : ''}${esc(r[0])}</b><span>${r[1].includes('<') ? r[1] : esc(r[1])}</span>`;
     let body;
     if (q) {
       const hits = cats.map(c => ({ c, rows: c.rows.filter(r => (r[0] + ' ' + strip(r[1])).toLowerCase().includes(q)) })).filter(x => x.rows.length);
@@ -1471,6 +1619,7 @@ const UI = (() => {
       <div class="chips gtabs">${GUIDE.map(g => `<button class="chip ${g.id === T.id ? 'on' : ''}" data-act="htab" data-v="${g.id}">${g.name}</button>`).join('')}</div>
       ${T.id === 'dict' ? dictHTML() : `<div class="gd">${T.rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join('')}</div>`}
       ${combos}</div>`, 'help');
+    for (const cv of document.querySelectorAll('#modal canvas[data-eico]')) Render.enemyIcon(cv.dataset.eico, cv);
     const ds = $('#dSearch');
     if (ds) {
       ds.oninput = () => { dictQ = ds.value; const pos = ds.selectionStart; openHelp(); const n = $('#dSearch'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} };
@@ -1627,6 +1776,9 @@ const UI = (() => {
 
   // ---------- wiring ----------
   function wire() {
+    $('#panel').addEventListener('pointerdown', () => { panelHeld = true; });
+    const panelLift = () => { if (!panelHeld) return; panelHeld = false; if (panelDirty) setTimeout(() => { if (panelDirty && !panelHeld) renderPanel(); }, 30); };
+    window.addEventListener('pointerup', panelLift, true); window.addEventListener('pointercancel', panelLift, true);
     $('#panel').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) panelAction(b.dataset.act, b); });
     $('#modal').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) modalAction(b.dataset.act, b); });
     const cv = $('#cv');
@@ -1638,7 +1790,7 @@ const UI = (() => {
     $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
-    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#pw').parentNode.onclick = () => {
       if (!G || G.over) return; SFX.play('ui');
       const free = gridFree(), T = topTower();
@@ -1659,6 +1811,8 @@ const UI = (() => {
       if (e.target.closest('#bOD')) { overdriveTap(); return; }
       const b = e.target.closest('[data-abil]'); if (!b || b.disabled || !G) return;
       const k = b.dataset.abil;
+      if (!abilOnline(k)) { SFX.play('deny'); toast(ABILITIES[k].name.toUpperCase(), `Comes online at Wave ${ABILITIES[k].from}. ${ABILITIES[k].desc}`, '#8a8fa8', true, 'tip'); return; }
+      if (!(G.charges[k] > 0)) { SFX.play('deny'); toast(ABILITIES[k].name.toUpperCase(), `Recharging · ${Math.ceil(G.abilCd[k] || 0)}s. Upgrade the core's Command Uplink or take Command talents for faster cooldowns`, '#8a8fa8', true, 'tip'); return; }
       if (ABILITIES[k].target) { G.aimAbility = G.aimAbility === k ? null : k; if (G.aimAbility) { toast('ORBITAL STRIKE', 'Tap a target', '#ffb03a'); closePanel(); } }
       else useAbility(k);
       updateHud();
@@ -1710,11 +1864,11 @@ const UI = (() => {
       if (k === 'n') { $('#bCall').click(); return; }
       if (k === 't') { SFX.play('ui'); Tree.open(); return; }
       if (k === 'u' && panel && panel.kind === 'tower') { const b = $('#panel [data-act=up]'); if (b && !b.disabled) b.click(); else SFX.play('deny'); return; }
-      const ab = { z: 0, x: 1, c: 2, v: 3 }[k];
+      const ab = { z: 0, x: 1, c: 2, v: 3, b: 4 }[k];
       if (ab !== undefined) { const b = document.querySelector(`[data-abil="${ABIL_ORDER[ab]}"]`); if (b && !b.hidden && !b.disabled) b.click(); return; }
     });
     $('#cv').addEventListener('contextmenu', e => e.preventDefault());
-    $('#cv').addEventListener('pointerleave', () => { Render.hover = null; });
+    $('#cv').addEventListener('pointerleave', () => { Render.hover = null; Render.hoverE = null; $('#etip').hidden = true; });
     // hooks
     Hooks.sfx = (n, a) => { SFX.play(n, a); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view
@@ -1735,9 +1889,17 @@ const UI = (() => {
     Hooks.onWave = () => {};
     Hooks.onCheckpoint = w => { toast('CHECKPOINT', 'A wormhole opens next wave. Rebuild, then Resume fast for a bonus.', '#59f0b4'); if (panel && panel.kind === 'tower') renderPanel(); Save.save(); };
     Hooks.onEntropy = () => {};
+    Hooks.newEnemy = k => setTimeout(() => enemyCard(k), 400);
+    Hooks.abilReady = k => { const b = document.querySelector(`[data-abil="${k}"]`); if (b) { b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping'); } };
+    Hooks.scanned = e => { const nm = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type, gs = (e.genes || []).filter(g => GENES[g]);
+      const beat = gs.length ? GENES[gs[0]].counter : ENEMIES[e.type] && ENEMIES[e.type].beat;
+      toast('BIGGEST THREAT', `${nm}${gs.length ? ' · ' + gs.map(g => GENES[g].name).join(', ') : ''} · ${fmt(e.hp)} HP${beat ? ' · Beat it: ' + beat : ''}`, '#ffb03a', true, 'tip'); };
   }
   function tick(dt) {
     if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
+    if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
+    if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());
+    onboardingTick();
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
@@ -1803,6 +1965,7 @@ const Tree = (() => {
     if (why === 'have') return 'Already yours';
     if (why === 'slots') { const n = CAP_NEXT(profLevel().level); return `You can hold ${capSlots(profLevel().level)} Capstone${capSlots(profLevel().level) > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
     if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
+    if (why === 'tree') return `One Capstone per tree. Remove ${capName(capsHeld().find(c => TAL[c].tree === T.tree))} first`;
     if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
     return 'Not available';
   }
@@ -1888,6 +2051,8 @@ const Tree = (() => {
   if (loaded) PROF = loaded;
   const webReset = migrateWeb();
   if (webReset) { Save.save(); setTimeout(() => UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'), 900); }
+  const capDrop = tidyCaps();
+  if (capDrop.length) { Save.save(); setTimeout(() => UI.toast('CAPSTONE REFUNDED', `One Capstone per tree now: ${capDrop.map(c => TAL[c].name).join(', ')} refunded. Spend the point elsewhere`, '#ffb03a'), 1400); }
   Render.init($('#cv'));
   Render.onCam = () => UI.zoomChanged && UI.zoomChanged();
   Tree.init();

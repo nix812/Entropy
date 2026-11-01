@@ -5,6 +5,7 @@ const PAL = {
 const ENEMY_COL = {
   drone: '#ff5470', swarmer: '#ff9ad5', tank: '#c9405a', flyer: '#ff86b0', splitter: '#ff6f3c', phantom: '#d6d2ff',
   medic: '#ff7c9c', shielder: '#8ab6ff', voidling: '#b86cff', boss: '#ff3355', pirate: '#d8281a',
+  reflector: '#cfe6ff', carrier: '#e0607a', sapper: '#ffa860', leech: '#ffd24a',
 };
 
 const Render = (() => {
@@ -18,7 +19,7 @@ const RES = 2;
   // the framed sector (buffer px). It eases outward when the run's sector grows.
   const reg = { x: 0, y: 0, w: 0, h: 0 };
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
-  let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0;
+  let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null;
   let scan = null, scanPat = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let fullHud = false, showNums = true, doShake = true;
@@ -239,7 +240,7 @@ const RES = 2;
     },
     voidling(g, c) { diamond(g, 5, 5, 5, '#1a0830'); diamond(g, 5, 5, 4, c); P(g, 4, 3, '#ffffff'); P(g, 5, 5, '#ffffff'); },
   };
-  const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11 };
+  const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11, reflector: 15, carrier: 22, sapper: 13, leech: 14 };
   const pirateSprite = gold => UNITS.pirate(gold);
   function enemySprite(type) {
     if (type === 'pirate') return pirateSprite(false);
@@ -634,6 +635,7 @@ const RES = 2;
       b.globalAlpha = 0.55 + 0.3 * Math.sin(frame / 5 + e.wob); b.drawImage(rim, Math.round((X - gw / 2) * RES) / RES, Math.round((y - gh / 2) * RES) / RES, gw, gh); b.globalAlpha = 1;
     }
     if (cloaked) b.globalAlpha = 0.25;
+    else if (e.cloak && e.cloakT < 0.6 && frame % 6 < 3) b.globalAlpha = 0.6; // v5.1 tell: it flickers just before it cloaks
     if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
     else if (e.boss) { const fl = Math.cos(e._ha) < -0.3; b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); if (fl && !e.burrowT) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
     else b.drawImage(s, Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2);
@@ -649,6 +651,12 @@ const RES = 2;
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
     if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
     if (e.wanted && !cloaked) { b.strokeStyle = hexA('#ffd84a', 0.6 + 0.35 * Math.sin(frame / 5)); b.lineWidth = 2; b.setLineDash([5, 4]); b.lineDashOffset = frame / 2; b.beginPath(); b.arc(X, y, hw + 8, 0, 6.283); b.stroke(); b.setLineDash([]); }
+    if (cloaked) { // v5.1 tell: a heat-haze shimmer where a cloaked unit is
+      b.strokeStyle = 'rgba(214,210,255,0.35)'; b.lineWidth = 1; b.beginPath();
+      for (let i = 0; i <= 16; i++) { const a = i / 16 * 6.283, rr = hw * 0.9 + Math.sin(a * 3 + frame / 4) * 1.5; i ? b.lineTo(X + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8) : b.moveTo(X + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8); }
+      b.stroke();
+    }
+    if (e.type === 'reflector' && !cloaked && frame % 40 < 4) { b.fillStyle = 'rgba(255,255,255,0.8)'; b.fillRect(Math.round(X - hw * 0.4), Math.round(y - hh * 0.5), 2, 2); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
     e._hh = hh; e._crown = elite && !cloaked ? eCols : null; // the crown is drawn in the overlay pass, above every unit
     if (false) {
@@ -1054,12 +1062,80 @@ const RES = 2;
         c.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w), Math.round(h)); c.setLineDash([]);
       }
     }
+    // v5.1 inspect: a ring follows the enemy you tapped (or hover)
+    for (const [E0, col] of [[selEnemy, PAL.amber], [hoverEnemy, '#e9e4d4']]) if (E0 && !E0.dead && E0 !== (col === '#e9e4d4' ? selEnemy : null)) {
+      const x = bx2s(E0.x * TILE), y = by2s(E0.y * TILE - (E0.fly ? 7 : 0)), r = (E0._hh || 8) * ws + 4;
+      c.strokeStyle = 'rgba(9,11,22,0.8)'; c.lineWidth = 4; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke();
+      c.strokeStyle = col; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke();
+    }
+    // v5.1 Sensor Sweep: green brackets on everything it Marked, an amber reticle on the biggest threat
+    if (G.scanT > 0) {
+      const u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const e of G.enemies) if (e.scanned > 0 && !e.dead && e !== G.scanThreat) {
+        const x = bx2s(e.x * TILE), y = by2s(e.y * TILE - (e.fly ? 7 : 0)), r = (e._hh || 6) * ws * 0.9 + 3 * u, a = Math.min(1, e.scanned / 1.5) * 0.85;
+        c.fillStyle = hexA('#7dffb0', a);
+        for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const px = Math.round(x + sx * r), py = Math.round(y + sy * r); c.fillRect(px - (sx > 0 ? 2 * u : 0), py - (sy > 0 ? u : 0), 2 * u, u); c.fillRect(px - (sx > 0 ? u : 0), py - (sy > 0 ? 2 * u : 0), u, 2 * u); }
+      }
+      const e = G.scanThreat;
+      if (e && !e.dead) {
+        const x = bx2s(e.x * TILE), y = by2s(e.y * TILE - (e.fly ? 7 : 0)), r = (e._hh || 8) * ws * 1.1 + 6 * u + Math.sin(frame / 4) * u;
+        c.strokeStyle = 'rgba(9,11,22,0.8)'; c.lineWidth = u + 2; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke();
+        c.strokeStyle = PAL.amber; c.lineWidth = u; c.setLineDash([u * 3, u * 2]); c.lineDashOffset = -frame / 3; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke(); c.setLineDash([]);
+        c.fillStyle = PAL.amber; for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) c.fillRect(Math.round(x + dx * (r + u) - u / 2 - (dx ? (dx > 0 ? 0 : 2 * u) : 0)), Math.round(y + dy * (r + u) - u / 2 - (dy ? (dy > 0 ? 0 : 2 * u) : 0)), dx ? 3 * u : u, dy ? 3 * u : u);
+        c.font = `${Math.max(8, 4 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom';
+        c.fillStyle = 'rgba(9,11,22,0.85)'; const tw = c.measureText('THREAT').width; c.fillRect(Math.round(x - tw / 2 - u), Math.round(y - r - 3 * u - 5 * u), Math.round(tw + 2 * u), 5 * u + u);
+        c.fillStyle = PAL.amber; c.fillText('THREAT', Math.round(x), Math.round(y - r - 3 * u)); c.textBaseline = 'alphabetic';
+      }
+    }
     // v4.7 elite crowns: gold, one gem per affix, drawn above everything so a crowd can't bury them
     for (const e of G.enemies) if (e._crown && !e.dead) {
       const x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - (e.fly ? 7 : 0) - (e._hh || 6) - 4)), u = clamp(Math.round(ws * 1.1), 2, 4), n = e._crown.length, cw = (5 + n * 2) * u;
       c.fillStyle = '#090b16'; c.fillRect(x - cw / 2 - u, y - 4 * u, cw + 2 * u, 5 * u);
       c.fillStyle = '#ffd84a'; c.fillRect(x - cw / 2, y - u * 1.5, cw, u * 2); for (const dx of [-cw / 2, -u / 2, cw / 2 - u]) c.fillRect(x + dx, y - 3 * u, u, 2 * u);
       e._crown.forEach((col, i) => { c.fillStyle = col; c.fillRect(x - (n * 2 * u - u) / 2 + i * 2 * u, y - u, u, u); });
+    }
+    // v5.3 first run: glowing build spots until the first tower goes down
+    if (hintTiles) for (const h of hintTiles) {
+      const x0 = bx2s(h.x * TILE), y0 = by2s(h.y * TILE), w = TILE * ws, a = 0.55 + 0.4 * Math.sin(frame / 6), u = Math.max(2, Math.round(w / 8));
+      c.fillStyle = hexA(PAL.good, 0.12 + 0.1 * a); c.fillRect(Math.round(x0), Math.round(y0), Math.round(w), Math.round(w));
+      c.fillStyle = hexA(PAL.good, a); for (const [sx, sy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const px = Math.round(x0 + sx * (w - 2 * u)), py = Math.round(y0 + sy * (w - 2 * u)); c.fillRect(px, py + (sy ? u : 0), 2 * u, u); c.fillRect(px + (sx ? u : 0), py, u, 2 * u); }
+      c.font = `${Math.max(8, Math.round(w / 4))}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = 'rgba(9,11,22,0.8)'; const tw = c.measureText('BUILD').width; c.fillRect(Math.round(x0 + w / 2 - tw / 2 - 2), Math.round(y0 + w + 1), Math.round(tw + 4), Math.round(w / 4) + 3);
+      c.fillStyle = PAL.good; c.fillText('BUILD', Math.round(x0 + w / 2), Math.round(y0 + w + 2)); c.textBaseline = 'alphabetic';
+    }
+    // v5.3: towers that haven't fired for two waves say so on the map
+    { const u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const t of G.towers) if (!(t.disabled > 0) && G.wave >= 2 && idleWaves(t) >= 2) {
+        const x = Math.round(bx2s(t.cx * TILE)), y = Math.round(by2s(t.y * TILE)) - u;
+        c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom'; const tw = c.measureText('IDLE').width;
+        c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), y - Math.round(4.5 * u), Math.round(tw + 2 * u), Math.round(4.5 * u) + 1);
+        c.fillStyle = '#9a96b0'; c.fillText('IDLE', x, y); c.textBaseline = 'alphabetic';
+      } }
+    // v5.2 pirates: the skiff's flight path ahead of it, its target, and its captain's name
+    for (const e of G.enemies) if (e.pirate && !e.dead) {
+      const P = e.pirate, L = e.L, pts = [{ x: e.x, y: e.y }]; for (let i = 0; i < L.pts.length; i++) if (L.cum[i] > e.d) pts.push(L.pts[i]);
+      c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.lineWidth = 2; c.strokeStyle = hexA('#ff4d6a', 0.55); c.beginPath();
+      pts.forEach((q, i) => { const x = bx2s(q.x * TILE), y = by2s(q.y * TILE - 7); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.setLineDash([]);
+      if (!P.got && P.cache) { const x = bx2s((P.cache.x + 0.5) * TILE), y = by2s((P.cache.y + 0.5) * TILE), r = TILE * ws * 0.6 + Math.sin(frame / 4) * 2; c.strokeStyle = '#ff4d6a'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke(); c.beginPath(); c.moveTo(x - r - 4, y); c.lineTo(x - r + 4, y); c.moveTo(x + r - 4, y); c.lineTo(x + r + 4, y); c.moveTo(x, y - r - 4); c.lineTo(x, y - r + 4); c.moveTo(x, y + r - 4); c.lineTo(x, y + r + 4); c.stroke(); }
+      if (P.captain) { const u = clamp(Math.round(ws * 1.1), 2, 4), x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - 7 - (e._hh || 8) - 3));
+        c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom'; const tw = c.measureText(P.captain).width;
+        c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), y - Math.round(4.5 * u), Math.round(tw + 2 * u), Math.round(4.5 * u) + 1);
+        c.fillStyle = P.got ? '#ff4d6a' : '#ffd84a'; c.fillText(P.captain, x, y); c.textBaseline = 'alphabetic'; }
+    }
+    // v5.1 storm transparency: towers a storm boosts wear its colour (dashed if it only touches them); knocked-out towers say why
+    if (G.storms.length) for (const st of G.storms) {
+      const els = st.mael ? ELS : st.types.map(ty => STORMS[ty].el), col = st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, r2 = st.r * st.r;
+      for (const t of G.towers) { if (dist2(t.cx, t.cy, st.x, st.y) > r2) continue;
+        const boosted = t.s && els.includes(t.s.el), x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
+        c.lineWidth = boosted ? 2 : 1; c.strokeStyle = hexA(col, boosted ? 0.9 : 0.45); if (!boosted) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
+    }
+    { const u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const t of G.towers) if (t.disabled > 0) {
+        const tag = t.disCause || 'OFFLINE', x = Math.round(bx2s(t.cx * TILE)), y = Math.round(by2s(t.y * TILE)) - u;
+        c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom';
+        const tw = c.measureText(tag).width; c.fillStyle = 'rgba(9,11,22,0.88)'; c.fillRect(Math.round(x - tw / 2 - u), y - Math.round(4.5 * u), Math.round(tw + 2 * u), Math.round(4.5 * u) + 1);
+        c.fillStyle = tag === 'SAPPED' ? '#ffa860' : '#ffe14d'; c.fillText(tag, x, y); c.textBaseline = 'alphabetic';
+        if (frame % 4 === 0) { const a = Math.random() * 6.283; c.fillStyle = '#ffe14d'; c.fillRect(Math.round(bx2s((t.cx + Math.cos(a) * 0.4) * TILE)), Math.round(by2s((t.cy + Math.sin(a) * 0.4) * TILE)), u, u); }
+      }
     }
     // v4.8.1 level display, kept off the tower art (Nic: the badges hid the sprites):
     //  - every tower: a thin tier-coloured line under its tile (white, green, blue, purple, orange, red in bands of 3 levels)
@@ -1089,11 +1165,10 @@ const RES = 2;
     }
     // veterans waiting for a mutation: a bobbing badge above the tower
     c.font = '10px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    // v5.2: a small corner pip (one "ready" chip in the top bar does the shouting, not a badge on every tower)
     for (const t of G.towers) if (t.pending > 0) {
-      const x = bx2s(t.cx * TILE), y = by2s(t.y * TILE) - 7 + Math.sin(frame / 6 + t.id) * 2;
-      c.fillStyle = '#090b16'; c.fillRect(x - 8, y - 8, 16, 15);
-      c.fillStyle = frame % 24 < 16 ? PAL.warn : '#fff6c0'; c.fillRect(x - 7, y - 7, 14, 13);
-      c.fillStyle = '#1a1004'; c.fillText('!', x + 0.5, y + 0.5);
+      const x = Math.round(bx2s(t.x * TILE + TILE)) - 5, y = Math.round(by2s(t.y * TILE)) + 1;
+      c.fillStyle = '#090b16'; c.fillRect(x - 1, y - 1, 6, 6); c.fillStyle = frame % 40 < 30 ? PAL.warn : '#fff6c0'; c.fillRect(x, y, 4, 4);
     }
     c.restore();
 
@@ -1183,8 +1258,18 @@ const RES = 2;
       case 'grav': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE, r1: 2, life: 0.5, max: 0.5, col: '#b86cff', w: 3 }); break;
       case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;
       case 'arcs': for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x) + Math.cos(a) * rr * 0.5 + (Math.random() - 0.5) * 10, y: T2P(d.y) + Math.sin(a) * rr * 0.5 }, { x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr }], life: 0.18, max: 0.18, col: '#9ff2ff', core: 1, w: 2 }); } break;
-      case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' }); break;
-      case 'shieldpulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.5, max: 0.5, col: '#8ab6ff' }); break;
+      case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' });
+        for (const o of d.to || []) { lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(o.x), y: T2P(o.y) }], life: 0.45, max: 0.45, col: '#7dffb0', core: 1, w: 2 }); text(o.x, o.y - 0.5, '+', '#7dffb0', 14, 0.5, -0.8); }
+        break;
+      case 'shieldpulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.5, max: 0.5, col: '#8ab6ff' });
+        for (const o of d.to || []) lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(o.x), y: T2P(o.y) }], life: 0.4, max: 0.4, col: '#8ab6ff', core: 0, w: 1 });
+        break;
+      case 'shieldbreak': for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + Math.random() * 0.3; parts.push({ x: T2P(d.x) + Math.cos(a) * 10, y: T2P(d.y) + Math.sin(a) * 10, vx: Math.cos(a) * 40 * K, vy: Math.sin(a) * 40 * K, life: 0.4, max: 0.4, col: i % 2 ? '#c8e8ff' : '#7fd4ff', s: 3 }); } rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 22, life: 0.25, max: 0.25, col: '#c8e8ff', w: 2 }); break;
+      case 'ping': burst(T2P(d.x), T2P(d.y), 4, '#e9e4d4', 35 * K, 0.18); if (texts.filter(T => T.ping).length < 3) { text(d.x + 0.3, d.y - 0.6, 'tink', '#c8c4b8', 11, 0.4, -0.6, 'Silkscreen, monospace'); texts[texts.length - 1].ping = 1; } break;
+      case 'glance': { const x = T2P(d.x), y = T2P(d.y), a = d.sx !== undefined ? Math.atan2(d.y - d.sy, d.x - d.sx) + Math.PI * (0.7 + Math.random() * 0.6) : Math.random() * 6.283;
+        lines.push({ pts: [{ x, y }, { x: x + Math.cos(a) * 22, y: y + Math.sin(a) * 22 }], life: 0.2, max: 0.2, col: '#ffffff', core: 1, w: 2 }); burst(x, y, 5, '#cfe6ff', 40 * K, 0.2); break; }
+      case 'sap': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.5, max: 0.5, col: '#ff3355', core: 1, w: 2 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 4, r1: 20, life: 0.4, max: 0.4, col: '#ff3355', w: 2, fill: 1 }); burst(T2P(d.x2), T2P(d.y2), 14, '#ffa860', 40 * K, 0.4); break;
+      case 'drop': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 18, life: 0.35, max: 0.35, col: '#ffe14d', w: 2 }); burst(T2P(d.x), T2P(d.y), 6, '#ffe14d', 25 * K, 0.3, 30 * K); break;
       case 'blink': burst(T2P(d.x), T2P(d.y), 14, '#b86cff', 40 * K, 0.3); break;
       case 'lure': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.35, max: 0.35, col: '#59f0b4', core: 0, w: 1 }); break;
       case 'net': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 3, life: 0.35, max: 0.35, col: '#59f0b4', w: 2 }); burst(T2P(d.x), T2P(d.y), 8, '#c9fff0', 20 * K, 0.3); break;
@@ -1198,6 +1283,7 @@ const RES = 2;
       case 'strike': lines.push({ pts: [{ x: T2P(d.x), y: -10 }, { x: T2P(d.x), y: T2P(d.y) }], life: 0.6, max: 0.6, col: '#ffe9b0', core: 1, w: 6 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 1.7 * TILE, r1: 2, life: 0.6, max: 0.6, col: '#ffe9b0', w: 3 }); break;
       case 'nova': flashes.push({ col: '#b86cff', life: 0.6, max: 0.6, a: 0.5 }); rings.push({ x: G.core.x * TILE, y: G.core.y * TILE, r0: 4, r1: BW, life: 0.7, max: 0.7, col: '#d6a6ff', w: 4 }); break;
       case 'stasis': flashes.push({ col: '#6ae2ff', life: 0.5, max: 0.5, a: 0.4 }); break;
+      case 'scan': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: BW * 1.2, life: 1.1, max: 1.1, col: '#7dffb0', w: 3 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: BW * 0.7, life: 0.8, max: 0.8, col: '#c9fff0', w: 1 }); flashes.push({ col: '#7dffb0', life: 0.25, max: 0.25, a: 0.12 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
       case 'overdrive': flashes.push({ col: '#e6fff6', life: 0.25, max: 0.25, a: 0.6 }); flashes.push({ col: PAL.core, life: 0.9, max: 0.9, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
@@ -1209,7 +1295,7 @@ const RES = 2;
       case 'elite': burst(T2P(d.x), T2P(d.y), 10, '#ffe14d', 25 * K, 0.5); break;
       case 'jam': case 'fizzle': burst(T2P(d.x), T2P(d.y), 8, '#8a8aa6', 20 * K, 0.4, -20 * K); break;
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
-      case 'coin': text(d.x, d.y - 0.6, '+' + d.v, PAL.amber, 15, 1, -0.6); break;
+      case 'coin': text(d.x, d.y - 0.6, d.v < 0 ? '−' + Math.abs(d.v) : '+' + d.v, d.v < 0 ? PAL.bad : PAL.amber, 15, 1, -0.6); break;
       case 'shake': shakeAt(d.v, 0.3); break;
       case 'burrow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: TILE * 1.6, life: 0.5, max: 0.5, col: '#c46cff', w: 3, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: TILE * 1.8, r1: 2, life: 0.5, max: 0.5, col: '#5cf2ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 30, '#c46cff', 60 * K, 0.5); break;
       case 'swallow': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.45, max: 0.45, col: d.back ? '#59f0b4' : '#c46cff', core: 1, w: 5 }); burst(T2P(d.x1), T2P(d.y1), 24, d.back ? '#59f0b4' : '#c46cff', 50 * K, 0.5); break;
@@ -1296,6 +1382,12 @@ const RES = 2;
     set onCam(f) { onCam = f; },
     tileToScreen,
     // draws a boss sprite, pixel-scaled, centred on a canvas (the boss intro card)
+    // v5.1 an enemy's portrait for the inspect panel, the intro card and the Dictionary
+    enemyIcon(type, cv) { const sp = type === 'pirate' ? UNITS.pirate(false) : UNITS.enemy(type, 0, 0) || enemySprite(type), g = cv.getContext('2d');
+      if (!cv.dataset.sized) { cv.dataset.sized = 1; const cs = getComputedStyle(cv); if (cs.width && cs.width !== 'auto') { cv.style.width = cs.width; cv.style.height = cs.height; } cv.width = cv.height = 64; }
+      const k = Math.min(cv.width / sp.width, cv.height / sp.height) * 0.9;
+      g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false; g.drawImage(sp, Math.round((cv.width - sp.width * k) / 2), Math.round((cv.height - sp.height * k) / 2), sp.width * k, sp.height * k); },
+    set hints(v) { hintTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
       if (cv.width < sp.width * 2) { const cs = getComputedStyle(cv); cv.style.width = cs.width; cv.style.height = cs.height; cv.width = cv.height = sp.width * 2; }
       const k = Math.max(1, Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height)));
