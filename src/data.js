@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.1.3';
+const VERSION = '5.1.4';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,7 +173,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.1.3', title: 'Entropy 5.1 · Know Your Enemy', items: [
+const WHATS_NEW = { ver: '5.1.4', title: 'Entropy 5.1 · Know Your Enemy', items: [
+  ['Cleaner screens', 'Every menu and side panel now has a fixed header and footer around a scrolling middle, so nothing drifts or leaves a band across the text while you scroll (the New Run screen did). Close buttons stay in the corner, card borders stay whole, and a tall footer (the core on a small phone) scrolls with the panel instead of squashing it. The notice line no longer blocks taps on the field: tap its LOG button to read past notices.'],
   ['Core Hull', 'A new core upgrade for late money: each level adds 12% max hull and cuts the damage every leak does by 5% (10 levels). Banked credits now buy breathing room.'],
   ['Tides tamed', 'Elite Tide adds fewer elites and a wave can never be more than 60% elite (late Elite Tides made almost every enemy an elite). Swarm Tide brings 60% more enemies instead of double. The two never land together.'],
   ['Scan when it counts', 'With cloaked enemies on the field and a charge ready, the Scan button lights up, and the notice line says so now and then.'],

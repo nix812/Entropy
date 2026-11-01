@@ -19,11 +19,11 @@ with sync_playwright() as p:
       const t = buildTower('pulse', spots[0][0], spots[0][1]); upgradeTower(t); upgradeTower(t); upgradeTower(t, 1); upgradeTower(t);
       window.__t = t; const f = buildTower('forge', spots[5][0], spots[5][1]); window.__f = f; }''')
     def scroll_need():
-        return pg.evaluate('() => { const el = document.querySelector("#panel"); return el.scrollHeight - el.clientHeight; }')
+        return pg.evaluate('() => { const el = document.querySelector("#panel .pbody") || document.querySelector("#panel"); return el.scrollHeight - el.clientHeight; }')
     pg.evaluate('() => { UI.openTowerForTest ? 0 : 0; }')
     for name, js in [('tower', '__t'), ('forge', '__f')]:
         pos = pg.evaluate(f'() => {{ const t = window.{js}, s = Render.tileToScreen(t.x + 0.5, t.y + 0.5), r = document.querySelector("#cv").getBoundingClientRect(); return [r.left + s.x, r.top + s.y]; }}')
-        pg.mouse.click(*pos); pg.wait_for_timeout(300)
+        pg.evaluate(f'() => UI._dbg.openTower(window.{js})'); pg.wait_for_timeout(300)
         report.append((name, 'actions overflow px', scroll_need()))
         pg.screenshot(path=str(out / f'panel_{name}_act.png'))
         pg.click('#panel [data-act=tab][data-v=info]'); pg.wait_for_timeout(200)

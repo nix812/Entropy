@@ -522,9 +522,9 @@ const UI = (() => {
     noteKeep(t.title, t.body, t.col);
     el.style.setProperty('--c', urgent ? '#ff4d6a' : t.col || '#ffb03a');
     el.classList.toggle('urgent', urgent); el.classList.remove('out', 'scroll');
-    el.innerHTML = `<div class="tkl"><b>${esc(t.title)}</b><span>${esc(t.body || '')}</span></div>`;
+    el.innerHTML = `<div class="tkl"><b>${esc(t.title)}</b><span>${esc(t.body || '')}</span></div><button class="tkb" aria-label="Notice log">LOG</button>`;
     el.hidden = false;
-    const line = el.firstChild, over = line.scrollWidth - el.clientWidth + 16;
+    const line = el.firstChild, over = line.scrollWidth - el.clientWidth + 56;
     let dur = urgent ? 6500 : Math.min(6000, 2800 + (t.body || '').length * 30);
     // too long for one line: it slides across once instead of being cut off
     if (over > 0) { const secs = Math.max(2.5, over / 45); line.style.setProperty('--shift', -over + 'px'); line.style.setProperty('--dur', secs + 's'); el.classList.add('scroll'); dur = Math.max(dur, 1200 + secs * 1000 + 1600); }
@@ -627,13 +627,19 @@ const UI = (() => {
     if (!panel) return;
     if (panelHeld) { panelDirty = true; return; }
     panelDirty = false;
-    const el = $('#panel');
+    const el = $('#panel'), pst = el.querySelector(':scope > .pbody'), keep = pst && renderPanel.last === panel && !panel.resetScroll ? pst.scrollTop : 0;
+    renderPanel.last = panel; panel.resetScroll = false;
     if (panel.kind === 'build') el.innerHTML = buildPanelHTML();
     else if (panel.kind === 'tower') el.innerHTML = towerPanelHTML(panel.t);
     else if (panel.kind === 'core') el.innerHTML = corePanelHTML();
     else if (panel.kind === 'cash') el.innerHTML = cashPanelHTML();
     else if (panel.kind === 'reloc') el.innerHTML = relocPanelHTML();
     else if (panel.kind === 'enemy') el.innerHTML = enemyPanelHTML(panel.e);
+    el.classList.remove('framed');
+    const nb = frameBox(el, 'ph', 'pfoot', 'pbody');
+    // a footer that would squeeze the body to nothing (the core's on a small phone) scrolls with the content instead
+    { const ft = el.querySelector(':scope > .pfoot'); if (nb && ft && ft.offsetHeight > el.clientHeight * 0.5) { nb.appendChild(ft); ft.classList.add('inbody'); } }
+    if (nb && keep) nb.scrollTop = keep;
     for (const cv of el.querySelectorAll('canvas[data-eico]')) Render.enemyIcon(cv.dataset.eico, cv);
     for (const cv of el.querySelectorAll('canvas[data-bico]')) Render.bossPortrait(cv.dataset.bico, cv);
     for (const cv of el.querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
@@ -817,7 +823,7 @@ const UI = (() => {
     const foot = `<div class="pfoot">${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= CORE_GUN.maxLv ? 'disabled' : costBtn(wc)}>${c.wLvl >= CORE_GUN.maxLv ? 'Battery · Max' : `Upgrade Battery · ${fmt(wc)}<small>${nextMod ? `LV ${nextMod.lv}: unlocks ${esc(nextMod.name)}` : '+50% Damage, +Range, new affix'}</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}</div>
       ${(() => { const u = c.uLvl || 0, nm = UPLINK.mods.find(m => m.lv > u), h = c.hLvl || 0;
-        return `<div class="row2"><button class="btn" data-act="cu" ${u >= UPLINK.max ? 'disabled' : costBtn(coreUplinkCost())}>${u >= UPLINK.max ? 'Uplink · Max' : `Uplink ${u + 1} · ${fmt(coreUplinkCost())}`}<small>${nm ? `−${UPLINK.cd}% cooldowns · LV ${nm.lv} ${esc(nm.name)}` : `−${UPLINK.cd}% cooldowns`}</small></button><button class="btn" data-act="ch" ${h >= HULL.max ? 'disabled' : costBtn(coreHullCost())}>${h >= HULL.max ? 'Hull · Max' : `Hull ${h + 1} · ${fmt(coreHullCost())}`}<small>+${HULL.hp}% hull, −${HULL.guard}% leak damage</small></button></div>`; })()}
+        return `<div class="row2"><button class="btn" data-act="cu" ${u >= UPLINK.max ? 'disabled' : costBtn(coreUplinkCost())}>${u >= UPLINK.max ? 'Uplink · Max' : `Uplink ${u + 1} · ${fmt(coreUplinkCost())}`}<small>−${UPLINK.cd}% cooldowns</small></button><button class="btn" data-act="ch" ${h >= HULL.max ? 'disabled' : costBtn(coreHullCost())}>${h >= HULL.max ? 'Hull · Max' : `Hull ${h + 1} · ${fmt(coreHullCost())}`}<small>+${HULL.hp}% hull, −${HULL.guard}% leak damage</small></button></div>`; })()}
       <div class="row2"><button class="btn" data-act="reactor" ${costBtn(reactorCost())}>Reactor +1 · ${fmt(reactorCost())}</button>${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
     if ((panel.tab || 'act') === 'act') return `${head}
       <div class="sg mini"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>${tipify('Power')}<b>${gridUsed()}/${gridCap()}</b></span></div>
@@ -897,7 +903,7 @@ const UI = (() => {
       const pg = el.querySelector('[data-live="eprog"]'); if (pg && e.L && e.L.len) pg.textContent = Math.round(e.d / e.L.len * 100) + '%';
       const sig = [e.st.burn ? 1 : 0, e.st.chill, e.st.frozen > 0 ? 1 : 0, e.st.shock > 0 ? 1 : 0, e.st.mark, e.scanned > 0 ? 1 : 0, e.shield > 0 ? 1 : 0, e.phase || 0].join(':');
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; } panel.sig = sig; return; }
-    if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; el.innerHTML = cashPanelHTML(); } return; }
+    if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; renderPanel(); } return; }
     if (panel.kind === 'core') {
       const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0);
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
@@ -911,7 +917,7 @@ const UI = (() => {
     SFX.play('ui');
     if (act === 'close') return closePanel();
     if (!panel || !G || G.over) return; // a stale tap on a panel that just closed
-    if (act === 'tab') { panel.tab = b.dataset.v; renderPanel(); $('#panel').scrollTop = 0; return; }
+    if (act === 'tab') { panel.tab = b.dataset.v; panel.resetScroll = true; renderPanel(); return; }
     if (panel.kind === 'build') {
       if (act === 'pick') {
         if (pick === b.dataset.type && G.credits >= towerCost(pick)) return panelAction('build', b);
@@ -1031,8 +1037,8 @@ const UI = (() => {
       <div class="sg mini"><span>Speed<b>${num1(e.spd)}</b></span><span>Road<b data-live="eprog">${prog}%</b></span><span>Bounty<b>${fmt(Math.round(e.cr * G.mods.credits))}</b></span></div>
       <div class="sts">${tipify(I.desc || '')}</div>
       ${I.beat ? `<div class="sts good">Beat it: ${tipify(I.beat)}</div>` : ''}
-      ${elites.length ? `<div class="lbl">Elite</div>${elites.map(A => `<div class="sts" style="box-shadow:inset 3px 0 0 ${A.col}"><b style="color:${A.col};font-weight:400">${esc(A.name)}</b> · ${esc(A.desc)}</div>`).join('')}` : ''}
-      ${genes.length ? `<div class="lbl">Genes</div>${genes.map(g => `<div class="sts" style="box-shadow:inset 3px 0 0 ${GENES[g].col}"><b style="color:${GENES[g].col};font-weight:400">${GENES[g].name}${g === 'ward' && e.gel ? ' · ' + EL[e.gel].name : ''}</b> · ${esc(GENES[g].desc)} · <u>Counter: ${esc(GENES[g].counter)}</u></div>`).join('')}` : ''}
+      ${elites.length ? `<div class="lbl">Elite</div>${elites.map(A => `<div class="sts erow" style="box-shadow:inset 3px 0 0 ${A.col}"><b style="color:${A.col};font-weight:400">${esc(A.name)}</b> · ${esc(A.desc)}</div>`).join('')}` : ''}
+      ${genes.length ? `<div class="lbl">Genes</div>${genes.map(g => `<div class="sts erow" style="box-shadow:inset 3px 0 0 ${GENES[g].col}"><b style="color:${GENES[g].col};font-weight:400">${GENES[g].name}${g === 'ward' && e.gel ? ' · ' + EL[e.gel].name : ''}</b> · ${esc(GENES[g].desc)} · <u>Counter: ${esc(GENES[g].counter)}</u></div>`).join('')}` : ''}
       <div class="sts" data-live="ests">${sts.join(' · ') || 'No statuses'}</div>`;
   }
   function openEnemy(e) {
@@ -1173,9 +1179,20 @@ const UI = (() => {
   }
 
   // ---------- modals ----------
+  // v5.1.4: modals and the side panel get a fixed header and footer around a scrolling body. Sticky headers and footers
+  // inside a scrolling, clipped box drifted on iOS during momentum scrolling (Nic: a band across the New Run text)
+  function frameBox(box, headCls, footCls, bodyCls) {
+    const kids = [...box.children], head = kids[0] && kids[0].classList.contains(headCls) ? kids[0] : null, last = kids[kids.length - 1], foot = last && last !== head && last.classList.contains(footCls) ? last : null;
+    if (!head && !foot) return null;
+    const body = document.createElement('div'); body.className = bodyCls;
+    for (const k of kids) if (k !== head && k !== foot) body.appendChild(k);
+    box.insertBefore(body, foot); box.classList.add('framed');
+    return body;
+  }
   function modal(html, kind) {
     const m = $('#modal');
     m.innerHTML = html; m.hidden = false; modalOpen = kind || 'modal';
+    for (const c of m.querySelectorAll(':scope > .card')) frameBox(c, 'ch', 'foot', 'cbody');
     document.body.classList.add('modal-open');
     hydrateIcons(m);
   }
@@ -1832,7 +1849,7 @@ const UI = (() => {
     $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
-    $('#ticker').onclick = () => { SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
+    $('#ticker').onclick = e => { if (!e.target.closest('.tkb')) return; SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
     $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#pw').parentNode.onclick = () => {
       if (!G || G.over) return; SFX.play('ui');
@@ -1959,6 +1976,8 @@ const UI = (() => {
   return {
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0,
     get screen() { return screen; }, get modalOpen() { return modalOpen; },
+    // test hooks (test/uiaudit.py opens every screen through these)
+    _dbg: { openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
   };
 })();
 

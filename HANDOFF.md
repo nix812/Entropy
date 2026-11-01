@@ -1,6 +1,13 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 4.4.0 · October 30, 2026**
+**Version at handoff: 5.1.4 · November 1, 2026**
+
+### Start here (state at 5.1.4)
+- **Live:** 5.1.4 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
+- **This build cycle (Oct 31 – Nov 1):** 5.0 Clean Sheet (talent trees) → 5.0.1 mouse support → 5.1 Know Your Enemy (cooldown abilities, Scan, Command Uplink, four new enemies, inspect, headline threats, gentler late curve, storm transparency, fewer taps, pirate captains, first-run onboarding) → 5.1.1 ability timers → 5.1.2 notice ticker → 5.1.3 Core Hull and tamer tides → 5.1.4 UI sweep. Details in 4.13, 4.14 and the version table (section 10).
+- **Read first:** section 2 (build, deploy, commit conventions), 4.14 (current systems), 7 (pitfalls, especially 26 and 35–38), 8 (working with Nic).
+- **Open threads** are at the top of section 9.
+
 
 Entropy is Nic's personal sci-fi, retro-pixel, endless tower defense game, played on iPhone and iPad in landscape. It is one self-contained HTML file with no frameworks and no network dependencies at runtime (it only fetches its fonts and two music files).
 
@@ -36,7 +43,7 @@ Or unzip the source zip and clone `main` for deploying. Playwright with Chromium
 cd entropy
 python3 build.py        # -> dist/entropy.html (artifact), dist/bundle.js, dist/pages/ (GitHub Pages site)
 ```
-- `build.py` concatenates `src/data.js, sim.js, audio.js, render.js, ui.js` **in that order** into the `/*__SCRIPT__*/` slot of `src/template.html`.
+- `build.py` concatenates `src/data.js, sim.js, audio.js, art.js, units.js, render.js, ui.js` **in that order** into the `/*__SCRIPT__*/` slot of `src/template.html`.
 - It also writes `dist/pages/index.html`. That is a full document with Apple Home Screen meta tags, plus `manifest.webmanifest` and the generated pixel icons (`icon-180/192/512.png`).
 - The scripts are plain globals, not modules. Top-level `const`/`let` declarations in one file are visible to the files after it, so order matters.
 
@@ -755,6 +762,8 @@ The expanding sector made every level a little easier, because the compact early
 33. **Music CPU:** every ConvolverNode with an input keeps costing CPU even when its return gain is 0, and long IRs cost more. Feed only what plays (see 4.12), and run `perfcheck.py` after adding voices.
 34. **`setConfig` must merge into fresh defaults** (`D2`), not into `d` after `Object.assign(d, c)`: that already replaced `d.fx` with the caller's partial object, which silently dropped the other FX keys (non-finite AudioParam errors).
 35. **Re-rendering a panel under a finger loses the tap.** The click lands on a detached node. `renderPanel` defers while `panelHeld` (pointer down on `#panel`) and runs once the finger lifts; live refreshes should patch nodes in place and also check `panelHeld`.
+37. **No `position: sticky` inside scrolling, clipped boxes.** On iOS it drifts during momentum scrolling and leaves a band over the content. Use the framed layout (fixed header and footer around a scrolling body, `frameBox`). Run `test/uiaudit.py` after any layout change.
+38. **Overlays on the field must let taps through.** Anything drawn over the playfield (the ticker, chips, banners) needs `pointer-events: none` except for its own small button, or it steals taps on towers beneath it.
 36. **Buttons that appear and disappear move their neighbours.** Keep fixed slots (the ability rail, the Upgrade slot in the tower footer) and dim or disable instead of hiding.
 26. **Don't edit `src/data.js` or `src/sim.js` while `par.sh` batches are running**: every bot process loads the source fresh, so a batch started after the edit measures the new code (and a syntax error kills the rest of the sweep).
 
@@ -771,6 +780,13 @@ The expanding sector made every level a little easier, because the compact early
 ---
 
 ## 9. Backlog and ideas discussed
+- **Open threads as of 5.1.4 (November 1, 2026):**
+  - **Nic's latest feedback:** liked 5.1 ("liking what I'm seeing"). Asked for and got: invasive notices fixed (5.1.2), ability durations shown (5.1.1), late money sink and tamer Elite/Swarm Tides (5.1.3), UI scroll bug sweep (5.1.4). Next thing to hear from him: whether the late game now feels too soft (tides were softened without a fresh bot sweep) and whether Core Hull gets bought.
+  - **Balance not re-run since 5.1.0.** 5.1.3 softened Elite Tide (+25%, elites capped at 60%) and Swarm Tide (×1.6 at 60% HP) and added Core Hull (bots buy it late). Run `TTK=1` sweeps at 60 and 96 points from a frozen copy (pitfall 26) and compare with `test/out/bal/v51_hpq07.txt`.
+  - **Void Lens** did ~68% of Nic's damage in his 5.1.0 run and ~50% for 96-point bots. Assaults ward the top element and the Reflector cuts beams; if it still dominates, trim `lens` dmg or `rampMax` before touching anything else.
+  - **Ability charges:** Nic held big stacks (10 Strikes at Wave 12, 13 Frenzies at Wave 37). Asked whether that was deliberate; no answer yet. If unintentional, cut the crate charge roll (15%) or the boss-kill charge.
+  - **Conduits** (below) are still parked until Nic has played the refinements.
+  - **Onboarding** has not been played by a new person yet. `test/onboardshot.py` shows the flow; a real first-timer's reaction is the test that matters.
 - **Open threads as of 4.5 (October 31, 2026):**
   - **Studio ideas not built yet:** share a saved piece as a code; per-genre favourites playlists; a minimal-piano style; drum-pattern editor.
   - **Conduits (proposed, waiting on Nic; now 4.9):** late-game elite towers that are one ability each, fired by one tap from a left-rail button with a cooldown ring, no aiming. Slots at Waves 40, 60 and 80, one of each kind, ~3 power. The cooldown charges faster from damage dealt by nearby towers, so placement matters. Six proposed: Singularity Lance (one shot at the strongest enemy in range for ~15 s of total defence damage), Chrono Anchor (4 s time freeze, stored damage released ×1.5), Event Horizon (drags everything in range to one point for 3 s), Recall Gate (sends the 12 enemies nearest the core back to their wormhole; bosses lose 30% road), Overclock Spire (×3 fire rate in range for 6 s, then 2 s cooldown), Chaos Engine (random effect table, including turning every enemy into a duck). Planned as 4.6 with bot balance testing. Ask Nic which ones before building.
@@ -830,6 +846,7 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 5.1.4 | UI sweep (Nic: the New Run screen's sticky footer left a band across the text while scrolling on iOS). `frameBox` (ui.js) gives every modal card (`.card.framed`: `.ch` + `.cbody` + `.foot`) and the side panel (`.panel.framed`: `.ph` + `.pbody` + `.pfoot`) a fixed header and footer around a scrolling body, replacing `position: sticky`; the panel keeps its scroll on re-render and resets it on tab change (`panel.resetScroll`); a footer taller than half the panel moves into the body (`.pfoot.inbody`); header/footer sit 2px inside the card border; close buttons are pinned top-right; `.lbl` has line-height 1.5 (wrapped labels overlapped); enemy elite/gene rows padded; the ticker and assault strip drop below the Map button when a side panel is open, and the ticker is tap-through with a LOG button (`.tkb`) so it no longer steals taps on towers. New tool: `test/uiaudit.py [WxH,...]` opens every screen, panel and modal through `UI._dbg`, scrolls each to top/middle/bottom and flags covered, clipped or off-screen text; `test/sheet_audit.py WxH` tiles the shots. Known false positives: the hangar version label, the Dictionary's sideways-scrolling category chips, tooltip-underlined words |
 | 5.1.3 | Nic's 5.1.0 log (Wave 64, 52.6k credits banked with the grid full; five Elite Tides between W46 and W61 made ~95% of those waves elite; Swarm Tide W57 = 402 kills over 150 s): **Core Hull** (`HULL`, `coreHullCost`, `coreUpgrade('hull')`, `c.hLvl`: +12% max hull and −5% leak damage per level, 10 levels, log key `hull`; Uplink purchases now log `uplink`); Elite Tide +25% (was +50%) with elites capped at 60% of a wave; Swarm Tide ×1.6 count at 60% HP (was ×2 at 55%); the two never roll together; Scan glows (`.abil.want`) with cloaked enemies on the field and says so every 6+ waves. Bot buys Hull late (`NOHULL=1` skips) |
 | 5.1.2 | Notices (Nic: invasive): in a game, alerts go to `#ticker`, one line under the top bar left of the Map button (`tickerShow`; long text slides via `.scroll`/`--shift`); `URGENT_RE` (Red Alert, Boss Halfway, Breach Warning) jumps the queue with an edge flash (`#stage.edgeflash`) and a buzz; `HOMED_RE` news (Strain Assault, Maelstrom, Swarm Evolves, Wormhole Detected) goes to the feed only, and storm chips pulse (`stormPulse`); `noteLog` keeps the last 30, shown in the Field Report (tap the ticker or +N). The assault strip is left-aligned, clear of Map. The old centre cards (`#toasts`) remain only outside a game. Tests: `test/tickershot.py`, `briefshot.py` |
 | 5.1.1 | Timed abilities (Frenzy, Stasis, Scan) count down on their rail buttons (`.abil.live`, `.dur`, `abilLeft`); a second use while running adds its time up to 3 uses' worth (`abilExtend`, `ABIL_TIMER`, `G.abilMax`). Test: `test/durshot.py`, `fixes.js` |

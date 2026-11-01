@@ -20,7 +20,7 @@ with sync_playwright() as p:
     pg.evaluate('() => Hooks.toast("RED ALERT", "Behemoth is 5 tiles from the core. Last Stand: core shells hit it ×3. Stasis, Strike and Overcharge now", "#ff4d6a", true)')
     pg.wait_for_timeout(250); pg.screenshot(path=str(out / 'ticker_urgent.png'))
     if not pg.evaluate('() => document.querySelector("#ticker").classList.contains("urgent")'): fails.append('urgent did not cut in')
-    pg.click('#ticker'); pg.wait_for_timeout(400); pg.screenshot(path=str(out / 'ticker_report.png'))
+    pg.click("#ticker .tkb"); pg.wait_for_timeout(400); pg.screenshot(path=str(out / 'ticker_report.png'))
     if not pg.evaluate('() => !!document.querySelector(".nlog")'): fails.append('no recent notices in the report')
     b.close()
 print('FAILS:', fails); print('ERRORS:', errs[:5])
