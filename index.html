@@ -193,6 +193,29 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 .rb.on { box-shadow: inset 0 0 0 1px var(--cryo); color: var(--cryo); }
 .abil { color: var(--warn); }
 .abil.aim { background: var(--amber); color: #1a1004; box-shadow: none; }
+/* v5.1 Know Your Enemy */
+.ehp { position: relative; height: 18px; background: #2a0a12; box-shadow: inset 0 0 0 1px #5a1424; margin: 2px 0 6px; }
+.ehp i { position: absolute; inset: 0 auto 0 0; background: var(--bad); }
+.ehp span { position: relative; display: block; text-align: center; font-size: 16px; line-height: 18px; color: #fff; text-shadow: 1px 1px 0 #000; font-variant-numeric: tabular-nums; }
+.etag { font-style: normal; color: var(--dim); white-space: nowrap; }
+.etag.bad { color: var(--bad); }
+canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background: var(--panel2); }
+#etip { position: absolute; z-index: 6; pointer-events: none; max-width: 220px; background: rgba(7, 8, 15, 0.94); box-shadow: inset 0 0 0 1px var(--line2); padding: 5px 8px; }
+#etip[hidden] { display: none; }
+#etip b { display: block; font-family: var(--f-pix); font-weight: 400; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); }
+#etip span { display: block; font-size: 15px; line-height: 1.15; color: var(--ink); }
+.ecard { text-align: left; }
+.ecard .erow { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; align-items: center; }
+.card.ecard .erow canvas { width: 88px !important; height: 88px !important; image-rendering: pixelated; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); }
+.ecard p { margin: 0 0 6px; }
+.dict b canvas.dico { width: 22px; height: 22px; image-rendering: pixelated; vertical-align: middle; margin-right: 6px; }
+.abil .cdf { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--warn); pointer-events: none; }
+.abil.empty, .abil.locked { color: #6a6584; }
+.abil.empty svg, .abil.locked svg { opacity: 0.45; }
+.abil.locked { box-shadow: inset 0 0 0 1px var(--line); }
+.abil .cnt.extra { color: var(--amber); }
+.abil.ping { animation: aping 0.6s steps(3) 1; }
+@keyframes aping { 0% { box-shadow: inset 0 0 0 2px var(--warn), 0 0 14px var(--warn); } 100% { box-shadow: inset 0 0 0 1px var(--line2); } }
 .abil.aim span, .abil.aim .cnt { color: #1a1004; }
 .rb.od { color: var(--core); }
 .rb.od.dim { opacity: 0.45; color: var(--dim); }
@@ -210,6 +233,17 @@ body.panel-l .cpbanner { left: 72%; } body.panel-r .cpbanner { left: 28%; }
 #webBadge[hidden] { display: none; }
 #chips { flex: 1; display: flex; gap: 5px; overflow: hidden; min-width: 0; }
 .evchip { flex: 0 0 auto; }
+.why { display: flex; flex-direction: column; gap: 3px; background: var(--panel); box-shadow: inset 3px 0 0 var(--bad); padding: 6px 10px; margin: 6px 0; text-align: left; }
+.why b { font-family: var(--f-pix); font-weight: 400; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bad); }
+.why span { font-size: 16px; line-height: 1.2; }
+.why span.good { color: var(--good); }
+.evchip.ready { cursor: pointer; pointer-events: auto; }
+.evchip.storm.tap { cursor: pointer; pointer-events: auto; }
+.conds { display: flex; flex-direction: column; gap: 3px; margin: 2px 0; }
+.conds:empty { display: none; }
+.conds span:not(.lbl) { font-size: 15px; line-height: 1.15; background: var(--panel); padding: 3px 7px; box-shadow: inset 3px 0 0 var(--line2); }
+.conds span.good { color: var(--good); } .conds span.bad { color: #ff8a9c; }
+.evchip.head { color: var(--amber); box-shadow: inset 0 0 0 1px #6a4a18; cursor: pointer; pointer-events: auto; }
 .evchip.more { color: var(--ink); background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); cursor: pointer; pointer-events: auto; }
 .card.report .rlist { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px; }
 .card.report .rrow { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
@@ -315,7 +349,7 @@ body.webopen #tip { bottom: calc(var(--sab, 0px) + 58px); } /* clear the region 
 #log, #dps { display: none; position: absolute; pointer-events: none; z-index: 3; font-size: 14px; }
 body.hudfull #dps { display: block; }
 #log { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; left: 6px; bottom: 6px; max-width: min(340px, 38%); font-size: 14px; }
-#log .fl { background: rgba(7, 8, 15, 0.78); padding: 1px 6px; line-height: 1.2; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #c9c6bc; box-shadow: inset 2px 0 0 var(--c); animation: tin 0.2s; transition: opacity 1.4s; }
+#log .fl { background: rgba(7, 8, 15, 0.78); padding: 1px 6px; line-height: 1.2; max-width: 100%; white-space: normal; color: #c9c6bc; box-shadow: inset 2px 0 0 var(--c); animation: tin 0.2s; transition: opacity 1.4s; }
 #log .fl b { color: var(--c); font-weight: 400; }
 #log .fl i { color: var(--dim); font-style: normal; }
 #log .fl.old { opacity: 0; }
@@ -735,6 +769,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
       <div id="docbar" hidden></div>
       <div id="dps"></div>
       <div id="panel" class="panel" hidden></div>
+      <div id="etip" hidden></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">
@@ -771,7 +806,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.0.1';
+const VERSION = '5.1.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -944,16 +979,22 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.0.1', title: 'Entropy 5.0.1 · Clean Sheet', items: [
-  ['Mouse and keyboard', 'Playing on a computer now works properly: hover shows the tile and a tower\'s range, the wheel (or a trackpad pinch) zooms smoothly, any button drags the map, right-click closes a panel or cancels an aim. Keys: WASD or arrows pan, + and − zoom, F map, N next wave, T talents, U upgrade, Z X C V abilities.'],
-  ['Talents replace the passive web', 'Seven short trees: Ballistics, Combustion, Voltaic, Cryogenics, Singularity, Bastion and Command. Each row opens after 5 points in its tree, and talents have ranks with real numbers. Every point you spend also adds +0.4% Damage to every tower. All your points are refunded: open Talents to spend them.'],
-  ['Capstones', 'Twenty points into a tree opens three play styles: pick one. Marksman, Glass Cannon, Wildfire, Conflagration, Circuit, Glacier, War Economy, Artisan, Gambler and more. Hold 1, then 2 from Level 50 and 3 from Level 100.'],
-  ['Recalibration tokens you\'ll use', 'Spend a token to reroll a tower\'s affixes for free, or to refund a talent mid-run (2 for a Capstone). The Captain\'s Chest now gives one too.'],
-  ['More gold late', 'Wave-clear bonus raised (25 + 6 per wave, was 20 + 4). From Wave 40 kill credits grow a little faster each wave. Pirate crates pay about 50% more and drop credits more often; the Captain\'s Chest always pays five crates\' worth.'],
-  ['Breach warning', 'When leaks start climbing, an alert names what is getting through and what counters it, before one bad wave ends the run.'],
-  ['Void Lens trimmed', 'Ramp ×3.2 (was ×3.5) and a little less base damage, Event Horizon ×5, Prism Split ×2.8. Five Lenses did 89% of the damage in a Wave 87 run; other towers matter again.'],
+const WHATS_NEW = { ver: '5.1.0', title: 'Entropy 5.1 · Know Your Enemy', items: [
+  ['Abilities on cooldowns', 'Every ability now recharges on its own timer into a charge slot, so the late game no longer runs dry. Crates, chests, bosses and milestones still give extra charges, and those stack with no cap. Buttons keep their place on the rail; empty ones dim and fill as they recharge.'],
+  ['New: Sensor Sweep', 'A fifth ability (Scan, from Wave 7). Reveals cloaked enemies, Marks everything for +15% damage taken, and puts a reticle on the biggest threat. Short cooldown. Key B on a computer.'],
+  ['Command Uplink', 'A new core upgrade: each level cuts ability cooldowns 5%. Level 3: Strike hits twice. Level 6: Stasis leaves enemies slowed. Level 9: Nova pulses again. Command talents add Reserve Cells (extra charge slots), Telemetry now cuts cooldowns, and the new Tactician Capstone links your abilities.'],
+  ['Know your enemy', 'Tap or hover any enemy: HP, what it does, what beats it, its genes and statuses. Each wave now leans on a headline enemy (amber chip). The Dictionary shows every enemy\'s sprite. Menders draw heal beams, Aegis shields crack, armour goes tink, cloakers shimmer.'],
+  ['Four new enemies', 'From Wave 18: the Reflector (bolts, beams and chains glance off), the Carrier (a flying mothership that drops drones), the Sapper (knocks a tower out for 4s) and the Leech (steals credits if it reaches the core). Each is announced a wave ahead.'],
+  ['A ramp, not a cliff', 'Enemy health builds more through Waves 20 to 50 and climbs less steeply after 40, so the late game gets harder steadily instead of all at once.'],
+  ['Storms you can read', 'Towers a storm boosts wear its colour. A tower\'s panel lists every live condition with numbers (storms, Blackout, EMP, Frenzy, outages). Knocked-out towers say why (EMP, SAPPED). Tap a storm chip for its effects and how many of your towers it touches.'],
+  ['Fewer taps', 'Crates next to one of your towers collect themselves. One "veterans ready" chip replaces the ! on every tower. Notices never cut off mid-sentence.'],
+  ['Pirates with names', 'Skiffs fly slower, carry a named captain, show their flight path and target, and announce themselves with a jingle.'],
+  ['First run', 'No wall of rules: glowing tiles show where to build, and each system introduces itself in two lines the first time it shows up. Credits piling up get a nudge, a boss halfway to the core gets an alarm, and the death screen says why you lost and what beats it.'],
+  ['Fixes', 'One Capstone per tree (a second one in the same tree is refunded). The breach warning names what got through. The Strain screen counts shield damage, so Arc Coils show up. Death screen buttons tidied. A tap on a panel can no longer be swallowed by a refresh, and the Sell button never slides under your finger.'],
 ] };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
+// v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
+const PIRATE_CAPTAINS = ['Captain Rustbeard', 'Black Static', 'Mad Mags Vortex', 'One-Eye Orrin', 'Calico Jett', 'Nebula Nell', 'Scurvy Quasar', 'Red Ronin Rook', 'Dread Pixel Pete', 'Salty Sal Saturn'];
 const PIRATE_LINES = {
   normal: ['Yarr!', 'Special delivery', "That's not ours", 'Tell no one', 'Insurance fraud!', 'Fell off a freighter', 'No refunds', 'Arr, butterfingers', 'Keep the change', 'Dropping the evidence', 'This never happened', 'Free sample!', 'Mind the paint', 'Totally legal cargo', 'Ye saw nothing', 'Express shipping'],
   cursed: ['Heh heh heh', 'Totally safe', 'Open it. Go on.', 'Do NOT shake', "Don't mind the noises", 'Our gift to you'],
@@ -1008,18 +1049,28 @@ const CURSES = [
 ];
 
 // ---------- Enemies ----------
+// v5.1 Know Your Enemy: every enemy says what it does (desc) and what beats it (beat). Four late enemies arrive from Wave 18,
+// each announced the wave before it lands
 const ENEMIES = {
-  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit' },
-  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups' },
-  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully' },
-  flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc' },
-  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death' },
-  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically. Weak to Void' },
-  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies' },
-  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies. Resists Kinetic' },
-  pirate: { name: 'Pirate Skiff', hp: 70, spd: 2.6, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core' },
-  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'Flies. Spawned by a Maelstrom' },
+  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit', beat: 'Anything. They add up in numbers' },
+  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups', beat: 'Splash: Swarm Missile, Flamethrower, Arc Coil' },
+  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully', beat: 'Rail Lance, Void Lens or Burn' },
+  flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc', beat: 'Arc, Pulse, Rail. Flame and Gravity can\'t reach it' },
+  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash to clean up the Swarmers it bursts into' },
+  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'Relay Pylon or Sensor Sweep to reveal it; Void hits it hard' },
+  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first: Rail or Strike. Burn stops all healing' },
+  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 2.5×' },
+  reflector: { name: 'Reflector', hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flamethrower, EMP Mortar' },
+  carrier:  { name: 'Carrier', hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, drops: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air (Rail, Missile, Pulse) before it unloads' },
+  sapper:   { name: 'Sapper', hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, sap: 1, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your line' },
+  leech:    { name: 'Leech', hp: 55, spd: 1.35, cr: 8, leak: 2, from: 30, w: 2.5, leech: 1, desc: 'Steals credits if it reaches the core, more the more you have banked', beat: 'Anything that kills it before the core. Spend what you bank' },
+  pirate: { name: 'Pirate Skiff', hp: 70, spd: 1.5, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core', beat: 'Anti-air before it escapes' },
+  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'Flies. Spawned by a Maelstrom', beat: 'Arc and anti-air' },
 };
+// v5.1: the drone a Carrier drops (a flying Drone, smaller)
+const CARRIER = { every: 4.5, n: 2, hp: 0.1 };
+const SAPPER = { range: 1.6, dur: 4, cd: 7 };
+const LEECH = { share: 0.1, cap: w => 60 + 18 * w };
 // what each boss's empowered ability does at a phase change (shown in the phase toast and the intro card)
 const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', wraith: 'a long phase-jump', overmind: 'a massive EMP',
   titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once',
@@ -1122,13 +1173,22 @@ const EVENTS = [
 ];
 
 // ---------- Abilities ----------
+// v5.1: abilities recharge on a cooldown into charge slots (1 each, more from Command talents). Charges from crates, chests
+// and bosses stack on top with no limit. `from`: the wave an ability comes online, so a new player meets them one at a time
 const ABILITIES = {
-  strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap a target. Heavy area damage.', target: 1 },
-  nova: { name: 'Entropy Nova', key: 'NOV', short: 'Nova', desc: 'All enemies lose 35% HP (Bosses 10%).' },
-  stasis: { name: 'Stasis Field', key: 'STS', short: 'Stasis', desc: 'Freezes all enemies for 4s.' },
-  overclock: { name: 'Frenzy', key: 'FRZ', short: 'Frenzy', desc: '+100% Attack Speed for 8s.' },
+  strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap a target. Heavy area damage.', target: 1, cd: 45, from: 1 },
+  nova: { name: 'Entropy Nova', key: 'NOV', short: 'Nova', desc: 'All enemies lose 35% HP (Bosses 10%).', cd: 210, from: 12 },
+  stasis: { name: 'Stasis Field', key: 'STS', short: 'Stasis', desc: 'Freezes all enemies for 4s.', cd: 110, from: 4 },
+  overclock: { name: 'Frenzy', key: 'FRZ', short: 'Frenzy', desc: '+100% Attack Speed for 8s.', cd: 90, from: 9 },
+  scan: { name: 'Sensor Sweep', key: 'SCN', short: 'Scan', desc: 'Reveals cloaked enemies for 8s, Marks everything it sweeps (+15% damage taken) and flags the biggest threat.', cd: 30, from: 7 },
 };
-const ABIL_ORDER = ['strike', 'nova', 'stasis', 'overclock'];
+const ABIL_ORDER = ['strike', 'nova', 'stasis', 'overclock', 'scan'];
+const SCAN = { dur: 8, mark: 15 };
+// v5.1 Command Uplink: a core upgrade line. Every level cuts ability cooldowns; milestone levels change how abilities work
+const UPLINK = { max: 9, cd: 5, base: 160, growth: 1.55, mods: [
+  { lv: 3, id: 'double', name: 'Double Tap', desc: 'Orbital Strike hits the same spot twice' },
+  { lv: 6, id: 'drag', name: 'Undertow', desc: 'Enemies leave Stasis slowed 40% for 4s' },
+  { lv: 9, id: 'echo', name: 'Nova Echo', desc: 'Entropy Nova pulses again 1.5s later at half strength' }] };
 const MILESTONE_BUFFS = [
   { k: 'dmg', v: 4, t: '+4% Damage' }, { k: 'rate', v: 4, t: '+4% Attack Speed' },
   { k: 'range', v: 3, t: '+3% Range' }, { k: 'critC', v: 2, t: '+2% Crit Chance' },
@@ -1178,7 +1238,7 @@ const STAT_TXT = {
   upgRed: v => `−${v}% upgrade cost`, credits: v => `+${v}% Credits`, startCredits: v => `+${v} starting credits`,
   coreHP: v => `+${v} core HP`, shield: v => `+${v} core shield`, shieldRegen: v => `+${v}% shield regen`,
   coreDmg: v => `+${v}% core Damage`, coreRate: v => `+${v}% core Attack Speed`, coreRange: v => `+${v} core Range`,
-  abilCharge: v => `−${v}% score needed per ability charge`, abilPower: v => `+${v}% ability power`,
+  abilCharge: v => `−${v}% ability cooldowns`, abilPower: v => `+${v}% ability power`, abilSlots: v => `+${v} charge slot${v > 1 ? 's' : ''} for every ability`,
   stasisDur: v => `+${v}s Stasis duration`, stormFreq: v => `+${v}% storm frequency`, stormPow: v => `+${v}% storm effects`,
   affixLuck: v => `+${v}% affix rarity`, shatter: v => `+${v}% Shatter damage`, overload: v => `+${v}% Overload damage`,
   overloadRad: v => `+${v}% Overload radius`, superRad: v => `+${v}% Superconduct radius`, collapse: v => `+${v}% Collapse damage`,
@@ -1204,7 +1264,7 @@ const STAT_TXT = {
   knockMark: () => 'Knockbacks also apply 2 Marks', blackHole: () => 'Collapse radius ×2 and pulls enemies back further',
   markPerma: () => 'Marks never fade', voidSiphon: () => 'Each Collapse fills the Entropy gauge',
   shieldWave: () => 'Core shield fully recharges at the start of each wave', sellPct: v => `Selling refunds ${v}%`,
-  loadout: () => 'Choose which abilities milestones can grant. +25% ability power for each one left out',
+  quarter: () => 'Ability charges from crates, chests, bosses and milestones come in pairs',
   interest: v => `Earn ${v}% interest on banked credits each wave (max 300)`, fieldRepair: v => `Waves with no leaks repair ${v}% core HP`,
   burnCrit: () => 'Kinetic hits on Burning enemies always crit', ovlBurn: () => 'Overload applies Burn to every enemy it hits',
   superChill: () => 'Superconduct also Chills',
@@ -1224,7 +1284,7 @@ const SMALL_NAME = {
   P: 'Power', Tm: 'Tempo', F: 'Focus', I: 'Integrity', burnDmg: 'Accelerant', burnChance: 'Kindling', chillChance: 'Frost',
   shockChance: 'Static', markChance: 'Null', burnDur: 'Smolder', chillPot: 'Permafrost', freezeDur: 'Stillness',
   shockEff: 'Voltage', splash: 'Blast Radius', costRed: 'Supply Lines', upgRed: 'Toolchain', credits: 'Salvage',
-  coreHP: 'Hull Plating', shield: 'Barrier', shieldRegen: 'Capacitance', abilPower: 'Uplink', abilCharge: 'Telemetry',
+  coreHP: 'Hull Plating', shield: 'Barrier', shieldRegen: 'Capacitance', abilPower: 'Uplink', abilCharge: 'Telemetry', abilSlots: 'Reserve Cells',
   affixLuck: 'Mutation', eliteDmg: 'Hunter', armorPen: 'Penetrator', frozenVuln: 'Brittle', knock: 'Recoil', xp: 'Insight',
 };
 
@@ -1321,10 +1381,11 @@ const TALENTS = [
     rows: [
       [T_('xPow', 'Uplink', 5, { abilPower: 8 }), T_('xCharge', 'Telemetry', 5, { abilCharge: 5 })],
       [T_('xLuck', 'Mutation', 3, { affixLuck: 10 }), T_('xXp', 'Insight', 3, { xp: 6 }), T_('xRange', 'Optics', 3, { range: 4 })],
-      [T_('xLoad', 'Loadout', 1, { loadout: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
+      [T_('xCell', 'Reserve Cells', 2, { abilSlots: 1 }), T_('xLoad', 'Quartermaster', 1, { quarter: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
       [T_('xWolf', 'Lone Wolf', 1, { loneWolf: 35 }), T_('xStasis', 'Stasis Theory', 1, { stasisDur: 3, chillVoid: 15 }), T_('xVet', 'Field Promotion', 3, { vxpAll: 30 })]],
     caps: [CAP('artisan', 'Artisan', { ks: 'artisan', doc: 6 }), CAP('gambler', 'Gambler', { ks: 'gambler', doc: 7 }),
-      CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'] })] },
+      CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'] }),
+      CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 25 }, lines: ['Using an ability takes 30% off every other ability\'s cooldown', '+25% ability power'] })] },
 ];
 // lookups: every talent and capstone by id, with its tree and row
 const TAL = {};
@@ -1469,6 +1530,7 @@ function talentBlock(id) {
   if (T.cap) {
     if (capsHeld().includes(id) || (PROF.remnants || []).includes(id)) return 'have';
     if (treePts(T.tree) < TCAP) return 'row';
+    if (capsHeld().some(c => TAL[c] && TAL[c].tree === T.tree)) return 'tree'; // v5.0.2: one Capstone per tree
     if (capsHeld().length >= capSlots(profLevel().level)) return 'slots';
     // Conflagration turns every Chill into Burn, so Capstones built on Chill and Freeze would do nothing beside it
     for (const [a, b] of CAP_CONFLICTS) { const other = id === a ? b : id === b ? a : null; if (other && activeCaps().includes(other)) return 'conflict:' + other; }
@@ -1527,6 +1589,13 @@ function migrateWeb() {
   PROF.webV = WEB_VER;
   return had;
 }
+// v5.0.2: one Capstone per tree. Older saves could hold two from the same tree; keep the first, the point comes back
+function tidyCaps() {
+  const seen = {}, keep = [], drop = [];
+  for (const c of capsHeld()) { const T = TAL[c]; if (!T) continue; if (seen[T.tree]) drop.push(c); else { seen[T.tree] = 1; keep.push(c); } }
+  if (drop.length) PROF.caps = keep;
+  return drop;
+}
 function treeSaveBuild(slot, name) { PROF.builds[slot] = { name: name || `Build ${slot + 1}`, tal: Object.assign({}, PROF.tal || {}), caps: capsHeld().slice(), lvl: pointsSpent() }; Hooks.onChange('tree'); }
 function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
@@ -1537,7 +1606,7 @@ function treeLoadBuild(slot) {
   // replay it rank by rank, row by row, so every gate is honoured
   PROF.tal = {}; PROF.caps = [];
   for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) PROF.tal[k] = Math.min(T.max, b.tal[k]); }
-  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(profLevel().level)) PROF.caps.push(c);
+  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(profLevel().level) && !capsHeld().some(h => TAL[h].tree === TAL[c].tree)) PROF.caps.push(c);
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return 'ok';
@@ -1558,7 +1627,37 @@ const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !
 const activeCaps = () => [...new Set(capsHeld().concat((PROF.remnants || []).filter(r => TAL[r])))];
 
 function masteryPick(id) { const v = PROF.mastery && PROF.mastery[id]; return v === undefined ? 0 : v; }
-function loadoutList() { const L = (PROF.loadout || []).filter(k => ABIL_ORDER.includes(k)); return L.length ? L : ABIL_ORDER.slice(); }
+// v5.1 abilities: cooldowns fill charge slots; loot charges stack on top without limit
+const abilOnline = k => !!(G.abilOn && G.abilOn[k]);
+function abilPool() { const L = ABIL_ORDER.filter(abilOnline); return L.length ? L : ['strike']; }
+function abilSlots() { return 1 + (G.mods.abilSlots || 0); }
+function uplinkHas(id) { const m = UPLINK.mods.find(x => x.id === id); return !!(m && G.core && (G.core.uLvl || 0) >= m.lv); }
+function abilCdMax(k) { return ABILITIES[k].cd * G.mods.abilCharge * (1 - UPLINK.cd / 100 * ((G.core && G.core.uLvl) || 0)); }
+// a charge from a crate, chest, boss or milestone (Quartermaster doubles it). Returns the ability it went to
+function lootCharge(k, n) { k = k || pick(G.r, abilPool()); n = (n || 1) * (FX('quarter') ? 2 : 1); G.charges[k] = (G.charges[k] || 0) + n; return k; }
+function abilOnlineCheck(w) {
+  for (const k of ABIL_ORDER) if (!abilOnline(k) && w >= ABILITIES[k].from) {
+    G.abilOn[k] = 1; G.charges[k] = Math.max(G.charges[k] || 0, 1); G.abilCd[k] = abilCdMax(k);
+    if (w > Math.max(1, G.startWave)) Hooks.toast(`${ABILITIES[k].name.toUpperCase()} ONLINE`, `${ABILITIES[k].desc} Recharges every ${Math.round(abilCdMax(k))}s`, '#ffe14d', true);
+    rlog('abilOn', { id: k });
+  }
+}
+function updateAbils(dt) {
+  if (!G.abilCd) G.abilCd = {};
+  const slots = abilSlots();
+  for (const k of ABIL_ORDER) {
+    if (!abilOnline(k)) continue;
+    const mx = abilCdMax(k);
+    if ((G.charges[k] || 0) >= slots) { G.abilCd[k] = mx; continue; }
+    if (G.abilCd[k] === undefined || G.abilCd[k] > mx) G.abilCd[k] = mx;
+    G.abilCd[k] -= dt;
+    if (G.abilCd[k] <= 0) { G.charges[k] = (G.charges[k] || 0) + 1; G.abilCd[k] = mx; Hooks.abilReady && Hooks.abilReady(k); }
+  }
+  if (G.scanT > 0) { G.scanT -= dt; if (G.scanT <= 0) G.scanThreat = null; }
+  if (G.scanThreat && G.scanThreat.dead) G.scanThreat = null;
+}
+// Sensor Sweep's pick: the enemy most likely to cost you the run
+function threatScore(e) { const prog = e.L && e.L.len ? e.d / e.L.len : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
   // v5.0: alloc is ignored (kept in the signature for old callers); talents, Capstones and Remnants come from PROF
@@ -1590,7 +1689,7 @@ function computeMods(alloc, runMods) {
     credits: 1 + g('credits') / 100, startCredits: g('startCredits'),
     coreHP: 100 + g('coreHP') + I * 1.5, shield: 20 + g('shield') + I * 0.4, shieldRegen: 1 + g('shieldRegen') / 100,
     coreDmg: 1 + g('coreDmg') / 100, coreRate: 1 + g('coreRate') / 100, coreRange: g('coreRange'),
-    abilCharge: Math.max(0.4, 1 - g('abilCharge') / 100), abilPower: 1 + g('abilPower') / 100, stasisDur: g('stasisDur'),
+    abilCharge: Math.max(0.4, 1 - g('abilCharge') / 100), abilSlots: g('abilSlots'), abilPower: 1 + g('abilPower') / 100, stasisDur: g('stasisDur'),
     stormFreq: 1 + g('stormFreq') / 100, stormPow: 1 + g('stormPow') / 100, affixLuck: g('affixLuck') / 100,
     shatter: 1 + g('shatter') / 100, overload: 1 + g('overload') / 100, overloadRad: 1 + g('overloadRad') / 100,
     superRad: 1 + g('superRad') / 100, collapse: 1 + g('collapse') / 100,
@@ -1600,7 +1699,6 @@ function computeMods(alloc, runMods) {
   };
   M.fx = m; M.orb = orb;
   if (m.infernoCore) { M.burnDmg *= 2; M.burnDur *= 0.6; }
-  if (m.loadout) M.abilPower += 0.25 * (ABIL_ORDER.length - loadoutList().length);
   if (ks.glass) { M.dmg *= 1.6; M.coreHP *= 0.6; M.shield *= 0.6; }
   if (ks.conflag) { M.burnDmg *= 2.5; M.el.T *= 1.5; }
   if (ks.overgrid) M.rate *= 1.4;
@@ -1619,7 +1717,13 @@ function computeMods(alloc, runMods) {
 
 // ---------------- Run state ----------------
 let G = null;
-const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * Math.pow(1.0011, (w - 1) * (w - 1));
+// v5.1: the late curve is a ramp, not a cliff. Up to Wave 40 as before; past it the steepening term accelerates 30% slower
+// (per-wave growth had reached +30% by Wave 80), and Waves 20-50 gain up to +20% so pressure builds through the middle of a
+// run, where enemies used to melt
+const ENVN0 = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
+const hpQ = w => w <= 40 ? Math.pow(1.0011, (w - 1) * (w - 1)) : Math.pow(1.0011, 1521 + 78 * (w - 40) + ENVN0('HPQ', 0.7) * (w - 40) * (w - 40));
+const hpMid = w => { const k = Math.min(1, Math.max(0, (w - 20) / 30)); return 1 + ENVN0('HPMID', 0.2) * k * k * (3 - 2 * k); };
+const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * hpQ(w) * hpMid(w);
 // v5.0: after Wave 40 kill credits grow 1% faster per wave (Nic: late upgrades outpaced income as waves got longer)
 const crMult = w => 1.1 * (1 + 0.05 * (w - 1)) * (1 + Math.max(0, w - 40) * 0.01);
 const tIdx = (x, y) => y * COLS + x;
@@ -1913,10 +2017,12 @@ function spawnThief(c) {
   const a = { x: fromLeft ? R.x0 - 1.5 : R.x1 + 1.5, y: y0 }, m = { x: c.x + 0.5, y: c.y + 0.5 }, z = { x: fromLeft ? R.x1 + 1.5 : R.x0 - 1.5, y: clamp(m.y + (G.r() - 0.5) * 8, R.y0 + 0.5, R.y1 - 0.5) };
   const L = prepLane([a, m, z]);
   const e = spawnEnemy('pirate', { L, pirate: 1, hpm: hpMult(Math.max(1, G.wave)) * (G.CH.hp || 1) });
-  e.pirate = { cache: c, grabD: L.cum[1], got: false };
+  const cap = pick(G.r, PIRATE_CAPTAINS);
+  e.pirate = { cache: c, grabD: L.cum[1], got: false, captain: cap };
   c.thief = e;
-  Hooks.toast('PIRATES', 'A skiff is after your salvage. Shoot it down', '#ff4d6a');
-  pirateSay('thief', a.x, a.y, 0.5);
+  Hooks.toast('PIRATES', `${cap}'s skiff is after your salvage. Shoot it down for a bounty, or grab the crate first`, '#ff4d6a');
+  Hooks.sfx('pirate', { x: a.x, y: a.y });
+  Hooks.fx('say', { x: a.x, y: a.y - 0.6, t: pick(G.r, PIRATE_LINES.thief) });
   return e;
 }
 function updateCaches(dt) {
@@ -1925,7 +2031,9 @@ function updateCaches(dt) {
   for (const c of G.caches) {
     if (c.thief && !c.thief.dead) continue; // the loot waits for the thief
     c.t -= dt;
-    if (c.t < 8 && !c.thiefRolled) { c.thiefRolled = true; if (G.wave >= 5 && G.r() < 0.25) spawnThief(c); }
+    if (c.t < 12 && !c.thiefRolled) { c.thiefRolled = true; if (G.wave >= 5 && G.r() < 0.25) spawnThief(c); }
+    // v5.2: a normal crate next to one of your towers is collected for you
+    if (c.kind !== 'gold' && c.kind !== 'cursed' && !c.auto && c.t < CACHE_LIFE - 1.2) { c.auto = 1; if (G.towers.some(t => Math.abs(t.x - c.x) <= 1 && Math.abs(t.y - c.y) <= 1)) { const m = claimCache(c); if (m) { Hooks.toast('SALVAGE', m + ' · collected by a tower next to it', '#ffe14d'); Hooks.fx('cacheClaim', { x: c.x + 0.5, y: c.y + 0.5, kind: 'normal' }); } } }
   }
   if (G.caches.some(c => c.t <= 0)) G.caches = G.caches.filter(c => c.t > 0);
   if (G.wave < 3 || G.spawningDone) return;
@@ -1961,10 +2069,10 @@ function claimCache(c) {
     // v5.0: the chest always pays credits (5 crates' worth), plus a Legendary or an ability charge
     const v = Math.round(crateCr(w) * 5 * G.mods.credits); G.credits += v; G.tokens++;
     if (G.r() < 0.5) { G.legendQueue++; msg = `+${v} credits · +1 token · your next tower rolls a Legendary affix`; }
-    else { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + 1; msg = `+${v} credits · +1 token · +1 ${ABILITIES[k].name} charge`; }
+    else { const k = lootCharge(); msg = `+${v} credits · +1 token · +${FX('quarter') ? 2 : 1} ${ABILITIES[k].name} charge`; }
   }
   else if (roll < 50) { const v = Math.round(crateCr(w) * G.mods.credits * k2); G.credits += v; msg = `+${v} credits`; }
-  else if (roll < 65) { const k = pick(G.r, ABIL_ORDER); G.charges[k] = (G.charges[k] || 0) + k2; msg = `+${k2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${k2 > 1 ? 's' : ''}`; }
+  else if (roll < 65) { const k = lootCharge(null, k2), n2 = k2 * (FX('quarter') ? 2 : 1); msg = `+${n2} ${ABILITIES[k] ? ABILITIES[k].name : k} charge${n2 > 1 ? 's' : ''}`; }
   else if (roll < 75) { addEntropy(12 * k2); msg = `+${12 * k2} Entropy`; }
   else if (roll < 85) { const v = Math.round(150 * w * k2); addScore(v); msg = `+${v} base score`; }
   else { G.tokens += k2; msg = `+${k2} Recalibration token${k2 > 1 ? 's' : ''}`; }
@@ -2028,7 +2136,7 @@ function newRun(opts) {
     map: genMap(r), towers: [], towerAt: {}, enemies: [], projs: [], zones: [], storms: [],
     wave: 0, queue: [], spawnClock: 0, next: 18, spawningDone: true,
     credits: 0, score: 0, xpEarned: 0, kills: 0, lvlStart: profLevel().level,
-    charges: { strike: 1, nova: 0, stasis: 0, overclock: 0 }, aimAbility: null,
+    charges: { strike: 1, nova: 0, stasis: 0, overclock: 0, scan: 0 }, abilCd: {}, abilOn: { strike: 1 }, aimAbility: null, scanT: 0,
     runMods: {}, mods: null, tokens: 2, legendQueue: 0, rerollDisc: false,
     nextMs: 0, msIdx: 0, ev: {}, evList: [], evT: {}, overclockT: 0, stasisT: 0,
     stormT: 50, lanesOpened: 0, laneWaves: CHAOS_LEVELS[chaos].lanes.slice(), laneWarn: null, rows: ROWS,
@@ -2044,7 +2152,7 @@ function newRun(opts) {
   G.scoreMult = 1 + G.af.score + gamblerScore();
   const M = G.mods, sw = G.startWave;
   G.core = { x: G.map.core.x + 0.5, y: G.map.core.y + 0.5, hp: M.coreHP * G.af.coreHPx, max: M.coreHP * G.af.coreHPx, shield: M.shield, smax: M.shield,
-    sinceHit: 99, wLvl: 1, sLvl: 1, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
+    sinceHit: 99, wLvl: 1, sLvl: 1, uLvl: 0, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
   setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
@@ -2058,8 +2166,9 @@ function newRun(opts) {
     genExtraLane(r); G.lanesOpened++;
     if (grew) placeNodes(1, G.region, P0);
   }
-  G.nextMs = Math.round(1500 * M.abilCharge * Math.pow(1.5, 0));
+  G.nextMs = 1500;
   if (sw > 1) { G.nextMs = Math.round(G.nextMs * Math.pow(1.4, Math.floor(sw / 4))); G.tokens += Math.floor(sw / 10); }
+  abilOnlineCheck(sw);
   G.next = sw > 1 ? 25 : 18;
   PROF.runs++;
   if (opts.daily) {
@@ -2489,6 +2598,38 @@ function stormAt(x, y) {
   }
   return res;
 }
+// v5.1 storm transparency: what a storm does, in words, and which of your towers it touches
+function stormEffects(s) {
+  const pow = G.mods.stormPow, out = [];
+  if (s.mael) { out.push(`+${Math.round(75 * pow)}% Damage for every tower`, 'enemies inside move 30% faster'); return out; }
+  const amp = (s.types.length > 1 ? 1.25 : 1) * pow;
+  for (const ty of s.types) { const S = STORMS[ty]; out.push(`+${Math.round(40 * amp)}% ${EL[S.el].name} Damage`); if (ty === 'cryo') out.push(`enemies slowed ${Math.round(15 * amp)}%`); if (ty === 'void') out.push(`enemies take +${Math.round(10 * amp)}% damage`); if (ty === 'static') out.push('−15% Range'); }
+  out.push('enemies inside move 12% faster');
+  return out;
+}
+function stormTowers(s) { return G.towers.filter(t => dist2(t.cx, t.cy, s.x, s.y) <= s.r * s.r); }
+function stormInfo(s) {
+  const tw = stormTowers(s), els = s.mael ? ELS : s.types.map(ty => STORMS[ty].el);
+  return { fx: stormEffects(s), n: tw.length, boosted: tw.filter(t => t.s && els.includes(t.s.el)).length };
+}
+// every live modifier on one tower, with numbers: storms, events, abilities, heat, outages
+function towerConditions(t) {
+  const out = [], ev = G.ev || {}, s = t.s || {};
+  if (t.disabled > 0) out.push({ t: `${t.disCause || 'Offline'}: knocked out for ${Math.ceil(t.disabled)}s`, bad: 1 });
+  for (const st of G.storms) if (dist2(t.cx, t.cy, st.x, st.y) <= st.r * st.r) {
+    const pow = G.mods.stormPow, amp = (st.types.length > 1 ? 1.25 : 1) * pow, bits = [];
+    if (st.mael) bits.push(`+${Math.round(75 * pow)}% Damage`);
+    else for (const ty of st.types) { if (STORMS[ty].el === s.el) bits.push(`+${Math.round(40 * amp)}% Damage`); if (ty === 'static') bits.push('−15% Range'); }
+    out.push({ t: `${stormName(st)}: ${bits.length ? bits.join(', ') : `no effect on ${EL[s.el] ? EL[s.el].name : 'this'} towers`}`, col: st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, bad: bits.some(b => b.startsWith('−')) && !bits.some(b => b.startsWith('+')) });
+  }
+  if (ev.blackout) out.push({ t: 'Blackout: −20% Range', bad: 1 });
+  if (ev.overcharge) out.push({ t: 'Overcharge event: +30% Attack Speed', good: 1 });
+  if (ev.emp) out.push({ t: 'EMP Storm: 2 random towers shut down every 5s', bad: 1 });
+  if (G.overclockT > 0) out.push({ t: `Frenzy: +100% Attack Speed for ${Math.ceil(G.overclockT)}s`, good: 1 });
+  if (t.hot && G.mods.ks.wildfire) out.push({ t: 'Overheated (Wildfire): −25% Attack Speed', bad: 1 });
+  if (G.flux && G.flux.el === s.el) out.push({ t: `Flux: ${EL[s.el].name} ×2 Damage`, good: 1 });
+  return out;
+}
 function spawnStorm(types, x, y, vx, vy) {
   const s = { id: G.eid++, types, x, y, vx, vy, r: 3 + G.r() * 1.2, life: 30 + G.r() * 15, age: 0, mael: false, spawnT: 0, rot: 0 };
   G.storms.push(s);
@@ -2648,7 +2789,14 @@ function prepareWave(w) {
   }
   for (const k in genes) { genes[k] = ng ? genes[k] / ng : 0; if (genes[k] > ((G.stats.peakGene || {}).v || 0)) G.stats.peakGene = { g: k, v: genes[k], w }; }
   G.geneHist = (G.geneHist || []).concat([{ w, g: Object.assign({}, genes) }]).slice(-12);
-  G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length, genes };
+  G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length, genes, heads: (g.heads || []).filter(k => counts[k]) };
+  // v5.1: a new kind of enemy is announced during the countdown before it lands; the first time ever, with a card
+  const seen = PROF.codex.enemies || (PROF.codex.enemies = {}), met = G.metEnemy || (G.metEnemy = {});
+  for (const k of Object.keys(counts)) if (!met[k]) {
+    met[k] = 1;
+    if (!seen[k]) { seen[k] = 1; if (ENEMIES[k].from >= 3) Hooks.newEnemy && Hooks.newEnemy(k, w); }
+    else if (ENEMIES[k].from >= 18 && w <= ENEMIES[k].from + 1) Hooks.toast('NEW ENEMY · WAVE ' + w, `${ENEMIES[k].name}: ${ENEMIES[k].desc}. Beat it: ${ENEMIES[k].beat}`, '#ff4d6a', true);
+  }
   // announce a trait when it takes hold (35%+), again only after it has faded below 20%
   const told = G.geneTold || (G.geneTold = {});
   if (!(G.assault && G.assault.w === w)) for (const k of GENE_IDS) {
@@ -2726,7 +2874,14 @@ function genWave(w, ev) {
   let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)) * (G.CH.count || 1));
   let hpm = hpMult(w) * (1 + (af.hpx || 0)) * (G.CH.hp || 1);
   if (ev.swarm) { count *= 2; hpm *= 0.55; }
-  const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w);
+  const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && ENEMIES[k].w > 0);
+  // v5.1 headline threats: each wave leans on one enemy (two from Wave 25), so you can see what it is and answer it.
+  // A type that has just arrived always headlines its first wave
+  const heads = [], fresh = types.filter(k => ENEMIES[k].from === w && w > 1);
+  const pool = types.filter(k => k !== 'drone' && !fresh.includes(k));
+  heads.push(...fresh.slice(0, 2));
+  while (heads.length < (w >= 25 ? 2 : 1) && pool.length) heads.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+  const HEAD_W = 3;
   let eliteP = clamp((w - 4) * 0.012, 0, 0.45) * G.CH.elite + (ev.elite ? 0.5 : 0) + (af.elite || 0);
   const affN = 1 + (w >= 25) + (w >= 50) + (w >= 80);
   const interval = Math.max(0.3, 0.8 - w * 0.008);
@@ -2747,7 +2902,7 @@ function genWave(w, ev) {
   };
   let n = 0;
   while (n < count) {
-    const type = wpick(r, types, k => ENEMIES[k].w * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1));
+    const type = wpick(r, types, k => ENEMIES[k].w * (heads.includes(k) ? HEAD_W : 1) * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1));
     const lane = laneFor();
     const grp = ENEMIES[type].group || 1;
     for (let g = 0; g < grp; g++) {
@@ -2775,7 +2930,7 @@ function genWave(w, ev) {
     q.sort((a, b) => a.t - b.t);
     A.n = n + extra;
   }
-  return { queue: q, rift };
+  return { queue: q, rift, heads };
 }
 // ===================== v4.0: STRAIN ASSAULTS (the swarm's move) =====================
 // Every few waves the swarm reads your defence (whose damage killed it these last waves), picks the genes that beat it,
@@ -2810,7 +2965,8 @@ function readDefence(w, jitter) {
   const pierce = sh('rail') + sh('lens') + sh('flame') * 0.5 + sh('missile') * 0.25;
   add('plating', (0.35 - pierce) * 1.6, `only ${pc(pierce)} of your fire pierces armour`);
   const arc = (I.el.A || 0) / (etot || 1);
-  add('shell', (0.15 - arc) * 3, arc < 0.02 ? 'you have no Arc damage to pop shields' : `only ${pc(arc)} Arc damage to pop shields`);
+  const arcT = G.towers.filter(t => TOWERS[t.type] && TOWERS[t.type].el === 'A').length;
+  add('shell', (0.15 - arc) * 3, !arcT ? 'you have no Arc towers to pop shields' : arc < 0.02 ? `your ${arcT} Arc tower${arcT > 1 ? 's' : ''} barely land a hit` : `only ${pc(arc)} of your damage is Arc, which pops shields`);
   const grd = sh('flame') + sh('grav');
   add('wings', (grd - 0.2) * 2, `${pc(grd)} of your damage can't hit air`);
   const att = G.towers.filter(t => canOvercharge(t)).length || 1, slows = G.towers.filter(t => t.type === 'cryo' || t.type === 'grav' || t.type === 'emp' || t.type === 'snare').length;
@@ -2907,6 +3063,7 @@ function startWave() {
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
+  abilOnlineCheck(w);
   if (!G.prep || G.prep.w !== w) prepareWave(w);
   const P = G.prep; G.prep = null;
   G.ev = P.ev; G.evList = P.list; G.evT = { emp: 5, meteor: 1.2, phase: 4 };
@@ -2931,14 +3088,14 @@ function startWave() {
   if (G.wave > 1 && G.leaksAtStart !== undefined) {
     const lk = G.stats.leaks - G.leaksAtStart, prev = G.lastLeakN || 0; G.lastLeakN = lk;
     if (lk >= 3 && (lk >= 6 || prev >= 3)) {
-      const now = G.leakBy || {}, was = G.leakSnap || {}, top = Object.keys(now).map(k => [k, now[k] - (was[k] || 0)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
+      const now = G.leakWave || {}, top = Object.keys(now).map(k => [k, now[k]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
       let who = '', counter = '';
       if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
       Hooks.toast('BREACH WARNING', `${lk} got through last wave${who ? ', mostly ' + who : ''}. Your core's shield won't hold many more.${counter}`, '#ff4d6a', true);
       rlog('breachWarn', { n: lk, who });
     }
   }
-  G.leakSnap = Object.assign({}, G.leakBy || {});
+  G.leakWave = {}; // v5.0.2: own per-wave tally (leakBy is cleared by the wave log, which left 'who' empty)
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
   lureAll();
@@ -3031,7 +3188,7 @@ function marketBuy(id) {
     case 'blueprint': { const k = nextLockedTower(); if (!k) return null; (G.runUnlocks || (G.runUnlocks = [])).push(k); msg = `${TOWERS[k].name} unlocked for this run`; Hooks.onUnlock(k); break; }
     case 'bribe': G.bossBribe = 1; break;
     case 'beacon': G.placing = 'beacon'; msg = 'Tap an empty tile to plant the Power Node'; break;
-    case 'crate': for (const k of ABIL_ORDER) G.charges[k] = (G.charges[k] || 0) + 1; break;
+    case 'crate': for (const k of abilPool()) lootCharge(k); break;
     case 'tokens': G.tokens += 2; break;
     case 'starmap': G.geneFit = {}; G.geneExp = {}; if (G.assault && G.assault.state === 'warn') { G.assault = null; G.refit = false; } if (G.assaultNext != null) G.assaultNext += 3; break;
     case 'mutagen': for (const t of G.towers) { t.affixes.push(rollAffix(t)); t.s = towerStats(t); } recomputeAuras(); break;
@@ -3429,14 +3586,27 @@ function updateEnemies(dt) {
     e.timer -= dt;
     if (e.type === 'medic' && e.timer <= 0) {
       e.timer = 1;
-      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) o.hp = Math.min(o.maxHp, o.hp + o.maxHp * (o.boss ? 0.005 : 0.04));
-      Hooks.fx('heal', { x: e.x, y: e.y });
+      const healed = [];
+      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) { if (o.hp < o.maxHp) healed.push({ x: o.x, y: o.y }); o.hp = Math.min(o.maxHp, o.hp + o.maxHp * (o.boss ? 0.005 : 0.04)); }
+      Hooks.fx('heal', { x: e.x, y: e.y, to: healed.slice(0, 5) });
     }
     if (e.type === 'shielder' && e.timer <= 0) {
       e.timer = 5;
-      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) o.shield = Math.max(o.shield, o.maxHp * (o.boss ? 0.04 : 0.25));
-      Hooks.fx('shieldpulse', { x: e.x, y: e.y });
+      const sh = [];
+      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) { sh.push({ x: o.x, y: o.y }); o.shield = Math.max(o.shield, o.maxHp * (o.boss ? 0.04 : 0.25)); }
+      Hooks.fx('shieldpulse', { x: e.x, y: e.y, to: sh.slice(0, 5) });
     }
+    // v5.1 new enemies
+    if (e.type === 'carrier') { e.dropT = (e.dropT === undefined ? 2.5 : e.dropT) - dt;
+      if (e.dropT <= 0 && !e.cloaked) { e.dropT = CARRIER.every;
+        for (let i = 0; i < CARRIER.n; i++) { const m = spawnEnemy('drone', { fromPt: { x: e.x + (i ? 0.35 : -0.35), y: e.y + 0.2 }, hpm: hpBase(e) * CARRIER.hp / ENEMIES.drone.hp }); m.fly = true; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); m.leak = 3; }
+        Hooks.fx('drop', { x: e.x, y: e.y }); } }
+    if (e.type === 'sapper') { e.sapCD = (e.sapCD || 0) - dt;
+      if (e.sapCD <= 0 && !(st.stun > 0) && !(st.frozen > 0) && !(G.stasisT > 0)) {
+        let tg = null, bd = SAPPER.range * SAPPER.range;
+        for (const t of G.towers) { if (t.disabled > 0) continue; const d = dist2(t.cx, t.cy, e.x, e.y); if (d < bd) { bd = d; tg = t; } }
+        if (tg) { e.sapCD = SAPPER.cd; tg.disabled = Math.max(tg.disabled, SAPPER.dur); tg.disCause = 'SAPPED'; Hooks.fx('sap', { x1: e.x, y1: e.y, x2: tg.cx, y2: tg.cy }); Hooks.sfx('crack', e);
+          if (!G.sapTold || G.time - G.sapTold > 20) { G.sapTold = G.time; Hooks.log(`A Sapper knocked out your ${TOWERS[tg.type].name} for ${SAPPER.dur}s`, '#ff4d6a'); } } } }
     if (e.elite.includes('blink') && e.timer <= 0 && !e.boss) { e.timer = 5; e.d += 1.5; Hooks.fx('blink', { x: e.x, y: e.y }); }
     if (e.boss) bossBehavior(e, dt);
     if (ev.phase) { e.timer2 -= dt; if (e.timer2 <= 0) { e.timer2 = 4; if (G.r() < 0.3 && !e.boss) { e.d += 1; Hooks.fx('blink', { x: e.x, y: e.y }); } } }
@@ -3461,6 +3631,7 @@ function updateEnemies(dt) {
       if (G.af.groundSlow && !e.fly) spd *= 1 - G.af.groundSlow;
       if (M.ks.horizon) spd *= 1.12;
       if (e.jammed) spd = 0;
+      if (G.dragT > 0) spd *= e.boss ? 0.8 : 0.6; // Uplink Undertow: leaving Stasis is slow going
       spd *= netK;
       if (G.slime && G.slime.length && e.boss !== 'snail') for (const p of G.slime) if (p.L === e.L && Math.abs(p.d - e.d) < 0.4) { spd *= 1.4; break; }
       e.slow = 1 - spd / e.spd;
@@ -3475,24 +3646,27 @@ function updateEnemies(dt) {
         if (P.cache && G.caches.includes(P.cache)) { G.caches = G.caches.filter(o => o !== P.cache); Hooks.toast('LOOT STOLEN', 'Shoot the skiff down to get it back', '#ff4d6a'); Hooks.fx('cacheClaim', { x: e.x, y: e.y, kind: 'cursed' }); pirateSay('thief', e.x, e.y, 0.6); }
         else P.cache = null;
       }
-      if (e.d >= e.L.len - 0.05) { e.dead = true; if (P.got && P.cache) Hooks.log('Pirates escaped with the salvage', '#ff4d6a'); }
+      if (e.d >= e.L.len - 0.05) { e.dead = true; if (P.got && P.cache) Hooks.log(`${P.captain || 'Pirates'} escaped with the salvage`, '#ff4d6a'); }
       continue;
     }
     // Red Alert (v4.4): a boss closing on the core is called out once, and the core goes to Last Stand against it
     if (e.boss && !e.gen && !e.redAlert && !e.dead) {
       const rem = e.L.len - e.d;
+      // v5.3: a first, earlier alarm at the halfway mark while there's still time to answer
+      if (!e.halfTold && e.d >= e.L.len * 0.5 && e.hp > e.maxHp * 0.3) { e.halfTold = 1; Hooks.toast('BOSS HALFWAY', `${e.bossName} is halfway to your core with ${Math.round(e.hp / e.maxHp * 100)}% HP. If it reaches the core the run ends: slow it, Scan it, Strike it`, '#ff4d6a', true); Hooks.sfx('bosswarn'); }
       if (rem <= RED_ALERT.tiles) { e.redAlert = 1; rlog('redAlert', { id: e.boss, hp: +(e.hp / e.maxHp).toFixed(2) }); Hooks.toast('RED ALERT', `${e.bossName} is ${Math.max(1, Math.ceil(rem))} tiles from the core. Last Stand: core shells hit it ×${RED_ALERT.coreDmg}. Stasis, Strike and Overcharge now`, '#ff4d6a', true); Hooks.sfx('bosswarn'); Hooks.fx('shake', { v: 6 }); Hooks.log(`Red Alert: ${e.bossName} at the gate`, '#ff4d6a'); }
     }
     if (e.d >= e.L.len - 0.05) leak(e);
   }
   G.redAlert = G.enemies.some(e => e.boss && e.redAlert && !e.dead);
   if (G.stasisT > 0) G.stasisT -= dt;
+  if (G.dragT > 0) G.dragT -= dt;
   if (G.slime && G.slime.length) { for (const p of G.slime) p.t -= dt; G.slime = G.slime.filter(p => p.t > 0); }
   G.enemies = G.enemies.filter(e => !e.dead);
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
   // reveal cloak near pylons
   if (G.pylons && G.pylons.length) for (const e of G.enemies) if (e.cloaked) for (const p of G.pylons) if (dist2(e.x, e.y, p.cx, p.cy) <= p.s.range * p.s.range) { e.revealed = 0.3; break; }
-  for (const e of G.enemies) if (e.revealed > 0) e.revealed -= dt;
+  for (const e of G.enemies) { if (e.revealed > 0) e.revealed -= dt; if (e.scanned > 0) { e.scanned -= dt; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.2); } }
 }
 const PHASE_LINES = { behemoth: ['RRRAAARGH', 'THE GROUND SHAKES'], queen: ['RISE, MY BROOD', 'SKREEEEE'], wraith: ['you cannot hold me', 'between, beyond'],
   overmind: ['YOUR MACHINES ARE MINE', 'SILENCE.'], titan: ['*CRACK*', 'UNSTOPPABLE'], cat: ['HSSSS', '*zoomies*'], whale: ['OOOOOOOOO', 'the deep remembers'],
@@ -3585,7 +3759,7 @@ function bossBehavior(e, dt) {
       e.timer2 -= 1;
       if (e.timer2 <= 0) { e.timer2 = 12; e.napT = 3; e.armorAll = 0.6; Hooks.fx('say', { x: e.x, y: e.y, t: 'zzz' }); Hooks.log('Mr. Whiskers is napping. Do not disturb.', '#ff9a3c'); break; }
       if (big) { // the zoomies: swats every tower nearby
-        for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 3.5 * 3.5) { t.disabled = Math.max(t.disabled, 3); Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.7 }); }
+        for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 3.5 * 3.5) { t.disabled = Math.max(t.disabled, 3); t.disCause = 'EMP'; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.7 }); }
         e.d += 1.5; Hooks.sfx('meow'); break;
       }
       if (e.timer2 % 5 === 0) {
@@ -3636,9 +3810,10 @@ function leak(e) {
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
   G.stats.leaks++;
   G.stats.lastLeak = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type;
-  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; }
+  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; (G.leakWave || (G.leakWave = {}))[lk] = (G.leakWave[lk] || 0) + 1; }
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
+  if (e.type === 'leech' && G.credits > 0) { const st2 = Math.round(Math.min(G.credits * LEECH.share, LEECH.cap(w))); G.credits -= st2; G.stats.leeched = (G.stats.leeched || 0) + st2; Hooks.fx('coin', { x: c.x, y: c.y - 0.6, v: -st2 }); if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech made off with ${st2} credits. They take more the more you bank`, '#ffb03a'); } }
   // v4.1: a boss that reaches the core ends the run outright (shields and Unbreakable don't save you). Gloop's splits still breach for a share
   if (e.boss && !e.gen) {
     Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
@@ -3684,6 +3859,9 @@ function hit(e, dmg, el, src, o) {
   let blunt = false;
   if (e.armor && !(o.dot || o.abil || (src && src.s && (src.s.kind === 'rail' || src.s.kind === 'beam' || src.s.shred)))) { mult *= 1 - clamp(e.armor * (1 - M.armorPen), 0, 0.7); blunt = e.armor * (1 - M.armorPen) > 0.25; }
   if (e.armorAll) mult *= 1 - e.armorAll;
+  // v5.1 Reflector: bolts, beams and chains glance off
+  let glance = false;
+  if (e.refl && !o.dot && !o.abil && src && src.s && (src.s.kind === 'bullet' || src.s.kind === 'beam' || src.s.kind === 'chain')) { mult *= 1 - e.refl; glance = true; }
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2;
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
@@ -3701,12 +3879,15 @@ function hit(e, dmg, el, src, o) {
     if (src.s.slowd && e.slow > 0.05) mult *= 1 + src.s.slowd;
     if (src.isolated && M.loneWolf) mult *= 1 + M.loneWolf;
   }
+  if (e.scanned > 0) mult *= 1 + SCAN.mark / 100; // Sensor Sweep's Mark
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
   if (src === G.core && e.redAlert && e.boss) mult *= RED_ALERT.coreDmg; // Last Stand: the core unloads on a boss at its gate
   let amt = dmg * mult;
   if (e.shield > 0) {
     const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
-    const a = Math.min(e.shield, amt * sk); e.shield -= a; amt -= a / sk;
+    const a = Math.min(e.shield, amt * sk), had = e.shield; e.shield -= a; amt -= a / sk;
+    if (had > 0 && e.shield <= 0.01) { e.shield = 0; Hooks.fx('shieldbreak', { x: e.x, y: e.y }); } // v5.1 tell: the shield cracks
+    if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += a; // v5.0.2: shield damage counts, so Arc's real work shows up
     if (amt <= 0) { e.hitFlash = 0.08; if (!o.dot) Hooks.sfx('hitshield', e); if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
   const dealt = Math.min(e.hp, amt);
@@ -3715,7 +3896,8 @@ function hit(e, dmg, el, src, o) {
   if (e.boss && !e.gen && e.boss !== 'gloop' && e.phase < BOSS_PHASES.length && e.hp < e.maxHp * BOSS_PHASES[e.phase]) bossPhase(e);
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
   if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; src.lastFireW = G.wave; }
-  if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt ? 'hitarmor' : 'hit', e); }
+  if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt || glance ? 'hitarmor' : 'hit', e);
+    if ((blunt || glance) && (e.pingT || 0) < G.time) { e.pingT = G.time + 0.25; Hooks.fx(glance ? 'glance' : 'ping', { x: e.x, y: e.y, sx: src && src.cx, sy: src && src.cy }); } }
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
   if (e.hp <= 0) { kill(e, src, o); return dealt; }
   if (el === 'K' && src && src.s && FX('kSlow')) e.kSlowT = 1;
@@ -3816,12 +3998,11 @@ function addScore(v) {
   if (G.score >= G.nextMs) milestone();
 }
 function milestone() {
-  const k = pick(G.r, FX('loadout') ? loadoutList() : ABIL_ORDER);
-  G.charges[k]++;
+  const k = lootCharge();
   const B = pick(G.r, MILESTONE_BUFFS);
   G.runMods[B.k] = (G.runMods[B.k] || 0) + B.v;
   G.msIdx++;
-  G.nextMs = Math.round(G.nextMs * 1.5 + 600 * G.mods.abilCharge);
+  G.nextMs = Math.round(G.nextMs * 1.5 + 600);
   recomputeAll();
   Hooks.toast('MILESTONE', `+1 ${ABILITIES[k].name} · ${B.t}`, '#ffe14d');
   Hooks.sfx('milestone');
@@ -3841,7 +4022,7 @@ function kill(e, src, o) {
     G.credits += bounty;
     let msg = `+${bounty} bounty`;
     if (P.cache) { if (!G.caches.includes(P.cache)) G.caches.push(P.cache); const m = claimCache(P.cache); if (m) msg += ' · ' + m; }
-    Hooks.toast('PIRATE DOWN', msg, '#ffe14d');
+    Hooks.toast('PIRATE DOWN', `${P.captain ? P.captain + ' shot down · ' : ''}${msg}`, '#ffe14d');
     G.stats.pirates = (G.stats.pirates || 0) + 1;
   }
   const M = G.mods;
@@ -3902,7 +4083,8 @@ function kill(e, src, o) {
   if (bossDown) {
     G.tokens++; G.stats.bossKills++; addEntropy(15);
     PROF.codex.bosses[e.boss] = (PROF.codex.bosses[e.boss] || 0) + 1;
-    Hooks.log(`${e.gen ? 'Gloop' : e.bossName} defeated · +1 Recalibration token`, '#59f0b4');
+    const bk = lootCharge();
+    Hooks.log(`${e.gen ? 'Gloop' : e.bossName} defeated · +1 Recalibration token · +${FX('quarter') ? 2 : 1} ${ABILITIES[bk].short} charge`, '#59f0b4');
     if (!G.draft) { // one boon pick at a time
       const opts = []; const pool = BOONS.slice();
       for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
@@ -3917,7 +4099,7 @@ function takeBoon(b) {
   if (b.m) for (const k in b.m) G.runMods[k] = (G.runMods[k] || 0) + b.m[k];
   switch (b.special) {
     case 'core': G.core.hpBonus = (G.core.hpBonus || 0) + 0.25; break;
-    case 'tokens': G.tokens += 2; G.charges[pick(G.r, ABIL_ORDER)]++; break;
+    case 'tokens': G.tokens += 2; lootCharge(); break;
     case 'legend': G.legendQueue += 3; break;
     case 'mutate': for (const t of G.towers) t.affixes.push(rollAffix(t)); break;
     case 'reroll': G.rerollDisc = true; break;
@@ -3987,7 +4169,7 @@ function updateTowers(dt) {
     G.power = Math.max(tot, (G.power || 0) * 0.995);
   }
   // EMP storm event
-  if (ev.emp) { G.evT.emp -= dt; if (G.evT.emp <= 0) { G.evT.emp = 5; const att = G.towers.filter(t => t.s.kind !== 'eco'); for (let i = 0; i < 2 && att.length; i++) { const t = att.splice(Math.floor(G.r() * att.length), 1)[0]; t.disabled = 3; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.8 }); } Hooks.sfx('emp'); } }
+  if (ev.emp) { G.evT.emp -= dt; if (G.evT.emp <= 0) { G.evT.emp = 5; const att = G.towers.filter(t => t.s.kind !== 'eco'); for (let i = 0; i < 2 && att.length; i++) { const t = att.splice(Math.floor(G.r() * att.length), 1)[0]; t.disabled = 3; t.disCause = 'EMP'; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.8 }); } Hooks.sfx('emp'); } }
   if (G.overclockT > 0) G.overclockT -= dt;
   if (G.flux) { G.flux.t -= dt; if (G.flux.t <= 0) { const o = ELS.filter(e => e !== G.flux.el); G.flux = { el: pick(G.r, o), t: 20 }; Hooks.log(`Flux: ${EL[G.flux.el].name} deals ×2`, EL[G.flux.el].col); } }
   let burning = 0;
@@ -4020,7 +4202,7 @@ function updateTowers(dt) {
     t.flash = Math.max(0, t.flash - dt);
     const s = t.s;
     if (s.kind === 'support' || s.kind === 'eco' || s.kind === 'snare') continue;
-    if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) t.stalled = false; t.ramp = 0; t.beamTargets = null; continue; }
+    if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) { t.stalled = false; t.disCause = null; } t.ramp = 0; t.beamTargets = null; continue; }
     const sw = stormAt(t.cx, t.cy);
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
@@ -4342,6 +4524,7 @@ function coreStats() {
   };
 }
 const coreWeaponCost = () => Math.round(120 * Math.pow(1.75, G.core.wLvl - 1));
+const coreUplinkCost = () => Math.round(UPLINK.base * Math.pow(UPLINK.growth, G.core.uLvl || 0));
 const coreShieldCost = () => Math.round(100 * Math.pow(1.65, G.core.sLvl - 1));
 const coreRepairCost = () => Math.round(40 + 14 * G.wave);
 function coreUpgrade(kind) {
@@ -4349,6 +4532,9 @@ function coreUpgrade(kind) {
   let rolled = null;
   if (kind === 'weapon') { const k = coreWeaponCost(); if (c.wLvl >= 12 || G.credits < k) return false; G.credits -= k; c.wLvl++; rolled = rollCoreAffix(c); }
   else if (kind === 'shield') { const k = coreShieldCost(); if (c.sLvl >= 10 || G.credits < k) return false; G.credits -= k; c.sLvl++; rolled = rollCoreAffix(c); }
+  else if (kind === 'uplink') { const k = coreUplinkCost(); if ((c.uLvl || 0) >= UPLINK.max || G.credits < k) return false; G.credits -= k; c.uLvl = (c.uLvl || 0) + 1;
+    for (const a of ABIL_ORDER) if (G.abilCd[a] > abilCdMax(a)) G.abilCd[a] = abilCdMax(a);
+    const m = UPLINK.mods.find(x => x.lv === c.uLvl); if (m) Hooks.toast('UPLINK · ' + m.name.toUpperCase(), m.desc, '#ffe14d', true); }
   else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; c.hp = Math.min(c.max, c.hp + c.max * 0.35); }
   if (rolled) { c.affixes.push(rolled); coreAffSum(c); recomputeAll(); if (kind === 'shield') c.shield = c.smax; }
   Hooks.sfx('upgrade', {});
@@ -4496,23 +4682,41 @@ function useAbility(k, x, y) {
   if (!G.charges[k] || G.charges[k] <= 0) return false;
   const M = G.mods, w = Math.max(1, G.wave);
   G.charges[k]--; rlog('abil', { id: k });
+  // Tactician: every use takes 30% off the other abilities' cooldowns
+  if (M.ks.tactician) for (const o of ABIL_ORDER) if (o !== k && G.abilCd[o] > 0) G.abilCd[o] *= 0.7;
   switch (k) {
-    case 'strike':
-      Hooks.fx('strike', { x, y });
-      Hooks.sfx('strikecharge');
-      setTimeoutSim(0.6, () => {
+    case 'strike': {
+      const boom = () => {
         Hooks.fx('boom', { x, y, r: 1.7, col: '#ffe9b0', big: 1 }); Hooks.sfx('strike'); Hooks.fx('shake', { v: 6 });
         for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, x, y) <= 1.7 * 1.7) hit(e, 30 * hpMult(w) * 4.5 * M.abilPower, 'K', null, { noStatus: 1, abil: 1 });
-      });
+      };
+      Hooks.fx('strike', { x, y });
+      Hooks.sfx('strikecharge');
+      setTimeoutSim(0.6, boom);
+      if (uplinkHas('double')) setTimeoutSim(1.3, () => { Hooks.fx('strike', { x, y }); setTimeoutSim(0.35, boom); });
       break;
-    case 'nova':
-      Hooks.fx('nova', {}); Hooks.sfx('nova'); Hooks.fx('shake', { v: 4 });
-      for (const e of G.enemies.slice()) if (!e.dead) hit(e, e.hp * (e.boss ? 0.1 : 0.35) * M.abilPower + 6 * hpMult(w), 'V', null, { noStatus: 1, abil: 1 });
+    }
+    case 'nova': {
+      const pulse = f => { Hooks.fx('nova', {}); Hooks.sfx('nova'); Hooks.fx('shake', { v: 4 });
+        for (const e of G.enemies.slice()) if (!e.dead) hit(e, (e.hp * (e.boss ? 0.1 : 0.35) * M.abilPower + 6 * hpMult(w)) * f, 'V', null, { noStatus: 1, abil: 1 }); };
+      pulse(1);
+      if (uplinkHas('echo')) setTimeoutSim(1.5, () => pulse(0.5));
       break;
+    }
     case 'stasis':
       G.stasisT = (4 + M.stasisDur) * Math.min(1.5, M.abilPower);
+      if (uplinkHas('drag')) G.dragT = G.stasisT + 4;
       Hooks.fx('stasis', {}); Hooks.sfx('stasis');
       break;
+    case 'scan': {
+      G.scanT = SCAN.dur * Math.min(1.5, M.abilPower);
+      let top = null, ts = 0;
+      for (const e of G.enemies) if (!e.dead) { e.scanned = G.scanT; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.3); const sc = threatScore(e); if (sc > ts) { ts = sc; top = e; } }
+      G.scanThreat = top;
+      Hooks.fx('scan', { x: G.core.x, y: G.core.y }); Hooks.sfx('scan');
+      if (top) Hooks.scanned && Hooks.scanned(top);
+      break;
+    }
     case 'overclock':
       G.overclockT = 8 * Math.min(1.5, M.abilPower);
       Hooks.fx('overclock', {}); Hooks.sfx('overclock');
@@ -4535,6 +4739,7 @@ function simStep(dt) {
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
+  updateAbils(dt);
   updateLinkBeams(dt);
   updateCaches(dt);
 }
@@ -4569,9 +4774,9 @@ function snapshotRun(waveNum) {
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
-    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
+    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, uLvl: G.core.uLvl || 0, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
-    charges: Object.assign({}, G.charges), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
+    charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -4611,7 +4816,8 @@ function resumeRun(S) {
   G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
   // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
   if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
-  G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
+  G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.uLvl = S.core.uLvl || 0;
+  G.abilCd = Object.assign({}, S.abilCd || {}); G.abilOn = Object.assign({ strike: 1 }, S.abilOn || {}); for (const k of ABIL_ORDER) G.charges[k] = G.charges[k] || 0; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
   G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
@@ -4994,6 +5200,9 @@ const SFX = (() => {
     strike(p) { duck(-6, 0.005, 0.2, 0.6, true); const c = ev('strike', busE, 0.9, { hall: 0.45 }, p); click(c, 0.8, 0, 2500); sub(c, 120, 30, 0.45, 0.8); nz(c, { ft: 'lowpass', f0: 5000, f1: 120, d: 0.6, v: 0.6, lofi: 1 }); fmv(c, { f0: 1200, f1: 40, r: 10, i: 8, i1: 0.2, d: 0.15, v: 0.25 }); done(c); },
     nova() { duck(-8, 0.02, 0.6, 1.2, true); const c = ev('nova', busE, 0.9, { hall: 0.6, pan: 0 }); sub(c, 80, 25, 1.2, 0.7); fmv(c, { f0: 300, f1: 60, r: 3, i: 4, d: 1, v: 0.2 }); nz(c, { ft: 'lowpass', f0: 3000, f1: 100, d: 1, v: 0.45 }); arp(c, [81, 76, 69, 64], 0.08, { w: 'sawtooth', v: 0.06, d: 0.4, lp: 3000, at: 0.05 }); done(c); },
     stasis() { duck(-5, 0.05, 0.5, 1, true); const c = ev('stasis', busE, 0.7, { hall: 0.55, pan: 0 }); fmv(c, { f0: 880, f1: 2640, r: 2, i: 0.5, d: 0.6, v: 0.14 }); fmv(c, { f0: 4186, f1: 220, r: 3.5, i: 1.2, d: 0.5, v: 0.08 }); nz(c, { ft: 'highpass', f0: 7000, d: 0.5, v: 0.15, a: 0.05 }); done(c); },
+    // v5.1 Sensor Sweep: a sonar ping and a rising sweep
+    scan() { const c = ev('scan', busE, 0.6, { hall: 0.55, pan: 0 }); tone(c, { w: 'sine', f0: 1568, f1: 1568, d: 0.5, v: 0.12, a: 0.003 }); tone(c, { w: 'sine', f0: 1568, f1: 1560, d: 0.35, v: 0.05, at: 0.32 }); nz(c, { f0: 600, f1: 4000, q: 3, d: 0.6, v: 0.12, a: 0.25, curve: 'lin' }); done(c); },
+    pirate(p) { if (!allow('pirate', 2)) return; const c = ev('pirate', busE, 0.6, { room: 0.4 }, p); arp(c, [62, 67, 71, 74], 0.09, { w: 0.25, v: 0.08, d: 0.14, lp: 3000 }); tone(c, { w: 'sawtooth', f0: 98, f1: 104, d: 0.5, v: 0.07, lp: 800, a: 0.04 }); done(c); },
     overclock() { const c = ev('overclock', busE, 0.7, { room: 0.4, pan: 0 }); tone(c, { w: 'sawtooth', f0: 110, f1: 440, d: 0.5, v: 0.12, lp: 600, lp1: 4000, crush: 1 }); arp(c, [69, 76, 81, 88], 0.06, { v: 0.08, d: 0.1 }); done(c); },
     boss() { if (!allow('boss', 1)) return; duck(-9, 0.05, 1.4, 1.5, true); const c = ev('boss', busE, 0.9, { hall: 0.6, pan: 0 }); sub(c, 55, 30, 1.2, 0.7); tone(c, { w: 'sawtooth', f0: 55, f1: 58, d: 1.6, v: 0.12, lp: 300, lp1: 1600, a: 0.3 }); tone(c, { w: 'sawtooth', f0: 82.4, f1: 87, d: 1.6, v: 0.1, lp: 300, lp1: 1600, a: 0.3 }); fmv(c, { f0: 110, f1: 55, r: 4, i: 5, i1: 0.5, d: 1.4, v: 0.14 }); nz(c, { ft: 'lowpass', f0: 700, f1: 150, d: 1.2, v: 0.3 }); done(c); },
     bossdie(e) { duck(-9, 0.02, 0.8, 1.4, true); const c = ev('bossdie', busE, 0.9, { hall: 0.6 }, e); click(c, 0.6, 0, 2000); sub(c, 90, 22, 1, 0.7); nz(c, { ft: 'lowpass', f0: 4000, f1: 120, d: 1, v: 0.55, lofi: 1 }); arp(c, [69, 72, 76, 81, 84, 88], 0.06, { v: 0.1, d: 0.35, bell: 1, at: 0.25 }); done(c); },
@@ -6190,13 +6399,40 @@ const UNITS = (() => {
       parts.push(P(S.poly([[6, -12], [11, -6], [11, 6], [6, 12], [3, 6], [3, -6]], 6, 2.5), 5, ramp(c, 0.85), { d: (x, y) => (Math.abs(y) < 0.7 || Math.abs(Math.abs(y) - 6) < 0.6 ? -1 : 0), e: (x, y) => (x > 9.2 && Math.abs(y) < 2 && f % 2) ? '#ffffff' : null }));
       return parts;
     },
+    // v5.1 late enemies
+    reflector(c, f) { // Reflector: a mirrored prism on short legs; a glint runs across its facets
+      const parts = [], st = f % 2 ? 1.2 : -1.2;
+      for (const s of [-1, 1]) for (const k of [-1, 1]) parts.push(P(S.box(k * 5 - 1 + st * s * k, Math.min(s * 4, s * 10), k * 5 + 1 + st * s * k, Math.max(s * 4, s * 10), 2, 1), 0, ramp('#1a2236')));
+      parts.push(P(S.gem(0, 0, 13, 10, 10), 2, ramp(c, 0.95), { d: (x, y) => (Math.abs(x - y * 0.6 - (f * 3 - 4)) < 1.4 ? 2 : 0), e: (x, y) => Math.abs(x - y * 0.6 - (f * 4 - 6)) < 0.8 ? '#ffffff' : null }));
+      return parts;
+    },
+    carrier(c, f) { // Carrier: a flying mothership with a glowing drone bay and twin engines
+      const parts = [P(S.ell(0, 0, 21, 9, 6), 4, ramp(c, 0.55), { d: (x) => (Math.abs(((x + 40) % 8) - 4) < 0.6 ? -1.2 : 0) }),
+        P(S.rbox(-8, -5, 8, 5, 3, 4, 2), 9, ramp(mix(c, '#2a0a14', 0.4), 0.6), { e: (x, y) => (Math.abs(y) < 1.6 && Math.abs(x) < 6 && f % 2) ? '#ffe14d' : null }),
+        P(S.poly([[21, 0], [13, -4], [13, 4]], 5, 2), 8, ramp(mix(c, '#ffffff', 0.25)))];
+      for (const s of [-1, 1]) { parts.push(P(S.poly([[-6, s * 8], [-14, s * 17], [-18, s * 15], [-12, s * 7]], 3, 2), 3, ramp(mix(c, '#3a0a1a', 0.3), 0.6))); parts.push(P(S.ell(-20, s * 4, 3, 2, 3), 4, ramp('#ffb03a'), { e: () => f % 2 ? '#ffe14d' : '#ffb03a' })); }
+      return parts;
+    },
+    sapper(c, f) { // Sapper: a crawler hauling a charge with a blinking red light
+      const parts = [], st = [0, 1, 0, -1][f] * 1.5;
+      for (const s of [-1, 1]) for (const k of [-1, 1]) { const x0 = k * 4, x1 = x0 + st * s * k + k * 2; parts.push(P(S.poly([[x0 - 1, s * 3], [x0 + 1, s * 3], [x1 + 1, s * 9], [x1 - 1, s * 9]], 2, 1), 0, ramp('#2a1608', 0.5))); }
+      parts.push(P(S.ell(-1, 0, 7, 5.5, 5), 2, ramp(c, 0.6)));
+      parts.push(P(S.dome(-3, 0, 4.4, 5), 6, ramp('#3a3446', 0.7), { e: (x, y) => Math.hypot(x + 3, y) < 1.5 ? (f % 2 ? '#ff3355' : '#5a1020') : null }));
+      parts.push(P(S.dome(6.5, 0, 3, 3), 3, ramp(mix(c, '#2a1608', 0.4)), { e: (x, y) => Math.hypot(x - 7.5, y) < 1 ? '#ffffff' : null }));
+      return parts;
+    },
+    leech(c, f) { // Leech: a segmented slug, its belly glowing with stolen credits
+      const parts = [];
+      for (let i = 3; i >= 0; i--) { const x = 6 - i * 4.5, y = Math.sin(f * 1.57 + i) * 1.4, r = 5.2 - i * 0.6; parts.push(P(S.dome(x, y, r, 5 - i * 0.6), 0, ramp(i ? mix(c, '#3a1a08', 0.22 * i) : c, 0.75), { e: (xx, yy) => (i === 0 && Math.hypot(xx - 9, yy - y) < 1.4) ? '#2a0a04' : (Math.hypot(xx - x, yy - y) < 1.2 && (f + i) % 2 ? '#fff4c0' : null) })); }
+      return parts;
+    },
     voidling(c, f) { // a void bat
       const w = [9, 6, 3, 6][f];
       return [P(S.poly([[7, 0], [-1, -w - 2], [-4, -2], [-7, 0], [-4, 2], [-1, w + 2]], 3, 3), 0, ramp(c, 0.8)),
         P(S.gem(1, 0, 4, 3, 6), 2, ramp('#2a1050', 0.8), { e: (x, y) => Math.hypot(x - 2, y) < 1.1 ? '#ffffff' : null })];
     },
   };
-  const ESZ = { drone: 42, swarmer: 24, tank: 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30 };
+  const ESZ = { drone: 42, swarmer: 24, tank: 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30, reflector: 36, carrier: 58, sapper: 32, leech: 34 };
   const EA = 16;
   function enemy(type, ang, fr) {
     if (!ENEMY[type]) return null;
@@ -6396,6 +6632,7 @@ const PAL = {
 const ENEMY_COL = {
   drone: '#ff5470', swarmer: '#ff9ad5', tank: '#c9405a', flyer: '#ff86b0', splitter: '#ff6f3c', phantom: '#d6d2ff',
   medic: '#ff7c9c', shielder: '#8ab6ff', voidling: '#b86cff', boss: '#ff3355', pirate: '#d8281a',
+  reflector: '#cfe6ff', carrier: '#e0607a', sapper: '#ffa860', leech: '#ffd24a',
 };
 
 const Render = (() => {
@@ -6409,7 +6646,7 @@ const RES = 2;
   // the framed sector (buffer px). It eases outward when the run's sector grows.
   const reg = { x: 0, y: 0, w: 0, h: 0 };
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
-  let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0;
+  let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null;
   let scan = null, scanPat = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let fullHud = false, showNums = true, doShake = true;
@@ -6630,7 +6867,7 @@ const RES = 2;
     },
     voidling(g, c) { diamond(g, 5, 5, 5, '#1a0830'); diamond(g, 5, 5, 4, c); P(g, 4, 3, '#ffffff'); P(g, 5, 5, '#ffffff'); },
   };
-  const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11 };
+  const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11, reflector: 15, carrier: 22, sapper: 13, leech: 14 };
   const pirateSprite = gold => UNITS.pirate(gold);
   function enemySprite(type) {
     if (type === 'pirate') return pirateSprite(false);
@@ -7025,6 +7262,7 @@ const RES = 2;
       b.globalAlpha = 0.55 + 0.3 * Math.sin(frame / 5 + e.wob); b.drawImage(rim, Math.round((X - gw / 2) * RES) / RES, Math.round((y - gh / 2) * RES) / RES, gw, gh); b.globalAlpha = 1;
     }
     if (cloaked) b.globalAlpha = 0.25;
+    else if (e.cloak && e.cloakT < 0.6 && frame % 6 < 3) b.globalAlpha = 0.6; // v5.1 tell: it flickers just before it cloaks
     if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
     else if (e.boss) { const fl = Math.cos(e._ha) < -0.3; b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); if (fl && !e.burrowT) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
     else b.drawImage(s, Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2);
@@ -7040,6 +7278,12 @@ const RES = 2;
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
     if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
     if (e.wanted && !cloaked) { b.strokeStyle = hexA('#ffd84a', 0.6 + 0.35 * Math.sin(frame / 5)); b.lineWidth = 2; b.setLineDash([5, 4]); b.lineDashOffset = frame / 2; b.beginPath(); b.arc(X, y, hw + 8, 0, 6.283); b.stroke(); b.setLineDash([]); }
+    if (cloaked) { // v5.1 tell: a heat-haze shimmer where a cloaked unit is
+      b.strokeStyle = 'rgba(214,210,255,0.35)'; b.lineWidth = 1; b.beginPath();
+      for (let i = 0; i <= 16; i++) { const a = i / 16 * 6.283, rr = hw * 0.9 + Math.sin(a * 3 + frame / 4) * 1.5; i ? b.lineTo(X + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8) : b.moveTo(X + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8); }
+      b.stroke();
+    }
+    if (e.type === 'reflector' && !cloaked && frame % 40 < 4) { b.fillStyle = 'rgba(255,255,255,0.8)'; b.fillRect(Math.round(X - hw * 0.4), Math.round(y - hh * 0.5), 2, 2); }
     if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
     e._hh = hh; e._crown = elite && !cloaked ? eCols : null; // the crown is drawn in the overlay pass, above every unit
     if (false) {
@@ -7445,12 +7689,80 @@ const RES = 2;
         c.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w), Math.round(h)); c.setLineDash([]);
       }
     }
+    // v5.1 inspect: a ring follows the enemy you tapped (or hover)
+    for (const [E0, col] of [[selEnemy, PAL.amber], [hoverEnemy, '#e9e4d4']]) if (E0 && !E0.dead && E0 !== (col === '#e9e4d4' ? selEnemy : null)) {
+      const x = bx2s(E0.x * TILE), y = by2s(E0.y * TILE - (E0.fly ? 7 : 0)), r = (E0._hh || 8) * ws + 4;
+      c.strokeStyle = 'rgba(9,11,22,0.8)'; c.lineWidth = 4; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke();
+      c.strokeStyle = col; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke();
+    }
+    // v5.1 Sensor Sweep: green brackets on everything it Marked, an amber reticle on the biggest threat
+    if (G.scanT > 0) {
+      const u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const e of G.enemies) if (e.scanned > 0 && !e.dead && e !== G.scanThreat) {
+        const x = bx2s(e.x * TILE), y = by2s(e.y * TILE - (e.fly ? 7 : 0)), r = (e._hh || 6) * ws * 0.9 + 3 * u, a = Math.min(1, e.scanned / 1.5) * 0.85;
+        c.fillStyle = hexA('#7dffb0', a);
+        for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const px = Math.round(x + sx * r), py = Math.round(y + sy * r); c.fillRect(px - (sx > 0 ? 2 * u : 0), py - (sy > 0 ? u : 0), 2 * u, u); c.fillRect(px - (sx > 0 ? u : 0), py - (sy > 0 ? 2 * u : 0), u, 2 * u); }
+      }
+      const e = G.scanThreat;
+      if (e && !e.dead) {
+        const x = bx2s(e.x * TILE), y = by2s(e.y * TILE - (e.fly ? 7 : 0)), r = (e._hh || 8) * ws * 1.1 + 6 * u + Math.sin(frame / 4) * u;
+        c.strokeStyle = 'rgba(9,11,22,0.8)'; c.lineWidth = u + 2; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke();
+        c.strokeStyle = PAL.amber; c.lineWidth = u; c.setLineDash([u * 3, u * 2]); c.lineDashOffset = -frame / 3; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke(); c.setLineDash([]);
+        c.fillStyle = PAL.amber; for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) c.fillRect(Math.round(x + dx * (r + u) - u / 2 - (dx ? (dx > 0 ? 0 : 2 * u) : 0)), Math.round(y + dy * (r + u) - u / 2 - (dy ? (dy > 0 ? 0 : 2 * u) : 0)), dx ? 3 * u : u, dy ? 3 * u : u);
+        c.font = `${Math.max(8, 4 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom';
+        c.fillStyle = 'rgba(9,11,22,0.85)'; const tw = c.measureText('THREAT').width; c.fillRect(Math.round(x - tw / 2 - u), Math.round(y - r - 3 * u - 5 * u), Math.round(tw + 2 * u), 5 * u + u);
+        c.fillStyle = PAL.amber; c.fillText('THREAT', Math.round(x), Math.round(y - r - 3 * u)); c.textBaseline = 'alphabetic';
+      }
+    }
     // v4.7 elite crowns: gold, one gem per affix, drawn above everything so a crowd can't bury them
     for (const e of G.enemies) if (e._crown && !e.dead) {
       const x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - (e.fly ? 7 : 0) - (e._hh || 6) - 4)), u = clamp(Math.round(ws * 1.1), 2, 4), n = e._crown.length, cw = (5 + n * 2) * u;
       c.fillStyle = '#090b16'; c.fillRect(x - cw / 2 - u, y - 4 * u, cw + 2 * u, 5 * u);
       c.fillStyle = '#ffd84a'; c.fillRect(x - cw / 2, y - u * 1.5, cw, u * 2); for (const dx of [-cw / 2, -u / 2, cw / 2 - u]) c.fillRect(x + dx, y - 3 * u, u, 2 * u);
       e._crown.forEach((col, i) => { c.fillStyle = col; c.fillRect(x - (n * 2 * u - u) / 2 + i * 2 * u, y - u, u, u); });
+    }
+    // v5.3 first run: glowing build spots until the first tower goes down
+    if (hintTiles) for (const h of hintTiles) {
+      const x0 = bx2s(h.x * TILE), y0 = by2s(h.y * TILE), w = TILE * ws, a = 0.55 + 0.4 * Math.sin(frame / 6), u = Math.max(2, Math.round(w / 8));
+      c.fillStyle = hexA(PAL.good, 0.12 + 0.1 * a); c.fillRect(Math.round(x0), Math.round(y0), Math.round(w), Math.round(w));
+      c.fillStyle = hexA(PAL.good, a); for (const [sx, sy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const px = Math.round(x0 + sx * (w - 2 * u)), py = Math.round(y0 + sy * (w - 2 * u)); c.fillRect(px, py + (sy ? u : 0), 2 * u, u); c.fillRect(px + (sx ? u : 0), py, u, 2 * u); }
+      c.font = `${Math.max(8, Math.round(w / 4))}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = 'rgba(9,11,22,0.8)'; const tw = c.measureText('BUILD').width; c.fillRect(Math.round(x0 + w / 2 - tw / 2 - 2), Math.round(y0 + w + 1), Math.round(tw + 4), Math.round(w / 4) + 3);
+      c.fillStyle = PAL.good; c.fillText('BUILD', Math.round(x0 + w / 2), Math.round(y0 + w + 2)); c.textBaseline = 'alphabetic';
+    }
+    // v5.3: towers that haven't fired for three waves say so on the map
+    { const u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const t of G.towers) if (!(t.disabled > 0) && G.wave >= 3 && idleWaves(t) >= 3) {
+        const x = Math.round(bx2s(t.cx * TILE)), y = Math.round(by2s(t.y * TILE)) - u;
+        c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom'; const tw = c.measureText('IDLE').width;
+        c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), y - Math.round(4.5 * u), Math.round(tw + 2 * u), Math.round(4.5 * u) + 1);
+        c.fillStyle = '#9a96b0'; c.fillText('IDLE', x, y); c.textBaseline = 'alphabetic';
+      } }
+    // v5.2 pirates: the skiff's flight path ahead of it, its target, and its captain's name
+    for (const e of G.enemies) if (e.pirate && !e.dead) {
+      const P = e.pirate, L = e.L, pts = [{ x: e.x, y: e.y }]; for (let i = 0; i < L.pts.length; i++) if (L.cum[i] > e.d) pts.push(L.pts[i]);
+      c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.lineWidth = 2; c.strokeStyle = hexA('#ff4d6a', 0.55); c.beginPath();
+      pts.forEach((q, i) => { const x = bx2s(q.x * TILE), y = by2s(q.y * TILE - 7); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.setLineDash([]);
+      if (!P.got && P.cache) { const x = bx2s((P.cache.x + 0.5) * TILE), y = by2s((P.cache.y + 0.5) * TILE), r = TILE * ws * 0.6 + Math.sin(frame / 4) * 2; c.strokeStyle = '#ff4d6a'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke(); c.beginPath(); c.moveTo(x - r - 4, y); c.lineTo(x - r + 4, y); c.moveTo(x + r - 4, y); c.lineTo(x + r + 4, y); c.moveTo(x, y - r - 4); c.lineTo(x, y - r + 4); c.moveTo(x, y + r - 4); c.lineTo(x, y + r + 4); c.stroke(); }
+      if (P.captain) { const u = clamp(Math.round(ws * 1.1), 2, 4), x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - 7 - (e._hh || 8) - 3));
+        c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom'; const tw = c.measureText(P.captain).width;
+        c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), y - Math.round(4.5 * u), Math.round(tw + 2 * u), Math.round(4.5 * u) + 1);
+        c.fillStyle = P.got ? '#ff4d6a' : '#ffd84a'; c.fillText(P.captain, x, y); c.textBaseline = 'alphabetic'; }
+    }
+    // v5.1 storm transparency: towers a storm boosts wear its colour (dashed if it only touches them); knocked-out towers say why
+    if (G.storms.length) for (const st of G.storms) {
+      const els = st.mael ? ELS : st.types.map(ty => STORMS[ty].el), col = st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, r2 = st.r * st.r;
+      for (const t of G.towers) { if (dist2(t.cx, t.cy, st.x, st.y) > r2) continue;
+        const boosted = t.s && els.includes(t.s.el), x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
+        c.lineWidth = boosted ? 2 : 1; c.strokeStyle = hexA(col, boosted ? 0.9 : 0.45); if (!boosted) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
+    }
+    { const u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const t of G.towers) if (t.disabled > 0) {
+        const tag = t.disCause || 'OFFLINE', x = Math.round(bx2s(t.cx * TILE)), y = Math.round(by2s(t.y * TILE)) - u;
+        c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom';
+        const tw = c.measureText(tag).width; c.fillStyle = 'rgba(9,11,22,0.88)'; c.fillRect(Math.round(x - tw / 2 - u), y - Math.round(4.5 * u), Math.round(tw + 2 * u), Math.round(4.5 * u) + 1);
+        c.fillStyle = tag === 'SAPPED' ? '#ffa860' : '#ffe14d'; c.fillText(tag, x, y); c.textBaseline = 'alphabetic';
+        if (frame % 4 === 0) { const a = Math.random() * 6.283; c.fillStyle = '#ffe14d'; c.fillRect(Math.round(bx2s((t.cx + Math.cos(a) * 0.4) * TILE)), Math.round(by2s((t.cy + Math.sin(a) * 0.4) * TILE)), u, u); }
+      }
     }
     // v4.8.1 level display, kept off the tower art (Nic: the badges hid the sprites):
     //  - every tower: a thin tier-coloured line under its tile (white, green, blue, purple, orange, red in bands of 3 levels)
@@ -7480,11 +7792,10 @@ const RES = 2;
     }
     // veterans waiting for a mutation: a bobbing badge above the tower
     c.font = '10px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    // v5.2: a small corner pip (one "ready" chip in the top bar does the shouting, not a badge on every tower)
     for (const t of G.towers) if (t.pending > 0) {
-      const x = bx2s(t.cx * TILE), y = by2s(t.y * TILE) - 7 + Math.sin(frame / 6 + t.id) * 2;
-      c.fillStyle = '#090b16'; c.fillRect(x - 8, y - 8, 16, 15);
-      c.fillStyle = frame % 24 < 16 ? PAL.warn : '#fff6c0'; c.fillRect(x - 7, y - 7, 14, 13);
-      c.fillStyle = '#1a1004'; c.fillText('!', x + 0.5, y + 0.5);
+      const x = Math.round(bx2s(t.x * TILE + TILE)) - 5, y = Math.round(by2s(t.y * TILE)) + 1;
+      c.fillStyle = '#090b16'; c.fillRect(x - 1, y - 1, 6, 6); c.fillStyle = frame % 40 < 30 ? PAL.warn : '#fff6c0'; c.fillRect(x, y, 4, 4);
     }
     c.restore();
 
@@ -7574,8 +7885,18 @@ const RES = 2;
       case 'grav': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE, r1: 2, life: 0.5, max: 0.5, col: '#b86cff', w: 3 }); break;
       case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;
       case 'arcs': for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x) + Math.cos(a) * rr * 0.5 + (Math.random() - 0.5) * 10, y: T2P(d.y) + Math.sin(a) * rr * 0.5 }, { x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr }], life: 0.18, max: 0.18, col: '#9ff2ff', core: 1, w: 2 }); } break;
-      case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' }); break;
-      case 'shieldpulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.5, max: 0.5, col: '#8ab6ff' }); break;
+      case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' });
+        for (const o of d.to || []) { lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(o.x), y: T2P(o.y) }], life: 0.45, max: 0.45, col: '#7dffb0', core: 1, w: 2 }); text(o.x, o.y - 0.5, '+', '#7dffb0', 14, 0.5, -0.8); }
+        break;
+      case 'shieldpulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.5, max: 0.5, col: '#8ab6ff' });
+        for (const o of d.to || []) lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(o.x), y: T2P(o.y) }], life: 0.4, max: 0.4, col: '#8ab6ff', core: 0, w: 1 });
+        break;
+      case 'shieldbreak': for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + Math.random() * 0.3; parts.push({ x: T2P(d.x) + Math.cos(a) * 10, y: T2P(d.y) + Math.sin(a) * 10, vx: Math.cos(a) * 40 * K, vy: Math.sin(a) * 40 * K, life: 0.4, max: 0.4, col: i % 2 ? '#c8e8ff' : '#7fd4ff', s: 3 }); } rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 22, life: 0.25, max: 0.25, col: '#c8e8ff', w: 2 }); break;
+      case 'ping': burst(T2P(d.x), T2P(d.y), 4, '#e9e4d4', 35 * K, 0.18); if (texts.filter(T => T.ping).length < 3) { text(d.x + 0.3, d.y - 0.6, 'tink', '#c8c4b8', 11, 0.4, -0.6, 'Silkscreen, monospace'); texts[texts.length - 1].ping = 1; } break;
+      case 'glance': { const x = T2P(d.x), y = T2P(d.y), a = d.sx !== undefined ? Math.atan2(d.y - d.sy, d.x - d.sx) + Math.PI * (0.7 + Math.random() * 0.6) : Math.random() * 6.283;
+        lines.push({ pts: [{ x, y }, { x: x + Math.cos(a) * 22, y: y + Math.sin(a) * 22 }], life: 0.2, max: 0.2, col: '#ffffff', core: 1, w: 2 }); burst(x, y, 5, '#cfe6ff', 40 * K, 0.2); break; }
+      case 'sap': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.5, max: 0.5, col: '#ff3355', core: 1, w: 2 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 4, r1: 20, life: 0.4, max: 0.4, col: '#ff3355', w: 2, fill: 1 }); burst(T2P(d.x2), T2P(d.y2), 14, '#ffa860', 40 * K, 0.4); break;
+      case 'drop': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 18, life: 0.35, max: 0.35, col: '#ffe14d', w: 2 }); burst(T2P(d.x), T2P(d.y), 6, '#ffe14d', 25 * K, 0.3, 30 * K); break;
       case 'blink': burst(T2P(d.x), T2P(d.y), 14, '#b86cff', 40 * K, 0.3); break;
       case 'lure': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.35, max: 0.35, col: '#59f0b4', core: 0, w: 1 }); break;
       case 'net': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 3, life: 0.35, max: 0.35, col: '#59f0b4', w: 2 }); burst(T2P(d.x), T2P(d.y), 8, '#c9fff0', 20 * K, 0.3); break;
@@ -7589,6 +7910,7 @@ const RES = 2;
       case 'strike': lines.push({ pts: [{ x: T2P(d.x), y: -10 }, { x: T2P(d.x), y: T2P(d.y) }], life: 0.6, max: 0.6, col: '#ffe9b0', core: 1, w: 6 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 1.7 * TILE, r1: 2, life: 0.6, max: 0.6, col: '#ffe9b0', w: 3 }); break;
       case 'nova': flashes.push({ col: '#b86cff', life: 0.6, max: 0.6, a: 0.5 }); rings.push({ x: G.core.x * TILE, y: G.core.y * TILE, r0: 4, r1: BW, life: 0.7, max: 0.7, col: '#d6a6ff', w: 4 }); break;
       case 'stasis': flashes.push({ col: '#6ae2ff', life: 0.5, max: 0.5, a: 0.4 }); break;
+      case 'scan': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: BW * 1.2, life: 1.1, max: 1.1, col: '#7dffb0', w: 3 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: BW * 0.7, life: 0.8, max: 0.8, col: '#c9fff0', w: 1 }); flashes.push({ col: '#7dffb0', life: 0.25, max: 0.25, a: 0.12 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
       case 'overdrive': flashes.push({ col: '#e6fff6', life: 0.25, max: 0.25, a: 0.6 }); flashes.push({ col: PAL.core, life: 0.9, max: 0.9, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
@@ -7600,7 +7922,7 @@ const RES = 2;
       case 'elite': burst(T2P(d.x), T2P(d.y), 10, '#ffe14d', 25 * K, 0.5); break;
       case 'jam': case 'fizzle': burst(T2P(d.x), T2P(d.y), 8, '#8a8aa6', 20 * K, 0.4, -20 * K); break;
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
-      case 'coin': text(d.x, d.y - 0.6, '+' + d.v, PAL.amber, 15, 1, -0.6); break;
+      case 'coin': text(d.x, d.y - 0.6, d.v < 0 ? '−' + Math.abs(d.v) : '+' + d.v, d.v < 0 ? PAL.bad : PAL.amber, 15, 1, -0.6); break;
       case 'shake': shakeAt(d.v, 0.3); break;
       case 'burrow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: TILE * 1.6, life: 0.5, max: 0.5, col: '#c46cff', w: 3, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: TILE * 1.8, r1: 2, life: 0.5, max: 0.5, col: '#5cf2ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 30, '#c46cff', 60 * K, 0.5); break;
       case 'swallow': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.45, max: 0.45, col: d.back ? '#59f0b4' : '#c46cff', core: 1, w: 5 }); burst(T2P(d.x1), T2P(d.y1), 24, d.back ? '#59f0b4' : '#c46cff', 50 * K, 0.5); break;
@@ -7687,6 +8009,12 @@ const RES = 2;
     set onCam(f) { onCam = f; },
     tileToScreen,
     // draws a boss sprite, pixel-scaled, centred on a canvas (the boss intro card)
+    // v5.1 an enemy's portrait for the inspect panel, the intro card and the Dictionary
+    enemyIcon(type, cv) { const sp = type === 'pirate' ? UNITS.pirate(false) : UNITS.enemy(type, 0, 0) || enemySprite(type), g = cv.getContext('2d');
+      if (!cv.dataset.sized) { cv.dataset.sized = 1; const cs = getComputedStyle(cv); if (cs.width && cs.width !== 'auto') { cv.style.width = cs.width; cv.style.height = cs.height; } cv.width = cv.height = 64; }
+      const k = Math.min(cv.width / sp.width, cv.height / sp.height) * 0.9;
+      g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false; g.drawImage(sp, Math.round((cv.width - sp.width * k) / 2), Math.round((cv.height - sp.height * k) / 2), sp.width * k, sp.height * k); },
+    set hints(v) { hintTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
       if (cv.width < sp.width * 2) { const cs = getComputedStyle(cv); cv.style.width = cs.width; cv.style.height = cs.height; cv.width = cv.height = sp.width * 2; }
       const k = Math.max(1, Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height)));
@@ -7711,6 +8039,7 @@ const ICONS = {
   nova: ['#...#...#', '.#..#..#.', '..#.#.#..', '...###...', '####.####', '...###...', '..#.#.#..', '.#..#..#.', '#...#...#'],
   stasis: ['#########', '.#.....#.', '..#...#..', '...#.#...', '....#....', '...#.#...', '..#.#.#..', '.#.###.#.', '#########'],
   overclock: ['.....###.', '....###..', '...###...', '..######.', '....###..', '...###...', '..##.....', '.##......', '#........'],
+  scan: ['..#####..', '.#.....#.', '#...#...#', '#..#.#..#', '#.#.#.#.#', '#..#.##.#', '#...#..##', '.#.....##', '..#####.#'],
   archive: ['#########', '#########', '.........', '.#######.', '.#.....#.', '.#.###.#.', '.#.....#.', '.#######.', '.........'],
   help: ['..#####..', '.##...##.', '......##.', '.....##..', '....##...', '....##...', '.........', '....##...', '....##...'],
   gear: ['...#.#...', '.#######.', '.##...##.', '##.....##', '.#..#..#.', '##.....##', '.##...##.', '.#######.', '...#.#...'],
@@ -7750,6 +8079,10 @@ const Save = (() => {
     out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
     out.caps = Array.isArray(p.caps) ? p.caps.filter(c => TAL[c] && TAL[c].cap) : [];
     if (!Array.isArray(out.builds) || out.builds.length !== 5) out.builds = [null, null, null, null, null];
+    // v5.1: a veteran has met the first eight enemies already; only the newcomers get an introduction card
+    out.codex = Object.assign(defaultProfile().codex, out.codex || {});
+    if (!out.seenSys && (out.bestWave || 0) >= 15) out.seenSys = { storm: 1, crate: 1, vet: 1 };
+    if (!out.codex.enemies) { out.codex.enemies = {}; if ((out.bestWave || 0) >= 12) for (const k in ENEMIES) if (ENEMIES[k].from <= 12) out.codex.enemies[k] = 1; }
     return out;
   }
   function loadLocal() { try { const s = localStorage.getItem(KEY); return s ? merge(JSON.parse(s)) : null; } catch (e) { return null; } }
@@ -7781,6 +8114,7 @@ const Save = (() => {
         try { remote = merge(JSON.parse(snap.data().json)); } catch (e) {}
         if (remote && (remote.updatedAt || 0) > (PROF.updatedAt || 0) && !(G && !G.over)) {
           PROF = remote;
+          tidyCaps();
           if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'); queue(); }
           try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
           UI.refreshAll();
@@ -7920,7 +8254,6 @@ const UI = (() => {
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave;
-    if (!snap && G.wanted && briefMode() !== 'off') setTimeout(() => { if (G && screen === 'game' && G.wanted) wantedPoster(briefMode() === 'pause'); }, 2600);
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
     Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
@@ -7930,7 +8263,45 @@ const UI = (() => {
     updateHud(true);
     Save.save();
     try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
-    if (!PROF.seenHelp) { PROF.seenHelp = true; openHelp(); }
+    // v5.3: no wall of rules on the first run. Glowing tiles show where to build; How to Play waits in the pause menu
+    if (!PROF.seenHelp) { PROF.seenHelp = true; setTimeout(() => toast('WELCOME', 'Enemies walk the road to your core. Tap a glowing tile beside it to build a tower. How to Play is in the pause menu', '#59f0b4', true, 'alert'), 900); }
+    G.wantedTold = !!snap || briefMode() === 'off';
+    G.hints = !snap && (PROF.bestWave || 0) < 10 && G.wave <= 1 ? buildHints() : null; Render.hints = G.hints;
+  }
+  // v5.3 first run: the three spots that cover the most road near the start of the main lane
+  function buildHints() {
+    const R = G.region, L = G.map.lanes[0], road = L.tiles.slice(0, Math.ceil(L.tiles.length * 0.7)), out = [];
+    const score = (x, y) => road.reduce((a, p) => a + (Math.hypot(p.x - x, p.y - y) <= 2.6 ? 1 : 0), 0);
+    const cands = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) cands.push({ x, y, s: score(x, y) });
+    cands.sort((a, b) => b.s - a.s);
+    for (const c of cands) { if (out.length >= 3) break; if (out.every(o => Math.abs(o.x - c.x) + Math.abs(o.y - c.y) >= 4)) out.push(c); }
+    return out;
+  }
+  // v5.3 one-time intro cards: each system says what it is the first time it shows up, in two lines
+  function introCard(key, title, body) {
+    const S = PROF.seenSys || (PROF.seenSys = {}); if (S[key]) return false;
+    if (modalOpen || Tree.isOpen || (G && G.draft)) return false;
+    S[key] = 1; Save.save();
+    if (briefMode() !== 'pause') { toast(title.toUpperCase(), body, '#6ae2ff', true, 'alert'); return true; }
+    closePanel(); G.paused = true; G.briefing = true;
+    modal(`<div class="card narrow brief intro"><div class="bi"><em>New</em><h3>${esc(title)}</h3><p class="desc">${tipify(body)}</p></div>
+      <div class="foot"><span class="note">Change this in Settings · Briefings</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
+    return true;
+  }
+  let nudgeW = -99;
+  function onboardingTick() {
+    if (!G || G.over || screen !== 'game' || modalOpen) return;
+    if (G.hints && (G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
+    if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
+    if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.')) return;
+    if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.')) return;
+    if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the "veterans ready" chip at the top to pick each one a mutation.')) return;
+    if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.')) return;
+    // credits piling up: say so once in a while, with what to do about it
+    if (G.spawningDone && G.wave >= 6 && G.wave - nudgeW >= 8 && G.towers.length) {
+      const cheap = Math.min(...G.towers.map(t => upgradeCost(t))), lim = Math.max(900, cheap * 4, 250 * G.wave);
+      if (G.credits > lim) { nudgeW = G.wave; toast('CREDITS PILING UP', `${fmt(G.credits)} credits banked. Spend them: the arrow marks your best upgrade, or build, or expand the reactor${G.wave >= 28 ? '. Leeches steal from big banks' : ''}`, '#ffb03a', false, 'alert'); }
+    }
   }
 
   // v4.4 Most Wanted: the run's bounty poster
@@ -7965,7 +8336,7 @@ const UI = (() => {
   }
   function buildAbilityBar() {
     $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Overdrive">${svgIcon('overdrive')}<span>Overdrive</span></button>` +
-      ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}" hidden>${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt">0</em></button>`).join('');
+      ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt"></em><i class="cdf"></i></button>`).join('');
   }
   function updateHud(force) {
     if (!G) return;
@@ -7975,9 +8346,9 @@ const UI = (() => {
     $('#hptxt').textContent = `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`;
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
     $('#cr').textContent = fmt(G.credits);
-    $('#wave').textContent = G.wave;
+    $("#wave").textContent = G.wave || "—";
     const cpWait = G.spawningDone && cpPending();
-    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`;
+    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `next in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`;
     $('#score').textContent = fmt(G.score);
     const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint && !cpWait;
     const cb = $('#bCall');
@@ -7993,11 +8364,19 @@ const UI = (() => {
     { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Overdrive') : 'W' + OD_WAVE;
       ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
+    // v5.1: every ability keeps its place on the rail. Empty ones dim and fill as they recharge; offline ones show their wave
     for (const k of ABIL_ORDER) {
-      const n = G.charges[k], btn = document.querySelector(`[data-abil="${k}"]`);
+      const n = G.charges[k] || 0, btn = document.querySelector(`[data-abil="${k}"]`);
       if (!btn) continue;
-      btn.querySelector('.cnt').textContent = n > 1 ? n : '';
-      btn.hidden = n <= 0;
+      const on = abilOnline(k), slots = abilSlots(), cnt = btn.querySelector('.cnt'), lab = btn.querySelector('span');
+      const ct = on && (n > 1 || n > slots) ? String(n) : '';
+      if (cnt.textContent !== ct) cnt.textContent = ct;
+      cnt.classList.toggle('extra', n > slots);
+      const lt = on ? ABILITIES[k].short : 'W' + ABILITIES[k].from;
+      if (lab.textContent !== lt) lab.textContent = lt;
+      btn.classList.toggle('locked', !on); btn.classList.toggle('empty', on && n <= 0);
+      const mx = on ? abilCdMax(k) : 1, cd = G.abilCd ? G.abilCd[k] : 0, filling = on && n < slots && cd > 0;
+      btn.querySelector('.cdf').style.width = filling ? pct(clamp(1 - cd / mx, 0, 1)) : '0%';
       btn.classList.toggle('aim', G.aimAbility === k);
     }
     const free = pointsFree();
@@ -8014,10 +8393,11 @@ const UI = (() => {
     if (G.spawningDone && G.prep) {
       const P = G.prep;
       if (P.boss) chips.push(`<span class="evchip next bad">Boss ${P.boss.odd ? "???" : esc(P.boss.name)}</span>`);
-      if (G.wanted && !G.wanted.done && G.wanted.w > G.wave) chips.push(`<span class="evchip wanted" data-wanted="1">Wanted · W${G.wanted.w}</span>`);
+      if (G.wanted && G.wantedTold && !G.wanted.done && G.wanted.w > G.wave) chips.push(`<span class="evchip wanted" data-wanted="1">Wanted · W${G.wanted.w}</span>`);
       for (const [g, v] of Object.entries(P.genes || {}).filter(([g, v]) => v >= 0.2).sort((a, b) => b[1] - a[1]).slice(0, 3))
         chips.push(`<span class="evchip gene" data-gene="${g}" style="--c:${GENES[g].col}">${GENES[g].name} ${Math.round(v * 100)}%</span>`);
-      chips.push(`<span class="evchip next">Next ${P.total}${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
+      chips.push(`<span class="evchip next">Next: ${P.total} enemies${P.fly ? ' · ' + P.fly + ' air' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}</span>`);
+      for (const k of P.heads || []) chips.push(`<span class="evchip head" data-ehead="${k}">${esc(ENEMIES[k].name)} ×${P.counts[k]}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
     if (!(G.spawningDone && G.prep) && geneCap(G.wave) > 0) {
@@ -8042,14 +8422,15 @@ const UI = (() => {
       const h = parts.join(''); if (db && db.dataset.h !== h) { db.innerHTML = h; db.dataset.h = h; db.hidden = !h; }
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
+    { const rdy = G.towers.filter(t => t.pending > 0).length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} veteran${rdy > 1 ? 's' : ''} ready</span>`); }
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
-    for (const s of G.storms) chips.push(`<span class="evchip storm" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}</span>`);
+    for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
     G.laneWarn = null; for (const L of G.map.lanes) if (L.openWave) { const d = L.openWave - G.wave; if (d >= 1 && (!G.laneWarn || d < G.laneWarn)) G.laneWarn = d; }
     if (G.laneWarn) chips.unshift(`<span class="evchip warn ${G.laneWarn === 1 ? 'bad' : 'storm'}" style="--c:#d6a6ff">${G.laneWarn === 1 ? 'Wormhole opens next wave' : 'Wormhole opens in ' + G.laneWarn + ' waves'}</span>`);
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
     if (G.stasisT > 0) chips.push('<span class="evchip good">Stasis</span>');
     // order by what you need to act on first; anything that doesn't fit goes behind a "+N" chip (the Field Report)
-    const prio = h => /evchip warn/.test(h) ? 0 : /next bad">Boss/.test(h) ? 1 : /data-wanted/.test(h) ? 2 : /evchip next">Next/.test(h) ? 3 : /data-evo/.test(h) ? 4 : /evchip (bad|good)"/.test(h) ? 5 : /storm/.test(h) ? 6 : /next (bad|good)/.test(h) ? 7 : 8;
+    const prio = h => /evchip warn/.test(h) ? 0 : /next bad">Boss/.test(h) ? 1 : /data-wanted/.test(h) ? 2 : /evchip next">Next/.test(h) || /evchip head/.test(h) ? 3 : /data-evo/.test(h) ? 4 : /evchip (bad|good)"/.test(h) ? 5 : /storm/.test(h) ? 6 : /next (bad|good)/.test(h) ? 7 : 8;
     chips.sort((a, b) => prio(a) - prio(b));
     chipList = chips;
     const html = chips.join('');
@@ -8094,16 +8475,16 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
-  const KEY_RE = /^(BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
+  const KEY_RE = /^(BOSS HALFWAY|NEW ENEMY|BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
-  function toast(title, body, col, force) {
+  function toast(title, body, col, force, as) {
     const key = title + '|' + body, now = performance.now();
     if (toastSeen[key] !== undefined && now - toastSeen[key] < 4000) return;
     toastSeen[key] = now;
-    let kind = screen !== 'game' ? (TIP_RE.test(title) ? 'tip' : 'alert') : toastKind(title);
+    let kind = as || (screen !== 'game' ? (TIP_RE.test(title) ? 'tip' : 'alert') : toastKind(title));
     // Settings > Notifications: Key keeps only the cards you must react to; Off keeps none (tips answering your own taps stay)
     const nm = PROF.settings.notes || 'all';
     if (screen === 'game' && !force && kind === 'alert' && (nm === 'off' || (nm === 'key' && !KEY_RE.test(title)))) { feed(title, body, col, true); return; }
@@ -8160,6 +8541,17 @@ const UI = (() => {
   // boss arrival: a portrait card and a moment of slow motion, so every boss gets its entrance
   let bossT = null;
   const briefMode = () => PROF.settings.briefings || 'pause';
+  // v5.1: the first time you meet an enemy, a short card says what it is and what beats it (queued if something is open)
+  const enemyCards = []; let readyIx = -1;
+  function enemyCard(k) {
+    const D = ENEMIES[k]; if (!D) return;
+    if (briefMode() !== 'pause' || screen !== 'game') { toast('NEW ENEMY · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ff4d6a', true); return; }
+    if (modalOpen || Tree.isOpen || (G && G.draft)) { if (!enemyCards.includes(k)) enemyCards.push(k); return; }
+    closePanel(); if (G && !G.over) { G.paused = true; G.briefing = true; }
+    modal(`<div class="card narrow brief ecard"><div class="erow"><canvas width="88" height="88" data-eico="${k}"></canvas><div class="bi"><em>New enemy · next wave</em><h3>${esc(D.name)}</h3><p class="desc">${tipify(D.desc)}.</p><p class="ph good">Beat it: ${tipify(D.beat)}</p></div></div>
+      <div class="foot"><span class="note">Tap any enemy on the field to inspect it</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
+    const cv = $('#modal canvas[data-eico]'); if (cv) Render.enemyIcon(k, cv);
+  }
   function bossIntro(e, B) {
     const box = $('#bossIntro'); if (!box) return;
     const first = !PROF.codex.bosses[B.id];
@@ -8198,7 +8590,7 @@ const UI = (() => {
   function closePanel() {
     panel = null; pick = null;
     $('#panel').hidden = true;
-    Render.sel = null; Render.selT = null; Render.prev = null;
+    Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
     document.body.classList.remove('panel-l', 'panel-r');
   }
@@ -8212,14 +8604,22 @@ const UI = (() => {
     document.body.classList.toggle('panel-r', !left);
     renderPanel();
   }
+  // v5.0.2: a re-render between finger-down and finger-up swallowed the tap (Nic: two Sell taps did nothing while a veteran
+  // rank or affix changed mid-fight). While a finger is on the panel, re-renders wait until it lifts
+  let panelHeld = false, panelDirty = false;
   function renderPanel() {
     if (!panel) return;
+    if (panelHeld) { panelDirty = true; return; }
+    panelDirty = false;
     const el = $('#panel');
     if (panel.kind === 'build') el.innerHTML = buildPanelHTML();
     else if (panel.kind === 'tower') el.innerHTML = towerPanelHTML(panel.t);
     else if (panel.kind === 'core') el.innerHTML = corePanelHTML();
     else if (panel.kind === 'cash') el.innerHTML = cashPanelHTML();
     else if (panel.kind === 'reloc') el.innerHTML = relocPanelHTML();
+    else if (panel.kind === 'enemy') el.innerHTML = enemyPanelHTML(panel.e);
+    for (const cv of el.querySelectorAll('canvas[data-eico]')) Render.enemyIcon(cv.dataset.eico, cv);
+    for (const cv of el.querySelectorAll('canvas[data-bico]')) Render.bossPortrait(cv.dataset.bico, cv);
     for (const cv of el.querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
     for (const cv of el.querySelectorAll('canvas[data-card]')) Render.towerCard(cv.dataset.card, cv, !!cv.dataset.lock);
     liveRefreshPanel();
@@ -8366,11 +8766,12 @@ const UI = (() => {
     const vbar = combat ? `<div class="vrow"><span class="lbl">${t.rank ? 'Veteran ' + roman(t.rank) : 'Rookie'}</span><div class="xpbar"><i style="width:${pct(clamp((t.vxp - prevVet) / Math.max(1, nextVet - prevVet), 0, 1))}"></i></div></div>` : '';
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
-    const foot = `<div class="pfoot">${t.lvl === 3 ? '' : up}
+    const foot = `<div class="pfoot">${t.lvl === 3 ? `<button class="btn wide lvup" disabled>Choose a Specialization<small>${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'}</small></button>` : up}
       <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
+      ${condHTML(t)}
       ${idle}
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
@@ -8379,20 +8780,27 @@ const UI = (() => {
     return `${head}
       ${t.lvl === 3 ? up : ''}
       ${vet}
+      ${condHTML(t)}
       ${idle}
       ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · +${Math.round((OVERCHARGE.dmg + FX('msOc') / 100) * 100)}% per step · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${ocFree(t) ? `<span class="note">Marksman: +${ocFree(t)} free</span>` : ''}${Array.from({ length: ocMax() + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n}` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
       ${!canOvercharge(t) && !modes ? `<div class="sg mini">${stats.replace(/^<div class="sg">|<\/div>.*$/gs, '')}</div>` : ''}
       ${foot}`;
   }
+  // v5.1: every live modifier on this tower in one place (Nic: storms weren't transparent)
+  function condHTML(t) {
+    const C = towerConditions(t);
+    return `<div class="conds" data-live="conds" data-sig="${esc(C.map(c => c.t).join('|'))}">${C.length ? `<span class="lbl">Conditions</span>${C.map(c => `<span class="${c.bad ? 'bad' : c.good ? 'good' : ''}"${c.col ? ` style="box-shadow:inset 3px 0 0 ${c.col}"` : ''}>${esc(c.t)}</span>`).join('')}` : ''}</div>`;
+  }
   function corePanelHTML() {
     const c = G.core, s = coreStats();
     const wc = coreWeaponCost(), sc = coreShieldCost(), rc = coreRepairCost();
     const nextMod = CORE_MODULES.find(m => m.lv === c.wLvl + 1);
     const mods = `<div class="cmods">${CORE_MODULES.map(m => `<span class="${c.wLvl >= m.lv ? 'on' : ''}"><b>${c.wLvl >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>`;
-    const head = `<div class="ph tabbed"><div class="pt"><b>Core Battery</b><small>Battery LV ${c.wLvl} · Shield LV ${c.sLvl}</small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(c.affixes.length ? c.affixes.length : '')}</div>`;
+    const head = `<div class="ph tabbed"><div class="pt"><b>Core Battery</b><small>Battery LV ${c.wLvl} · Shield LV ${c.sLvl}${c.uLvl ? ' · Uplink LV ' + c.uLvl : ''}</small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(c.affixes.length ? c.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= CORE_GUN.maxLv ? 'disabled' : costBtn(wc)}>${c.wLvl >= CORE_GUN.maxLv ? 'Battery · Max' : `Upgrade Battery · ${fmt(wc)}<small>${nextMod ? `LV ${nextMod.lv}: unlocks ${esc(nextMod.name)}` : '+50% Damage, +Range, new affix'}</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}</div>
+      ${(() => { const u = c.uLvl || 0, nm = UPLINK.mods.find(m => m.lv > u); return `<button class="btn wide" data-act="cu" ${u >= UPLINK.max ? 'disabled' : costBtn(coreUplinkCost())}>${u >= UPLINK.max ? 'Command Uplink · Max' : `Command Uplink ${u + 1} · ${fmt(coreUplinkCost())}`}<small>${u >= UPLINK.max ? `−${UPLINK.cd * u}% ability cooldowns` : `−${UPLINK.cd}% ability cooldowns${nm ? ` · LV ${nm.lv}: ${esc(nm.name)}` : ''}`}</small></button>`; })()}
       <div class="row2"><button class="btn" data-act="reactor" ${costBtn(reactorCost())}>Reactor +1 · ${fmt(reactorCost())}</button>${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
     if ((panel.tab || 'act') === 'act') return `${head}
       <div class="sg mini"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>${tipify('Power')}<b>${gridUsed()}/${gridCap()}</b></span></div>
@@ -8404,6 +8812,8 @@ const UI = (() => {
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
       <div class="sts">${tipify(`Shells hit whatever is closest to reaching the core · Blast ${num1(s.splash)}`)}</div>
       ${mods}
+      <div class="lbl">Command Uplink · LV ${c.uLvl || 0}/${UPLINK.max} · −${UPLINK.cd * (c.uLvl || 0)}% cooldowns</div>
+      <div class="cmods">${UPLINK.mods.map(m => `<span class="${(c.uLvl || 0) >= m.lv ? 'on' : ''}"><b>${(c.uLvl || 0) >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
       <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Overdrive: used on Wave ${G.odUsed}` : odReady() ? 'Overdrive: ready · release it from the left rail. One board clear this run' : `Overdrive: unlocks at Wave ${OD_WAVE} · once per run`)}</div>
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
@@ -8462,8 +8872,14 @@ const UI = (() => {
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const d = el.querySelector('[data-live="dps"]'); if (d) d.textContent = fmt(t.dps);
+      const cd = el.querySelector('[data-live="conds"]'); if (cd && !panelHeld) { const sg = towerConditions(t).map(c => c.t).join('|'); if (cd.dataset.sig !== sg) cd.outerHTML = condHTML(t); }
       const k = el.querySelector('[data-live="kills"]'); if (k) k.textContent = t.kills;
     }
+    if (panel.kind === 'enemy') { const e = panel.e, b = el.querySelector('[data-live="ehpbar"]'); if (b) b.style.width = pct(clamp(e.hp / e.maxHp, 0, 1));
+      const h = el.querySelector('[data-live="ehp"]'); if (h) h.textContent = `${fmt(Math.max(0, e.hp))} / ${fmt(e.maxHp)} HP`;
+      const pg = el.querySelector('[data-live="eprog"]'); if (pg && e.L && e.L.len) pg.textContent = Math.round(e.d / e.L.len * 100) + '%';
+      const sig = [e.st.burn ? 1 : 0, e.st.chill, e.st.frozen > 0 ? 1 : 0, e.st.shock > 0 ? 1 : 0, e.st.mark, e.scanned > 0 ? 1 : 0, e.shield > 0 ? 1 : 0, e.phase || 0].join(':');
+      if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; } panel.sig = sig; return; }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; el.innerHTML = cashPanelHTML(); } return; }
     if (panel.kind === 'core') {
       const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0);
@@ -8525,6 +8941,7 @@ const UI = (() => {
       if (act === 'cel') { G.core.el = b.dataset.v; renderPanel(); }
       else if (act === 'cw') { if (!coreUpgrade('weapon')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cs') { if (!coreUpgrade('shield')) SFX.play('deny'); renderPanel(); }
+      else if (act === 'cu') { if (!coreUpgrade('uplink')) SFX.play('deny'); renderPanel(); updateHud(); }
       else if (act === 'cr') { if (!coreUpgrade('repair')) SFX.play('deny'); renderPanel(); }
       else if (act === 'crr') { if (!rerollCore()) SFX.play('deny'); renderPanel(); }
       else if (act === 'od') {
@@ -8567,6 +8984,44 @@ const UI = (() => {
     pick = null; Render.prev = null;
     openPanel({ kind: 'build', x, y });
   }
+  // ---------- v5.1 Know Your Enemy: tap (or hover) any enemy to see what it is, what it does and what beats it ----------
+  function enemyAt(p, rad) {
+    let best = null, bd = (rad || 0.6) * (rad || 0.6);
+    for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0)) || e.burrowT > 0) continue; const ey = e.y - (e.fly ? 0.3 : 0), r = e.boss ? 1.4 : 1, d = dist2(e.x, ey, p.x, p.y) / (r * r); if (d < bd) { bd = d; best = e; } }
+    return best;
+  }
+  function enemyInfo(e) {
+    const B = e.boss ? BOSSES.find(b => b.id === e.boss) : null, D = ENEMIES[e.type] || {};
+    return { name: e.boss ? e.bossName : D.name || e.type, desc: B ? B.desc : D.desc, beat: B ? (B.tip || 'Single-target damage, Stasis and Strike. A boss that reaches the core ends the run') : D.beat };
+  }
+  function enemyPanelHTML(e) {
+    const I = enemyInfo(e), st = e.st || {};
+    const tags = [];
+    if (e.boss) tags.push(`<span class="etag bad">Boss${e.phase ? ' · phase ' + (e.phase + 1) : ''}</span>`);
+    if (e.fly) tags.push('<span class="etag">Flying</span>');
+    if (e.armor) tags.push(`<span class="etag">Plated ${Math.round(e.armor * 100)}%</span>`);
+    for (const [k, v] of Object.entries(e.res || {})) if (v) tags.push(`<span class="etag" style="color:${EL[k].col}">${v > 0 ? 'Resists' : 'Weak to'} ${EL[k].name} ${Math.round(Math.abs(v) * 100)}%</span>`);
+    const sts = [];
+    if (st.burn) sts.push('<span style="color:#ff7b39">Burning</span>'); if (st.frozen > 0) sts.push('<span style="color:#bff4ff">Frozen</span>'); else if (st.chill > 0) sts.push(`<span style="color:#9ad8ff">Chilled ${st.chill}</span>`);
+    if (st.shock > 0) sts.push('<span style="color:#ffe14d">Shocked</span>'); if (st.mark > 0) sts.push(`<span style="color:#b86cff">Marked ${st.mark}</span>`); if (e.scanned > 0) sts.push('<span style="color:#7dffb0">Scanned +15%</span>');
+    if (e.shield > 0) sts.push(`<span style="color:#7fd4ff">Shield ${fmt(e.shield)}</span>`);
+    const elites = (e.elite || []).map(id => ELITE_AFFIXES.find(a => a.id === id)).filter(Boolean);
+    const genes = (e.genes || []).filter(g => GENES[g]);
+    const prog = e.L && e.L.len ? Math.round(e.d / e.L.len * 100) : 0;
+    return `<div class="ph"><canvas class="ico eico" width="32" height="32" ${e.boss ? `data-bico="${e.boss}"` : `data-eico="${e.pirate ? 'pirate' : e.type}"`}></canvas><div class="pt"><b>${esc(I.name)}</b><small>${tags.join(' ') || 'Ground'}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
+      <div class="ehp"><i data-live="ehpbar" style="width:${pct(clamp(e.hp / e.maxHp, 0, 1))}"></i><span data-live="ehp">${fmt(Math.max(0, e.hp))} / ${fmt(e.maxHp)} HP</span></div>
+      <div class="sg mini"><span>Speed<b>${num1(e.spd)}</b></span><span>Road<b data-live="eprog">${prog}%</b></span><span>Bounty<b>${fmt(Math.round(e.cr * G.mods.credits))}</b></span></div>
+      <div class="sts">${tipify(I.desc || '')}</div>
+      ${I.beat ? `<div class="sts good">Beat it: ${tipify(I.beat)}</div>` : ''}
+      ${elites.length ? `<div class="lbl">Elite</div>${elites.map(A => `<div class="sts" style="box-shadow:inset 3px 0 0 ${A.col}"><b style="color:${A.col};font-weight:400">${esc(A.name)}</b> · ${esc(A.desc)}</div>`).join('')}` : ''}
+      ${genes.length ? `<div class="lbl">Genes</div>${genes.map(g => `<div class="sts" style="box-shadow:inset 3px 0 0 ${GENES[g].col}"><b style="color:${GENES[g].col};font-weight:400">${GENES[g].name}${g === 'ward' && e.gel ? ' · ' + EL[e.gel].name : ''}</b> · ${esc(GENES[g].desc)} · <u>Counter: ${esc(GENES[g].counter)}</u></div>`).join('')}` : ''}
+      <div class="sts" data-live="ests">${sts.join(' · ') || 'No statuses'}</div>`;
+  }
+  function openEnemy(e) {
+    Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = e; G.selCore = false;
+    const p = { kind: 'enemy', e, x: Math.floor(e.x), y: Math.floor(e.y) };
+    openPanel(p);
+  }
   function openCore() {
     Render.sel = { x: G.map.core.x, y: G.map.core.y }; Render.selT = null; Render.prev = null; G.selCore = true;
     openPanel({ kind: 'core', x: G.map.core.x, y: G.map.core.y });
@@ -8605,7 +9060,13 @@ const UI = (() => {
     const p = Render.screenToTile((e.clientX - r.left) / UIS, (e.clientY - r.top) / UIS), tx = Math.floor(p.x), ty = Math.floor(p.y);
     const inside = G.region && inRegion(tx, ty, G.region);
     Render.hover = inside ? { x: tx, y: ty } : null;
-    const live = inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheAt(tx, ty));
+    const en = !G.towerAt[tIdx(tx, ty)] ? enemyAt(p) : null;
+    Render.hoverE = en;
+    const tip = $('#etip');
+    if (en) { const I = enemyInfo(en); tip.innerHTML = `<b>${esc(I.name)}</b><span>${esc(I.beat ? 'Beat it: ' + I.beat : I.desc || '')}</span>`; tip.hidden = false;
+      const sr = $('#stage').getBoundingClientRect(), x = e.clientX - sr.left, y = e.clientY - sr.top; tip.style.left = Math.round(Math.min(sr.width - 230, x + 14) / UIS) + 'px'; tip.style.top = Math.round(Math.max(0, y - 46) / UIS) + 'px'; }
+    else tip.hidden = true;
+    const live = en || inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheAt(tx, ty));
     $('#cv').style.cursor = G.aimAbility ? 'crosshair' : live ? 'pointer' : 'default';
   }
   function canvasUp(e) {
@@ -8654,9 +9115,10 @@ const UI = (() => {
     if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
     const cc = cacheAt(tx, ty);
     if (cc) { const kind = cc.kind, m = claimCache(cc); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
-    SFX.play('ui');
     const isCore = tx === G.map.core.x && ty === G.map.core.y;
     const t = G.towerAt[tIdx(tx, ty)];
+    if (!isCore && !t) { const en = enemyAt(p); if (en) { SFX.play('ui'); if (panel && panel.kind === 'enemy' && panel.e === en) { closePanel(); return; } openEnemy(en); return; } }
+    SFX.play('ui');
     // with a panel open, tapping empty ground (or the selected tile again) dismisses it;
     // towers and the core still switch straight to their own panel
     if (panel) {
@@ -8835,6 +9297,16 @@ const UI = (() => {
       <div class="newslist">${N.items.map(([h, t]) => `<div><b>${esc(h)}</b><span>${tipify(t)}</span></div>`).join('')}</div>
       <div class="foot"><button class="btn primary" data-act="newsDone">Let's go</button></div></div>`, 'news');
   }
+  // v5.3: the death screen says why, and what would have stopped it
+  function lossWhyHTML() {
+    if (G.stats.bossBreach) return `<div class="why"><b>Why</b><span>${esc(G.stats.bossBreach)} reached the core. A boss at the core ends the run, whatever your shield.</span><span class="good">Next time: slow it (Cryo, Gravity Well, Stasis), Scan it for +15% damage taken, and put single-target fire on it (Rail Lance, Void Lens). Upgrade the core's Command Uplink for faster Stasis.</span></div>`;
+    const L = G.leakWave || {}, top = Object.entries(L).sort((a, b) => b[1] - a[1])[0];
+    if (!top) return '';
+    const n = Object.values(L).reduce((a, b) => a + b, 0), [ty, ...gs] = top[0].split('+'), D = ENEMIES[ty];
+    const nm = D ? D.name : ty.replace('boss:', ''), g0 = gs.find(g => GENES[g]);
+    const beat = g0 ? GENES[g0].counter : D && D.beat;
+    return `<div class="why"><b>Why</b><span>${n} got through in Wave ${G.wave}, mostly ${esc(nm)}${gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''} (${top[1]}).</span>${beat ? `<span class="good">Beat it: ${tipify(beat)}</span>` : ''}</div>`;
+  }
   function openGameOver() {
     const L = profLevel(), gained = L.level - G.lvlStart;
     const best = G.wave > (G.bestAtStart || 0);
@@ -8842,13 +9314,14 @@ const UI = (() => {
     Save.save();
     modal(`<div class="card over"><div class="ch"><h2 class="bad">Core Destroyed</h2><span class="note">${G.daily ? 'Daily Challenge' : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>Levels<b>+${gained}</b></span></div>
+      ${lossWhyHTML()}
       ${G.daily ? `<p class="void">Today's best: Wave ${PROF.daily ? PROF.daily.best : G.wave}</p>` : best ? '<p class="amber">New best wave!</p>' : `<p class="note">Best: Wave ${PROF.bestWave}</p>`}
       ${G.hallRank >= 0 ? `<p class="amber">Hall of Fame #${G.hallRank + 1}!</p>` : ''}
       ${recapHTML(G.rec)}
       ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
       ${pointsFree() > 0 ? `<p class="good">${pointsFree()} talent point${pointsFree() === 1 ? '' : 's'} to spend</p>` : ''}
       <div class="row logrow"><span class="note">Run log for analysis</span><button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button></div>
-      <div class="foot"><button class="btn small" data-act="logCopy" title="Copy this run's log to paste into a chat">Copy log</button><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Passive Web</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
+      <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Talents</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
   const fsOK = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
@@ -9042,7 +9515,7 @@ const UI = (() => {
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan. Tap Fit to reset the view.'],
-      ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V abilities, Space pause, 1–3 speed, Esc close.'],
+      ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V B abilities, Space pause, 1–3 speed, Esc close.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
       ['Burn', 'Deals damage over time.'],
@@ -9053,13 +9526,16 @@ const UI = (() => {
     ], combos: true },
     { id: 'run', name: 'In a Run', rows: [
       ['Affixes', 'Random bonuses: Common, Magic, Rare, Legendary. Curses are negative.'],
-      ['Veterans', 'Towers rank up from kills. A ! means a mutation is ready.'],
+      ['Veterans', 'Towers rank up from kills. When one has a mutation to pick, a "veterans ready" chip appears at the top: tap it to jump there.'],
       ['Ascend', 'Max-level towers can Ascend for ×1.3 Damage.'],
       ['Entropy', 'Fills as you fight. When full, draw an Anomaly or Stabilize.'],
       ['Storms', 'Boost one element. Storms merge; 3 types form a Maelstrom.'],
       ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned 2 waves ahead.'],
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
-      ['Abilities', 'Earned from score milestones. Shown on the left.'],
+      ['Abilities', 'The left rail. Each ability comes online at its wave and recharges on its own timer (the bar under it fills). Crates, chests, bosses and milestones add extra charges on top, with no cap. Command talents and the core\'s Command Uplink cut cooldowns and add charge slots.'],
+      ['Sensor Sweep', `Scan: reveals cloaked enemies for ${SCAN.dur}s, Marks everything it sweeps (+${SCAN.mark}% damage taken) and flags the biggest threat with a reticle. Short cooldown.`],
+      ['Know your enemy', 'Tap (or hover) any enemy to see its HP, what it does and what beats it. Each wave leans on a headline enemy, shown as an amber chip. New enemies are announced the wave before they land.'],
+      ['Command Uplink', `A core upgrade line: −${UPLINK.cd}% ability cooldowns per level. ${UPLINK.mods.map(m => `LV ${m.lv} ${m.name}: ${m.desc}`).join('. ')}.`],
       ['Bosses', 'Every 10 waves, always on the longest road (flying bosses skim it). Drop a boon and a Recalibration token. If one reaches your core, the run ends, so watch the Red Alert.'],
       ['Red Alert', `A boss within ${RED_ALERT.tiles} tiles of the core: sirens, the field turns red and the core goes to Last Stand, hitting it ×${RED_ALERT.coreDmg}. That is the moment for Stasis, a Strike or a burst of Overcharge.`],
       ['Black Market', 'Tap Score to open the Exchange: Cash In, plus a pirate trader with 3 items in stock (a Legendary for your next towers, a bribe for the boss, a stolen blueprint...). Prices climb with the wave; new stock after every boss.'],
@@ -9100,7 +9576,7 @@ const UI = (() => {
         ['Crit', 'Critical hit. Deals bonus Crit Damage.'], ['Ramp', 'Beam damage that grows while it holds one target.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
         ['Specialization', 'A permanent fork chosen at LV 3.'], ['Veteran', 'Rank earned from kills. Each rank offers a mutation.'], ['Mutation', 'An affix you choose when a tower ranks up.'],
         ['Ascend', 'Upgrade past max level for ×1.3 Damage and a new affix.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
-        ['Milestone', 'Score threshold. Grants an ability charge and a small bonus.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
+        ['Milestone', 'Score threshold. Grants an extra ability charge and a small bonus.'], ['Conditions', 'In a tower\'s panel: every live modifier on it (storms, events, Frenzy, outages) with numbers.'], ['Headline', 'The enemy a wave leans on. Amber chip in the top bar; tap it for what beats it.'], ['IDLE', 'Tag on a tower that hasn\'t fired for three waves. Move it to where the enemies are.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
@@ -9126,7 +9602,7 @@ const UI = (() => {
         ...AFFIXES.map(A => [A.t(affRange(A)), `Common range · ${P[A.pool]}`]) ] },
       { id: 'legend', name: 'Legendaries', rows: LEGENDARIES.map(L => [L.name, `${L.t()}. ${P[L.pool]}.`, RARITY[3].col]) },
       { id: 'curse', name: 'Curses', rows: CURSES.map(C => [C.t(), 'Curse', RARITY[4].col]) },
-      { id: 'enemy', name: 'Enemies', rows: Object.values(ENEMIES).map(E => [E.name, E.desc + '.', '#ff8a9c']) },
+      { id: 'enemy', name: 'Enemies', rows: Object.entries(ENEMIES).map(([k, E]) => [E.name, `${esc(E.desc)}. <em>Beat it: ${esc(E.beat || '')}${E.from < 999 ? ` · from Wave ${E.from}` : ''}</em>`, '#ff8a9c', k]) },
       { id: 'genes', name: 'Evolution', rows: GENE_IDS.map(g => [GENES[g].name, `${GENES[g].desc}. Counter: ${GENES[g].counter}.`, GENES[g].col]) },
       { id: 'elite', name: 'Elite Affixes', rows: ELITE_AFFIXES.map(E => [E.name, E.desc + '.', E.col]) },
       { id: 'boss', name: 'Bosses', rows: BOSSES.map(B => [B.name, B.desc + '.', '#ff4d6a']) },
@@ -9145,7 +9621,7 @@ const UI = (() => {
   function dictHTML() {
     const cats = dictData(), q = dictQ.trim().toLowerCase();
     const strip = h => h.replace(/<[^>]+>/g, '');
-    const row = r => `<b style="--c:${r[2] || ''}">${esc(r[0])}</b><span>${r[1].includes('<') ? r[1] : esc(r[1])}</span>`;
+    const row = r => `<b style="--c:${r[2] || ''}">${r[3] ? `<canvas class="dico" width="22" height="22" data-eico="${r[3]}"></canvas>` : ''}${esc(r[0])}</b><span>${r[1].includes('<') ? r[1] : esc(r[1])}</span>`;
     let body;
     if (q) {
       const hits = cats.map(c => ({ c, rows: c.rows.filter(r => (r[0] + ' ' + strip(r[1])).toLowerCase().includes(q)) })).filter(x => x.rows.length);
@@ -9167,6 +9643,7 @@ const UI = (() => {
       <div class="chips gtabs">${GUIDE.map(g => `<button class="chip ${g.id === T.id ? 'on' : ''}" data-act="htab" data-v="${g.id}">${g.name}</button>`).join('')}</div>
       ${T.id === 'dict' ? dictHTML() : `<div class="gd">${T.rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join('')}</div>`}
       ${combos}</div>`, 'help');
+    for (const cv of document.querySelectorAll('#modal canvas[data-eico]')) Render.enemyIcon(cv.dataset.eico, cv);
     const ds = $('#dSearch');
     if (ds) {
       ds.oninput = () => { dictQ = ds.value; const pos = ds.selectionStart; openHelp(); const n = $('#dSearch'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} };
@@ -9323,6 +9800,9 @@ const UI = (() => {
 
   // ---------- wiring ----------
   function wire() {
+    $('#panel').addEventListener('pointerdown', () => { panelHeld = true; });
+    const panelLift = () => { if (!panelHeld) return; panelHeld = false; if (panelDirty) setTimeout(() => { if (panelDirty && !panelHeld) renderPanel(); }, 30); };
+    window.addEventListener('pointerup', panelLift, true); window.addEventListener('pointercancel', panelLift, true);
     $('#panel').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) panelAction(b.dataset.act, b); });
     $('#modal').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) modalAction(b.dataset.act, b); });
     const cv = $('#cv');
@@ -9334,7 +9814,7 @@ const UI = (() => {
     $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
-    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
+    $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#pw').parentNode.onclick = () => {
       if (!G || G.over) return; SFX.play('ui');
       const free = gridFree(), T = topTower();
@@ -9355,6 +9835,8 @@ const UI = (() => {
       if (e.target.closest('#bOD')) { overdriveTap(); return; }
       const b = e.target.closest('[data-abil]'); if (!b || b.disabled || !G) return;
       const k = b.dataset.abil;
+      if (!abilOnline(k)) { SFX.play('deny'); toast(ABILITIES[k].name.toUpperCase(), `Comes online at Wave ${ABILITIES[k].from}. ${ABILITIES[k].desc}`, '#8a8fa8', true, 'tip'); return; }
+      if (!(G.charges[k] > 0)) { SFX.play('deny'); toast(ABILITIES[k].name.toUpperCase(), `Recharging · ${Math.ceil(G.abilCd[k] || 0)}s. Upgrade the core's Command Uplink or take Command talents for faster cooldowns`, '#8a8fa8', true, 'tip'); return; }
       if (ABILITIES[k].target) { G.aimAbility = G.aimAbility === k ? null : k; if (G.aimAbility) { toast('ORBITAL STRIKE', 'Tap a target', '#ffb03a'); closePanel(); } }
       else useAbility(k);
       updateHud();
@@ -9406,11 +9888,11 @@ const UI = (() => {
       if (k === 'n') { $('#bCall').click(); return; }
       if (k === 't') { SFX.play('ui'); Tree.open(); return; }
       if (k === 'u' && panel && panel.kind === 'tower') { const b = $('#panel [data-act=up]'); if (b && !b.disabled) b.click(); else SFX.play('deny'); return; }
-      const ab = { z: 0, x: 1, c: 2, v: 3 }[k];
+      const ab = { z: 0, x: 1, c: 2, v: 3, b: 4 }[k];
       if (ab !== undefined) { const b = document.querySelector(`[data-abil="${ABIL_ORDER[ab]}"]`); if (b && !b.hidden && !b.disabled) b.click(); return; }
     });
     $('#cv').addEventListener('contextmenu', e => e.preventDefault());
-    $('#cv').addEventListener('pointerleave', () => { Render.hover = null; });
+    $('#cv').addEventListener('pointerleave', () => { Render.hover = null; Render.hoverE = null; $('#etip').hidden = true; });
     // hooks
     Hooks.sfx = (n, a) => { SFX.play(n, a); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view
@@ -9431,9 +9913,17 @@ const UI = (() => {
     Hooks.onWave = () => {};
     Hooks.onCheckpoint = w => { toast('CHECKPOINT', 'A wormhole opens next wave. Rebuild, then Resume fast for a bonus.', '#59f0b4'); if (panel && panel.kind === 'tower') renderPanel(); Save.save(); };
     Hooks.onEntropy = () => {};
+    Hooks.newEnemy = k => setTimeout(() => enemyCard(k), 400);
+    Hooks.abilReady = k => { const b = document.querySelector(`[data-abil="${k}"]`); if (b) { b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping'); } };
+    Hooks.scanned = e => { const nm = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type, gs = (e.genes || []).filter(g => GENES[g]);
+      const beat = gs.length ? GENES[gs[0]].counter : ENEMIES[e.type] && ENEMIES[e.type].beat;
+      toast('BIGGEST THREAT', `${nm}${gs.length ? ' · ' + gs.map(g => GENES[g].name).join(', ') : ''} · ${fmt(e.hp)} HP${beat ? ' · Beat it: ' + beat : ''}`, '#ffb03a', true, 'tip'); };
   }
   function tick(dt) {
     if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
+    if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
+    if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());
+    onboardingTick();
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
@@ -9499,6 +9989,7 @@ const Tree = (() => {
     if (why === 'have') return 'Already yours';
     if (why === 'slots') { const n = CAP_NEXT(profLevel().level); return `You can hold ${capSlots(profLevel().level)} Capstone${capSlots(profLevel().level) > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
     if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
+    if (why === 'tree') return `One Capstone per tree. Remove ${capName(capsHeld().find(c => TAL[c].tree === T.tree))} first`;
     if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
     return 'Not available';
   }
@@ -9584,6 +10075,8 @@ const Tree = (() => {
   if (loaded) PROF = loaded;
   const webReset = migrateWeb();
   if (webReset) { Save.save(); setTimeout(() => UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'), 900); }
+  const capDrop = tidyCaps();
+  if (capDrop.length) { Save.save(); setTimeout(() => UI.toast('CAPSTONE REFUNDED', `One Capstone per tree now: ${capDrop.map(c => TAL[c].name).join(', ')} refunded. Spend the point elsewhere`, '#ffb03a'), 1400); }
   Render.init($('#cv'));
   Render.onCam = () => UI.zoomChanged && UI.zoomChanged();
   Tree.init();
