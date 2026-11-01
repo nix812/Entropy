@@ -119,3 +119,22 @@ G.core.hp = G.core.max; G.core.shield = 0; const hp0 = G.core.hp; const lk = S.s
 ok(hp0 - G.core.hp < 4 * (1 + 0.03 * G.wave) * 0.55, `leak damage cut by half: ${(hp0 - G.core.hp).toFixed(1)}`);
 G.wave = 55; const q = S.genWave(56, { elite: 1 }).queue.filter(e => e.type !== 'boss'); const ef = q.filter(e => e.elite).length / q.length;
 ok(ef < 0.7, `Elite Tide at Wave 56: ${Math.round(ef * 100)}% elites (non-swarmers capped at 60%, was 95%)`);
+
+// v5.4: Scan catches enemies that arrive mid-sweep; never more than two bad events a wave; Shell recharges unless Arc hit it;
+// the breach forecast speaks once per band instead of every wave
+prof(0, 60); G = S.newRun({ seed: 8, chaos: 1 }); for (let w = 0; w < 10; w++) S.startWave();
+G.charges.scan = 1; S.useAbility('scan'); const late = S.spawnEnemy('drone', {}); S.simStep(1 / 30);
+ok(late.scanned > 0, `an enemy spawned mid-Scan is Marked too (${late.scanned.toFixed(1)}s)`);
+{ let worst = 0; G = S.newRun({ seed: 9, chaos: 3 }); G.wave = 90; for (let w = 0; w < 300; w++) { const r = S.rollEvents(60 + (w % 40)); worst = Math.max(worst, r.list.filter(x => !x.good).length); } ok(worst <= 2, `at most ${worst} bad events in a wave over 300 rolls on Pandemonium`); }
+prof(0, 60); G = S.newRun({ seed: 10, chaos: 1 }); for (let w = 0; w < 30; w++) S.startWave();
+{ const sh = S.spawnEnemy('drone', { genes: ['shell'] }); ok(sh.shellMax > 0 && sh.shield === sh.shellMax, `Shell starts with a ${Math.round(sh.shellMax / sh.maxHp * 100)}% shield`);
+  S.hit(sh, sh.shield * 0.5, 'K', null, {}); const s1 = sh.shield; for (let i = 0; i < 30 * 4; i++) { sh.d = 0; S.simStep(1 / 30); }
+  ok(sh.shield > s1, `left alone, it recharges (${Math.round(s1)} -> ${Math.round(sh.shield)})`);
+  const sh2 = S.spawnEnemy('drone', { genes: ['shell'] }); S.hit(sh2, sh2.shield * 0.5, 'A', null, {}); const s2 = sh2.shield; for (let i = 0; i < 30 * 2.8; i++) { sh2.d = 0; S.simStep(1 / 30); }
+  ok(sh2.shield === s2, 'an Arc hit stops the recharge for 3s'); }
+prof(0, 60); G = S.newRun({ seed: 11, chaos: 1 }); for (let w = 0; w < 30; w++) S.startWave();
+{ let says = 0; const t0 = S.Hooks.toast; S.Hooks.toast = (t) => { if (t === 'BREACH WARNING') says++; };
+  for (let w = 0; w < 6; w++) { G.leakDmgW = (G.core.smax + G.core.max) * 0.6; G.stats.leaks += 5; S.startWave(); }
+  ok(says === 1, `six heavy waves in a row: one breach warning (${says}), core bar shows ${Math.round(G.breachP * 100)}%`);
+  G.leakDmgW = (G.core.smax + G.core.max) * 0.9; S.startWave(); ok(says === 2, 'it speaks again when it climbs to the next band');
+  S.Hooks.toast = t0; }

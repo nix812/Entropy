@@ -1,0 +1,3 @@
+v54_pts0 | n=8 median=57 mean=48.3 range=22-71 | boss deaths=1 (<=W30: 0) | assaults 29/37 | waves: 22,26,27,51,57,62,70,71 | by seed: 62:Spli 26:Carr 70:Skim 71:Jugg 27:Carr 57:Jugg 22:Dron 51:PhasWrai
+v54_pts60 | n=8 median=91 mean=92.6 range=52-157 | boss deaths=2 (<=W30: 0) | assaults 57/85 | waves: 52,69,76,81,91,94,121,157 | by seed: 69:Refl 94:Refl 157:Skim 121:Quac 91:Skim 81:Refl 76:Refl 52:Over
+v54_pts96 | n=8 median=102 mean=107.8 range=56-241 | boss deaths=2 (<=W30: 0) | assaults 74/98 | waves: 56,72,80,82,102,113,116,241 | by seed: 80:Skim 116:Aegi 56:Carr 241:WormWorm 113:Skim 72:Phan 82:Skim 102:Gloo

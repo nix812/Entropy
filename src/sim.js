@@ -1282,7 +1282,8 @@ function rollEvents(w) {
   let chance = Math.min(0.85, (0.28 + w * 0.012) * G.CH.ev);
   for (let i = 0; i < maxN; i++) {
     if (G.r() > chance) break;
-    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)));
+    const bad = list.filter(x => !x.good).length; // v5.4: never more than two bad events in one wave (Nic's Wave 88: Overcharge, Rift Breach and Blackout at once)
+    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)) && (E.good || bad < 2));
     if (!opts.length) break;
     const E = wpick(G.r, opts, e => e.w);
     ev[E.id] = 1; list.push(E);
@@ -1290,7 +1291,7 @@ function rollEvents(w) {
   }
   // Gambler: one more roll of the dice every wave
   // a fair coin: good or bad, and always good on a boss wave (a breach ends the run)
-  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
+  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5 || list.filter(x => !x.good).length >= 2; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
   return { ev, list };
 }
 function prepareWave(w) {
@@ -1481,6 +1482,7 @@ function genWave(w, ev) {
 // assault a wave ahead and selling is free (100% refund) until it lands, so you get a move in reply.
 // Hold it (few leaks): the strain is broken, +1 power for the rest of the run, and its genes fall out of favour.
 // Fail: it entrenches. Its genome spreads through the next waves and the following assault comes sooner.
+const SHELL = { share: ENVN0('SHS', 0.6), regen: ENVN0('SHR', 0.12), delay: ENVN0('SHD', 2.5) }; // v5.4 Shell gene: shield share of HP, recharge per second, quiet time before it recharges
 const ENVN = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
 // secs: the assault's total HP is sized to this many seconds of your firepower (like bosses), so it tests any defence
 const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1, minHp: 1.3, secs: ENVN('ASEC', 40), count: ENVN('ACNT', 1.3) };
@@ -1633,18 +1635,25 @@ function startWave() {
     }
   }
   G.spawnClock = 0; G.spawningDone = false;
-  // v5.0 breach warning: the core can sit at full health while a few leaks a wave are soaked by the shield, then die in one
-  // bad wave (Nic, Wave 87). When leaks climb, say so before the cliff, with what is getting through and what stops it
-  if (G.wave > 1 && G.leaksAtStart !== undefined) {
-    const lk = G.stats.leaks - G.leaksAtStart, prev = G.lastLeakN || 0; G.lastLeakN = lk;
-    if (lk >= 3 && (lk >= 6 || prev >= 3)) {
+  // v5.4 breach forecast (replaces the v5.0 warning that repeated every wave: 16 times in Nic's Wave 88 run). The shield soaks small
+  // leaks, so the core can sit at full health until one wave kills it. Instead: weigh last wave's leak damage against shield + hull
+  // (G.breachP, drawn on the core bar) and speak only when it climbs a band: 50% (heavy), 85% (one more like it ends the run)
+  if (G.wave > 1) {
+    const c = G.core, prot = Math.max(1, c.smax + c.max), P = (G.leakDmgW || 0) / prot;
+    G.breachP = P; G.breachPeak = Math.max((G.breachPeak || 0) * 0.85, P);
+    const band = P >= 0.85 ? 2 : P >= 0.5 ? 1 : 0;
+    if (P < 0.3) G.breachBand = 0;
+    if (band > (G.breachBand || 0)) {
+      G.breachBand = band;
       const now = G.leakWave || {}, top = Object.keys(now).map(k => [k, now[k]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
       let who = '', counter = '';
       if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
-      Hooks.toast('BREACH WARNING', `${lk} got through last wave${who ? ', mostly ' + who : ''}. Your core's shield won't hold many more.${counter}`, '#ff4d6a', true);
-      rlog('breachWarn', { n: lk, who });
+      const lk = G.stats.leaks - G.leaksAtStart;
+      Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are eating your defences: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield hides it until it doesn't.${counter}`, '#ff4d6a', true);
+      rlog('breachWarn', { n: lk, who, p: +P.toFixed(2) });
     }
   }
+  G.leakDmgW = 0;
   G.leakWave = {}; // v5.0.2: own per-wave tally (leakBy is cleared by the wave log, which left 'who' empty)
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
@@ -1935,7 +1944,7 @@ function spawnEnemy(type, q) {
       if (g === 'plating') e.armor = Math.min(0.7, e.armor + 0.4);
       if (g === 'bulk') e.size *= 1.2;
       if (g === 'brood') e.brood = 1;
-      if (g === 'shell') e.shield = e.maxHp * 0.5;
+      if (g === 'shell') { e.shield = e.shellMax = e.maxHp * SHELL.share; e.shHitT = -9; }
       if (g === 'regen') e.regenG = 0.025;
       if (g === 'ward') { e.wardEl = q.gel || 'K'; e.res[e.wardEl] = (e.res[e.wardEl] || 0) + (G.mods.ks.conflag && e.wardEl === 'T' ? 0.25 : 0.5); }
       if (g === 'cloak') e.cloak = 1;
@@ -2224,7 +2233,12 @@ function updateEnemies(dt) {
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
   // reveal cloak near pylons
   if (G.pylons && G.pylons.length) for (const e of G.enemies) if (e.cloaked) for (const p of G.pylons) if (dist2(e.x, e.y, p.cx, p.cy) <= p.s.range * p.s.range) { e.revealed = 0.3; break; }
-  for (const e of G.enemies) { if (e.revealed > 0) e.revealed -= dt; if (e.scanned > 0) { e.scanned -= dt; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.2); } }
+  for (const e of G.enemies) {
+    if (G.scanT > 0 && !e.dead && !(e.scanned > 0)) e.scanned = G.scanT; // v5.4: the sweep stays up its full time, so enemies arriving mid-Scan are caught too
+    if (e.revealed > 0) e.revealed -= dt; if (e.scanned > 0) { e.scanned -= dt; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.2); }
+    // v5.4 Shell: the shield recharges (20% a second) once it's been left alone 1.5 s, unless Arc hit it in the last 3 s
+    if (e.shellMax && e.shield < e.shellMax && !e.dead && G.time - e.shHitT > SHELL.delay && G.time - (e.arcT || -9) > 3) e.shield = Math.min(e.shellMax, e.shield + e.shellMax * SHELL.regen * dt);
+  }
 }
 const PHASE_LINES = { behemoth: ['RRRAAARGH', 'THE GROUND SHAKES'], queen: ['RISE, MY BROOD', 'SKREEEEE'], wraith: ['you cannot hold me', 'between, beyond'],
   overmind: ['YOUR MACHINES ARE MINE', 'SILENCE.'], titan: ['*CRACK*', 'UNSTOPPABLE'], cat: ['HSSSS', '*zoomies*'], whale: ['OOOOOOOOO', 'the deep remembers'],
@@ -2391,6 +2405,7 @@ function leak(e) {
     Hooks.fx('boom', { x: c.x, y: c.y, r: 2.5, col: '#59f0b4', big: 1 });
   }
   c.sinceHit = 0;
+  G.leakDmgW = (G.leakDmgW || 0) + dmg; // v5.4: the breach forecast weighs a wave's leak damage against shield + hull
   const abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs;
   c.hp -= dmg;
   Hooks.fx('leak', { x: c.x, y: c.y, boss: !!e.boss });
@@ -2442,8 +2457,10 @@ function hit(e, dmg, el, src, o) {
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
   if (src === G.core && e.redAlert && e.boss) mult *= RED_ALERT.coreDmg; // Last Stand: the core unloads on a boss at its gate
   let amt = dmg * mult;
+  if (e.shellMax && (el === 'A' || (src && src.s && src.s.el0 === 'A'))) e.arcT = G.time; // v5.4: Arc keeps a Shell from recharging
   if (e.shield > 0) {
-    const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
+    const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 3 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it). v5.4: ×3 (was 2.5)
+    e.shHitT = G.time;
     const a = Math.min(e.shield, amt * sk), had = e.shield; e.shield -= a; amt -= a / sk;
     if (had > 0 && e.shield <= 0.01) { e.shield = 0; Hooks.fx('shieldbreak', { x: e.x, y: e.y }); } // v5.1 tell: the shield cracks
     if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += a; // v5.0.2: shield damage counts, so Arc's real work shows up

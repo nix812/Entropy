@@ -286,6 +286,7 @@ body.watching #abils, body.watching #bCall, body.watching #bWeb, body.watching #
 .card.vets .vhead { display: flex; gap: 10px; align-items: center; margin: 4px 0 6px; } .card.vets .vhead canvas { width: 32px; height: 32px; image-rendering: pixelated; }
 .card.vets .vhead b { display: block; font-family: var(--f-pix); font-weight: 400; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #ffe14d; } .card.vets .vhead small { font-size: 15px; color: var(--dim); }
 .card.vets .vet { display: grid; gap: 6px; } .card.vets .affs.mini { opacity: 0.8; margin-bottom: 4px; }
+#hpbar { position: relative; } #leakmark { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: rgba(255,77,106,0.6); pointer-events: none; transition: width 0.4s; } #leakmark.hot { background: #ff4d6a; animation: blink 0.8s infinite steps(1); }
 .rb.ghost { visibility: hidden; }
 .hs.cashbtn.nomkt .cashtag { display: none; }
 .chip.locked { opacity: 0.45; box-shadow: inset 0 0 0 1px var(--line2); } .chip.locked small { display: block; font-size: 8px; color: var(--dim); margin-top: 2px; }
@@ -824,7 +825,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 
   <section id="game" class="screen" hidden>
     <header id="hud">
-      <div class="corebox"><span class="lbl">Core</span><div id="hpbar"><i id="hpfill"></i><i id="shfill"></i></div><span id="hptxt">100</span></div>
+      <div class="corebox"><span class="lbl">Core</span><div id="hpbar"><i id="hpfill"></i><i id="shfill"></i><i id="leakmark"></i></div><span id="hptxt">100</span></div>
       <div class="hs cr"><span class="coin"></span><b id="cr">0</b></div>
       <div class="hs pwr" aria-label="Power grid"><span class="bolt"></span><b id="pw">0/0</b></div>
       <div class="hs"><span class="lbl">Wave</span><b id="wave">0</b><small id="nextw"></small></div>

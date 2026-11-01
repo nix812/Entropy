@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.3.4';
+const VERSION = '5.4.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -80,8 +80,8 @@ const TOWERS = {
             { name: 'Long Lure', desc: '+2 lure range, +6 catches per wave', m: { rangeAdd: 2, catches: 6 } }] },
   coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 24, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
     blurb: 'Chain lightning. Applies Shock.',
-    specs: [{ name: 'Tesla Crown', desc: '+3 Chain', m: { chain: 3 } },
-            { name: 'Overvolt', desc: '×2 Shock effect, 12% chance to Stun', m: { shockX: 2, stun: 0.12 } }] },
+    specs: [{ name: 'Tesla Crown', desc: '+3 Chain, ×1.35 Damage', m: { chain: 3, dmgX: 1.35 } },
+            { name: 'Overvolt', desc: '×1.7 Damage, ×2 Shock effect, 12% chance to Stun', m: { dmgX: 1.7, shockX: 2, stun: 0.12 } }] }, // v5.4: the specs added no damage, so Coils fell behind at LV 5
   forge: { name: 'Credit Forge', el: 'N', cost: 150, dmg: 0, rate: 0, range: 0, kind: 'eco', income: 30, unlock: 12,
     blurb: 'Produces credits each wave.',
     specs: [{ name: 'Refinery', desc: '×2.2 Income', m: { incomeX: 2.2 } },
@@ -90,11 +90,11 @@ const TOWERS = {
     blurb: 'Short-range cone. Applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
-  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.7, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.2, // v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
+  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.7, rate: 10, range: 3.2, kind: 'beam', rampMax: 2.8, // v5.4 trim: was 3.2 (4 Lenses did 71% of Nic's Wave 88 run). v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
     st: { mark: 0.15 }, unlock: 20,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×5 damage', m: { rampMax: 5 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.8', m: { beams: 3, rampMax: 2.8 } }] },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×4.3 damage', m: { rampMax: 4.3 } },
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.5', m: { beams: 3, rampMax: 2.5 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
@@ -173,17 +173,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.3.4', title: 'Entropy 5.3 · The Hunt', items: [
-  ['Veteran Picks (5.3.4)', 'Tap the "veterans ready" chip to go through every waiting mutation in one place: each tower\'s card, its three choices, then straight on to the next. Show on map jumps to the tower, Next tower skips, Later closes. The game pauses while you choose.'],
-  ['Rounds land (5.3.3)', 'A bullet whose target dies on the way now flies on to where it fell and sparks out there, instead of vanishing mid-air. No change to damage.'],
-  ['White lines fixed (5.3.2)', 'The three thin white lines across the field on iPhone came from the faint retro scanlines, drawn as a repeating texture that Safari stitched badly. They are now drawn as plain stripes. Thanks for running the display test.'],
-  ['Bounties win runs', 'Every run posts a bounty: a named boss with a mutation and a price on its head. Bring it in and the run is a win. Then choose: Extract to end it there and bank half again in XP, or Push on at a higher score multiplier (×1.25 per bounty pushed past) toward the next bounty 20 waves later. Fall before you extract and the bonus is lost. The bounty sits in the top bar the whole run.'],
-  ['Your Nemesis', 'Whatever ends a run comes back for you. If a strain did it, the next run\'s swarm starts already carrying its genes and it leads your first Strain Assault; if a boss did it, it takes your next bounty, mutated. Beat it for a double bounty. Lose to it again and it ranks up. It waits on the main menu.'],
-  ['Daily Hunt', 'One map, one bounty and one Nemesis for everyone, every tower open, and the same 40 talent points each (build them from the Daily Hunt card, separate from your own talents), so the ladder is about play. Your first run of the day is the ranked one. Every input is recorded: watch your ranked run back, or copy a hunt code a friend can paste in and watch, tap for tap.'],
-  ['Exact resume', 'Close the app mid Daily Hunt and it picks up at the exact moment you left, not the start of the wave.'],
-  ['Main menu', 'Your Nemesis, trophies (bounties, extractions, Nemeses beaten) and today\'s Hunt sit under your level.'],
-  ['Chaos ladder', 'Extract once on a Chaos level to open the next one (reaching Wave 20 or 30 still works). Supernova now needs level 40 to start (was 60).'],
-  ['Graphics switches', 'Settings has Glow (soft lighting) and Pixel scaling (Sharp or Simple).'],
+const WHATS_NEW = { ver: '5.4.0', title: 'Entropy 5.4 · Read the Leaks', items: [
+  ['Breach forecast', 'The red stripe on the core bar shows how much of your shield and hull last wave\'s leaks used. The shield soaks small leaks, so the core can look full right up to the wave that kills it; the stripe shows the pressure building. The Breach Warning now speaks once when leaks pass half your defences and again near the edge, instead of every wave.'],
+  ['Arc means shields', 'Shell enemies\' shields now recharge when left alone, unless an Arc hit landed in the last 3 seconds. Arc Coils and EMP tear shields ×3 (was ×2.5) and keep them down for every tower around them. When the swarm says "you have no Arc", it matters now.'],
+  ['Arc Coil upgrades', 'Both specializations now add damage (Tesla Crown ×1.35, Overvolt ×1.7). Coils used to gain almost nothing past Level 3.'],
+  ['Void Lens trimmed', 'Its ramp tops out lower: ×2.8 (Event Horizon ×4.3, Prism Split ×2.5). Four Lenses did 71% of all damage in your Wave 88 run.'],
+  ['Fewer pile-ups', 'A wave never rolls more than two bad events at once.'],
+  ['Scan fix', 'Enemies that arrive while Sensor Sweep is running are revealed and Marked too, for its full time. Ability timers count game seconds, so at 3× speed they run out three times as fast in real time.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
@@ -259,7 +255,7 @@ const ENEMIES = {
   splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash to clean up the Swarmers it bursts into' },
   phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'Relay Pylon or Sensor Sweep to reveal it; Void hits it hard' },
   medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first: Rail or Strike. Burn stops all healing' },
-  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 2.5×' },
+  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 3×' },
   reflector: { name: 'Reflector', hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flamethrower, EMP Mortar' },
   carrier:  { name: 'Carrier', hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, drops: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air (Rail, Missile, Pulse) before it unloads' },
   sapper:   { name: 'Sapper', hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, sap: 1, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your line' },
@@ -288,7 +284,7 @@ const GENES = {
   haste:   { name: 'Haste', col: '#ffe14d', hp: 0.7, spd: 1.4, desc: '+40% speed', counter: 'Cryo, Gravity, EMP, Snare' },
   bulk:    { name: 'Bulk', col: '#ff7b39', hp: 1.4, spd: 0.75, desc: '+40% HP, slower', counter: 'Void Lens, Rail' },
   brood:   { name: 'Brood', col: '#ff9ad5', hp: 0.7, desc: 'Bursts into 3 mites', counter: 'Missile, Flame, Coil' },
-  shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.7, desc: 'Shield worth 50% of HP', counter: 'Arc Coil, EMP' },
+  shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.65, desc: 'Shield worth 60% of HP. It recharges when left alone, unless Arc has hit it in the last 3s', counter: 'Arc Coil, EMP' },
   regen:   { name: 'Regrowth', col: '#59f0b4', hp: 0.75, desc: 'Heals 2.5%/s unless Burning', counter: 'Flame, Missile' },
   ward:    { name: 'Ward', col: '#d6a6ff', hp: 0.85, desc: '50% resist to one element', counter: 'any other element' },
   cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon' },

@@ -338,6 +338,7 @@ const UI = (() => {
     $('#shfill').style.width = pct(c.smax ? c.shield / c.smax : 0);
     $('#hptxt').textContent = `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`;
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
+    { const lm = $('#leakmark'), P = Math.min(1, G.breachP || 0); if (lm) { lm.style.width = pct(P); lm.classList.toggle('hot', P >= 0.5); } } // v5.4: last wave's leaks against shield + hull
     $('#cr').textContent = fmt(G.credits);
     $("#wave").textContent = G.wave || "—";
     const cpWait = G.spawningDone && cpPending();
@@ -714,7 +715,7 @@ const UI = (() => {
     pulse: 'Anti-air all-rounder · fast shots, weak to Plating', rail: 'Pierces Plating and lines · slow, long range, hits air',
     cryo: 'Control · slows everything in its ring, air included', snare: 'Anti-air control · pulls fliers into a net',
     missile: 'Crowds, Brood and air · splash and Burn, weak to Plating', pylon: 'Support · boosts towers around it, reveals Cloak',
-    coil: 'Shields and crowds · ×2.5 vs shields, chains', forge: 'Economy · credits every wave',
+    coil: 'Shields and crowds · ×3 vs shields, stops Shell recharging, chains', forge: 'Economy · credits every wave',
     flame: 'Ground crowds · Burn stops Regrowth · can\'t hit air', lens: 'Plating, Bulk and bosses · beam ignores Plating, weak vs swarms',
     emp: 'Control · stuns and strips shields, hits air', grav: 'Control · drags ground enemies back · can\'t hit air',
   };
