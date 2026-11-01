@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.4.2';
+const VERSION = '5.4.3';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,8 +173,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.4.2', title: 'Entropy 5.4 · Read the Leaks', items: [
-  ['A new hangar sky (5.4.2)', 'The launch screen is redrawn: a Lorenz attractor, the classic picture of chaos, turns over a drifting nebula, with comets running its loops, three layers of stars, the odd meteor, and a glitch that tears the sky and the title together.'],
+const WHATS_NEW = { ver: '5.4.3', title: 'Entropy 5.4 · Read the Leaks', items: [
+  ['A new hangar sky (5.4.2–5.4.3)', 'The launch screen is redrawn: a Lorenz attractor, the classic picture of chaos, turns over a drifting nebula, with comets running its loops, three layers of stars, the odd meteor, and a glitch that tears the sky and the title together. 5.4.3 draws it twice as sharp on iPhone.'],
   ['Hunt build reminder (5.4.1)', 'Starting a Daily Hunt with talent points unspent now asks first: spend them, or start anyway. The build locks once the run begins.'],
   ['Breach forecast', 'The red stripe on the core bar shows how much of your shield and hull last wave\'s leaks used. The shield soaks small leaks, so the core can look full right up to the wave that kills it; the stripe shows the pressure building. The Breach Warning now speaks once when leaks pass half your defences and again near the edge, instead of every wave.'],
   ['Arc means shields', 'Shell enemies\' shields now recharge when left alone, unless an Arc hit landed in the last 3 seconds. Arc Coils and EMP tear shields ×3 (was ×2.5) and keep them down for every tower around them. When the swarm says "you have no Arc", it matters now.'],

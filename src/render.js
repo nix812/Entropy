@@ -1403,7 +1403,7 @@ const HangarFX = (() => {
   const rgba = (k, a) => `rgba(${k[0]},${k[1]},${k[2]},${a})`;
   const sh = (k, a) => { const q = Math.max(0, Math.min(24, Math.round(a * 24))); const m = k.sh || (k.sh = []); return m[q] || (m[q] = rgba(k, q / 24)); }; // cached colour strings
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-  let cv = null, c = null, W = 0, H = 0, PX = 2, t = 0, fade = 0, lastCall = 0;
+  let cv = null, c = null, W = 0, H = 0, PX = 2, R = 1, NP = 10, t = 0, fade = 0, lastCall = 0; // R: resolution relative to 5.4.2's 2 CSS px per pixel
   let neb = null, over = null, halo = null, dcv = null, dctx = null, dimg = null;
   const ZSPD = [1.2, 3, 6.5];
   let stars = [], sparks = [], comets = [], streak = null;
@@ -1423,9 +1423,9 @@ const HangarFX = (() => {
   const sstep = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
 
   // ---- the attractor: one long Lorenz trajectory, computed once ----
-  const LN = 6500, LP = new Float32Array(LN * 3);
-  { let x = 0.1, y = 0, z = 20; const h = 0.005;
-    for (let i = -2500; i < LN; i++) {
+  const LN = 13000, LP = new Float32Array(LN * 3); // v5.4.3: twice the points at half the step, so trails stay solid at the finer resolution
+  { let x = 0.1, y = 0, z = 20; const h = 0.0025;
+    for (let i = -5000; i < LN; i++) {
       const dx = 10 * (y - x), dy = x * (28 - z) - y, dz = x * y - (8 / 3) * z; x += dx * h; y += dy * h; z += dz * h;
       if (i >= 0) { LP[i * 3] = x; LP[i * 3 + 1] = y; LP[i * 3 + 2] = z - 24; } } }
   const SX = new Float32Array(LN), SY = new Float32Array(LN), SD = new Float32Array(LN);
@@ -1435,13 +1435,13 @@ const HangarFX = (() => {
     const gr = g.createRadialGradient(r, r, 0, r, r, r); gr.addColorStop(0, rgba(col, 0.9)); gr.addColorStop(0.25, rgba(col, 0.35)); gr.addColorStop(1, rgba(col, 0));
     g.fillStyle = gr; g.fillRect(0, 0, r * 2, r * 2); return s;
   }
-  const GLOW = { amber: sprite(C.amber, 8), ink: sprite(C.ink, 8), core: sprite(C.core, 8), bad: sprite(C.bad, 8), cryo: sprite(C.cryo, 8) };
+  let GLOW = {};
 
   function buildNebula() { // dithered, palette-tinted clouds at half the backdrop's resolution, brightest around the attractor
-    const nw = Math.ceil(W / 2) + 20, nh = Math.ceil(H / 2) + 20;
+    NP = Math.round(10 * R); const nw = Math.ceil(W / 2) + 2 * NP, nh = Math.ceil(H / 2) + 2 * NP;
     neb = document.createElement('canvas'); neb.width = nw; neb.height = nh;
     const g = neb.getContext('2d'), img = g.createImageData(nw, nh), d = img.data;
-    const sc = 3.4 / nh, ox = NOX, oy = NOY, fx = lay.cx / 2 + 10, fy = lay.cy / 2 + 10, STEP = 7;
+    const sc = 3.4 / nh, ox = NOX, oy = NOY, fx = lay.cx / 2 + NP, fy = lay.cy / 2 + NP, STEP = 7;
     for (let y = 0; y < nh; y++) for (let x = 0; x < nw; x++) {
       const px = x * sc + ox, py = y * sc + oy;
       const qx = fbm(px, py), qy = fbm(px + 5.2, py + 1.3), n = fbm(px + 3 * qx, py + 3 * qy), m = fbm(px * 0.8 + 8 - 2 * qy, py * 0.8 + 2 * qx);
@@ -1470,17 +1470,18 @@ const HangarFX = (() => {
   }
   function seed() {
     stars = [];
-    const n = Math.round(W * H / 140);
+    const n = Math.round(W * H / (140 * R * R)); // same number of stars at any resolution
     for (let i = 0; i < n; i++) {
       const z = Math.random() < 0.62 ? 0 : Math.random() < 0.7 ? 1 : 2, r = Math.random();
       stars.push({ x: Math.random() * W, y: Math.random() * H, z, b: [0.25, 0.5, 0.85][z] * (0.6 + 0.4 * Math.random()), p: Math.random() * 6.28, f: 0.6 + Math.random() * 2.2,
         col: r < 0.7 ? C.star : r < 0.8 ? C.cryo : r < 0.88 ? C.amber : r < 0.95 ? C.void : C.bad });
     }
-    comets = [0, 1, 2, 3, 4].map(i => ({ i: Math.random() * LN, v: 85 + Math.random() * 40, len: 150 + Math.floor(Math.random() * 120), col: ['amber', 'ink', 'core', 'bad', 'cryo'][i] }));
+    comets = [0, 1, 2, 3, 4].map(i => ({ i: Math.random() * LN, v: 170 + Math.random() * 80, len: 300 + Math.floor(Math.random() * 240), col: ['amber', 'ink', 'core', 'bad', 'cryo'][i] }));
     sparks = [];
   }
   function resize(w, h) {
     W = w; H = h; cv.width = W; cv.height = H;
+    const gr = Math.round(8 * R); GLOW = { amber: sprite(C.amber, gr), ink: sprite(C.ink, gr), core: sprite(C.core, gr), bad: sprite(C.bad, gr), cryo: sprite(C.cryo, gr) };
     dcv = document.createElement('canvas'); dcv.width = W; dcv.height = H; dctx = dcv.getContext('2d'); dimg = dctx.createImageData(W, H);
     layout(); buildNebula(); buildOverlay(); seed(); fade = 0;
   }
@@ -1490,10 +1491,11 @@ const HangarFX = (() => {
     const mr = m && m.getBoundingClientRect(), ur = u && u.getBoundingClientRect();
     if (!mr || !mr.width) { lay = { cx: W * 0.64, cy: H * 0.47, s: Math.min(H * 0.0145, W * 0.0095) }; return; }
     const k = W / (r0.width || 1); // the app may be zoomed by a transform, so measure in on-screen pixels
-    const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.1) - r0.top) * k + 4, bot = (mr.top - r0.top) * k - 2;
+    const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.1) - r0.top) * k + 4 * R, bot = (mr.top - r0.top) * k - 2 * R;
     const cx = Math.round((mr.left + mr.width / 2 - r0.left) * k), room = Math.max(H * 0.3, bot - top);
-    const br = document.querySelector('#hangar .brand h1'), bR = br ? (br.getBoundingClientRect().right - r0.left) * k + 6 : 0; // keep clear of the title
-    lay = { cx, cy: Math.round(top + room * 0.5), s: Math.max(0.8, Math.min(room / 52, mr.width * k / 54, (W - 4 - cx) / 27, bR ? (cx - bR) / 27 : 99, H * 0.016)) };
+    const br = document.querySelector('#hangar .brand h1'); let bR = 0; // keep clear of the title's letters (on iPad they run past the h1's own box)
+    if (br) { let rr = br.getBoundingClientRect().right; try { const rg = document.createRange(); rg.selectNodeContents(br); rr = Math.max(rr, rg.getBoundingClientRect().right); } catch (e) {} bR = (rr - r0.left) * k + 8 * R; }
+    lay = { cx, cy: Math.round(top + room * 0.5), s: Math.max(0.8 * R, Math.min(room / 52, mr.width * k / 54, (W - 4 * R - cx) / 29, bR ? (cx - bR) / 31 : 99, H * 0.016)) };
   }
   function project(cx, cy, s, a) {
     const ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(0.32), st = Math.sin(0.32);
@@ -1507,14 +1509,16 @@ const HangarFX = (() => {
   function draw(canvas, dt) {
     const now = performance.now(); if (now - lastCall > 600) fade = 0; lastCall = now;
     if (cv !== canvas) { cv = canvas; c = cv.getContext('2d'); W = 0; title = document.querySelector('.brand h1'); }
-    const br = cv.getBoundingClientRect(), cw = br.width || 1, ch = br.height || 1; PX = Math.max(2, Math.ceil(cw / 720));
+    // v5.4.3: finer pixels, 3 device pixels each (1 CSS px on 3x iPhones, 1.5 on 2x iPads), capped near 1100 across
+    const br = cv.getBoundingClientRect(), cw = br.width || 1, ch = br.height || 1, dpr = window.devicePixelRatio || 1;
+    PX = Math.max(cw / 1100, Math.min(2, Math.max(1, 3 / dpr))); R = 2 / PX;
     const w = Math.max(1, Math.round(cw / PX)), h = Math.max(1, Math.round(ch / PX));
     if (w !== W || h !== H) resize(w, h);
     const mv = motion(), sp = mv ? 1 : 0.25; dt *= sp; t += dt; fade = Math.min(1, fade + dt / 1.4);
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.imageSmoothingEnabled = false;
     c.fillStyle = rgba(C.bg, 1); c.fillRect(0, 0, W, H);
     // nebula drifts on a slow orbit
-    c.drawImage(neb, Math.round(-20 + Math.sin(t * 0.05) * 7), Math.round(-20 + Math.cos(t * 0.037) * 5), neb.width * 2, neb.height * 2);
+    c.drawImage(neb, Math.round(-2 * NP + Math.sin(t * 0.05) * 7 * R), Math.round(-2 * NP + Math.cos(t * 0.037) * 5 * R), neb.width * 2, neb.height * 2);
     c.globalCompositeOperation = 'lighter';
     // the attractor: a wide soft halo, then thousands of points, two wings in two colours, nearer points brighter
     layT -= dt; if (layT <= 0) { layT = 0.5; const o = lay && lay.cx + ',' + lay.cy; layout(); if (o !== lay.cx + ',' + lay.cy) buildOverlay(); }
@@ -1525,40 +1529,40 @@ const HangarFX = (() => {
     // overlaps glow brighter, and it costs a fraction of drawing thousands of 1-pixel rects (the byte array clamps at 255 by itself)
     const dd = dimg.data; dd.fill(0);
     const plot = (x, y, k, a) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= W || y >= H || a <= 0) return; const q = (y * W + x) * 4; dd[q] += k[0] * a; dd[q + 1] += k[1] * a; dd[q + 2] += k[2] * a; dd[q + 3] = 255; };
-    const lift = Math.min(1.8, Math.max(1, s / 2.2)) * fade; // bigger on big screens spreads the points, so lift them
+    const lift = Math.min(1.8, Math.max(1, s / (2.2 * R))) * (0.6 + 0.4 * R) * fade; // finer lines read dimmer, so lift them a touch // bigger on big screens spreads the points, so lift them
     for (let i = 0; i < LN; i++) { const d = SD[i]; plot(SX[i], SY[i], LP[i * 3] > 0 ? C.void : C.cryo, (d > 9 ? 0.1 : d > -9 ? 0.17 : 0.27) * lift); }
     // comets run the trajectory, leaving fading trails and shedding sparks
     for (const k of comets) {
       k.i = (k.i + k.v * dt) % LN; const hi = Math.floor(k.i), col = C[k.col];
-      for (let j = 0; j < k.len; j++) { const q = (hi - j + LN) % LN; plot(SX[q], SY[q], col, 0.9 * fade * Math.pow(1 - j / k.len, 1.6)); }
+      for (let j = 0; j < k.len; j++) { const q = (hi - j + LN) % LN; plot(SX[q], SY[q], col, 0.9 * (0.7 + 0.3 * R) * fade * Math.pow(1 - j / k.len, 1.6)); }
       if (mv && Math.random() < dt * 9 && sparks.length < 140) {
         const q = (hi - 2 + LN) % LN, gx = SX[hi], gy = SY[hi], vx = gx - SX[q], vy = gy - SY[q], m = Math.hypot(vx, vy) || 1;
-        sparks.push({ x: gx, y: gy, vx: vx / m * (4 + Math.random() * 8) + (Math.random() - 0.5) * 6, vy: vy / m * (4 + Math.random() * 8) + (Math.random() - 0.5) * 6, l: 0, L: 1.5 + Math.random() * 2.5, col });
+        sparks.push({ x: gx, y: gy, vx: (vx / m * (4 + Math.random() * 8) + (Math.random() - 0.5) * 6) * R, vy: (vy / m * (4 + Math.random() * 8) + (Math.random() - 0.5) * 6) * R, l: 0, L: 1.5 + Math.random() * 2.5, col });
       }
     }
     for (let i = sparks.length - 1; i >= 0; i--) { // entropy: everything drifts apart and fades
       const p = sparks[i]; p.l += dt; if (p.l >= p.L) { sparks.splice(i, 1); continue; }
-      p.vx *= 1 - dt * 0.6; p.vy = p.vy * (1 - dt * 0.6) - dt * 1.5; p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vx *= 1 - dt * 0.6; p.vy = p.vy * (1 - dt * 0.6) - dt * 1.5 * R; p.x += p.vx * dt; p.y += p.vy * dt;
       plot(p.x, p.y, p.col, 0.8 * (1 - p.l / p.L));
     }
     // stars: three depths drifting left, twinkling; the near ones flare into crosses
     for (const st of stars) {
-      st.x -= ZSPD[st.z] * dt; if (st.x < -2) { st.x += W + 4; st.y = Math.random() * H; }
+      st.x -= ZSPD[st.z] * R * dt; if (st.x < -2) { st.x += W + 4; st.y = Math.random() * H; }
       st.p += st.f * dt; const tw = 0.55 + 0.45 * Math.sin(st.p), al = st.b * tw * (0.4 + 0.6 * fade), x = st.x, y = st.y;
       plot(x, y, st.col, al);
       if (st.z === 2 && tw > 0.86) { const a2 = al * 0.45; plot(x - 1, y, st.col, a2); plot(x + 1, y, st.col, a2); plot(x, y - 1, st.col, a2); plot(x, y + 1, st.col, a2);
         if (tw > 0.96) { const a3 = al * 0.2; plot(x - 2, y, st.col, a3); plot(x + 2, y, st.col, a3); plot(x, y - 2, st.col, a3); plot(x, y + 2, st.col, a3); } }
     }
     // now and then a meteor
-    if (mv) { nextStreak -= dt; if (nextStreak <= 0 && !streak) { streak = { x: W * (0.35 + Math.random() * 0.6), y: -4, vx: -(60 + Math.random() * 50), vy: 28 + Math.random() * 30, l: 0, L: 0.7 + Math.random() * 0.5 }; nextStreak = 5 + Math.random() * 8; } }
+    if (mv) { nextStreak -= dt; if (nextStreak <= 0 && !streak) { streak = { x: W * (0.35 + Math.random() * 0.6), y: -4, vx: -(60 + Math.random() * 50) * R, vy: (28 + Math.random() * 30) * R, l: 0, L: 0.7 + Math.random() * 0.5 }; nextStreak = 5 + Math.random() * 8; } }
     if (streak) {
       const m = streak; m.l += dt; m.x += m.vx * dt; m.y += m.vy * dt; const k = 1 - m.l / m.L;
-      for (let j = 0; j < 16; j++) plot(m.x - m.vx * j * 0.008, m.y - m.vy * j * 0.008, C.ink, 0.7 * k * (1 - j / 16));
+      const n = Math.round(16 * R); for (let j = 0; j < n; j++) plot(m.x - m.vx * j * 0.128 / n, m.y - m.vy * j * 0.128 / n, C.ink, 0.7 * k * (1 - j / n));
       if (m.l >= m.L) streak = null;
     }
     dctx.putImageData(dimg, 0, 0); c.globalAlpha = 1; c.drawImage(dcv, 0, 0);
     for (const k of comets) { // soft heads on top
-      const hi = Math.floor(k.i); c.globalAlpha = fade * (SD[hi] < 0 ? 1 : 0.6); c.drawImage(GLOW[k.col], Math.round(SX[hi] - 8), Math.round(SY[hi] - 8));
+      const hi = Math.floor(k.i); c.globalAlpha = fade * (SD[hi] < 0 ? 1 : 0.6); const g = GLOW[k.col]; c.drawImage(g, Math.round(SX[hi] - g.width / 2), Math.round(SY[hi] - g.height / 2));
     }
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
     // glitch: a few rows tear sideways and the title jumps with them
@@ -1568,7 +1572,7 @@ const HangarFX = (() => {
       if (glitch > 0) {
         glitch -= dt;
         for (let b = 0; b < 4; b++) {
-          const y = Math.floor(Math.random() * H), hh = 1 + Math.floor(Math.random() * 5), dx = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.floor(Math.random() * 9));
+          const y = Math.floor(Math.random() * H), hh = Math.round((1 + Math.random() * 4) * R), dx = (Math.random() < 0.5 ? -1 : 1) * Math.round((2 + Math.random() * 8) * R);
           c.drawImage(cv, 0, y, W, hh, dx, y, W, hh);
           c.fillStyle = sh(Math.random() < 0.5 ? C.bad : C.cryo, 0.1); c.fillRect(0, y, W, hh);
         }
