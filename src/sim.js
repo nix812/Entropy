@@ -2952,12 +2952,21 @@ function updateProjs(dt) {
     if (p.dead) continue;
     if (p.k === 'bullet') {
       p.life -= dt;
-      if (!p.e || p.e.dead) {
+      if (p.e && !p.e.dead) { p.lx = p.e.x; p.ly = p.e.y; }
+      else if (!p.spent) {
         // retarget nearby
         let best = null, bd = 2.25;
         for (const e of G.enemies) if (enemyTargetable(e) && !p.hitSet.has(e)) { const d = dist2(e.x, e.y, p.x, p.y); if (d < bd) { bd = d; best = e; } }
-        if (!best) { p.dead = true; continue; }
-        p.e = best;
+        if (best) { p.e = best; p.lx = best.x; p.ly = best.y; }
+        else if (p.lx === undefined) { p.dead = true; continue; }
+        // v5.3.3: nothing left to hit: the round still flies to where its target fell and sparks out there (no damage)
+        else { p.spent = 1; p.e = null; }
+      }
+      if (p.spent) {
+        const fx = p.lx - p.x, fy = p.ly - p.y, fd = Math.hypot(fx, fy), fs = p.spd * dt;
+        if (fd <= fs + 0.15 || p.life <= 0) { p.dead = true; Hooks.fx('spark', { x: p.lx, y: p.ly, col: EL[p.el].col }); }
+        else { p.x += fx / fd * fs; p.y += fy / fd * fs; }
+        continue;
       }
       const dx = p.e.x - p.x, dy = p.e.y - p.y, d = Math.hypot(dx, dy), stepv = p.spd * dt;
       if (d <= stepv + 0.15) {

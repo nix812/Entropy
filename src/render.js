@@ -902,12 +902,12 @@ const RES = 2;
       const X = p.x * TILE, Y = p.y * TILE, col = EL[p.el] ? EL[p.el].col : '#fff';
       if (p.k === 'bullet' && p.shell) {
         // core battery shell: a bright plasma orb with a streaming tail
-        let dx = 0, dy = 0; if (p.e && !p.e.dead) { dx = p.e.x - p.x; dy = p.e.y - p.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; }
+        let dx = 0, dy = 0; { const tx = p.e && !p.e.dead ? p.e.x : p.lx, ty = p.e && !p.e.dead ? p.e.y : p.ly; if (tx !== undefined) { dx = tx - p.x; dy = ty - p.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; } }
         for (let k = 4; k >= 1; k--) D(b, X - dx * k * 3, Y - dy * k * 3, Math.max(1, 3 - k * 0.6), hexA(col, 0.12 + 0.1 * (4 - k)));
         D(b, X, Y, 3, hexA(col, 0.9)); D(b, X, Y, 1.5, '#ffffff');
         if (frame % 3 === 0) parts.push({ x: X, y: Y, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8, life: 0.35, max: 0.35, col, s: 2 });
       } else if (p.k === 'bullet') {
-        let dx = 0, dy = 0; if (p.e && !p.e.dead) { dx = p.e.x - p.x; dy = p.e.y - p.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; }
+        let dx = 0, dy = 0; { const tx = p.e && !p.e.dead ? p.e.x : p.lx, ty = p.e && !p.e.dead ? p.e.y : p.ly; if (tx !== undefined) { dx = tx - p.x; dy = ty - p.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; } }
         // a tracer: a soft streak behind a hot core
         b.lineCap = 'round'; b.strokeStyle = hexA(col, 0.35); b.lineWidth = p.crit ? 2.5 : 1.5; b.beginPath(); b.moveTo(X - dx * 7, Y - dy * 7); b.lineTo(X, Y); b.stroke();
         b.strokeStyle = hexA(p.crit ? '#ffffff' : col, 0.85); b.lineWidth = p.crit ? 1.5 : 1; b.beginPath(); b.moveTo(X - dx * 3.5, Y - dy * 3.5); b.lineTo(X, Y); b.stroke(); b.lineCap = 'butt';
