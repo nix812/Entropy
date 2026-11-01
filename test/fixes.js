@@ -110,3 +110,12 @@ G.charges.overclock = 5; S.useAbility('overclock'); const f1 = G.overclockT; S.u
 ok(Math.abs(G.overclockT - 2 * f1) < 1e-6, `second Frenzy adds time: ${f1}s -> ${G.overclockT}s`);
 S.useAbility('overclock'); S.useAbility('overclock');
 ok(Math.abs(G.overclockT - 3 * f1) < 1e-6, `capped at three uses' worth (${G.overclockT}s)`);
+
+// v5.1.3: Core Hull raises max hull and cuts leak damage; Elite Tide can't make a wave all elites
+prof(0, 60); G = S.newRun({ seed: 6, chaos: 1 }); for (let w = 0; w < 30; w++) S.startWave();
+const m0 = G.core.max; G.credits = 1e7; for (let i = 0; i < 12; i++) S.coreUpgrade('hull');
+ok(G.core.hLvl === 10 && G.core.max > m0 * 2, `Hull 10: max ${Math.round(m0)} -> ${Math.round(G.core.max)}`);
+G.core.hp = G.core.max; G.core.shield = 0; const hp0 = G.core.hp; const lk = S.spawnEnemy('drone', {}); S.leak(lk);
+ok(hp0 - G.core.hp < 4 * (1 + 0.03 * G.wave) * 0.55, `leak damage cut by half: ${(hp0 - G.core.hp).toFixed(1)}`);
+G.wave = 55; const q = S.genWave(56, { elite: 1 }).queue.filter(e => e.type !== 'boss'); const ef = q.filter(e => e.elite).length / q.length;
+ok(ef < 0.7, `Elite Tide at Wave 56: ${Math.round(ef * 100)}% elites (non-swarmers capped at 60%, was 95%)`);

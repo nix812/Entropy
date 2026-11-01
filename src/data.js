@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.1.2';
+const VERSION = '5.1.3';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,7 +173,10 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.1.2', title: 'Entropy 5.1 · Know Your Enemy', items: [
+const WHATS_NEW = { ver: '5.1.3', title: 'Entropy 5.1 · Know Your Enemy', items: [
+  ['Core Hull', 'A new core upgrade for late money: each level adds 12% max hull and cuts the damage every leak does by 5% (10 levels). Banked credits now buy breathing room.'],
+  ['Tides tamed', 'Elite Tide adds fewer elites and a wave can never be more than 60% elite (late Elite Tides made almost every enemy an elite). Swarm Tide brings 60% more enemies instead of double. The two never land together.'],
+  ['Scan when it counts', 'With cloaked enemies on the field and a charge ready, the Scan button lights up, and the notice line says so now and then.'],
   ['Quieter notices', 'No more cards over the battlefield. Notices run along one slim line under the top bar, one at a time; long ones slide across instead of being cut off. Only run-ending news (Red Alert, Boss Halfway, Breach Warning) cuts in, with a red flash at the screen edge. News that already has a place on screen (the Strain Assault strip, storm and DNA chips) no longer repeats as a notice. Tap the line, or the +N chip, to read the last 30.'],
   ['Ability timers', 'Frenzy, Stasis and Scan count down on their buttons while they run (seconds left, and a bar that drains along the top). Using one again while it runs adds its time, up to three uses\' worth, instead of restarting it.'],
   ['Abilities on cooldowns', 'Every ability now recharges on its own timer into a charge slot, so the late game no longer runs dry. Crates, chests, bosses and milestones still give extra charges, and those stack with no cap. Buttons keep their place on the rail; empty ones dim and fill as they recharge.'],
@@ -358,8 +361,8 @@ const EVENTS = [
   { id: 'surge', name: 'Surge', good: 0, w: 10, from: 5, desc: '+35% enemy speed' },
   { id: 'emp', name: 'EMP Storm', good: 0, w: 8, from: 8, desc: 'Towers randomly shut down' },
   { id: 'breach', name: 'Rift Breach', good: 0, w: 8, from: 6, desc: 'Enemies spawn mid-path' },
-  { id: 'swarm', name: 'Swarm Tide', good: 0, w: 8, from: 5, desc: 'Twice the enemies at half HP' },
-  { id: 'elite', name: 'Elite Tide', good: 0, w: 6, from: 10, desc: 'Many more Elites' },
+  { id: 'swarm', name: 'Swarm Tide', good: 0, w: 8, from: 5, desc: '60% more enemies at 60% HP' },
+  { id: 'elite', name: 'Elite Tide', good: 0, w: 6, from: 10, desc: 'More Elites (up to 6 in 10)' },
   { id: 'blackout', name: 'Blackout', good: 0, w: 6, from: 12, desc: '−20% tower Range' },
   { id: 'regen', name: 'Nanite Bloom', good: 0, w: 6, from: 14, desc: 'Enemies regenerate HP' },
   { id: 'phase', name: 'Phase Shift', good: 0, w: 6, from: 16, desc: 'Enemies teleport forward' },
@@ -385,6 +388,8 @@ const UPLINK = { max: 9, cd: 5, base: 160, growth: 1.55, mods: [
   { lv: 3, id: 'double', name: 'Double Tap', desc: 'Orbital Strike hits the same spot twice' },
   { lv: 6, id: 'drag', name: 'Undertow', desc: 'Enemies leave Stasis slowed 40% for 4s' },
   { lv: 9, id: 'echo', name: 'Nova Echo', desc: 'Entropy Nova pulses again 1.5s later at half strength' }] };
+// v5.1.3 Core Hull: a late money sink that buys safety. Each level +12% max hull and −5% damage from every leak
+const HULL = { max: 10, hp: 12, guard: 5, base: 400, growth: 1.55 };
 const MILESTONE_BUFFS = [
   { k: 'dmg', v: 4, t: '+4% Damage' }, { k: 'rate', v: 4, t: '+4% Attack Speed' },
   { k: 'range', v: 3, t: '+3% Range' }, { k: 'critC', v: 2, t: '+2% Crit Chance' },

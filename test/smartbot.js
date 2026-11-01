@@ -104,6 +104,8 @@ for (let run = OFF; run < OFF + runs; run++) {
       if (G.charges.scan > 0 && !(G.scanT > 0) && (G.enemies.some(e => e.cloaked) || G.bossAlive || alive > 20)) S.useAbility('scan');
     }
     // v5.1 Command Uplink: a level every ~8 waves when there's spare cash (NOUPLINK=1 skips)
+    // v5.1.3 Core Hull with idle money late (NOHULL=1 skips)
+    if (!process.env.NOHULL && S.coreHullCost && G.wave >= 25 && (G.core.hLvl || 0) < 10 && G.credits > S.coreHullCost() * 4) S.coreUpgrade('hull');
     if (!process.env.NOUPLINK && S.coreUplinkCost && (G.core.uLvl || 0) < Math.min(9, Math.floor(G.wave / 7)) && G.credits > S.coreUplinkCost() * 2.5) S.coreUpgrade('uplink');
     // repair
     if (G.core.hp / G.core.max < 0.45 && G.credits > S.coreRepairCost()) S.coreUpgrade('repair');

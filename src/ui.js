@@ -276,7 +276,7 @@ const UI = (() => {
     // credits piling up: say so once in a while, with what to do about it
     if (G.spawningDone && G.wave >= 6 && G.wave - nudgeW >= 8 && G.towers.length) {
       const cheap = Math.min(...G.towers.map(t => upgradeCost(t))), lim = Math.max(900, cheap * 4, 250 * G.wave);
-      if (G.credits > lim) { nudgeW = G.wave; toast('CREDITS PILING UP', `${fmt(G.credits)} credits banked. Spend them: the arrow marks your best upgrade, or build, or expand the reactor${G.wave >= 28 ? '. Leeches steal from big banks' : ''}`, '#ffb03a', false, 'alert'); }
+      if (G.credits > lim) { nudgeW = G.wave; toast('CREDITS PILING UP', `${fmt(G.credits)} credits banked. Spend them: the arrow marks your best upgrade, or build, expand the reactor, or reinforce the core's Hull${G.wave >= 28 ? '. Leeches steal from big banks' : ''}`, '#ffb03a', false, 'alert'); }
     }
   }
 
@@ -359,6 +359,9 @@ const UI = (() => {
       const mx = on ? abilCdMax(k) : 1, cd = G.abilCd ? G.abilCd[k] : 0, filling = on && n < slots && cd > 0;
       btn.querySelector('.cdf').style.width = filling ? pct(clamp(1 - cd / mx, 0, 1)) : '0%';
       btn.classList.toggle('aim', G.aimAbility === k);
+      // v5.1.3: Scan lights up while cloaked enemies are on the field and it has a charge
+      if (k === 'scan') { const hid = on && n > 0 && !(G.scanT > 0) && G.enemies.some(e => !e.dead && e.cloaked && !(e.revealed > 0)); btn.classList.toggle('want', hid);
+        if (hid && (G.scanHintW || 0) + 6 <= G.wave) { G.scanHintW = G.wave; toast('CLOAKED ENEMIES', 'Your towers can\'t see them. Scan reveals them and marks them for +15% damage', '#7dffb0', false, 'alert'); } }
     }
     const free = pointsFree();
     $('#bStats').classList.toggle('on', hudFull);
@@ -810,10 +813,11 @@ const UI = (() => {
     const wc = coreWeaponCost(), sc = coreShieldCost(), rc = coreRepairCost();
     const nextMod = CORE_MODULES.find(m => m.lv === c.wLvl + 1);
     const mods = `<div class="cmods">${CORE_MODULES.map(m => `<span class="${c.wLvl >= m.lv ? 'on' : ''}"><b>${c.wLvl >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>`;
-    const head = `<div class="ph tabbed"><div class="pt"><b>Core Battery</b><small>Battery LV ${c.wLvl} · Shield LV ${c.sLvl}${c.uLvl ? ' · Uplink LV ' + c.uLvl : ''}</small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(c.affixes.length ? c.affixes.length : '')}</div>`;
+    const head = `<div class="ph tabbed"><div class="pt"><b>Core Battery</b><small>Battery LV ${c.wLvl} · Shield LV ${c.sLvl}${c.uLvl ? ' · Uplink ' + c.uLvl : ''}${c.hLvl ? ' · Hull ' + c.hLvl : ''}</small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(c.affixes.length ? c.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${canRelocate() ? relocHTML() : ''}<button class="btn primary wide" data-act="cw" ${c.wLvl >= CORE_GUN.maxLv ? 'disabled' : costBtn(wc)}>${c.wLvl >= CORE_GUN.maxLv ? 'Battery · Max' : `Upgrade Battery · ${fmt(wc)}<small>${nextMod ? `LV ${nextMod.lv}: unlocks ${esc(nextMod.name)}` : '+50% Damage, +Range, new affix'}</small>`}</button>
       <div class="row2"><button class="btn" data-act="cs" ${c.sLvl >= 10 ? 'disabled' : costBtn(sc)}>Shield · ${fmt(sc)}</button>${G.af.lastStand ? '' : `<button class="btn" data-act="cr" ${costBtn(rc)}>Repair · ${fmt(rc)}</button>`}</div>
-      ${(() => { const u = c.uLvl || 0, nm = UPLINK.mods.find(m => m.lv > u); return `<button class="btn wide" data-act="cu" ${u >= UPLINK.max ? 'disabled' : costBtn(coreUplinkCost())}>${u >= UPLINK.max ? 'Command Uplink · Max' : `Command Uplink ${u + 1} · ${fmt(coreUplinkCost())}`}<small>${u >= UPLINK.max ? `−${UPLINK.cd * u}% ability cooldowns` : `−${UPLINK.cd}% ability cooldowns${nm ? ` · LV ${nm.lv}: ${esc(nm.name)}` : ''}`}</small></button>`; })()}
+      ${(() => { const u = c.uLvl || 0, nm = UPLINK.mods.find(m => m.lv > u), h = c.hLvl || 0;
+        return `<div class="row2"><button class="btn" data-act="cu" ${u >= UPLINK.max ? 'disabled' : costBtn(coreUplinkCost())}>${u >= UPLINK.max ? 'Uplink · Max' : `Uplink ${u + 1} · ${fmt(coreUplinkCost())}`}<small>${nm ? `−${UPLINK.cd}% cooldowns · LV ${nm.lv} ${esc(nm.name)}` : `−${UPLINK.cd}% cooldowns`}</small></button><button class="btn" data-act="ch" ${h >= HULL.max ? 'disabled' : costBtn(coreHullCost())}>${h >= HULL.max ? 'Hull · Max' : `Hull ${h + 1} · ${fmt(coreHullCost())}`}<small>+${HULL.hp}% hull, −${HULL.guard}% leak damage</small></button></div>`; })()}
       <div class="row2"><button class="btn" data-act="reactor" ${costBtn(reactorCost())}>Reactor +1 · ${fmt(reactorCost())}</button>${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
     if ((panel.tab || 'act') === 'act') return `${head}
       <div class="sg mini"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>${tipify('Power')}<b>${gridUsed()}/${gridCap()}</b></span></div>
@@ -955,6 +959,7 @@ const UI = (() => {
       else if (act === 'cw') { if (!coreUpgrade('weapon')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cs') { if (!coreUpgrade('shield')) SFX.play('deny'); renderPanel(); }
       else if (act === 'cu') { if (!coreUpgrade('uplink')) SFX.play('deny'); renderPanel(); updateHud(); }
+      else if (act === 'ch') { if (!coreUpgrade('hull')) SFX.play('deny'); else toast('HULL REINFORCED', `LV ${G.core.hLvl}: ${Math.round(G.core.max)} max hull, leaks deal ${HULL.guard * G.core.hLvl}% less`, '#59f0b4', true, 'tip'); renderPanel(); updateHud(); }
       else if (act === 'cr') { if (!coreUpgrade('repair')) SFX.play('deny'); renderPanel(); }
       else if (act === 'crr') { if (!rerollCore()) SFX.play('deny'); renderPanel(); }
       else if (act === 'od') {

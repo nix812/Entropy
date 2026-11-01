@@ -669,7 +669,7 @@ function newRun(opts) {
   G.scoreMult = 1 + G.af.score + gamblerScore();
   const M = G.mods, sw = G.startWave;
   G.core = { x: G.map.core.x + 0.5, y: G.map.core.y + 0.5, hp: M.coreHP * G.af.coreHPx, max: M.coreHP * G.af.coreHPx, shield: M.shield, smax: M.shield,
-    sinceHit: 99, wLvl: 1, sLvl: 1, uLvl: 0, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
+    sinceHit: 99, wLvl: 1, sLvl: 1, uLvl: 0, hLvl: 0, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
   setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
@@ -735,7 +735,7 @@ function recomputeAll() {
   const c = G.core;
   if (!c.A) coreAffSum(c);
   const hpR = c.hp / c.max, shR = c.smax ? c.shield / c.smax : 1;
-  c.max = M.coreHP * (1 + (c.hpBonus || 0) + (c.A.chp || 0) / 100) * G.af.coreHPx; c.hp = Math.max(1, Math.min(c.max, hpR * c.max));
+  c.max = M.coreHP * (1 + (c.hpBonus || 0) + (c.A.chp || 0) / 100 + HULL.hp / 100 * (c.hLvl || 0)) * G.af.coreHPx; c.hp = Math.max(1, Math.min(c.max, hpR * c.max));
   c.smax = G.af.noShield ? 0 : M.shield * (1 + 0.4 * (c.sLvl - 1)) * (1 + (c.A.cshield || 0) / 100); c.shield = Math.min(c.smax, shR * c.smax);
   for (const t of G.towers) t.s = towerStats(t);
   recomputeAuras();
@@ -1258,7 +1258,7 @@ function rollEvents(w) {
   let chance = Math.min(0.85, (0.28 + w * 0.012) * G.CH.ev);
   for (let i = 0; i < maxN; i++) {
     if (G.r() > chance) break;
-    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id]);
+    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)));
     if (!opts.length) break;
     const E = wpick(G.r, opts, e => e.w);
     ev[E.id] = 1; list.push(E);
@@ -1390,7 +1390,7 @@ function genWave(w, ev) {
   const r = G.r, isBoss = w % 10 === 0, af = G.af || {};
   let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)) * (G.CH.count || 1));
   let hpm = hpMult(w) * (1 + (af.hpx || 0)) * (G.CH.hp || 1);
-  if (ev.swarm) { count *= 2; hpm *= 0.55; }
+  if (ev.swarm) { count *= 1.6; hpm *= 0.6; } // v5.1.3: was ×2 at 55% (Nic: an endless stream)
   const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && ENEMIES[k].w > 0);
   // v5.1 headline threats: each wave leans on one enemy (two from Wave 25), so you can see what it is and answer it.
   // A type that has just arrived always headlines its first wave
@@ -1399,7 +1399,8 @@ function genWave(w, ev) {
   heads.push(...fresh.slice(0, 2));
   while (heads.length < (w >= 25 ? 2 : 1) && pool.length) heads.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
   const HEAD_W = 3;
-  let eliteP = clamp((w - 4) * 0.012, 0, 0.45) * G.CH.elite + (ev.elite ? 0.5 : 0) + (af.elite || 0);
+  // v5.1.3: Elite Tide adds 25% (was 50%) and elites never pass 60% of a wave (late Elite Tides made 95% of a wave elite)
+  let eliteP = Math.min(Math.max(0.6, (af.elite || 0) + 0.3), clamp((w - 4) * 0.012, 0, 0.45) * G.CH.elite + (ev.elite ? 0.25 : 0) + (af.elite || 0));
   const affN = 1 + (w >= 25) + (w >= 50) + (w >= 80);
   const interval = Math.max(0.3, 0.8 - w * 0.008);
   const q = []; let t = 0;
@@ -2342,6 +2343,7 @@ function leak(e) {
   if (e.boss === 'auditor' && e.audited > 0) { Hooks.log(`The Auditor left with ${Math.round(e.audited)} of your credits`, '#ff4d6a'); e.audited = 0; }
   if (e.shield > 0 && e.boss) dmg *= 1.2;
   if (c.A && c.A.cguard) dmg *= 1 - Math.min(0.6, c.A.cguard / 100);
+  if (c.hLvl) dmg *= 1 - HULL.guard / 100 * c.hLvl;
   if (c.leg && c.leg.retribution && G.time - (c.retT || -99) > 1.5) {
     c.retT = G.time;
     const k = coreStats().dmg * 4;
@@ -3041,6 +3043,7 @@ function coreStats() {
   };
 }
 const coreWeaponCost = () => Math.round(120 * Math.pow(1.75, G.core.wLvl - 1));
+const coreHullCost = () => Math.round(HULL.base * Math.pow(HULL.growth, G.core.hLvl || 0) * (1 + 0.02 * Math.max(0, (G.wave || 1) - 10)));
 const coreUplinkCost = () => Math.round(UPLINK.base * Math.pow(UPLINK.growth, G.core.uLvl || 0));
 const coreShieldCost = () => Math.round(100 * Math.pow(1.65, G.core.sLvl - 1));
 const coreRepairCost = () => Math.round(40 + 14 * G.wave);
@@ -3049,7 +3052,8 @@ function coreUpgrade(kind) {
   let rolled = null;
   if (kind === 'weapon') { const k = coreWeaponCost(); if (c.wLvl >= 12 || G.credits < k) return false; G.credits -= k; c.wLvl++; rolled = rollCoreAffix(c); }
   else if (kind === 'shield') { const k = coreShieldCost(); if (c.sLvl >= 10 || G.credits < k) return false; G.credits -= k; c.sLvl++; rolled = rollCoreAffix(c); }
-  else if (kind === 'uplink') { const k = coreUplinkCost(); if ((c.uLvl || 0) >= UPLINK.max || G.credits < k) return false; G.credits -= k; c.uLvl = (c.uLvl || 0) + 1;
+  else if (kind === 'hull') { const k = coreHullCost(); if ((c.hLvl || 0) >= HULL.max || G.credits < k) return false; G.credits -= k; const was = c.max; c.hLvl = (c.hLvl || 0) + 1; recomputeAll(); c.hp = Math.min(c.max, c.hp + (c.max - was)); rlog('hull', { lv: c.hLvl, cost: k }); }
+  else if (kind === 'uplink') { const k = coreUplinkCost(); if ((c.uLvl || 0) >= UPLINK.max || G.credits < k) return false; G.credits -= k; c.uLvl = (c.uLvl || 0) + 1; rlog('uplink', { lv: c.uLvl, cost: k });
     for (const a of ABIL_ORDER) if (G.abilCd[a] > abilCdMax(a)) G.abilCd[a] = abilCdMax(a);
     const m = UPLINK.mods.find(x => x.lv === c.uLvl); if (m) Hooks.toast('UPLINK · ' + m.name.toUpperCase(), m.desc, '#ffe14d', true); }
   else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; c.hp = Math.min(c.max, c.hp + c.max * 0.35); }
@@ -3291,7 +3295,7 @@ function snapshotRun(waveNum) {
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
-    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, uLvl: G.core.uLvl || 0, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
+    core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, uLvl: G.core.uLvl || 0, hLvl: G.core.hLvl || 0, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
@@ -3333,7 +3337,7 @@ function resumeRun(S) {
   G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
   // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
   if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
-  G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.uLvl = S.core.uLvl || 0;
+  G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.uLvl = S.core.uLvl || 0; G.core.hLvl = S.core.hLvl || 0;
   G.abilCd = Object.assign({}, S.abilCd || {}); G.abilOn = Object.assign({ strike: 1 }, S.abilOn || {}); for (const k of ABIL_ORDER) G.charges[k] = G.charges[k] || 0; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
   G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
