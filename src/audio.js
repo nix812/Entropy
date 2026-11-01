@@ -596,7 +596,7 @@ const SFX = (() => {
     let cfg = JSON.parse(JSON.stringify(DEF));
     let P = null, lastG = '', lastF = '', bar = 0, s16 = 0, forceNext = null, favIdx = 0, tempoNow = 0, EV = null;
     const pieceLog = [];
-    let hist = [], rep = false, paused = false, editing = false; // v5.5: Back, Repeat, Pause, composer editing (session only)
+    let hist = [], rep = false, paused = false, editing = false, held = false; // held: the composer silenced the radio // v5.5: Back, Repeat, Pause, composer editing (session only)
     const live = () => cfg.custom ? cfg : Object.assign({}, DEF, { calmBpm: cfg.calmBpm, favs: cfg.favs });
     // effective energy: the Energy knob, pushed by the battle as far as Follow allows
     const effE = () => { const c = live(); return Math.max(0, Math.min(1, c.energy + c.follow * (battle - 0.4) * 0.85)); };
@@ -1134,7 +1134,7 @@ const SFX = (() => {
       if (!ctx || !P) return;
       battle += (targetB - battle) * 0.04;
       if (nextT < ctx.currentTime - 0.4) nextT = ctx.currentTime + 0.05;
-      if (paused) return;
+      if (paused || held) return;
       const until = (horizon !== undefined ? horizon : ctx.currentTime + 0.3);
       while (nextT < until) { const t = nextT; scheduleStep(t); nextT += liveSpb() / 4; }
     }
@@ -1174,8 +1174,8 @@ const SFX = (() => {
       if (cp.lead === 'none') S.lead = null;
       else if (LD) S.lead = Object.assign({ scale: 'mode', oct: 74 }, S.lead || {}, { kind: LD[0], grammar: LD[2], lv: Math.min((S.lead && S.lead.lv) || 0.3, 0.25), duty: LD[0] === 'chip' ? 0.25 : (S.lead && S.lead.duty) });
       else if (S.lead) S.lead = Object.assign({}, S.lead, { lv: Math.min(S.lead.lv, 0.25) });
-      const mel = Array.isArray(cp.mel) && cp.mel.some(x => x !== null && x !== undefined) ? cp.mel : null;
-      p.fixedMel = 0; if (S.lead) { if (mel) { const m = melMotif(mel); p.motifs = [m, m]; p.fixedMel = 1; } else p.motifs = [makeMotif(S.lead), makeMotif(S.lead)]; }
+      const mel = Array.isArray(cp.mel) ? cp.mel : null, any = mel && mel.some(x => x !== null && x !== undefined);
+      p.fixedMel = 0; if (S.lead) { if (any) { const m = melMotif(mel); p.motifs = [m, m]; p.fixedMel = 1; } else if (mel) { p.motifs = [[], []]; p.fixedMel = 1; } else p.motifs = [makeMotif(S.lead), makeMotif(S.lead)]; }
       R = r0;
     }
     function compFromPiece() {
@@ -1232,7 +1232,16 @@ const SFX = (() => {
       get canBack() { return hist.length >= 2; },
       get repeat() { return rep; }, set repeat(v) { rep = !!v; },
       get paused() { return paused; },
-      setPaused(v) { paused = !!v; if (pauseG && ctx) pauseG.gain.setTargetAtTime(paused ? 0 : 1, ctx.currentTime, 0.06); },
+      setPaused(v) { paused = !!v; if (pauseG && ctx) pauseG.gain.setTargetAtTime(paused || held ? 0 : 1, ctx.currentTime, 0.06); },
+      get held() { return held; },
+      setHold(v) { held = !!v; if (pauseG && ctx) pauseG.gain.setTargetAtTime(paused || held ? 0 : 1, ctx.currentTime, 0.04); if (!held && ctx) nextT = Math.max(nextT, ctx.currentTime + 0.05); },
+      // start a piece now instead of at the next bar: fade out what is already scheduled, then begin after the lookahead window
+      jump(force) {
+        if (!ctx || !P) { forceNext = force || null; return; }
+        const t = ctx.currentTime; newPiece(force || null); forceNext = null; nextT = t + 0.34;
+        if (pauseG) { const g = pauseG.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.05); if (!paused && !held) g.setValueAtTime(1, t + 0.33); }
+      },
+      get spec() { return P ? specOf() : null; },
       get editing() { return editing; }, set editing(v) { editing = !!v; },
       get sndGen() { return sndGen; },
       setName(n) { if (P && n) { P.name = String(n).slice(0, 32); if (hist.length) hist[hist.length - 1].name = P.name; } },
@@ -1248,7 +1257,8 @@ const SFX = (() => {
       compose(cp) { // play a comp: edits to the piece already playing apply at once; a new genre or flavour starts it at the next bar
         if (!cp || !GENRES[cp.genre] || !GENRES[cp.genre].flavours[cp.flav]) return null;
         if (P && P.comp && P.g === cp.genre && P.f === cp.flav && !P.skip) { applyComp(P, cp); P.seed = cp.seed >>> 0; P.name = cp.name || P.name; P.bpm = pieceBpm(); applyGenreMix(false); return 'live'; }
-        forceNext = { genre: cp.genre, flav: cp.flav, seed: cp.seed >>> 0, name: cp.name, comp: cp, start: editing ? 8 : 0 }; if (P) P.skip = true; return 'next';
+        const f = { genre: cp.genre, flav: cp.flav, seed: cp.seed >>> 0, name: cp.name, comp: cp, start: editing ? 8 : 0 };
+        if (editing) { this.jump(f); return 'now'; } forceNext = f; if (P) P.skip = true; return 'next';
       },
       compFromPiece, drumsFor, loopsFor, numerals, MOODS, BASSES, LEADS, DRUM_ROWS, NOTE,
       autoMel() { if (!P || !P.motifs || !P.motifs[0]) return null; const o = Array(16).fill(null); for (const n of P.motifs[0]) if (n.st < 16) { let d = n.d; while (d < 0) d += 7; while (d > 7) d -= 7; o[n.st] = d; } return o; },

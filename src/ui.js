@@ -1587,7 +1587,7 @@ const UI = (() => {
   // away. Listen: vibe presets, genres, My Tracks (rename, share codes, delete). Shape: energy, tempo, mixer, effects.
   // Compose (hidden; tap the visualizer five times): build a track from parts. Everything persists in PROF.settings.studio
   // (it is SFX.music.config): custom genres/mix, favs (each remembers its sound, composed ones carry their comp), draft, composer.
-  let studioRaf = 0, studioBack = null, stTab = 'listen', stEdit = -1, stDelArm = -1, stPaste = false, stGrid = 'drums', stTaps = [], stSig = '', stStep = -1, stSnd = -1;
+  let studioRaf = 0, studioBack = null, stTab = 'listen', stEdit = -1, stDelArm = -1, stPaste = false, stGrid = 'drums', stTaps = [], stSig = '', stStep = -1, stSnd = -1, stInCompose = false, stRadio = null, stOverArm = false;
   const ST_FX = [['reverb', 'Reverb'], ['echo', 'Echo'], ['tone', 'Tone'], ['tape', 'Tape & Vinyl'], ['pump', 'Pump']];
   const ST_CH = [['pads', 'Pads'], ['keys', 'Keys'], ['arp', 'Arps'], ['bass', 'Bass'], ['drums', 'Drums'], ['lead', 'Lead']];
   const ST_VIBES = [['calm', 'Calm', ['ambient', 'lofi', 'downtempo']], ['club', 'Club', ['house', 'techno', 'trance', 'dnb']], ['retro', 'Retro', ['synthwave', 'chiptune']], ['all', 'Everything', null]];
@@ -1693,8 +1693,9 @@ const UI = (() => {
   }
   function stComposeHTML() {
     const M = SFX.music, c = studioCfg(), d = c.draft, G5 = M.GENRES;
-    if (!d) return `<div class="stcompose empty"><p class="note">Build your own track. You pick the style, mood, key, chords, drums, bass and melody; the arrangement (intro, groove, breakdown) stays automatic, so it always sounds like music.</p>
-      <div class="strow"><button class="btn primary" data-act="cpNew">Start from this piece</button></div></div>`;
+    if (!d) return `<div class="stcompose empty"><p class="note">Your first song starts here. Pick a style: it gives you a beat, a bassline and chords to build on. Then change anything, draw a melody, and save it to My Tracks.</p>
+      <div class="cpstyles">${cpStyles().map(([g, f]) => `<button class="cpsty" style="--c:${G5[g].col}" data-act="cpStart" data-g="${g}" data-f="${f}"><b>${esc(G5[g].short || G5[g].name)}</b><small>${esc(M.flavName(g, f))}</small></button>`).join('')}</div>
+      ${stRadio ? `<div class="strow"><button class="btn small" data-act="cpFrom">Or start from ${esc(stRadio.name)}</button></div>` : ''}</div>`;
     const G0 = G5[d.genre], loops = cpLoops(d.genre), li = Math.max(0, loops.findIndex(L0 => JSON.stringify(L0.degs) === JSON.stringify(d.loop.degs) && (L0.bars || 1) === (d.loop.bars || 1)));
     const mood = M.MOODS.find(m => m[0] === d.mode) || M.MOODS[4], bass = M.BASSES.find(b => d.bass && b[0] === d.bass[0] && b[1] === d.bass[1]), lead = M.LEADS.find(l => l[0] === d.lead) || M.LEADS[0];
     const st = (k, lab, val, col) => `<div class="cpst"><span class="lbl">${lab}</span><button class="stb" data-act="cpStep" data-k="${k}" data-v="-1" aria-label="Previous ${lab}">◀</button><b ${col ? `style="color:${col}"` : ''}>${val}</b><button class="stb" data-act="cpStep" data-k="${k}" data-v="1" aria-label="Next ${lab}">▶</button></div>`;
@@ -1710,14 +1711,14 @@ const UI = (() => {
           ${st('bass', 'Bass', bass ? bass[2] : 'Style')}
           ${st('lead', 'Lead', lead[1])}
         </div>
-        <div class="strow"><button class="btn small" data-act="cpNew">Start over</button></div>
+        <div class="strow"><button class="btn small ${stOverArm ? 'danger' : ''}" data-act="cpOver">${stOverArm ? 'Sure? Unsaved changes go' : 'New song'}</button></div>
       </div>
       <div class="cpright">
         <div class="strow cpgt"><button class="chip ${stGrid === 'drums' ? 'on' : ''}" data-act="cpGrid" data-v="drums">Drums</button><button class="chip ${stGrid === 'melody' ? 'on' : ''}" data-act="cpGrid" data-v="melody">Melody</button>
-          ${stGrid === 'melody' ? `<button class="chip" data-act="cpDice"><i data-svg="dice"></i>New</button>${d.mel ? '<button class="chip" data-act="cpMelClr">Auto</button>' : ''}` : '<button class="chip" data-act="cpDrumReset">Reset</button>'}
+          ${stGrid === 'melody' ? `<button class="chip" data-act="cpDice"><i data-svg="dice"></i>Roll</button>${d.mel && d.mel.some(x => x !== null) ? '<button class="chip" data-act="cpMelClr">Clear</button>' : ''}` : '<button class="chip" data-act="cpDrumReset">Reset</button><button class="chip" data-act="cpDrumClr">Clear</button>'}
           <button class="btn small primary cpsave" data-act="cpSave">Save</button></div>
         <div id="cpGridBox">${cpGridHTML()}</div>
-        <p class="note sthint">${stGrid === 'melody' ? (d.mel ? 'Your melody. Rows are steps up the scale from each chord, so it follows the chords; 1 is the chord itself.' : 'The faint notes are an automatic melody. Tap the grid to make it yours, or roll a new one.') : 'Tap a step to switch a hit on or off. Breakdowns still drop the drums out.'}</p>
+        <p class="note sthint">${stGrid === 'melody' ? (d.mel === null ? 'The faint notes are a rolled melody. Tap the grid to make it yours, or roll again.' : d.mel.some(x => x !== null) ? 'Your melody. Rows are steps up the scale from each chord, so it follows the chords; 1 is the chord itself.' : 'No melody yet. Tap the grid to write one (it always fits the chords), or Roll one.') : 'Tap a step to switch a hit on or off. Breakdowns still drop the drums out.'}</p>
       </div>
     </div>`;
   }
@@ -1726,13 +1727,24 @@ const UI = (() => {
     const M = SFX.music, d = studioCfg().draft; if (!d) return '';
     const head = `<div class="cprow cph"><span></span>${Array.from({ length: 16 }, (_, i) => `<i class="${i % 4 ? '' : 'b'}">${i % 4 ? '' : i / 4 + 1}</i>`).join('')}</div>`;
     if (stGrid === 'drums') return `<div class="cpgrid drums">${head}${M.DRUM_ROWS.map(([k, lab]) => `<div class="cprow"><span>${lab.replace('Open hat', 'Open')}</span>${Array.from({ length: 16 }, (_, i) => { const v = +(d.drums[k] || '')[i] || 0; return `<button class="cell ${v ? 'on' : ''} ${i % 4 ? '' : 'b'}" style="--a:${v ? (0.35 + v / 15).toFixed(2) : 0}" data-act="cpCell" data-r="${k}" data-i="${i}" data-c="${i}" aria-label="${lab} step ${i + 1}"></button>`; }).join('')}</div>`).join('')}</div>`;
-    const mel = d.mel, ghost = mel ? null : cpAutoMel();
+    const mel = d.mel && d.mel.length === 16 ? d.mel : null, ghost = d.mel === null ? cpAutoMel() : null;
     let rows = '';
     for (let r = 7; r >= 0; r--) rows += `<div class="cprow"><span>${r + 1}</span>${Array.from({ length: 16 }, (_, i) => { const on = mel ? mel[i] === r : false, gh = !mel && ghost && ghost[i] === r; return `<button class="cell ${on ? 'on' : ''} ${gh ? 'gh' : ''} ${i % 4 ? '' : 'b'}" data-act="cpNote" data-r="${r}" data-i="${i}" data-c="${i}" aria-label="Step ${i + 1} note ${r + 1}"></button>`; }).join('')}</div>`;
     return `<div class="cpgrid melody">${head}${rows}</div>`;
   }
+  // Compose is its own room: the radio stops when you walk in, your song loops while you work, and the radio comes back when you leave
+  const cpSpec = d => ({ genre: d.genre, flav: d.flav, seed: d.seed >>> 0, name: d.name, comp: d, start: 8 });
+  function enterCompose() {
+    const M = SFX.music, c = studioCfg(), p = M.piece; stOverArm = false;
+    stRadio = p && !p.comp ? M.spec : stRadio; M.editing = true;
+    if (c.draft) { M.setHold(false); M.jump(cpSpec(c.draft)); } else M.setHold(true);
+  }
+  function leaveCompose() {
+    const M = SFX.music; M.editing = false; M.setHold(false);
+    M.jump(stRadio ? Object.assign({}, stRadio, { start: 0 }) : null); stRadio = null;
+  }
   function cpApply(rerender) { // the draft changed: save it and hear it
-    const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose'; M.compose(c.draft);
+    const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose'; if (M.held) M.setHold(false); M.compose(c.draft);
     if (rerender === 'grid') { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); } else if (rerender) openStudio();
   }
   // ---- the card ----
@@ -1747,7 +1759,8 @@ const UI = (() => {
       ${stNowHTML()}</div>
       ${stTab === 'shape' ? stShapeHTML() : stTab === 'compose' ? stComposeHTML() : stListenHTML()}</div>`, 'studio');
     const body = $('#modal .card.studio .cbody'); if (body) { body.dataset.tab = stTab; if (wasTab === stTab) body.scrollTop = keep; }
-    M.editing = stTab === 'compose' && !!c.draft;
+    if (stTab === 'compose' && !stInCompose) { stInCompose = true; enterCompose(); } else if (stTab !== 'compose' && stInCompose) { stInCompose = false; leaveCompose(); }
+    const card = $('#modal .card.studio'); if (card) card.classList.toggle('composing', stTab === 'compose');
     stSig = ''; stStep = -1; stSnd = M.sndGen;
     const bind = (id, fn, label) => { const el = $('#' + id); if (!el) return; el.oninput = () => { studioTouch(); fn(+el.value); const v = $('#' + id + 'V'); if (v && label) v.textContent = label(+el.value); SFX.music.apply(); }; el.onchange = studioSave; };
     bind('stEnergy', v => c.energy = v, energyWord);
@@ -1762,7 +1775,6 @@ const UI = (() => {
     }
     const ren = $('#stRenIn'); if (ren) { ren.focus(); ren.select(); const done = () => { if (ren._done) return; ren._done = 1; const i = +ren.dataset.i, f = c.favs[i]; if (f && ren.value.trim()) { f.name = ren.value.trim().slice(0, 24); const p0 = SFX.music.piece; if (p0 && p0.seed === f.seed && !f.comp === !p0.comp) SFX.music.setName(f.name); } stEdit = -1; studioSave(); openStudio(); }; ren.onkeydown = e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') { stEdit = -1; openStudio(); } }; ren.onblur = () => setTimeout(done, 0); }
     const nm = $('#cpName'); if (nm) nm.onchange = () => { if (c.draft) { c.draft.name = nm.value.trim().slice(0, 24) || 'My Track'; cpApply(false); } };
-    if (stTab === 'compose' && c.draft && !(p.comp && p.genre === c.draft.genre)) M.compose(c.draft);
     cancelAnimationFrame(studioRaf); studioLoop();
   }
   function studioLoop() {
@@ -1778,12 +1790,13 @@ const UI = (() => {
         for (let y = 0; y < h; y += 3) { x.fillStyle = y > H * 0.7 ? '#ffffff' : col; x.globalAlpha = 0.35 + 0.65 * (y / H); x.fillRect(Math.round(i * bw) + 1, H - y - 3, Math.max(2, Math.round(bw) - 2), 2); }
       }
       x.globalAlpha = 1;
-      const sig = p.name + '|' + p.genre + '|' + p.seed + '|' + p.saved + '|' + M.paused + '|' + M.repeat + '|' + M.canBack;
+      const sig = p.name + '|' + p.genre + '|' + p.seed + '|' + p.saved + '|' + M.paused + '|' + M.repeat + '|' + M.canBack + '|' + M.held;
       if (sig !== stSig) {
         const changed = stSig && stSig.split('|').slice(0, 3).join('|') !== sig.split('|').slice(0, 3).join('|'); stSig = sig;
-        $('#stName').textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.flavName + (p.comp ? ' · composed' : '');
+        if (M.held) { $('#stName').textContent = 'New song'; $('#stGen').textContent = 'Pick a style to begin'; } else { $('#stName').textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.flavName + (p.comp ? ' · composed' : ''); }
         const kb = $('#stKeepB'); if (kb) { kb.classList.toggle('on', p.saved); kb.innerHTML = svgIcon(p.saved ? 'heart' : 'heartO'); }
         const pb = $('#stPauseB'); if (pb) { pb.innerHTML = svgIcon(M.paused ? 'play' : 'pause'); pb.setAttribute('aria-label', M.paused ? 'Play music' : 'Pause music'); pb.classList.toggle('on', M.paused); }
+        if (pb) pb.style.visibility = M.held ? 'hidden' : ''; const sbar = $('.stbar'); if (sbar) sbar.style.visibility = M.held ? 'hidden' : '';
         const rb = $('#stRepB'); if (rb) rb.classList.toggle('on', M.repeat);
         const bb = $('#stBackB'); if (bb) bb.disabled = !M.canBack;
         const card = $('.card.studio'); if (card) card.style.setProperty('--gc', col);
@@ -1792,9 +1805,10 @@ const UI = (() => {
         if (changed && stTab === 'compose' && stGrid === 'melody' && studioCfg().draft && !studioCfg().draft.mel) { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); }
       }
       if (stSnd !== M.sndGen) { stSnd = M.sndGen; if (stTab === 'shape') openStudio(); } // a kept track brought its own sound
-      const ky = $('#stKey'); if (ky) ky.textContent = p.key + ' · ' + p.now + ' BPM';
+      const ky = $('#stKey'); if (ky && !M.held) ky.textContent = p.key + ' · ' + p.now + ' BPM';
       const br = $('#stBar'); if (br) br.style.width = ((p.bar + p.step / 16) / p.bars * 100) + '%';
-      const se = $('#stSec'); if (se) se.textContent = M.paused ? 'Paused' : p.section;
+      const se = $('#stSec'); if (se) se.textContent = M.held ? '' : M.paused ? 'Paused' : p.section;
+      if (M.held) { const ky2 = $('#stKey'); if (ky2) ky2.textContent = 'The radio is off while you compose'; }
       if (stTab === 'shape') { const mt = M.meters(); for (const f of document.querySelectorAll('#modal .fader')) { const v = Math.min(1, Math.sqrt(mt[f.dataset.ch] || 0) * 2.6); f.firstChild.style.height = Math.round(v * 100) + '%'; } }
       if (stTab === 'compose') { // playhead on the grid while the draft plays
         const step = p.comp && !M.paused ? p.step : -1;
@@ -1805,9 +1819,9 @@ const UI = (() => {
   }
   function studioAction(act, b) {
     const M = SFX.music, c = M.config;
-    if (act !== 'stDel') stDelArm = -1;
+    if (act !== 'stDel') stDelArm = -1; if (act !== 'cpOver') stOverArm = false;
     switch (act) {
-      case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; M.editing = false; SFX.play('ui'); openStudio(); return true;
+      case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; SFX.play('ui'); openStudio(); return true;
       case 'stVibe': {
         studioTouch(); const v = ST_VIBES.find(x => x[0] === b.dataset.v); c.genres = (v[2] || M.GENRE_IDS).slice(); c.favOnly = false;
         M.apply(); studioSave(); if (M.piece && !c.genres.includes(M.piece.genre)) M.skip(); openStudio(); return true;
@@ -1850,7 +1864,16 @@ const UI = (() => {
         return true;
       }
       // ---- composer ----
-      case 'cpNew': { const cp = M.compFromPiece(); if (cp) { c.draft = cp; stGrid = 'drums'; M.editing = true; cpApply(true); } return true; }
+      case 'cpStart': { // a new song from a style: its beat, bassline, chords and sound, and no melody yet
+        const g = b.dataset.g, f = b.dataset.f, G0 = M.GENRES[g], F = G0.flavours[f] || {}, L0 = cpLoops(g);
+        const n = c.favs.filter(t => t.comp).length + 1, mode = (F.modes || ['aeolian'])[0];
+        const d = { v: 1, genre: g, flav: f, seed: (Math.random() * 4294967296) >>> 0, name: 'Song ' + n, mode, key: Math.floor(Math.random() * 12), loop: JSON.parse(JSON.stringify((F.loops || L0)[0] || L0[0])), mel: [], melSeed: (Math.random() * 4294967296) >>> 0 };
+        cpDefaults(d); if (d.lead === 'none') d.lead = 'bell';
+        c.draft = d; stGrid = 'drums'; stOverArm = false; M.editing = true; cpApply(true); return true;
+      }
+      case 'cpFrom': { const cp = M.compFromPiece(); if (cp) { c.draft = cp; stGrid = 'drums'; stOverArm = false; M.editing = true; cpApply(true); } return true; }
+      case 'cpOver': { if (!stOverArm) { stOverArm = true; openStudio(); return true; } stOverArm = false; c.draft = null; studioSave(); M.setHold(true); openStudio(); return true; }
+      case 'cpDrumClr': { const d = c.draft; if (d) { for (const k in d.drums) d.drums[k] = '0'.repeat(16); cpApply('grid'); } return true; }
       case 'cpSave': { const d = c.draft; if (!d) return true; const nm = $('#cpName'); if (nm) d.name = nm.value.trim().slice(0, 24) || 'My Track'; M.saveComp(d); studioSave(); toast('SAVED TO MY TRACKS', d.name, '#ff5fa8'); return true; }
       case 'cpGrid': stGrid = b.dataset.v; openStudio(); return true;
       case 'cpStep': {
@@ -1868,14 +1891,14 @@ const UI = (() => {
       case 'cpDrumReset': { const d = c.draft; if (d) { d.drums = M.drumsFor(d.genre, d.flav); cpApply('grid'); } return true; }
       case 'cpNote': {
         const d = c.draft; if (!d) return true; const r = +b.dataset.r, i = +b.dataset.i;
-        if (!d.mel) { const gh = cpAutoMel(); d.mel = gh ? gh.slice() : Array(16).fill(null); if (d.lead === 'none') d.lead = 'bell'; }
+        if (!d.mel || d.mel.length !== 16) { const gh = d.mel === null ? cpAutoMel() : null; d.mel = gh ? gh.slice() : Array(16).fill(null); if (d.lead === 'none') d.lead = 'bell'; }
         d.mel[i] = d.mel[i] === r ? null : r;
-        if (!d.mel.some(x => x !== null)) d.mel = null;
+        if (!d.mel.some(x => x !== null)) d.mel = [];
         cpApply(true); return true;
       }
       case 'cpDice': { const d = c.draft; if (d) { d.mel = null; d.melSeed = (Math.random() * 4294967296) >>> 0; if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); } return true; }
-      case 'cpMelClr': { const d = c.draft; if (d) { d.mel = null; cpApply(true); } return true; }
-      case 'stClose': { cancelAnimationFrame(studioRaf); M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
+      case 'cpMelClr': { const d = c.draft; if (d) { d.mel = []; cpApply(true); } return true; }
+      case 'stClose': { cancelAnimationFrame(studioRaf); if (stInCompose) { stInCompose = false; leaveCompose(); } M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
         if (M.paused) toast('MUSIC PAUSED', 'Press play in the Music Studio to bring it back', '#ff5fa8');
         if (back === 'settings') { if (G && !G.over && screen === 'game') modalFrom = 'pause'; openSettings(); }
         else if (back === 'pause' && G && !G.over && screen === 'game') openPause();
