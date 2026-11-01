@@ -52,6 +52,10 @@ with sync_playwright() as p:
     act(pg, '[data-act=stRepeat]')
     ok('repeat on', pg.evaluate('() => SFX.music.repeat && document.querySelector("#stRepB").classList.contains("on")'))
     act(pg, '[data-act=stRepeat]')
+    # pressing play on anything while paused plays it (5.5.2: a queued skip waited for a beat that never came)
+    act(pg, '[data-act=stPause]'); pg.wait_for_timeout(300)
+    act(pg, '[data-act=stPlayG][data-v=techno]')
+    ok('play on a genre while paused starts it at once', waitPiece(pg, '() => !SFX.music.paused && SFX.music.piece.genre === "techno"', 3000))
     # Shape: a sound to remember
     act(pg, '[data-act=stTab][data-v=shape]'); pg.wait_for_timeout(300)
     shot(pg, 'shape')
@@ -97,8 +101,9 @@ with sync_playwright() as p:
     act(pg, '[data-act=cpFrom]'); pg.wait_for_timeout(300)
     ok('or a song starts from the radio piece', pg.evaluate('() => { const d = SFX.music.config.draft; return d && d.drums && d.loop.degs.length > 0; }'))
     ok('the draft plays', waitPiece(pg, '() => SFX.music.piece.comp'))
+    act(pg, '[data-act=stPause]'); pg.wait_for_timeout(200)  # stop the song first: leaving must not keep the radio paused
     act(pg, '[data-act=stTab][data-v=listen]'); pg.wait_for_timeout(300)
-    ok('leaving Compose brings the radio back', pg.evaluate(f'() => !SFX.music.held && !SFX.music.editing && !SFX.music.piece.comp && SFX.music.piece.name === {radio!r}'))
+    ok('leaving Compose brings the radio back', pg.evaluate(f'() => !SFX.music.held && !SFX.music.paused && !SFX.music.editing && !SFX.music.piece.comp && SFX.music.piece.name === {radio!r}'))
     act(pg, '[data-act=stTab][data-v=compose]'); pg.wait_for_timeout(300)
     ok('coming back resumes your song at once', pg.evaluate('() => SFX.music.piece.comp && SFX.music.editing'))
     shot(pg, 'compose_drums')
