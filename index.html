@@ -299,6 +299,7 @@ body.watching #abils, body.watching #bCall, body.watching #bWeb, body.watching #
 .card.vets .vhead { display: flex; gap: 10px; align-items: center; margin: 4px 0 6px; } .card.vets .vhead canvas { width: 32px; height: 32px; image-rendering: pixelated; }
 .card.vets .vhead b { display: block; font-family: var(--f-pix); font-weight: 400; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #ffe14d; } .card.vets .vhead small { font-size: 15px; color: var(--dim); }
 .card.vets .vet { display: grid; gap: 6px; } .card.vets .affs.mini { opacity: 0.8; margin-bottom: 4px; }
+#hpbar { position: relative; } #leakmark { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: rgba(255,77,106,0.6); pointer-events: none; transition: width 0.4s; } #leakmark.hot { background: #ff4d6a; animation: blink 0.8s infinite steps(1); }
 .rb.ghost { visibility: hidden; }
 .hs.cashbtn.nomkt .cashtag { display: none; }
 .chip.locked { opacity: 0.45; box-shadow: inset 0 0 0 1px var(--line2); } .chip.locked small { display: block; font-size: 8px; color: var(--dim); margin-top: 2px; }
@@ -840,7 +841,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 
   <section id="game" class="screen" hidden>
     <header id="hud">
-      <div class="corebox"><span class="lbl">Core</span><div id="hpbar"><i id="hpfill"></i><i id="shfill"></i></div><span id="hptxt">100</span></div>
+      <div class="corebox"><span class="lbl">Core</span><div id="hpbar"><i id="hpfill"></i><i id="shfill"></i><i id="leakmark"></i></div><span id="hptxt">100</span></div>
       <div class="hs cr"><span class="coin"></span><b id="cr">0</b></div>
       <div class="hs pwr" aria-label="Power grid"><span class="bolt"></span><b id="pw">0/0</b></div>
       <div class="hs"><span class="lbl">Wave</span><b id="wave">0</b><small id="nextw"></small></div>
@@ -895,7 +896,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.3.4';
+const VERSION = '5.4.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -975,8 +976,8 @@ const TOWERS = {
             { name: 'Long Lure', desc: '+2 lure range, +6 catches per wave', m: { rangeAdd: 2, catches: 6 } }] },
   coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 24, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
     blurb: 'Chain lightning. Applies Shock.',
-    specs: [{ name: 'Tesla Crown', desc: '+3 Chain', m: { chain: 3 } },
-            { name: 'Overvolt', desc: '×2 Shock effect, 12% chance to Stun', m: { shockX: 2, stun: 0.12 } }] },
+    specs: [{ name: 'Tesla Crown', desc: '+3 Chain, ×1.35 Damage', m: { chain: 3, dmgX: 1.35 } },
+            { name: 'Overvolt', desc: '×1.7 Damage, ×2 Shock effect, 12% chance to Stun', m: { dmgX: 1.7, shockX: 2, stun: 0.12 } }] }, // v5.4: the specs added no damage, so Coils fell behind at LV 5
   forge: { name: 'Credit Forge', el: 'N', cost: 150, dmg: 0, rate: 0, range: 0, kind: 'eco', income: 30, unlock: 12,
     blurb: 'Produces credits each wave.',
     specs: [{ name: 'Refinery', desc: '×2.2 Income', m: { incomeX: 2.2 } },
@@ -985,11 +986,11 @@ const TOWERS = {
     blurb: 'Short-range cone. Applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
-  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.7, rate: 10, range: 3.2, kind: 'beam', rampMax: 3.2, // v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
+  lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.7, rate: 10, range: 3.2, kind: 'beam', rampMax: 2.8, // v5.4 trim: was 3.2 (4 Lenses did 71% of Nic's Wave 88 run). v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
     st: { mark: 0.15 }, unlock: 20,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×5 damage', m: { rampMax: 5 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.8', m: { beams: 3, rampMax: 2.8 } }] },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×4.3 damage', m: { rampMax: 4.3 } },
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.5', m: { beams: 3, rampMax: 2.5 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
@@ -1068,17 +1069,13 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.3.4', title: 'Entropy 5.3 · The Hunt', items: [
-  ['Veteran Picks (5.3.4)', 'Tap the "veterans ready" chip to go through every waiting mutation in one place: each tower\'s card, its three choices, then straight on to the next. Show on map jumps to the tower, Next tower skips, Later closes. The game pauses while you choose.'],
-  ['Rounds land (5.3.3)', 'A bullet whose target dies on the way now flies on to where it fell and sparks out there, instead of vanishing mid-air. No change to damage.'],
-  ['White lines fixed (5.3.2)', 'The three thin white lines across the field on iPhone came from the faint retro scanlines, drawn as a repeating texture that Safari stitched badly. They are now drawn as plain stripes. Thanks for running the display test.'],
-  ['Bounties win runs', 'Every run posts a bounty: a named boss with a mutation and a price on its head. Bring it in and the run is a win. Then choose: Extract to end it there and bank half again in XP, or Push on at a higher score multiplier (×1.25 per bounty pushed past) toward the next bounty 20 waves later. Fall before you extract and the bonus is lost. The bounty sits in the top bar the whole run.'],
-  ['Your Nemesis', 'Whatever ends a run comes back for you. If a strain did it, the next run\'s swarm starts already carrying its genes and it leads your first Strain Assault; if a boss did it, it takes your next bounty, mutated. Beat it for a double bounty. Lose to it again and it ranks up. It waits on the main menu.'],
-  ['Daily Hunt', 'One map, one bounty and one Nemesis for everyone, every tower open, and the same 40 talent points each (build them from the Daily Hunt card, separate from your own talents), so the ladder is about play. Your first run of the day is the ranked one. Every input is recorded: watch your ranked run back, or copy a hunt code a friend can paste in and watch, tap for tap.'],
-  ['Exact resume', 'Close the app mid Daily Hunt and it picks up at the exact moment you left, not the start of the wave.'],
-  ['Main menu', 'Your Nemesis, trophies (bounties, extractions, Nemeses beaten) and today\'s Hunt sit under your level.'],
-  ['Chaos ladder', 'Extract once on a Chaos level to open the next one (reaching Wave 20 or 30 still works). Supernova now needs level 40 to start (was 60).'],
-  ['Graphics switches', 'Settings has Glow (soft lighting) and Pixel scaling (Sharp or Simple).'],
+const WHATS_NEW = { ver: '5.4.0', title: 'Entropy 5.4 · Read the Leaks', items: [
+  ['Breach forecast', 'The red stripe on the core bar shows how much of your shield and hull last wave\'s leaks used. The shield soaks small leaks, so the core can look full right up to the wave that kills it; the stripe shows the pressure building. The Breach Warning now speaks once when leaks pass half your defences and again near the edge, instead of every wave.'],
+  ['Arc means shields', 'Shell enemies\' shields now recharge when left alone, unless an Arc hit landed in the last 3 seconds. Arc Coils and EMP tear shields ×3 (was ×2.5) and keep them down for every tower around them. When the swarm says "you have no Arc", it matters now.'],
+  ['Arc Coil upgrades', 'Both specializations now add damage (Tesla Crown ×1.35, Overvolt ×1.7). Coils used to gain almost nothing past Level 3.'],
+  ['Void Lens trimmed', 'Its ramp tops out lower: ×2.8 (Event Horizon ×4.3, Prism Split ×2.5). Four Lenses did 71% of all damage in your Wave 88 run.'],
+  ['Fewer pile-ups', 'A wave never rolls more than two bad events at once.'],
+  ['Scan fix', 'Enemies that arrive while Sensor Sweep is running are revealed and Marked too, for its full time. Ability timers count game seconds, so at 3× speed they run out three times as fast in real time.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
@@ -1154,7 +1151,7 @@ const ENEMIES = {
   splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash to clean up the Swarmers it bursts into' },
   phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'Relay Pylon or Sensor Sweep to reveal it; Void hits it hard' },
   medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first: Rail or Strike. Burn stops all healing' },
-  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 2.5×' },
+  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 3×' },
   reflector: { name: 'Reflector', hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flamethrower, EMP Mortar' },
   carrier:  { name: 'Carrier', hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, drops: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air (Rail, Missile, Pulse) before it unloads' },
   sapper:   { name: 'Sapper', hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, sap: 1, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your line' },
@@ -1183,7 +1180,7 @@ const GENES = {
   haste:   { name: 'Haste', col: '#ffe14d', hp: 0.7, spd: 1.4, desc: '+40% speed', counter: 'Cryo, Gravity, EMP, Snare' },
   bulk:    { name: 'Bulk', col: '#ff7b39', hp: 1.4, spd: 0.75, desc: '+40% HP, slower', counter: 'Void Lens, Rail' },
   brood:   { name: 'Brood', col: '#ff9ad5', hp: 0.7, desc: 'Bursts into 3 mites', counter: 'Missile, Flame, Coil' },
-  shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.7, desc: 'Shield worth 50% of HP', counter: 'Arc Coil, EMP' },
+  shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.65, desc: 'Shield worth 60% of HP. It recharges when left alone, unless Arc has hit it in the last 3s', counter: 'Arc Coil, EMP' },
   regen:   { name: 'Regrowth', col: '#59f0b4', hp: 0.75, desc: 'Heals 2.5%/s unless Burning', counter: 'Flame, Missile' },
   ward:    { name: 'Ward', col: '#d6a6ff', hp: 0.85, desc: '50% resist to one element', counter: 'any other element' },
   cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon' },
@@ -2877,7 +2874,8 @@ function rollEvents(w) {
   let chance = Math.min(0.85, (0.28 + w * 0.012) * G.CH.ev);
   for (let i = 0; i < maxN; i++) {
     if (G.r() > chance) break;
-    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)));
+    const bad = list.filter(x => !x.good).length; // v5.4: never more than two bad events in one wave (Nic's Wave 88: Overcharge, Rift Breach and Blackout at once)
+    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)) && (E.good || bad < 2));
     if (!opts.length) break;
     const E = wpick(G.r, opts, e => e.w);
     ev[E.id] = 1; list.push(E);
@@ -2885,7 +2883,7 @@ function rollEvents(w) {
   }
   // Gambler: one more roll of the dice every wave
   // a fair coin: good or bad, and always good on a boss wave (a breach ends the run)
-  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
+  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5 || list.filter(x => !x.good).length >= 2; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
   return { ev, list };
 }
 function prepareWave(w) {
@@ -3076,6 +3074,7 @@ function genWave(w, ev) {
 // assault a wave ahead and selling is free (100% refund) until it lands, so you get a move in reply.
 // Hold it (few leaks): the strain is broken, +1 power for the rest of the run, and its genes fall out of favour.
 // Fail: it entrenches. Its genome spreads through the next waves and the following assault comes sooner.
+const SHELL = { share: ENVN0('SHS', 0.6), regen: ENVN0('SHR', 0.12), delay: ENVN0('SHD', 2.5) }; // v5.4 Shell gene: shield share of HP, recharge per second, quiet time before it recharges
 const ENVN = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
 // secs: the assault's total HP is sized to this many seconds of your firepower (like bosses), so it tests any defence
 const ASSAULT = { share: 0.7, hold: 0.1, crPerWave: 30, hp: 1, minHp: 1.3, secs: ENVN('ASEC', 40), count: ENVN('ACNT', 1.3) };
@@ -3228,18 +3227,25 @@ function startWave() {
     }
   }
   G.spawnClock = 0; G.spawningDone = false;
-  // v5.0 breach warning: the core can sit at full health while a few leaks a wave are soaked by the shield, then die in one
-  // bad wave (Nic, Wave 87). When leaks climb, say so before the cliff, with what is getting through and what stops it
-  if (G.wave > 1 && G.leaksAtStart !== undefined) {
-    const lk = G.stats.leaks - G.leaksAtStart, prev = G.lastLeakN || 0; G.lastLeakN = lk;
-    if (lk >= 3 && (lk >= 6 || prev >= 3)) {
+  // v5.4 breach forecast (replaces the v5.0 warning that repeated every wave: 16 times in Nic's Wave 88 run). The shield soaks small
+  // leaks, so the core can sit at full health until one wave kills it. Instead: weigh last wave's leak damage against shield + hull
+  // (G.breachP, drawn on the core bar) and speak only when it climbs a band: 50% (heavy), 85% (one more like it ends the run)
+  if (G.wave > 1) {
+    const c = G.core, prot = Math.max(1, c.smax + c.max), P = (G.leakDmgW || 0) / prot;
+    G.breachP = P; G.breachPeak = Math.max((G.breachPeak || 0) * 0.85, P);
+    const band = P >= 0.85 ? 2 : P >= 0.5 ? 1 : 0;
+    if (P < 0.3) G.breachBand = 0;
+    if (band > (G.breachBand || 0)) {
+      G.breachBand = band;
       const now = G.leakWave || {}, top = Object.keys(now).map(k => [k, now[k]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
       let who = '', counter = '';
       if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
-      Hooks.toast('BREACH WARNING', `${lk} got through last wave${who ? ', mostly ' + who : ''}. Your core's shield won't hold many more.${counter}`, '#ff4d6a', true);
-      rlog('breachWarn', { n: lk, who });
+      const lk = G.stats.leaks - G.leaksAtStart;
+      Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are eating your defences: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield hides it until it doesn't.${counter}`, '#ff4d6a', true);
+      rlog('breachWarn', { n: lk, who, p: +P.toFixed(2) });
     }
   }
+  G.leakDmgW = 0;
   G.leakWave = {}; // v5.0.2: own per-wave tally (leakBy is cleared by the wave log, which left 'who' empty)
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
@@ -3530,7 +3536,7 @@ function spawnEnemy(type, q) {
       if (g === 'plating') e.armor = Math.min(0.7, e.armor + 0.4);
       if (g === 'bulk') e.size *= 1.2;
       if (g === 'brood') e.brood = 1;
-      if (g === 'shell') e.shield = e.maxHp * 0.5;
+      if (g === 'shell') { e.shield = e.shellMax = e.maxHp * SHELL.share; e.shHitT = -9; }
       if (g === 'regen') e.regenG = 0.025;
       if (g === 'ward') { e.wardEl = q.gel || 'K'; e.res[e.wardEl] = (e.res[e.wardEl] || 0) + (G.mods.ks.conflag && e.wardEl === 'T' ? 0.25 : 0.5); }
       if (g === 'cloak') e.cloak = 1;
@@ -3819,7 +3825,12 @@ function updateEnemies(dt) {
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
   // reveal cloak near pylons
   if (G.pylons && G.pylons.length) for (const e of G.enemies) if (e.cloaked) for (const p of G.pylons) if (dist2(e.x, e.y, p.cx, p.cy) <= p.s.range * p.s.range) { e.revealed = 0.3; break; }
-  for (const e of G.enemies) { if (e.revealed > 0) e.revealed -= dt; if (e.scanned > 0) { e.scanned -= dt; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.2); } }
+  for (const e of G.enemies) {
+    if (G.scanT > 0 && !e.dead && !(e.scanned > 0)) e.scanned = G.scanT; // v5.4: the sweep stays up its full time, so enemies arriving mid-Scan are caught too
+    if (e.revealed > 0) e.revealed -= dt; if (e.scanned > 0) { e.scanned -= dt; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.2); }
+    // v5.4 Shell: the shield recharges (20% a second) once it's been left alone 1.5 s, unless Arc hit it in the last 3 s
+    if (e.shellMax && e.shield < e.shellMax && !e.dead && G.time - e.shHitT > SHELL.delay && G.time - (e.arcT || -9) > 3) e.shield = Math.min(e.shellMax, e.shield + e.shellMax * SHELL.regen * dt);
+  }
 }
 const PHASE_LINES = { behemoth: ['RRRAAARGH', 'THE GROUND SHAKES'], queen: ['RISE, MY BROOD', 'SKREEEEE'], wraith: ['you cannot hold me', 'between, beyond'],
   overmind: ['YOUR MACHINES ARE MINE', 'SILENCE.'], titan: ['*CRACK*', 'UNSTOPPABLE'], cat: ['HSSSS', '*zoomies*'], whale: ['OOOOOOOOO', 'the deep remembers'],
@@ -3986,6 +3997,7 @@ function leak(e) {
     Hooks.fx('boom', { x: c.x, y: c.y, r: 2.5, col: '#59f0b4', big: 1 });
   }
   c.sinceHit = 0;
+  G.leakDmgW = (G.leakDmgW || 0) + dmg; // v5.4: the breach forecast weighs a wave's leak damage against shield + hull
   const abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs;
   c.hp -= dmg;
   Hooks.fx('leak', { x: c.x, y: c.y, boss: !!e.boss });
@@ -4037,8 +4049,10 @@ function hit(e, dmg, el, src, o) {
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
   if (src === G.core && e.redAlert && e.boss) mult *= RED_ALERT.coreDmg; // Last Stand: the core unloads on a boss at its gate
   let amt = dmg * mult;
+  if (e.shellMax && (el === 'A' || (src && src.s && src.s.el0 === 'A'))) e.arcT = G.time; // v5.4: Arc keeps a Shell from recharging
   if (e.shield > 0) {
-    const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 2.5 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it)
+    const sk = el === 'A' || (src && src.s && src.s.el0 === 'A') ? 3 : 1; // Arc towers tear through shields (by their own element, so Conflagration keeps it). v5.4: ×3 (was 2.5)
+    e.shHitT = G.time;
     const a = Math.min(e.shield, amt * sk), had = e.shield; e.shield -= a; amt -= a / sk;
     if (had > 0 && e.shield <= 0.01) { e.shield = 0; Hooks.fx('shieldbreak', { x: e.x, y: e.y }); } // v5.1 tell: the shield cracks
     if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += a; // v5.0.2: shield damage counts, so Arc's real work shows up
@@ -8691,6 +8705,7 @@ const UI = (() => {
     $('#shfill').style.width = pct(c.smax ? c.shield / c.smax : 0);
     $('#hptxt').textContent = `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`;
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
+    { const lm = $('#leakmark'), P = Math.min(1, G.breachP || 0); if (lm) { lm.style.width = pct(P); lm.classList.toggle('hot', P >= 0.5); } } // v5.4: last wave's leaks against shield + hull
     $('#cr').textContent = fmt(G.credits);
     $("#wave").textContent = G.wave || "—";
     const cpWait = G.spawningDone && cpPending();
@@ -9067,7 +9082,7 @@ const UI = (() => {
     pulse: 'Anti-air all-rounder · fast shots, weak to Plating', rail: 'Pierces Plating and lines · slow, long range, hits air',
     cryo: 'Control · slows everything in its ring, air included', snare: 'Anti-air control · pulls fliers into a net',
     missile: 'Crowds, Brood and air · splash and Burn, weak to Plating', pylon: 'Support · boosts towers around it, reveals Cloak',
-    coil: 'Shields and crowds · ×2.5 vs shields, chains', forge: 'Economy · credits every wave',
+    coil: 'Shields and crowds · ×3 vs shields, stops Shell recharging, chains', forge: 'Economy · credits every wave',
     flame: 'Ground crowds · Burn stops Regrowth · can\'t hit air', lens: 'Plating, Bulk and bosses · beam ignores Plating, weak vs swarms',
     emp: 'Control · stuns and strips shields, hits air', grav: 'Control · drags ground enemies back · can\'t hit air',
   };
