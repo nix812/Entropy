@@ -214,6 +214,9 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
 .abil.empty svg, .abil.locked svg { opacity: 0.45; }
 .abil.locked { box-shadow: inset 0 0 0 1px var(--line); }
 .abil .cnt.extra { color: var(--amber); }
+.abil .dur { position: absolute; left: 0; top: 0; height: 3px; width: 0; background: var(--core); pointer-events: none; }
+.abil.live { box-shadow: inset 0 0 0 2px var(--core), 0 0 10px rgba(89, 240, 180, 0.35); }
+.abil.live span { color: var(--core); font-family: var(--f-term); font-size: 17px; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
 .abil.ping { animation: aping 0.6s steps(3) 1; }
 @keyframes aping { 0% { box-shadow: inset 0 0 0 2px var(--warn), 0 0 14px var(--warn); } 100% { box-shadow: inset 0 0 0 1px var(--line2); } }
 .abil.aim span, .abil.aim .cnt { color: #1a1004; }
@@ -806,7 +809,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.1.0';
+const VERSION = '5.1.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -979,7 +982,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.1.0', title: 'Entropy 5.1 · Know Your Enemy', items: [
+const WHATS_NEW = { ver: '5.1.1', title: 'Entropy 5.1 · Know Your Enemy', items: [
+  ['Ability timers', 'Frenzy, Stasis and Scan count down on their buttons while they run (seconds left, and a bar that drains along the top). Using one again while it runs adds its time, up to three uses\' worth, instead of restarting it.'],
   ['Abilities on cooldowns', 'Every ability now recharges on its own timer into a charge slot, so the late game no longer runs dry. Crates, chests, bosses and milestones still give extra charges, and those stack with no cap. Buttons keep their place on the rail; empty ones dim and fill as they recharge.'],
   ['New: Sensor Sweep', 'A fifth ability (Scan, from Wave 7). Reveals cloaked enemies, Marks everything for +15% damage taken, and puts a reticle on the biggest threat. Short cooldown. Key B on a computer.'],
   ['Command Uplink', 'A new core upgrade: each level cuts ability cooldowns 5%. Level 3: Strike hits twice. Level 6: Stasis leaves enemies slowed. Level 9: Nova pulses again. Command talents add Reserve Cells (extra charge slots), Telemetry now cuts cooldowns, and the new Tactician Capstone links your abilities.'],
@@ -1656,6 +1660,16 @@ function updateAbils(dt) {
   if (G.scanT > 0) { G.scanT -= dt; if (G.scanT <= 0) G.scanThreat = null; }
   if (G.scanThreat && G.scanThreat.dead) G.scanThreat = null;
 }
+// v5.1.1: a timed ability used while it is still running adds its time (up to 3 uses' worth) instead of restarting.
+// G.abilLeft / G.abilMax feed the rail's countdown
+const ABIL_TIMER = { stasis: 'stasisT', overclock: 'overclockT', scan: 'scanT' };
+function abilExtend(k, cur, dur) {
+  const t = Math.min(dur * 3, Math.max(0, cur || 0) + dur);
+  (G.abilMax || (G.abilMax = {}))[k] = Math.max(t, cur > 0 ? G.abilMax[k] || 0 : 0);
+  if (cur > 0) Hooks.toast((ABILITIES[k].short + ' extended').toUpperCase(), `+${Math.round(t - cur)}s · ${Math.ceil(t)}s left`, '#ffe14d', true, 'tip');
+  return t;
+}
+const abilLeft = k => ABIL_TIMER[k] && G[ABIL_TIMER[k]] > 0 ? G[ABIL_TIMER[k]] : 0;
 // Sensor Sweep's pick: the enemy most likely to cost you the run
 function threatScore(e) { const prog = e.L && e.L.len ? e.d / e.L.len : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
@@ -4704,12 +4718,12 @@ function useAbility(k, x, y) {
       break;
     }
     case 'stasis':
-      G.stasisT = (4 + M.stasisDur) * Math.min(1.5, M.abilPower);
+      G.stasisT = abilExtend('stasis', G.stasisT, (4 + M.stasisDur) * Math.min(1.5, M.abilPower));
       if (uplinkHas('drag')) G.dragT = G.stasisT + 4;
       Hooks.fx('stasis', {}); Hooks.sfx('stasis');
       break;
     case 'scan': {
-      G.scanT = SCAN.dur * Math.min(1.5, M.abilPower);
+      G.scanT = abilExtend('scan', G.scanT, SCAN.dur * Math.min(1.5, M.abilPower));
       let top = null, ts = 0;
       for (const e of G.enemies) if (!e.dead) { e.scanned = G.scanT; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.3); const sc = threatScore(e); if (sc > ts) { ts = sc; top = e; } }
       G.scanThreat = top;
@@ -4718,7 +4732,7 @@ function useAbility(k, x, y) {
       break;
     }
     case 'overclock':
-      G.overclockT = 8 * Math.min(1.5, M.abilPower);
+      G.overclockT = abilExtend('overclock', G.overclockT, 8 * Math.min(1.5, M.abilPower));
       Hooks.fx('overclock', {}); Hooks.sfx('overclock');
       break;
   }
@@ -8372,8 +8386,13 @@ const UI = (() => {
       const ct = on && (n > 1 || n > slots) ? String(n) : '';
       if (cnt.textContent !== ct) cnt.textContent = ct;
       cnt.classList.toggle('extra', n > slots);
-      const lt = on ? ABILITIES[k].short : 'W' + ABILITIES[k].from;
+      // v5.1.1: a running ability counts down on its button (label → seconds left, a bar drains along the top)
+      const left = on ? abilLeft(k) : 0, mxl = left > 0 ? Math.max(left, (G.abilMax && G.abilMax[k]) || left) : 1;
+      const lt = !on ? 'W' + ABILITIES[k].from : left > 0 ? `${left < 10 ? left.toFixed(1) : Math.ceil(left)}s` : ABILITIES[k].short;
       if (lab.textContent !== lt) lab.textContent = lt;
+      btn.classList.toggle('live', left > 0);
+      let db = btn.querySelector('.dur'); if (!db) { db = document.createElement('i'); db.className = 'dur'; btn.appendChild(db); }
+      db.style.width = left > 0 ? pct(clamp(left / mxl, 0, 1)) : '0%';
       btn.classList.toggle('locked', !on); btn.classList.toggle('empty', on && n <= 0);
       const mx = on ? abilCdMax(k) : 1, cd = G.abilCd ? G.abilCd[k] : 0, filling = on && n < slots && cd > 0;
       btn.querySelector('.cdf').style.width = filling ? pct(clamp(1 - cd / mx, 0, 1)) : '0%';
