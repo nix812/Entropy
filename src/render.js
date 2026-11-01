@@ -1102,9 +1102,9 @@ const RES = 2;
       c.font = `${Math.max(8, Math.round(w / 4))}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = 'rgba(9,11,22,0.8)'; const tw = c.measureText('BUILD').width; c.fillRect(Math.round(x0 + w / 2 - tw / 2 - 2), Math.round(y0 + w + 1), Math.round(tw + 4), Math.round(w / 4) + 3);
       c.fillStyle = PAL.good; c.fillText('BUILD', Math.round(x0 + w / 2), Math.round(y0 + w + 2)); c.textBaseline = 'alphabetic';
     }
-    // v5.3: towers that haven't fired for two waves say so on the map
+    // v5.3: towers that haven't fired for three waves say so on the map
     { const u = clamp(Math.round(ws * 1.1), 2, 4);
-      for (const t of G.towers) if (!(t.disabled > 0) && G.wave >= 2 && idleWaves(t) >= 2) {
+      for (const t of G.towers) if (!(t.disabled > 0) && G.wave >= 3 && idleWaves(t) >= 3) {
         const x = Math.round(bx2s(t.cx * TILE)), y = Math.round(by2s(t.y * TILE)) - u;
         c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'bottom'; const tw = c.measureText('IDLE').width;
         c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), y - Math.round(4.5 * u), Math.round(tw + 2 * u), Math.round(4.5 * u) + 1);

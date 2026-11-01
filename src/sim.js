@@ -224,11 +224,11 @@ function computeMods(alloc, runMods) {
 
 // ---------------- Run state ----------------
 let G = null;
-// v5.1: the late curve is a ramp, not a cliff. Up to Wave 40 as before; past it the steepening term accelerates half as fast
+// v5.1: the late curve is a ramp, not a cliff. Up to Wave 40 as before; past it the steepening term accelerates 30% slower
 // (per-wave growth had reached +30% by Wave 80), and Waves 20-50 gain up to +20% so pressure builds through the middle of a
 // run, where enemies used to melt
 const ENVN0 = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
-const hpQ = w => w <= 40 ? Math.pow(1.0011, (w - 1) * (w - 1)) : Math.pow(1.0011, 1521 + 78 * (w - 40) + ENVN0('HPQ', 0.5) * (w - 40) * (w - 40));
+const hpQ = w => w <= 40 ? Math.pow(1.0011, (w - 1) * (w - 1)) : Math.pow(1.0011, 1521 + 78 * (w - 40) + ENVN0('HPQ', 0.7) * (w - 40) * (w - 40));
 const hpMid = w => { const k = Math.min(1, Math.max(0, (w - 20) / 30)); return 1 + ENVN0('HPMID', 0.2) * k * k * (3 - 2 * k); };
 const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * hpQ(w) * hpMid(w);
 // v5.0: after Wave 40 kill credits grow 1% faster per wave (Nic: late upgrades outpaced income as waves got longer)
