@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.3.3';
+const VERSION = '5.3.4';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,7 +173,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.3.3', title: 'Entropy 5.3 · The Hunt', items: [
+const WHATS_NEW = { ver: '5.3.4', title: 'Entropy 5.3 · The Hunt', items: [
+  ['Veteran Picks (5.3.4)', 'Tap the "veterans ready" chip to go through every waiting mutation in one place: each tower\'s card, its three choices, then straight on to the next. Show on map jumps to the tower, Next tower skips, Later closes. The game pauses while you choose.'],
   ['Rounds land (5.3.3)', 'A bullet whose target dies on the way now flies on to where it fell and sparks out there, instead of vanishing mid-air. No change to damage.'],
   ['White lines fixed (5.3.2)', 'The three thin white lines across the field on iPhone came from the faint retro scanlines, drawn as a repeating texture that Safari stitched badly. They are now drawn as plain stripes. Thanks for running the display test.'],
   ['Bounties win runs', 'Every run posts a bounty: a named boss with a mutation and a price on its head. Bring it in and the run is a win. Then choose: Extract to end it there and bank half again in XP, or Push on at a higher score multiplier (×1.25 per bounty pushed past) toward the next bounty 20 waves later. Fall before you extract and the bonus is lost. The bounty sits in the top bar the whole run.'],
