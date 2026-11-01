@@ -315,11 +315,31 @@ body.panel-r #docbar { display: none; }
 #toasts { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 4px; align-items: center; pointer-events: none; z-index: 30; width: min(520px, 70%); }
 body.modal-open #toasts { display: none; }
 body.bossbar #toasts { top: 58px; } body.asbar #toasts { top: 84px; }
-#asbar { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; gap: 10px; align-items: baseline; padding: 4px 12px; background: rgba(40, 6, 16, 0.88); box-shadow: inset 0 0 0 1px #ff4d6a, 0 0 14px rgba(255,77,106,0.35); cursor: pointer; white-space: nowrap; max-width: 92%; overflow: hidden; }
+#asbar { position: absolute; top: 6px; left: 6px; z-index: 5; display: flex; gap: 10px; align-items: baseline; padding: 4px 12px; background: rgba(40, 6, 16, 0.88); box-shadow: inset 0 0 0 1px #ff4d6a, 0 0 14px rgba(255,77,106,0.35); cursor: pointer; white-space: nowrap; max-width: calc(100% - 150px); overflow: hidden; }
 #asbar b { font-family: var(--f-pix); font-size: 9px; color: #ff4d6a; letter-spacing: 1px; }
 #asbar span { font-size: 15px; color: #f2e9ea; } #asbar i { font-style: normal; }
 #asbar em { font-style: normal; font-size: 15px; color: #ffd0d8; } #asbar em.lost { color: #fff; background: #ff4d6a; padding: 0 4px; }
-body.panel-l #asbar { left: calc(50% + 140px); max-width: calc(100% - 300px); } body.panel-r #asbar { left: calc(50% - 140px); max-width: calc(100% - 300px); }
+body.panel-l #asbar { left: calc(min(270px, 46%) + 10px); max-width: calc(100% - min(270px, 46%) - 160px); } body.panel-r #asbar { left: 140px; max-width: calc(100% - min(270px, 46%) - 150px); }
+/* v5.1.2 the ticker: one line under the top bar, left of the Map button, never over the middle of the field */
+#ticker { position: absolute; top: 6px; left: 6px; max-width: calc(100% - 150px); z-index: 6; overflow: hidden; background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c); padding: 3px 10px 3px 12px; cursor: pointer; animation: tin 0.2s; transition: opacity 0.25s; }
+#ticker[hidden] { display: none; }
+#ticker.out { opacity: 0; }
+#ticker .tkl { display: inline-flex; gap: 8px; align-items: baseline; white-space: nowrap; }
+#ticker.scroll .tkl { animation: tick var(--dur, 3s) linear 1.2s forwards; }
+@keyframes tick { to { transform: translateX(var(--shift, 0)); } }
+#ticker b { font-family: var(--f-pix); font-weight: 400; font-size: 9px; letter-spacing: 0.08em; color: var(--c); }
+#ticker span { font-size: 16px; color: var(--ink); }
+#ticker.urgent { background: rgba(40, 6, 16, 0.94); }
+body.asbar #ticker { top: 36px; } body.bossbar #ticker { top: 30px; }
+body.panel-l #ticker { left: calc(min(270px, 46%) + 10px); max-width: calc(100% - min(270px, 46%) - 160px); } body.panel-r #ticker { left: 140px; max-width: calc(100% - min(270px, 46%) - 150px); }
+body.modal-open #ticker { display: none; }
+#stage.edgeflash::before { content: ''; position: absolute; inset: 0; z-index: 7; pointer-events: none; animation: edgef 0.9s steps(6) 2; }
+@keyframes edgef { 0% { box-shadow: inset 0 0 0 4px #ff4d6a, inset 0 0 40px rgba(255, 77, 106, 0.55); } 100% { box-shadow: inset 0 0 0 0 transparent; } }
+.nlog { display: flex; flex-direction: column; gap: 3px; max-height: 40vh; overflow-y: auto; }
+.nlog div { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "b i" "s s"; background: var(--panel); box-shadow: inset 3px 0 0 var(--c); padding: 3px 8px; }
+.nlog b { grid-area: b; font-family: var(--f-pix); font-weight: 400; font-size: 9px; color: var(--c); letter-spacing: 0.06em; }
+.nlog span { grid-area: s; font-size: 15px; line-height: 1.15; }
+.nlog i { grid-area: i; font-style: normal; color: var(--dim); font-size: 13px; }
 body.panel-l #toasts { left: calc(50% + 140px); width: min(400px, 46%); }
 body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 .toast { background: rgba(7, 8, 15, 0.94); box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c), 0 0 22px rgba(0,0,0,0.6); padding: 6px 12px 7px 14px; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; animation: tin 0.2s; transition: opacity 0.3s; max-width: 100%; pointer-events: auto; cursor: pointer; }
@@ -331,7 +351,7 @@ body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 #tip.out { opacity: 0; }
 body.panel-l #tip { left: calc(50% + 140px); } body.panel-r #tip { left: calc(50% - 140px); }
 body.webopen #tip { bottom: calc(var(--sab, 0px) + 58px); } /* clear the region chips in the Passive Web */
-.evchip.dna.pulse { animation: dnapulse 0.9s steps(2) infinite; }
+.evchip.dna.pulse, .evchip.storm.pulse { animation: dnapulse 0.9s steps(2) infinite; }
 @keyframes dnapulse { 50% { box-shadow: inset 0 0 0 1px #59f0b4, 0 0 10px #59f0b4; } }
 .toast.out { opacity: 0; }
 @keyframes tin { from { transform: translateY(-6px); opacity: 0; } }
@@ -773,6 +793,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
       <div id="dps"></div>
       <div id="panel" class="panel" hidden></div>
       <div id="etip" hidden></div>
+      <div id="ticker" hidden></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">
@@ -809,7 +830,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.1.1';
+const VERSION = '5.1.2';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -982,7 +1003,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.1.1', title: 'Entropy 5.1 · Know Your Enemy', items: [
+const WHATS_NEW = { ver: '5.1.2', title: 'Entropy 5.1 · Know Your Enemy', items: [
+  ['Quieter notices', 'No more cards over the battlefield. Notices run along one slim line under the top bar, one at a time; long ones slide across instead of being cut off. Only run-ending news (Red Alert, Boss Halfway, Breach Warning) cuts in, with a red flash at the screen edge. News that already has a place on screen (the Strain Assault strip, storm and DNA chips) no longer repeats as a notice. Tap the line, or the +N chip, to read the last 30.'],
   ['Ability timers', 'Frenzy, Stasis and Scan count down on their buttons while they run (seconds left, and a bar that drains along the top). Using one again while it runs adds its time, up to three uses\' worth, instead of restarting it.'],
   ['Abilities on cooldowns', 'Every ability now recharges on its own timer into a charge slot, so the late game no longer runs dry. Crates, chests, bosses and milestones still give extra charges, and those stack with no cap. Buttons keep their place on the rail; empty ones dim and fill as they recharge.'],
   ['New: Sensor Sweep', 'A fifth ability (Scan, from Wave 7). Reveals cloaked enemies, Marks everything for +15% damage taken, and puts a reticle on the biggest threat. Short cooldown. Key B on a computer.'],
@@ -8443,7 +8465,7 @@ const UI = (() => {
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     { const rdy = G.towers.filter(t => t.pending > 0).length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} veteran${rdy > 1 ? 's' : ''} ready</span>`); }
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
-    for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
+    for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap${performance.now() < stormPulse ? ' pulse' : ''}" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
     G.laneWarn = null; for (const L of G.map.lanes) if (L.openWave) { const d = L.openWave - G.wave; if (d >= 1 && (!G.laneWarn || d < G.laneWarn)) G.laneWarn = d; }
     if (G.laneWarn) chips.unshift(`<span class="evchip warn ${G.laneWarn === 1 ? 'bad' : 'storm'}" style="--c:#d6a6ff">${G.laneWarn === 1 ? 'Wormhole opens next wave' : 'Wormhole opens in ' + G.laneWarn + ' waves'}</span>`);
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
@@ -8480,6 +8502,7 @@ const UI = (() => {
     G.paused = true;
     modal(`<div class="card narrow report"><div class="ch"><h2>Field Report</h2><span class="note">Wave ${G.wave}</span><button class="x" data-act="resume" aria-label="Close">✕</button></div>
       <div class="rlist">${rows || '<p class="note">Nothing to report.</p>'}</div>
+      ${noteLog.length ? `<div class="lbl">Recent notices</div><div class="nlog">${noteLog.slice().reverse().map(n => `<div style="--c:${n.col || '#c9c6bc'}"><b>${esc(n.title)}</b><span>${esc(n.body || '')}</span><i>W${n.w}</i></div>`).join('')}</div>` : ''}
       <div class="foot">${geneCap(G.wave) > 0 ? '<button class="btn" data-act="evoR">Swarm DNA</button>' : ''}${G.wanted && !G.wanted.done ? '<button class="btn" data-act="wantR">Most Wanted</button>' : ''}<button class="btn primary" data-act="resume">Continue</button></div></div>`);
   }
   function renderDps() {
@@ -8497,6 +8520,12 @@ const UI = (() => {
   const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
   const KEY_RE = /^(BOSS HALFWAY|NEW ENEMY|BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
+  // v5.1.2 notices in a game go to one slim ticker under the top bar, never over the field. URGENT ones (the run is at stake)
+  // flash the screen edge and buzz; everything is kept in noteLog, read back from the ticker or the +N chip (Field Report)
+  const URGENT_RE = /^(RED ALERT|BOSS HALFWAY|BREACH WARNING)/;
+  const HOMED_RE = /^(STRAIN ASSAULT|MAELSTROM|SWARM EVOLVES|WORMHOLE DETECTED)/;
+  const noteLog = []; let stormPulse = 0;
+  function noteKeep(title, body, col) { noteLog.push({ title, body, col, w: G ? G.wave : 0 }); if (noteLog.length > 30) noteLog.shift(); }
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force, as) {
@@ -8508,10 +8537,15 @@ const UI = (() => {
     const nm = PROF.settings.notes || 'all';
     if (screen === 'game' && !force && kind === 'alert' && (nm === 'off' || (nm === 'key' && !KEY_RE.test(title)))) { feed(title, body, col, true); return; }
     if (/^SWARM EVOLVES/.test(title)) dnaPulse = now + 9000;
+    if (/^MAELSTROM|^STORM/.test(title)) stormPulse = now + 6000;
+    // v5.1.2: news that already has a home on screen (the assault strip, the DNA and storm chips) doesn't also get a notice
+    if (screen === 'game' && kind === 'alert' && HOMED_RE.test(title)) kind = 'feed';
     if (kind === 'feed') { feed(title, body, col); return; }
     if (kind === 'tip') { flashTip(title, body, col); return; }
     if (!force && screen === 'game' && (modalOpen || Tree.isOpen)) { toastHeld.push([title, body, col]); if (toastHeld.length > 3) toastHeld.shift(); return; }
     if (toastNQ.some(t => t.title === title)) return;
+    // urgent news jumps the queue and cuts in
+    if (screen === 'game' && URGENT_RE.test(title)) { toastNQ.unshift({ title, body, col }); if (toastBusy && !$('#ticker').classList.contains('urgent')) { clearTimeout(tickT); tickerShow(toastNQ.shift()); } else if (!toastBusy) nextToast(); return; }
     toastNQ.push({ title, body, col });
     while (toastNQ.length > 2) feed(...Object.values(toastNQ.shift()));
     if (!toastBusy) nextToast();
@@ -8526,6 +8560,7 @@ const UI = (() => {
   function nextToast() {
     const t = toastNQ.shift(); if (!t) { toastBusy = false; return; }
     toastBusy = true;
+    if (screen === 'game') { tickerShow(t); return; }
     const box = $('#toasts');
     box.innerHTML = '';
     const d = document.createElement('div');
@@ -8538,9 +8573,28 @@ const UI = (() => {
     const dur = Math.min(5600, 2600 + (t.body || '').length * 35);
     toastT = setTimeout(end, toastNQ.length ? 2400 : dur);
   }
+  let tickT = null;
+  function tickerShow(t) {
+    const el = $('#ticker'), urgent = URGENT_RE.test(t.title);
+    noteKeep(t.title, t.body, t.col);
+    el.style.setProperty('--c', urgent ? '#ff4d6a' : t.col || '#ffb03a');
+    el.classList.toggle('urgent', urgent); el.classList.remove('out', 'scroll');
+    el.innerHTML = `<div class="tkl"><b>${esc(t.title)}</b><span>${esc(t.body || '')}</span></div>`;
+    el.hidden = false;
+    const line = el.firstChild, over = line.scrollWidth - el.clientWidth + 16;
+    let dur = urgent ? 6500 : Math.min(6000, 2800 + (t.body || '').length * 30);
+    // too long for one line: it slides across once instead of being cut off
+    if (over > 0) { const secs = Math.max(2.5, over / 45); line.style.setProperty('--shift', -over + 'px'); line.style.setProperty('--dur', secs + 's'); el.classList.add('scroll'); dur = Math.max(dur, 1200 + secs * 1000 + 1600); }
+    if (toastNQ.length) dur = Math.min(dur, Math.max(2600, over > 0 ? 1200 + Math.max(2.5, over / 45) * 1000 + 600 : 0));
+    if (urgent) { const st = $('#stage'); st.classList.remove('edgeflash'); void st.offsetWidth; st.classList.add('edgeflash'); Haptics.big(); }
+    clearTimeout(tickT);
+    const end = () => { clearTimeout(tickT); el.classList.add('out'); tickT = setTimeout(() => { el.hidden = true; el.classList.remove('out'); nextToast(); }, 250); };
+    tickT = setTimeout(end, dur);
+  }
   // the feed: recent events in the corner. Old ones fade; with Stats on it keeps the last few
   const feedLines = [];
   function feed(title, body, col, quiet) {
+    if (!quiet && screen === 'game') noteKeep(title, body, col);
     const now = performance.now(), last = feedLines[feedLines.length - 1];
     if (last && last.title === title && last.body === body) { last.n++; last.t = now; renderFeed(); return; }
     feedLines.push({ title, body, col, t: now, n: 1, quiet: !!quiet });
@@ -9833,6 +9887,7 @@ const UI = (() => {
     $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
+    $('#ticker').onclick = () => { SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
     $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#pw').parentNode.onclick = () => {
       if (!G || G.over) return; SFX.play('ui');
