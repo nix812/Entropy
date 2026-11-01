@@ -405,7 +405,7 @@ const UI = (() => {
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     { const rdy = G.towers.filter(t => t.pending > 0).length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} veteran${rdy > 1 ? 's' : ''} ready</span>`); }
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
-    for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
+    for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap${performance.now() < stormPulse ? ' pulse' : ''}" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
     G.laneWarn = null; for (const L of G.map.lanes) if (L.openWave) { const d = L.openWave - G.wave; if (d >= 1 && (!G.laneWarn || d < G.laneWarn)) G.laneWarn = d; }
     if (G.laneWarn) chips.unshift(`<span class="evchip warn ${G.laneWarn === 1 ? 'bad' : 'storm'}" style="--c:#d6a6ff">${G.laneWarn === 1 ? 'Wormhole opens next wave' : 'Wormhole opens in ' + G.laneWarn + ' waves'}</span>`);
     if (G.overclockT > 0) chips.push('<span class="evchip good">Frenzy</span>');
@@ -442,6 +442,7 @@ const UI = (() => {
     G.paused = true;
     modal(`<div class="card narrow report"><div class="ch"><h2>Field Report</h2><span class="note">Wave ${G.wave}</span><button class="x" data-act="resume" aria-label="Close">✕</button></div>
       <div class="rlist">${rows || '<p class="note">Nothing to report.</p>'}</div>
+      ${noteLog.length ? `<div class="lbl">Recent notices</div><div class="nlog">${noteLog.slice().reverse().map(n => `<div style="--c:${n.col || '#c9c6bc'}"><b>${esc(n.title)}</b><span>${esc(n.body || '')}</span><i>W${n.w}</i></div>`).join('')}</div>` : ''}
       <div class="foot">${geneCap(G.wave) > 0 ? '<button class="btn" data-act="evoR">Swarm DNA</button>' : ''}${G.wanted && !G.wanted.done ? '<button class="btn" data-act="wantR">Most Wanted</button>' : ''}<button class="btn primary" data-act="resume">Continue</button></div></div>`);
   }
   function renderDps() {
@@ -459,6 +460,12 @@ const UI = (() => {
   const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
   const KEY_RE = /^(BOSS HALFWAY|NEW ENEMY|BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
+  // v5.1.2 notices in a game go to one slim ticker under the top bar, never over the field. URGENT ones (the run is at stake)
+  // flash the screen edge and buzz; everything is kept in noteLog, read back from the ticker or the +N chip (Field Report)
+  const URGENT_RE = /^(RED ALERT|BOSS HALFWAY|BREACH WARNING)/;
+  const HOMED_RE = /^(STRAIN ASSAULT|MAELSTROM|SWARM EVOLVES|WORMHOLE DETECTED)/;
+  const noteLog = []; let stormPulse = 0;
+  function noteKeep(title, body, col) { noteLog.push({ title, body, col, w: G ? G.wave : 0 }); if (noteLog.length > 30) noteLog.shift(); }
   const toastNQ = []; let toastBusy = false, toastT = null, tipT = null, dnaPulse = 0;
   function toastKind(title) { return ALERT_RE.test(title) ? 'alert' : TIP_RE.test(title) ? 'tip' : 'feed'; }
   function toast(title, body, col, force, as) {
@@ -470,10 +477,15 @@ const UI = (() => {
     const nm = PROF.settings.notes || 'all';
     if (screen === 'game' && !force && kind === 'alert' && (nm === 'off' || (nm === 'key' && !KEY_RE.test(title)))) { feed(title, body, col, true); return; }
     if (/^SWARM EVOLVES/.test(title)) dnaPulse = now + 9000;
+    if (/^MAELSTROM|^STORM/.test(title)) stormPulse = now + 6000;
+    // v5.1.2: news that already has a home on screen (the assault strip, the DNA and storm chips) doesn't also get a notice
+    if (screen === 'game' && kind === 'alert' && HOMED_RE.test(title)) kind = 'feed';
     if (kind === 'feed') { feed(title, body, col); return; }
     if (kind === 'tip') { flashTip(title, body, col); return; }
     if (!force && screen === 'game' && (modalOpen || Tree.isOpen)) { toastHeld.push([title, body, col]); if (toastHeld.length > 3) toastHeld.shift(); return; }
     if (toastNQ.some(t => t.title === title)) return;
+    // urgent news jumps the queue and cuts in
+    if (screen === 'game' && URGENT_RE.test(title)) { toastNQ.unshift({ title, body, col }); if (toastBusy && !$('#ticker').classList.contains('urgent')) { clearTimeout(tickT); tickerShow(toastNQ.shift()); } else if (!toastBusy) nextToast(); return; }
     toastNQ.push({ title, body, col });
     while (toastNQ.length > 2) feed(...Object.values(toastNQ.shift()));
     if (!toastBusy) nextToast();
@@ -488,6 +500,7 @@ const UI = (() => {
   function nextToast() {
     const t = toastNQ.shift(); if (!t) { toastBusy = false; return; }
     toastBusy = true;
+    if (screen === 'game') { tickerShow(t); return; }
     const box = $('#toasts');
     box.innerHTML = '';
     const d = document.createElement('div');
@@ -500,9 +513,28 @@ const UI = (() => {
     const dur = Math.min(5600, 2600 + (t.body || '').length * 35);
     toastT = setTimeout(end, toastNQ.length ? 2400 : dur);
   }
+  let tickT = null;
+  function tickerShow(t) {
+    const el = $('#ticker'), urgent = URGENT_RE.test(t.title);
+    noteKeep(t.title, t.body, t.col);
+    el.style.setProperty('--c', urgent ? '#ff4d6a' : t.col || '#ffb03a');
+    el.classList.toggle('urgent', urgent); el.classList.remove('out', 'scroll');
+    el.innerHTML = `<div class="tkl"><b>${esc(t.title)}</b><span>${esc(t.body || '')}</span></div>`;
+    el.hidden = false;
+    const line = el.firstChild, over = line.scrollWidth - el.clientWidth + 16;
+    let dur = urgent ? 6500 : Math.min(6000, 2800 + (t.body || '').length * 30);
+    // too long for one line: it slides across once instead of being cut off
+    if (over > 0) { const secs = Math.max(2.5, over / 45); line.style.setProperty('--shift', -over + 'px'); line.style.setProperty('--dur', secs + 's'); el.classList.add('scroll'); dur = Math.max(dur, 1200 + secs * 1000 + 1600); }
+    if (toastNQ.length) dur = Math.min(dur, Math.max(2600, over > 0 ? 1200 + Math.max(2.5, over / 45) * 1000 + 600 : 0));
+    if (urgent) { const st = $('#stage'); st.classList.remove('edgeflash'); void st.offsetWidth; st.classList.add('edgeflash'); Haptics.big(); }
+    clearTimeout(tickT);
+    const end = () => { clearTimeout(tickT); el.classList.add('out'); tickT = setTimeout(() => { el.hidden = true; el.classList.remove('out'); nextToast(); }, 250); };
+    tickT = setTimeout(end, dur);
+  }
   // the feed: recent events in the corner. Old ones fade; with Stats on it keeps the last few
   const feedLines = [];
   function feed(title, body, col, quiet) {
+    if (!quiet && screen === 'game') noteKeep(title, body, col);
     const now = performance.now(), last = feedLines[feedLines.length - 1];
     if (last && last.title === title && last.body === body) { last.n++; last.t = now; renderFeed(); return; }
     feedLines.push({ title, body, col, t: now, n: 1, quiet: !!quiet });
@@ -1795,6 +1827,7 @@ const UI = (() => {
     $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openAssault(); };
+    $('#ticker').onclick = () => { SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
     $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-evo]')) { SFX.play('ui'); openEvo(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
     $('#pw').parentNode.onclick = () => {
       if (!G || G.over) return; SFX.play('ui');

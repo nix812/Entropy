@@ -41,9 +41,9 @@ with sync_playwright() as p:
     check(not pg.evaluate('() => G.paused'), 'Fight did not resume')
     # notifications Off: an alert goes to the feed instead of a card
     pg.evaluate('() => { PROF.settings.notes = "off"; UI.toast("PIRATES", "test", "#fff"); }'); pg.wait_for_timeout(300)
-    check(pg.evaluate('() => !document.querySelector("#toasts .toast")'), 'Off still showed an alert card')
+    check(pg.evaluate('() => document.querySelector("#ticker").hidden'), 'Off still showed an alert')
     pg.evaluate('() => { PROF.settings.notes = "key"; UI.toast("PIRATES", "test2", "#fff"); UI.toast("LEVEL UP", "test3", "#fff"); }'); pg.wait_for_timeout(300)
-    txt = pg.evaluate('() => [...document.querySelectorAll("#toasts .toast b")].map(b => b.textContent)')
+    txt = pg.evaluate('() => [...document.querySelectorAll("#ticker:not([hidden]) b")].map(b => b.textContent)')
     check(txt == ['PIRATES'], f'Key filter wrong: {txt}')
     b.close()
 print('FAILS:', fails); print('ERRORS:', errs[:5])
