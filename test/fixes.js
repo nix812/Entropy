@@ -103,3 +103,10 @@ const cd0 = S.abilCdMax('strike'); G.credits = 1e7; for (let i = 0; i < 12; i++)
 ok(G.core.uLvl === 9 && S.abilCdMax('strike') < cd0 * 0.6, `Command Uplink LV ${G.core.uLvl}: Strike ${cd0}s -> ${S.abilCdMax('strike').toFixed(1)}s`);
 const e0 = S.spawnEnemy('phantom', {}); e0.cloaked = true; G.charges.scan = 1;
 ok(S.useAbility('scan') && e0.scanned > 0 && G.scanThreat, 'Scan Marks and picks a threat');
+
+// v5.1.1: a timed ability used again while running adds its time (capped at 3 uses), and the rail can read what's left
+prof(0, 60); G = S.newRun({ seed: 4, chaos: 1 }); for (let w = 0; w < 12; w++) S.startWave();
+G.charges.overclock = 5; S.useAbility('overclock'); const f1 = G.overclockT; S.useAbility('overclock');
+ok(Math.abs(G.overclockT - 2 * f1) < 1e-6, `second Frenzy adds time: ${f1}s -> ${G.overclockT}s`);
+S.useAbility('overclock'); S.useAbility('overclock');
+ok(Math.abs(G.overclockT - 3 * f1) < 1e-6, `capped at three uses' worth (${G.overclockT}s)`);

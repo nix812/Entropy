@@ -163,6 +163,16 @@ function updateAbils(dt) {
   if (G.scanT > 0) { G.scanT -= dt; if (G.scanT <= 0) G.scanThreat = null; }
   if (G.scanThreat && G.scanThreat.dead) G.scanThreat = null;
 }
+// v5.1.1: a timed ability used while it is still running adds its time (up to 3 uses' worth) instead of restarting.
+// G.abilLeft / G.abilMax feed the rail's countdown
+const ABIL_TIMER = { stasis: 'stasisT', overclock: 'overclockT', scan: 'scanT' };
+function abilExtend(k, cur, dur) {
+  const t = Math.min(dur * 3, Math.max(0, cur || 0) + dur);
+  (G.abilMax || (G.abilMax = {}))[k] = Math.max(t, cur > 0 ? G.abilMax[k] || 0 : 0);
+  if (cur > 0) Hooks.toast((ABILITIES[k].short + ' extended').toUpperCase(), `+${Math.round(t - cur)}s · ${Math.ceil(t)}s left`, '#ffe14d', true, 'tip');
+  return t;
+}
+const abilLeft = k => ABIL_TIMER[k] && G[ABIL_TIMER[k]] > 0 ? G[ABIL_TIMER[k]] : 0;
 // Sensor Sweep's pick: the enemy most likely to cost you the run
 function threatScore(e) { const prog = e.L && e.L.len ? e.d / e.L.len : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
@@ -3211,12 +3221,12 @@ function useAbility(k, x, y) {
       break;
     }
     case 'stasis':
-      G.stasisT = (4 + M.stasisDur) * Math.min(1.5, M.abilPower);
+      G.stasisT = abilExtend('stasis', G.stasisT, (4 + M.stasisDur) * Math.min(1.5, M.abilPower));
       if (uplinkHas('drag')) G.dragT = G.stasisT + 4;
       Hooks.fx('stasis', {}); Hooks.sfx('stasis');
       break;
     case 'scan': {
-      G.scanT = SCAN.dur * Math.min(1.5, M.abilPower);
+      G.scanT = abilExtend('scan', G.scanT, SCAN.dur * Math.min(1.5, M.abilPower));
       let top = null, ts = 0;
       for (const e of G.enemies) if (!e.dead) { e.scanned = G.scanT; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.3); const sc = threatScore(e); if (sc > ts) { ts = sc; top = e; } }
       G.scanThreat = top;
@@ -3225,7 +3235,7 @@ function useAbility(k, x, y) {
       break;
     }
     case 'overclock':
-      G.overclockT = 8 * Math.min(1.5, M.abilPower);
+      G.overclockT = abilExtend('overclock', G.overclockT, 8 * Math.min(1.5, M.abilPower));
       Hooks.fx('overclock', {}); Hooks.sfx('overclock');
       break;
   }

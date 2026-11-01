@@ -348,8 +348,13 @@ const UI = (() => {
       const ct = on && (n > 1 || n > slots) ? String(n) : '';
       if (cnt.textContent !== ct) cnt.textContent = ct;
       cnt.classList.toggle('extra', n > slots);
-      const lt = on ? ABILITIES[k].short : 'W' + ABILITIES[k].from;
+      // v5.1.1: a running ability counts down on its button (label → seconds left, a bar drains along the top)
+      const left = on ? abilLeft(k) : 0, mxl = left > 0 ? Math.max(left, (G.abilMax && G.abilMax[k]) || left) : 1;
+      const lt = !on ? 'W' + ABILITIES[k].from : left > 0 ? `${left < 10 ? left.toFixed(1) : Math.ceil(left)}s` : ABILITIES[k].short;
       if (lab.textContent !== lt) lab.textContent = lt;
+      btn.classList.toggle('live', left > 0);
+      let db = btn.querySelector('.dur'); if (!db) { db = document.createElement('i'); db.className = 'dur'; btn.appendChild(db); }
+      db.style.width = left > 0 ? pct(clamp(left / mxl, 0, 1)) : '0%';
       btn.classList.toggle('locked', !on); btn.classList.toggle('empty', on && n <= 0);
       const mx = on ? abilCdMax(k) : 1, cd = G.abilCd ? G.abilCd[k] : 0, filling = on && n < slots && cd > 0;
       btn.querySelector('.cdf').style.width = filling ? pct(clamp(1 - cd / mx, 0, 1)) : '0%';

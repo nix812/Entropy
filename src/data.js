@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.1.0';
+const VERSION = '5.1.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,7 +173,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.1.0', title: 'Entropy 5.1 · Know Your Enemy', items: [
+const WHATS_NEW = { ver: '5.1.1', title: 'Entropy 5.1 · Know Your Enemy', items: [
+  ['Ability timers', 'Frenzy, Stasis and Scan count down on their buttons while they run (seconds left, and a bar that drains along the top). Using one again while it runs adds its time, up to three uses\' worth, instead of restarting it.'],
   ['Abilities on cooldowns', 'Every ability now recharges on its own timer into a charge slot, so the late game no longer runs dry. Crates, chests, bosses and milestones still give extra charges, and those stack with no cap. Buttons keep their place on the rail; empty ones dim and fill as they recharge.'],
   ['New: Sensor Sweep', 'A fifth ability (Scan, from Wave 7). Reveals cloaked enemies, Marks everything for +15% damage taken, and puts a reticle on the biggest threat. Short cooldown. Key B on a computer.'],
   ['Command Uplink', 'A new core upgrade: each level cuts ability cooldowns 5%. Level 3: Strike hits twice. Level 6: Stasis leaves enemies slowed. Level 9: Nova pulses again. Command talents add Reserve Cells (extra charge slots), Telemetry now cuts cooldowns, and the new Tactician Capstone links your abilities.'],
