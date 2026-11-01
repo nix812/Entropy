@@ -1,0 +1,93 @@
+"""v5.3 The Hunt: hangar lines, Nemesis on the setup card and in the run, Bounty Claimed with Push and Extract, the game-over card
+(extracted, new Nemesis), the Daily Hunt card and build editor, an exact Daily resume after a reload, watching the ranked run,
+and a hunt code round trip. usage: python3 v53shot.py [W H]"""
+import pathlib, sys, mkpage
+from playwright.sync_api import sync_playwright
+root = pathlib.Path(__file__).parent.parent; out = root / 'test' / 'out' / 'v53'; out.mkdir(parents=True, exist_ok=True)
+W, H = (int(sys.argv[1]), int(sys.argv[2])) if len(sys.argv) > 2 else (852, 393)
+mkpage.mk(); errs = []; checks = []
+def ok(name, v): checks.append((name, bool(v))); print(('ok   ' if v else 'FAIL ') + name)
+def shot(pg, n): pg.screenshot(path=str(out / (n + '.png')))
+CLAIM = '''() => { const w = G.wanted.w; G.wave = w; const L = G.map.lanes[0]; const e = spawnBoss({ boss: G.wanted.boss, lane: L, hpm: 1 });
+  if (G.wanted.mod === 'twins') { kill(e, null, {}); const t2 = spawnBoss({ boss: G.wanted.boss, lane: L, hpm: 1, twin: 1 }); kill(t2, null, {}); } else kill(e, null, {}); return !!G.huntChoice; }'''
+with sync_playwright() as p:
+    b = p.chromium.launch(); ctx = b.new_context(viewport={'width': W, 'height': H}, device_scale_factor=2, has_touch=True)
+    pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
+    pg.evaluate('''() => { PROF.seenVer = VERSION; PROF.seenHelp = true; PROF.zoomHint = 1; PROF.bestWave = 45; PROF.xp = 400000; PROF.settings.briefings = 'off';
+      PROF.nemesis = { kind: 'strain', type: 'drone', genes: ['haste', 'plating'], el: 'K', rank: 2, lastW: 33 }; PROF.nemesis.name = nemesisName(PROF.nemesis);
+      PROF.hunt = { bounties: 3, extracts: 1, extractBy: { 1: 1 }, nemDown: 1, nemDownList: [], best: {} }; UI.renderHangar(); }''')
+    pg.wait_for_timeout(200); shot(pg, 'hangar')
+    ok('hangar shows the Nemesis and trophies', pg.evaluate('() => /Nemesis/.test(document.querySelector("#hHunt").textContent) && /3 bounties/.test(document.querySelector("#hHunt").textContent)'))
+    pg.click('#bLaunch'); pg.wait_for_timeout(300); shot(pg, 'setup_nemesis')
+    ok('setup says the Nemesis is waiting', pg.evaluate('() => /Nemesis waiting/.test(document.querySelector("#modal").textContent)'))
+    pg.click('[data-act=launch]'); pg.wait_for_timeout(800)
+    ok('the run carries the Nemesis', pg.evaluate('() => !!G.nemesis && G.nemesis.rank === 2 && Object.keys(G.geneFit || {}).length > 0'))
+    ok('bounty chip on the HUD', pg.evaluate('() => !!document.querySelector("#chips [data-wanted]")'))
+    # first bounty: push on
+    ok('a bounty kill offers the choice', pg.evaluate(CLAIM))
+    pg.wait_for_timeout(600)
+    pg.evaluate('() => { const b = document.querySelector("[data-act=boon]"); b && b.click(); }'); pg.wait_for_timeout(500)
+    shot(pg, 'bounty_claimed')
+    ok('Bounty Claimed card open', pg.evaluate('() => !!document.querySelector("#modal .card.hunt")'))
+    pg.click('[data-act=push]'); pg.wait_for_timeout(400)
+    ok('pushed on: ×1.25 and the next bounty is 20 waves out', pg.evaluate('() => G.pushes === 1 && !G.huntChoice && G.wanted.w === G.bounties[0].w + 20 && Math.abs(huntMult() - 1.25) < 1e-9'))
+    shot(pg, 'pushed')
+    # second bounty: extract
+    pg.evaluate(CLAIM); pg.wait_for_timeout(600)
+    pg.evaluate('() => { const b = document.querySelector("[data-act=boon]"); b && b.click(); }'); pg.wait_for_timeout(500)
+    xp0 = pg.evaluate('() => PROF.xp')
+    pg.click('[data-act=extract]'); pg.wait_for_timeout(1500)
+    shot(pg, 'extracted')
+    ok('extracted: the run ends as a win with bonus XP', pg.evaluate('(x0) => G.over && G.extracted > 0 && PROF.xp > x0 && /Extracted/.test(document.querySelector("#modal").textContent)', xp0))
+    ok('trophies counted', pg.evaluate('() => PROF.hunt.bounties === 5 && PROF.hunt.extracts === 2'))
+    # a loss makes a Nemesis
+    pg.evaluate('() => { document.querySelector("[data-act=hangar]").click(); }'); pg.wait_for_timeout(300)
+    pg.evaluate('() => { PROF.nemesis = null; UI.renderHangar(); }')
+    pg.click('#bLaunch'); pg.wait_for_timeout(300); pg.click('[data-act=launch]'); pg.wait_for_timeout(700)
+    pg.evaluate('() => { G.wave = 27; G.leakWave = { "tank+plating+regen": 6, swarmer: 2 }; G.core.hp = 0; gameOver(); }'); pg.wait_for_timeout(1400)
+    shot(pg, 'new_nemesis')
+    ok('a loss leaves a Nemesis', pg.evaluate('() => PROF.nemesis && PROF.nemesis.type === "tank" && PROF.nemesis.genes.join() === "plating,regen" && /New Nemesis/.test(document.querySelector("#modal").textContent)'))
+    # Daily Hunt card and build
+    pg.evaluate('() => { document.querySelector("[data-act=hangar]").click(); }'); pg.wait_for_timeout(300)
+    pg.evaluate('() => { PROF.daily = null; UI.renderHangar(); document.querySelector("#hHunt [data-hact=daily]").click(); }'); pg.wait_for_timeout(400)
+    shot(pg, 'daily_card')
+    ok('Daily Hunt card', pg.evaluate('() => /Daily Hunt/.test(document.querySelector("#modal").textContent) && /Start ranked run/.test(document.querySelector("#modal").textContent)'))
+    pg.click('[data-act=huntBuild]'); pg.wait_for_timeout(400)
+    ok('Hunt build editor has 40 points', pg.evaluate('() => document.querySelector("#tree h2").textContent === "Hunt Build" && pointsFree() === 40'))
+    pg.evaluate('() => { for (let i = 0; i < 5; i++) talentAdd(TALENTS[0].rows[0][0].id); Tree.refresh(); }'); pg.wait_for_timeout(200); shot(pg, 'hunt_build')
+    ok('profile talents untouched by the Hunt build', pg.evaluate('() => !PROF.tal[TALENTS[0].rows[0][0].id] && PROF.huntBuild.tal[TALENTS[0].rows[0][0].id] === 5'))
+    pg.evaluate('() => document.querySelector("[data-tact=close]").click()'); pg.wait_for_timeout(400)
+    ok('back on the Daily Hunt card with the build', pg.evaluate('() => /5\\/40/.test(document.querySelector("#modal").textContent)'))
+    pg.click('[data-act=launchDaily]'); pg.wait_for_timeout(800)
+    ok('the Hunt run uses the Hunt build and opens every tower', pg.evaluate('() => !!G.huntBuild && pointsSpent() === 5 && towerUnlocked("grav") && talentBlock(TALENTS[1].rows[0][0].id) === "locked"'))
+    # play a little through act, then save, reload and resume exactly
+    pg.evaluate('''() => { const L = G.map.lanes[0]; let n = 0; for (const p0 of L.tiles) { for (const [dx, dy] of [[1,0],[0,1]]) if (n < 4 && canBuildAt(p0.x + dx, p0.y + dy)) { if (window.act('build', ['pulse','cryo','rail','pulse'][n], p0.x + dx, p0.y + dy)) n++; } } G.speed = 3; }''')
+    pg.wait_for_timeout(5000)
+    pg.evaluate('() => { window.act("call"); }'); pg.wait_for_timeout(2500)
+    pg.evaluate('() => { G.paused = true; snapshotNow(); Save.save(); }')
+    before = pg.evaluate('() => ({ tick: G.tick, h: runHash(), n: G.inputs.length, w: G.wave })')
+    pg.reload(); pg.wait_for_timeout(600)
+    ok('hangar offers to resume the Hunt', pg.evaluate('() => !!PROF.runSnap && !!PROF.runSnap.rec'))
+    pg.click('#bLaunch'); pg.wait_for_timeout(2500)
+    after = pg.evaluate('() => G.resumedHunt')
+    print('   before', before, 'after', after)
+    ok('Daily Hunt resumed at the exact tick and state', before == after)
+    shot(pg, 'hunt_resumed')
+    # end it: ranked result and recording, then watch it
+    pg.evaluate('() => { G.paused = false; window.act("abandon"); }'); pg.wait_for_timeout(1500)
+    shot(pg, 'daily_over')
+    ok('ranked run stored with its recording', pg.evaluate('() => PROF.daily.ranked && PROF.daily.rec && PROF.daily.rec.inputs.length === %d' % (after['n'] + 1)))
+    code = pg.evaluate('async () => { const c = await UI._dbg.huntCode(PROF.daily.rec); const r = await UI._dbg.readHuntCode(c); return [c.slice(0, 6), c.length, r && r.inputs.length]; }')
+    print('   hunt code', code)
+    ok('hunt code round trip', code[2] == after['n'] + 1 and code[0] in ('HUNT1:', 'HUNT0:'))
+    xpw = pg.evaluate('() => PROF.xp')
+    pg.evaluate('() => document.querySelector("[data-act=huntWatch]").click()'); pg.wait_for_timeout(4000)
+    shot(pg, 'watching')
+    ok('watching the ranked run', pg.evaluate('() => !!(G && G.watch) && !document.querySelector("#watchbar").hidden'))
+    ok('taps do nothing while watching', pg.evaluate('() => window.act("build", "pulse", 1, 1) === false'))
+    pg.evaluate('() => document.querySelector("#watchbar [data-act=watchEnd]").click()'); pg.wait_for_timeout(400)
+    ok('watching left the profile alone', pg.evaluate('(x) => !G && PROF.xp === x', xpw))
+    b.close()
+print('ERRORS:', errs[:5])
+print('FAILED:', [n for n, v in checks if not v])

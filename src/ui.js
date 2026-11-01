@@ -135,7 +135,13 @@ const UI = (() => {
     $('#bLaunch2').hidden = !snap;
     $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
     const dk = dailyKey(), dd = PROF.daily && PROF.daily.date === dk ? PROF.daily : null;
-    $('#hPlaySub').textContent = snap ? `Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}` : (dd ? `Daily best: Wave ${dd.best}` : '');
+    $('#hPlaySub').textContent = snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : '';
+    // v5.3 The Hunt: what is waiting for you, what you've won, and today's Daily Hunt, before you press Play
+    const H = PROF.hunt || {}, N = PROF.nemesis, hh = $('#hHunt'), rows = [];
+    if (N) rows.push(`<div class="hhr nem"><span class="lbl">Nemesis</span><b>${esc(N.name)}</b><small>${N.kind === 'boss' ? 'takes your next bounty' : 'leads your next Strain Assault'} · ended you on Wave ${N.lastW}</small></div>`);
+    if (H.bounties || H.extracts || H.nemDown) rows.push(`<div class="hhr"><span class="lbl">Trophies</span><b>${H.bounties || 0} bount${H.bounties === 1 ? 'y' : 'ies'} · ${H.extracts || 0} extracted${H.nemDown ? ` · ${H.nemDown} Nemes${H.nemDown === 1 ? 'is' : 'es'} down` : ''}</b></div>`);
+    rows.push(`<div class="hhr day"><span class="lbl">Today's Hunt</span><b>${dd && dd.ranked ? `Wave ${dd.ranked.wave}${dd.ranked.ext ? ' · extracted' : ''}` : 'Not played yet'}</b><button class="btn small" data-hact="daily">${dd && dd.ranked ? 'Ladder' : 'Hunt'}</button></div>`);
+    hh.innerHTML = rows.join('');
   }
 
   // ---------- Setup ----------
@@ -172,10 +178,11 @@ const UI = (() => {
             <div class="chips wrap">${starts.map(w => `<button class="chip ${w === sw ? 'on' : ''}" data-act="sw" data-v="${w}">${w}</button>`).join('')}</div>
             <p class="note">${starts.length === 1 ? 'Reach Wave 10 to unlock later starts.' : sw === 1 ? 'Later starts skip early waves and grant bonus credits.' : `${fmt(credits)} starting credits. Tougher enemies, bigger rewards.`}</p>
             <div class="lbl">Chaos</div>
-            <div class="chips">${CHAOS_LEVELS.map((c, i) => chaosUnlocked(i) ? `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>` : `<button class="chip locked" data-act="chLock" data-v="${i}">${c.name}<small>Best W${CHAOS_GATE[i]}</small></button>`).join('')}</div>
+            <div class="chips">${CHAOS_LEVELS.map((c, i) => chaosUnlocked(i) ? `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>` : `<button class="chip locked" data-act="chLock" data-v="${i}">${c.name}<small>Extract on ${CHAOS_LEVELS[i - 1].name}</small></button>`).join('')}</div>
             <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite}${CH.cr ? ` · Credits ×${CH.cr}` : ""} · <b class="amber">Score ×${CH.score}</b></p>
             <p class="note">${tipify('Evolution')}: ${esc(CH.evo ? CH.evo.desc : '')}</p>
             <p class="note">Sector ${R0.x1 - R0.x0}×${R0.y1 - R0.y0} → ${COLS}×${ROWS} · ${CH.lanes.length} wormholes${CH.lanes[0] <= 1 ? ', one at start' : ''}</p>
+            ${PROF.nemesis ? `<p class="note nem"><b>Nemesis waiting: ${esc(PROF.nemesis.name)}.</b> ${PROF.nemesis.kind === 'boss' ? 'It takes your first bounty, mutated, for double the reward.' : 'The swarm starts already carrying it, and it leads your first Strain Assault, with a double bounty.'}</p>` : ''}
           </div>
           <div class="col">
             <div class="lbl">Map</div>
@@ -188,30 +195,37 @@ const UI = (() => {
     Render.preview_map($('#mapPrev'), setup.map, setup.frac);
   }
   function modeChips() {
-    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily</button></div>`;
+    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button></div>`;
   }
   function renderDaily() {
     const spec = dailySpec(dailyKey());
-    setCols(fitCols());
     setRows(CHAOS_LEVELS[spec.chaos].rows); setCols(fitCols());
     setup.daily = spec; setup.seed = spec.seed; setup.map = genMap(mulberry32(spec.seed));
-    const d = PROF.daily && PROF.daily.date === spec.date ? PROF.daily : null;
+    const d = PROF.daily && PROF.daily.date === spec.date ? PROF.daily : null, hb = huntBuildProf();
+    let spent = 0; for (const k in hb.tal) if (TAL[k]) spent += hb.tal[k]; const capN = (hb.caps || []).filter(c => TAL[c]);
+    const nem = Object.assign({}, spec.nemesis); nem.name = nemesisName(nem);
+    const runs = d && d.runs ? d.runs.slice(0, 5) : [];
+    if (d && d.rec) prepHuntCode();
     modal(`
       <div class="card setup">
         <div class="ch"><h2>New Run</h2>${modeChips()}<button class="x" data-act="close">✕</button></div>
         <div class="setup-grid">
           <div class="col">
-            <div class="lbl">Daily Challenge · ${spec.date}</div>
-            <p class="note">Same map and anomalies for everyone today. Unstable chaos. Resets at midnight.</p>
+            <div class="lbl">Daily Hunt · ${spec.date}</div>
+            <p class="note">Same map, bounty and Nemesis for everyone. Every tower open, ${HUNT.pts} talent points each: it comes down to play. Your first run today is ranked.</p>
+            <div class="hbuild"><span>Hunt build <b>${spent}/${HUNT.pts}</b> points${capN.length ? ' · ' + capN.map(c => esc(TAL[c].name)).join(', ') : ''}</span><button class="btn small" data-act="huntBuild">${spent ? 'Edit' : 'Build it'}</button></div>
+            <p class="note nem"><b>Today's Nemesis: ${esc(nem.name)}.</b> It leads the first Strain Assault.</p>
             <div class="anlist">${spec.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>
-            <p class="note">${d ? `Today's best: Wave ${d.best} · ${fmt(d.score)} · ${d.tries} ${d.tries === 1 ? 'attempt' : 'attempts'}` : 'No attempts yet today.'}</p>
           </div>
           <div class="col">
             <div class="lbl">Map</div>
             <canvas id="mapPrev" width="320" height="150"></canvas>
+            <div class="lbl">Today's ladder <em class="dim">(this device; online at launch)</em></div>
+            ${runs.length ? `<div class="ladder">${runs.map((r, i) => `<div class="${d.ranked && r.ts === d.ranked.ts ? 'ranked' : ''}"><em>#${i + 1}</em><b>Wave ${r.wave}${r.ext ? ' · extracted' : ''}</b><span>${fmt(r.score)}${d.ranked && r.ts === d.ranked.ts ? ' · ranked' : ''}</span></div>`).join('')}</div>` : '<p class="note">No runs yet today.</p>'}
+            <div class="row">${d && d.rec ? '<button class="btn small" data-act="huntWatch">Watch ranked run</button><button class="btn small" data-act="huntCode">Copy hunt code</button>' : ''}<button class="btn small" data-act="huntPaste">Watch a code</button></div>
           </div>
         </div>
-        <div class="foot"><button class="btn primary" data-act="launchDaily">Start Daily</button></div>
+        <div class="foot"><button class="btn primary" data-act="launchDaily">${d && d.ranked ? 'Practice run' : 'Start ranked run'}</button></div>
       </div>`, 'setup');
     Render.preview_map($('#mapPrev'), setup.map);
   }
@@ -221,18 +235,19 @@ const UI = (() => {
     Render.reset();
     requestAnimationFrame(() => { Render.resize(); });
     feedLines.length = 0; renderFeed();
-    if (snap) resumeRun(snap);
-    else if (setup.mode === 'daily') newRun({ seed: setup.daily.seed, chaos: setup.daily.chaos, startWave: 1, daily: setup.daily, cols: COLS });
+    if (snap && snap.rec) { const sv = PROF.runSnap; replayRun(snap.rec, { quiet: true, until: snap.rec.end }); PROF.runSnap = sv; G.resumedHunt = { tick: G.tick, h: runHash(), n: G.inputs.length, w: G.wave }; }
+    else if (snap) resumeRun(snap);
+    else if (setup.mode === 'daily') { const sp = setup.daily; newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, cols: COLS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis }); }
     else {
       PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
-      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS });
+      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null });
     }
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave; G.fresh = freshProfile();
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
-    Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake;
+    Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false;
     document.body.classList.toggle('hudfull', hudFull);
     closePanel();
     buildAbilityBar();
@@ -289,6 +304,7 @@ const UI = (() => {
       modal(`<div class="card narrow brief wanted"><div class="ch"><h2>Most Wanted</h2><span class="note">Wave ${Wd.w}</span></div>
         <p class="wname">${esc(Wd.name)}</p><p class="note">Wanted for ${esc(Wd.crime)}.</p>${M ? `<p>${tipify(M.desc)}.</p>` : ''}
         <p class="amber">Reward: ${fmt(Wd.bounty)} credits and a Legendary schematic${M && M.loaded ? " (double, plus a Captain's Chest)" : ''}.</p>
+        <p class="note">Bring it in and the run is a win: extract and bank it, or push on for a bigger score and the next bounty.</p>
         <div class="foot"><span class="note">Tap the Wanted chip any time to see this again</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
       return;
     }
@@ -304,7 +320,7 @@ const UI = (() => {
     if (!odReady()) { toast('OVERDRIVE', `Charges at Wave ${OD_WAVE}: one board clear per run (bosses survive)`, '#8a8fa8'); return; }
     if (!odArm) { odArm = true; clearTimeout(odArmT); odArmT = setTimeout(() => { odArm = false; updateHud(); }, 3000); updateHud(); toast('OVERDRIVE ARMED', 'Tap again to erase every non-boss enemy. One use per run', '#59f0b4', true); return; }
     odArm = false; clearTimeout(odArmT);
-    const r = releaseOverdrive();
+    const r = window.act('od');
     if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); }
     else if (r !== 'ok') SFX.play('deny');
     else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); }
@@ -364,7 +380,7 @@ const UI = (() => {
       if (k === 'scan') { const hid = on && n > 0 && !(G.scanT > 0) && G.enemies.some(e => !e.dead && e.cloaked && !(e.revealed > 0)); btn.classList.toggle('want', hid);
         if (hid && (G.scanHintW || 0) + 6 <= G.wave) { G.scanHintW = G.wave; toast('CLOAKED ENEMIES', 'Your towers can\'t see them. Scan reveals them and marks them for +15% damage', '#7dffb0', false, 'alert'); } }
     }
-    const free = pointsFree();
+    const free = huntRun() ? 0 : pointsFree(); // a Hunt run's build is locked: no badge
     $('#bStats').classList.toggle('on', hudFull);
     const eb = $('#bEnt');
     $('#entFill').style.height = pct(Math.min(1, G.entropy / 100));
@@ -378,12 +394,12 @@ const UI = (() => {
     if (G.spawningDone && G.prep) {
       const P = G.prep;
       if (P.boss) chips.push(`<span class="evchip next bad">Boss ${P.boss.odd ? "???" : esc(P.boss.name)}</span>`);
-      if (G.wanted && G.wantedTold && !G.wanted.done && G.wanted.w > G.wave) chips.push(`<span class="evchip wanted" data-wanted="1">Wanted · W${G.wanted.w}</span>`);
       for (const E of P.list) chips.push(`<span class="evchip next ${E.good ? 'good' : 'bad'}">${esc(E.name)}</span>`);
     }
     // v5.2 threat board: one chip says what is coming and what the swarm is doing (next wave, new and headline enemies, DNA, Strain Assault).
     // Tap it for the full board. Replaces the separate Next / headline / gene / DNA chips and the assault banner
     { const th = threatChip(); if (th) chips.push(th); }
+    if (G.wanted && G.wantedTold && !G.wanted.done) chips.push(`<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1">${G.wanted.nemesis ? 'Nemesis' : 'Bounty'} · W${G.wanted.w}${G.pushes ? ' · ×' + huntMult().toFixed(2) : ''}</span>`);
     { const asb = $('#asbar'); if (asb && !asb.hidden) { asb.hidden = true; document.body.classList.remove('asbar'); } }
     { // Doctrine meters, bottom right of the field
       const db = $('#docbar'), parts = [];
@@ -600,7 +616,7 @@ const UI = (() => {
   }
   // boss arrival: a portrait card and a moment of slow motion, so every boss gets its entrance
   let bossT = null;
-  const briefMode = () => PROF.settings.briefings || 'pause';
+  const briefMode = () => G && G.watch ? 'off' : PROF.settings.briefings || 'pause';
   // v5.1: the first time you meet an enemy, a short card says what it is and what beats it (queued if something is open)
   const enemyCards = []; let readyIx = -1;
   function enemyCard(k) {
@@ -970,10 +986,10 @@ const UI = (() => {
         Render.prev = D.range ? { x: panel.x, y: panel.y, range: D.range * G.mods.range * (pick === 'pulse' || pick === 'rail' ? 1 + G.mods.rangeKR : 1), col: EL[D.el].col } : null;
         renderPanel();
       } else if (act === 'reactor') {
-        if (!expandReactor()) { SFX.play('deny'); return; }
+        if (!window.act('reactor')) { SFX.play('deny'); return; }
         toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next expansion ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud();
       } else if (act === 'build') {
-        const t = buildTower(pick, panel.x, panel.y);
+        const t = window.act('build', pick, panel.x, panel.y);
         if (!t) { SFX.play('deny'); return; }
         Render.prev = null;
         openTower(t);
@@ -982,53 +998,53 @@ const UI = (() => {
     }
     if (panel.kind === 'tower') {
       const t = panel.t;
-      if (act === 'mode') { t.mode = b.dataset.v; renderPanel(); }
-      else if (act === 'up') { if (!upgradeTower(t)) SFX.play('deny'); renderPanel(); }
-      else if (act === 'spec') { if (!upgradeTower(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
-      else if (act === 'reroll') { if (!rerollTower(t)) SFX.play('deny'); renderPanel(); }
-      else if (act === 'rerollTok') { if (!rerollTower(t, true)) SFX.play('deny'); renderPanel(); }
-      else if (act === 'sell') { sellTower(t); closePanel(); }
-      else if (act === 'oc') { if (!setOvercharge(t, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
-      else if (act === 'vet') { if (!claimVet(t, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
+      if (act === 'mode') { window.act('mode', t.x, t.y, b.dataset.v); renderPanel(); }
+      else if (act === 'up') { if (!window.act('up', t.x, t.y)) SFX.play('deny'); renderPanel(); }
+      else if (act === 'spec') { if (!window.act('up', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
+      else if (act === 'reroll') { if (!window.act('reroll', t.x, t.y, 0)) SFX.play('deny'); renderPanel(); }
+      else if (act === 'rerollTok') { if (!window.act('reroll', t.x, t.y, 1)) SFX.play('deny'); renderPanel(); }
+      else if (act === 'sell') { window.act('sell', t.x, t.y); closePanel(); }
+      else if (act === 'oc') { if (!window.act('oc', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
+      else if (act === 'vet') { if (!window.act('vet', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       return;
     }
     if (panel.kind === 'cash') {
-      if (act === 'cash') { const got = cashIn(Math.floor(G.credits * +b.dataset.v)); if (got) toast('CASHED IN', `+${fmt(got)} score`, '#ffb03a'); else SFX.play('deny'); updateHud(); panel.sig = null; liveRefreshPanel(); }
+      if (act === 'cash') { const got = window.act('cash', Math.floor(G.credits * +b.dataset.v)); if (got) toast('CASHED IN', `+${fmt(got)} score`, '#ffb03a'); else SFX.play('deny'); updateHud(); panel.sig = null; liveRefreshPanel(); }
       else if (act === 'buy') {
-        const m = marketBuy(b.dataset.v);
+        const m = window.act('buy', b.dataset.v);
         if (!m) { SFX.play('deny'); return; }
         const I = MARKET_ITEMS.find(x => x.id === b.dataset.v);
-        if (G.placing === 'beacon') { G.placingRefund = marketPrice(I); closePanel(); toast('NODE BEACON', m + '. Tap the core to cancel', '#6ae2ff', true); }
+        if (G.placing === 'beacon') { closePanel(); toast('NODE BEACON', m + '. Tap the core to cancel', '#6ae2ff', true); }
         else { toast('BLACK MARKET', `${I.name}: ${m}`, I.col); panel.sig = null; liveRefreshPanel(); }
         updateHud(); Save.save();
       }
       return;
     }
     if (panel.kind === 'core') {
-      if (act === 'cel') { G.core.el = b.dataset.v; renderPanel(); }
-      else if (act === 'cw') { if (!coreUpgrade('weapon')) SFX.play('deny'); renderPanel(); }
-      else if (act === 'cs') { if (!coreUpgrade('shield')) SFX.play('deny'); renderPanel(); }
-      else if (act === 'cu') { if (!coreUpgrade('uplink')) SFX.play('deny'); renderPanel(); updateHud(); }
-      else if (act === 'ch') { if (!coreUpgrade('hull')) SFX.play('deny'); else toast('HULL REINFORCED', `LV ${G.core.hLvl}: ${Math.round(G.core.max)} max hull, leaks deal ${HULL.guard * G.core.hLvl}% less`, '#59f0b4', true, 'tip'); renderPanel(); updateHud(); }
-      else if (act === 'cr') { if (!coreUpgrade('repair')) SFX.play('deny'); renderPanel(); }
-      else if (act === 'crr') { if (!rerollCore()) SFX.play('deny'); renderPanel(); }
+      if (act === 'cel') { window.act('coreEl', b.dataset.v); renderPanel(); }
+      else if (act === 'cw') { if (!window.act('core', 'weapon')) SFX.play('deny'); renderPanel(); }
+      else if (act === 'cs') { if (!window.act('core', 'shield')) SFX.play('deny'); renderPanel(); }
+      else if (act === 'cu') { if (!window.act('core', 'uplink')) SFX.play('deny'); renderPanel(); updateHud(); }
+      else if (act === 'ch') { if (!window.act('core', 'hull')) SFX.play('deny'); else toast('HULL REINFORCED', `LV ${G.core.hLvl}: ${Math.round(G.core.max)} max hull, leaks deal ${HULL.guard * G.core.hLvl}% less`, '#59f0b4', true, 'tip'); renderPanel(); updateHud(); }
+      else if (act === 'cr') { if (!window.act('core', 'repair')) SFX.play('deny'); renderPanel(); }
+      else if (act === 'crr') { if (!window.act('coreRoll')) SFX.play('deny'); renderPanel(); }
       else if (act === 'od') {
         // two taps: the first arms it for 3 seconds
         if (!panel.odArm) { panel.odArm = true; renderPanel(); setTimeout(() => { if (panel && panel.kind === 'core' && panel.odArm) { panel.odArm = false; renderPanel(); } }, 3000); return; }
         panel.odArm = false;
-        const r = releaseOverdrive();
+        const r = window.act('od');
         if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); renderPanel(); }
         else if (r !== 'ok') { SFX.play('deny'); renderPanel(); }
         else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
       }
       else if (act === 'reloc') startReloc();
-      else if (act === 'reactor') { if (!expandReactor()) SFX.play('deny'); else toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud(); }
+      else if (act === 'reactor') { if (!window.act('reactor')) SFX.play('deny'); else toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud(); }
       return;
     }
     if (panel.kind === 'reloc') {
       if (act === 'rcancel') endReloc();
       else if (act === 'rgo') {
-        if (!applyRelocation(G.reloc && G.reloc.plan)) { SFX.play('deny'); return; }
+        if (!(G.reloc && G.reloc.plan && window.act('reloc', G.reloc.plan.x, G.reloc.plan.y))) { SFX.play('deny'); return; }
         const paid = G.relocUsed > 1;
         endReloc(); toast('CORE RELOCATED', paid ? `−${fmt(RELOCATE_COST)} credits` : 'Next move costs ' + fmt(RELOCATE_COST), '#59f0b4'); updateHud(); Save.save();
       }
@@ -1161,16 +1177,17 @@ const UI = (() => {
   }
   let lastTap = null;
   function tapTile(p) {
+    if (G.watch) return; // a replay plays itself
     if (G.aimAbility) {
       const Rg = G.region; if (p.x < Rg.x0 || p.y < Rg.y0 || p.x > Rg.x1 || p.y > Rg.y1) return;
-      useAbility(G.aimAbility, p.x, p.y);
+      window.act('abil', G.aimAbility, p.x, p.y);
       G.aimAbility = null; Render.aim = null; updateHud();
       return;
     }
     const tx = Math.floor(p.x), ty = Math.floor(p.y);
     if (G.placing === 'beacon') {
-      if (tx === G.map.core.x && ty === G.map.core.y) { G.placing = null; G.credits += G.placingRefund || 0; G.placingRefund = 0; if (G.market) { G.market.bought = G.market.bought.filter(x => x !== 'beacon'); G.market.spent = Math.max(0, (G.market.spent || 0) - marketPrice(MARKET_ITEMS.find(x => x.id === 'beacon'))); } SFX.play('sell', {}); toast('NODE BEACON', 'Cancelled and refunded', '#6ae2ff', true); updateHud(); return; }
-      if (marketPlaceNode(tx, ty)) { SFX.play('ui'); G.placingRefund = 0; toast('POWER NODE PLANTED', 'Towers built here draw no power and hit harder', '#6ae2ff'); updateHud(); }
+      if (tx === G.map.core.x && ty === G.map.core.y) { window.act('beaconCancel'); SFX.play('sell', {}); toast('NODE BEACON', 'Cancelled and refunded', '#6ae2ff', true); updateHud(); return; }
+      if (window.act('beacon', tx, ty)) { SFX.play('ui'); toast('POWER NODE PLANTED', 'Towers built here draw no power and hit harder', '#6ae2ff'); updateHud(); }
       else { SFX.play('deny'); toast('NODE BEACON', 'Needs an empty ground tile inside the sector. Tap the core to cancel', '#ff4d6a', true); }
       return;
     }
@@ -1182,7 +1199,7 @@ const UI = (() => {
     }
     if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
     const cc = cacheAt(tx, ty);
-    if (cc) { const kind = cc.kind, m = claimCache(cc); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
+    if (cc) { const kind = cc.kind, m = window.act('cache', tx, ty); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
     const isCore = tx === G.map.core.x && ty === G.map.core.y;
     const t = G.towerAt[tIdx(tx, ty)];
     if (!isCore && !t) { const en = enemyAt(p); if (en) { SFX.play('ui'); if (panel && panel.kind === 'enemy' && panel.e === en) { closePanel(); return; } openEnemy(en); return; } }
@@ -1250,7 +1267,8 @@ const UI = (() => {
     if (!G || G.over) return;
     G.paused = true;
     modal(`<div class="card narrow"><div class="ch"><h2>Paused</h2></div>
-      <p class="note">Wave ${G.wave} · Score ${fmt(G.score)} · Multiplier ×${G.scoreMult.toFixed(2)}</p>
+      <p class="note">Wave ${G.wave} · Score ${fmt(G.score)} · Multiplier ×${(G.scoreMult * huntMult()).toFixed(2)}</p>
+      <p class="note">${G.bounties.length ? `${G.bounties.length} bount${G.bounties.length === 1 ? 'y' : 'ies'} claimed · ` : ''}${G.wanted ? `Next bounty: ${esc(G.wanted.name)}, Wave ${G.wanted.w}` : ''}${G.nemesis && !G.nemesis.beaten ? ` · Nemesis: ${esc(G.nemesis.name)}` : ''}</p>
       ${G.anoms.length ? `<div class="lbl">Anomalies</div><div class="anlist">${G.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>` : ''}
       <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
       <button class="btn" data-act="help">How to Play</button>
@@ -1271,7 +1289,7 @@ const UI = (() => {
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
-      bounty: G.stats.bounty || null, elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
+      ext: G.extracted || 0, bounties: G.bounties.length, bounty: G.stats.bounty || null, elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: activeCaps().map(id => TAL[id].name) };
   }
@@ -1301,7 +1319,7 @@ const UI = (() => {
   function hallHTML() {
     const H = PROF.hall || [];
     if (!H.length) return `<div class="lbl">Hall of Fame</div><p class="note">Finish a run to claim a spot.</p>`;
-    return `<div class="lbl">Hall of Fame</div><div class="hall">${H.map((R, i) => `<button class="hrow" data-act="hall" data-v="${i}"><em>#${i + 1}</em><span><b>Wave ${R.wave}</b><small>${fmt(R.score)} · ${esc(runMode(R))}${R.strain ? ' · vs ' + esc(R.strain.name) : ''}${R.nova ? ' · Supernova ' + R.nova : ''} · ${esc(runDate(R))}</small></span>${R.mvp ? `<canvas class="ico" width="20" height="20" data-ico="${R.mvp.type}"></canvas>` : ''}</button>`).join('')}</div>`;
+    return `<div class="lbl">Hall of Fame</div><div class="hall">${H.map((R, i) => `<button class="hrow" data-act="hall" data-v="${i}"><em>#${i + 1}</em><span><b>Wave ${R.wave}${R.ext ? ' · Extracted' : ''}</b><small>${fmt(R.score)} · ${esc(runMode(R))}${R.strain ? ' · vs ' + esc(R.strain.name) : ''}${R.nova ? ' · Supernova ' + R.nova : ''} · ${esc(runDate(R))}</small></span>${R.mvp ? `<canvas class="ico" width="20" height="20" data-ico="${R.mvp.type}"></canvas>` : ''}</button>`).join('')}</div>`;
   }
   function openHall(i) {
     const R = (PROF.hall || [])[i]; if (!R) return openArchive();
@@ -1386,15 +1404,95 @@ const UI = (() => {
     const beat = g0 ? GENES[g0].counter : D && D.beat;
     return `<div class="why"><b>Why</b><span>${n} got through in Wave ${G.wave}, mostly ${esc(nm)}${gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''} (${top[1]}).</span>${beat ? `<span class="good">Beat it: ${tipify(beat)}</span>` : ''}</div>`;
   }
+  // ---------- v5.3 The Hunt: the choice after a bounty, hunt codes, and watching a recorded run ----------
+  function openHunt() {
+    const C = G.huntChoice; if (!C) return;
+    const xp = Math.round(G.xpEarned * HUNT.extractXp), m2 = 1 + HUNT.pushScore * ((G.pushes || 0) + 1);
+    modal(`<div class="card narrow hunt"><div class="ch"><h2 class="amber">Bounty Claimed</h2><span class="note">Wave ${G.wave} · ${G.bounties.length} claimed this run</span></div>
+      <p class="wname">${esc(C.name)}</p>
+      <p class="note">+${fmt(C.cr)} credits and a Legendary schematic. This run is a win. Bank it, or push your luck.</p>
+      <div class="hchoice">
+        <button class="hopt ext" data-act="extract"><b>Extract</b><span>End the run here as a win: +${fmt(xp)} XP on top (half again), and it counts toward opening the next Chaos level${G.daily ? '. Your Daily Hunt result is locked in' : ''}.</span></button>
+        <button class="hopt push" data-act="push"><b>Push on</b><span>Keep playing at score ×${m2.toFixed(2)}. Next bounty: ${esc(C.nextName)}, Wave ${C.next}. Fall before you extract and the bonus is lost.</span></button>
+      </div></div>`, 'hunt');
+    SFX.play('levelup');
+  }
+  let huntCodeCache = null;
+  const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64 = t => { const s = atob(t), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+  async function pipe(u8, Stream) { const out = new Response(new Blob([u8]).stream().pipeThrough(new Stream('deflate-raw'))); return new Uint8Array(await out.arrayBuffer()); }
+  async function huntCode(rec) {
+    const raw = new TextEncoder().encode(JSON.stringify({ opts: rec.opts, inputs: rec.inputs, end: rec.end }));
+    try { if (typeof CompressionStream !== 'undefined') return 'HUNT1:' + b64(await pipe(raw, CompressionStream)); } catch (e) {}
+    return 'HUNT0:' + b64(raw);
+  }
+  async function readHuntCode(code) {
+    try {
+      code = (code || '').trim(); const m = /^HUNT([01]):(.+)$/s.exec(code); if (!m) return null;
+      let u = unb64(m[2].replace(/\s+/g, ''));
+      if (m[1] === '1') u = await pipe(u, DecompressionStream);
+      const rec = JSON.parse(new TextDecoder().decode(u));
+      return rec && rec.opts && Array.isArray(rec.inputs) ? rec : null;
+    } catch (e) { return null; }
+  }
+  function prepHuntCode() { huntCodeCache = null; const d = PROF.daily; if (d && d.rec) huntCode(d.rec).then(c => { huntCodeCache = c; }); }
+  function openPasteHunt() {
+    modal(`<div class="card narrow"><div class="ch"><h2>Watch a Hunt</h2><button class="x" data-act="close" aria-label="Close">✕</button></div>
+      <p class="note">Paste a hunt code a friend sent you. You'll watch their exact run, tap for tap.</p>
+      <textarea id="huntIn" class="codebox" rows="4" placeholder="HUNT1:…"></textarea>
+      <div class="foot"><button class="btn primary" data-act="huntPasteGo">Watch</button></div></div>`, 'paste');
+  }
+  // Watching: the recording drives the run on screen. Taps do nothing (act refuses), the profile is never touched,
+  // briefings stay quiet, and when the inputs run out (or the run ends) a card says so
+  function watchRun(rec, title) {
+    closeModal(); closePanel();
+    show('game'); Render.reset(); requestAnimationFrame(() => Render.resize());
+    feedLines.length = 0; renderFeed();
+    const keep = JSON.stringify(PROF);
+    newRun(rec.opts);
+    G.watch = { inputs: rec.inputs || [], i: 0, title: title || 'Replay', keep, ver: rec.opts && rec.opts.v };
+    G.inputs = []; G.speed = 2; G.unlocks = []; G.wantedTold = true; G.fresh = false;
+    Render.resetCam(); updateZoomBtn(); buildAbilityBar(); updateHud(true);
+    document.body.classList.add('watching');
+    const wb = $('#watchbar'); wb.hidden = false; wb.querySelector('b').textContent = G.watch.title + (G.watch.ver && G.watch.ver !== VERSION ? ` · recorded on ${G.watch.ver}, may drift` : '');
+  }
+  // feed the recording into the live loop: called before each frame's steps
+  function watchFeed() {
+    const W = G.watch, inp = W.inputs;
+    while (W.i < inp.length && inp[W.i][0] <= G.tick && !G.over) { const [, n, ...a] = inp[W.i++]; if (ACTS[n]) ACTS[n](...a); }
+    const halted = G.draft || G.huntChoice || (G.checkpoint && !G.enemies.length);
+    if (halted && W.i < inp.length && inp[W.i][0] > G.tick && G.checkpoint) G.tick = inp[W.i][0];
+    if (!G.over && halted && W.i >= inp.length && !W.done) { W.done = 1; watchDone('The recording ends here.'); }
+  }
+  function watchDone(msg) {
+    if (modalOpen) return;
+    G.paused = true;
+    modal(`<div class="card narrow"><div class="ch"><h2>Replay Over</h2><span class="note">${esc(G.watch ? G.watch.title : '')}</span></div>
+      <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>Bounties<b>${G.bounties.length}</b></span></div>
+      <p class="note">${esc(msg)}${G.extracted ? ` Extracted at Wave ${G.extracted}.` : ''}</p>
+      <div class="foot"><button class="btn primary" data-act="watchEnd">Done</button></div></div>`, 'watch');
+  }
+  function endWatch() {
+    if (G && G.watch) { try { const P = JSON.parse(G.watch.keep); for (const k of Object.keys(PROF)) delete PROF[k]; Object.assign(PROF, P); } catch (e) {} }
+    closeModal(); document.body.classList.remove('watching'); $('#watchbar').hidden = true;
+    G = null; show('hangar'); renderHangar();
+  }
   function openGameOver() {
     const L = profLevel(), gained = L.level - G.lvlStart;
     const best = G.wave > (G.bestAtStart || 0);
     if (!G.rec) { G.rec = runRecord(); G.hallRank = hallAdd(G.rec); storeRunLog(); }
     Save.save();
-    modal(`<div class="card over"><div class="ch"><h2 class="bad">Core Destroyed</h2><span class="note">${G.daily ? 'Daily Challenge' : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
-      <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>Levels<b>+${gained}</b></span></div>
-      ${lossWhyHTML()}
-      ${G.daily ? `<p class="void">Today's best: Wave ${PROF.daily ? PROF.daily.best : G.wave}</p>` : best ? '<p class="amber">New best wave!</p>' : `<p class="note">Best: Wave ${PROF.bestWave}</p>`}
+    if (G.watch) { watchDone(G.extracted ? 'They extracted.' : 'Their core fell here.'); return; }
+    const N = G.newNemesis, ranked = !!G.rankedRun;
+    if (G.daily) prepHuntCode();
+    modal(`<div class="card over"><div class="ch">${G.extracted ? '<h2 class="good">Extracted</h2>' : '<h2 class="bad">Core Destroyed</h2>'}<span class="note">${G.daily ? 'Daily Hunt · ' + esc(G.daily) : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
+      <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>${G.daily ? 'Bounties' : 'Levels'}<b>${G.daily ? G.bounties.length : '+' + gained}</b></span></div>
+      ${G.extracted ? `<div class="why good"><b>Bounty banked</b><span>${esc(G.bounties.map(b => b.name).join(', '))}. ${G.stats.extractXp ? `+${fmt(G.stats.extractXp)} XP for getting out alive.` : ''}${G.pushes ? ` You pushed past ${G.pushes} bount${G.pushes === 1 ? 'y' : 'ies'} first.` : ''}</span></div>` : lossWhyHTML()}
+      ${!G.extracted && G.bounties.length ? `<p class="note hl" style="color:#ffd84a">Bounties claimed: ${esc(G.bounties.map(b => b.name).join(', '))}. Pushing on cost you the extraction bonus.</p>` : ''}
+      ${G.nemDown ? `<p class="good">Nemesis down: ${esc(G.nemDown)}.</p>` : ''}
+      ${N ? `<div class="why nem"><b>${N.rank > 1 ? 'It got you again' : 'New Nemesis'}</b><span>${esc(N.name)}${N.rank > 1 ? ` (rank ${N.rank})` : ''}. ${N.kind === 'boss' ? 'It will take your next bounty, mutated, for double the reward.' : 'The swarm will start your next run already carrying it, and it leads your first Strain Assault.'}</span></div>` : ''}
+      ${G.daily ? `<p class="note">${ranked ? 'This was your ranked run for today.' : 'Practice run: your first run of the day is the ranked one.'}</p>${PROF.daily && PROF.daily.rec ? '<div class="row"><button class="btn small" data-act="huntWatch">Watch ranked run</button><button class="btn small" data-act="huntCode">Copy hunt code</button></div>' : ''}` : ''}
+      ${G.daily ? '' : best ? '<p class="amber">New best wave!</p>' : `<p class="note">Best: Wave ${PROF.bestWave}</p>`}
       ${G.hallRank >= 0 ? `<p class="amber">Hall of Fame #${G.hallRank + 1}!</p>` : ''}
       ${recapHTML(G.rec)}
       ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
@@ -1439,6 +1537,8 @@ const UI = (() => {
       <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
       <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Haptics <em class="dim">buzz when the core is hit</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.haptics !== false) === v ? 'on' : ''}" data-act="haptic" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
+      <div class="set"><span>Glow <em class="dim">soft lighting on the field</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.glow !== false) === v ? 'on' : ''}" data-act="gfx" data-k="glow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
+      <div class="set"><span>Pixel scaling <em class="dim">Sharp is crisper; Simple is lighter work</em></span><div class="chips">${[[true, 'Sharp'], [false, 'Simple']].map(([v, l]) => `<button class="chip ${(S.sharp !== false) === v ? 'on' : ''}" data-act="gfx" data-k="sharp" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Boss slow-down <em class="dim">drop to 1× when a boss arrives</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.autoSlow !== false) === v ? 'on' : ''}" data-act="autoslow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
       <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
@@ -1825,7 +1925,7 @@ const UI = (() => {
       case 'close2': { const back = modalFrom; closeModal(); if (back === 'pause' && G && !G.over && screen === 'game') { openPause(); break; } if (G && !G.over && screen === 'game') G.paused = false; break; }
       case 'sw': setup.startWave = +b.dataset.v; renderSetup(); break;
       case 'ch': setup.chaos = +b.dataset.v; rerollMap(); renderSetup(); break;
-      case 'chLock': SFX.play('deny'); toast(CHAOS_LEVELS[+b.dataset.v].name.toUpperCase(), `Opens when your best wave reaches ${CHAOS_GATE[+b.dataset.v]}`, '#8a8fa8', true, 'tip'); break;
+      case 'chLock': SFX.play('deny'); toast(CHAOS_LEVELS[+b.dataset.v].name.toUpperCase(), `Opens when you extract once on ${CHAOS_LEVELS[+b.dataset.v - 1].name}, or reach Wave ${CHAOS_GATE[+b.dataset.v]}`, '#8a8fa8', true, 'tip'); break;
       case 'reroll': rerollMap(); renderSetup(); break;
       case 'launch': launch(); break;
       case 'launchDaily': launch(); break;
@@ -1838,10 +1938,18 @@ const UI = (() => {
       case 'studio': openStudio('pause'); break;
       case 'studioS': openStudio('settings'); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
-      case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); abandonRun(); break;
-      case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } takeBoon(o); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
-      case 'anom': { takeAnomaly(b.dataset.v); closeModal(); G.paused = false; const A = ANOMALIES.find(a => a.id === b.dataset.v); toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
-      case 'stab': { stabilize(); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
+      case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); window.act('abandon'); break;
+      case 'extract': closeModal(); window.act('extract'); break;
+      case 'push': closeModal(); if (window.act('push')) { G.paused = false; SFX.play('levelup'); } break;
+      case 'huntBuild': closeModal(); Tree.open('hunt'); break;
+      case 'huntWatch': { const d = PROF.daily; if (d && d.rec) watchRun(d.rec, `Your Daily Hunt · ${d.date}`); break; }
+      case 'huntCode': { const d = PROF.daily; if (d && d.rec) huntCode(d.rec).then(c => { copyText(c); toast('HUNT CODE COPIED', 'Paste it to a friend: they can watch your exact run', '#59f0b4', true, 'tip'); }); break; }
+      case 'huntPaste': openPasteHunt(); break;
+      case 'huntPasteGo': { const v = ($('#huntIn') || {}).value || ''; readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); }); break; }
+      case 'watchEnd': endWatch(); break;
+      case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } window.act('boon', +b.dataset.v); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
+      case 'anom': { window.act('anom', b.dataset.v); closeModal(); G.paused = false; const A = ANOMALIES.find(a => a.id === b.dataset.v); toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
+      case 'stab': { window.act('stab'); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
       case 'hangar': closeModal(); G = null; show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'again': closeModal(); G = null; show('hangar'); renderHangar(); openSetup(); break;
       case 'web': closeModal(); G = null; show('hangar'); renderHangar(); Tree.open(); break;
@@ -1870,6 +1978,7 @@ const UI = (() => {
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'uis': PROF.settings.uiScale = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v; Save.save(); UI.fitVV(); openSettings(); break;
+      case 'gfx': PROF.settings[b.dataset.k] = b.dataset.v === '1'; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false; Save.save(); openSettings(); break;
       case 'autoslow': PROF.settings.autoSlow = b.dataset.v === '1'; Save.save(); openSettings(); break;
       case 'haptic': PROF.settings.haptics = b.dataset.v === '1'; Save.save(); if (PROF.settings.haptics) Haptics.tap(true); openSettings(); break;
       case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
@@ -1894,7 +2003,7 @@ const UI = (() => {
     cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); if (!ptrs.size) gesture = null; });
     cv.addEventListener('wheel', canvasWheel, { passive: false });
     $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
-    $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = resumeCheckpoint(); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = callEarly(); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
+    $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = window.act('cpResume', G.cpT); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = window.act('call'); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openThreat(); };
     $('#ticker').onclick = e => { if (!e.target.closest('.tkb')) return; SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
     $('#chips').addEventListener('click', e => { if (e.target.closest('[data-more]')) { SFX.play('ui'); openReport(); return; } if (e.target.closest('[data-threat]') || e.target.closest('[data-evo]')) { SFX.play('ui'); openThreat(); return; } if (e.target.closest('[data-wanted]')) { SFX.play('ui'); wantedPoster(); return; } if (e.target.closest('[data-ready]')) { const rd = G.towers.filter(t => t.pending > 0); if (rd.length) { readyIx = (readyIx + 1) % rd.length; const t = rd[readyIx]; SFX.play('ui'); openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } return; } const sc = e.target.closest('[data-storm]'); if (sc) { const st = G.storms.find(x => x.id === +sc.dataset.storm); if (st) { const I = stormInfo(st); SFX.play('ui'); toast(stormName(st).toUpperCase(), `${I.fx.join(' · ')}. ${I.n ? `${I.n} of your towers inside, ${I.boosted} boosted (outlined)` : 'None of your towers inside'}`, st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, true, 'tip'); } return; } const h = e.target.closest('[data-ehead]'); if (h) { const D = ENEMIES[h.dataset.ehead]; SFX.play('ui'); toast('HEADLINE · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ffb03a', true, 'tip'); return; } const c = e.target.closest('[data-gene]'); if (!c) return; const g = GENES[c.dataset.gene]; SFX.play('ui'); toast(g.name.toUpperCase(), `${g.desc} · counter: ${g.counter}`, g.col, true); });
@@ -1903,7 +2012,7 @@ const UI = (() => {
       const free = gridFree(), T = topTower();
       if (free >= 1 && T && canOvercharge(T) && (T.oc || 0) < ocMax()) {
         const n = Math.min(ocMax(), (T.oc || 0) + free);
-        if (setOvercharge(T, n)) { openTower(T); toast('OVERCHARGED', `${TOWERS[T.type].name}${T.name ? ` "${T.name}"` : ''} +${n}: spare power put to work. Change it any time in the tower panel`, '#59f0b4'); updateHud(); return; }
+        if (window.act('oc', T.x, T.y, n)) { openTower(T); toast('OVERCHARGED', `${TOWERS[T.type].name}${T.name ? ` "${T.name}"` : ''} +${n}: spare power put to work. Change it any time in the tower panel`, '#59f0b4'); updateHud(); return; }
       }
       if (free >= 1) toast('SPARE POWER', `${free} unused. Tap a tower and raise its Overcharge: +${Math.round(OVERCHARGE.dmg * 100)}% Damage per point`, '#59f0b4');
       else toast('POWER', `Every tower draws 1 power; Overcharge draws more. Capacity grows 1 every ${GRID.perWaves} waves, or expand the reactor from the core panel`, '#59f0b4');
@@ -1921,10 +2030,12 @@ const UI = (() => {
       if (!abilOnline(k)) { SFX.play('deny'); toast(ABILITIES[k].name.toUpperCase(), `Comes online at Wave ${ABILITIES[k].from}. ${ABILITIES[k].desc}`, '#8a8fa8', true, 'tip'); return; }
       if (!(G.charges[k] > 0)) { SFX.play('deny'); toast(ABILITIES[k].name.toUpperCase(), `Recharging · ${Math.ceil(G.abilCd[k] || 0)}s. Upgrade the core's Command Uplink or take Command talents for faster cooldowns`, '#8a8fa8', true, 'tip'); return; }
       if (ABILITIES[k].target) { G.aimAbility = G.aimAbility === k ? null : k; if (G.aimAbility) { toast('ORBITAL STRIKE', 'Tap a target', '#ffb03a'); closePanel(); } }
-      else useAbility(k);
+      else window.act('abil', k);
       updateHud();
     });
-    $('#bLaunch').onclick = () => { SFX.init(); SFX.play('ui'); if (PROF.runSnap) launch(PROF.runSnap); else openSetup(); };
+    $('#bLaunch').onclick = () => { SFX.init(); SFX.play('ui'); if (PROF.runSnap && PROF.runSnap.rec) { modal(`<div class="card narrow"><div class="ch"><h2>Daily Hunt</h2></div><p class="note">Restoring your run exactly where you left it…</p></div>`, 'wait'); setTimeout(() => launch(PROF.runSnap), 80); } else if (PROF.runSnap) launch(PROF.runSnap); else openSetup(); };
+    $('#watchbar').addEventListener('click', e => { if (e.target.closest('[data-act=watchEnd]')) { SFX.play('ui'); endWatch(); } });
+    $('#hHunt').addEventListener('click', e => { const b = e.target.closest('[data-hact]'); if (!b) return; SFX.init(); SFX.play('ui'); if (b.dataset.hact === 'daily') { if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); return; } openSetup(); setup.mode = 'daily'; renderSetup(); } });
     $('#bLaunch2').onclick = () => { SFX.init(); SFX.play('ui'); openSetup(); };
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
@@ -2015,7 +2126,8 @@ const UI = (() => {
     else if (G && !G.over && G.speedWas && screen === 'game') { if (G.speed === 1) { G.speed = G.speedWas; toast(`SPEED ${G.speed}×`, 'Boss down', '#59f0b4', true, 'tip'); } G.speedWas = 0; G.slowKey = null; updateHud(); }
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
-    if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen) { closePanel(); openDraft(G.draft); }
+    if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen && !G.watch) { closePanel(); openDraft(G.draft); }
+    if (screen === 'game' && G && G.huntChoice && !G.draft && !G.over && !modalOpen && !Tree.isOpen && !G.watch) { closePanel(); openHunt(); }
     if (G && G.reloc && !canRelocate()) endReloc();
     // continuous sounds: the Void Lens hum and the low-hull heartbeat
     const live = screen === 'game' && G && !G.over && !G.paused && !modalOpen && !Tree.isOpen;
@@ -2026,10 +2138,10 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0,
+    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     get screen() { return screen; }, get modalOpen() { return modalOpen; },
     // test hooks (test/uiaudit.py opens every screen through these)
-    _dbg: { openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
+    _dbg: { openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
   };
 })();
 
@@ -2037,7 +2149,7 @@ const UI = (() => {
 // Tree tabs on the left, the chosen tree's rows in the middle, the selected talent's details on the right. Tap a talent to see it,
 // tap + to add a rank (or double-tap the talent). Everything is plain DOM: it scrolls like any page on a phone.
 const Tree = (() => {
-  let open_ = false, cur = 'K', sel = null, drawer = null, lastTap = { id: null, t: 0 }, confirmReset = false;
+  let mode = null, open_ = false, cur = 'K', sel = null, drawer = null, lastTap = { id: null, t: 0 }, confirmReset = false;
   const el = id => document.getElementById(id);
   const capName = id => TAL[id] ? TAL[id].name : id;
   function init() {
@@ -2077,7 +2189,8 @@ const Tree = (() => {
     if (why === 'points') return 'No points left. You earn one each level';
     if (why === 'max') return 'Already at its last rank';
     if (why === 'have') return 'Already yours';
-    if (why === 'slots') { const n = CAP_NEXT(profLevel().level); return `You can hold ${capSlots(profLevel().level)} Capstone${capSlots(profLevel().level) > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
+    if (why === 'locked') return 'Your Daily Hunt build is locked for this run';
+    if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${capSlots(lv)} Capstone${capSlots(lv) > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
     if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
     if (why === 'tree') return `One Capstone per tree. Remove ${capName(capsHeld().find(c => TAL[c].tree === T.tree))} first`;
     if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
@@ -2087,7 +2200,7 @@ const Tree = (() => {
   function rankPips(T, r) { if (T.max <= 1) return ''; let s = ''; for (let i = 0; i < T.max; i++) s += `<i class="${i < r ? 'on' : ''}"></i>`; return `<span class="pips">${s}</span>`; }
   function tile(T, tr) {
     const r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), canAdd = !why, locked = why === 'row', full = !T.cap && r >= T.max;
-    const rem = (PROF.remnants || []).includes(T.id);
+    const rem = (TS().remnants || []).includes(T.id);
     const cls = ['ttile', T.cap ? 'cap' : '', r ? 'have' : '', locked ? 'locked' : '', full ? 'full' : '', sel === T.id ? 'sel' : ''].join(' ');
     const desc = talentLines(T, Math.max(1, r)).join(' · ');
     return `<div class="${cls}" style="--c:${tr.col}"><button class="tbody" data-tact="sel" data-v="${T.id}"><b>${esc(T.name)}${rem ? ' <em>Remnant</em>' : ''}</b>${T.cap ? '' : `<small>${r}/${T.max}</small>`}${rankPips(T, r)}<span class="td">${esc(desc)}</span></button>${canAdd ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Add a rank">+</button>` : ''}</div>`;
@@ -2105,11 +2218,11 @@ const Tree = (() => {
   function sumHTML() {
     const M = computeMods(null, null), lines = [];
     const agg = {};
-    for (const id in PROF.tal || {}) { const T = TAL[id]; if (!T || T.cap) continue; for (const k in T.fx) agg[k] = (agg[k] || 0) + T.fx[k] * PROF.tal[id]; }
+    for (const id in TS().tal || {}) { const T = TAL[id]; if (!T || T.cap) continue; for (const k in T.fx) agg[k] = (agg[k] || 0) + T.fx[k] * TS().tal[id]; }
     for (const k in agg) if (STAT_TXT[k]) lines.push(STAT_TXT[k](typeof agg[k] === 'number' && agg[k] !== 1 ? +agg[k].toFixed(2) : agg[k]));
     const caps = activeCaps();
     return `<div class="thead"><b>Your build</b><span>Everything your talents give you, in one place</span><em>${pointsSpent()} spent · ${pointsFree()} free</em></div>
-      <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(PROF.remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : '<p class="note">None yet. Spend 20 points in one tree to reach its Capstones.</p>'}
+      <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(TS().remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : '<p class="note">None yet. Spend 20 points in one tree to reach its Capstones.</p>'}
       <div class="lbl">Bonuses</div><p class="note">Every point spent: +${TAL_PT_DMG}% Damage to all towers (now +${+(pointsSpent() * TAL_PT_DMG).toFixed(1)}%).</p>${lines.length ? `<ul class="tsum">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="note">No talents yet.</p>'}
       <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / 26 * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
   }
@@ -2117,7 +2230,7 @@ const Tree = (() => {
     if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after 5 points in that tree. Capstones open at 20. Every point also adds +${TAL_PT_DMG}% Damage to all towers.</p></div>`;
     const T = TAL[sel], tr = TREE_BY_ID[T.tree], r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id);
     const now = r ? talentLines(T, r) : null, next = !T.cap && r < T.max ? talentLines(T, r + 1) : null;
-    const rem = (PROF.remnants || []).includes(T.id);
+    const rem = (TS().remnants || []).includes(T.id);
     return `<div class="tinfo-t" style="--c:${tr.col}"><em>${esc(tr.name)}${T.cap ? ' · Capstone' : ` · Row ${T.row + 1}`}</em><b>${esc(T.name)}</b>${T.cap ? `<small>${r ? (rem ? 'Remnant: always on' : 'Yours') : 'Not taken'}</small>` : `<small>Rank ${r} of ${T.max}</small>`}</div>
       ${T.cap ? `<ul class="tl">${talentLines(T).map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : `${now ? `<div class="lbl">Now</div><ul class="tl">${now.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}${next ? `<div class="lbl">${r ? 'Next rank' : 'Rank 1'}</div><ul class="tl dim">${next.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}`}
       ${why && why !== 'max' && why !== 'have' ? `<p class="note bad">${esc(blockMsg(T.id, why))}</p>` : ''}
@@ -2129,7 +2242,8 @@ const Tree = (() => {
   }
   function refresh() {
     if (!open_) return;
-    const lv = profLevel().level, free = pointsFree(), held = capsHeld().length, slots = capSlots(lv);
+    const lv = talLevel(), free = pointsFree(), held = capsHeld().length, slots = capSlots(lv);
+    el('tree').querySelector('h2').textContent = mode === 'hunt' ? 'Hunt Build' : huntRun() ? 'Hunt Build · locked' : 'Talents';
     el('tPts').textContent = free;
     el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
     const tk = el('tTok'); tk.hidden = !(G && !G.over); if (G) tk.innerHTML = `<b>${G.tokens}</b> tokens`;
@@ -2139,7 +2253,8 @@ const Tree = (() => {
     el('tinfo').innerHTML = infoHTML();
     document.body.classList.toggle('tsel', !!sel);
   }
-  function open() {
+  function open(m) {
+    mode = m === 'hunt' ? 'hunt' : null; TAL_EDIT = mode ? huntBuildProf() : null; // v5.3: the Daily Hunt build, a fixed budget
     if (G && !G.over) { G.wasPaused = G.paused; G.paused = true; }
     UI.closePanel();
     el('tree').hidden = false; open_ = true; document.body.classList.add('webopen');
@@ -2149,7 +2264,9 @@ const Tree = (() => {
     drawer = null; confirmReset = false; refresh();
   }
   function close() {
+    const wasHunt = mode === 'hunt'; mode = null; TAL_EDIT = null;
     el('tree').hidden = true; open_ = false; sel = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
+    if (wasHunt) { Save.save(); UI.openSetupDaily(); return; }
     if (G && !G.over) G.paused = !!G.wasPaused;
     UI.flushToasts();
     if (UI.screen === 'hangar') UI.renderHangar();
@@ -2227,7 +2344,8 @@ const Tree = (() => {
     if (UI.screen === 'game' && G) {
       if (G.checkpoint && !G.paused && !G.reloc && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt;
       if (UI.slowmo > 0) UI.slowmo -= dt;
-      const halted = G.over || G.paused || G.draft || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen;
+      if (G.watch && !G.paused && !UI.modalOpen) UI.watchFeed();
+      const halted = G.over || G.paused || G.draft || G.huntChoice || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen;
       if (!halted) {
         acc += dt * G.speed * (UI.slowmo > 0 ? 0.3 : 1);
         let n = 0;

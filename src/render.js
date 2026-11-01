@@ -13,6 +13,7 @@ const Render = (() => {
 const TW_K = 1.12, EN_K = 1.15; // v4.8 sprite scale-up (towers still sit inside their tile)
 const SIGHTED = { bullet: 1, rail: 1, beam: 1, cone: 1 };
 const RES = 2;
+  const R_ = { glow: true, sharp: true }; // v5.3 graphics switches (Settings · Glow, Pixel scaling)
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
   const cam = { z: 1, x: 0, y: 0 };
@@ -980,7 +981,7 @@ const RES = 2;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     // sharp-bilinear: integer nearest-neighbour upscale first, then one smooth resample to the exact size,
     // so every art pixel lands the same width on screen (no shimmer from uneven nearest-neighbour scaling)
-    const dsb = v.ws * dpr / RES, k = (window.__rdbg & 8) ? 1 : Math.max(1, Math.min(8, Math.ceil(dsb - 0.08)));
+    const dsb = v.ws * dpr / RES, k = (window.__rdbg & 8) || R_.sharp === false ? 1 : Math.max(1, Math.min(8, Math.ceil(dsb - 0.08)));
     let src = buf;
     if (k > 1) {
       if (mid.width !== bw * k || mid.height !== bh * k) { mid.width = bw * k; mid.height = bh * k; }
@@ -1003,7 +1004,7 @@ const RES = 2;
       if (x + r < 0 || y + r < 0 || x - r > lw || y - r > lh) continue;
       lctx.globalAlpha = Math.min(1, lights[i + 4]); lctx.drawImage(lightSprite(lights[i + 3]), x - r, y - r, r * 2, r * 2);
     }
-    c.globalCompositeOperation = 'lighter'; c.drawImage(lightCv, ox, oy, DW, DH);
+    if (R_.glow !== false) { c.globalCompositeOperation = 'lighter'; c.drawImage(lightCv, ox, oy, DW, DH); }
     c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
     // smooth overlays: ranges, selection, aim
     const ringS = (x, y, r, col, a, w, fill) => {
@@ -1375,6 +1376,7 @@ const RES = 2;
     g.setLineDash([]);
   }
   return {
+    set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; },
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },

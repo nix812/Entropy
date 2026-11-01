@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.2.0';
+const VERSION = '5.3.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,13 +173,14 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.2.0', title: 'Entropy 5.2 · The First Hour', items: [
-  ['Threat Board', 'One chip in the top bar now says what is coming: the next wave, new and headline enemies, the swarm\'s strongest gene, and a Strain Assault when one is on its way (it turns red). Tap it for the full board: every enemy in the next wave with what beats it, the assault and how it read you, and the swarm\'s DNA. It replaces the separate Next, headline, gene and DNA chips and the assault banner.'],
-  ['Fast-forward stays on', 'When a boss arrives, or reaches Red Alert, the game drops to 1× so you can deal with it. Your speed comes back when it falls. Speed up again by hand any time; turn it off in Settings · Boss slow-down.'],
-  ['First runs pay', 'The first two levels cost much less XP, so a first run that ends around Wave 10 earns a talent point. Your own level may tick up by one.'],
-  ['Less on screen at first', 'On a new profile, abilities stay off the rail until they come online, the Exchange opens at Wave 10, and Unstable and Pandemonium open at best Wave 20 and 30. Veterans see everything as before.'],
-  ['Hall of Fame', 'Ranked by wave reached, then score, and a run needs Wave 10 to make it.'],
-  ['Fixes', 'The "Beat it" line on enemy and boss cards no longer breaks into columns.'],
+const WHATS_NEW = { ver: '5.3.0', title: 'Entropy 5.3 · The Hunt', items: [
+  ['Bounties win runs', 'Every run posts a bounty: a named boss with a mutation and a price on its head. Bring it in and the run is a win. Then choose: Extract to end it there and bank half again in XP, or Push on at a higher score multiplier (×1.25 per bounty pushed past) toward the next bounty 20 waves later. Fall before you extract and the bonus is lost. The bounty sits in the top bar the whole run.'],
+  ['Your Nemesis', 'Whatever ends a run comes back for you. If a strain did it, the next run\'s swarm starts already carrying its genes and it leads your first Strain Assault; if a boss did it, it takes your next bounty, mutated. Beat it for a double bounty. Lose to it again and it ranks up. It waits on the main menu.'],
+  ['Daily Hunt', 'One map, one bounty and one Nemesis for everyone, every tower open, and the same 40 talent points each (build them from the Daily Hunt card, separate from your own talents), so the ladder is about play. Your first run of the day is the ranked one. Every input is recorded: watch your ranked run back, or copy a hunt code a friend can paste in and watch, tap for tap.'],
+  ['Exact resume', 'Close the app mid Daily Hunt and it picks up at the exact moment you left, not the start of the wave.'],
+  ['Main menu', 'Your Nemesis, trophies (bounties, extractions, Nemeses beaten) and today\'s Hunt sit under your level.'],
+  ['Chaos ladder', 'Extract once on a Chaos level to open the next one (reaching Wave 20 or 30 still works). Supernova now needs level 40 to start (was 60).'],
+  ['Graphics switches', 'Settings has Glow (soft lighting) and Pixel scaling (Sharp or Simple). If you see thin lines across the field on iPhone, try turning each off and tell me which one clears them.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
@@ -203,6 +204,13 @@ const WANTED_MODS = [
 const WANTED_FOR = { behemoth: 'property damage', queen: 'an unlicensed breeding programme', wraith: 'trespassing (repeatedly)', overmind: 'identity theft', titan: 'being a wall',
   cat: 'knocking things off tables', gloop: 'loitering', whale: 'singing without a permit', duck: 'disturbing the peace', fsm: 'impersonating a deity', worm: 'eating public property', auditor: 'tax evasion (ironic)', snail: 'speeding (allegedly)' };
 const WANTED = { creditsPerWave: 60 };
+// ---------- v5.3 The Hunt ----------
+// Every bounty claimed is a chance to cash out (Extract: the run ends as a win, +50% XP) or push on (score ×1.25 per bounty pushed
+// past, and a new bounty 20 waves on). The strain or boss that ends a run comes back next run as your Nemesis.
+// Daily Hunt: one seed, bounty and Nemesis for everyone, every tower open and a fixed talent budget so the ladder measures play.
+const HUNT = { every: 20, pushScore: 0.25, extractXp: 0.5, pts: 40 };
+const NEMESIS_CRIME = ['the fall of your last core', 'breaking and entering (your core)', 'gloating', 'returning to the scene of the crime', 'holding a grudge'];
+
 // ---------- v4.4 Red Alert: a boss within this many tiles of the core puts the core on Last Stand (shells hit it much harder) ----------
 const RED_ALERT = { tiles: 8, coreDmg: 2.5, coreRate: 1.6 };
 const BOSS_HOLD = 45; // seconds the next wave's countdown runs slow while a boss is still on the field
@@ -654,7 +662,7 @@ const LAWS = [
   { id: 'brittle', name: 'Brittle Star', up: '+60% core Damage, +1 core Range', down: '−25% core max HP', m: { coreDmg: 60, coreRange: 1 }, af: { coreHPx: 0.75 } },
 ];
 const LAW_SCORE = 0.15, NOVA_SCORE = 0.1, NOVA_XP = 0.25;
-const novaLevelReq = n => Math.min(150, 60 + 10 * n);
+const novaLevelReq = n => Math.min(150, 40 + 10 * n); // v5.3: 40 (was 60); extracted runs get there
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',
   'Last Light', 'Gravedigger', 'Little Sun', 'Night Shift', 'Paper Moon', 'Iron Psalm', 'Red Tide', 'Cold Comfort', 'Dead Reckoning',
@@ -680,5 +688,9 @@ function dailySpec(key) {
   let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
   const seed = h >>> 0, r = mulberry32(seed), pool = ANOMALIES.slice(), anoms = [];
   while (anoms.length < 2) anoms.push(pool.splice(Math.floor(r() * pool.length), 1)[0].id);
-  return { date: key, seed, anoms, chaos: 2 };
+  // v5.3 Daily Hunt: today's Nemesis, the same two genes for everyone
+  const gp = ['plating', 'haste', 'bulk', 'shell', 'regen', 'ward', 'cloak', 'brood'], genes = [];
+  while (genes.length < 2) { const g = gp[Math.floor(r() * gp.length)]; if (!genes.includes(g)) genes.push(g); }
+  const sp = ['drone', 'swarmer', 'tank', 'splitter'][Math.floor(r() * 4)], el = ['K', 'T', 'C', 'A', 'V'][Math.floor(r() * 5)];
+  return { date: key, seed, anoms, chaos: 2, nemesis: { kind: 'strain', type: sp, genes, el, rank: 1, daily: 1 } };
 }

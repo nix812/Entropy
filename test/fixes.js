@@ -66,10 +66,10 @@ bosses = G.enemies.filter(e => e.boss);
 ok(bosses.length === 2 && bosses.every(e => e.wanted === 'twins'), `twins: ${bosses.length} wanted bosses on the field`);
 let cr0 = G.credits, lq0 = G.legendQueue;
 S.kill(bosses[0], null, {}); ok(!G.wanted.done && !G.stats.bounty, 'first twin pays no bounty yet');
-S.kill(bosses[1], null, {}); ok(G.credits > cr0 && G.legendQueue === lq0 + 1 && G.wanted.done && G.stats.bounty, `second twin pays the bounty: +${G.credits - cr0} credits, legend queue +1`);
+S.kill(bosses[1], null, {}); ok(G.credits > cr0 && G.legendQueue === lq0 + 1 && G.bounties.length === 1 && G.stats.bounty && G.huntChoice && G.wanted.w === 50 && !G.wanted.done, `second twin pays the bounty: +${G.credits - cr0} credits, legend queue +1, Extract/Push offered, next bounty W${G.wanted.w}`);
 // snapshot
 S.snapshotNow(); const snap3 = JSON.parse(JSON.stringify(S.PROF.runSnap)); const G2 = S.resumeRun(snap3);
-ok(G2.wanted && G2.wanted.done, 'wanted state survives a resume');
+ok(G2.wanted && G2.wanted.w === 50 && G2.bounties.length === 1 && G2.huntChoice, 'bounty state (claimed list, next poster, pending choice) survives a resume');
 
 // v5.0.2: one Capstone per tree, and older saves holding two are tidied with the point back
 prof(200, 60); S.newRun({ seed: 5, chaos: 1 });

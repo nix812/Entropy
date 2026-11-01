@@ -23,22 +23,30 @@ const profLevel = () => levelFromXP(PROF.xp);
 // ---------- v5.0 Talents (see TALENTS in data.js) ----------
 // PROF.tal = { talentId: rank }, PROF.caps = [capstoneId, ...]. Remnants (from Supernova) are capstone ids that stay active forever
 // without a slot; legacy 'sN' remnants (the old web's sectors) keep that tree's one-point notables.
-const talRank = id => (PROF.tal && PROF.tal[id]) || 0;
-const capsHeld = () => (PROF.caps || []).filter(id => TAL[id]);
-const pointsSpent = () => { let t = 0; for (const k in PROF.tal || {}) if (TAL[k]) t += PROF.tal[k]; return t + capsHeld().length; };
-const pointsFree = () => profLevel().level - pointsSpent();
+// v5.3: the talent rules read and write a *source*: the profile, or the Daily Hunt build (a fixed budget everyone gets, so the
+// daily ladder is about play, not hours). TAL_EDIT is the build being edited on the Talents screen; a live Hunt run locks its own copy.
+let TAL_EDIT = null;
+const huntRun = () => !!(G && !G.over && G.huntBuild);
+const ghostRun = () => !!(G && (G.replaying || G.watch));
+const TS = () => huntRun() ? G.huntBuild : TAL_EDIT || PROF;
+const talLevel = () => { const S = TS(); return S === PROF ? profLevel().level : S.lvl; };
+const talRank = id => (TS().tal && TS().tal[id]) || 0;
+const capsHeld = () => (TS().caps || []).filter(id => TAL[id]);
+const pointsSpent = () => { let t = 0; for (const k in TS().tal || {}) if (TAL[k]) t += TS().tal[k]; return t + capsHeld().length; };
+const pointsFree = () => talLevel() - pointsSpent();
 // points spent in a tree, optionally only in rows above `row`
-function treePts(tid, belowRow) { let t = 0; for (const k in PROF.tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && (belowRow === undefined || T.row < belowRow)) t += PROF.tal[k]; } return t; }
+function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; }
 const rowNeed = r => r >= 4 ? TCAP : r * TROW;
 // why a talent can't take another rank right now ('' = it can)
 function talentBlock(id) {
   const T = TAL[id]; if (!T) return 'none';
+  if (huntRun()) return 'locked';
   if (pointsFree() < 1) return 'points';
   if (T.cap) {
-    if (capsHeld().includes(id) || (PROF.remnants || []).includes(id)) return 'have';
+    if (capsHeld().includes(id) || (TS().remnants || []).includes(id)) return 'have';
     if (treePts(T.tree) < TCAP) return 'row';
     if (capsHeld().some(c => TAL[c] && TAL[c].tree === T.tree)) return 'tree'; // v5.0.2: one Capstone per tree
-    if (capsHeld().length >= capSlots(profLevel().level)) return 'slots';
+    if (capsHeld().length >= capSlots(talLevel())) return 'slots';
     // Conflagration turns every Chill into Burn, so Capstones built on Chill and Freeze would do nothing beside it
     for (const [a, b] of CAP_CONFLICTS) { const other = id === a ? b : id === b ? a : null; if (other && activeCaps().includes(other)) return 'conflict:' + other; }
     return '';
@@ -50,8 +58,8 @@ function talentBlock(id) {
 function talentAdd(id) {
   if (talentBlock(id)) return false;
   const T = TAL[id];
-  if (T.cap) PROF.caps = capsHeld().concat([id]);
-  else { PROF.tal = PROF.tal || {}; PROF.tal[id] = talRank(id) + 1; }
+  if (T.cap) TS().caps = capsHeld().concat([id]);
+  else { TS().tal = TS().tal || {}; TS().tal[id] = talRank(id) + 1; }
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return true;
@@ -63,14 +71,15 @@ const refundFree = () => !(G && !G.over && !G.checkpoint);
 // would removing one rank of id leave a talent above it without the points its row needs?
 function talentCanRemove(id) {
   const T = TAL[id]; if (!T) return 'none';
+  if (huntRun()) return 'locked';
   if (T.cap) { if (!capsHeld().includes(id)) return 'none'; }
   else if (!talRank(id)) return 'none';
   if (!T.cap) {
-    const tid = T.tree; PROF.tal[id]--;
+    const tid = T.tree; TS().tal[id]--;
     let bad = '';
-    for (const k in PROF.tal) { const U = TAL[k]; if (U && U.tree === tid && PROF.tal[k] > 0 && treePts(tid, U.row) < rowNeed(U.row)) { bad = 'row'; break; } }
+    for (const k in TS().tal) { const U = TAL[k]; if (U && U.tree === tid && TS().tal[k] > 0 && treePts(tid, U.row) < rowNeed(U.row)) { bad = 'row'; break; } }
     if (!bad && capsHeld().some(c => TAL[c].tree === tid) && treePts(tid) < TCAP) bad = 'cap';
-    PROF.tal[id]++;
+    TS().tal[id]++;
     if (bad) return bad;
   }
   if (!refundFree() && G.tokens < refundCost(id)) return 'tokens';
@@ -80,14 +89,14 @@ function talentRemove(id) {
   if (talentCanRemove(id)) return false;
   if (!refundFree()) G.tokens -= refundCost(id);
   const T = TAL[id];
-  if (T.cap) PROF.caps = capsHeld().filter(c => c !== id);
-  else { PROF.tal[id]--; if (!PROF.tal[id]) delete PROF.tal[id]; }
+  if (T.cap) TS().caps = capsHeld().filter(c => c !== id);
+  else { TS().tal[id]--; if (!TS().tal[id]) delete TS().tal[id]; }
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return true;
 }
 // clear every talent (free between runs and at checkpoints only)
-function talentReset() { if (!refundFree()) return false; PROF.tal = {}; PROF.caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
+function talentReset() { if (!refundFree() || huntRun()) return false; TS().tal = {}; TS().caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
 // v5.0 clean sheet: older webs are reset with every point refunded
 function migrateWeb() {
   if (PROF.webV === WEB_VER) return false;
@@ -103,17 +112,18 @@ function tidyCaps() {
   if (drop.length) PROF.caps = keep;
   return drop;
 }
-function treeSaveBuild(slot, name) { PROF.builds[slot] = { name: name || `Build ${slot + 1}`, tal: Object.assign({}, PROF.tal || {}), caps: capsHeld().slice(), lvl: pointsSpent() }; Hooks.onChange('tree'); }
+function treeSaveBuild(slot, name) { PROF.builds[slot] = { name: name || `Build ${slot + 1}`, tal: Object.assign({}, TS().tal || {}), caps: capsHeld().slice(), lvl: pointsSpent() }; Hooks.onChange('tree'); }
 function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
   if (!b || !b.tal) return 'empty';
   let need = 0; for (const k in b.tal) if (TAL[k]) need += b.tal[k]; need += (b.caps || []).filter(c => TAL[c]).length;
-  if (need > profLevel().level) return 'points';
+  if (huntRun()) return 'locked';
+  if (need > talLevel()) return 'points';
   if (!refundFree()) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   // replay it rank by rank, row by row, so every gate is honoured
-  PROF.tal = {}; PROF.caps = [];
-  for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) PROF.tal[k] = Math.min(T.max, b.tal[k]); }
-  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(profLevel().level) && !capsHeld().some(h => TAL[h].tree === TAL[c].tree)) PROF.caps.push(c);
+  TS().tal = {}; TS().caps = [];
+  for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) TS().tal[k] = Math.min(T.max, b.tal[k]); }
+  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(talLevel()) && !capsHeld().some(h => TAL[h].tree === TAL[c].tree)) TS().caps.push(c);
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return 'ok';
@@ -131,12 +141,14 @@ function supernova(remnant, law) {
 }
 // v5.2: higher Chaos levels open as you prove yourself (Unstable at best Wave 20, Pandemonium at 30). v5.3 adds extractions
 const CHAOS_GATE = [0, 0, 20, 30];
-const chaosUnlocked = i => i <= 1 || (PROF.bestWave || 0) >= CHAOS_GATE[i];
+const chaosUnlocked = i => i <= 1 || (PROF.bestWave || 0) >= CHAOS_GATE[i] || ((PROF.hunt && PROF.hunt.extractBy && PROF.hunt.extractBy[i - 1]) || 0) >= 1; // v5.3: or extract once on the level below
+// the Daily Hunt build (a fixed budget, edited on the Talents screen from the Daily Hunt card)
+function huntBuildProf() { const b = PROF.huntBuild || (PROF.huntBuild = { tal: {}, caps: [], remnants: [] }); b.lvl = HUNT.pts; b.remnants = []; b.tal = b.tal || {}; b.caps = b.caps || []; return b; }
 // a profile still learning the game (best wave under 10): locked controls stay out of sight until they come online
 const freshProfile = () => (PROF.bestWave || 0) < 10;
-const towerUnlocked = id => TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
+const towerUnlocked = id => huntRun() || TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
 // the Capstones currently in force (held + remnants), as ks flags or fx bundles
-const activeCaps = () => [...new Set(capsHeld().concat((PROF.remnants || []).filter(r => TAL[r])))];
+const activeCaps = () => [...new Set(capsHeld().concat((TS().remnants || []).filter(r => TAL[r])))];
 
 function masteryPick(id) { const v = PROF.mastery && PROF.mastery[id]; return v === undefined ? 0 : v; }
 // v5.1 abilities: cooldowns fill charge slots; loot charges stack on top without limit
@@ -186,10 +198,11 @@ function computeMods(alloc, runMods) {
   const m = {}, ks = {};
   const orb = { dmg: {}, rate: {}, status: {}, range: {}, reson: {}, vxp: {}, flux: {}, storm: {}, vol: {}, ent: {}, rift: {}, combo: {} };
   const add = fx => { for (const k in fx) m[k] = (m[k] || 0) + fx[k]; };
-  for (const id in PROF.tal || {}) { const T = TAL[id], r = PROF.tal[id]; if (!T || T.cap || !r) continue; for (const k in T.fx) m[k] = (m[k] || 0) + T.fx[k] * r; }
+  const SRC = TS();
+  for (const id in SRC.tal || {}) { const T = TAL[id], r = SRC.tal[id]; if (!T || T.cap || !r) continue; for (const k in T.fx) m[k] = (m[k] || 0) + T.fx[k] * r; }
   for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add(T.fx); }
   // legacy remnants from the old web: that tree's one-point notables stay on
-  for (const r of PROF.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
+  for (const r of SRC.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
   if (m.vxpAll) for (const e of ELS) orb.vxp[e] = (orb.vxp[e] || 0) + m.vxpAll;
   m.dmg = (m.dmg || 0) + pointsSpent() * TAL_PT_DMG;
   if (runMods) for (const k in runMods) m[k] = (m[k] || 0) + runMods[k];
@@ -649,6 +662,7 @@ function openLane(L) {
 function newRun(opts) {
   if (opts.cols) setCols(opts.cols);
   const seed = opts.seed || Math.floor(Math.random() * 1e9);
+  opts = Object.assign({}, opts, { seed });
   const r = mulberry32(seed);
   const chaos = clamp(opts.chaos ?? 1, 0, 3);
   setRows(opts.rows || CHAOS_LEVELS[chaos].rows);
@@ -667,6 +681,10 @@ function newRun(opts) {
     checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
     stats: { dmgByEl: { K: 0, T: 0, C: 0, A: 0, V: 0 }, combos: {}, elites: 0, leaks: 0, bossKills: 0, peakDps: 0 },
   };
+  // v5.3: the run records every input (act) from the start; with these opts it replays exactly (Daily Hunt resume, ladder checks)
+  G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS }))); G.inputs = []; G.tick = 0;
+  if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
+  G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
   G.laws = opts.daily ? [] : (PROF.laws || []).slice(); G.novaN = opts.daily ? 0 : PROF.nova || 0;
   G.af = computeAf([]);
@@ -699,6 +717,7 @@ function newRun(opts) {
     recomputeAll(); G.core.hp = G.core.max; G.core.shield = G.core.smax;
   }
   planWanted();
+  if (opts.nemesis) nemesisArrive(opts.nemesis, r);
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
   // harder difficulties: the swarm arrives already adapted to one or two weaknesses (seeded as strong parents)
@@ -711,7 +730,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
-    ks: activeCaps(), tal: Object.assign({}, PROF.tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
+    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
   return G;
 }
 
@@ -1298,6 +1317,7 @@ function prepareWave(w) {
     Hooks.fx('lane', { lane: L });
     Hooks.sfx('lane');
   }
+  if (G.wanted && !G.wanted.done && !G.wanted.spawned && w > G.wanted.w) planWanted(Math.ceil((w + 10) / 10) * 10); // its boss never showed: post it again
   assaultTick(w);
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
@@ -1514,6 +1534,12 @@ function readDefence(w, jitter) {
   return out.sort((a, b) => b.score - a.score);
 }
 function planAssault(w) {
+  const N = G.nemesis;
+  if (N && N.kind === 'strain' && !N.met) { // v5.3: the strain that ended your last run comes back first, with a bounty on it
+    N.met = w;
+    const genes = N.genes.slice(), el = genes.includes('ward') ? N.el || pick(G.r, ELS) : null;
+    return { w, genes, el, key: geneKey(genes, el), why: [`it ended your last run${N.lastW ? ' on Wave ' + N.lastW : ''}`, 'it remembers what you built'], name: N.name, nemesis: 1, state: 'warn', n: 0, killed: 0, leaked: 0 };
+  }
   const r = G.r, cap = Math.max(2, geneCap(w) + 1), reads = readDefence(w, true);
   const genes = [], why = []; let el = null;
   for (const R of reads) { if (genes.length >= Math.min(2, cap)) break; genes.push(R.g); why.push(R.why); if (R.el) el = R.el; }
@@ -1557,6 +1583,7 @@ function resolveAssault() {
     const cr = Math.round(ASSAULT.crPerWave * A.w * (G.CH.cr || 1)); G.credits += cr; A.cr = cr;
     for (const k in F) if (parseGenes(k).genes.some(g => A.genes.includes(g))) F[k].s = Math.min(F[k].s, -0.4 * F[k].n);
     G.assaultNext = A.w + assaultEvery();
+    if (A.nemesis && G.nemesis) { G.nemesis.beaten = A.w; const b2 = cr; G.credits += b2; A.cr += b2; Hooks.toast('NEMESIS DOWN', `${A.name} is finished. Double bounty: +${fmt(b2)} more credits`, '#ffd84a', true); }
     Hooks.toast('STRAIN BROKEN', `${A.name} held off (${A.leaked} leaked). +1 power for the rest of the run, +${cr} credits`, '#59f0b4', true);
     Hooks.sfx('levelup'); Hooks.fx('cash', {});
   } else {
@@ -1634,7 +1661,7 @@ function startWave() {
     t.s = towerStats(t); recomputeAuras();
     Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: w % 3 === 0 ? '#ff4d6a' : '#59f0b4' });
   }
-  if (w > PROF.bestWave) {
+  if (w > PROF.bestWave && !ghostRun()) {
     const before = PROF.bestWave;
     PROF.bestWave = w;
     for (const k of TOWER_ORDER) if (TOWERS[k].unlock > Math.max(1, before) && TOWERS[k].unlock <= w) {
@@ -1710,7 +1737,7 @@ function marketBuy(id) {
     case 'schematic': G.legendQueue += 2; break;
     case 'blueprint': { const k = nextLockedTower(); if (!k) return null; (G.runUnlocks || (G.runUnlocks = [])).push(k); msg = `${TOWERS[k].name} unlocked for this run`; Hooks.onUnlock(k); break; }
     case 'bribe': G.bossBribe = 1; break;
-    case 'beacon': G.placing = 'beacon'; msg = 'Tap an empty tile to plant the Power Node'; break;
+    case 'beacon': G.placing = 'beacon'; G.placingRefund = price; msg = 'Tap an empty tile to plant the Power Node'; break;
     case 'crate': for (const k of abilPool()) lootCharge(k); break;
     case 'tokens': G.tokens += 2; break;
     case 'starmap': G.geneFit = {}; G.geneExp = {}; if (G.assault && G.assault.state === 'warn') { G.assault = null; G.refit = false; } if (G.assaultNext != null) G.assaultNext += 3; break;
@@ -1728,7 +1755,7 @@ function marketBuy(id) {
 function marketPlaceNode(x, y) {
   if (G.placing !== 'beacon' || !inRegion(x, y, G.region) || G.map.tiles[tIdx(x, y)] !== 0 || isNode(x, y)) return false;
   if (Math.abs(x - G.map.core.x) + Math.abs(y - G.map.core.y) < 2) return false;
-  G.placing = null; setNodes(G.nodes.concat([{ x, y }])); G.market.beacons = (G.market.beacons || 0) + 1; G.mapRev = (G.mapRev || 0) + 1;
+  G.placing = null; G.placingRefund = 0; setNodes(G.nodes.concat([{ x, y }])); G.market.beacons = (G.market.beacons || 0) + 1; G.mapRev = (G.mapRev || 0) + 1;
   for (const t of G.towers) t.s = towerStats(t); recomputeAuras();
   Hooks.fx('upgrade', { x: x + 0.5, y: y + 0.5, col: '#6ae2ff' }); Hooks.sfx('upgrade', {});
   return true;
@@ -1852,8 +1879,10 @@ function vetOffer(t) {
   if (!t.pending) return null;
   if (!t.offer) {
     const minTier = t.rank >= 5 ? 2 : t.rank >= 3 ? 1 : 0;
-    const o = [];
-    for (let i = 0; i < 3; i++) o.push(rollAffix(t, undefined, 0.3 * t.rank, minTier, o.map(a => a.id)));
+    const o = [], r0 = G.r;
+    // v5.3: the offer comes from the tower's own stream (seed, tower, rank, pick count): looking at a panel must never move the run's dice
+    G.r = mulberry32((G.seed ^ Math.imul(t.id, 2654435761) ^ Math.imul(t.rank + 1, 40503) ^ Math.imul((t.vetN || 0) + 1, 9973)) >>> 0);
+    try { for (let i = 0; i < 3; i++) o.push(rollAffix(t, undefined, 0.3 * t.rank, minTier, o.map(a => a.id))); } finally { G.r = r0; }
     t.offer = o;
   }
   return t.offer;
@@ -1863,7 +1892,7 @@ function claimVet(t, i) {
   if (!o || !o[i]) return false;
   t.affixes.push(o[i]);
   if (o[i].tier === 3) PROF.codex.legendaries[o[i].id] = 1;
-  t.pending--; t.offer = null;
+  t.pending--; t.offer = null; t.vetN = (t.vetN || 0) + 1;
   t.s = towerStats(t); recomputeAuras();
   Hooks.sfx('upgrade', t);
   Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: RARITY[o[i].tier].col });
@@ -1890,7 +1919,7 @@ function spawnEnemy(type, q) {
     armor: D.armor || 0, armorAll: 0, res: Object.assign({}, D.res || {}), size: type === 'tank' ? 0.42 : type === 'swarmer' ? 0.22 : 0.32,
     cr: D.cr * crMult(w), leak: D.leak, score: Math.round(D.cr * 10 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
-    cloak: D.cloak ? 1 : 0, cloakT: 2 + Math.random() * 2, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0,
+    cloak: D.cloak ? 1 : 0, cloakT: 2 + ((G.eid * 2654435761) >>> 0) % 1000 / 500, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0,
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
@@ -1949,8 +1978,8 @@ function bossFrom(B) { return B.from || BOSS_FROM[B.id] || 10; }
 // ---------- v4.4 Most Wanted ----------
 // One boss per run gets a poster: a mutation (Colossal, Twin, Hasted, Armored, Spectral, Loaded) and a bounty. It is announced at the start,
 // shows as a chip between waves, and lands on the first boss wave at least ten waves out (never before Wave 20).
-function planWanted() {
-  const r = G.r, w = Math.max(20, Math.ceil((G.startWave + 10) / 10) * 10);
+function planWanted(at) {
+  const r = G.r, w = at || Math.max(20, Math.ceil((G.startWave + 10) / 10) * 10);
   const pool = BOSSES.filter(B => bossFrom(B) <= w && !(G.af && G.af.oddAll && !B.odd));
   const B = pick(r, pool), M = pick(r, WANTED_MODS);
   G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w * (G.CH.cr || 1)) };
@@ -1958,13 +1987,19 @@ function planWanted() {
 }
 function wantedMod(e) { return e.wanted ? WANTED_MODS.find(m => m.id === e.wanted) : null; }
 function claimBounty(e) {
-  const Wd = G.wanted, M = wantedMod(e); if (!Wd || !M) return;
+  const Wd = G.wanted, M = wantedMod(e); if (!Wd || !M || Wd.done || (e.wantedW && e.wantedW !== Wd.w)) return;
   // twins: the bounty comes with the second kill
   if (M.twins && G.enemies.some(o => o !== e && !o.dead && o.wanted)) { Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: 'my twin will avenge me' }); return; }
   const cr = Wd.bounty * (M.loaded ? 2 : 1);
   G.credits += cr; G.legendQueue++; Wd.done = 1; G.stats.bounty = Wd.name;
   if (M.loaded) { const c = { x: Math.round(e.x - 0.5), y: Math.round(e.y - 0.5), t: CACHE_LIFE * 2, id: G.eid++, kind: 'gold' }; if (inRegion(c.x, c.y, G.region) && G.map.tiles[tIdx(c.x, c.y)] !== 2 && !G.towerAt[tIdx(c.x, c.y)]) { (G.caches || (G.caches = [])).push(c); Hooks.fx('cache', { x: c.x + 0.5, y: c.y + 0.5, kind: 'gold' }); } }
   rlog('bounty', { boss: e.boss, mod: M.id, cr });
+  if (Wd.nemesis && G.nemesis) G.nemesis.beaten = G.wave;
+  G.bounties.push({ name: Wd.name, w: Wd.w, cr, nemesis: !!Wd.nemesis });
+  // v5.3 The Hunt: a claimed bounty is a choice. The sim holds (like a boon pick) until the player extracts or pushes on
+  planWanted(Wd.w + HUNT.every); G.wanted.told = 0;
+  G.huntChoice = { w: Wd.w, name: Wd.name, cr, next: G.wanted.w, nextName: G.wanted.name };
+  Hooks.huntChoice && Hooks.huntChoice(G.huntChoice);
   Hooks.toast('BOUNTY CLAIMED', `${Wd.name} brought in: +${fmt(cr)} credits, your next tower rolls a Legendary${M.loaded ? ", and the Captain's Chest it was carrying" : ''}`, '#ffd84a', true);
   Hooks.sfx('levelup'); Hooks.fx('cash', {});
 }
@@ -2002,7 +2037,7 @@ function spawnBoss(q) {
   // Most Wanted: the poster's boss gets its mutation (twins: the second copy follows 3 s later)
   if (!gen && G.wanted && !G.wanted.done && G.wanted.boss === B.id && G.wanted.w === w) {
     const M = WANTED_MODS.find(m => m.id === G.wanted.mod);
-    e.wanted = M.id; e.hp = e.maxHp *= M.hp || 1; e.spd *= M.spd || 1; e.size *= M.size || 1; if (M.armorAll) e.armorAll = Math.max(e.armorAll, M.armorAll); if (M.cloak) e.wcloak = 1; if (M.loaded) e.wantedLoaded = 1;
+    e.wanted = M.id; e.wantedW = G.wanted.w; G.wanted.spawned = 1; e.hp = e.maxHp *= M.hp || 1; e.spd *= M.spd || 1; e.size *= M.size || 1; if (M.armorAll) e.armorAll = Math.max(e.armorAll, M.armorAll); if (M.cloak) e.wcloak = 1; if (M.loaded) e.wantedLoaded = 1;
     if (M.twins && !q.twin) setTimeoutSim(3, () => { const t2 = spawnBoss(Object.assign({}, q, { twin: 1 })); if (t2) Hooks.fx('say', { x: t2.x, y: t2.y - 1, t: 'two for one' }); });
   }
   if (G.bossBribe && !gen) { G.bossBribe = 0; e.hp = e.maxHp * 0.7; e.bribed = 1; Hooks.fx('say', { x: e.x, y: e.y - 1, t: B.id === 'auditor' ? 'Donation noted.' : '*pockets the bribe*' }); }
@@ -2341,7 +2376,7 @@ function leak(e) {
   if (e.boss && !e.gen) {
     Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
     Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
-    G.stats.bossBreach = e.bossName; c.shield = 0; c.hp = 0; gameOver(); return;
+    G.stats.bossBreach = e.bossName; G.stats.bossBreachId = e.boss; c.shield = 0; c.hp = 0; gameOver(); return;
   }
   if (e.boss) dmg = c.max * (e.gen === 1 ? 0.12 : 0.06);
   if (e.boss === 'worm' && e.gut && e.gut.length) { Hooks.toast('DIGESTED', `${e.gut.length} swallowed tower${e.gut.length > 1 ? 's are' : ' is'} gone for good`, '#ff4d6a', true); e.gut = []; }
@@ -2510,15 +2545,16 @@ function applyStatuses(e, dmg, el, src, o) {
   if (M.knock && r() < M.knock && !jugg) { e.d = Math.max(0, e.d - (e.boss ? 0.15 : 0.5)); if (FX('knockMark')) { st.mark = Math.min(M.markMax, st.mark + 2); st.markT = 4; } }
   if (s.stunDur && s.kind === 'mortar' && !jugg) st.stun = Math.max(st.stun, s.stunDur * (e.boss ? 0.3 : 1));
 }
+const huntMult = () => 1 + HUNT.pushScore * ((G && G.pushes) || 0);
 function addScore(v) {
-  v = v * G.CH.score * (G.scoreMult || 1);
+  v = v * G.CH.score * (G.scoreMult || 1) * huntMult();
   G.score += v;
   const xp = v * 0.1 * G.mods.xp * (1 + NOVA_XP * (G.novaN || 0));
   G.xpEarned += xp;
-  const before = profLevel().level;
+  if (!ghostRun()) { const before = profLevel().level;
   PROF.xp += xp;
   const after = profLevel().level;
-  if (after > before) { Hooks.onLevel(after, after - before); Hooks.sfx('levelup'); }
+  if (after > before) { Hooks.onLevel(after, after - before); Hooks.sfx('levelup'); } }
   if (G.score >= G.nextMs) milestone();
 }
 function milestone() {
@@ -2558,7 +2594,7 @@ function kill(e, src, o) {
   }
   const cr = Math.max(1, Math.round(e.cr * cm)) + (FX('salvage') ? Math.floor(G.wave / 10) : 0);
   G.credits += cr;
-  G.kills++; PROF.kills++;
+  G.kills++; if (!ghostRun()) PROF.kills++;
   addScore(e.score);
   if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); }
   if (e.elite.length) { G.stats.elites++; if (G.entWaveCombo < 6) { G.entWaveCombo += 0.25; addEntropy(0.25); } }
@@ -3254,7 +3290,8 @@ function useAbility(k, x, y) {
 
 // ---------- main step ----------
 function simStep(dt) {
-  if (!G || G.over || G.paused || G.draft) return;
+  if (!G || G.over || G.paused || G.draft || G.huntChoice) return;
+  G.tick = (G.tick || 0) + 1;
   G.time += dt;
   updateWaves(dt);
   updateStorms(dt);
@@ -3273,12 +3310,18 @@ function simStep(dt) {
 function gameOver() {
   if (G.over) return;
   G.over = true;
+  if (ghostRun()) { Hooks.onGameOver(); return; }
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
     rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain() }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
+  huntEnd();
   if (G.daily) {
     const d = PROF.daily && PROF.daily.date === G.daily ? PROF.daily : { date: G.daily, best: 0, score: 0, tries: 0 };
     d.tries++; if (G.wave > d.best) d.best = G.wave; if (G.score > d.score) d.score = Math.round(G.score);
+    // v5.3: the first attempt of the day is the ranked one; it keeps its recording (ladder, replay, hunt code)
+    const res = { wave: G.wave, score: Math.round(G.score), ext: G.extracted || 0, bounties: G.bounties.length, ts: Date.now() };
+    if (!d.ranked) { d.ranked = res; d.rec = { opts: G.recOpts, inputs: G.inputs, end: G.tick }; G.rankedRun = 1; }
+    (d.runs || (d.runs = [])).push(res); d.runs.sort((a, b) => (b.ext ? 1 : 0) - (a.ext ? 1 : 0) || b.wave - a.wave || b.score - a.score); d.runs = d.runs.slice(0, 10);
     PROF.daily = d;
   }
   PROF.playTime += G.time;
@@ -3291,12 +3334,165 @@ function abandonRun() {
   gameOver();
 }
 
+// ===================== v5.3 THE HUNT =====================
+// Extract or push on after a bounty
+function huntExtract() {
+  const C = G && G.huntChoice; if (!C || G.over) return false;
+  G.extracted = C.w; G.huntChoice = null;
+  const bonus = Math.round(G.xpEarned * HUNT.extractXp);
+  if (!G.daily) { const before = profLevel().level; PROF.xp += bonus; const after = profLevel().level; if (after > before) Hooks.onLevel(after, after - before); }
+  G.xpEarned += bonus; G.stats.extractXp = bonus;
+  rlog('extract', { w: C.w, xp: bonus });
+  gameOver();
+  return true;
+}
+function huntPush() {
+  const C = G && G.huntChoice; if (!C || G.over) return false;
+  G.pushes = (G.pushes || 0) + 1; G.huntChoice = null;
+  rlog('push', { w: C.w, n: G.pushes });
+  Hooks.toast('PUSHING ON', `Score ×${huntMult().toFixed(2)} from here. Next bounty: ${G.wanted.name}, Wave ${G.wanted.w}`, '#ffd84a', true);
+  return true;
+}
+// the Nemesis: what ended your last run, back again
+function nemesisName(N) {
+  const base = N.kind === 'boss' ? (BOSSES.find(b => b.id === N.boss) || { name: 'Boss' }).name : strainName(N.type, N.genes, N.genes.includes('ward') ? N.el : null);
+  return base + (N.rank > 1 ? ' ' + roman(N.rank) : '');
+}
+function nemesisArrive(N0, r) {
+  const N = G.nemesis = JSON.parse(JSON.stringify(N0)); N.met = 0; N.beaten = 0; N.name = nemesisName(N);
+  if (N.kind === 'boss') { // it takes the first Most Wanted poster, with a mutation that grows with its rank
+    const B = BOSSES.find(b => b.id === N.boss); if (!B || !G.wanted) return;
+    const mods = ['colossal', 'armored', 'hasted', 'twins', 'spectral'], M = WANTED_MODS.find(m => m.id === mods[Math.min(mods.length - 1, (N.rank || 1) - 1)]);
+    Object.assign(G.wanted, { boss: B.id, mod: M.id, name: `${M.name} ${N.name}`, crime: pick(r, NEMESIS_CRIME), bounty: G.wanted.bounty * 2, nemesis: 1 });
+    rlog('nemesis', { kind: 'boss', boss: B.id, rank: N.rank });
+    return;
+  }
+  // a strain: the swarm starts already carrying it, and it leads the first Strain Assault
+  const F = G.geneFit || (G.geneFit = {}), s0 = 2 + 0.4 * (N.rank || 1);
+  F[geneKey(N.genes, N.genes.includes('ward') ? N.el : null)] = { s: s0 * 6, n: 6 };
+  for (const g of N.genes) F[geneKey([g], g === 'ward' ? N.el : null)] = F[geneKey([g], g === 'ward' ? N.el : null)] || { s: s0 * 4, n: 4 };
+  rlog('nemesis', { kind: 'strain', genes: N.genes, rank: N.rank });
+}
+// what ended this run, as a Nemesis record (null if nothing clear)
+function runKiller() {
+  if (G.stats.bossBreach && G.stats.bossBreachId) return { kind: 'boss', boss: G.stats.bossBreachId };
+  const pool = Object.keys(G.leakWave || {}).length ? G.leakWave : G.leakBy || {};
+  const top = Object.keys(pool).filter(k => !k.startsWith('boss:')).map(k => [k, pool[k]]).sort((a, b) => b[1] - a[1])[0];
+  if (top) { const [type, ...genes] = top[0].split('+'); if (ENEMIES[type] && genes.length) return { kind: 'strain', type, genes: genes.filter(g => GENES[g]), el: pick(G.r, ELS) }; }
+  const bk = Object.keys(pool).find(k => k.startsWith('boss:'));
+  if (bk) return { kind: 'boss', boss: bk.slice(5) };
+  return null;
+}
+const nemKey = N => N ? (N.kind === 'boss' ? 'boss:' + N.boss : N.type + '+' + N.genes.slice().sort().join('+')) : '';
+// end of run bookkeeping: trophies and the Nemesis (dailies leave your profile's Nemesis alone)
+function huntEnd() {
+  const H = PROF.hunt || (PROF.hunt = { bounties: 0, extracts: 0, extractBy: {}, nemDown: 0, nemDownList: [], best: {} });
+  H.bounties += G.bounties.length;
+  if (G.extracted) { H.extracts++; H.extractBy[G.chaos] = (H.extractBy[G.chaos] || 0) + 1; }
+  if (G.daily) return;
+  const N = G.nemesis;
+  if (N && N.beaten) { H.nemDown++; H.nemDownList = [N.name].concat(H.nemDownList || []).slice(0, 12); PROF.nemesis = null; G.nemDown = N.name; }
+  if (G.extracted) return;
+  const K = runKiller(); if (!K) return;
+  const cur = PROF.nemesis;
+  const nn = cur && nemKey(cur) === nemKey(K) ? Object.assign(cur, { rank: Math.min(9, (cur.rank || 1) + 1), lastW: G.wave }) : Object.assign(K, { rank: 1, lastW: G.wave, since: Date.now() });
+  nn.name = nemesisName(nn);
+  PROF.nemesis = nn; G.newNemesis = nn;
+}
+
+// ===================== v5.3 INPUTS, RECORDING AND REPLAY =====================
+// Every player action goes through act(name, ...args): it is stamped with the tick it happened on and appended to G.inputs.
+// The sim is a fixed 1/30 s step from a seed, so newRun(G.recOpts) plus the same inputs at the same ticks gives the same run,
+// bit for bit. That is what lets a Daily Hunt resume exactly where it was, and lets a server check a ladder score by replaying it.
+const SIM_STEP = 1 / 30;
+const twAt = (x, y) => G.towerAt[tIdx(x, y)] || null;
+function setTowerMode(t, m) { if (!t || !['first', 'last', 'strong', 'weak', 'close'].includes(m)) return false; t.mode = m; return true; }
+function setCoreEl(el) { if (!ELS.includes(el)) return false; G.core.el = el; return true; }
+function cancelBeacon() {
+  if (G.placing !== 'beacon') return false;
+  G.placing = null; G.credits += G.placingRefund || 0; G.placingRefund = 0;
+  if (G.market) { G.market.bought = G.market.bought.filter(x => x !== 'beacon'); G.market.spent = Math.max(0, (G.market.spent || 0) - marketPrice(MARKET_ITEMS.find(x => x.id === 'beacon'))); }
+  return true;
+}
+const ACTS = {
+  build: (type, x, y) => buildTower(type, x, y) || false,
+  up: (x, y, spec) => { const t = twAt(x, y); return !!t && upgradeTower(t, spec == null ? undefined : spec); },
+  reroll: (x, y, tok) => { const t = twAt(x, y); return !!t && rerollTower(t, !!tok); },
+  sell: (x, y) => { const t = twAt(x, y); if (!t) return false; sellTower(t); return true; },
+  oc: (x, y, n) => { const t = twAt(x, y); return !!t && setOvercharge(t, n); },
+  vet: (x, y, i) => { const t = twAt(x, y); return !!t && claimVet(t, i); },
+  mode: (x, y, m) => setTowerMode(twAt(x, y), m),
+  abil: (k, x, y) => useAbility(k, x, y),
+  core: kind => !!coreUpgrade(kind),
+  coreRoll: () => !!rerollCore(),
+  coreEl: el => setCoreEl(el),
+  reactor: () => expandReactor(),
+  cash: amt => cashIn(amt),
+  buy: id => marketBuy(id),
+  beacon: (x, y) => marketPlaceNode(x, y),
+  beaconCancel: () => cancelBeacon(),
+  call: () => callEarly(),
+  cpResume: cpT => { if (typeof cpT === 'number') G.cpT = cpT; return resumeCheckpoint(); },
+  anom: id => takeAnomaly(id),
+  stab: () => stabilize(),
+  boon: i => !!(G.draft && G.draft[i]) && (takeBoon(G.draft[i]), true),
+  cache: (x, y) => { const c = cacheAt(x, y); return !!c && claimCache(c); },
+  od: () => releaseOverdrive(),
+  reloc: (x, y) => { const P = planRelocation(x, y); return !!P && !P.fail && applyRelocation(P); },
+  extract: () => huntExtract(),
+  push: () => huntPush(),
+  abandon: () => { abandonRun(); return true; },
+};
+function act(name, ...a) {
+  if (!G || (G.over && name !== 'abandon') || G.replaying || G.watch) return false; // a replay is driven by its recording, not taps
+  const f = ACTS[name]; if (!f) return false;
+  if (G.inputs && !G.replaying) G.inputs.push([G.tick || 0, name].concat(a.map(v => v === undefined ? null : v)));
+  return f(...a);
+}
+// Rebuild a run from its recording. Stops at the end of the inputs (a halt with nothing left to answer it), at `until` ticks,
+// or when the run ends. The profile keeps what it had (XP, kills and records were counted live the first time).
+// `quiet` silences toasts, sounds and effects while it fast-forwards.
+const HALTED = () => G.draft || G.huntChoice || (G.checkpoint && !G.enemies.length);
+function replayRun(rec, opts) {
+  opts = opts || {};
+  const keep = JSON.stringify({ xp: PROF.xp, kills: PROF.kills, bestWave: PROF.bestWave, bestScore: PROF.bestScore, runs: PROF.runs, playTime: PROF.playTime, codex: PROF.codex, daily: PROF.daily, hunt: PROF.hunt, nemesis: PROF.nemesis, runSnap: PROF.runSnap });
+  const saved = {};
+  if (opts.quiet) for (const k in Hooks) if (typeof Hooks[k] === 'function') { saved[k] = Hooks[k]; Hooks[k] = () => {}; }
+  let i = 0;
+  try {
+    newRun(rec.opts);
+    G.replaying = true;
+    const inp = rec.inputs || [], until = opts.until == null ? Infinity : opts.until;
+    for (let guard = 0; guard < 5e6; guard++) {
+      while (i < inp.length && inp[i][0] <= G.tick) { const [, n, ...a] = inp[i++]; ACTS[n] && ACTS[n](...a); if (G.over) break; }
+      if (G.over || G.tick >= until) break;
+      if (HALTED()) { if (i >= inp.length) break; if (G.checkpoint && !G.enemies.length && inp[i][0] > G.tick) { G.tick = inp[i][0]; continue; } if (inp[i][0] > G.tick) break; continue; }
+      G.paused = false;
+      simStep(SIM_STEP);
+    }
+    G.replaying = false;
+    G.inputs = (rec.inputs || []).slice(0, i);
+  } finally {
+    for (const k in saved) Hooks[k] = saved[k];
+    const K = JSON.parse(keep); for (const k in K) PROF[k] = K[k];
+  }
+  return { applied: i, tick: G.tick, wave: G.wave, score: Math.round(G.score), over: G.over, credits: Math.round(G.credits) };
+}
+// a short fingerprint of the run state, to compare a replay with the original
+function runHash() {
+  let h = 2166136261; const mix = v => { h ^= v; h = Math.imul(h, 16777619) >>> 0; };
+  mix(G.tick | 0); mix(G.wave | 0); mix(Math.round(G.score)); mix(Math.round(G.credits * 10)); mix(G.kills | 0); mix(Math.round(G.core.hp * 100));
+  for (const t of G.towers) { mix(t.x * 97 + t.y); mix(t.lvl); mix(Math.round(t.dmgDone)); }
+  for (const e of G.enemies) { mix(Math.round(e.hp * 10)); mix(Math.round(e.d * 100)); }
+  return h.toString(16);
+}
+
 // ---------- snapshots (resume after the app is closed) ----------
 function snapshotRun(waveNum) {
-  if (!G || G.over) return;
+  if (!G || G.over || ghostRun()) return;
   const gut = []; let owed = 0; for (const e of G.enemies) if (!e.dead) { if (e.gut) for (const t of e.gut) if (!G.towerAt[tIdx(t.x, t.y)]) gut.push(t); if (e.audited) owed += e.audited; }
   const tw = G.towers.concat(gut).map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
-    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0 }));
+    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0 }));
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
@@ -3304,6 +3500,8 @@ function snapshotRun(waveNum) {
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
+    pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
+    rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
   Hooks.onSave();
@@ -3328,7 +3526,7 @@ function resumeRun(S) {
     const t = { id: G.tid++, type: T.type, x: T.x, y: T.y, cx: T.x + 0.5, cy: T.y + 0.5, lvl: T.lvl, spec: T.spec, affixes: T.affixes, rerolls: T.rerolls,
       invested: T.invested, cd: 0.3, angle: -Math.PI / 2, kills: T.kills, dmgDone: T.dmgDone, dps: 0, dpsAcc: 0, mode: T.mode || 'first', disabled: 0,
       ramp: 0, olT: 0, buff: { dmg: 0, rate: 0, crit: 0 }, isolated: false, flash: 0,
-      vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0 };
+      vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0, vetN: T.vetN || 0 };
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t;
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
@@ -3336,10 +3534,11 @@ function resumeRun(S) {
     lanesOpened: S.lanesOpened, cpDue: S.cpDue || 0, unbreakUsed: S.unbreakUsed, boonsTaken: S.boonsTaken || [], next: 12,
     entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
   if (S.stats) G.stats = S.stats;
+  G.pushes = S.pushes || 0; G.bounties = (S.bounties || []).slice(); G.huntChoice = S.huntChoice || null; G.nemesis = S.nemesis ? JSON.parse(JSON.stringify(S.nemesis)) : null;
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   if (G.daily) { G.laws = []; G.novaN = 0; } // dailies never carry Cosmic Laws, resumed or not
-  G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
+  G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; if (G.wanted && !G.wanted.done) G.wanted.spawned = 0; // bosses aren't saved G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
   // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
   if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.uLvl = S.core.uLvl || 0; G.core.hLvl = S.core.hLvl || 0;

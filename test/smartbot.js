@@ -65,6 +65,7 @@ for (let run = OFF; run < OFF + runs; run++) {
   const G = S.newRun({ seed: 1000 + run * 17, chaos, startWave: sw, cols: +(process.env.COLS || 39) });
   let t = 0, act = 0, pi = 0, lastWave = G.wave;
   while (!G.over && t < 3 * 3600) {
+    if (S.G.huntChoice) S.huntPush(); // v5.3: the bot never extracts, it plays on (a stalled choice would freeze the sim)
     S.simStep(1 / 30); t += 1 / 30; if (S.G.checkpoint) S.resumeCheckpoint();
     if (process.env.BOSSLOG) {
       if (!G.dbgBoss) G.dbgBoss = {};
