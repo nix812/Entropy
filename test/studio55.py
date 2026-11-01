@@ -1,0 +1,144 @@
+"""v5.5 Music Studio: tabs with a pinned now-playing bar; Back / Pause / Repeat / Keep; vibe presets; kept tracks remember
+their sound; rename, share codes and adding a code; the hidden Composer (five taps on the visualizer), its steppers, drum
+grid, melody grid, playhead and Save to My Tracks; composed tracks share and play back. usage: python3 studio55.py [W H]"""
+import pathlib, sys, mkpage
+from playwright.sync_api import sync_playwright
+root = pathlib.Path(__file__).parent.parent; out = root / 'test' / 'out' / 'studio55'; out.mkdir(parents=True, exist_ok=True)
+W, H = (int(sys.argv[1]), int(sys.argv[2])) if len(sys.argv) > 2 else (852, 393)
+mkpage.mk(); errs = []; checks = []
+def ok(name, v): checks.append((name, bool(v))); print(('ok   ' if v else 'FAIL ') + name)
+def shot(pg, n): pg.screenshot(path=str(out / f'{n}_{W}.png'))
+def act(pg, sel): pg.evaluate('(s) => { const b = document.querySelector(s); if (!b) throw new Error("missing " + s); b.click(); }', sel); pg.wait_for_timeout(150)
+def waitPiece(pg, cond, ms=12000):
+    t = 0
+    while t < ms:
+        if pg.evaluate(cond): return True
+        pg.wait_for_timeout(250); t += 250
+    return False
+with sync_playwright() as p:
+    b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
+    ctx = b.new_context(viewport={'width': W, 'height': H}, device_scale_factor=2, has_touch=True)
+    ctx.grant_permissions(['clipboard-read', 'clipboard-write'])
+    pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
+    pg.evaluate('() => { PROF.seenVer = VERSION; PROF.seenHelp = true; UI.renderHangar(); }')
+    pg.click('#bStudio'); pg.wait_for_timeout(1500)
+    ok('studio opens on Listen', pg.evaluate('() => !!document.querySelector(".card.studio") && document.querySelector(".sttabs .chip.on").textContent === "Listen"'))
+    ok('no Compose tab before it is found', pg.evaluate('() => document.querySelectorAll(".sttabs .chip").length === 2'))
+    ov = pg.evaluate('() => { const c = document.querySelector(".card.studio"); return [c.scrollWidth - c.clientWidth, c.getBoundingClientRect().bottom <= innerHeight + 1]; }')
+    ok('fits the screen', ov[0] <= 1 and ov[1])
+    shot(pg, 'listen')
+    # now-playing bar stays while the body scrolls
+    pg.evaluate('() => { const b = document.querySelector(".card.studio .cbody"); b.scrollTop = 9999; }'); pg.wait_for_timeout(150)
+    ok('now-playing bar pinned', pg.evaluate('() => { const r = document.querySelector(".stnow").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }'))
+    # vibe preset
+    act(pg, '[data-act=stVibe][data-v=club]'); pg.wait_for_timeout(300)
+    ok('Club vibe sets four club genres', pg.evaluate('() => { const g = SFX.music.config.genres; return SFX.music.config.custom && g.length === 4 && g.includes("house") && g.includes("dnb"); }'))
+    ok('a club piece follows', waitPiece(pg, '() => ["house","techno","trance","dnb"].includes(SFX.music.piece.genre)'))
+    first = pg.evaluate('() => SFX.music.piece.name')
+    # pause / resume
+    act(pg, '[data-act=stPause]')
+    ok('pause mutes the music', pg.evaluate('() => SFX.music.paused && document.querySelector("#stSec").textContent === "Paused"'))
+    pg.wait_for_timeout(300); act(pg, '[data-act=stPause]')
+    ok('play resumes', pg.evaluate('() => !SFX.music.paused'))
+    # skip then back
+    act(pg, '[data-act=stSkip]')
+    ok('skip moves on', waitPiece(pg, f'() => SFX.music.piece.name !== {first!r}'))
+    second = pg.evaluate('() => SFX.music.piece.name')
+    ok('back is available', pg.evaluate('() => SFX.music.canBack && !document.querySelector("#stBackB").disabled'))
+    act(pg, '[data-act=stBack]')
+    ok('back returns to the last piece', waitPiece(pg, f'() => SFX.music.piece.name === {first!r}'))
+    # repeat
+    act(pg, '[data-act=stRepeat]')
+    ok('repeat on', pg.evaluate('() => SFX.music.repeat && document.querySelector("#stRepB").classList.contains("on")'))
+    act(pg, '[data-act=stRepeat]')
+    # Shape: a sound to remember
+    act(pg, '[data-act=stTab][data-v=shape]'); pg.wait_for_timeout(300)
+    shot(pg, 'shape')
+    ok('Shape tab has one tempo slider', pg.evaluate('() => document.querySelectorAll("#stTempo").length === 1 && document.querySelectorAll(".fader").length === 6'))
+    pg.evaluate('() => { const e = document.querySelector("#stFx_echo"); e.value = 0.9; e.dispatchEvent(new Event("input")); e.dispatchEvent(new Event("change")); }')
+    act(pg, '[data-act=stKeep]')
+    ok('keep saves the piece with its sound', pg.evaluate('() => { const f = SFX.music.config.favs[0]; return f && f.snd && Math.abs(f.snd.fx.echo - 0.9) < 0.01 && SFX.music.isSaved(); }'))
+    pg.evaluate('() => { const e = document.querySelector("#stFx_echo"); e.value = 0.2; e.dispatchEvent(new Event("input")); e.dispatchEvent(new Event("change")); }')
+    # Listen: My Tracks, rename, share, play brings the sound back
+    act(pg, '[data-act=stTab][data-v=listen]'); pg.wait_for_timeout(200)
+    act(pg, '[data-act=stRen][data-v="0"]')
+    pg.fill('#stRenIn', 'Night Drive'); pg.press('#stRenIn', 'Enter'); pg.wait_for_timeout(200)
+    ok('rename sticks', pg.evaluate('() => SFX.music.config.favs[0].name === "Night Drive"'))
+    shot(pg, 'tracks')
+    act(pg, '[data-act=stShare][data-v="0"]'); pg.wait_for_timeout(500)
+    code = pg.evaluate('async () => { const f = SFX.music.config.favs[0]; return await (async () => { try { return await navigator.clipboard.readText(); } catch (e) { return ""; } })(); }')
+    ok('share code copied', code.startswith('TRACK1:') or code.startswith('TRACK0:'))
+    act(pg, '[data-act=stPlay][data-v="0"]')
+    ok('playing a kept track brings back its sound', waitPiece(pg, '() => SFX.music.piece.name === "Night Drive" && Math.abs(SFX.music.config.fx.echo - 0.9) < 0.01'))
+    # add a code (a fresh copy of the same track)
+    act(pg, '[data-act=stPaste]'); pg.fill('#stCode', code); act(pg, '[data-act=stCodeGo]'); pg.wait_for_timeout(600)
+    ok('a pasted code adds the track', pg.evaluate('() => SFX.music.config.favs.length === 2 && SFX.music.config.favs[0].name === "Night Drive"'))
+    # delete needs two taps
+    act(pg, '[data-act=stDel][data-v="0"]')
+    ok('first delete tap only arms', pg.evaluate('() => SFX.music.config.favs.length === 2 && !!document.querySelector(".stb.del.arm")'))
+    act(pg, '[data-act=stDel][data-v="0"]')
+    ok('second tap deletes', pg.evaluate('() => SFX.music.config.favs.length === 1'))
+    # the hidden composer
+    for i in range(5): act(pg, '#stViz')
+    pg.wait_for_timeout(300)
+    ok('five taps unlock the Composer', pg.evaluate('() => SFX.music.config.composer && document.querySelectorAll(".sttabs .chip").length === 3 && document.querySelector(".sttabs .chip.on").textContent === "Compose"'))
+    shot(pg, 'compose_empty')
+    act(pg, '[data-act=cpNew]'); pg.wait_for_timeout(300)
+    ok('a draft starts from the playing piece', pg.evaluate('() => { const d = SFX.music.config.draft; return d && d.drums && d.drums.K.length === 16 && d.loop.degs.length > 0; }'))
+    ok('the draft plays', waitPiece(pg, '() => SFX.music.piece.comp'))
+    shot(pg, 'compose_drums')
+    # steppers
+    pg.evaluate('() => SFX.music.config.draft.mode = "aeolian"')
+    act(pg, '[data-act=cpStep][data-k=mood][data-v="-1"]')
+    ok('mood steps (Moody to Soulful)', pg.evaluate('() => SFX.music.config.draft.mode === "dorian"'))
+    k0 = pg.evaluate('() => SFX.music.config.draft.key')
+    act(pg, '[data-act=cpStep][data-k=key][data-v="1"]')
+    ok('key steps', pg.evaluate(f'() => SFX.music.config.draft.key === ({k0} + 1) % 12'))
+    ok('edits are heard live', waitPiece(pg, '() => SFX.music.piece.mode === "dorian"', 4000))
+    act(pg, '[data-act=cpStep][data-k=loop][data-v="1"]')
+    act(pg, '[data-act=cpStep][data-k=bass][data-v="1"]')
+    act(pg, '[data-act=cpStep][data-k=lead][data-v="1"]')
+    b0 = pg.evaluate('() => SFX.music.config.draft.bpm')
+    act(pg, '[data-act=cpStep][data-k=bpm][data-v="1"]')
+    ok('tempo steps', pg.evaluate(f'() => SFX.music.config.draft.bpm === {b0} + 2'))
+    # drum cell toggles
+    before = pg.evaluate('() => SFX.music.config.draft.drums.K[1]')
+    act(pg, '[data-act=cpCell][data-r=K][data-i="1"]')
+    after = pg.evaluate('() => SFX.music.config.draft.drums.K[1]')
+    ok('a drum step toggles', (before == '0') != (after == '0'))
+    ok('the playhead runs over the grid', waitPiece(pg, '() => document.querySelectorAll("#cpGridBox .cell.ph").length >= 8', 5000))
+    # melody
+    act(pg, '[data-act=cpGrid][data-v=melody]'); pg.wait_for_timeout(300)
+    shot(pg, 'compose_melody')
+    act(pg, '[data-act=cpNote][data-r="4"][data-i="0"]')
+    ok('tapping the melody grid makes it yours', pg.evaluate('() => { const m = SFX.music.config.draft.mel; return Array.isArray(m) && m.length === 16; }'))
+    act(pg, '[data-act=cpDice]')
+    ok('new melody rolls a fresh automatic one', pg.evaluate('() => SFX.music.config.draft.mel === null'))
+    act(pg, '[data-act=cpNote][data-r="2"][data-i="4"]')
+    # style change
+    g0 = pg.evaluate('() => SFX.music.config.draft.genre + "/" + SFX.music.config.draft.flav')
+    act(pg, '[data-act=cpStep][data-k=style][data-v="1"]')
+    ok('style steps and its drums come along', pg.evaluate(f'() => (SFX.music.config.draft.genre + "/" + SFX.music.config.draft.flav) !== {g0!r}'))
+    ok('the new style plays', waitPiece(pg, '() => SFX.music.piece.comp && SFX.music.piece.genre === SFX.music.config.draft.genre'))
+    pg.fill('#cpName', 'Engine Room'); pg.press('#cpName', 'Tab'); pg.wait_for_timeout(100)
+    act(pg, '[data-act=cpSave]')
+    ok('saved to My Tracks with its parts', pg.evaluate('() => { const f = SFX.music.config.favs[0]; return f.name === "Engine Room" && f.comp && Array.isArray(f.comp.mel); }'))
+    shot(pg, 'compose_saved')
+    # composed track: share code round trip carries the comp
+    rt = pg.evaluate('''async () => { const f = SFX.music.config.favs[0];
+      const btn = document.createElement('button'); return null; }''')
+    act(pg, '[data-act=stTab][data-v=listen]'); pg.wait_for_timeout(200)
+    act(pg, '[data-act=stShare][data-v="0"]'); pg.wait_for_timeout(500)
+    code2 = pg.evaluate('async () => { try { return await navigator.clipboard.readText(); } catch (e) { return ""; } }')
+    act(pg, '[data-act=stPaste]'); pg.fill('#stCode', code2); act(pg, '[data-act=stCodeGo]'); pg.wait_for_timeout(600)
+    ok('a composed track survives its share code', pg.evaluate('() => { const [a, b] = SFX.music.config.favs; return a.comp && JSON.stringify(a.comp) === JSON.stringify(b.comp) && a.name === "Engine Room"; }'))
+    ok('it plays back as composed', waitPiece(pg, '() => SFX.music.piece.comp && SFX.music.piece.name === "Engine Room"'))
+    ok('edit button on composed tracks', pg.evaluate('() => !!document.querySelector("[data-act=stEditT]")'))
+    # persistence
+    ok('all of it is saved in the profile', pg.evaluate('() => PROF.settings.studio.composer && PROF.settings.studio.draft && PROF.settings.studio.favs.length >= 3'))
+    act(pg, '[data-act=stClose]')
+    ok('closing ends editing', pg.evaluate('() => !SFX.music.editing && !document.querySelector(".card.studio")'))
+    b.close()
+print('ERRORS:', errs[:5])
+print('FAILED:', [n for n, v in checks if not v])

@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.4.3';
+const VERSION = '5.5.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,15 +173,14 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.4.3', title: 'Entropy 5.4 · Read the Leaks', items: [
-  ['A new hangar sky (5.4.2–5.4.3)', 'The launch screen is redrawn: a Lorenz attractor, the classic picture of chaos, turns over a drifting nebula, with comets running its loops, three layers of stars, the odd meteor, and a glitch that tears the sky and the title together. 5.4.3 draws it twice as sharp on iPhone.'],
-  ['Hunt build reminder (5.4.1)', 'Starting a Daily Hunt with talent points unspent now asks first: spend them, or start anyway. The build locks once the run begins.'],
-  ['Breach forecast', 'The red stripe on the core bar shows how much of your shield and hull last wave\'s leaks used. The shield soaks small leaks, so the core can look full right up to the wave that kills it; the stripe shows the pressure building. The Breach Warning now speaks once when leaks pass half your defences and again near the edge, instead of every wave.'],
-  ['Arc means shields', 'Shell enemies\' shields now recharge when left alone, unless an Arc hit landed in the last 3 seconds. Arc Coils and EMP tear shields ×3 (was ×2.5) and keep them down for every tower around them. When the swarm says "you have no Arc", it matters now.'],
-  ['Arc Coil upgrades', 'Both specializations now add damage (Tesla Crown ×1.35, Overvolt ×1.7). Coils used to gain almost nothing past Level 3.'],
-  ['Void Lens trimmed', 'Its ramp tops out lower: ×2.8 (Event Horizon ×4.3, Prism Split ×2.5). Four Lenses did 71% of all damage in your Wave 88 run.'],
-  ['Fewer pile-ups', 'A wave never rolls more than two bad events at once.'],
-  ['Scan fix', 'Enemies that arrive while Sensor Sweep is running are revealed and Marked too, for its full time. Ability timers count game seconds, so at 3× speed they run out three times as fast in real time.'],
+const WHATS_NEW = { ver: '5.5.0', title: 'Entropy 5.5 · The Music Studio', items: [
+  ['Music Studio, rebuilt', 'Two tabs instead of one long page: Listen picks the music, Shape changes how it sounds. What is playing stays at the top the whole time.'],
+  ['Back, Pause, Repeat', 'Skipped a good one? Back plays it again. Pause stops the music; Repeat keeps the current piece going.'],
+  ['Vibes', 'Calm, Club, Retro or Everything in one tap, then add or remove genres. The ▶ on a genre plays it right away.'],
+  ['My Tracks', 'The heart keeps a piece, and it remembers your mixer and effects too. Tap a name to rename it. The share button copies a code that plays the same track for a friend (Add a code).'],
+  ['Shape', 'One tempo slider for the genre that is playing, with energy, the mixer and effects on one screen.'],
+  ['…and one more thing', 'Something is hidden in the Studio. Try tapping the visualizer.'],
+  ['A new hangar sky (5.4.2)', 'The launch screen is redrawn: a Lorenz attractor, the classic picture of chaos, turns over a drifting nebula with comets, stars and the odd meteor.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come

@@ -596,6 +596,7 @@ const SFX = (() => {
     let cfg = JSON.parse(JSON.stringify(DEF));
     let P = null, lastG = '', lastF = '', bar = 0, s16 = 0, forceNext = null, favIdx = 0, tempoNow = 0, EV = null;
     const pieceLog = [];
+    let hist = [], rep = false, paused = false, editing = false; // v5.5: Back, Repeat, Pause, composer editing (session only)
     const live = () => cfg.custom ? cfg : Object.assign({}, DEF, { calmBpm: cfg.calmBpm, favs: cfg.favs });
     // effective energy: the Energy knob, pushed by the battle as far as Follow allows
     const effE = () => { const c = live(); return Math.max(0, Math.min(1, c.energy + c.follow * (battle - 0.4) * 0.85)); };
@@ -621,20 +622,28 @@ const SFX = (() => {
       const S = recipe(g, f), G0 = GENRES[g];
       let mode = pick(S.modes);
       if (!force && mood === 'boss' && (mode === 'ionian' || mode === 'lydian' || mode === 'mixolydian')) mode = 'aeolian';
-      const loop = pick(S.loops), root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)), name = pick(ADJ) + ' ' + pick(NOUN);
+      const loop = pick(S.loops), root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
+      if (force && force.name) name = String(force.name).slice(0, 32); // renamed or composed tracks keep their own name
       lastG = g; lastF = f;
       P = { g, f, S, G0, seed, name, mode, scale: MODES[mode], loop, root, bar: 0,
         swing: S.swing, motifs: null, bassPat: null, keysPat: null, gatePat: pick(['xx.xx.x.xx.xx.x.', 'x.xxx.xxx.xxx.x.', 'xxx.xx.xxx.xx.x.', 'x.x.xx.xx.x.xx.x']),
         acc: [], lastChordV: null, form: makeForm(S.form), stabShape: pick([[0, 3, 7, 10], [0, 3, 7, 10, 14], [0, 3, 10, 14], [0, 7, 10, 15]]), drop: {} };
       P.motifs = [makeMotif(S.lead), makeMotif(S.lead)];
       P.bassPat = makeBass(S.bass); P.keysPat = makeKeys(S.keys); P.dense = {};
+      if (force && force.comp) applyComp(P, force.comp);
+      if (force && force.snd) loadSnd(force.snd, g);
       P.bpm = pieceBpm(); P.spb = 60 / P.bpm; tempoNow = 0;
       applyGenreMix(true);
       pieceLog.push({ name, genre: g, flav: f, mode, root, bpm: Math.round(P.bpm), t: +(nextT || 0).toFixed(1), e: +effE().toFixed(2) });
       if (pieceLog.length > 60) pieceLog.shift();
-      bar = 0; s16 = 0;
+      hist.push(specOf()); if (hist.length > 40) hist.shift();
+      bar = force && force.start ? force.start : 0; s16 = 0;
     }
+    const specOf = () => { const o = { seed: P.seed, genre: P.g, flav: P.f, name: P.name }; if (P.comp) o.comp = P.comp; return o; };
+    // what plays after this piece: a queued pick, the same piece again (Repeat, or the composer looping its draft), or a new one
+    const nextSpec = () => forceNext || (editing && P.comp ? Object.assign(specOf(), { start: 8 }) : rep ? specOf() : null);
     function pieceBpm() {
+      if (P.comp && P.comp.bpm) return Math.max(50, Math.min(200, +P.comp.bpm));
       const c = live(), G0 = GENRES[P.g], base = cfg.custom ? (c.bpm[P.g] || G0.bpm[1]) : G0.bpm[1] * (c.calmBpm || 72) / 72;
       return Math.max(G0.bpm[0] * 0.85, Math.min(G0.bpm[2] * 1.1, base * (P.S.bpmX || 1)));
     }
@@ -940,7 +949,7 @@ const SFX = (() => {
       wowD.connect(cleanMix); crushWS.connect(crushMix); cleanMix.connect(toneLP); crushMix.connect(toneLP); // the crusher is only patched in when Tape is high (CPU)
       comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 2.5; comp.knee.value = 12; comp.attack.value = 0.015; comp.release.value = 0.25;
       outAn = ctx.createAnalyser(); outAn.fftSize = 256; outAn.smoothingTimeConstant = 0.75;
-      trimG = gainN(1, comp); toneLP.connect(toneHS); toneHS.connect(trimG); comp.connect(synthOut()); comp.connect(outAn);
+      pauseG = gainN(paused ? 0 : 1, comp); trimG = gainN(1, pauseG); toneLP.connect(toneHS); toneHS.connect(trimG); comp.connect(synthOut()); comp.connect(outAn); // v5.5: pauseG mutes the music (Studio Pause)
       revSend = ctx.createGain(); revRet = gainN(0.5, toneLP);
       revA = ctx.createConvolver(); revB = ctx.createConvolver(); revAG = gainN(1, revRet); revBG = gainN(0, revRet); revA.connect(revAG); revB.connect(revBG);
       revHP = lp(200, 0.7, null, 'highpass'); revSend.connect(revHP); revHP.connect(revA); revA.buffer = impulse(3, 0.25); // only the active reverb is fed (CPU)
@@ -961,7 +970,7 @@ const SFX = (() => {
       const cr = ctx.createBufferSource(); cr.buffer = vb; cr.loop = true; vinylG = gainN(0); cr.connect(lp(2500, 0.5, vinylG, 'highpass')); vinylG.connect(toneLP); cr.start();
       const hs = ctx.createBufferSource(); hs.buffer = noiseBuf; hs.loop = true; hissG = gainN(0); hs.connect(lp(5000, 0.4, hissG, 'bandpass')); hissG.connect(toneLP); hs.start();
     }
-    let P_flG = null, sweepLP = null, trimG = null, toneHS = null, revHP = null, gateCv = null, crushOn = false, gateOn = false;
+    let P_flG = null, sweepLP = null, trimG = null, pauseG = null, toneHS = null, revHP = null, gateCv = null, crushOn = false, gateOn = false;
     function applyGenreMix(newGenre) {
       if (!mIn || !P) return;
       const c = live(), M = P.S.mix, t = ctx.currentTime, k = (x, d, span) => fxK(x, d, span);
@@ -1000,7 +1009,7 @@ const SFX = (() => {
     const lvl = (thr) => { const E = Math.max(0, effE() + P.form[Math.floor(bar / 8) % 4].d); return E >= thr ? Math.min(1, 0.55 + (E - thr) * 1.5) : 0; };
 
     function scheduleStep(t) {
-      if (P.skip && s16 === 0) { newPiece(forceNext); forceNext = null; return scheduleStep(t); }
+      if (P.skip && s16 === 0) { newPiece(nextSpec()); forceNext = null; return scheduleStep(t); }
       const S = P.S, sp16 = P.spb / 4, phIdx = Math.floor(bar / 8) % 4, ph = P.form[phIdx], barInPh = bar % 8, lastBarOfPh = barInPh === 7;
       const ch = chordAt(bar), swingOff = (s16 % 2 === 1) ? (S.swing - 0.5) * 2 * sp16 : 0, hum = () => S.human ? (R() - 0.5) * S.human / 1000 : 0;
       const tt = t + swingOff;
@@ -1110,8 +1119,8 @@ const SFX = (() => {
       s16++;
       if (s16 >= 16) {
         s16 = 0; bar++;
-        if (bar % 8 === 0 && bar < 32 && chance(0.6)) P.motifs[0] = varyMotif(P.motifs[0]);
-        if (bar >= 32) { newPiece(forceNext); forceNext = null; }
+        if (bar % 8 === 0 && bar < 32 && !P.fixedMel && chance(0.6)) P.motifs[0] = varyMotif(P.motifs[0]);
+        if (bar >= 32) { newPiece(nextSpec()); forceNext = null; }
       }
     }
     const AMB_LOOPS = [{ per: 19.7, d: 0 }, { per: 23.5, d: 2 }, { per: 25.9, d: 4 }, { per: 29.9, d: 7 }, { per: 31.3, d: 9 }];
@@ -1125,9 +1134,68 @@ const SFX = (() => {
       if (!ctx || !P) return;
       battle += (targetB - battle) * 0.04;
       if (nextT < ctx.currentTime - 0.4) nextT = ctx.currentTime + 0.05;
+      if (paused) return;
       const until = (horizon !== undefined ? horizon : ctx.currentTime + 0.3);
       while (nextT < until) { const t = nextT; scheduleStep(t); nextT += liveSpb() / 4; }
     }
+    // ---------------- v5.5 composer: a piece whose parts are chosen instead of rolled ----------------
+    // A comp is plain data (it travels in saved tracks and share codes): genre + flavour (the sound kit and arrangement), mode,
+    // key (pitch class), chord loop, 16-step drum rows, bass and lead style, a melody (16 steps of scale steps above the chord
+    // root, so it follows the chords) or a melody seed for an automatic one, and a tempo.
+    const MOODS = [['ionian', 'Bright'], ['lydian', 'Dreamy'], ['mixolydian', 'Bluesy'], ['dorian', 'Soulful'], ['aeolian', 'Moody'], ['phrygian', 'Dark'], ['harmonic', 'Exotic']];
+    const BASSES = [['sub', 'long', 'Sub'], ['upright', 'lofi', 'Upright'], ['dub', 'dubby', 'Dub'], ['sawoct', 'octave', 'Octaves'], ['sub', 'deep', 'Deep'], ['sawoct', 'disco', 'Disco'],
+      ['organ', 'organ', 'Organ'], ['sub', 'rumble', 'Rumble'], ['acid', 'acid', 'Acid 303'], ['saw', 'rolling', 'Rolling'], ['saw', 'offbeat', 'Offbeat'], ['sub', 'twostep', 'Two-step'],
+      ['reese', 'reese', 'Reese'], ['tri', 'chip', 'Chip'], ['dub', 'dub', 'Dub roots']];
+    const LEADS = [['none', 'None'], ['bell', 'Bell', 'sparse'], ['flute', 'Flute', 'sparse'], ['piano', 'Piano', 'riff'], ['theremin', 'Theremin', 'long'], ['saw', 'Saw', 'anthem'],
+      ['supersaw', 'Supersaw', 'trance'], ['bleep', 'Bleep', 'bleep'], ['chip', 'Chip', 'chip'], ['melodica', 'Melodica', 'call'], ['glass', 'Glass', 'sparse']];
+    const DRUM_ROWS = [['K', 'Kick', 9], ['S', 'Snare', 9], ['C', 'Clap', 8], ['H', 'Hat', 6], ['O', 'Open hat', 7], ['R', 'Rim', 6], ['P', 'Shaker', 4], ['D', 'Ride', 5]];
+    function drumsFor(g, f) { const d = recipe(g, f).drums, o = {}; for (const [k] of DRUM_ROWS) o[k] = (d[k] || '').slice(0, 16).padEnd(16, '0'); return o; }
+    function loopsFor(g) { const seen = new Set(), out = []; for (const F of Object.values(GENRES[g].flavours)) for (const L0 of F.loops || []) { const k = JSON.stringify(L0); if (!seen.has(k)) { seen.add(k); out.push(L0); } } return out; }
+    function numerals(degs, mode, q) { // roman numerals for a chord loop in a mode (upper case = major)
+      const sc = MODES[mode] || MODES.aeolian, R0 = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+      return degs.map((d, i) => { const dd = ((d % 7) + 7) % 7, third = (sc[(dd + 2) % 7] - sc[dd] + 12) % 12, fifth = (sc[(dd + 4) % 7] - sc[dd] + 12) % 12, qq = q && q[i];
+        const minor = qq ? /^m/.test(qq) && !/^M/.test(qq) : third === 3; let r = minor ? R0[dd].toLowerCase() : R0[dd]; if (!qq && fifth === 6) r += '°'; return r; }).join(' · ');
+    }
+    function melMotif(mel) { // 16 steps (null or a scale step) into the engine's 2-bar motif; each note lasts until the next
+      const on = []; for (let i = 0; i < 16; i++) if (mel[i] !== null && mel[i] !== undefined) on.push(i);
+      const out = []; for (let h = 0; h < 2; h++) on.forEach((st, j) => { const nx = j + 1 < on.length ? on[j + 1] : on[0] + 16; out.push({ st: st + 16 * h, d: +mel[st], len: Math.min(4, Math.max(1, nx - st)) }); });
+      return out.length ? out : [{ st: 0, d: 0, len: 4 }];
+    }
+    function applyComp(p, cp) {
+      const S = Object.assign({}, p.S); p.S = S; p.comp = JSON.parse(JSON.stringify(cp));
+      if (MODES[cp.mode]) { p.mode = cp.mode; p.scale = MODES[cp.mode]; }
+      if (cp.key !== undefined && cp.key !== null && cp.key >= 0) p.root = S.keyR[0] + ((((cp.key | 0) - S.keyR[0]) % 12) + 12) % 12;
+      if (cp.loop && Array.isArray(cp.loop.degs) && cp.loop.degs.length) p.loop = { degs: cp.loop.degs.slice(0, 8).map(x => x | 0), q: (cp.loop.q || []).slice(0, 8), bars: Math.max(1, Math.min(8, cp.loop.bars | 0 || 1)) };
+      if (cp.drums) { S.drums = {}; for (const k in cp.drums) if (/^[KSCHORDP]$/.test(k) && typeof cp.drums[k] === 'string') S.drums[k] = cp.drums[k].replace(/[^0-9]/g, '0').slice(0, 32); S.halftime = 0; }
+      const r0 = R; R = mulberry32((cp.melSeed >>> 0) || 7); // the automatic melody and bassline come from the comp's own seed
+      if (Array.isArray(cp.bass) && cp.bass[0]) S.bass = Object.assign({ lv: 0.1 }, S.bass || {}, { kind: cp.bass[0], line: cp.bass[1] });
+      p.bassPat = makeBass(S.bass);
+      const LD = LEADS.find(x => x[0] === cp.lead);
+      if (cp.lead === 'none') S.lead = null;
+      else if (LD) S.lead = Object.assign({ scale: 'mode', oct: 74 }, S.lead || {}, { kind: LD[0], grammar: LD[2], lv: Math.min((S.lead && S.lead.lv) || 0.3, 0.25), duty: LD[0] === 'chip' ? 0.25 : (S.lead && S.lead.duty) });
+      else if (S.lead) S.lead = Object.assign({}, S.lead, { lv: Math.min(S.lead.lv, 0.25) });
+      const mel = Array.isArray(cp.mel) && cp.mel.some(x => x !== null && x !== undefined) ? cp.mel : null;
+      p.fixedMel = 0; if (S.lead) { if (mel) { const m = melMotif(mel); p.motifs = [m, m]; p.fixedMel = 1; } else p.motifs = [makeMotif(S.lead), makeMotif(S.lead)]; }
+      R = r0;
+    }
+    function compFromPiece() {
+      if (!P) return null;
+      return { v: 1, genre: P.g, flav: P.f, seed: (Math.random() * 4294967296) >>> 0, name: P.name, mode: P.mode, key: P.root % 12,
+        loop: { degs: P.loop.degs.slice(), q: (P.loop.q || []).slice(), bars: P.loop.bars || 1 }, drums: P.comp && P.comp.drums ? Object.assign({}, P.comp.drums) : drumsFor(P.g, P.f),
+        bass: P.S.bass ? [P.S.bass.kind, P.S.bass.line] : null, lead: P.S.lead ? P.S.lead.kind : 'none', mel: P.comp && P.comp.mel ? P.comp.mel.slice() : null,
+        melSeed: (Math.random() * 4294967296) >>> 0, bpm: Math.round(P.bpm) };
+    }
+    // a saved track remembers the sound it was saved with; playing it brings that sound back
+    function snapshot() { const c = live(); return { energy: c.energy, follow: c.follow, mix: Object.assign({}, c.mix), mute: Object.assign({}, c.mute || {}), fx: Object.assign({}, c.fx), bpm: cfg.custom && P ? c.bpm[P.g] : undefined }; }
+    function loadSnd(sn, g) {
+      if (!cfg.custom) { const D = JSON.parse(JSON.stringify(DEF)); Object.assign(cfg, { genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx }); cfg.custom = true; }
+      for (const k of ['energy', 'follow']) if (typeof sn[k] === 'number') cfg[k] = Math.max(0, Math.min(1, sn[k]));
+      if (sn.mix) Object.assign(cfg.mix, sn.mix); if (sn.fx) Object.assign(cfg.fx, sn.fx); cfg.mute = Object.assign({}, sn.mute || {});
+      if (sn.bpm && g) cfg.bpm[g] = sn.bpm;
+      sndGen++;
+    }
+    let sndGen = 0;
+    const sameComp = (a, b) => !a === !b && (!a || JSON.stringify(a) === JSON.stringify(b));
     function start() {
       if (running || !ctx) return; running = true;
       if (!mIn) busFor();
@@ -1159,8 +1227,31 @@ const SFX = (() => {
       },
       apply() { applyGenreMix(false); if (P) P.bpm = pieceBpm(); },
       skip(force) { if (!P) return; forceNext = force || null; P.skip = true; },
-      save() { if (!P) return null; if (cfg.favs.some(f => f.seed === P.seed)) return null; const f = { seed: P.seed, genre: P.g, flav: P.f, name: P.name, at: Date.now() }; cfg.favs.unshift(f); if (cfg.favs.length > 60) cfg.favs.pop(); return f; },
-      isSaved() { return !!(P && cfg.favs.some(f => f.seed === P.seed)); },
+      // v5.5: Back to the last piece, Repeat, Pause; tracks remember their sound; composed pieces
+      back() { if (!P || hist.length < 2) return null; hist.pop(); const prev = hist.pop(); forceNext = prev; P.skip = true; return prev.name; },
+      get canBack() { return hist.length >= 2; },
+      get repeat() { return rep; }, set repeat(v) { rep = !!v; },
+      get paused() { return paused; },
+      setPaused(v) { paused = !!v; if (pauseG && ctx) pauseG.gain.setTargetAtTime(paused ? 0 : 1, ctx.currentTime, 0.06); },
+      get editing() { return editing; }, set editing(v) { editing = !!v; },
+      get sndGen() { return sndGen; },
+      setName(n) { if (P && n) { P.name = String(n).slice(0, 32); if (hist.length) hist[hist.length - 1].name = P.name; } },
+      save(extra) {
+        if (!P) return null; if (cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp))) return null;
+        const f = { seed: P.seed, genre: P.g, flav: P.f, name: (extra && extra.name) || P.name, at: Date.now(), snd: snapshot() }; if (P.comp) f.comp = JSON.parse(JSON.stringify(P.comp));
+        cfg.favs.unshift(f); if (cfg.favs.length > 80) cfg.favs.pop(); return f;
+      },
+      saveComp(cp) { const f = { seed: cp.seed >>> 0, genre: cp.genre, flav: cp.flav, name: cp.name || 'My Track', at: Date.now(), snd: snapshot(), comp: JSON.parse(JSON.stringify(cp)) }; cfg.favs.unshift(f); if (cfg.favs.length > 80) cfg.favs.pop(); return f; },
+      unsave() { if (!P) return false; const n = cfg.favs.length; cfg.favs = cfg.favs.filter(f => !(f.seed === P.seed && sameComp(f.comp, P.comp))); return cfg.favs.length < n; },
+      isSaved() { return !!(P && cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp))); },
+      addTrack(f) { if (!f || !GENRES[f.genre] || !GENRES[f.genre].flavours[f.flav]) return null; const t = { seed: f.seed >>> 0, genre: f.genre, flav: f.flav, name: String(f.name || 'Shared Track').slice(0, 32), at: Date.now() }; if (f.snd) t.snd = f.snd; if (f.comp) t.comp = f.comp; cfg.favs.unshift(t); if (cfg.favs.length > 80) cfg.favs.pop(); return t; },
+      compose(cp) { // play a comp: edits to the piece already playing apply at once; a new genre or flavour starts it at the next bar
+        if (!cp || !GENRES[cp.genre] || !GENRES[cp.genre].flavours[cp.flav]) return null;
+        if (P && P.comp && P.g === cp.genre && P.f === cp.flav && !P.skip) { applyComp(P, cp); P.seed = cp.seed >>> 0; P.name = cp.name || P.name; P.bpm = pieceBpm(); applyGenreMix(false); return 'live'; }
+        forceNext = { genre: cp.genre, flav: cp.flav, seed: cp.seed >>> 0, name: cp.name, comp: cp, start: editing ? 8 : 0 }; if (P) P.skip = true; return 'next';
+      },
+      compFromPiece, drumsFor, loopsFor, numerals, MOODS, BASSES, LEADS, DRUM_ROWS, NOTE,
+      autoMel() { if (!P || !P.motifs || !P.motifs[0]) return null; const o = Array(16).fill(null); for (const n of P.motifs[0]) if (n.st < 16) { let d = n.d; while (d < 0) d += 7; while (d > 7) d -= 7; o[n.st] = d; } return o; },
       meters() { const o = {}; for (const c of CHN) o[c] = meterOf(AN[c]); return o; },
       spectrum(arr) { if (outAn) outAn.getByteFrequencyData(arr); },
       get energyNow() { return effE(); },
@@ -1169,7 +1260,7 @@ const SFX = (() => {
       set debug(v) { EV = v ? [] : null; }, get events() { return EV; },
       renderAhead(seconds, curve) { start(); const step = 0.1; for (let t = 0; t < seconds; t += step) { if (curve) targetB = curve(t / seconds); battle += (targetB - battle) * 0.3; const h = t + step; while (nextT < h) { const tt = nextT; scheduleStep(tt); nextT += liveSpb() / 4; } } },
       get log() { return pieceLog; },
-      get piece() { if (!P) return null; const ph = P.form[Math.floor(bar / 8) % 4]; return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: 32, seed: P.seed, saved: cfg.favs.some(f => f.seed === P.seed), energy: +effE().toFixed(2), section: ph.brk ? (ph.build ? 'Breakdown · build' : 'Breakdown') : ph.drop ? 'Drop' : ph.version ? 'Dub version' : ['Intro', 'Groove', 'Bridge', 'Return'][Math.floor(bar / 8) % 4] }; },
+      get piece() { if (!P) return null; const ph = P.form[Math.floor(bar / 8) % 4]; return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: 32, step: s16, seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.brk ? (ph.build ? 'Breakdown · build' : 'Breakdown') : ph.drop ? 'Drop' : ph.version ? 'Dub version' : ['Intro', 'Groove', 'Bridge', 'Return'][Math.floor(bar / 8) % 4] }; },
     };
   })();
 

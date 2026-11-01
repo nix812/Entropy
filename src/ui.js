@@ -21,7 +21,15 @@ const ICONS = {
   gear: ['...#.#...', '.#######.', '.##...##.', '##.....##', '.#..#..#.', '##.....##', '.##...##.', '.#######.', '...#.#...'],
   overdrive: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#.#.#.#.#', '#.#...#.#', '#..###..#', '.#.....#.', '..#####..'],
   music: ['...######', '...######', '...#....#', '...#....#', '...#....#', '.###..###', '####.####', '####.####', '.##...##.'],
-  fit: ['###...###', '#.......#', '#.......#', '.........', '.........', '.........', '#.......#', '#.......#', '###...###'],
+  fit: ['###...###', '#.......#', '#.......#', '.........', '.........', '.........', '#.......#', '#.......#', '###...###'],  // v5.5 Music Studio transport
+  play: ['.#.......', '.##......', '.###.....', '.####....', '.#####...', '.####....', '.###.....', '.##......', '.#.......'],
+  prev: ['..........', '#....#...#', '#...##..##', '#..###.###', '#.########', '#..###.###', '#...##..##', '#....#...#', '..........'],
+  repeat: ['.....#...', '.#######.', '#....#..#', '#.......#', '#.......#', '#.......#', '#..#....#', '.#######.', '...#.....'],
+  heart: ['.........', '.##...##.', '####.####', '#########', '#########', '.#######.', '..#####..', '...###...', '....#....'],
+  heartO: ['.........', '.##...##.', '#..#.#..#', '#...#...#', '#.......#', '.#.....#.', '..#...#..', '...#.#...', '....#....'],
+  share: ['....#....', '...###...', '..#.#.#..', '....#....', '....#....', '#...#...#', '#.......#', '#.......#', '#########'],
+  edit: ['......##.', '.....#..#', '....#..#.', '...#..#..', '..#..#...', '.#..#....', '#..#.....', '##.......', '###......'],
+  dice: ['#########', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#########'],
 };
 function svgIcon(name, size) {
   const rows = ICONS[name]; if (!rows) return '';
@@ -1574,64 +1582,177 @@ const UI = (() => {
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
     const bp = $('#setBpm'); if (bp) { bp.oninput = () => { PROF.settings.bpm = +bp.value; $('#bpmV').textContent = bp.value + ' BPM'; SFX.music.setBaseBpm(+bp.value); }; bp.onchange = () => Save.save(); }
   }
-  // ---------- v4.8 Music Studio: ten genres, shaped live ----------
-  // Default plays the calm mix (Ambient, Lo-fi, Trip Hop) and follows the battle. Touching any control switches to Custom,
-  // starting from the default values, so nobody has to touch it and anybody can. Everything persists in PROF.settings.studio
-  // (it is SFX.music.config). FX knobs are relative to the genre: the middle tick is the genre's own sound.
-  let studioRaf = 0, studioBack = null;
+  // ---------- v5.5 Music Studio: Listen / Shape / Compose, with the piece always in view ----------
+  // The now-playing bar (name, visualizer, Back / Pause / Skip / Repeat / Keep) sits in the card's header so it never scrolls
+  // away. Listen: vibe presets, genres, My Tracks (rename, share codes, delete). Shape: energy, tempo, mixer, effects.
+  // Compose (hidden; tap the visualizer five times): build a track from parts. Everything persists in PROF.settings.studio
+  // (it is SFX.music.config): custom genres/mix, favs (each remembers its sound, composed ones carry their comp), draft, composer.
+  let studioRaf = 0, studioBack = null, stTab = 'listen', stEdit = -1, stDelArm = -1, stPaste = false, stGrid = 'drums', stTaps = [], stSig = '', stStep = -1, stSnd = -1;
   const ST_FX = [['reverb', 'Reverb'], ['echo', 'Echo'], ['tone', 'Tone'], ['tape', 'Tape & Vinyl'], ['pump', 'Pump']];
   const ST_CH = [['pads', 'Pads'], ['keys', 'Keys'], ['arp', 'Arps'], ['bass', 'Bass'], ['drums', 'Drums'], ['lead', 'Lead']];
+  const ST_VIBES = [['calm', 'Calm', ['ambient', 'lofi', 'downtempo']], ['club', 'Club', ['house', 'techno', 'trance', 'dnb']], ['retro', 'Retro', ['synthwave', 'chiptune']], ['all', 'Everything', null]];
   const energyWord = v => v < 0.15 ? 'Still' : v < 0.4 ? 'Chill' : v < 0.7 ? 'Groove' : 'Peak';
   const fxWord = v => v < 0.02 ? 'Off' : Math.abs(v - 0.5) < 0.03 ? 'Genre' : (v < 0.5 ? '−' : '+') + Math.round(Math.abs(v - 0.5) * 200) + '%';
   const studioCfg = () => SFX.music.config;
-  function studioTouch() { const c = studioCfg(); if (!c.custom) { const D = JSON.parse(JSON.stringify(SFX.music.DEF)); Object.assign(c, { genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx, favOnly: false }); c.custom = true; /* what you see in Default is what you start from */ SFX.music.apply(); const m = $('#stMode'); if (m) m.outerHTML = studioModeHTML(); const d = $('#stDesc'); if (d) d.textContent = studioDesc(); } }
-  const studioModeHTML = () => { const c = studioCfg(); return `<div class="chips" id="stMode"><button class="chip ${c.custom ? '' : 'on'}" data-act="stMode" data-v="0">Default</button><button class="chip ${c.custom ? 'on' : ''}" data-act="stMode" data-v="1">Custom</button></div>`; };
-  const studioDesc = () => studioCfg().custom ? 'Custom: your mix. Every change applies live, mid-piece.' : 'Default: the calm mix of Ambient, Lo-fi and Trip Hop, following the battle. Touch anything to make it yours.';
+  function studioTouch() { const c = studioCfg(); if (!c.custom) { const D = JSON.parse(JSON.stringify(SFX.music.DEF)); Object.assign(c, { genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx, favOnly: false }); c.custom = true; SFX.music.apply(); } }
   function studioSave() { PROF.settings.studio = studioCfg(); Save.save(); }
+  const stGenres = () => { const c = studioCfg(); return c.custom ? c.genres : SFX.music.DEF.genres; };
+  const sameSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+  // ---- track share codes: TRACK1 (deflate-raw) or TRACK0 (plain), base64 JSON of the track ----
+  async function trackCode(f) {
+    const o = { s: f.seed >>> 0, g: f.genre, f: f.flav, n: f.name }; if (f.snd) o.d = f.snd; if (f.comp) o.c = f.comp;
+    const raw = new TextEncoder().encode(JSON.stringify(o));
+    try { if (typeof CompressionStream !== 'undefined') return 'TRACK1:' + b64(await pipe(raw, CompressionStream)); } catch (e) {}
+    return 'TRACK0:' + b64(raw);
+  }
+  async function readTrackCode(code) {
+    try {
+      const m = /^TRACK([01]):(.+)$/s.exec((code || '').trim()); if (!m) return null;
+      let u = unb64(m[2].replace(/\s+/g, '')); if (m[1] === '1') u = await pipe(u, DecompressionStream);
+      const o = JSON.parse(new TextDecoder().decode(u)), M = SFX.music;
+      if (!o || !M.GENRES[o.g] || !M.GENRES[o.g].flavours[o.f]) return null;
+      return { seed: o.s >>> 0, genre: o.g, flav: o.f, name: String(o.n || 'Shared Track').slice(0, 32), snd: o.d && typeof o.d === 'object' ? o.d : undefined, comp: o.c && typeof o.c === 'object' ? o.c : undefined };
+    } catch (e) { return null; }
+  }
+  // ---- the now-playing bar ----
+  function stNowHTML() {
+    const M = SFX.music, p = M.piece || {};
+    return `<div class="stnow">
+      <canvas id="stViz" width="160" height="48" data-act="stViz" aria-label="Visualizer"></canvas>
+      <div class="stinfo"><b id="stName">${esc(p.name || '…')}</b><span class="lbl" id="stGen">${esc((p.genreName || '') + (p.flavName ? ' · ' + p.flavName : ''))}${p.comp ? ' · composed' : ''}</span>
+        <span class="stmeta"><span id="stKey">${esc(p.key || '')} · ${p.now || p.bpm || ''} BPM</span><em id="stSec">${esc(p.section || '')}</em></span><div class="stbar"><i id="stBar"></i></div></div>
+      <div class="sttr">
+        <button class="stb" id="stBackB" data-act="stBack" aria-label="Previous piece" data-svg="prev"></button>
+        <button class="stb" id="stPauseB" data-act="stPause" aria-label="Pause music" data-svg="${M.paused ? 'play' : 'pause'}"></button>
+        <button class="stb" data-act="stSkip" aria-label="Next piece" data-svg="next"></button>
+        <button class="stb ${M.repeat ? 'on' : ''}" id="stRepB" data-act="stRepeat" aria-label="Repeat this piece" data-svg="repeat"></button>
+        <button class="stb keep ${p.saved ? 'on' : ''}" id="stKeepB" data-act="stKeep" aria-label="Keep this piece" data-svg="${p.saved ? 'heart' : 'heartO'}"></button>
+      </div></div>`;
+  }
+  // ---- Listen ----
+  function stListenHTML() {
+    const M = SFX.music, c = studioCfg(), G5 = M.GENRES, sel = stGenres(), p = M.piece || {}, tg = p.genre && G5[p.genre] ? p.genre : 'lofi';
+    const vibeOn = v => v[2] ? sameSet(sel, v[2]) && (v[0] !== 'calm' || true) : M.GENRE_IDS.every(g => sel.includes(g));
+    const favs = c.favs.map((f, i) => {
+      const G0 = G5[f.genre] || G5.lofi, sub = `${G0.short || G0.name} · ${M.flavName(f.genre, f.flav)}${f.comp ? ' · composed' : ''}`;
+      const nm = stEdit === i ? `<input class="stren" id="stRenIn" data-i="${i}" maxlength="24" value="${esc(f.name)}" aria-label="Track name">` : `<button class="stnm" data-act="stRen" data-v="${i}" aria-label="Rename"><b>${esc(f.name)}</b></button>`;
+      return `<div class="stfav" style="--c:${G0.col}"><div class="stft">${nm}<span class="dim">${esc(sub)}</span></div>
+        <button class="stb" data-act="stPlay" data-v="${i}" aria-label="Play" data-svg="play"></button>
+        ${f.comp && c.composer ? `<button class="stb" data-act="stEditT" data-v="${i}" aria-label="Edit in Composer" data-svg="edit"></button>` : ''}
+        <button class="stb" data-act="stShare" data-v="${i}" aria-label="Copy share code" data-svg="share"></button>
+        <button class="stb del ${stDelArm === i ? 'arm' : ''}" data-act="stDel" data-v="${i}" aria-label="Delete">${stDelArm === i ? 'Delete?' : '✕'}</button></div>`;
+    }).join('');
+    return `<div class="stlisten">
+      <div class="stcol">
+        <div class="lbl stl">Vibe</div>
+        <div class="stvibe">${ST_VIBES.map(v => `<button class="chip ${vibeOn(v) ? 'on' : ''}" data-act="stVibe" data-v="${v[0]}">${v[1]}</button>`).join('')}</div>
+        <div class="lbl stl">Genres <em class="dim">tap to add or remove · ▶ plays one now</em></div>
+        <div class="stgen">${M.GENRE_IDS.map(g => `<div class="gw ${sel.includes(g) ? 'on' : ''}" style="--c:${G5[g].col}"><button class="gch" data-act="stGenre" data-v="${g}">${esc(G5[g].short || G5[g].name)}</button><button class="gpl" data-act="stPlayG" data-v="${g}" aria-label="Play ${esc(G5[g].name)} now" data-svg="play"></button></div>`).join('')}</div>
+        <p class="note stblurb" id="stBlurb"><span style="color:${G5[tg].col}">${esc(G5[tg].name)}</span> ${esc(G5[tg].blurb.toLowerCase())}.</p>
+      </div>
+      <div class="stcol">
+        <div class="lbl stl">My Tracks <em class="dim">${c.favs.length ? c.favs.length + ' kept' : ''}</em></div>
+        <div class="strow">${c.favs.length ? `<button class="chip ${c.favOnly ? 'on' : ''}" data-act="stFavOnly">Only my tracks</button>` : ''}<button class="chip" data-act="stPaste">${stPaste ? 'Cancel' : 'Add a code'}</button></div>
+        ${stPaste ? `<div class="strow"><input id="stCode" class="stcode" placeholder="Paste a TRACK code" autocomplete="off" spellcheck="false"><button class="btn small" data-act="stCodeGo">Add</button></div>` : ''}
+        ${c.favs.length ? `<div class="stfavs">${favs}</div>` : '<p class="note">Tap the heart while a piece plays to keep it here. Kept tracks remember your sound settings, and you can share them as codes.</p>'}
+      </div></div>`;
+  }
+  // ---- Shape ----
+  function stShapeHTML() {
+    const M = SFX.music, c = studioCfg(), vis = c.custom ? c : Object.assign({}, M.DEF, { favs: c.favs }), p = M.piece || {}, G5 = M.GENRES, g = p.genre && G5[p.genre] ? p.genre : 'lofi';
+    const slider = (id, lab, v, min, max, step, out, mid, dis) => `<label class="st2"><span>${lab}</span><output id="${id}V">${out}</output><span class="rng${mid ? ' mid' : ''}"><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}" ${dis ? 'disabled' : ''}></span></label>`;
+    const bpm = p.comp ? p.bpm : (vis.bpm[g] || G5[g].bpm[1]);
+    return `<div class="stshape">
+      <div class="stcol">
+        <div class="lbl stl">Feel</div>
+        ${slider('stEnergy', 'Energy', vis.energy, 0, 1, 0.01, energyWord(vis.energy))}
+        ${slider('stFollow', 'Follow battle', vis.follow, 0, 1, 0.01, Math.round(vis.follow * 100) + '%')}
+        ${slider('stTempo', `Tempo · <span style="color:${G5[g].col}">${esc(p.comp ? 'composed' : G5[g].short || G5[g].name)}</span>`, bpm, G5[g].bpm[0], G5[g].bpm[2], 1, bpm + ' BPM', 0, p.comp)}
+        <p class="note sthint">Energy: how full the music is. Follow: how much the battle pushes it.${p.comp ? ' A composed track sets its tempo in Compose.' : ''}</p>
+        <button class="btn small" data-act="stReset">Reset sound</button>
+      </div>
+      <div class="stcol">
+        <div class="lbl stl">Mixer <em class="dim">tap a name to mute</em></div>
+        <div class="mixer">${ST_CH.map(([k, l]) => `<div class="fch" data-ch="${k}"><div class="fader" data-ch="${k}"><i class="fmeter"></i><i class="ffill" style="height:${Math.round((vis.mix[k] / 1.25) * 100)}%"></i><i class="fknob" style="bottom:${Math.round((vis.mix[k] / 1.25) * 100)}%"></i></div><button class="fmute ${vis.mute && vis.mute[k] ? 'm' : ''}" data-act="stMute" data-v="${k}">${l}</button></div>`).join('')}</div>
+      </div>
+      <div class="stcol">
+        <div class="lbl stl">Effects <em class="dim">middle = the genre's own</em></div>
+        ${ST_FX.map(([k, l]) => slider('stFx_' + k, l, vis.fx[k], 0, 1, 0.01, fxWord(vis.fx[k]), 1)).join('')}
+      </div></div>`;
+  }
+  // ---- Compose ----
+  const CP_EXTRA = [{ degs: [0, 4, 5, 3], q: [], bars: 1 }, { degs: [0, 5, 3, 4], q: [], bars: 1 }, { degs: [0, 3], q: [], bars: 2 }, { degs: [0], q: [], bars: 4 }, { degs: [0, 6, 5, 6], q: [], bars: 1 }, { degs: [1, 4, 0, 0], q: ['m7', '7', 'M7', 'M7'], bars: 1 }];
+  function cpLoops(g) { const M = SFX.music, out = M.loopsFor(g).slice(), seen = new Set(out.map(x => JSON.stringify(x))); for (const L0 of CP_EXTRA) if (!seen.has(JSON.stringify(L0))) out.push(L0); return out; }
+  function cpStyles() { const M = SFX.music, out = []; for (const g of M.GENRE_IDS) for (const f of Object.keys(M.GENRES[g].flavours)) out.push([g, f]); return out; }
+  function cpDefaults(cp) { // a style's own drums, bass, lead and tempo
+    const M = SFX.music, G0 = M.GENRES[cp.genre], F = G0.flavours[cp.flav] || {};
+    cp.drums = M.drumsFor(cp.genre, cp.flav);
+    const B = Object.assign({}, G0.bass || {}, F.bass || {}); cp.bass = B.kind ? [B.kind, B.line] : null;
+    const Ld = F.lead === null ? null : Object.assign({}, G0.lead || {}, F.lead || {}); cp.lead = Ld && Ld.kind ? Ld.kind : 'none';
+    cp.bpm = Math.round(G0.bpm[1] * (F.bpmX || 1));
+  }
+  function stComposeHTML() {
+    const M = SFX.music, c = studioCfg(), d = c.draft, G5 = M.GENRES;
+    if (!d) return `<div class="stcompose empty"><p class="note">Build your own track. You pick the style, mood, key, chords, drums, bass and melody; the arrangement (intro, groove, breakdown) stays automatic, so it always sounds like music.</p>
+      <div class="strow"><button class="btn primary" data-act="cpNew">Start from this piece</button></div></div>`;
+    const G0 = G5[d.genre], loops = cpLoops(d.genre), li = Math.max(0, loops.findIndex(L0 => JSON.stringify(L0.degs) === JSON.stringify(d.loop.degs) && (L0.bars || 1) === (d.loop.bars || 1)));
+    const mood = M.MOODS.find(m => m[0] === d.mode) || M.MOODS[4], bass = M.BASSES.find(b => d.bass && b[0] === d.bass[0] && b[1] === d.bass[1]), lead = M.LEADS.find(l => l[0] === d.lead) || M.LEADS[0];
+    const st = (k, lab, val, col) => `<div class="cpst"><span class="lbl">${lab}</span><button class="stb" data-act="cpStep" data-k="${k}" data-v="-1" aria-label="Previous ${lab}">◀</button><b ${col ? `style="color:${col}"` : ''}>${val}</b><button class="stb" data-act="cpStep" data-k="${k}" data-v="1" aria-label="Next ${lab}">▶</button></div>`;
+    return `<div class="stcompose">
+      <div class="cpleft">
+        <input id="cpName" maxlength="24" value="${esc(d.name || 'My Track')}" aria-label="Track name">
+        <div class="cpsteps">
+          ${st('style', 'Style', esc((G0.short || G0.name) + ' · ' + M.flavName(d.genre, d.flav)), G0.col)}
+          ${st('mood', 'Mood', mood[1])}
+          ${st('key', 'Key', M.NOTE[d.key % 12])}
+          ${st('bpm', 'Tempo', d.bpm + ' BPM')}
+          ${st('loop', 'Chords', esc(M.numerals(d.loop.degs, d.mode, d.loop.q)) + (d.loop.bars > 1 ? ` <small>×${d.loop.bars}</small>` : ''))}
+          ${st('bass', 'Bass', bass ? bass[2] : 'Style')}
+          ${st('lead', 'Lead', lead[1])}
+        </div>
+        <div class="strow"><button class="btn small" data-act="cpNew">Start over</button></div>
+      </div>
+      <div class="cpright">
+        <div class="strow cpgt"><button class="chip ${stGrid === 'drums' ? 'on' : ''}" data-act="cpGrid" data-v="drums">Drums</button><button class="chip ${stGrid === 'melody' ? 'on' : ''}" data-act="cpGrid" data-v="melody">Melody</button>
+          ${stGrid === 'melody' ? `<button class="chip" data-act="cpDice"><i data-svg="dice"></i>New</button>${d.mel ? '<button class="chip" data-act="cpMelClr">Auto</button>' : ''}` : '<button class="chip" data-act="cpDrumReset">Reset</button>'}
+          <button class="btn small primary cpsave" data-act="cpSave">Save</button></div>
+        <div id="cpGridBox">${cpGridHTML()}</div>
+        <p class="note sthint">${stGrid === 'melody' ? (d.mel ? 'Your melody. Rows are steps up the scale from each chord, so it follows the chords; 1 is the chord itself.' : 'The faint notes are an automatic melody. Tap the grid to make it yours, or roll a new one.') : 'Tap a step to switch a hit on or off. Breakdowns still drop the drums out.'}</p>
+      </div>
+    </div>`;
+  }
+  function cpAutoMel() { const M = SFX.music, p = M.piece; return p && p.comp && M.autoMel ? M.autoMel() : null; }
+  function cpGridHTML() {
+    const M = SFX.music, d = studioCfg().draft; if (!d) return '';
+    const head = `<div class="cprow cph"><span></span>${Array.from({ length: 16 }, (_, i) => `<i class="${i % 4 ? '' : 'b'}">${i % 4 ? '' : i / 4 + 1}</i>`).join('')}</div>`;
+    if (stGrid === 'drums') return `<div class="cpgrid drums">${head}${M.DRUM_ROWS.map(([k, lab]) => `<div class="cprow"><span>${lab.replace('Open hat', 'Open')}</span>${Array.from({ length: 16 }, (_, i) => { const v = +(d.drums[k] || '')[i] || 0; return `<button class="cell ${v ? 'on' : ''} ${i % 4 ? '' : 'b'}" style="--a:${v ? (0.35 + v / 15).toFixed(2) : 0}" data-act="cpCell" data-r="${k}" data-i="${i}" data-c="${i}" aria-label="${lab} step ${i + 1}"></button>`; }).join('')}</div>`).join('')}</div>`;
+    const mel = d.mel, ghost = mel ? null : cpAutoMel();
+    let rows = '';
+    for (let r = 7; r >= 0; r--) rows += `<div class="cprow"><span>${r + 1}</span>${Array.from({ length: 16 }, (_, i) => { const on = mel ? mel[i] === r : false, gh = !mel && ghost && ghost[i] === r; return `<button class="cell ${on ? 'on' : ''} ${gh ? 'gh' : ''} ${i % 4 ? '' : 'b'}" data-act="cpNote" data-r="${r}" data-i="${i}" data-c="${i}" aria-label="Step ${i + 1} note ${r + 1}"></button>`; }).join('')}</div>`;
+    return `<div class="cpgrid melody">${head}${rows}</div>`;
+  }
+  function cpApply(rerender) { // the draft changed: save it and hear it
+    const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose'; M.compose(c.draft);
+    if (rerender === 'grid') { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); } else if (rerender) openStudio();
+  }
+  // ---- the card ----
   function openStudio(from) {
-    SFX.init(); studioBack = from || studioBack;
+    SFX.init(); if (from) studioBack = from;
     if (G && !G.over) G.paused = true;
-    const M = SFX.music, c = M.config, G5 = M.GENRES, ids = M.GENRE_IDS, p = M.piece || {};
-    const vis = c.custom ? c : Object.assign({}, M.DEF, { favs: c.favs });
-    const sel = c.custom ? c.genres : M.DEF.genres, allOn = c.custom && ids.every(g => c.genres.includes(g));
-    const tg = p.genre && G5[p.genre] ? p.genre : 'lofi';
-    const slider = (id, lab, v, min, max, step, out, mid) => `<label class="set st"><span>${lab}</span><span class="rng${mid ? ' mid' : ''}"><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}"></span><output id="${id}V">${out}</output></label>`;
-    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2>${studioModeHTML()}<button class="x" data-act="stClose" aria-label="Close">✕</button></div>
-      <div class="stnow">
-        <canvas id="stViz" width="240" height="72"></canvas>
-        <div class="stinfo"><span class="lbl" id="stGen">${esc(p.genreName || '')} · ${esc(p.flavName || '')}</span><b id="stName">${esc(p.name || '…')}</b>
-          <span class="note" id="stKey">${esc(p.key || '')} · ${p.now || p.bpm || ''} BPM</span>
-          <div class="stbar"><i id="stBar"></i></div><span class="stsec"><em id="stSec">${esc(p.section || '')}</em><span>Energy now <i class="emeter"><i id="stE"></i></i></span></span></div>
-        <div class="stbtns"><button class="btn small" data-act="stSkip">Skip<small>new piece</small></button><button class="btn small ${p.saved ? 'saved' : ''}" id="stSaveB" data-act="stSave">${p.saved ? '♥ Saved' : '♡ Save'}<small>keep this one</small></button></div>
-      </div>
-      <p class="note stdesc" id="stDesc">${studioDesc()}</p>
-      <div class="lbl stl">Genres <em class="dim">pick any mix; each piece is one genre, the next can be another</em></div>
-      <div class="stgen">${ids.map(g => `<button class="chip ${sel.includes(g) ? 'on' : ''}" style="--c:${G5[g].col}" data-act="stGenre" data-v="${g}"><b>${G5[g].short || G5[g].name}</b><small>${G5[g].bpm[1]}</small></button>`).join('')}<button class="chip ${allOn ? 'on' : ''}" data-act="stGenre" data-v="all"><b>Shuffle</b><small>all ten</small></button></div>
-      <p class="note stblurb" id="stBlurb"><span style="color:${G5[tg].col}">${esc(G5[tg].name)}</span> ${esc(G5[tg].blurb.toLowerCase())}. Flavours: ${Object.values(G5[tg].flavours).map(f => esc(f.name)).join(', ')}.</p>
-      <div class="stgrid">
-        <div class="stcol">
-          <div class="lbl stl">Feel</div>
-          ${slider('stEnergy', 'Energy', vis.energy, 0, 1, 0.01, energyWord(vis.energy))}
-          ${slider('stFollow', 'Follow Battle', vis.follow, 0, 1, 0.01, Math.round(vis.follow * 100) + '%')}
-          <p class="note sthint">Energy sets how full the music is, from bare pads to every layer, and picks calmer or harder flavours. Follow lets the battle push it up in big waves and back down between them.</p>
-          <div class="lbl stl">Tempo <em class="dim">for your genres; the battle still nudges it</em></div>
-          ${sel.map(g => slider('stBpm_' + g, `<span style="color:${G5[g].col}">${esc(G5[g].short || G5[g].name)}</span>`, vis.bpm[g] || G5[g].bpm[1], G5[g].bpm[0], G5[g].bpm[2], 1, (vis.bpm[g] || G5[g].bpm[1]) + ' BPM')).join('')}
-        </div>
-        <div class="stcol">
-          <div class="lbl stl">Mixer <em class="dim">drag a fader, tap a name to mute</em></div>
-          <div class="mixer">${ST_CH.map(([k, l]) => `<div class="fch" data-ch="${k}"><div class="fader" data-ch="${k}"><i class="fmeter"></i><i class="ffill" style="height:${Math.round((vis.mix[k] / 1.25) * 100)}%"></i><i class="fknob" style="bottom:${Math.round((vis.mix[k] / 1.25) * 100)}%"></i></div><button class="fmute ${vis.mute && vis.mute[k] ? 'm' : ''}" data-act="stMute" data-v="${k}">${l}</button></div>`).join('')}</div>
-          <div class="lbl stl">Effects <em class="dim">the middle tick is the genre's own sound</em></div>
-          ${ST_FX.map(([k, l]) => slider('stFx_' + k, l, vis.fx[k], 0, 1, 0.01, fxWord(vis.fx[k]), 1)).join('')}
-        </div>
-      </div>
-      <div class="lbl stl">Saved Pieces <em class="dim">${c.favs.length ? c.favs.length + ' kept' : 'tap Save while one plays'}</em></div>
-      ${c.favs.length ? `<div class="set"><span>Play saved pieces only</span><button class="chip ${c.favOnly ? 'on' : ''}" data-act="stFavOnly">${c.favOnly ? 'On' : 'Off'}</button></div>
-      <div class="stfavs">${c.favs.map((f, i) => `<div class="stfav" style="--c:${(G5[f.genre] || G5.lofi).col}"><b>${esc(f.name)}</b><span class="dim">${esc((G5[f.genre] || G5.lofi).name)} · ${esc(M.flavName(f.genre, f.flav))}</span><button class="btn small" data-act="stPlay" data-v="${i}">Play</button><button class="btn small danger" data-act="stDel" data-v="${i}" aria-label="Remove">✕</button></div>`).join('')}</div>` : ''}
-      <div class="foot"><button class="btn" data-act="stReset">Reset Studio</button><button class="btn primary" data-act="stClose">Done</button></div></div>`, 'studio');
+    const M = SFX.music, c = M.config, p = M.piece || {}, G5 = M.GENRES, tg = p.genre && G5[p.genre] ? p.genre : 'lofi';
+    if (stTab === 'compose' && !c.composer) stTab = 'listen';
+    const tabs = [['listen', 'Listen'], ['shape', 'Shape']].concat(c.composer ? [['compose', 'Compose']] : []);
+    const prev = $('#modal .card.studio .cbody'), keep = prev ? prev.scrollTop : 0, wasTab = prev ? prev.dataset.tab : '';
+    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2><div class="chips sttabs">${tabs.map(([k, l]) => `<button class="chip ${stTab === k ? 'on' : ''}" data-act="stTab" data-v="${k}">${l}</button>`).join('')}</div><button class="x" data-act="stClose" aria-label="Close">✕</button>
+      ${stNowHTML()}</div>
+      ${stTab === 'shape' ? stShapeHTML() : stTab === 'compose' ? stComposeHTML() : stListenHTML()}</div>`, 'studio');
+    const body = $('#modal .card.studio .cbody'); if (body) { body.dataset.tab = stTab; if (wasTab === stTab) body.scrollTop = keep; }
+    M.editing = stTab === 'compose' && !!c.draft;
+    stSig = ''; stStep = -1; stSnd = M.sndGen;
     const bind = (id, fn, label) => { const el = $('#' + id); if (!el) return; el.oninput = () => { studioTouch(); fn(+el.value); const v = $('#' + id + 'V'); if (v && label) v.textContent = label(+el.value); SFX.music.apply(); }; el.onchange = studioSave; };
     bind('stEnergy', v => c.energy = v, energyWord);
     bind('stFollow', v => c.follow = v, v => Math.round(v * 100) + '%');
-    for (const g of ids) bind('stBpm_' + g, v => c.bpm[g] = v, v => v + ' BPM');
+    bind('stTempo', v => { const g = (M.piece || {}).genre; if (g) c.bpm[g] = v; }, v => v + ' BPM');
     for (const [k] of ST_FX) bind('stFx_' + k, v => c.fx[k] = v, fxWord);
     for (const f of document.querySelectorAll('#modal .fader')) {
       const k = f.dataset.ch, set = ev => { const r = f.getBoundingClientRect(), v = clamp(1 - (ev.clientY - r.top) / r.height, 0, 1) * 1.25; studioTouch(); c.mix[k] = Math.round(v * 100) / 100; f.querySelector('.ffill').style.height = (v / 1.25 * 100) + '%'; f.querySelector('.fknob').style.bottom = (v / 1.25 * 100) + '%'; SFX.music.apply(); };
@@ -1639,6 +1760,9 @@ const UI = (() => {
       f.onpointerup = f.onpointercancel = () => { f.onpointermove = null; studioSave(); };
       f.ondblclick = () => { studioTouch(); c.mix[k] = 1; SFX.music.apply(); studioSave(); openStudio(); };
     }
+    const ren = $('#stRenIn'); if (ren) { ren.focus(); ren.select(); const done = () => { if (ren._done) return; ren._done = 1; const i = +ren.dataset.i, f = c.favs[i]; if (f && ren.value.trim()) { f.name = ren.value.trim().slice(0, 24); const p0 = SFX.music.piece; if (p0 && p0.seed === f.seed && !f.comp === !p0.comp) SFX.music.setName(f.name); } stEdit = -1; studioSave(); openStudio(); }; ren.onkeydown = e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') { stEdit = -1; openStudio(); } }; ren.onblur = () => setTimeout(done, 0); }
+    const nm = $('#cpName'); if (nm) nm.onchange = () => { if (c.draft) { c.draft.name = nm.value.trim().slice(0, 24) || 'My Track'; cpApply(false); } };
+    if (stTab === 'compose' && c.draft && !(p.comp && p.genre === c.draft.genre)) M.compose(c.draft);
     cancelAnimationFrame(studioRaf); studioLoop();
   }
   function studioLoop() {
@@ -1647,53 +1771,112 @@ const UI = (() => {
     if (cv && p) {
       const x = cv.getContext('2d'), W = cv.width, H = cv.height, arr = new Uint8Array(128), col = M.GENRES[p.genre].col;
       M.spectrum(arr); x.clearRect(0, 0, W, H);
-      const n = 30, bw = W / n;
+      const n = 24, bw = W / n;
       for (let i = 0; i < n; i++) {
         const lo = Math.floor(Math.pow(i / n, 1.7) * 100), hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1) / n, 1.7) * 100)); let v = 0; for (let k = lo; k < hi; k++) v = Math.max(v, arr[k]);
-        const h = Math.round(v / 255 * (H - 4) / 4) * 4;
-        for (let y = 0; y < h; y += 4) { x.fillStyle = y > H * 0.7 ? '#ffffff' : col; x.globalAlpha = 0.35 + 0.65 * (y / H); x.fillRect(Math.round(i * bw) + 1, H - y - 4, Math.max(2, Math.round(bw) - 2), 3); }
+        const h = M.paused ? 0 : Math.round(v / 255 * (H - 3) / 3) * 3;
+        for (let y = 0; y < h; y += 3) { x.fillStyle = y > H * 0.7 ? '#ffffff' : col; x.globalAlpha = 0.35 + 0.65 * (y / H); x.fillRect(Math.round(i * bw) + 1, H - y - 3, Math.max(2, Math.round(bw) - 2), 2); }
       }
       x.globalAlpha = 1;
-      const nm = $('#stName');
-      if (nm && nm.textContent !== p.name) {
-        nm.textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.flavName;
-        const sb = $('#stSaveB'); if (sb) { sb.classList.toggle('saved', p.saved); sb.firstChild.textContent = p.saved ? '♥ Saved' : '♡ Save'; }
+      const sig = p.name + '|' + p.genre + '|' + p.seed + '|' + p.saved + '|' + M.paused + '|' + M.repeat + '|' + M.canBack;
+      if (sig !== stSig) {
+        const changed = stSig && stSig.split('|').slice(0, 3).join('|') !== sig.split('|').slice(0, 3).join('|'); stSig = sig;
+        $('#stName').textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.flavName + (p.comp ? ' · composed' : '');
+        const kb = $('#stKeepB'); if (kb) { kb.classList.toggle('on', p.saved); kb.innerHTML = svgIcon(p.saved ? 'heart' : 'heartO'); }
+        const pb = $('#stPauseB'); if (pb) { pb.innerHTML = svgIcon(M.paused ? 'play' : 'pause'); pb.setAttribute('aria-label', M.paused ? 'Play music' : 'Pause music'); pb.classList.toggle('on', M.paused); }
+        const rb = $('#stRepB'); if (rb) rb.classList.toggle('on', M.repeat);
+        const bb = $('#stBackB'); if (bb) bb.disabled = !M.canBack;
         const card = $('.card.studio'); if (card) card.style.setProperty('--gc', col);
-        const G0 = M.GENRES[p.genre], bl = $('#stBlurb'); if (bl) bl.innerHTML = `<span style="color:${col}">${esc(G0.name)}</span> ${esc(G0.blurb.toLowerCase())}. Flavours: ${Object.values(G0.flavours).map(f => esc(f.name)).join(', ')}.`;
+        const G0 = M.GENRES[p.genre], bl = $('#stBlurb'); if (bl) bl.innerHTML = `<span style="color:${col}">${esc(G0.name)}</span> ${esc(G0.blurb.toLowerCase())}.`;
+        if (changed && stTab === 'shape') openStudio(); // the tempo slider belongs to the genre that plays
+        if (changed && stTab === 'compose' && stGrid === 'melody' && studioCfg().draft && !studioCfg().draft.mel) { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); }
       }
+      if (stSnd !== M.sndGen) { stSnd = M.sndGen; if (stTab === 'shape') openStudio(); } // a kept track brought its own sound
       const ky = $('#stKey'); if (ky) ky.textContent = p.key + ' · ' + p.now + ' BPM';
-      const br = $('#stBar'); if (br) br.style.width = (p.bar / p.bars * 100) + '%';
-      const se = $('#stSec'); if (se) se.textContent = p.section;
-      const en = $('#stE'); if (en) en.style.width = Math.round(M.energyNow * 100) + '%';
-      const mt = M.meters();
-      for (const f of document.querySelectorAll('#modal .fader')) { const v = Math.min(1, Math.sqrt(mt[f.dataset.ch] || 0) * 2.6); f.firstChild.style.height = Math.round(v * 100) + '%'; }
+      const br = $('#stBar'); if (br) br.style.width = ((p.bar + p.step / 16) / p.bars * 100) + '%';
+      const se = $('#stSec'); if (se) se.textContent = M.paused ? 'Paused' : p.section;
+      if (stTab === 'shape') { const mt = M.meters(); for (const f of document.querySelectorAll('#modal .fader')) { const v = Math.min(1, Math.sqrt(mt[f.dataset.ch] || 0) * 2.6); f.firstChild.style.height = Math.round(v * 100) + '%'; } }
+      if (stTab === 'compose') { // playhead on the grid while the draft plays
+        const step = p.comp && !M.paused ? p.step : -1;
+        if (step !== stStep) { for (const el of document.querySelectorAll('#cpGridBox .cell.ph')) el.classList.remove('ph'); if (step >= 0) for (const el of document.querySelectorAll(`#cpGridBox .cell[data-c="${step}"]`)) el.classList.add('ph'); stStep = step; }
+      }
     }
     studioRaf = requestAnimationFrame(studioLoop);
   }
   function studioAction(act, b) {
     const M = SFX.music, c = M.config;
+    if (act !== 'stDel') stDelArm = -1;
     switch (act) {
-      case 'stMode': { const on = b.dataset.v === '1'; c.custom = on; if (on && !c.genres.length) c.genres = M.DEF.genres.slice(); M.apply(); studioSave(); if (M.piece && !(on ? c.genres : M.DEF.genres).includes(M.piece.genre)) M.skip(); openStudio(); return true; }
+      case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; M.editing = false; SFX.play('ui'); openStudio(); return true;
+      case 'stVibe': {
+        studioTouch(); const v = ST_VIBES.find(x => x[0] === b.dataset.v); c.genres = (v[2] || M.GENRE_IDS).slice(); c.favOnly = false;
+        M.apply(); studioSave(); if (M.piece && !c.genres.includes(M.piece.genre)) M.skip(); openStudio(); return true;
+      }
       case 'stGenre': {
         studioTouch();
-        const g = b.dataset.v, all = M.GENRE_IDS;
-        if (g === 'all') c.genres = all.every(x => c.genres.includes(x)) ? M.DEF.genres.slice() : all.slice();
-        else if (c.genres.includes(g)) { if (c.genres.length > 1) c.genres = c.genres.filter(x => x !== g); }
+        const g = b.dataset.v;
+        if (c.genres.includes(g)) { if (c.genres.length > 1) c.genres = c.genres.filter(x => x !== g); }
         else c.genres = c.genres.concat([g]);
         M.apply(); studioSave();
         // a newly picked genre should be heard right away
-        if (g !== 'all' && c.genres.includes(g) && M.piece && M.piece.genre !== g) M.skip({ genre: g });
+        if (c.genres.includes(g) && M.piece && M.piece.genre !== g) M.skip({ genre: g });
         else if (M.piece && !c.genres.includes(M.piece.genre)) M.skip();
         openStudio(); return true;
       }
+      case 'stPlayG': { const g = b.dataset.v; M.skip({ genre: g }); toast('UP NEXT', M.GENRES[g].name + ' · from the next bar', M.GENRES[g].col); return true; }
       case 'stMute': studioTouch(); c.mute[b.dataset.v] = !c.mute[b.dataset.v]; b.classList.toggle('m', !!c.mute[b.dataset.v]); M.apply(); studioSave(); return true;
       case 'stSkip': M.skip(); SFX.play('ui'); return true;
-      case 'stSave': { const f = M.save(); if (f) { studioSave(); toast('PIECE SAVED', f.name, '#ff5fa8'); openStudio(); } return true; }
+      case 'stBack': { const n = M.back(); if (n) toast('BACK TO', n + ' · from the next bar', '#ff5fa8'); return true; }
+      case 'stPause': M.setPaused(!M.paused); return true;
+      case 'stRepeat': M.repeat = !M.repeat; toast(M.repeat ? 'REPEAT ON' : 'REPEAT OFF', M.repeat ? 'This piece plays again when it ends' : 'A new piece follows this one', '#ff5fa8'); return true;
+      case 'stKeep': {
+        if (M.isSaved()) { M.unsave(); toast('REMOVED', 'Taken out of My Tracks', '#ff5fa8'); }
+        else { const f = M.save(); if (f) toast('KEPT', f.name + ' · with your sound settings', '#ff5fa8'); }
+        studioSave(); if (stTab === 'listen') openStudio(); return true;
+      }
       case 'stPlay': { const f = c.favs[+b.dataset.v]; if (f) { M.skip(f); toast('UP NEXT', f.name + ' · from the next bar', '#ff5fa8'); } return true; }
-      case 'stDel': c.favs.splice(+b.dataset.v, 1); if (!c.favs.length) c.favOnly = false; studioSave(); openStudio(); return true;
+      case 'stRen': stEdit = +b.dataset.v; openStudio(); return true;
+      case 'stDel': { const i = +b.dataset.v; if (stDelArm !== i) { stDelArm = i; openStudio(); return true; } stDelArm = -1; c.favs.splice(i, 1); if (!c.favs.length) c.favOnly = false; studioSave(); openStudio(); return true; }
+      case 'stShare': { const f = c.favs[+b.dataset.v]; if (f) trackCode(f).then(code => { copyText(code); toast('TRACK CODE COPIED', `Send it to a friend: Music Studio › Add a code plays ${f.name} for them`, '#ff5fa8', true, 'tip'); }); return true; }
+      case 'stPaste': stPaste = !stPaste; openStudio(); if (stPaste) { const i = $('#stCode'); if (i) i.focus(); } return true;
+      case 'stCodeGo': { const v = ($('#stCode') || {}).value || ''; readTrackCode(v).then(f => { if (!f) { toast('TRACK CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } const t = M.addTrack(f); if (t) { stPaste = false; studioSave(); M.skip(t); toast('TRACK ADDED', t.name + ' · playing from the next bar', '#ff5fa8'); openStudio(); } }); return true; }
+      case 'stEditT': { const f = c.favs[+b.dataset.v]; if (f && f.comp) { c.draft = Object.assign(JSON.parse(JSON.stringify(f.comp)), { name: f.name }); stTab = 'compose'; studioSave(); M.editing = true; M.compose(c.draft); openStudio(); } return true; }
       case 'stFavOnly': studioTouch(); c.favOnly = !c.favOnly; studioSave(); if (c.favOnly) M.skip(); openStudio(); return true;
-      case 'stReset': { const favs = c.favs, calmBpm = c.calmBpm; M.setConfig({ favs, calmBpm }); PROF.settings.studio = M.config; studioSave(); M.skip(); openStudio(); return true; }
-      case 'stClose': { cancelAnimationFrame(studioRaf); const back = studioBack; studioBack = null; closeModal();
+      case 'stReset': { const keepK = { favs: c.favs, calmBpm: c.calmBpm, draft: c.draft, composer: c.composer }; M.setConfig(keepK); PROF.settings.studio = M.config; studioSave(); M.skip(); openStudio(); return true; }
+      case 'stViz': { // the hidden door: five taps on the visualizer
+        if (c.composer) return true;
+        const now = performance.now(); stTaps = stTaps.filter(t => now - t < 2500); stTaps.push(now);
+        if (stTaps.length >= 5) { stTaps = []; c.composer = true; studioSave(); SFX.play('levelup'); toast('COMPOSER UNLOCKED', 'A new tab in the Music Studio: build your own track', '#ff5fa8', true, 'alert'); stTab = 'compose'; openStudio(); }
+        return true;
+      }
+      // ---- composer ----
+      case 'cpNew': { const cp = M.compFromPiece(); if (cp) { c.draft = cp; stGrid = 'drums'; M.editing = true; cpApply(true); } return true; }
+      case 'cpSave': { const d = c.draft; if (!d) return true; const nm = $('#cpName'); if (nm) d.name = nm.value.trim().slice(0, 24) || 'My Track'; M.saveComp(d); studioSave(); toast('SAVED TO MY TRACKS', d.name, '#ff5fa8'); return true; }
+      case 'cpGrid': stGrid = b.dataset.v; openStudio(); return true;
+      case 'cpStep': {
+        const d = c.draft; if (!d) return true; const k = b.dataset.k, dir = +b.dataset.v, wrap = (i, n) => ((i % n) + n) % n;
+        if (k === 'style') { const L0 = cpStyles(), i = L0.findIndex(x => x[0] === d.genre && x[1] === d.flav), nx = L0[wrap(i + dir, L0.length)]; d.genre = nx[0]; d.flav = nx[1]; cpDefaults(d); const lp0 = cpLoops(d.genre); if (!lp0.some(L1 => JSON.stringify(L1.degs) === JSON.stringify(d.loop.degs))) d.loop = JSON.parse(JSON.stringify(lp0[0])); }
+        else if (k === 'mood') { const i = M.MOODS.findIndex(m => m[0] === d.mode); d.mode = M.MOODS[wrap(i + dir, M.MOODS.length)][0]; }
+        else if (k === 'key') d.key = wrap((d.key | 0) + dir, 12);
+        else if (k === 'bpm') { const G0 = M.GENRES[d.genre]; d.bpm = clamp((d.bpm | 0) + dir * 2, Math.round(G0.bpm[0] * 0.8), Math.round(G0.bpm[2] * 1.15)); }
+        else if (k === 'loop') { const L0 = cpLoops(d.genre), i = L0.findIndex(L1 => JSON.stringify(L1.degs) === JSON.stringify(d.loop.degs) && (L1.bars || 1) === (d.loop.bars || 1)); d.loop = JSON.parse(JSON.stringify(L0[wrap(i + dir, L0.length)])); }
+        else if (k === 'bass') { const i = M.BASSES.findIndex(x => d.bass && x[0] === d.bass[0] && x[1] === d.bass[1]); const nx = M.BASSES[wrap(i + dir, M.BASSES.length)]; d.bass = [nx[0], nx[1]]; }
+        else if (k === 'lead') { const i = M.LEADS.findIndex(x => x[0] === d.lead); d.lead = M.LEADS[wrap(i + dir, M.LEADS.length)][0]; }
+        SFX.play('ui'); cpApply(true); return true;
+      }
+      case 'cpCell': { const d = c.draft; if (!d) return true; const r = b.dataset.r, i = +b.dataset.i, row = (d.drums[r] || '0'.repeat(16)).padEnd(16, '0').split(''); const def = (M.DRUM_ROWS.find(x => x[0] === r) || [0, 0, 8])[2]; row[i] = +row[i] ? '0' : String(def); d.drums[r] = row.join(''); cpApply('grid'); return true; }
+      case 'cpDrumReset': { const d = c.draft; if (d) { d.drums = M.drumsFor(d.genre, d.flav); cpApply('grid'); } return true; }
+      case 'cpNote': {
+        const d = c.draft; if (!d) return true; const r = +b.dataset.r, i = +b.dataset.i;
+        if (!d.mel) { const gh = cpAutoMel(); d.mel = gh ? gh.slice() : Array(16).fill(null); if (d.lead === 'none') d.lead = 'bell'; }
+        d.mel[i] = d.mel[i] === r ? null : r;
+        if (!d.mel.some(x => x !== null)) d.mel = null;
+        cpApply(true); return true;
+      }
+      case 'cpDice': { const d = c.draft; if (d) { d.mel = null; d.melSeed = (Math.random() * 4294967296) >>> 0; if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); } return true; }
+      case 'cpMelClr': { const d = c.draft; if (d) { d.mel = null; cpApply(true); } return true; }
+      case 'stClose': { cancelAnimationFrame(studioRaf); M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
+        if (M.paused) toast('MUSIC PAUSED', 'Press play in the Music Studio to bring it back', '#ff5fa8');
         if (back === 'settings') { if (G && !G.over && screen === 'game') modalFrom = 'pause'; openSettings(); }
         else if (back === 'pause' && G && !G.over && screen === 'game') openPause();
         else if (G && !G.over && screen === 'game') G.paused = false;
@@ -1926,7 +2109,7 @@ const UI = (() => {
       <p class="note">Anomalies ${an}/${ANOMALIES.length} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
   }
   function modalAction(act, b) {
-    if (act.startsWith('st') && studioAction(act, b)) return;
+    if ((act.startsWith('st') || act.startsWith('cp')) && studioAction(act, b)) return;
     SFX.play('ui');
     switch (act) {
       case 'close': closeModal(); break;
