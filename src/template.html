@@ -880,6 +880,16 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
   .stcompose { grid-template-columns: minmax(0, 1fr); } .cpright { order: -1; } /* the grid first on small phones */
 }
 @media (prefers-reduced-motion: reduce) { .brand h1, .entg.ready, #rotate .ph-icon { animation: none; } }
+/* v5.7 studio splash (outside #app, so sized in viewport units) */
+#splash { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 55%, #1b1530 0%, #07080f 70%); transition: opacity 0.5s; touch-action: none; }
+#splash.out { opacity: 0; pointer-events: none; }
+#splash .spc { display: flex; flex-direction: column; align-items: center; opacity: 0; transform: translateY(6px); transition: opacity 0.45s, transform 0.6s; }
+#splash.in .spc { opacity: 1; transform: none; }
+#splash .spcat { width: min(40vh, 34vw); image-rendering: pixelated; }
+#splash .spn { font-family: var(--f-pix); font-weight: 700; font-size: min(11vh, 9vw); line-height: 0.9; margin-top: 2.6vh; letter-spacing: 0.04em; color: var(--ink); text-shadow: 3px 0 0 var(--bad), -3px 0 0 var(--cryo), 0 0 24px rgba(184, 108, 255, 0.35); }
+#splash .spi { font-family: var(--f-pix); font-size: min(3.6vh, 3vw); letter-spacing: 0.55em; margin: 1.6vh 0 0 0.55em; color: var(--dim); }
+#splash .spp { font-family: var(--f-term); font-size: min(4vh, 3.4vw); letter-spacing: 0.12em; margin-top: 3.4vh; color: #6b6a88; }
+@media (prefers-reduced-motion: reduce) { #splash, #splash .spc { transition: none; } }
 </style>
 
 <div id="app">

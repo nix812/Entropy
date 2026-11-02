@@ -2637,6 +2637,25 @@ const Tree = (() => {
 })();
 
 // ---------------- Main loop ----------------
+const NIGEL_PX = ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAA4CAYAAABNGP5yAAADXklEQVR4Xu2aS2gTQRjHp+JNCz6qh2B9rUKQoPjAir1Y9SDmoGg9ihcVFK/1WMRjpXpSaxVKztYiSKrQlgpSseIDtWgOpiiFXFpUqB6EgvKtTJrdnd355vFttnZ/EJrQ2d35/zI7M/u1jKWkpKSkpKRQ0Lis6Y+N89o6j4glNjoYxvp1OePOnz7WZUViGKQCdmWPssblq7QlQPiRF/covyNaARwdCXGEB8hGgGmAN6VBI4FYyATwAAecnNsXlVEA8r7/qFSPpYRMANz/HBUJfOTwY6hZSn0BPzASjh++HDqzU096fsgFPC1PuNeEb5S/l4WsbUsN2S3gh4fHoNLWlNgEJBUSAaZLoAiVVUQFEgG1a3jSIRFQuwQmHesCwoZ/cXSv+5KBbWcL6wJEwx9Cbd10ibXuGYiUgG1nE+sCwob/2tUHUf3GtrMF+UYIyLe9ZGOvTlTfh4FtZ5NYBHAJGEBCnDTYvhiUr2DNpmD25zc2+2vGap+VT9Z755HwQWbi3Xs3c27HdvZs8JN0vw9sWdPk/vw8PYP21X7yjNu2r3CDdV/vCxw3NPSY3e+/hc6FbsiDl0ofIzs793vO7RxmFMA3CmDaAhC+/0Ghev1D+86yh8Nd7Nz5Dk+fstltaBEoARBeFtzP3d5rkcFWrsgwKHoAte91AJF+CcDU1FfpaJAK0AnPkUmwia6ESAEjwx+E93tPz23W3LwB1f/pyQbUfGCDK1e7hacpFG6ysedPhFlDBUD4YnG+MOkHhhdGQlwCIDxMgGFUKpNCCcKdoCw8AOFBQhRJCQ9kMptZ6/4jgREdEIAJz4mSkKTwHJEEjwCV8DIJmJrA29cD7ksX2bAX4ZfgEVAuf9HtS4A4agKqS7MIjwDH2WhNAJadu/89JOkAGx5TrD8Oc2CHJsMkvC3IBMDOjG91k4zR43A+P//nLxGy39vAcS6wzs4Od3LTQVsAhIvaKMVJS0sbGx8f1ZKgdQskKTwHJMBuTxVlAUkMbyJBWYDNvUISUBZQj70CJcoC/jeMBcATYe1TYT0+m6C9DHL8NYF6f1bFMwKg0rPY8AiAcrKsyAG7roWMvzIUmANkEviuK4nIdoOisphwElyIEnTCA5FV4VPtF0P/nQ0kiWps9QKqvlH9CasKpyx2/gJwILY0tl0hfQAAAABJRU5ErkJggg==', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAA4CAYAAABNGP5yAAADP0lEQVR4Xu2aP2gUQRSHJ2KnAZXYHEbFtTjkUNQioo2ihZhC0ViKjQraxzKIZSRaqTEK4WqjCJIoJEFBFFOoqEGv8IISuCZBhWghBJQ3MMnu7Oz8f3tzZj8I3JHZvfl993Zn9iWEFBQUFBQUFGDQvqbjr4/z+jqPiFU+JpjF5k0V58mfOd7vRWIWqAL2lI+R9rUbrCVA+MnX9zC/I1wBDBsJeYQH0CrANcDb2piTQF3QBLAAB6MKnYtJFYC8Hz8bS8digiYArn+GiQRWOewYbFZjfwAPVMKJI5cz7+zYNz0edAHP69P0M+EbZa9VIeNjsUG7BHhYeB1MxrqSm4BQQRHgugSKMFlFTEAREF/DQwdFQHwJDB3vAjDKHxPvAkTlf3jfuaUM8dc8uuN80ubzZEBWBbBwqj2AbNzCr+9k4fe81zmjb4QYquCm43zh/RJoNbyWEwDtK1izMcC4BIwFDN15LHyQmX7/gWau7NpJXox91ir57Rs76DFf5ua1ffWcOkvHDldvkIHrw6njxsefkPsjt7RzaQ9kwWu1T9LJLv5ZpJPTqQL4RmnVaFYMhB95UE2sKI8m+sn5C72JOZXLO7RFaAmA8KrgPHeHrkmDrV9XItD0AOKvbQCRvARgdvabshqUAmzCM1QSfGIrQSpgcuKj8HofHLxNOju3aM1/bqZN637ggytXB4SnqVZvkpevngqzZgqA8KOjy41JHigvHQl5CYDwcAPMotGYEUoQ7gNU4QEIDxJkhBIeKJW2kQP7j6YqOiVAJzxDJiGk8AyRhIQAk/AqCTo9gXdvHtIfW1RlL4KXkBBQr3+1nUuKPHoCpkuziISAKNrqTYAuu/ee1B2aAjY8rqA9DMEOTYVLeF+gCYCdGdvqhoxTP6C7e/nPXyJUv/dBFF0kfX299OZmg7UACCfbKOVJV9chMjX1zEqC1SUQUngGSIDdninGAkIM7yLBWIDPvUIIGAtoxl4BE2MB/xvOAuCJMP5U2Iz3Llgvgwy+J9Ds96YkKgA6PSuNhABoJ6uaHLDramX4zlDqHqCSwHZdIaLaDYraYsKbYCtKsAkPSLvCp3suZf47G0gS9diaBXR9ZfPJ6goXrHT+AfnLr7228PTCAAAAAElFTkSuQmCC'];
+// v5.7 studio splash: Nigel (the studio cat) in his couch, a slow blink, then the hangar. Skipped under automation
+// unless forced (test/splashshot.py), returns how long it will cover the screen in ms.
+UI.splash = function (force) {
+  if (!force && navigator.webdriver) return 0;
+  const old = document.getElementById('splash'); if (old) old.remove();
+  const el = document.createElement('div'); el.id = 'splash'; el.setAttribute('aria-label', 'Nigel Industries presents');
+  el.innerHTML = '<div class="spc"><img class="spcat" alt="" src="' + NIGEL_PX[0] + '"><div class="spn">NIGEL</div><div class="spi">INDUSTRIES</div><div class="spp">presents</div></div>';
+  document.body.appendChild(el);
+  const img = el.querySelector('.spcat'); new Image().src = NIGEL_PX[1];
+  let done = false; const timers = [];
+  const end = () => { if (done) return; done = true; timers.forEach(clearTimeout); el.classList.add('out'); setTimeout(() => el.remove(), 520); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); end(); });
+  const go = () => { if (done) return; el.classList.add('in');
+    timers.push(setTimeout(() => { img.src = NIGEL_PX[1]; }, 1150), setTimeout(() => { img.src = NIGEL_PX[0]; }, 1500), setTimeout(end, 2300)); };
+  let started = false; const start = () => { if (!started) { started = true; go(); } };
+  try { document.fonts.ready.then(start); } catch (e) {} setTimeout(start, 600);
+  return 2900;
+};
 (function boot() {
   const loaded = Save.loadLocal();
   if (loaded) PROF = loaded;
@@ -2651,9 +2670,10 @@ const Tree = (() => {
   UI.wire();
   UI.renderHangar();
   UI.show('hangar');
+  const spT = UI.splash(); // v5.7: Nigel Industries presents (cold start only; a tap skips)
   // returning players see what changed once per version; brand-new players skip it
   if (!PROF.runs) { PROF.seenVer = VERSION; }
-  else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900);
+  else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT);
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();

@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.6.0';
+const VERSION = '5.7.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,7 +173,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.6.0', title: 'Last Gradient 5.6 · A New Name', items: [
+const WHATS_NEW = { ver: '5.7.0', title: 'Last Gradient 5.7 · Nigel Industries', items: [
+  ['Nigel Industries presents', 'The studio has a mascot: Nigel, a small black cat, in his couch. He greets you when the game starts. Tap to skip him (he will not mind).'],
   ['Entropy is now Last Gradient', 'Everything in the universe runs on gradients: hot next to cold, order next to chaos. When the last one flattens out, nothing moves again. You are holding it up.'],
   ['The title', 'The name on the hangar fades from cream to violet and breaks apart as you watch. With Reduce Motion on, it holds still.'],
   ['Nothing else changed', 'Your progress, talents, tracks, Hunt codes and the Entropy gauge are exactly where you left them.'],
