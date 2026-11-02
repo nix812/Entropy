@@ -52,7 +52,7 @@ function bestSpot(G, type, near) {
   }
   return best;
 }
-// 5.8: sectors, jump doors, escalations and the Bounty Purse. SECTOR=id forces the contract and every door into that sector,
+// 5.8: sectors, jump doors, escalations and the Bounty Purse. SECTOR=id plays the whole run in that zone (pushes without a door),
 // PUSH=1 never extracts (the 5.3-5.7 sweeps pushed at every bounty), EXTRACT=0 likewise
 const SEC_PREF = { salvage: 3, demo: 3, drift: 2, hive: 2, tempest: 2, iron: 1, skies: 1, ghost: 1, choir: 1, oddball: 0 };
 const TW_PREF = { learn: 3, storms: 3, affix: 2, worm: 2, rifts: 1, blitz: 1, carriers: 1, twin: 0 };
@@ -60,8 +60,8 @@ const best = (arr, f) => arr.reduce((a, x) => (f(x) + Math.random() * 0.5 > f(a)
 function pickSector(ids) { if (process.env.SECTOR) return process.env.SECTOR; return S.PROF.bestWave < 10 ? S.SECTOR_START : best(ids, id => SEC_PREF[id] || 0); }
 // a door: the riskier tiers when the defence is comfortable (core high, few recent leaks), the safest otherwise
 function pickDoor(G, doors, met) {
-  const calm = G.core.hp / G.core.max > 0.8 && met.recentMin > 0.6, shaky = met.recentMin < 0.45;
-  const tier = shaky ? 0 : calm ? (Math.random() < 0.5 ? 2 : 1) : 1;
+  const calm = G.core.hp / G.core.max > 0.9 && met.recentMin > 0.85, shaky = met.recentMin < 0.6;
+  const tier = process.env.TIER ? +process.env.TIER : shaky ? 0 : calm ? (Math.random() < 0.4 ? 2 : 1) : 1;
   if (process.env.SECTOR) { const k = doors.findIndex(d => d.tier === tier); return k < 0 ? 0 : k; }
   let bi = 0, bs = -9; doors.forEach((d, i) => { const sc = (SEC_PREF[d.sector] || 0) - Math.abs(d.tier - tier) * 2 + Math.random(); if (sc > bs) { bs = sc; bi = i; } });
   return bi;
@@ -86,7 +86,7 @@ for (let run = OFF; run < OFF + runs; run++) {
   met.recentMin = 1; met.mins = []; met.doors = []; met.startSec = G.sector;
   let t = 0, act = 0, pi = 0, lastWave = G.wave;
   while (!G.over && t < 3 * 3600) {
-    if (S.G.huntChoice) { const C = S.G.huntChoice; if (wantExtract(G, met)) { met.extracted = G.wave; S.huntExtract(); break; } if (C.doors) { const i = pickDoor(G, C.doors, met); met.doors.push(C.doors[i].sector.slice(0, 4) + C.doors[i].tier); S.huntPush(i); } else S.huntPush(); }
+    if (S.G.huntChoice) { const C = S.G.huntChoice; if (wantExtract(G, met)) { met.extracted = G.wave; S.huntExtract(); break; } if (C.doors && !process.env.SECTOR) { const i = pickDoor(G, C.doors, met); met.doors.push(C.doors[i].sector.slice(0, 4) + C.doors[i].tier); S.huntPush(i); } else S.huntPush(); }
     if (false) S.huntPush(); // v5.3: the bot never extracts, it plays on (a stalled choice would freeze the sim)
     S.simStep(1 / 30); t += 1 / 30; if (S.G.checkpoint) S.resumeCheckpoint();
     if (process.env.BOSSLOG) {

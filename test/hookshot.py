@@ -44,7 +44,7 @@ with sync_playwright() as p:
     pg.click('[data-act=launch]'); pg.wait_for_timeout(700)
     ok('the run starts in the picked sector (through newRun opts)', pg.evaluate('(id) => G.sector === id && G.recOpts.sector === id && G.hk === HOOK_VER', offers[1]))
     pg.evaluate('() => { G.wantedTold = 1; G.purse = 12345; UI._dbg.updateHud(true); }'); pg.wait_for_timeout(300)
-    ok('bounty chip shows the purse', pg.evaluate('() => /Purse 12\\.3K/.test((document.querySelector("#chips [data-wanted]") || {}).textContent || "")'))
+    ok('bounty chip shows the purse', pg.evaluate('() => /12\\.3K XP/.test((document.querySelector("#chips [data-wanted]") || {}).textContent || "")'))
     ok('bounty chip clear of the controls: ' + (pg.evaluate(CHIP) or 'yes'), not pg.evaluate(CHIP))
     shot(pg, 'hud_purse')
     # the bounty: purse and three doors

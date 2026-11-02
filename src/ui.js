@@ -193,10 +193,10 @@ const UI = (() => {
             ${PROF.nemesis ? `<p class="note nem"><b>Nemesis waiting: ${esc(PROF.nemesis.name)}.</b> ${PROF.nemesis.kind === 'boss' ? 'It takes your first bounty, mutated, for double the reward.' : 'The swarm starts already carrying it, and it leads your first Strain Assault, with a double bounty.'}</p>` : ''}
           </div>
           <div class="col">
+            ${setupSectorHTML()}
             <div class="lbl">Map</div>
             <canvas id="mapPrev" width="320" height="150"></canvas>
             <div class="row"><button class="btn small" data-act="reroll">Reroll Map</button><span class="note">Each wormhole expands the sector.</span></div>
-            ${setupSectorHTML()}
           </div>
         </div>
         <div class="foot"><button class="btn primary" data-act="launch">Start · Wave ${sw}</button></div>
@@ -430,7 +430,9 @@ const UI = (() => {
     // v5.2 threat board: one chip says what is coming and what the swarm is doing (next wave, new and headline enemies, DNA, Strain Assault).
     // Tap it for the full board. Replaces the separate Next / headline / gene / DNA chips and the assault banner
     { const th = threatChip(); if (th) chips.push(th); }
-    if (G.wanted && G.wantedTold && !G.wanted.done) chips.push(`<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1">${G.wanted.nemesis ? 'Nemesis' : 'Bounty'} · W${G.wanted.w}${G.hk ? ` · <i class="pz">Purse ${fmt(G.purse)}</i>` : G.pushes ? ' · ×' + huntMult().toFixed(2) : ''}</span>`);
+    if (G.wanted && G.wantedTold && !G.wanted.done) chips.push(G.hk // 5.8: the bounty wave and the Bounty Purse, kept short so it fits beside the threat chip on a phone
+      ? `<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1" title="Bounty on Wave ${G.wanted.w}. Bounty Purse: Extract after a bounty to bank all of it; if your core falls you keep ${Math.round(PURSE.death * 100)}%">${G.wanted.nemesis ? 'Nemesis ' : ''}W${G.wanted.w} · <i class="pz">${fmt(G.purse)} XP</i></span>`
+      : `<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1">${G.wanted.nemesis ? 'Nemesis' : 'Bounty'} · W${G.wanted.w}${G.pushes ? ' · ×' + huntMult().toFixed(2) : ''}</span>`);
     { const asb = $('#asbar'); if (asb && !asb.hidden) { asb.hidden = true; document.body.classList.remove('asbar'); } }
     { // Doctrine meters, bottom right of the field
       const db = $('#docbar'), parts = [];
@@ -2132,7 +2134,7 @@ const UI = (() => {
         ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
         ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap Overdrive on the left rail (or in the core panel), then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
-        ['Bounty Purse', `Half of the XP you earn banks at once; the other half rides in the purse. Each bounty claimed grows it ×${PURSE.bounty}, and each push through a jump door multiplies it again (×${DOOR_TIERS.map(t => t.mult).join(', ×')} by risk). Extract to bank all of it. If your core falls you keep ${Math.round(PURSE.death * 100)}%.`],
+        ['Bounty Purse', `${Math.round(PURSE.safe * 100)}% of the XP you earn banks at once; the rest rides in the purse. Each bounty claimed grows it ×${PURSE.bounty}, and each push through a jump door multiplies it again (×${DOOR_TIERS.map(t => t.mult).join(', ×')} by risk). Extract to bank all of it. If your core falls you keep ${Math.round(PURSE.death * 100)}%.`],
         ['Zone', 'The contract a run is fought under: which enemies come most, the weather, the events, the Most Wanted boss, plus a perk and a drawback. You pick one of three at the start, and a new one through a jump door at every bounty.'],
         ['Jump door', 'After a bounty you can push on through one of three doors: a new zone for the next 20 waves at a risk tier (Steady, Hot or Deadly). Riskier doors grow the Bounty Purse more and pay more score.'],
         ['Escalation', `From Wave ${TWIST_FROM}, each boss wave makes you choose one of two permanent twists. They stack and each one raises your score and XP.`],

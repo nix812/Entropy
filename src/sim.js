@@ -1486,7 +1486,7 @@ function genWave(w, ev) {
       const bl = lanes.reduce((a, L) => (L.len > a.len ? L : a), lanes[0]);
       q.push({ t, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0 });
       t += 2;
-      // 5.8 Twin Bosses: a second copy 3 s behind, each at 65%
+      // 5.8 Twin Bosses: a second copy right behind it, each at 65% (bounty waves keep their own Wanted mutation)
       if (G.twists && G.twists.twin && !(G.wanted && !G.wanted.done && G.wanted.w === w)) { q[q.length - 1].hpX = TWIN_HP; q.push({ t: t + 1, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0, hpX: TWIN_HP, twinOf: 1 }); t += 2; }
     }
   }

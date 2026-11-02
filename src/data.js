@@ -212,7 +212,7 @@ const HUNT = { every: 20, pushScore: 0.25, extractXp: 0.5, pts: 40 };
 const HOOK_VER = 1;
 // Bounty Purse: `safe` of all XP banks as you earn it, the rest goes in the purse. A claimed bounty grows it ×bounty, a push ×(door tier).
 // Extract banks the whole purse; a fallen core banks `death` of it.
-const PURSE = { safe: 0.5, death: 0.3, bounty: 1.25 };
+const PURSE = { safe: 0.6, death: 0.3, bounty: 1.25 };
 // jump door risk: purse multiplier on the push, and what the next 20 waves cost (enemy HP, elites) and pay (score and XP)
 const DOOR_TIERS = [
   { id: 'steady', name: 'Steady', col: '#59f0b4', mult: 1.25, af: {}, desc: 'No extra danger' },

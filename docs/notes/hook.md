@@ -24,7 +24,7 @@ Every run now has a reason to exist and a shape of its own. You pick a zone at t
 - **Daily Hunt.** The day's zone comes from `dailySpec` (drawn after the older fields, so the day's seed, anomalies and Nemesis are unchanged), shown on the Daily card as "Today's zone".
 
 **Bounty Purse.**
-- Half of every XP gain banks at once (the level-up feedback stays); the other half goes into the purse.
+- 60% of every XP gain banks at once (the level-up feedback stays); the other 40% goes into the purse.
 - Each bounty claimed grows the purse ×1.25. Each push multiplies it by the door's tier.
 - Extract banks the whole purse. If the core falls (or you abandon), you keep 30%.
 - The purse shows on the HUD's bounty chip ("Bounty · W40 · Purse 12.3K"), on the bounty card with plain text, and on the game-over card ("you kept 30%, +1,500 of 5,000 XP. Extracting after X would have banked all of it").
