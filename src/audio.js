@@ -219,9 +219,13 @@ const SFX = (() => {
   // loudness trims (dB), set from offline renders so each role lands in its tier (loudest 50 ms, dBFS):
   // UI -28 · rapid weapons -28 to -31 · single-shot weapons -24 · hits -36 · deaths -30 (heavy -24) · combos -22 ·
   // player actions -22 · notices -20 to -24 · big events -12. Measured with test/sfxrender.py.
-  const TRIM = { ui: 20, deny: 12, rail: -2, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -6, hit: 13, hitcrit: -2, hitshield: 2,
+  const TRIM = { ui: 20, deny: 12, rail: -2.3, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -9, hit: 13, hitcrit: -2, hitshield: 2,
     build: -3, upgrade: 4, reroll: 15, sell: 12, cash: 4, wave: -2, call: 11, milestone: 6, freeze: 2, net: 15, boom: -2, blink: 3, storm: 7, levelup: 2, unbreak: 4,
     converge: 4, crack: 1, stasis: 5, strikecharge: 3, overclock: 12, quack: 5,
+    // v5.8 tower character (measured with sfxrender.py; spec variants sit level with their base sound, grav trimmed 3 dB into its tier)
+    shot2: 4.4, rail1: -1.8, rail2: -2, pulse1: -2.1, pulse2: 1.1, missile1: 0.3, missile2: -0.2, coil: 1.7, coil1: 1.1, coil2: -3.7, ignite: 5,
+    mortar1: -2, mortar2: -1.1, grav1: -9.1, grav2: -8.5, hitK: 9.5, hitR: 2.3, hitC: 7.7, hitF: 3.4, hitV: 10.1, hitA: 10.9,
+    boomT: -2, boomT2: -1.8, pop: 0.5, empboom: -2.7, empboom1: -2.6, lure: 2.8, lure2: 0.7, net1: -3.3, lock: 14.7, lock2: 14.7, forge: 1.2, forge1: 2.4, pylon: 11.7,
     comboSHATTER: -2.5, comboOVERLOAD: -5, 'comboTHERMAL SHOCK': -3, comboSUPERCONDUCT: 3, comboCOLLAPSE: -7 };
   const dB = v => Math.pow(10, v / 20);
   // start a sound: bus, base volume, pitch jitter (semitones), placement and sends
@@ -229,50 +233,70 @@ const SFX = (() => {
     o = o || {};
     const P = place(arg), jit = o.jit === undefined ? 0.6 : o.jit;
     const dens = bus === busW || bus === busH ? density() : 1;
-    const c = chain(bus, { vol: vol * dB((TRIM[name] || 0) + (o.trim || 0)) * P.k * dens * rnd(0.9, 1.05), pan: o.pan !== undefined ? o.pan : P.pan, dull: P.dull, room: o.room, hall: o.hall, pitch: (o.pitch || 1) * semi(rnd(-jit, jit)) });
+    const c = chain(bus, { vol: vol * dB((TRIM[o.tn || name] || 0) + (o.trim || 0)) * P.k * dens * rnd(0.9, 1.05), pan: o.pan !== undefined ? o.pan : P.pan, dull: P.dull, room: o.room, hall: o.hall, pitch: (o.pitch || 1) * semi(rnd(-jit, jit)) });
     c.name = name; return c;
   }
   let played = 0;
   function done(c) { played++; trackV(c.name, c); }
 
+  let gatBar = 1;
+  // Ascended towers sound a little heavier (+1 dB, then +0.5 dB per Ascend after the first)
+  const ascT = t => t && t.asc ? 0.5 + 0.5 * Math.min(4, t.asc) : 0;
+  // the Pulse Blaster's element flavours (shared by the single shot and each Twin Cannons tap)
+  function shotBody(c, el) {
+    click(c, 0.35, 0, 4500);
+    if (el === 'T') { nz(c, { f0: 1600, f1: 500, q: 1.4, d: 0.07, v: 0.4 }); tone(c, { w: 0.25, f0: 520, f1: 180, d: 0.06, v: 0.22, lp: 3000 }); }
+    else if (el === 'C') { fmv(c, { f0: 1900, f1: 1300, r: 3.5, i: 1.2, d: 0.07, v: 0.22 }); nz(c, { ft: 'highpass', f0: 6000, d: 0.03, v: 0.2 }); }
+    else if (el === 'A') { fmv(c, { f0: 900, f1: 300, r: 7.1, i: 4, d: 0.05, v: 0.22, cw: 'square' }); nz(c, { ft: 'highpass', f0: 7000, d: 0.03, v: 0.3 }); }
+    else if (el === 'V') { fmv(c, { f0: 300, f1: 110, r: 0.5, i: 3, d: 0.08, v: 0.32 }); }
+    else { tone(c, { w: 0.25, f0: 1250, f1: 380, d: 0.05, v: 0.24, lp: 5200, lp1: 1800 }); nz(c, { f0: 2400, f1: 1200, q: 1.6, d: 0.04, v: 0.3 }); }
+  }
+
   // ---------- the sound set ----------
   const WEAP = {
     // Pulse Blaster: light, bright, high lane. A 25% pulse chirp over a noise snap. Kinetic by default; element flavours below.
     shot(t) {
-      const el = t && t.s ? t.s.el : 'K', fast = t && t.spec === 1;
+      const el = t && t.s ? t.s.el : 'K', fast = t && t.spec === 1, twin = t && t.spec === 2;
       if (!allow('shot', fast ? 0.045 : 0.06, 6)) return;
-      const c = ev('shot', busW, fast ? 0.32 : 0.42, { room: 0.12, jit: 1, trim: ({ K: 5, T: 5, C: 0, A: 0, V: -2 }[el] || 0) + (fast ? 2 : 0) }, t);
-      click(c, 0.35, 0, 4500);
-      if (el === 'T') { nz(c, { f0: 1600, f1: 500, q: 1.4, d: 0.07, v: 0.4 }); tone(c, { w: 0.25, f0: 520, f1: 180, d: 0.06, v: 0.22, lp: 3000 }); }
-      else if (el === 'C') { fmv(c, { f0: 1900, f1: 1300, r: 3.5, i: 1.2, d: 0.07, v: 0.22 }); nz(c, { ft: 'highpass', f0: 6000, d: 0.03, v: 0.2 }); }
-      else if (el === 'A') { fmv(c, { f0: 900, f1: 300, r: 7.1, i: 4, d: 0.05, v: 0.22, cw: 'square' }); nz(c, { ft: 'highpass', f0: 7000, d: 0.03, v: 0.3 }); }
-      else if (el === 'V') { fmv(c, { f0: 300, f1: 110, r: 0.5, i: 3, d: 0.08, v: 0.32 }); }
-      else { tone(c, { w: 0.25, f0: 1250, f1: 380, d: 0.05, v: 0.24, lp: 5200, lp1: 1800 }); nz(c, { f0: 2400, f1: 1200, q: 1.6, d: 0.04, v: 0.3 }); }
+      // v5.8 tower character: the Gatling's drum alternates barrels a semitone up and down; Twin Cannons fire two taps panned apart
+      if (fast) gatBar = -gatBar;
+      if (twin) { const P0 = place(t).pan; for (const [k, at] of [[-1, 0], [1, 0.045]]) { const c = ev('shot', busW, 0.36, { room: 0.12, jit: 0.6, tn: 'shot2', pan: Math.max(-0.9, Math.min(0.9, P0 + k * 0.15)), trim: ({ K: 5, T: 5, C: 0, A: 0, V: -2 }[el] || 0) + ascT(t) }, t); c.t += at; shotBody(c, el); done(c); } return; }
+      const c = ev('shot', busW, fast ? 0.32 : 0.42, { room: 0.12, jit: fast ? 0.3 : 1, pitch: fast ? semi(gatBar) * semi(3) : 1, trim: ({ K: 5, T: 5, C: 0, A: 0, V: -2 }[el] || 0) + (fast ? 2 : 0) + ascT(t) }, t);
+      if (fast && el === 'K') { click(c, 0.3, 0, 6000); tone(c, { w: 0.125, f0: 1500, f1: 700, d: 0.03, v: 0.2, lp: 6000 }); nz(c, { ft: 'highpass', f0: 4000, d: 0.02, v: 0.22 }); done(c); return; }
+      shotBody(c, el);
       done(c);
     },
     // Rail Lance: the sharpest gun. Crack + FM sweep down + metallic ring + room tail; mid-high lane.
+    // v5.8: a sub thump for weight. Gauss Spire rings out in the hall; Splinter Rail cracks with a bright sweep and three clicks
     rail(t) {
       if (!allow('rail', 0.08, 4)) return;
-      const c = ev('rail', busW, 0.6, { room: 0.3, jit: 0.5 }, t);
+      const sp = t && t.spec || 0;
+      const c = ev('rail', busW, 0.6, { room: 0.3, jit: 0.5, hall: sp === 1 ? 0.3 : 0, tn: sp ? 'rail' + sp : 'rail', trim: ascT(t) }, t);
       click(c, 0.6, 0, 5000);
       fmv(c, { f0: 2200, f1: 90, r: 9.03, i: 7, i1: 0.3, d: 0.14, v: 0.32 });
       tone(c, { w: 'sawtooth', f0: 660, f1: 110, d: 0.11, v: 0.16, lp: 4000, lp1: 500 });
-      fmv(c, { f0: 1480, r: 2.76, i: 0.8, d: 0.22, v: 0.06, at: 0.01 });
+      sub(c, 120, 42, 0.12, 0.4);
+      if (sp === 1) fmv(c, { f0: 1480, r: 1.41, i: 1.6, i1: 0.2, d: 0.6, v: 0.12, at: 0.01 });
+      else if (sp === 2) { nz(c, { ft: 'highpass', f0: 2500, f1: 9000, d: 0.12, v: 0.3 }); for (let k = 0; k < 3; k++) click(c, 0.4, 0.03 + k * 0.028, 5000); }
+      else fmv(c, { f0: 1480, r: 2.76, i: 0.8, d: 0.22, v: 0.06, at: 0.01 });
       done(c);
     },
     // Cryo pulse: a glassy bell and a frosty hiss. High and soft (it fires constantly).
+    // v5.8: Glacier Core rings a lower, longer bell; Shatter Field adds tiny glass tinks
     pulse(t) {
       if (!allow('pulse', 0.14, 3)) return;
-      const c = ev('pulse', busW, 0.42, { room: 0.35, jit: 1.5 }, t);
-      fmv(c, { f0: 2093, r: 3.01, i: 1.4, i1: 0.05, d: 0.28, v: 0.16 });
-      fmv(c, { f0: 3136, r: 1.5, i: 0.6, d: 0.2, v: 0.07, at: 0.015 });
-      nz(c, { ft: 'highpass', f0: 7000, d: 0.16, v: 0.16, a: 0.01 });
+      const sp = t && t.spec || 0;
+      const c = ev('pulse', busW, 0.42, { room: 0.35, jit: 1.5, tn: sp ? 'pulse' + sp : 'pulse', trim: ascT(t) }, t);
+      if (sp === 1) { fmv(c, { f0: 1397, r: 3.01, i: 1.6, i1: 0.05, d: 0.5, v: 0.17 }); fmv(c, { f0: 2093, r: 1.5, i: 0.5, d: 0.35, v: 0.06, at: 0.03 }); nz(c, { ft: 'highpass', f0: 5000, d: 0.3, v: 0.14, a: 0.03 }); }
+      else if (sp === 2) { fmv(c, { f0: 2093, r: 3.01, i: 1.4, i1: 0.05, d: 0.24, v: 0.14 }); nz(c, { ft: 'highpass', f0: 7000, d: 0.12, v: 0.14, a: 0.01 }); for (let k = 0; k < 2; k++) fmv(c, { f0: rnd(3500, 5200), r: 3.1, i: 0.8, d: 0.04, v: 0.06, at: 0.04 + k * 0.035 + rnd(0, 0.02) }); }
+      else { fmv(c, { f0: 2093, r: 3.01, i: 1.4, i1: 0.05, d: 0.28, v: 0.16 }); fmv(c, { f0: 3136, r: 1.5, i: 0.6, d: 0.2, v: 0.07, at: 0.015 }); nz(c, { ft: 'highpass', f0: 7000, d: 0.16, v: 0.16, a: 0.01 }); }
       done(c);
     },
     // Swarm Missile: launch thunk + rising rocket whoosh. Mid lane.
     missile(t) {
       if (!allow('missile', 0.09, 4)) return;
-      const c = ev('missile', busW, 0.5, { room: 0.18 }, t);
+      const sp = t && t.spec || 0; // v5.8: Cluster Pods launch higher and tighter, Napalm Payload lower and heavier
+      const c = ev('missile', busW, 0.5, { room: 0.18, tn: sp ? 'missile' + sp : 'missile', pitch: sp === 1 ? semi(3) : sp === 2 ? semi(-3) : 1, trim: ascT(t) }, t);
       sub(c, 160, 70, 0.07, 0.35);
       nz(c, { f0: 700, f1: 2400, q: 1.2, d: 0.22, v: 0.3, a: 0.015 });
       nz(c, { ft: 'lowpass', f0: 900, d: 0.05, v: 0.3, lofi: 1 });
@@ -287,29 +311,49 @@ const SFX = (() => {
       tone(c, { w: 0.125, f0: 220, f1: 110, d: 0.07, v: 0.08, crush: 1 });
       done(c);
     },
-    // Flame Projector: a breathy roar in the low-mid lane (fires in bursts, so it stays short)
-    flame(t) {
-      if (!allow('flame', 0.16, 2)) return;
-      const c = ev('flame', busW, 0.42, { room: 0.1, jit: 1 }, t);
-      nz(c, { f0: 600, f1: 380, q: 0.7, d: 0.24, v: 0.45, a: 0.03, curve: 'lin' });
-      nz(c, { ft: 'highpass', f0: 3500, d: 0.08, v: 0.12, lofi: 1 });
+    // v5.8 Arc Coil: its own crackling bolt (zap stays for thunder and abilities). Tesla Crown crackles once per hop;
+    // Overvolt is thicker: a crushed layer and a sub
+    coil(t) {
+      if (!allow('coil', 0.07, 4)) return;
+      const sp = t && t.spec || 0;
+      const c = ev('coil', busW, 0.42, { room: 0.15, jit: 2, tn: sp ? 'coil' + sp : 'coil', trim: ascT(t) }, t);
+      nz(c, { ft: 'highpass', f0: 5000, d: 0.06, v: 0.4, q: 0.5, lofi: 1 });
+      fmv(c, { f0: rnd(600, 900), f1: 140, r: 5.03, i: 6, d: 0.11, v: 0.2, cw: 'square' });
+      if (sp === 1) { const n = Math.min(6, (t.s && t.s.chain) || 6); for (let k = 0; k < n; k++) click(c, 0.35, 0.02 + k * 0.022, 3500 + k * 400); }
+      else if (sp === 2) { tone(c, { w: 'sawtooth', f0: 110, f1: 70, d: 0.16, v: 0.12, crush: 1 }); sub(c, 90, 40, 0.14, 0.4); }
+      else tone(c, { w: 0.125, f0: 247, f1: 123, d: 0.08, v: 0.08, crush: 1 });
+      done(c);
+    },
+    // Flame Projector: the roar is one continuous voice (SFX.flames, driven from UI.tick); each shot is silent here
+    flame() {},
+    // a short ignition chirp when a projector starts firing
+    ignite(t) {
+      if (!allow('ignite', 0.12, 2)) return;
+      const sp = t && t.spec || 0;
+      const c = ev('ignite', busW, 0.42, { room: 0.1, jit: 1, pitch: sp === 2 ? semi(4) : sp === 1 ? semi(-2) : 1 }, t);
+      click(c, 0.3, 0, 2500);
+      nz(c, { f0: 400, f1: 1400, q: 1.2, d: 0.09, v: 0.35, a: 0.01 });
+      nz(c, { ft: 'highpass', f0: 3500, d: 0.06, v: 0.15, lofi: 1 });
       done(c);
     },
     // EMP Mortar: a heavy tube thump on launch. Low lane.
     mortar(t) {
       if (!allow('mortar', 0.1, 3)) return;
-      const c = ev('mortar', busW, 0.55, { room: 0.25 }, t);
-      sub(c, 110, 45, 0.14, 0.55);
-      nz(c, { ft: 'lowpass', f0: 1200, f1: 300, d: 0.1, v: 0.35, lofi: 1 });
-      click(c, 0.25, 0, 2500);
+      const sp = t && t.spec || 0; // v5.8: Ion Barrage = three thumps 70 ms apart; Blackout Shell a deeper tube
+      const c = ev('mortar', busW, 0.55, { room: 0.25, tn: sp ? 'mortar' + sp : 'mortar', pitch: sp === 1 ? semi(-3) : 1, trim: ascT(t) }, t);
+      if (sp === 2) { for (let k = 0; k < 3; k++) { sub(c, 120 - k * 6, 48, 0.1, 0.5, k * 0.07); click(c, 0.22, k * 0.07, 2500); } nz(c, { ft: 'lowpass', f0: 1200, f1: 300, d: 0.24, v: 0.3, lofi: 1 }); }
+      else { sub(c, 110, 45, 0.14, 0.55); nz(c, { ft: 'lowpass', f0: 1200, f1: 300, d: 0.1, v: 0.35, lofi: 1 }); click(c, 0.25, 0, 2500); }
       done(c);
     },
     // Gravity Well: a sub drop under a down-bending FM moan. Lowest lane.
+    // v5.8: Singularity sucks upward before the drop; Tidal Lock drops longer with a vibrato
     grav(t) {
       if (!allow('grav', 0.2, 2)) return;
-      const c = ev('grav', busW, 0.55, { hall: 0.25 }, t);
-      sub(c, 90, 28, 0.5, 0.5);
-      fmv(c, { f0: 220, f1: 55, r: 0.5, i: 3, d: 0.45, v: 0.16, mw: 'triangle' });
+      const sp = t && t.spec || 0;
+      const c = ev('grav', busW, 0.55, { hall: 0.25, tn: sp ? 'grav' + sp : 'grav', trim: ascT(t) }, t);
+      if (sp === 1) { nz(c, { f0: 300, f1: 2400, q: 2, d: 0.14, v: 0.25, a: 0.12, curve: 'lin' }); tone(c, { w: 'sine', f0: 110, f1: 330, d: 0.14, v: 0.12, a: 0.1 }); sub(c, 90, 24, 0.5, 0.55, 0.15); fmv(c, { f0: 220, f1: 45, r: 0.5, i: 3, d: 0.45, v: 0.16, mw: 'triangle', at: 0.15 }); }
+      else if (sp === 2) { tone(c, { w: 'sine', f0: 90, f1: 26, d: 0.8, v: 0.5, a: 0.003, vib: [5, 0.04] }); fmv(c, { f0: 196, f1: 49, r: 0.5, i: 3, d: 0.75, v: 0.15, mw: 'triangle' }); }
+      else { sub(c, 90, 28, 0.5, 0.5); fmv(c, { f0: 220, f1: 55, r: 0.5, i: 3, d: 0.45, v: 0.16, mw: 'triangle' }); }
       done(c);
     },
     // Core Battery: a plasma shell. Bright square chirp up, small sub, so it reads as "ours"
@@ -322,8 +366,25 @@ const SFX = (() => {
     },
   };
   // impacts: tiny, gated hard. Crits get a bright tink; blunted hits on armour a dull clank; shields a glassy ping.
+  // v5.8: every tower family has its own impact and its own voice budget, so rapid Lens, Flame and Cryo hits can't starve the rest.
+  // Missile, Mortar and Gravity Well hits are covered by their own blast or pull sound.
+  const HIT_FAM = { pulse: 'K', rail: 'R', cryo: 'C', flame: 'F', lens: 'V', coil: 'A', missile: null, emp: null, grav: null };
+  const HITS = {
+    N: [0.035, 5, 0.22, c => nz(c, { f0: rnd(1500, 2600), q: 2.2, d: 0.03, v: 0.4 })],
+    K: [0.04, 4, 0.22, c => { click(c, 0.25, 0, 5000); tone(c, { w: 0.25, f0: 1900, f1: 950, d: 0.025, v: 0.16, lp: 6000 }); }],
+    R: [0.05, 3, 0.25, c => { click(c, 0.3, 0, 4000); fmv(c, { f0: 1250, r: 2.76, i: 1.4, d: 0.06, v: 0.14 }); }],
+    C: [0.09, 2, 0.2, c => fmv(c, { f0: rnd(3300, 3900), r: 3.01, i: 0.7, d: 0.045, v: 0.12 })],
+    F: [0.12, 2, 0.2, c => nz(c, { ft: 'highpass', f0: 3800, d: 0.06, v: 0.3, lofi: 1, a: 0.008 })],
+    V: [0.1, 2, 0.2, c => nz(c, { f0: rnd(2600, 3400), q: 4, d: 0.03, v: 0.45 })],
+    A: [0.05, 3, 0.22, c => { tone(c, { w: 0.125, f0: 520, f1: 260, d: 0.035, v: 0.14 }); click(c, 0.2, 0, 6000); }],
+  };
   const HIT = {
-    hit(e) { if (!allow('hit', 0.035, 5)) return; const c = ev('hit', busH, 0.22, { jit: 2 }, e); nz(c, { f0: rnd(1500, 2600), q: 2.2, d: 0.03, v: 0.4 }); done(c); },
+    hit(e, src) {
+      const ty = src && src.type, f = !ty ? 'N' : ty in HIT_FAM ? HIT_FAM[ty] : 'N';
+      if (!f) return;
+      const H = HITS[f]; if (!allow('hit' + f, H[0], H[1])) return;
+      const c = ev(f === 'N' ? 'hit' : 'hit' + f, busH, H[2], { jit: 2 }, e); H[3](c); done(c);
+    },
     hitcrit(e) { if (!allow('hitcrit', 0.06, 3)) return; const c = ev('hitcrit', busH, 0.45, { room: 0.2, jit: 1 }, e); click(c, 0.4, 0, 6000); fmv(c, { f0: 2637, r: 2.01, i: 1, d: 0.09, v: 0.16 }); done(c); },
     hitarmor(e) { if (!allow('hitarmor', 0.07, 3)) return; const c = ev('hitarmor', busH, 0.3, { jit: 1.5 }, e); fmv(c, { f0: 420, r: 1.41, i: 2.5, d: 0.07, v: 0.22, cw: 'triangle' }); nz(c, { ft: 'lowpass', f0: 1400, d: 0.03, v: 0.2 }); done(c); },
     hitshield(e) { if (!allow('hitshield', 0.07, 3)) return; const c = ev('hitshield', busH, 0.3, { room: 0.2, jit: 1 }, e); fmv(c, { f0: 1760, f1: 1500, r: 1.5, i: 0.8, d: 0.08, v: 0.14 }); done(c); },
@@ -374,7 +435,35 @@ const SFX = (() => {
     levelup() { duck(-5, 0.03, 0.4, 0.8, true); const c = ev('levelup', busE, 0.65, { hall: 0.45, jit: 0, pan: 0 }); arp(c, [69, 72, 76, 79, 81, 84], 0.07, { v: 0.11, d: 0.3, bell: 1 }); tone(c, { w: 'triangle', f0: note(45), d: 0.8, v: 0.18, at: 0.35 }); done(c); },
     unbreak() { const c = ev('unbreak', busE, 0.6, { hall: 0.4, jit: 0, pan: 0 }); arp(c, [60, 64, 67, 72], 0.05, { v: 0.12, d: 0.4, bell: 1 }); done(c); },
     freeze(e) { if (!allow('freeze', 0.12, 2)) return; const c = ev('freeze', busH, 0.4, { room: 0.35 }, e); fmv(c, { f0: 2794, f1: 1397, r: 3.5, i: 2, d: 0.18, v: 0.15 }); nz(c, { ft: 'highpass', f0: 6000, f1: 3000, d: 0.15, v: 0.25 }); done(c); },
-    net(e) { if (!allow('net', 0.1, 2)) return; const c = ev('net', busH, 0.4, { room: 0.2 }, e); tone(c, { w: 0.25, f0: 1400, f1: 500, d: 0.1, v: 0.12 }); nz(c, { f0: 2500, f1: 900, q: 3, d: 0.1, v: 0.25 }); done(c); },
+    net(e, t) { if (!allow('net', 0.1, 2)) return; const sp = t && t.spec || 0; const c = ev('net', busH, 0.4, { room: 0.2, tn: sp === 1 ? 'net1' : 'net' }, e);
+      if (sp === 1) { sub(c, 150, 55, 0.14, 0.5); nz(c, { ft: 'lowpass', f0: 900, f1: 200, d: 0.12, v: 0.4, lofi: 1 }); tone(c, { w: 0.25, f0: 700, f1: 260, d: 0.09, v: 0.08 }); }
+      else { tone(c, { w: 0.25, f0: 1400, f1: 500, d: 0.1, v: 0.12 }); nz(c, { f0: 2500, f1: 900, q: 3, d: 0.1, v: 0.25 }); }
+      done(c); },
+    // v5.8: a flier swerves toward a Snare Beacon: a soft rising lure (Long Lure: a radar ping)
+    lure(e, t) { if (!allow('lure', 0.25, 2)) return; const sp = t && t.spec || 0; const c = ev('lure', busH, 0.35, { room: 0.3, hall: sp === 2 ? 0.2 : 0, tn: sp === 2 ? 'lure2' : 'lure', jit: 0.5 }, t || e);
+      if (sp === 2) { tone(c, { w: 'sine', f0: 1320, d: 0.16, v: 0.12 }); tone(c, { w: 'sine', f0: 1320, d: 0.12, v: 0.05, at: 0.16 }); }
+      else { tone(c, { w: 'triangle', f0: 520, f1: 880, d: 0.14, v: 0.12, a: 0.03 }); }
+      done(c); },
+    // v5.8: a Void Lens locks onto a new target
+    lock(t) { if (!allow('lock', 0.08, 2)) return; const c = ev('lock', busW, 0.3, { jit: 0.3, tn: t && t.spec === 2 ? 'lock2' : 'lock' }, t); tone(c, { w: 0.25, f0: 1320, d: 0.025, v: 0.1, lp: 5000 }); tone(c, { w: 0.25, f0: 1760, d: 0.035, v: 0.1, lp: 5000, at: 0.03 }); done(c); },
+    // v5.8: Credit Forge payout: one bell per forge, staggered so several forges arpeggiate
+    forge(f, i) { i = i || 0; if (i > 7) return; const sp = f && f.spec || 0; const c = ev('forge', busE, 0.5, { room: 0.35, jit: 0, tn: sp === 1 ? 'forge1' : 'forge' }, f);
+      c.t += i * 0.07; const m = [76, 79, 83, 88, 91, 95, 100, 103][i] + (sp === 1 ? 0 : -5);
+      tone(c, { w: 'sine', f0: note(m), d: 0.25, v: 0.12 }); fmv(c, { f0: note(m + 12), r: 3.5, i: 0.8, d: 0.12, v: 0.05 }); click(c, 0.15, 0, 6000); done(c); },
+    // v5.8: a Relay Pylon links a new tower
+    pylon(t) { if (!allow('pylon', 0.3, 2)) return; const sp = t && t.spec || 0; const c = ev('pylon', busE, 0.4, { room: 0.3, jit: 0 }, t); arp(c, sp === 2 ? [84, 91] : sp === 1 ? [76, 83] : [79, 86], 0.05, { v: 0.08, d: 0.08 }); done(c); },
+    // v5.8 Swarm Missile impact (was the shared 'boom'): a sub, a crunchy blast and a crackle. Napalm Payload adds a rising whoomph
+    boomT(p) { if (!allow('boomT', 0.06, 4)) return; const nap = p && p.src && p.src.s && p.src.s.napalm; const c = ev('boomT', busH, 0.55, { room: 0.25, tn: nap ? 'boomT2' : 'boomT' }, p);
+      sub(c, 110, 40, 0.18, 0.5); nz(c, { ft: 'lowpass', f0: 2800, f1: 260, d: 0.2, v: 0.45, lofi: 1 }); click(c, 0.25, 0, 2000);
+      if (nap) nz(c, { f0: 250, f1: 1100, q: 1.1, d: 0.3, v: 0.35, a: 0.08, curve: 'lin' }); else nz(c, { ft: 'highpass', f0: 3000, d: 0.1, v: 0.12, lofi: 1, at: 0.03 });
+      done(c); },
+    // v5.8 Cluster Pods bomblets: a cheap little pop
+    pop(p) { if (!allow('pop', 0.05, 3)) return; const c = ev('pop', busH, 0.4, { room: 0.12, jit: 2 }, p); click(c, 0.3, 0, 2500); nz(c, { f0: 1800, f1: 500, q: 1.2, d: 0.06, v: 0.4, lofi: 1 }); sub(c, 150, 70, 0.05, 0.25); done(c); },
+    // v5.8 EMP Mortar impact: a sub, a noise sweep, a square FM chirp and a crushed buzz. Blackout Shell leaves a 0.4 s buzz tail
+    empboom(p) { if (!allow('empboom', 0.06, 3)) return; const sp = p && p.src && p.src.spec || 0; const c = ev('empboom', busH, 0.55, { room: 0.3, tn: sp === 1 ? 'empboom1' : 'empboom' }, p);
+      sub(c, 95, 32, 0.22, 0.55); nz(c, { f0: 3500, f1: 250, q: 2, d: 0.22, v: 0.35 }); fmv(c, { f0: 140, f1: 55, r: 7.07, i: 5, d: 0.2, v: 0.14, cw: 'square' });
+      tone(c, { w: 0.125, f0: sp === 1 ? 60 : 880, f1: sp === 1 ? 55 : 110, d: sp === 1 ? 0.45 : 0.18, v: sp === 1 ? 0.1 : 0.06, crush: 1, curve: sp === 1 ? 'lin' : undefined });
+      done(c); },
     boom(p) { if (!allow('boom', 0.06, 4)) return; const c = ev('boom', busH, 0.55, { room: 0.25 }, p); sub(c, 100, 38, 0.18, 0.5); nz(c, { ft: 'lowpass', f0: 2500, f1: 250, d: 0.2, v: 0.45, lofi: 1 }); click(c, 0.25, 0, 2000); done(c); },
     emp(e) { if (!allow('emp', 0.2, 2)) return; const c = ev('emp', busE, 0.55, { room: 0.3 }, e); nz(c, { f0: 3000, f1: 300, q: 3, d: 0.3, v: 0.35 }); fmv(c, { f0: 110, f1: 55, r: 7.07, i: 4, d: 0.3, v: 0.15, cw: 'square' }); tone(c, { w: 0.125, f0: 880, f1: 110, d: 0.25, v: 0.06, crush: 1 }); done(c); },
     blink(e) { if (!allow('blink', 0.15, 2)) return; const c = ev('blink', busE, 0.45, { room: 0.4 }, e); fmv(c, { f0: 880, f1: 220, r: 3, i: 2.5, i1: 0.05, d: 0.22, v: 0.15 }); tone(c, { w: 0.125, f0: 1760, f1: 3520, d: 0.08, v: 0.05 }); done(c); },
@@ -403,31 +492,64 @@ const SFX = (() => {
     whale(e) { if (!allow('whale', 1)) return; const c = ev('whale', busE, 0.6, { hall: 0.8 }, e); tone(c, { w: 'sine', f0: 180, f1: 260, d: 1.2, v: 0.16, a: 0.3, vib: [4, 0.015] }); tone(c, { w: 'sine', f0: 260, f1: 140, d: 1.1, v: 0.12, a: 0.2, at: 1.1, vib: [5, 0.02] }); done(c); },
     blorp(e) { if (!allow('blorp', 0.2)) return; const c = ev('blorp', busE, 0.6, { room: 0.3, jit: 2 }, e); tone(c, { w: 'sine', f0: 440, f1: 70, d: 0.18, v: 0.3 }); nz(c, { ft: 'lowpass', f0: 700, q: 6, f1: 200, d: 0.12, v: 0.25 }); done(c); },
   };
-  function play(name, arg) {
+  function play(name, arg, arg2) {
     if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
-    if (WEAP[name]) return WEAP[name](arg);
-    if (HIT[name]) return HIT[name](arg);
+    if (WEAP[name]) return WEAP[name](arg, arg2);
+    if (HIT[name]) return HIT[name](arg, arg2);
     if (name === 'die') return die(arg);
     if (name === 'bosswarn') return EVT.boss(arg);
     if (name === 'combo') { const n = typeof arg === 'string' ? arg : arg && arg.n; if (!COMBO[n] || !allow('combo' + n, 0.12, 2)) return; const c = ev('combo' + n, busE, 0.6, { room: 0.3 }, typeof arg === 'object' ? arg : null); COMBO[n](c); done(c); return; }
     if (name === 'ui' || name === 'deny') { if (!allow(name, name === 'ui' ? 0.03 : 0.1)) return; return UIS[name](); }
-    if (EVT[name]) return EVT[name](arg);
+    if (EVT[name]) return EVT[name](arg, arg2);
   }
   // Void Lens: one shared beam hum. Its level follows how many beams are firing; its pitch climbs as they ramp up.
-  function beams(n, ramp) {
-    if (!ctx || ctx.state !== 'running' || !busW) return;
+  // v5.8: eh / pr = share of firing Lenses that are Event Horizon (a sub octave under the hum) or Prism Split (a wider chorus)
+  function beams(n, ramp, eh, pr) {
+    if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
     if (!beamV) {
-      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
-      o1.type = 'sawtooth'; o2.setPeriodicWave(pulseWave(0.25)); o1.frequency.value = 110; o2.frequency.value = 110.6; f.type = 'lowpass'; f.Q.value = 4; f.frequency.value = 600;
+      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator(), o4 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      const g3 = ctx.createGain(), g4 = ctx.createGain();
+      o1.type = 'sawtooth'; o2.setPeriodicWave(pulseWave(0.25)); o3.type = 'sine'; o4.type = 'sawtooth'; o1.frequency.value = 110; o2.frequency.value = 110.6; o3.frequency.value = 55; o4.frequency.value = 109;
+      f.type = 'lowpass'; f.Q.value = 4; f.frequency.value = 600;
       lfo.frequency.value = 7; lg.gain.value = 120; lfo.connect(lg); lg.connect(f.frequency);
-      g.gain.value = 0; o1.connect(f); o2.connect(f); f.connect(g); g.connect(busW);
-      o1.start(); o2.start(); lfo.start(); beamV = { o1, o2, f, g };
+      g.gain.value = 0; g3.gain.value = 0; g4.gain.value = 0; o1.connect(f); o2.connect(f); o4.connect(g4); g4.connect(f); f.connect(g); o3.connect(g3); g3.connect(g); g.connect(busW);
+      o1.start(); o2.start(); o3.start(); o4.start(); lfo.start(); beamV = { o1, o2, o3, o4, g3, g4, f, g };
     }
-    const t = ctx.currentTime, k = Math.min(1, ramp || 0), on = n > 0;
+    const t = T(), k = Math.min(1, ramp || 0), on = n > 0;
     beamV.g.gain.setTargetAtTime(on ? Math.min(0.09, 0.035 + 0.02 * Math.log2(1 + n)) : 0, t, on ? 0.05 : 0.12);
-    const f0 = 98 * semi(k * 12);
-    beamV.o1.frequency.setTargetAtTime(f0, t, 0.1); beamV.o2.frequency.setTargetAtTime(f0 * 1.005, t, 0.1);
+    const f0 = 98 * semi(k * 12), w = 0.005 + 0.012 * (pr || 0);
+    beamV.o1.frequency.setTargetAtTime(f0, t, 0.1); beamV.o2.frequency.setTargetAtTime(f0 * (1 + w), t, 0.1); beamV.o4.frequency.setTargetAtTime(f0 * (1 - w), t, 0.1);
+    beamV.o3.frequency.setTargetAtTime(f0 / 2, t, 0.1);
+    beamV.g3.gain.setTargetAtTime(1.4 * (eh || 0), t, 0.15); beamV.g4.gain.setTargetAtTime(0.8 * (pr || 0), t, 0.15);
     beamV.f.frequency.setTargetAtTime(500 + 2200 * k, t, 0.1);
+  }
+  // v5.8 Flame Projector: one continuous roar for every projector that is firing (n), like the Lens hum. A noise band around
+  // 600 Hz with an 11 Hz flutter and a lo-fi crackle; Inferno (inf share) adds a low rumble, Plasma Torch (pl share) a crushed 110 Hz buzz
+  let flameV = null;
+  function flames(n, inf, pl) {
+    if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
+    if (!flameV) {
+      if (!n) return;
+      const src = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), fl = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
+      src.buffer = noiseBuf; src.loop = true; bp.type = 'bandpass'; bp.frequency.value = 600; bp.Q.value = 0.8;
+      lfo.frequency.value = 11; lg.gain.value = 0.35; fl.gain.value = 0.65; lfo.connect(lg); lg.connect(fl.gain);
+      const cr = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), cg = ctx.createGain(), clfo = ctx.createOscillator(), clg = ctx.createGain();
+      cr.buffer = noiseLo; cr.loop = true; cr.playbackRate.value = 0.7; hp.type = 'highpass'; hp.frequency.value = 3200; cg.gain.value = 0.12; clfo.type = 'square'; clfo.frequency.value = 17; clg.gain.value = 0.12; clfo.connect(clg); clg.connect(cg.gain);
+      const rb = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), rg = ctx.createGain();
+      rb.buffer = noiseBuf; rb.loop = true; lp.type = 'lowpass'; lp.frequency.value = 160; lp.Q.value = 1.5; rg.gain.value = 0;
+      const bz = ctx.createOscillator(), bg = ctx.createGain(); bz.type = 'square'; bz.frequency.value = 110; bg.gain.value = 0;
+      g.gain.value = 0;
+      src.connect(bp); bp.connect(fl); fl.connect(g); cr.connect(hp); hp.connect(cg); cg.connect(g); rb.connect(lp); lp.connect(rg); rg.connect(g); bz.connect(bg); bg.connect(crushIn);
+      g.connect(busW);
+      for (const o of [src, cr, rb, lfo, clfo, bz]) o.start(T(), 0);
+      flameV = { g, rg, bg, bp };
+    }
+    const t = T(), on = n > 0;
+    const lvl = on ? Math.min(0.3, (0.08 + 0.045 * Math.log2(1 + n)) * 1.5) : 0;
+    flameV.g.gain.setTargetAtTime(lvl, t, on ? 0.04 : 0.1);
+    flameV.rg.gain.setTargetAtTime(on ? 1.6 * (inf || 0) : 0, t, 0.1);
+    flameV.bg.gain.setTargetAtTime(on ? 0.03 * (pl || 0) * Math.min(1, 0.5 + 0.25 * n) : 0, t, on ? 0.05 : 0.1);
+    flameV.bp.frequency.setTargetAtTime(600 * (pl ? 1 + 0.4 * pl : 1) * (inf ? 1 - 0.2 * inf : 1), t, 0.2);
   }
   // low core: a soft double heartbeat whose rate climbs as the hull falls (k = 0 healthy … 1 critical)
   function danger(k, dt) {
@@ -437,7 +559,7 @@ const SFX = (() => {
     const c = ev('heart', busE, 0.25 + 0.3 * k, { jit: 0, pan: 0 }); sub(c, 70, 45, 0.12, 0.5); sub(c, 62, 40, 0.14, 0.4, 0.2); done(c);
   }
   // offline rendering for tests: play(name) into an OfflineAudioContext at time t
-  function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; buildMasterOffline(); }
+  function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; beamV = null; flameV = null; buildMasterOffline(); }
   function buildMasterOffline() {
     limiter = ctx.createDynamicsCompressor(); limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
     master = ctx.createGain(); master.gain.value = 1; sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
@@ -1346,7 +1468,7 @@ const SFX = (() => {
     return API;
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------

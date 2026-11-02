@@ -874,7 +874,7 @@ function lure(e) {
   best.caught = (best.caught || 0) + 1;
   e.L = prepLane([{ x: e.x, y: e.y }, { x: best.cx, y: best.cy }, { x: cx, y: cy }]); e.d = 0;
   e.lured = best.id; e.lureT = best;
-  Hooks.fx('lure', { x1: best.cx, y1: best.cy, x2: e.x, y2: e.y });
+  Hooks.fx('lure', { x1: best.cx, y1: best.cy, x2: e.x, y2: e.y, t: best }); Hooks.sfx('lure', e, best);
 }
 function lureAll() { for (const e of G.enemies) lure(e); }
 function buildTower(type, x, y) {
@@ -1683,8 +1683,9 @@ function startWave() {
     let inc = f.s.income + (f.s.interest ? Math.min(G.credits * f.s.interest, 40 + w * 5) : 0);
     inc *= G.mods.credits * (G.ev.gold ? 2 : 1);
     G.credits += Math.round(inc);
-    Hooks.fx('coin', { x: f.cx, y: f.cy, v: Math.round(inc) });
+    Hooks.fx('coin', { x: f.cx, y: f.cy, v: Math.round(inc), forge: f });
   }
+  { let i = 0; for (const f of G.forges || []) Hooks.sfx('forge', f, i++); } // cosmetic: a payout chime per forge, staggered
   if (w % 10 === 0) Hooks.sfx('bosswarn');
   Hooks.sfx('wave', w);
   Hooks.onWave(w);
@@ -2185,7 +2186,7 @@ function updateEnemies(dt) {
       const t = e.lureT;
       if (G.towerAt[tIdx(t.x, t.y)] !== t) e.lureT = null;
       else if (dist2(e.x, e.y, t.cx, t.cy) <= t.s.netR * t.s.netR) {
-        if (!e.netted) { e.netted = 1; e.netHold = t.s.hold * (e.boss ? 0.3 : 1); Hooks.fx('net', { x: e.x, y: e.y }); Hooks.sfx('net', e); }
+        if (!e.netted) { e.netted = 1; e.netHold = t.s.hold * (e.boss ? 0.3 : 1); Hooks.fx('net', { x: e.x, y: e.y, t }); Hooks.sfx('net', e, t); }
         netK = 1 - t.s.netSlow * (e.boss ? 0.4 : 1);
       }
     }
@@ -2472,7 +2473,7 @@ function hit(e, dmg, el, src, o) {
   if (e.boss && !e.gen && e.boss !== 'gloop' && e.phase < BOSS_PHASES.length && e.hp < e.maxHp * BOSS_PHASES[e.phase]) bossPhase(e);
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
   if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; src.lastFireW = G.wave; }
-  if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt || glance ? 'hitarmor' : 'hit', e);
+  if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt || glance ? 'hitarmor' : 'hit', e, src);
     if ((blunt || glance) && (e.pingT || 0) < G.time) { e.pingT = G.time + 0.25; Hooks.fx(glance ? 'glance' : 'ping', { x: e.x, y: e.y, sx: src && src.cx, sy: src && src.cy }); } }
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
   if (e.hp <= 0) { kill(e, src, o); return dealt; }
@@ -2554,7 +2555,7 @@ function applyStatuses(e, dmg, el, src, o) {
   }
   if (shockP > 0 && r() < shockP) {
     st.shock = FX('shockLong') ? 6 : 3; st.shockEff = Math.max(st.shockEff, s.shockX * M.shockEff);
-    if (s.stun && r() < s.stun && !jugg) st.stun = Math.max(st.stun, e.boss ? 0.2 : 0.6);
+    if (s.stun && r() < s.stun && !jugg) { st.stun = Math.max(st.stun, e.boss ? 0.2 : 0.6); Hooks.fx('ovstun', { x: e.x, y: e.y }); }
   }
   if (markP > 0 && r() < markP) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
   if (M.ks.horizon && st.mark >= M.markMax && !e.yanked && !e.boss && !e.fly) { e.yanked = 1; e.d = Math.max(0, e.d - 1.5); Hooks.fx('implode', { x: e.x, y: e.y, r: 0.8 }); }
@@ -2843,7 +2844,7 @@ function towerAttack(t, range, sw) {
       const n = Math.min(hits.length, 1 + s.pierce);
       for (let i = 0; i < n; i++) { hit(hits[i][1], dmg, s.el, t, { crit }); }
       if (n) ricochet(t, hits[0][1], dmg, s.el);
-      Hooks.fx('rail', { x1: t.cx, y1: t.cy, x2: t.cx + dx * len, y2: t.cy + dy * len, col: EL[s.el].col, crit });
+      Hooks.fx('rail', { x1: t.cx, y1: t.cy, x2: t.cx + dx * len, y2: t.cy + dy * len, col: EL[s.el].col, crit, t, hp: hits.slice(0, n).map(h => ({ x: h[1].x, y: h[1].y })) });
       }
       Hooks.sfx('rail', t);
       return true;
@@ -2855,7 +2856,7 @@ function towerAttack(t, range, sw) {
       const crit = rollCrit(t);
       const dmg = atkDmg(t, sw, crit);
       for (const e of tg) hit(e, dmg, s.el, t, { crit });
-      Hooks.fx('pulse', { x: t.cx, y: t.cy, r: range, col: EL[s.el].col });
+      Hooks.fx('pulse', { x: t.cx, y: t.cy, r: range, col: EL[s.el].col, t });
       Hooks.sfx('pulse', t);
       return true;
     }
@@ -2890,9 +2891,9 @@ function towerAttack(t, range, sw) {
           hit(best, dmg, s.el, t); cur = best;
         }
         ricochet(t, e0, dmg, s.el);
-        Hooks.fx('chain', { pts, col: EL[s.el].col });
+        Hooks.fx('chain', { pts, col: EL[s.el].col, t });
       }
-      Hooks.sfx('zap', t);
+      Hooks.sfx('coil', t);
       return true;
     }
     case 'cone': {
@@ -2910,7 +2911,7 @@ function towerAttack(t, range, sw) {
         while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
         if (Math.abs(da) < 0.55) hit(e, dmg, s.el, t, { crit });
       }
-      Hooks.fx('flame', { x: t.cx, y: t.cy, ang, range, col: EL[s.el].col });
+      Hooks.fx('flame', { x: t.cx, y: t.cy, ang, range, col: EL[s.el].col, t });
       Hooks.sfx('flame', t);
       return true;
     }
@@ -2937,7 +2938,7 @@ function towerAttack(t, range, sw) {
         if (!e.elite.includes('jugg')) { e.pullN = (e.pullN || 0) + 1; e.d = Math.max(0, e.d - s.pull * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - 0.15 * (e.pullN - 1))); }
         hit(e, dmg, s.el, t);
       }
-      Hooks.fx('grav', { x: t.cx, y: t.cy, r: range });
+      Hooks.fx('grav', { x: t.cx, y: t.cy, r: range, t, es: tg });
       Hooks.sfx('grav', t);
       return true;
     }
@@ -3033,8 +3034,8 @@ function shards(p, from) {
 function explode(p) {
   const r = p.splash || 0.6, src = p.src, s = src.s;
   if (G.af.fractal && p.k === 'missile') shards(p, null);
-  Hooks.fx('boom', { x: p.x, y: p.y, r, col: EL[p.el].col });
-  Hooks.sfx('boom', p);
+  Hooks.fx('boom', { x: p.x, y: p.y, r, col: EL[p.el].col, k: p.k, t: src });
+  Hooks.sfx(p.k === 'mortar' ? 'empboom' : p.k === 'bomblet' ? 'pop' : 'boomT', p); // cosmetic: each payload has its own impact
   for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, p.x, p.y) <= (r + e.size) * (r + e.size)) {
     if (p.k === 'mortar' && e.shield > 0) e.shield *= 0.5; // EMP strips shields
     hit(e, p.dmg, p.el, src, { crit: p.crit });
