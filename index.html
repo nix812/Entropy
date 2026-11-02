@@ -893,6 +893,16 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
   .stcompose { grid-template-columns: minmax(0, 1fr); } .cpright { order: -1; } /* the grid first on small phones */
 }
 @media (prefers-reduced-motion: reduce) { .brand h1, .entg.ready, #rotate .ph-icon { animation: none; } }
+/* v5.7 studio splash (outside #app, so sized in viewport units) */
+#splash { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 55%, #1b1530 0%, #07080f 70%); transition: opacity 0.5s; touch-action: none; }
+#splash.out { opacity: 0; pointer-events: none; }
+#splash .spc { display: flex; flex-direction: column; align-items: center; opacity: 0; transform: translateY(6px); transition: opacity 0.45s, transform 0.6s; }
+#splash.in .spc { opacity: 1; transform: none; }
+#splash .spcat { width: min(40vh, 34vw); image-rendering: pixelated; }
+#splash .spn { font-family: var(--f-pix); font-weight: 700; font-size: min(11vh, 9vw); line-height: 0.9; margin-top: 2.6vh; letter-spacing: 0.04em; color: var(--ink); text-shadow: 3px 0 0 var(--bad), -3px 0 0 var(--cryo), 0 0 24px rgba(184, 108, 255, 0.35); }
+#splash .spi { font-family: var(--f-pix); font-size: min(3.6vh, 3vw); letter-spacing: 0.55em; margin: 1.6vh 0 0 0.55em; color: var(--dim); }
+#splash .spp { font-family: var(--f-term); font-size: min(4vh, 3.4vw); letter-spacing: 0.12em; margin-top: 3.4vh; color: #6b6a88; }
+@media (prefers-reduced-motion: reduce) { #splash, #splash .spc { transition: none; } }
 </style>
 
 
@@ -987,7 +997,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.6.0';
+const VERSION = '5.7.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1160,7 +1170,8 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.6.0', title: 'Last Gradient 5.6 · A New Name', items: [
+const WHATS_NEW = { ver: '5.7.0', title: 'Last Gradient 5.7 · Nigel Industries', items: [
+  ['Nigel Industries presents', 'The studio has a mascot: Nigel, a small black cat, in his couch. He greets you when the game starts. Tap to skip him (he will not mind).'],
   ['Entropy is now Last Gradient', 'Everything in the universe runs on gradients: hot next to cold, order next to chaos. When the last one flattens out, nothing moves again. You are holding it up.'],
   ['The title', 'The name on the hangar fades from cream to violet and breaks apart as you watch. With Reduce Motion on, it holds still.'],
   ['Nothing else changed', 'Your progress, talents, tracks, Hunt codes and the Entropy gauge are exactly where you left them.'],
@@ -11538,6 +11549,25 @@ const Tree = (() => {
 })();
 
 // ---------------- Main loop ----------------
+const NIGEL_PX = ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAA4CAYAAABNGP5yAAADXklEQVR4Xu2aS2gTQRjHp+JNCz6qh2B9rUKQoPjAir1Y9SDmoGg9ihcVFK/1WMRjpXpSaxVKztYiSKrQlgpSseIDtWgOpiiFXFpUqB6EgvKtTJrdnd355vFttnZ/EJrQ2d35/zI7M/u1jKWkpKSkpKRQ0Lis6Y+N89o6j4glNjoYxvp1OePOnz7WZUViGKQCdmWPssblq7QlQPiRF/covyNaARwdCXGEB8hGgGmAN6VBI4FYyATwAAecnNsXlVEA8r7/qFSPpYRMANz/HBUJfOTwY6hZSn0BPzASjh++HDqzU096fsgFPC1PuNeEb5S/l4WsbUsN2S3gh4fHoNLWlNgEJBUSAaZLoAiVVUQFEgG1a3jSIRFQuwQmHesCwoZ/cXSv+5KBbWcL6wJEwx9Cbd10ibXuGYiUgG1nE+sCwob/2tUHUf3GtrMF+UYIyLe9ZGOvTlTfh4FtZ5NYBHAJGEBCnDTYvhiUr2DNpmD25zc2+2vGap+VT9Z755HwQWbi3Xs3c27HdvZs8JN0vw9sWdPk/vw8PYP21X7yjNu2r3CDdV/vCxw3NPSY3e+/hc6FbsiDl0ofIzs793vO7RxmFMA3CmDaAhC+/0Ghev1D+86yh8Nd7Nz5Dk+fstltaBEoARBeFtzP3d5rkcFWrsgwKHoAte91AJF+CcDU1FfpaJAK0AnPkUmwia6ESAEjwx+E93tPz23W3LwB1f/pyQbUfGCDK1e7hacpFG6ysedPhFlDBUD4YnG+MOkHhhdGQlwCIDxMgGFUKpNCCcKdoCw8AOFBQhRJCQ9kMptZ6/4jgREdEIAJz4mSkKTwHJEEjwCV8DIJmJrA29cD7ksX2bAX4ZfgEVAuf9HtS4A4agKqS7MIjwDH2WhNAJadu/89JOkAGx5TrD8Oc2CHJsMkvC3IBMDOjG91k4zR43A+P//nLxGy39vAcS6wzs4Od3LTQVsAhIvaKMVJS0sbGx8f1ZKgdQskKTwHJMBuTxVlAUkMbyJBWYDNvUISUBZQj70CJcoC/jeMBcATYe1TYT0+m6C9DHL8NYF6f1bFMwKg0rPY8AiAcrKsyAG7roWMvzIUmANkEviuK4nIdoOisphwElyIEnTCA5FV4VPtF0P/nQ0kiWps9QKqvlH9CasKpyx2/gJwILY0tl0hfQAAAABJRU5ErkJggg==', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAA4CAYAAABNGP5yAAADP0lEQVR4Xu2aP2gUQRSHJ2KnAZXYHEbFtTjkUNQioo2ihZhC0ViKjQraxzKIZSRaqTEK4WqjCJIoJEFBFFOoqEGv8IISuCZBhWghBJQ3MMnu7Oz8f3tzZj8I3JHZvfl993Zn9iWEFBQUFBQUFGDQvqbjr4/z+jqPiFU+JpjF5k0V58mfOd7vRWIWqAL2lI+R9rUbrCVA+MnX9zC/I1wBDBsJeYQH0CrANcDb2piTQF3QBLAAB6MKnYtJFYC8Hz8bS8digiYArn+GiQRWOewYbFZjfwAPVMKJI5cz7+zYNz0edAHP69P0M+EbZa9VIeNjsUG7BHhYeB1MxrqSm4BQQRHgugSKMFlFTEAREF/DQwdFQHwJDB3vAjDKHxPvAkTlf3jfuaUM8dc8uuN80ubzZEBWBbBwqj2AbNzCr+9k4fe81zmjb4QYquCm43zh/RJoNbyWEwDtK1izMcC4BIwFDN15LHyQmX7/gWau7NpJXox91ir57Rs76DFf5ua1ffWcOkvHDldvkIHrw6njxsefkPsjt7RzaQ9kwWu1T9LJLv5ZpJPTqQL4RmnVaFYMhB95UE2sKI8m+sn5C72JOZXLO7RFaAmA8KrgPHeHrkmDrV9XItD0AOKvbQCRvARgdvabshqUAmzCM1QSfGIrQSpgcuKj8HofHLxNOju3aM1/bqZN637ggytXB4SnqVZvkpevngqzZgqA8KOjy41JHigvHQl5CYDwcAPMotGYEUoQ7gNU4QEIDxJkhBIeKJW2kQP7j6YqOiVAJzxDJiGk8AyRhIQAk/AqCTo9gXdvHtIfW1RlL4KXkBBQr3+1nUuKPHoCpkuziISAKNrqTYAuu/ee1B2aAjY8rqA9DMEOTYVLeF+gCYCdGdvqhoxTP6C7e/nPXyJUv/dBFF0kfX299OZmg7UACCfbKOVJV9chMjX1zEqC1SUQUngGSIDdninGAkIM7yLBWIDPvUIIGAtoxl4BE2MB/xvOAuCJMP5U2Iz3Llgvgwy+J9Ds96YkKgA6PSuNhABoJ6uaHLDramX4zlDqHqCSwHZdIaLaDYraYsKbYCtKsAkPSLvCp3suZf47G0gS9diaBXR9ZfPJ6goXrHT+AfnLr7228PTCAAAAAElFTkSuQmCC'];
+// v5.7 studio splash: Nigel (the studio cat) in his couch, a slow blink, then the hangar. Skipped under automation
+// unless forced (test/splashshot.py), returns how long it will cover the screen in ms.
+UI.splash = function (force) {
+  if (!force && navigator.webdriver) return 0;
+  const old = document.getElementById('splash'); if (old) old.remove();
+  const el = document.createElement('div'); el.id = 'splash'; el.setAttribute('aria-label', 'Nigel Industries presents');
+  el.innerHTML = '<div class="spc"><img class="spcat" alt="" src="' + NIGEL_PX[0] + '"><div class="spn">NIGEL</div><div class="spi">INDUSTRIES</div><div class="spp">presents</div></div>';
+  document.body.appendChild(el);
+  const img = el.querySelector('.spcat'); new Image().src = NIGEL_PX[1];
+  let done = false; const timers = [];
+  const end = () => { if (done) return; done = true; timers.forEach(clearTimeout); el.classList.add('out'); setTimeout(() => el.remove(), 520); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); end(); });
+  const go = () => { if (done) return; el.classList.add('in');
+    timers.push(setTimeout(() => { img.src = NIGEL_PX[1]; }, 1150), setTimeout(() => { img.src = NIGEL_PX[0]; }, 1500), setTimeout(end, 2300)); };
+  let started = false; const start = () => { if (!started) { started = true; go(); } };
+  try { document.fonts.ready.then(start); } catch (e) {} setTimeout(start, 600);
+  return 2900;
+};
 (function boot() {
   const loaded = Save.loadLocal();
   if (loaded) PROF = loaded;
@@ -11552,9 +11582,10 @@ const Tree = (() => {
   UI.wire();
   UI.renderHangar();
   UI.show('hangar');
+  const spT = UI.splash(); // v5.7: Nigel Industries presents (cold start only; a tap skips)
   // returning players see what changed once per version; brand-new players skip it
   if (!PROF.runs) { PROF.seenVer = VERSION; }
-  else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900);
+  else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT);
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
