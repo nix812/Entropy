@@ -2,10 +2,11 @@
 
 **Version at handoff: 5.5.14 · November 1, 2026**
 
-### Start here (state at 5.3.0)
+### Start here (state at 5.5.14)
 - **Live:** 5.5.14 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
 - **Nov 1 build cycle:** a Fable design review (doc "Entropy Design Review" in the Project) found the game had no reason to start the next run. 5.2 First Hour (Threat Board, boss slow-down, first runs pay, fresh profiles see less) and 5.3 **The Hunt** (bounty win line with Extract/Push, Nemesis, Daily Hunt with a fixed build, input recording, exact replay and resume). Details in 4.15 and the version table.
 - **The sim is replayable (5.3).** Every player action goes through `act(name, ...args)` (sim.js `ACTS`): stamped with `G.tick`, appended to `G.inputs`. `newRun(G.recOpts)` + the inputs reproduce a run bit for bit (`test/replay.js`). **Any new player action must be an `ACTS` entry called through `window.act` from ui.js**, never a direct sim call or a direct write to `G`, or replays and Daily resume break (pitfall 39).
+- **Latest session (Nov 1, 5.4.2 → 5.5.14):** hangar sky backdrop, then a long Music Studio cycle: rebuilt Listen/Shape tabs, share codes (`TRACK1:`), the hidden Composer (five taps on the visualizer) that plays exactly what's written, Mono Audio, sound health and wake-up fixes, a musician's harmony pass, song length/arrangement, one-tap share, a typing panel that clears the iPhone keyboard, and battlefield music controls (Music tile + deck, 5.5.14). All in section 4.16 and the version table. Nic is happy with where music is.
 - **Read first:** section 2 (build, deploy, commit conventions), 4.15 (The Hunt), 7 (pitfalls, especially 26, 35–39), 8 (working with Nic).
 - **Open threads** are at the top of section 9.
 
@@ -819,6 +820,10 @@ The expanding sector made every level a little easier, because the compact early
 ---
 
 ## 9. Backlog and ideas discussed
+- **Open threads as of 5.5.14 (November 1, 2026):**
+  - **Music is in a good place** (Nic: "That's perfect"). Ask how the Music tile/deck feels in real play before touching it again; he was critical of two earlier placements, so show screenshots before shipping layout changes.
+  - **Still waiting on Nic** (unchanged from 5.3.0 below): 5.4 balance log, the Hunt play feedback, the store path and the name choice, an online ladder.
+  - **Uncommitted ideas from the music cycle:** per-genre favourites playlists; a minimal-piano style. The Claude artifact copy is still 4.4 (Pages only).
 - **Open threads as of 5.3.0 (November 1, 2026):**
   - **5.4 needs Nic's next log:** does the breach line read, does Arc now answer Shell for him, is Lens still dominant (aim: under ~45% in a long run)? 60-point bots rose to median 91 in 5.4 (noise is ±10): if Nic's late game feels soft, raise `HPQ` toward 0.85 or restore half the Elite Tide cut.
   - **Late game too soft:** the review sweep (test/out/bal/v514_review_sweep.txt) shows 60/96-point bots at median 80/102 vs 72.5/83 on 5.1.0. Nic hasn't confirmed by feel. Restore half the Elite Tide cut (+37%) and/or raise `HPQ` toward 0.85.
