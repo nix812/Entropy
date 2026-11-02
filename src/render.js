@@ -96,6 +96,69 @@ const RES = 2;
     if (!c) { c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.u = src.u; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); m.set(col, c); }
     return c;
   }
+  // v5.8 Cloak gene: the sprite's silhouette in a 2×2 checker of one colour (cached per sprite like tintOf)
+  const dithW = new WeakMap();
+  function ditherOf(src, col) {
+    let c = dithW.get(src);
+    if (!c) {
+      c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.u = src.u; const g = c.getContext('2d');
+      g.fillStyle = col; for (let y = 0; y < c.height; y += 2) for (let x = ((y >> 1) & 1) * 2; x < c.width; x += 4) g.fillRect(x, y, 2, 2);
+      g.globalCompositeOperation = 'destination-in'; g.drawImage(src, 0, 0); dithW.set(src, c);
+    }
+    return c;
+  }
+  // v5.8 the visible swarm: one readable mark per gene, drawn in screen space (crisp at any zoom) around a unit whose half
+  // extents on screen are hw × hh. u is the art pixel (2-4 screen px). Used on the field and for menu icons (e.icon: still).
+  const MARK_INK = '#090b16';
+  function geneMark(c, g, x, y, hw, hh, u, e) {
+    const blk = (bx, by, w, h, col) => { c.fillStyle = MARK_INK; c.fillRect(Math.round(bx) - 1, Math.round(by) - 1, w + 2, h + 2); c.fillStyle = col; c.fillRect(Math.round(bx), Math.round(by), w, h); };
+    const col = GENES[g].col;
+    if (g === 'shell') { // a hexagon bubble; solid while the shield holds, broken while it recharges
+      const R = Math.max(hw, hh) + 2 * u, up = e.icon || e.shield > 0;
+      c.beginPath(); for (let i = 0; i < 6; i++) { const a = i * 1.0472 + 0.5236, px = x + Math.cos(a) * R, py = y + Math.sin(a) * R * 0.92; i ? c.lineTo(px, py) : c.moveTo(px, py); } c.closePath();
+      if (up) { c.fillStyle = 'rgba(127,212,255,0.1)'; c.fill(); }
+      c.lineWidth = u + 2; c.strokeStyle = 'rgba(9,11,22,0.75)'; if (!up) c.setLineDash([u * 2, u * 2]); c.stroke();
+      c.lineWidth = u; c.strokeStyle = up ? col : 'rgba(127,212,255,0.55)'; c.stroke(); if (!up) c.setLineDash([]);
+    } else if (g === 'plating') { // steel plates on both flanks and the brow
+      const pw = Math.round(u * 1.5); blk(x - hw - u - pw, y - u * 2, pw, u * 4, '#eef1fa'); blk(x + hw + u, y - u * 2, pw, u * 4, '#eef1fa'); blk(x - u * 2, y - hh - u * 2, u * 4, pw, '#eef1fa');
+      c.fillStyle = '#8f97b3'; c.fillRect(Math.round(x - hw - u - pw), Math.round(y + u), pw, u); c.fillRect(Math.round(x + hw + u), Math.round(y + u), pw, u);
+    } else if (g === 'wings') { // pixel wings at the shoulders, beating
+      const f = e.icon ? 0 : ((frame >> 2) & 1) * u, wy = y - hh * 0.5;
+      for (const sd of [-1, 1]) { const bx = sd < 0 ? x - hw - u * 2 : x + hw; blk(bx, wy, u * 2, u, col); blk(bx + sd * u * 1.5, wy - u - f, u * 2, u, col); blk(bx + sd * u * 3, wy - u * 2 - f * 2, u * 2, u, '#e8f6ff'); }
+    } else if (g === 'haste') { // speed streaks trailing behind
+      const a = e._ha || 0, cx = Math.cos(a), cy = Math.sin(a), bx = x - cx * (hw + u), by = y - cy * (hh * 0.6 + u), fl = e.icon ? 1 : (frame >> 1) % 3;
+      for (let i = -1; i <= 1; i++) { const L = (i ? 3 : 5) * u + (i === fl - 1 ? u : 0), ox = -cy * i * u * 1.6, oy = cx * i * u * 1.6;
+        c.beginPath(); c.moveTo(bx + ox, by + oy); c.lineTo(bx + ox - cx * L, by + oy - cy * L);
+        c.lineWidth = u + 2; c.strokeStyle = MARK_INK; c.stroke(); c.lineWidth = u; c.strokeStyle = col; c.stroke(); }
+    } else if (g === 'bulk') { // a heavy bracket under its feet
+      const w = Math.max(u * 4, Math.round(hw * 1.6)); blk(x - w / 2, y + hh + u * 0.5, w, u, col); blk(x - w / 2, y + hh - u * 0.5, u, u, col); blk(x + w / 2 - u, y + hh - u * 0.5, u, u, col);
+    } else if (g === 'brood') { // three eggs clinging on
+      const s = Math.round(u * 1.5); for (const [dx, dy] of [[-u, -u], [u, -u * 2.8], [u * 1.2, u * 0.4]]) { blk(x + hw + dx, y + hh + dy, s, s, col); c.fillStyle = '#ffe3f2'; c.fillRect(Math.round(x + hw + dx), Math.round(y + hh + dy), Math.max(1, s >> 1), Math.max(1, s >> 1)); }
+    } else if (g === 'regen') { // a green cross that pulses (grey while Burning: it can't heal)
+      const burn = e.st && e.st.burn, cc = burn ? '#7c8790' : e.icon || frame % 30 < 15 ? col : '#c8ffe9', qx = Math.round(x + hw * 0.75), qy = Math.round(y - hh - u);
+      c.fillStyle = MARK_INK; c.fillRect(qx - Math.round(u / 2) - 1, qy - Math.round(u * 1.5) - 1, u + 2, u * 3 + 2); c.fillRect(qx - Math.round(u * 1.5) - 1, qy - Math.round(u / 2) - 1, u * 3 + 2, u + 2);
+      c.fillStyle = cc; c.fillRect(qx - Math.round(u / 2), qy - Math.round(u * 1.5), u, u * 3); c.fillRect(qx - Math.round(u * 1.5), qy - Math.round(u / 2), u * 3, u);
+    } else if (g === 'ward') { // a small ring in the colour of the element it resists
+      const wc = EL[e.wardEl] ? EL[e.wardEl].col : col, bx = x - hw - u * 0.5, by = y + hh - u * 0.5, R = u * 1.6;
+      c.beginPath(); c.arc(bx, by, R, 0, 6.283); c.fillStyle = MARK_INK; c.fill(); c.lineWidth = u + 2; c.strokeStyle = MARK_INK; c.stroke(); c.lineWidth = u; c.strokeStyle = wc; c.stroke();
+    }
+  }
+  // which of a unit's genes get marks: the ones most common in the swarm right now (re-read a few times a second), at most two,
+  // only one when the field is crowded
+  let gRankT = -999, gRankStamp = 0; const gRank = {};
+  function geneRanks() {
+    const dense = G && G.enemies.length > 40 ? 1 : 0, bump = () => { gRankStamp = (((gRankStamp >> 1) + 1) << 1) | dense; };
+    if (dense !== (gRankStamp & 1)) bump();
+    if (frame - gRankT < 20 && frame >= gRankT) return;
+    gRankT = frame; const sh = G ? geneShares() : {}; let ch = false;
+    GENE_IDS.forEach((g, i) => { const v = Math.round((sh[g] || 0) * 50) + (GENE_IDS.length - i) * 0.01; if (gRank[g] !== v) { gRank[g] = v; ch = true; } });
+    if (ch) bump();
+  }
+  function geneMarks(e) {
+    if (e._gmS === gRankStamp) return e._gm;
+    const n = gRankStamp & 1 ? 1 : 2, gs = e.genes.filter(g => GENES[g]).sort((a, b) => gRank[b] - gRank[a]);
+    e._gmS = gRankStamp; e._gm = gs.length > n ? gs.slice(0, n) : gs; return e._gm;
+  }
   const STEEL = { o: '#090b16', d: '#141830', m: '#232948', l: '#343d6a', h: '#4c568c' };
 
   // ---------- tower sprites ----------
@@ -634,6 +697,12 @@ const RES = 2;
       const rim = tintOf(s, eCols[0]), gw = sw * 1.2, gh = hh * 2 * 1.2;
       b.globalAlpha = 0.55 + 0.3 * Math.sin(frame / 5 + e.wob); b.drawImage(rim, Math.round((X - gw / 2) * RES) / RES, Math.round((y - gh / 2) * RES) / RES, gw, gh); b.globalAlpha = 1;
     }
+    // v5.8: which genes get a mark (screen-space overlay pass), and an outline in the strain's colour on Strain Assault units
+    const gm = e.genes && e.genes.length && !cloaked ? geneMarks(e) : null; e._gmOn = gm && gm.length ? gm : null; e._hw = hw;
+    if (e.assault && !cloaked && G.assault) {
+      const rim = tintOf(s, strainCol(G.assault.genes)), gw = sw + 3, gh = hh * 2 + 3;
+      b.globalAlpha = 0.85; b.drawImage(rim, Math.round((X - gw / 2) * RES) / RES, Math.round((y - gh / 2) * RES) / RES, gw, gh); b.globalAlpha = 1;
+    }
     if (cloaked) b.globalAlpha = 0.25;
     else if (e.cloak && e.cloakT < 0.6 && frame % 6 < 3) b.globalAlpha = 0.6; // v5.1 tell: it flickers just before it cloaks
     if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
@@ -644,20 +713,24 @@ const RES = 2;
     if (e.hitFlash > 0) { b.globalAlpha = cloaked ? 0.2 : e.boss ? 0.3 : 0.55; ovl('#ffffff'); }
     else if (st.frozen > 0) { b.globalAlpha = 0.6; ovl('#bff4ff'); }
     else if (st.chill > 0) { b.globalAlpha = 0.12 + st.chill * 0.06; ovl('#9ad8ff'); }
+    if (gm) for (const g of gm) { // v5.8 body marks: Cloak dithers the body violet, Regrowth pulses it green
+      if (g === 'cloak' && !e.boss) { b.globalAlpha = 0.8; b.drawImage(ditherOf(s, '#c58cff'), Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2); }
+      else if (g === 'regen' && !st.burn) { b.globalAlpha = 0.15 + 0.3 * (0.5 + 0.5 * Math.sin(frame / 5 + e.wob)); ovl('#59f0b4'); }
+    }
     b.globalAlpha = 1;
     if (false) { const ox = Math.round(X - hw), oy = Math.round(y - hh); const q = v => Math.round(v * BOSS_SCALE); R(b, ox + q(16), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(27), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(16), oy + q(18), q(6), 2, '#3a1606'); R(b, ox + q(27), oy + q(18), q(6), 2, '#3a1606'); }
     if (e.boss === 'titan' && e.plates > 0) { const q = v => Math.round(v * BOSS_SCALE); const pl = (x, y, w, h) => { R(b, x, y, w, h, '#3a3f58'); R(b, x + 0.5, y + 0.5, w - 1, h - 1, '#6a7094'); b.fillStyle = '#9aa0c0'; b.fillRect(x + 0.5, y + 0.5, w - 1, 0.5); }; pl(X - q(22), y - q(22), q(44), q(5)); pl(X - q(22), y + q(17), q(44), q(5)); if (e.plates > 1) { pl(X - q(22), y - q(17), q(5), q(34)); pl(X + q(17), y - q(17), q(5), q(34)); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
-    if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA('#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
+    if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA(G.assault ? strainCol(G.assault.genes) : '#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
     if (e.wanted && !cloaked) { b.strokeStyle = hexA('#ffd84a', 0.6 + 0.35 * Math.sin(frame / 5)); b.lineWidth = 2; b.setLineDash([5, 4]); b.lineDashOffset = frame / 2; b.beginPath(); b.arc(X, y, hw + 8, 0, 6.283); b.stroke(); b.setLineDash([]); }
     if (cloaked) { // v5.1 tell: a heat-haze shimmer where a cloaked unit is
-      b.strokeStyle = 'rgba(214,210,255,0.35)'; b.lineWidth = 1; b.beginPath();
+      b.strokeStyle = e.genes && e.genes.includes('cloak') ? 'rgba(197,140,255,0.45)' : 'rgba(214,210,255,0.35)'; b.lineWidth = 1; b.beginPath();
       for (let i = 0; i <= 16; i++) { const a = i / 16 * 6.283, rr = hw * 0.9 + Math.sin(a * 3 + frame / 4) * 1.5; i ? b.lineTo(X + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8) : b.moveTo(X + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8); }
       b.stroke();
     }
     if (e.type === 'reflector' && !cloaked && frame % 40 < 4) { b.fillStyle = 'rgba(255,255,255,0.8)'; b.fillRect(Math.round(X - hw * 0.4), Math.round(y - hh * 0.5), 2, 2); }
-    if (e.shield > 0 && !cloaked) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
+    if (e.shield > 0 && !cloaked && !(gm && gm.includes('shell'))) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
     e._hh = hh; e._crown = elite && !cloaked ? eCols : null; // the crown is drawn in the overlay pass, above every unit
     if (false) {
     } else if (e.elite.length && !cloaked) {
@@ -665,17 +738,6 @@ const RES = 2;
       b.strokeStyle = hexA(ec, frame % 12 < 9 ? 0.9 : 0.4); b.lineWidth = 2; b.setLineDash([3, 3]); b.lineDashOffset = -frame / 2;
       b.beginPath(); b.arc(X, y, r, 0, 6.283); b.stroke(); b.setLineDash([]);
       R(b, X - 2, y - r - 5, 5, 3, ec); P(b, X - 2, y - r - 6, ec); P(b, X, y - r - 6, ec); P(b, X + 2, y - r - 6, ec);
-    }
-    // evolved traits
-    if (e.genes && e.genes.length && !cloaked) {
-      for (const g of e.genes) {
-        if (g === 'plating') { R(b, X - hw - 1, y - 3, 2, 6, '#c8ccd8'); R(b, X + hw - 1, y - 3, 2, 6, '#c8ccd8'); R(b, X - 3, y - hh - 1, 6, 2, '#c8ccd8'); }
-        else if (g === 'wings') { const f = (frame >> 2) & 1; for (const sd of [-1, 1]) { R(b, X + sd * (hw + 1) - (sd < 0 ? 3 : 0), y - 3 - f, 3, 1, '#9ad8ff'); R(b, X + sd * (hw + 2) - (sd < 0 ? 2 : 0), y - 4 - f, 2, 1, '#e8f6ff'); } }
-        else if (g === 'haste') { for (let i = 0; i < 3; i++) R(b, X - hw - 4 - i * 2, y - 2 + i * 2, 3, 1, '#ffe14d'); }
-        else if (g === 'brood') { P(b, X - 2, y + hh + 1, '#ff9ad5'); P(b, X + 1, y + hh + 2, '#ff9ad5'); P(b, X + 3, y + hh, '#ff9ad5'); }
-        else if (g === 'regen' && !st.burn && frame % 30 < 15) { R(b, X + hw - 1, y - hh - 4, 3, 1, '#59f0b4'); R(b, X + hw, y - hh - 5, 1, 3, '#59f0b4'); }
-        else if (g === 'ward') { b.strokeStyle = hexA(EL[e.wardEl] ? EL[e.wardEl].col : '#d6a6ff', 0.75); b.lineWidth = 1; b.setLineDash([2, 2]); b.beginPath(); b.arc(X, y, hw + 2, 0, 6.283); b.stroke(); b.setLineDash([]); }
-      }
     }
     // status pips
     if (st.burn && frame % 6 < 4) { R(b, X - 3 + (frame % 3) * 2, y - hh - 4, 2, 2, EL.T.col); P(b, X - 2 + (frame % 3) * 2, y - hh - 5, '#ffe14d'); }
@@ -887,6 +949,7 @@ const RES = 2;
     if (odReady()) { const cx = G.core.x * TILE, cy = G.core.y * TILE, k = (frame % 30) / 30;
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
+    geneRanks();
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // pirate drop ships
@@ -1062,6 +1125,13 @@ const RES = 2;
         c.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w), Math.round(h)); c.setLineDash([]);
       }
     }
+    // v5.8 gene marks, in screen space so they stay readable at phone zoom
+    { const u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const e of G.enemies) if (e._gmOn && !e.dead && !(e.cloaked && !(e.revealed > 0))) {
+        const x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - (e.fly ? 7 : 0))), hw = (e._hw || 6) * ws, hh = (e._hh || 6) * ws;
+        if (x < -40 || y < -40 || x > DW + 40 || y > DH + 40) continue;
+        for (const g of e._gmOn) geneMark(c, g, x, y, hw, hh, u, e);
+      } }
     // v5.1 inspect: a ring follows the enemy you tapped (or hover)
     for (const [E0, col] of [[selEnemy, PAL.amber], [hoverEnemy, '#e9e4d4']]) if (E0 && !E0.dead && E0 !== (col === '#e9e4d4' ? selEnemy : null)) {
       const x = bx2s(E0.x * TILE), y = by2s(E0.y * TILE - (E0.fly ? 7 : 0)), r = (E0._hh || 8) * ws + 4;
@@ -1387,6 +1457,15 @@ const RES = 2;
       if (!cv.dataset.sized) { cv.dataset.sized = 1; const cs = getComputedStyle(cv); if (cs.width && cs.width !== 'auto') { cv.style.width = cs.width; cv.style.height = cs.height; } cv.width = cv.height = 64; }
       const k = Math.min(cv.width / sp.width, cv.height / sp.height) * 0.9;
       g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false; g.drawImage(sp, Math.round((cv.width - sp.width * k) / 2), Math.round((cv.height - sp.height * k) / 2), sp.width * k, sp.height * k); },
+    // v5.8: a gene's mark on a Drone, for the Threat Board, the recap and the Archive (canvas width attribute = CSS size)
+    geneIcon(g, cv, el) { if (!GENES[g]) return; const gx = cv.getContext('2d');
+      if (!cv.dataset.sized) { cv.dataset.sized = 1; const s0 = cv.width; cv.style.width = cv.style.height = s0 + 'px'; cv.width = cv.height = s0 * 3; }
+      const W = cv.width, sp = UNITS.enemy('drone', 0, 0) || enemySprite('drone'), u = Math.max(2, Math.round(W / 15));
+      const k = W * (g === 'bulk' ? 0.62 : 0.5) / Math.max(sp.width, sp.height), sw = sp.width * k, sh = sp.height * k, x = Math.round(W / 2), y = Math.round(W / 2 - (g === 'bulk' ? u : g === 'wings' ? -u : 0));
+      gx.clearRect(0, 0, W, W); gx.imageSmoothingEnabled = false; gx.drawImage(sp, x - sw / 2, y - sh / 2, sw, sh);
+      if (g === 'cloak') { gx.globalAlpha = 0.85; gx.drawImage(ditherOf(sp, '#c58cff'), x - sw / 2, y - sh / 2, sw, sh); gx.globalAlpha = 1; }
+      if (g === 'regen') { gx.globalAlpha = 0.3; gx.drawImage(tintOf(sp, '#59f0b4'), x - sw / 2, y - sh / 2, sw, sh); gx.globalAlpha = 1; }
+      geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
       if (cv.width < sp.width * 2) { const cs = getComputedStyle(cv); cv.style.width = cs.width; cv.style.height = cs.height; cv.width = cv.height = sp.width * 2; }
