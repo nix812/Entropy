@@ -1351,7 +1351,7 @@ function prepareWave(w) {
       up.sort((a, b) => b[1] - a[1] || b[2] - a[2]);
       const [k, t, sh] = up[0];
       if (t >= 2 && !PROF.seenEvo) Hooks.evoIntro && Hooks.evoIntro(k, sh);
-      Hooks.toast('SWARM EVOLVES', up.map(([g, tt, s]) => `${GENES[g].name} ${roman(tt)} ${Math.round(s * 100)}%`).join(' · ') + ` · counter: ${GENES[k].counter}`, GENES[k].col);
+      Hooks.toast('SWARM EVOLVES', up.map(([g, tt, s]) => `${GENES[g].name} ${roman(tt)} ${Math.round(s * 100)}%`).join(' · ') + (up.length === 1 ? ` · counter: ${GENES[k].counter}` : ''), GENES[k].col);
       Hooks.log(`Evolution: ${up.map(([g, tt]) => GENES[g].name + ' ' + roman(tt)).join(', ')}`, GENES[k].col);
     }
   }

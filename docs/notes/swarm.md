@@ -51,7 +51,8 @@ Rendering only reads state (`e._gm*`, `e._hw` are render caches on the enemy obj
 No balance change: genes, breeding, assaults and rewards are untouched. Only when a notice fires changed.
 
 ## Performance
-DRAWBENCH_PLACEHOLDER
+The machine was shared with four other builders (load average 75–110 on 2 cores), so wall-clock `drawbench.py` runs swung 2–4× between identical runs and can't be trusted. Instead, a scratch A/B loaded the old and new builds side by side in one browser, set up the `drawbench.py GENES=1` scene (36 towers, 90 enemies all carrying genes, 30 of them assault units), and alternated 10-frame batches 30 times, timing the renderer's main-thread **CPU time** (CDP `ThreadTime`) rather than wall time. Result: base 52.5 ms/frame median (min 46.9), new 53.6 (min 48.4), so **+2% median, +3% min**, inside the +10% budget. Two cheaper changes went in after that measurement: Haste streaks are one path instead of three, and the Shell hexagon has no fill. Re-run `GENES=1 python3 test/drawbench.py <old page>` against the new build on a quiet machine to confirm.
+Per-frame cost: no gradients, no shadowBlur. Tinted, dithered and outlined sprites are cached per sprite (`tintOf`, `ditherOf`). Gene ranking runs every 20 frames, and each enemy's chosen marks are cached until the ranking changes.
 
 ## Open issues
 - The marks are tuned for u = 2 px (phone and iPad home zoom). Pinching far in shows them at up to 4 px.
