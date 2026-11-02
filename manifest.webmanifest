@@ -1,6 +1,6 @@
 {
- "name": "Entropy",
- "short_name": "Entropy",
+ "name": "Last Gradient",
+ "short_name": "Last Gradient",
  "start_url": "./",
  "scope": "./",
  "display": "fullscreen",
