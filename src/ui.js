@@ -1572,6 +1572,7 @@ const UI = (() => {
       <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
       <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
       <div class="set"><span>Damage Numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
+      <div class="set"><span>Mono Audio <em class="dim">one earbud, one speaker</em></span><button class="chip ${S.mono ? 'on' : ''}" data-act="mono">${S.mono ? 'On' : 'Off'}</button></div>
       <div class="set"><span>Screen Shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
       ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
@@ -2211,7 +2212,7 @@ const UI = (() => {
           if (!raw.startsWith('ENT1:')) throw 0;
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
           P.runSnap = null; PROF = P; Save.save(); closeModal(); renderHangar(); Tree.refresh();
-          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
+          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
           toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');
         } catch (e) { toast('INVALID CODE', 'Make sure the full code was pasted', '#ff4d6a', 1); }
@@ -2225,6 +2226,7 @@ const UI = (() => {
       case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
       case 'notes': PROF.settings.notes = b.dataset.v; Save.save(); renderFeed(); openSettings(); break;
       case 'nums': PROF.settings.dmgNums = !PROF.settings.dmgNums; Render.nums = PROF.settings.dmgNums; Save.save(); openSettings(); break;
+      case 'mono': PROF.settings.mono = !PROF.settings.mono; SFX.setMono(PROF.settings.mono); Save.save(); openSettings(); break;
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;
       case 'wipe': if (!confirmReset) { confirmReset = true; openSettings(); return; } PROF = defaultProfile(); Save.save(); closeModal(); renderHangar(); toast('PROGRESS RESET', 'All progress erased', '#ff4d6a'); break;
     }
@@ -2535,7 +2537,7 @@ const Tree = (() => {
   // returning players see what changed once per version; brand-new players skip it
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900);
-  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
+  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)

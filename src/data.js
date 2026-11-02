@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.5.2';
+const VERSION = '5.5.3';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -179,6 +179,7 @@ const WHATS_NEW = { ver: '5.5.0', title: 'Entropy 5.5 · The Music Studio', item
   ['Vibes', 'Calm, Club, Retro or Everything in one tap, then add or remove genres. The ▶ on a genre plays it right away.'],
   ['My Tracks', 'The heart keeps a piece, and it remembers your mixer and effects too. Tap a name to rename it. The share button copies a code that plays the same track for a friend (Add a code).'],
   ['Shape', 'One tempo slider for the genre that is playing, with energy, the mixer and effects on one screen.'],
+  ['Mono Audio (5.5.3)', 'Settings › Mono Audio plays everything in both ears, for one earbud or a single speaker. Sounds panned to one side are no longer lost.'],
   ['…and one more thing', 'Something is hidden in the Studio. Try tapping the visualizer.'],
   ['A new hangar sky (5.4.2)', 'The launch screen is redrawn: a Lorenz attractor, the classic picture of chaos, turns over a drifting nebula with comets, stars and the odd meteor.'],
 ]};

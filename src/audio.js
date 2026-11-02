@@ -3,7 +3,10 @@
 // routed through reverb, compression and distortion. Everything is synthesized.
 const SFX = (() => {
   let ctx = null, master, sfxBus, musBus, limiter, noiseBuf, noiseLo;
-  let sfxVol = 0.8, musVol = 0.45;
+  let sfxVol = 0.8, musVol = 0.45, mono = false;
+  // v5.5.3 Mono Audio (Settings): the master gain sums left and right into one channel (the speakers rule: (L + R) / 2), then the
+  // output plays it in both ears, so nothing panned to one side is lost with a single earbud
+  function applyMono() { if (!master) return; master.channelCountMode = mono ? 'explicit' : 'max'; master.channelCount = mono ? 1 : 2; master.channelInterpretation = 'speakers'; }
   const revCache = {};
   const last = {};
   let recent = [];
@@ -17,7 +20,7 @@ const SFX = (() => {
     // master: a brickwall limiter just under 0 dBFS. The SFX glue compressor (in buildBuses) does the gentle work.
     limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -3; limiter.knee.value = 1; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.12;
-    master = ctx.createGain(); master.gain.value = 0.95;
+    master = ctx.createGain(); master.gain.value = 0.95; applyMono();
     sfxBus = ctx.createGain(); sfxBus.gain.value = sfxVol;
     musBus = ctx.createGain(); musBus.gain.value = musVol;
     sfxBus.connect(limiter); limiter.connect(master); master.connect(ctx.destination);
@@ -420,7 +423,7 @@ const SFX = (() => {
   function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; buildMasterOffline(); }
   function buildMasterOffline() {
     limiter = ctx.createDynamicsCompressor(); limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
-    master = ctx.createGain(); master.gain.value = 1; sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
+    master = ctx.createGain(); master.gain.value = 1; applyMono(); sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
     sfxBus.connect(limiter); limiter.connect(master); master.connect(ctx.destination);
     makeNoise(); buildBuses(); hookMusic();
   }
@@ -1275,7 +1278,7 @@ const SFX = (() => {
     };
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, get ready() { return !!ctx; } };
+  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
