@@ -479,6 +479,10 @@ const SFX = (() => {
     const MODES = { ionian: [0, 2, 4, 5, 7, 9, 11], dorian: [0, 2, 3, 5, 7, 9, 10], phrygian: [0, 1, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11],
       mixolydian: [0, 2, 4, 5, 7, 9, 10], aeolian: [0, 2, 3, 5, 7, 8, 10], harmonic: [0, 2, 3, 5, 7, 8, 11] };
     const MODE_NAME = { ionian: 'major', dorian: 'dorian', phrygian: 'phrygian', lydian: 'lydian', mixolydian: 'mixolydian', aeolian: 'minor', harmonic: 'harmonic minor' };
+    // v5.5.8 musician's pass: a triad's quality on a degree of a mode; a loop fits a mode when it lands on no diminished or
+    // augmented triad it did not ask for (the audit found 30 such combinations, e.g. Lydian I-iv°, Dorian i-vi°, minor i-ii°)
+    function triadQ(mode, d) { const sc = MODES[mode] || MODES.aeolian, dd = ((d % 7) + 7) % 7, t = (sc[(dd + 2) % 7] - sc[dd] + 12) % 12, f = (sc[(dd + 4) % 7] - sc[dd] + 12) % 12; return t === 3 && f === 6 ? 'dim' : t === 4 && f === 8 ? 'aug' : t === 3 ? 'm' : 'M'; }
+    const loopOK = (L0, mode) => L0.degs.every((d, i) => (L0.q && L0.q[i]) || !/dim|aug/.test(triadQ(mode, d)));
     const PENT = { major: [0, 2, 4, 7, 9], minor: [0, 3, 5, 7, 10] };
     // a chord loop: degrees (0 = i/I) in the mode, optional per-chord quality override ('M' major triad, 'm' minor, '7' dominant 7,
     // 's2'/'s4' sus) and bars per chord. Loops come from the research: Axis (i-VI-III-VII), Nightcall, Kerri Chandler, ii-V-I...
@@ -642,7 +646,12 @@ const SFX = (() => {
       const S = recipe(g, f), G0 = GENRES[g];
       let mode = pick(S.modes);
       if (!force && mood === 'boss' && (mode === 'ionian' || mode === 'lydian' || mode === 'mixolydian')) mode = 'aeolian';
-      const loop = pick(S.loops), root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
+      let loop = pick(S.loops);
+      if (!loopOK(loop, mode)) { // the next loop that fits this mode, else a mode that fits this loop (no extra dice: seeded pieces that were fine stay the same)
+        const i0 = S.loops.indexOf(loop), alt = S.loops.map((_, k) => S.loops[(i0 + 1 + k) % S.loops.length]).find(L0 => loopOK(L0, mode));
+        if (alt) loop = alt; else { const m2 = S.modes.find(m => loopOK(loop, m)); if (m2) mode = m2; }
+      }
+      const root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
       if (force && force.name) name = String(force.name).slice(0, 32); // renamed or composed tracks keep their own name
       lastG = g; lastF = f;
       P = { g, f, S, G0, seed, name, mode, scale: MODES[mode], loop, root, bar: 0,
@@ -690,7 +699,7 @@ const SFX = (() => {
         if (T) { const t = T.slice(); if (ext >= 5 && t.length === 4 && q !== '6' && q !== 'm6' && q !== 'mM7') t.push(14); return t; }
       }
       const r = sc[((deg % 7) + 7) % 7];
-      for (let k = 0; k < ext; k++) { const d = deg + 2 * k; out.push(sc[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7) - r - 12 * Math.floor(deg / 7)); }
+      for (let k = 0; k < ext; k++) { const d = deg + 2 * k, iv = sc[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7) - r - 12 * Math.floor(deg / 7); if (k >= 4 && iv % 12 === 1) continue; out.push(iv); } // 5.5.8: no ♭9 on the stack (the classic avoid note)
       return out;
     }
     const chordRoot = deg => P.root + P.scale[((deg % 7) + 7) % 7] + 12 * Math.floor(deg / 7);
@@ -1125,8 +1134,9 @@ const SFX = (() => {
         const tail = barInPh % 4 === 3 && barInPh !== 7 ? 1 : 0;
         for (const nn of mot) if (nn.st === st) {
           if (tail && s16 >= 8 && !P.fixedMel && chance(0.5)) continue;
-          const scaleTones = Ld.scale === 'pent' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : Ld.scale === 'pentmajor' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : P.scale;
-          const strong = s16 % 4 === 0, off = scaleTones.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
+          const abs = P.fixedMel && P.comp && P.comp.melAbs; // 5.5.8 'Fixed notes': degrees of the key, not of each chord
+          const scaleTones = abs ? P.scale : Ld.scale === 'pent' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : Ld.scale === 'pentmajor' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : P.scale;
+          const strong = s16 % 4 === 0, off = abs ? 0 : scaleTones.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
           let n = degTo(P.root + 12 * Math.round((Ld.oct - P.root) / 12), off + nn.d, scaleTones);
           if (!P.fixedMel) { if (strong) n = nearestChordTone(n, C0); if (barInPh === 7 && s16 >= 8) n = nearestPc(n, C0.root % 12); if (Ld.grammar === 'drone' && !strong) continue; }
           lead(n, tt + hum(), Math.max(sp16, nn.len * sp16), (Ld.kind === 'chip' ? 0.6 : 0.85) * ll, Ld.kind, Ld.duty);
@@ -1174,11 +1184,16 @@ const SFX = (() => {
       ['supersaw', 'Supersaw', 'trance'], ['bleep', 'Bleep', 'bleep'], ['chip', 'Chip', 'chip'], ['melodica', 'Melodica', 'call'], ['glass', 'Glass', 'sparse']];
     const DRUM_ROWS = [['K', 'Kick', 9], ['S', 'Snare', 9], ['C', 'Clap', 8], ['H', 'Hat', 6], ['O', 'Open hat', 7], ['R', 'Rim', 6], ['P', 'Shaker', 4], ['D', 'Ride', 5]];
     function drumsFor(g, f) { const d = recipe(g, f).drums, o = {}; for (const [k] of DRUM_ROWS) o[k] = (d[k] || '').slice(0, 16).padEnd(16, '0'); return o; }
-    function loopsFor(g) { const seen = new Set(), out = []; for (const F of Object.values(GENRES[g].flavours)) for (const L0 of F.loops || []) { const k = JSON.stringify(L0); if (!seen.has(k)) { seen.add(k); out.push(L0); } } return out; }
-    function numerals(degs, mode, q) { // roman numerals for a chord loop in a mode (upper case = major)
-      const sc = MODES[mode] || MODES.aeolian, R0 = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-      return degs.map((d, i) => { const dd = ((d % 7) + 7) % 7, third = (sc[(dd + 2) % 7] - sc[dd] + 12) % 12, fifth = (sc[(dd + 4) % 7] - sc[dd] + 12) % 12, qq = q && q[i];
-        const minor = qq ? /^m/.test(qq) && !/^M/.test(qq) : third === 3; let r = minor ? R0[dd].toLowerCase() : R0[dd]; if (!qq && fifth === 6) r += '°'; return r; }).join(' · ');
+    // each loop with the modes its flavours were written for (a loop that forces chord types, like Rainy Day's i-VI-V7, belongs to those moods)
+    function loopsFor(g) { const by = new Map(); for (const F of Object.values(GENRES[g].flavours)) for (const L0 of F.loops || []) { const k = JSON.stringify(L0); if (!by.has(k)) by.set(k, Object.assign({}, L0, { modes: [] })); for (const m of F.modes || []) if (!by.get(k).modes.includes(m)) by.get(k).modes.push(m); } return [...by.values()]; }
+    function numerals(degs, mode, q) { // roman numerals as a musician writes them: case for major/minor, ° and +, and the chord type
+      const sc = MODES[mode] || MODES.aeolian, R0 = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'], FLAT = { 1: [1, 2], 2: [3, 4], 5: [8, 9], 6: [10, 11] };
+      const SUF = { M: '', m: '', '7': '7', M7: 'maj7', m7: '7', m9: '9', '6': '6', m6: '6', mM7: '(maj7)', s2: 'sus2', s4: 'sus4' };
+      return degs.map((d, i) => { const dd = ((d % 7) + 7) % 7, qq = q && q[i], tq = triadQ(mode, d);
+        const minor = qq ? /^m/.test(qq) && !/^M/.test(qq) : tq === 'm' || tq === 'dim';
+        const fl = FLAT[dd] && sc[dd] === FLAT[dd][0] ? '♭' : dd === 3 && sc[3] === 6 ? '♯' : ''; // against the major scale: ♭II ♭III ♭VI ♭VII, Lydian's ♯IV
+        let r = fl + (minor ? R0[dd].toLowerCase() : R0[dd]);
+        if (!qq && tq === 'dim') r += '°'; if (!qq && tq === 'aug') r += '+'; if (qq) r += SUF[qq] || ''; return r; }).join(' · ');
     }
     function melMotif(mel) { // 16 steps (null or a scale step) into the engine's 2-bar motif; each note lasts until the next
       const on = []; for (let i = 0; i < 16; i++) if (mel[i] !== null && mel[i] !== undefined) on.push(i);
@@ -1287,7 +1302,7 @@ const SFX = (() => {
         const f = { genre: cp.genre, flav: cp.flav, seed: cp.seed >>> 0, name: cp.name, comp: cp, start: editing ? 8 : 0 };
         if (editing) { this.jump(f); return 'now'; } forceNext = f; if (P) P.skip = true; return 'next';
       },
-      compFromPiece, drumsFor, loopsFor, numerals, MOODS, BASSES, LEADS, DRUM_ROWS, NOTE,
+      compFromPiece, drumsFor, loopsFor, numerals, loopOK, triadQ, MODES, MOODS, BASSES, LEADS, DRUM_ROWS, NOTE,
       autoMel() { if (!P || !P.motifs || !P.motifs[0]) return null; const o = Array(16).fill(null); for (const n of P.motifs[0]) if (n.st < 16) { let d = n.d; while (d < 0) d += 7; while (d > 7) d -= 7; o[n.st] = d; } return o; },
       meters() { const o = {}; for (const c of CHN) o[c] = meterOf(AN[c]); return o; },
       spectrum(arr) { if (outAn) outAn.getByteFrequencyData(arr); },
@@ -1297,7 +1312,7 @@ const SFX = (() => {
       set debug(v) { EV = v ? [] : null; }, get events() { return EV; },
       renderAhead(seconds, curve) { start(); const step = 0.1; for (let t = 0; t < seconds; t += step) { if (curve) targetB = curve(t / seconds); battle += (targetB - battle) * 0.3; const h = t + step; while (nextT < h) { const tt = nextT; scheduleStep(tt); nextT += liveSpb() / 4; } } },
       get log() { return pieceLog; },
-      get piece() { if (!P) return null; const ph = P.form[Math.floor(bar / 8) % 4]; return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: 32, step: s16, seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.brk ? (ph.build ? 'Breakdown · build' : 'Breakdown') : ph.drop ? 'Drop' : ph.version ? 'Dub version' : ['Intro', 'Groove', 'Bridge', 'Return'][Math.floor(bar / 8) % 4] }; },
+      get piece() { if (!P) return null; const ph = P.form[Math.floor(bar / 8) % 4]; return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: 32, step: s16, loop: P.loop.degs.slice(), loopQ: (P.loop.q || []).slice(), seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.brk ? (ph.build ? 'Breakdown · build' : 'Breakdown') : ph.drop ? 'Drop' : ph.version ? 'Dub version' : ['Intro', 'Groove', 'Bridge', 'Return'][Math.floor(bar / 8) % 4] }; },
     };
     return API;
   })();
