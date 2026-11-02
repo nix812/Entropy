@@ -207,7 +207,74 @@ const WANTED = { creditsPerWave: 60 };
 // past, and a new bounty 20 waves on). The strain or boss that ends a run comes back next run as your Nemesis.
 // Daily Hunt: one seed, bounty and Nemesis for everyone, every tower open and a fixed talent budget so the ladder measures play.
 const HUNT = { every: 20, pushScore: 0.25, extractXp: 0.5, pts: 40 };
-const NEMESIS_CRIME = ['the fall of your last core', 'breaking and entering (your core)', 'gloating', 'returning to the scene of the crime', 'holding a grudge'];
+// ---------- 5.8 The Hook: sector contracts, jump doors, the Bounty Purse and late escalations ----------
+// HOOK_VER: the rules a run was started under (G.hk). Recordings made before 5.8 replay with hk 0: no sector, no purse, old boons, old HP curve.
+const HOOK_VER = 1;
+// Bounty Purse: `safe` of all XP banks as you earn it, the rest goes in the purse. A claimed bounty grows it ×bounty, a push ×(door tier).
+// Extract banks the whole purse; a fallen core banks `death` of it.
+const PURSE = { safe: 0.5, death: 0.3, bounty: 1.25 };
+// jump door risk: purse multiplier on the push, and what the next 20 waves cost (enemy HP, elites) and pay (score and XP)
+const DOOR_TIERS = [
+  { id: 'steady', name: 'Steady', col: '#59f0b4', mult: 1.25, af: {}, desc: 'No extra danger' },
+  { id: 'hot', name: 'Hot', col: '#ffb03a', mult: 1.4, af: { hpx: 0.12, score: 0.1 }, desc: '+12% enemy HP · +10% score' },
+  { id: 'deadly', name: 'Deadly', col: '#ff4d6a', mult: 1.6, af: { hpx: 0.25, elite: 0.06, score: 0.25 }, desc: '+25% enemy HP, more Elites · +25% score' },
+];
+// Sectors: a run's contract, then a new one through each jump door. lean: enemy weights in genWave (headline picks lean the same way),
+// storm: the weather that rolls in most, ev: event weights, boss/mod: the sector's Most Wanted, m/af: the perk and the drawback
+const SECTORS = [
+  { id: 'drift', name: 'Quiet Drift', col: '#6ae2ff', pitch: 'Thin traffic and kind weather. A good place to learn the trade.',
+    lean: { drone: 1.6, tank: 0.6, flyer: 0.7 }, storm: 'cryo', ev: { gold: 2, meteor: 2, overcharge: 1.5 }, boss: 'behemoth', mod: 'colossal',
+    up: '+10% Credits', down: '−10% score', m: { credits: 10 }, af: { score: -0.1 } },
+  { id: 'hive', name: 'The Hive', col: '#ff9ad5', pitch: 'Brood nests on every lane. Swarmers by the hundred.',
+    lean: { swarmer: 3, splitter: 3, drone: 0.6 }, storm: 'solar', ev: { swarm: 3, breach: 1.5 }, boss: 'queen', mod: 'twins',
+    up: '+1 Chain, +15% Thermal Damage', down: '+10% enemy speed', m: { chain: 1, dmgT: 15 }, af: { haste: 0.1 } },
+  { id: 'iron', name: 'Iron Reach', col: '#c8ccd8', pitch: 'Juggernauts and Aegis walls grind down the road.',
+    lean: { tank: 3, shielder: 3, reflector: 1.5, swarmer: 0.5 }, storm: 'static', ev: { elite: 1.5, regen: 1.5 }, boss: 'titan', mod: 'armored',
+    up: '+15% armour piercing', down: '+10% enemy HP', m: { armorPen: 15 }, af: { hpx: 0.1 } },
+  { id: 'skies', name: 'Open Skies', col: '#9ad8ff', pitch: 'No roads up here. Skimmers and Carriers fly straight in.',
+    lean: { flyer: 3.5, carrier: 3, tank: 0.5, sapper: 0.5 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
+    up: '+20% Arc Damage, +8% Range', down: '+10% tower cost', m: { dmgA: 20, range: 8 }, af: { costX: 0.1 } },
+  { id: 'ghost', name: 'Ghost Lanes', col: '#b86cff', pitch: 'Phantoms flicker in and out. Bring eyes.',
+    lean: { phantom: 4, medic: 1.5, leech: 2 }, storm: 'void', ev: { blackout: 2, phase: 2 }, boss: 'wraith', mod: 'spectral',
+    up: '+25% Void Damage', down: '−10% Range', m: { dmgV: 25, range: -10 } },
+  { id: 'salvage', name: 'Salvage Belt', col: '#ffd84a', pitch: 'Rich wrecks, pirate traffic, and Leeches after your bank.',
+    lean: { leech: 3, sapper: 2, drone: 1.3 }, storm: 'static', ev: { gold: 3, emp: 1.5 }, boss: 'auditor', mod: 'loaded',
+    up: '+25% Credits', down: '+15% upgrade cost', m: { credits: 25 }, af: { upgX: 0.15 } },
+  { id: 'tempest', name: 'Tempest Front', col: '#ffe14d', pitch: 'Storms roll in back to back. Ride them or drown.',
+    lean: { flyer: 1.5, carrier: 1.5 }, storm: null, ev: { surge: 1.5, overcharge: 2 }, boss: 'fsm', mod: 'hasted',
+    up: 'Storms twice as often, 40% stronger', down: '+10% enemy speed', m: { stormFreq: 100, stormPow: 40 }, af: { haste: 0.1 } },
+  { id: 'demo', name: 'Demolition Row', col: '#ff7b39', pitch: 'Sappers and Splitters. Your towers will go dark.',
+    lean: { sapper: 4, splitter: 1.5, reflector: 1.5 }, storm: 'cryo', ev: { emp: 2, elite: 1.5 }, boss: 'overmind', mod: 'hasted',
+    up: '+10% Attack Speed', down: 'More Elites', m: { rate: 10 }, af: { elite: 0.08 } },
+  { id: 'choir', name: 'Green Choir', col: '#59f0b4', pitch: 'Menders and Regrowth. Whatever you leave standing comes back.',
+    lean: { medic: 4, shielder: 1.5 }, storm: 'solar', ev: { regen: 3 }, boss: 'snail', mod: 'colossal',
+    up: '+15% Thermal Damage, Burn +30%', down: 'Enemies regenerate 0.5% HP per second', m: { dmgT: 15, burnDmg: 30 }, af: { regen: 0.005 } },
+  { id: 'oddball', name: 'The Odd Belt', col: '#ff4d6a', pitch: 'The strange ones hold court here. Expect the cat.',
+    lean: {}, storm: 'void', ev: { meteor: 2, phase: 1.5 }, boss: 'cat', mod: 'loaded',
+    up: 'Oddball bosses drop 3× credits', down: 'Every boss wave brings an oddball', af: { oddAll: 1 } },
+];
+const SECTOR_BY = Object.fromEntries(SECTORS.map(s => [s.id, s]));
+const SECTOR_START = 'drift'; // a fresh profile's first runs: no contract to choose
+// the 3 contracts the setup screen offers, from the setup's own seed (never G.r)
+function sectorOffers(seed) {
+  const r = mulberry32(((seed || 1) ^ 0x5ec7095) >>> 0), pool = SECTORS.slice(), out = [];
+  while (out.length < 3) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0].id);
+  return out;
+}
+// Escalations: from Wave 50 each boss wave offers 1 of 2. They stack, and each adds `score` to the score and XP multiplier
+const TWISTS = [
+  { id: 'twin', name: 'Twin Bosses', desc: 'Every boss arrives with a twin. Each has 65% health', max: 1, score: 0.2 },
+  { id: 'rifts', name: 'Torn Space', desc: 'Every wave opens a Rift: some enemies start halfway down the road', max: 1, score: 0.15, af: { rifts: 1 } },
+  { id: 'affix', name: 'Elite Plating', desc: 'Elites carry one more affix', max: 2, score: 0.12, af: { affN: 1 } },
+  { id: 'storms', name: 'Hostile Weather', desc: 'Enemies inside storms move 25% faster. Storms come 50% more often', max: 1, score: 0.12, m: { stormFreq: 50 }, af: { stormHaste: 0.25 } },
+  { id: 'learn', name: 'Quick Study', desc: 'The swarm learns twice as fast', max: 1, score: 0.12, af: { learn: 1 } },
+  { id: 'carriers', name: 'Carrier Fleet', desc: 'Carriers headline every wave', max: 1, score: 0.15, af: { carrierHead: 1 } },
+  { id: 'blitz', name: 'Blitz', desc: 'Enemies spawn 25% faster and move 6% faster', max: 2, score: 0.15, af: { gap: 0.25, haste: 0.06 } },
+  { id: 'worm', name: 'New Wormhole', desc: 'A new wormhole opens in 2 waves', max: 2, score: 0.15 },
+];
+const TWIST_FROM = 50;
+const TWIN_HP = 0.65;
+const NEMESIS_CRIME = ['the fall of your last core','breaking and entering (your core)', 'gloating', 'returning to the scene of the crime', 'holding a grudge'];
 
 // ---------- v4.4 Red Alert: a boss within this many tiles of the core puts the core on Last Stand (shells hit it much harder) ----------
 const RED_ALERT = { tiles: 8, coreDmg: 2.5, coreRate: 1.6 };
@@ -690,5 +757,7 @@ function dailySpec(key) {
   const gp = ['plating', 'haste', 'bulk', 'shell', 'regen', 'ward', 'cloak', 'brood'], genes = [];
   while (genes.length < 2) { const g = gp[Math.floor(r() * gp.length)]; if (!genes.includes(g)) genes.push(g); }
   const sp = ['drone', 'swarmer', 'tank', 'splitter'][Math.floor(r() * 4)], el = ['K', 'T', 'C', 'A', 'V'][Math.floor(r() * 5)];
-  return { date: key, seed, anoms, chaos: 2, nemesis: { kind: 'strain', type: sp, genes, el, rank: 1, daily: 1 } };
+  // 5.8: the day's sector contract (drawn last, so the older fields keep their values)
+  const sector = SECTORS[Math.floor(r() * SECTORS.length)].id;
+  return { date: key, seed, anoms, chaos: 2, nemesis: { kind: 'strain', type: sp, genes, el, rank: 1, daily: 1 }, sector };
 }
