@@ -1309,6 +1309,7 @@ const SFX = (() => {
         if (pauseG) { const g = pauseG.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.05); if (!paused && !held) g.setValueAtTime(1, t + 0.33); }
       },
       get spec() { return P ? specOf() : null; },
+      get track() { if (!P) return null; const o = specOf(); o.snd = snapshot(); return o; }, // what is playing, as a shareable track
       get queued() { return forceNext; },
       get editing() { return editing; }, set editing(v) { editing = !!v; },
       get sndGen() { return sndGen; },

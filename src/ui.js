@@ -1386,10 +1386,34 @@ const UI = (() => {
   const LOG_KEY = 'entropy.runlog';
   function storeRunLog() { try { if (G && G.rlog) localStorage.setItem(LOG_KEY, 'ENTROPY RUN LOG · ' + VERSION + ' · ' + new Date().toISOString() + '\n' + G.rlog.map(e => JSON.stringify(e)).join('\n')); } catch (e) {} }
   function lastLogText() { try { return localStorage.getItem(LOG_KEY) || ''; } catch (e) { return ''; } }
-  function copyText(txt) {
-    const done = () => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · paste it into a chat with Claude`, '#59f0b4', true);
-    const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); ok ? done() : toast('COPY FAILED', 'Use Save log instead', '#ff4d6a', true); };
+  function copyText(txt, onDone) {
+    const done = onDone || (() => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · paste it into a chat with Claude`, '#59f0b4', true));
+    const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
+      if (ok) done(); else if (onDone) askText({ title: 'Copy this code', value: txt, multiline: true, readOnly: true, ok: 'Done', onDone: () => {} }); else toast('COPY FAILED', 'Use Save log instead', '#ff4d6a', true); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+  }
+  // v5.5.10 typing on a phone: a panel pinned to the part of the screen the keyboard leaves visible. The game is a fixed,
+  // scaled layer, so iOS cannot scroll a text box inside it into view; this panel lives outside it and follows visualViewport.
+  let entryOpen = false;
+  function askText(o) {
+    const old = $('#entry'); if (old) old.remove();
+    const el = document.createElement('div'); el.id = 'entry';
+    el.innerHTML = `<div class="enbox"><b>${esc(o.title || '')}</b>${o.multiline ? `<textarea rows="3" ${o.readOnly ? 'readonly' : ''} autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${esc(o.placeholder || '')}"></textarea>` : `<input type="text" maxlength="${o.max || 60}" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(o.placeholder || '')}">`}
+      <div class="enrow">${o.readOnly ? '' : '<button class="btn" data-en="x">Cancel</button>'}<button class="btn primary" data-en="ok">${esc(o.ok || 'OK')}</button></div></div>`;
+    document.body.appendChild(el); entryOpen = true;
+    const inp = el.querySelector('input, textarea'), vv = window.visualViewport;
+    inp.value = o.value || '';
+    const place = () => { if (!vv) return; el.style.top = vv.offsetTop + 'px'; el.style.left = vv.offsetLeft + 'px'; el.style.width = vv.width + 'px'; el.style.height = vv.height + 'px'; };
+    place(); if (vv) { vv.addEventListener('resize', place); vv.addEventListener('scroll', place); }
+    const finish = v => { if (vv) { vv.removeEventListener('resize', place); vv.removeEventListener('scroll', place); } inp.blur(); el.remove(); entryOpen = false; setTimeout(() => UI.fitVV && UI.fitVV(), 250); if (v !== null && o.onDone) o.onDone(v); };
+    el.onclick = e => { const b = e.target.closest('[data-en]'); if (b) { e.preventDefault(); finish(b.dataset.en === 'ok' ? inp.value : null); } else if (e.target === el) finish(null); };
+    inp.onkeydown = e => { if (e.key === 'Enter' && !o.multiline) { e.preventDefault(); finish(inp.value); } if (e.key === 'Escape') finish(null); };
+    inp.focus(); if (o.readOnly || o.value) { inp.select(); try { inp.setSelectionRange(0, inp.value.length); } catch (e) {} } // focus inside the tap, or iOS keeps the keyboard down
+  }
+  // a code from the clipboard (iOS asks to allow the paste), else the typing panel
+  function pasteCode(title, use) {
+    const ask = () => askText({ title, multiline: true, placeholder: 'Paste the code here', ok: 'Add', onDone: v => v.trim() && use(v.trim()) });
+    if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(t => { t = (t || '').trim(); if (/^(TRACK|HUNT)[01]:/.test(t)) use(t); else ask(); }, ask); else ask();
   }
   function saveText(txt) {
     const name = `entropy-run-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.txt`;
@@ -1642,6 +1666,7 @@ const UI = (() => {
         <button class="stb" data-act="stSkip" aria-label="Next piece" data-svg="next"></button>
         <button class="stb ${M.repeat ? 'on' : ''}" id="stRepB" data-act="stRepeat" aria-label="Repeat this piece" data-svg="repeat"></button>
         <button class="stb keep ${p.saved ? 'on' : ''}" id="stKeepB" data-act="stKeep" aria-label="Keep this piece" data-svg="${p.saved ? 'heart' : 'heartO'}"></button>
+        <button class="stb" data-act="stShareNow" aria-label="Copy a share code for this piece" data-svg="share"></button>
       </div></div>`;
   }
   // ---- Listen ----
@@ -1667,9 +1692,9 @@ const UI = (() => {
       </div>
       <div class="stcol">
         <div class="lbl stl">My Tracks <em class="dim">${c.favs.length ? c.favs.length + ' kept' : ''}</em></div>
-        <div class="strow">${c.favs.length ? `<button class="chip ${c.favOnly ? 'on' : ''}" data-act="stFavOnly">Only my tracks</button>` : ''}<button class="chip" data-act="stPaste">${stPaste ? 'Cancel' : 'Add a code'}</button></div>
+        <div class="strow">${c.favs.length ? `<button class="chip ${c.favOnly ? 'on' : ''}" data-act="stFavOnly">Only my tracks</button>` : ''}<button class="chip" data-act="stPaste">Paste a code</button></div>
         ${stPaste ? `<div class="strow"><input id="stCode" class="stcode" placeholder="Paste a TRACK code" autocomplete="off" spellcheck="false"><button class="btn small" data-act="stCodeGo">Add</button></div>` : ''}
-        ${c.favs.length ? `<div class="stfavs">${favs}</div>` : '<p class="note">Tap the heart while a piece plays to keep it here. Kept tracks remember your sound settings, and you can share them as codes.</p>'}
+        ${(c.favs.forEach(warmCode), '')}${c.favs.length ? `<div class="stfavs">${favs}</div>` : '<p class="note">Tap the heart while a piece plays to keep it here. Kept tracks remember your sound settings, and you can share them as codes.</p>'}
       </div></div>`;
   }
   // ---- Shape ----
@@ -1738,7 +1763,7 @@ const UI = (() => {
     const st = (k, lab, val, col) => `<div class="cpst"><span class="lbl">${lab}</span><button class="stb" data-act="cpStep" data-k="${k}" data-v="-1" aria-label="Previous ${lab}">◀</button><b ${col ? `style="color:${col}"` : ''}>${val}</b><button class="stb" data-act="cpStep" data-k="${k}" data-v="1" aria-label="Next ${lab}">▶</button></div>`;
     return `<div class="stcompose">
       <div class="cpleft">
-        <input id="cpName" maxlength="24" value="${esc(d.name || 'My Track')}" aria-label="Track name">
+        <button class="cpnamebtn" data-act="cpRename" aria-label="Rename song"><b>${esc(d.name || 'My Track')}</b><i data-svg="edit"></i></button>
         <div class="cpsteps">
           ${st('style', 'Style', esc((G0.short || G0.name) + ' · ' + M.flavName(d.genre, d.flav)), G0.col)}
           ${st('mood', 'Mood', mood[1])}
@@ -1823,7 +1848,6 @@ const UI = (() => {
       f.ondblclick = () => { studioTouch(); c.mix[k] = 1; SFX.music.apply(); studioSave(); openStudio(); };
     }
     const ren = $('#stRenIn'); if (ren) { ren.focus(); ren.select(); const done = () => { if (ren._done) return; ren._done = 1; const i = +ren.dataset.i, f = c.favs[i]; if (f && ren.value.trim()) { f.name = ren.value.trim().slice(0, 24); const p0 = SFX.music.piece; if (p0 && p0.seed === f.seed && !f.comp === !p0.comp) SFX.music.setName(f.name); } stEdit = -1; studioSave(); openStudio(); }; ren.onkeydown = e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') { stEdit = -1; openStudio(); } }; ren.onblur = () => setTimeout(done, 0); }
-    const nm = $('#cpName'); if (nm) nm.onchange = () => { if (c.draft) { c.draft.name = nm.value.trim().slice(0, 24) || 'My Track'; cpApply(false); } };
     cancelAnimationFrame(studioRaf); studioLoop();
   }
   function studioLoop() {
@@ -1842,6 +1866,7 @@ const UI = (() => {
       const dr = stInCompose ? studioCfg().draft : null;
       const sig = p.name + '|' + p.genre + '|' + p.seed + '|' + p.saved + '|' + M.paused + '|' + M.repeat + '|' + M.canBack + '|' + M.held + '|' + stInCompose + '|' + (dr ? dr.name + dr.genre + dr.flav + dr.mode + dr.key + dr.bpm : '');
       if (sig !== stSig) {
+        { const tk = M.track; if (tk) warmCode(tk); }
         const changed = stSig && stSig.split('|').slice(0, 3).join('|') !== sig.split('|').slice(0, 3).join('|'); stSig = sig;
         if (stInCompose) { // the bar is about your song, never the radio
           const G1 = dr && M.GENRES[dr.genre], md = dr && (M.MOODS.find(m => m[0] === dr.mode) || [0, ''])[1];
@@ -1872,6 +1897,14 @@ const UI = (() => {
       }
     }
     studioRaf = requestAnimationFrame(studioLoop);
+  }
+  // codes are made ahead (Safari only lets a tap copy, and making one waits on compression), so a tap copies at once
+  const codeCache = new Map(); const codeKey = f => JSON.stringify([f.seed, f.genre, f.flav, f.name, f.comp || 0, f.snd || 0]);
+  const warmCode = f => { const k = codeKey(f); if (!codeCache.has(k)) { codeCache.set(k, null); trackCode(f).then(c => codeCache.set(k, c)); } };
+  function shareTrack(f) {
+    const tell = () => toast('TRACK CODE COPIED', `Send it to a friend: Music Studio › Paste a code plays ${f.name} for them`, '#ff5fa8', true, 'tip');
+    const c0 = codeCache.get(codeKey(f)); if (c0) { copyText(c0, tell); return; }
+    trackCode(f).then(c => { codeCache.set(codeKey(f), c); copyText(c, tell); });
   }
   function studioAction(act, b) {
     const M = SFX.music, c = M.config;
@@ -1906,10 +1939,13 @@ const UI = (() => {
         studioSave(); if (stTab === 'listen') openStudio(); return true;
       }
       case 'stPlay': { const f = c.favs[+b.dataset.v]; if (f) { stPlayNow(f); toast('NOW PLAYING', f.name, '#ff5fa8'); } return true; }
-      case 'stRen': stEdit = +b.dataset.v; openStudio(); return true;
+      case 'stRen': { const i = +b.dataset.v, f = c.favs[i]; if (!f) return true; askText({ title: 'Rename track', value: f.name, max: 24, ok: 'Rename', onDone: v => { v = v.trim().slice(0, 24); if (!v) return; f.name = v; const p0 = M.piece; if (p0 && p0.seed === f.seed && !f.comp === !p0.comp) M.setName(v); studioSave(); openStudio(); } }); return true; }
       case 'stDel': { const i = +b.dataset.v; if (stDelArm !== i) { stDelArm = i; openStudio(); return true; } stDelArm = -1; c.favs.splice(i, 1); if (!c.favs.length) c.favOnly = false; studioSave(); openStudio(); return true; }
-      case 'stShare': { const f = c.favs[+b.dataset.v]; if (f) trackCode(f).then(code => { copyText(code); toast('TRACK CODE COPIED', `Send it to a friend: Music Studio › Add a code plays ${f.name} for them`, '#ff5fa8', true, 'tip'); }); return true; }
-      case 'stPaste': stPaste = !stPaste; openStudio(); if (stPaste) { const i = $('#stCode'); if (i) i.focus(); } return true;
+      case 'stShare': { const f = c.favs[+b.dataset.v]; if (f) shareTrack(f); return true; }
+      case 'stShareNow': { const t = M.track; if (t) shareTrack(t); return true; }
+      case 'stPaste': pasteCode('Paste a track code', v => readTrackCode(v).then(f => {
+        if (!f) { toast('TRACK CODE', /^HUNT/.test(v) ? 'That is a hunt code: Daily Hunt › Watch a code' : 'That code could not be read', '#ff4d6a', true, 'tip'); return; }
+        const t = M.addTrack(f); if (t) { studioSave(); stPlayNow(t); toast('TRACK ADDED', t.name + ' · playing now', '#ff5fa8'); openStudio(); } })); return true;
       case 'stCodeGo': { const v = ($('#stCode') || {}).value || ''; readTrackCode(v).then(f => { if (!f) { toast('TRACK CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } const t = M.addTrack(f); if (t) { stPaste = false; studioSave(); stPlayNow(t); toast('TRACK ADDED', t.name + ' · playing now', '#ff5fa8'); openStudio(); } }); return true; }
       case 'stEditT': { const f = c.favs[+b.dataset.v]; if (f && f.comp) { c.draft = Object.assign(JSON.parse(JSON.stringify(f.comp)), { name: f.name }); stTab = 'compose'; studioSave(); M.editing = true; M.compose(c.draft); openStudio(); } return true; }
       case 'stFavOnly': studioTouch(); c.favOnly = !c.favOnly; studioSave(); if (c.favOnly) stPlayNow(); openStudio(); return true;
@@ -1931,7 +1967,8 @@ const UI = (() => {
       case 'cpFrom': { const cp = M.compFromPiece(); if (cp) { cp.name = 'Song ' + (c.favs.filter(t => t.comp).length + 1); c.draft = cp; stGrid = 'drums'; stOverArm = false; M.editing = true; cpApply(true); } return true; }
       case 'cpOver': { if (!stOverArm) { stOverArm = true; openStudio(); return true; } stOverArm = false; c.draft = null; studioSave(); M.setHold(true); openStudio(); return true; }
       case 'cpDrumClr': { const d = c.draft; if (d) { for (const k in d.drums) d.drums[k] = '0'.repeat(16); cpApply('grid'); } return true; }
-      case 'cpSave': { const d = c.draft; if (!d) return true; const nm = $('#cpName'); if (nm) d.name = nm.value.trim().slice(0, 24) || 'My Track'; M.saveComp(d); studioSave(); toast('SAVED TO MY TRACKS', d.name, '#ff5fa8'); return true; }
+      case 'cpRename': { const d = c.draft; if (d) askText({ title: 'Name your song', value: d.name, max: 24, ok: 'Rename', onDone: v => { v = v.trim().slice(0, 24); if (v) { d.name = v; studioSave(); if (M.piece && M.piece.comp) M.setName(v); openStudio(); } } }); return true; }
+      case 'cpSave': { const d = c.draft; if (!d) return true; M.saveComp(d); studioSave(); toast('SAVED TO MY TRACKS', d.name, '#ff5fa8'); return true; }
       case 'cpGrid': stGrid = b.dataset.v; openStudio(); return true;
       case 'cpStep': {
         const d = c.draft; if (!d) return true; const k = b.dataset.k, dir = +b.dataset.v, wrap = (i, n) => ((i % n) + n) % n;
@@ -2239,8 +2276,8 @@ const UI = (() => {
       case 'push': closeModal(); if (window.act('push')) { G.paused = false; SFX.play('levelup'); } break;
       case 'huntBuild': closeModal(); Tree.open('hunt'); break;
       case 'huntWatch': { const d = PROF.daily; if (d && d.rec) watchRun(d.rec, `Your Daily Hunt · ${d.date}`); break; }
-      case 'huntCode': { const d = PROF.daily; if (d && d.rec) huntCode(d.rec).then(c => { copyText(c); toast('HUNT CODE COPIED', 'Paste it to a friend: they can watch your exact run', '#59f0b4', true, 'tip'); }); break; }
-      case 'huntPaste': openPasteHunt(); break;
+      case 'huntCode': { const d = PROF.daily, tell = () => toast('HUNT CODE COPIED', 'Paste it to a friend: they can watch your exact run', '#59f0b4', true, 'tip'); if (huntCodeCache) copyText(huntCodeCache, tell); else if (d && d.rec) huntCode(d.rec).then(c => { huntCodeCache = c; copyText(c, tell); }); break; }
+      case 'huntPaste': pasteCode('Paste a hunt code', v => readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', /^TRACK/.test(v) ? 'That is a track code: Music Studio › Paste a code' : 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); })); break;
       case 'huntPasteGo': { const v = ($('#huntIn') || {}).value || ''; readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); }); break; }
       case 'watchEnd': endWatch(); break;
       case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } window.act('boon', +b.dataset.v); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
@@ -2350,6 +2387,7 @@ const UI = (() => {
     document.addEventListener('dblclick', e => e.preventDefault());
     // size to the visible viewport so browser toolbars never crop the bottom rail
     const fitVV = () => {
+      if (entryOpen) return; // the typing panel handles the keyboard; the game keeps its size underneath
       const vv = window.visualViewport, vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
       const auto = clamp(Math.min(vw / 820, vh / 480), 1, 1.6), pref = PROF.settings && PROF.settings.uiScale;
       UIS = pref && pref !== 'auto' ? clamp(auto * pref, 0.8, 2) : auto;
