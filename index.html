@@ -92,6 +92,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 /* v5.7.1: the hangar galaxy shows through the menu buttons */
 #hangar .menu .btn:not(.primary):not(.nova) { background: rgba(21, 25, 51, 0.5); }
 #hangar .menu .btn.primary { background: rgba(255, 176, 58, 0.86); }
+#hangar .menu .btn.nova:not(.ready) { background: linear-gradient(90deg, rgba(42, 20, 64, 0.55), rgba(58, 26, 42, 0.55)); }
 #hangar .util .ib { background: rgba(21, 25, 51, 0.55); }
 .badge { font-style: normal; background: var(--core); color: #062018; font-family: var(--f-term); font-size: 17px; padding: 0 5px; line-height: 1.15; letter-spacing: 0; text-transform: none; }
 .menu .btn.glow { box-shadow: inset 0 0 0 2px var(--core); }
@@ -1001,7 +1002,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.7.1';
+const VERSION = '5.7.2';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1176,7 +1177,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
 const WHATS_NEW = { ver: '5.7.0', title: 'Last Gradient 5.7 · Nigel Industries', items: [
   ['Nigel Industries presents', 'The studio has a mascot: Nigel, a small black cat, in his couch. He greets you when the game starts. Tap to skip him (he will not mind).'],
-  ['A bigger sky (5.7.1)', 'The attractor on the main menu is larger and turns behind the menu buttons, which are now see-through. Nigel also stays a little longer.'],
+  ['A bigger sky (5.7.2)', 'The attractor on the main menu is larger and sits in the upper right, and the pieces breaking off the title are pulled across and spiral into it. The menu buttons are see-through. Nigel also stays a little longer.'],
   ['Entropy is now Last Gradient', 'Everything in the universe runs on gradients: hot next to cold, order next to chaos. When the last one flattens out, nothing moves again. You are holding it up.'],
   ['The title', 'The name on the hangar fades from cream to violet and breaks apart as you watch. With Reduce Motion on, it holds still.'],
   ['Nothing else changed', 'Your progress, talents, tracks, Hunt codes and the Entropy gauge are exactly where you left them.'],
@@ -8733,20 +8734,16 @@ const HangarFX = (() => {
     layout(); buildNebula(); buildOverlay(); seed(); fade = 0;
   }
 
-  function layout() { // v5.7.1: the attractor fills the column from under the utility icons to the bottom of the menu, behind the (see-through) buttons
-    const r0 = cv.getBoundingClientRect(), m = document.querySelector('#hangar .menu'), u = document.querySelector('#hangar .util');
-    const mr = m && m.getBoundingClientRect(), ur = u && u.getBoundingClientRect();
-    if (!mr || !mr.width) { lay = { cx: W * 0.64, cy: H * 0.5, s: Math.min(H * 0.02, W * 0.012) }; return; }
+  function layout() { // v5.7.2: upper right, as large as fits between the title word, the screen edge and the utility icons
+    // (attractor extents over its whole sway, in units of s: x −29…+30, y −23…+19)
+    const r0 = cv.getBoundingClientRect(), u = document.querySelector('#hangar .util'), ur = u && u.getBoundingClientRect();
     const k = W / (r0.width || 1); // the app may be zoomed by a transform, so measure in on-screen pixels
-    const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.1) - r0.top) * k + 2 * R, bot = (mr.bottom - r0.top) * k;
-    const cx = Math.round((mr.left + mr.width / 2 - r0.left) * k), room = Math.max(H * 0.45, bot - top);
-    let bR = 0, bB = 0; // keep clear of the title's letters (the word itself, not the canvas room its shards drift into)
-    for (const el of document.querySelectorAll('#hangar .brand h1 .t1, #hangar .brand h1 .t2')) { const r = el.getBoundingClientRect(); bR = Math.max(bR, (r.right - r0.left) * k + 4 * R); bB = Math.max(bB, (r.bottom - r0.top) * k + 6 * R); }
-    const wide = (W + 6 * R - cx) / 29, cap = H * 0.024;
-    // beside the title, or (when that is roomier, as on iPad where the title runs long) below it
-    const sA = Math.min(room / 47, wide, bR ? (cx - bR) / 31 : 99, cap);
-    const top2 = Math.max(top, bB), room2 = bot - top2, sB = bB ? Math.min(room2 / 47, wide, cap) : 0;
-    lay = sB > sA ? { cx, cy: Math.round(top2 + room2 * 0.5), s: Math.max(0.8 * R, sB) } : { cx, cy: Math.round(top + room * 0.5), s: Math.max(0.8 * R, sA) };
+    const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.12) - r0.top) * k + 3 * R;
+    let bR = W * 0.45; // keep clear of the title word itself (its shards drift into the attractor on purpose)
+    const words = document.querySelectorAll('#hangar .brand h1 .t1, #hangar .brand h1 .t2');
+    if (words.length) { bR = 0; for (const el of words) bR = Math.max(bR, (el.getBoundingClientRect().right - r0.left) * k + 6 * R); }
+    const s = Math.max(0.8 * R, Math.min((W - 3 * R - bR) / 60, (H * 0.8 - top) / 42.5, H * 0.032));
+    lay = { cx: Math.round(W - 3 * R - 30.5 * s), cy: Math.round(top + 23.5 * s), s };
   }
   function project(cx, cy, s, a) {
     const ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(0.32), st = Math.sin(0.32);
@@ -8832,7 +8829,11 @@ const HangarFX = (() => {
     c.drawImage(over, 0, 0);
     if (fade < 1) { c.fillStyle = rgba(C.bg, (1 - fade) * 0.85); c.fillRect(0, 0, W, H); }
   }
-  return { draw };
+  function center() { // the attractor in on-screen px, for TitleFX (null until laid out)
+    if (!lay || !cv || !W) return null; const r0 = cv.getBoundingClientRect(), k = W / (r0.width || 1);
+    return { x: r0.left + lay.cx / k, y: r0.top + lay.cy / k, s: lay.s / k };
+  }
+  return { draw, center };
 })();
 
 // v5.6 title: GRADIENT shades cream to cyan to violet and breaks into pixel shards toward the right edge.
@@ -8848,11 +8849,14 @@ const TitleFX = (() => {
     const cs = getComputedStyle(host), fs = parseFloat(cs.fontSize), fam = cs.fontFamily, word = host.dataset.word || 'GRADIENT';
     const r = host.getBoundingClientRect(), scale = (host.offsetWidth ? r.width / host.offsetWidth : 1) || 1;
     const D = Math.min(3, (window.devicePixelRatio || 1) * scale); // device px per CSS px, including the interface scale
-    const k = fs + '|' + D + '|' + word + '|' + fam; if (k === key) return; key = k;
     const font = '700 ' + fs + 'px ' + fam, m0 = document.createElement('canvas').getContext('2d'); m0.font = font;
     const mt = m0.measureText(word), wd = Math.ceil(mt.width * D), asc = Math.ceil((mt.actualBoundingBoxAscent || fs * 0.62) * D), inkH = asc;
     const off = Math.round(3 * D), hc = Math.max(2, Math.round(fs / 16 * D)); // chromatic offset; shard = half a font pixel
-    const padL = off + hc, padR = Math.round(fs * 1.6 * D), padV = Math.round(fs * 0.45 * D);
+    // v5.7.2: the attractor pulls the shards in. Its centre in this canvas's pixels, relative to the word's top-left
+    const q = D / scale, hz = (typeof HangarFX !== 'undefined' && HangarFX.center) ? HangarFX.center() : null;
+    const T = hz ? { x: (hz.x - r.left) * q, y: (hz.y - r.top) * q, s: hz.s * q } : { x: mt.width * D + fs * 1.4 * D, y: asc * 0.2, s: fs * 0.08 * D };
+    const k = fs + '|' + D + '|' + word + '|' + fam + '|' + Math.round(T.x / 8) + ',' + Math.round(T.y / 8) + ',' + Math.round(T.s * 4); if (k === key) return; key = k;
+    const padL0 = off + hc, padV0 = Math.round(fs * 0.45 * D);
     // source: red and cyan offsets under the main word, which carries the colour ramp
     src = document.createElement('canvas'); src.width = wd + off * 2; src.height = inkH; const sc = src.getContext('2d');
     const main = document.createElement('canvas'); main.width = wd; main.height = inkH; const mc = main.getContext('2d');
@@ -8865,34 +8869,44 @@ const TitleFX = (() => {
     ac.font = mc.font; ac.textBaseline = 'alphabetic'; ac.fillStyle = css('--bad'); ac.fillText(word, off * 2, asc); ac.fillStyle = css('--cryo'); ac.fillText(word, 0, asc);
     ac.globalCompositeOperation = 'destination-in'; const am = ac.createLinearGradient(off, 0, off + wd, 0); am.addColorStop(0.4, '#000'); am.addColorStop(0.8, 'rgba(0,0,0,0.12)'); ac.fillStyle = am; ac.fillRect(0, 0, ab.width, inkH);
     sc.drawImage(ab, 0, 0); sc.drawImage(main, off, 0);
-    // static layer: amber glow fading out, then every cell that has not broken away
-    const W = padL + src.width + padR, H = inkH + padV * 2;
-    stat = document.createElement('canvas'); stat.width = W; stat.height = H; const st = stat.getContext('2d');
-    const glow = document.createElement('canvas'); glow.width = W; glow.height = H; const gc = glow.getContext('2d');
-    gc.font = mc.font; gc.textBaseline = 'alphabetic'; gc.shadowColor = 'rgba(255, 176, 58, 0.34)'; gc.shadowBlur = 28 * D; gc.shadowOffsetX = 10000;
-    gc.fillText(word, padL + off - 10000, padV + asc); gc.shadowColor = 'transparent';
-    gc.globalCompositeOperation = 'destination-in'; const gm = gc.createLinearGradient(padL, 0, padL + wd, 0); gm.addColorStop(0.3, '#000'); gm.addColorStop(0.85, 'rgba(0,0,0,0)'); gc.fillStyle = gm; gc.fillRect(0, 0, W, H);
-    st.drawImage(glow, 0, 0);
+    // cells: intact ones stay in the word, the rest become shards with a path into the attractor (word-relative coordinates)
     const px = sc.getImageData(0, 0, src.width, src.height).data, cols = Math.ceil(src.width / hc), rows = Math.ceil(src.height / hc);
-    shards = [];
+    const keep = []; shards = [];
+    let x0 = -padL0, y0 = -padV0, x1 = src.width + padV0, y1 = inkH + padV0;
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
       let lit = false;
       for (let yy = y * hc; yy < Math.min(src.height, y * hc + hc) && !lit; yy++) for (let xx = x * hc; xx < Math.min(src.width, x * hc + hc); xx++) if (px[(yy * src.width + xx) * 4 + 3] > 40) { lit = true; break; }
       if (!lit) continue;
       const u = (x * hc + hc / 2 - off) / wd, f = sstep(0.6, 1.22, u);
       const th = (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16 * 0.62 + hash(x, y) * 0.38;
-      const sx = x * hc, sy = y * hc, hx = padL + sx, hy = padV + sy;
-      if (th >= f) { st.globalAlpha = 1 - 0.4 * f; st.drawImage(src, sx, sy, hc, hc, hx, hy, hc, hc); continue; }
+      const sx = x * hc, sy = y * hc;
+      if (th >= f) { keep.push([sx, sy, 1 - 0.4 * f]); continue; }
       if (f > 0.8 && hash(y, x) < 0.4) continue; // the far end is simply gone
-      const h2 = hash(x + 91, y + 7), h3 = hash(x + 13, y + 57);
-      shards.push({ sx, sy, hx, hy, P: 2.6 + h2 * 3.4, ph: h3, vx: 0.55 + hash(x + 3, y + 19) * 0.9, vy: (hash(x + 5, y + 23) - 0.62) * 0.9,
-        dist: hc * (4 + 26 * f), a: 1 - 0.5 * f, j: hash(x + 7, y + 29) });
+      const ja = hash(x + 41, y + 3) * 6.283, jr = T.s * (1.5 + 7 * hash(x + 17, y + 71));
+      const s0 = { sx, sy, tx: T.x + Math.cos(ja) * jr, ty: T.y + Math.sin(ja) * jr * 0.7, P: 3.4 + hash(x + 91, y + 7) * 3.4, ph: hash(x + 13, y + 57),
+        sw: 1.8 + hash(x + 3, y + 19) * 1.4, a: 1 - 0.35 * f, j: hash(x + 7, y + 29) };
+      for (let i = 0; i <= 10; i++) { const P0 = path(s0, i / 10); x0 = Math.min(x0, P0[0] - hc); y0 = Math.min(y0, P0[1] - hc); x1 = Math.max(x1, P0[0] + hc * 2); y1 = Math.max(y1, P0[1] + hc * 2); }
+      shards.push(s0);
     }
+    const padL = Math.ceil(-x0), padT = Math.ceil(-y0), W = Math.ceil(x1) + padL, H = Math.ceil(y1) + padT;
+    stat = document.createElement('canvas'); stat.width = W; stat.height = H; const st = stat.getContext('2d');
+    // static layer: amber glow fading out, then every cell that has not broken away
+    const glow = document.createElement('canvas'); glow.width = W; glow.height = H; const gc = glow.getContext('2d');
+    gc.font = mc.font; gc.textBaseline = 'alphabetic'; gc.shadowColor = 'rgba(255, 176, 58, 0.34)'; gc.shadowBlur = 28 * D; gc.shadowOffsetX = 10000;
+    gc.fillText(word, padL + off - 10000, padT + asc); gc.shadowColor = 'transparent';
+    gc.globalCompositeOperation = 'destination-in'; const gm = gc.createLinearGradient(padL, 0, padL + wd, 0); gm.addColorStop(0.3, '#000'); gm.addColorStop(0.85, 'rgba(0,0,0,0)'); gc.fillStyle = gm; gc.fillRect(0, 0, W, H);
+    st.drawImage(glow, 0, 0);
+    for (const [sx, sy, al] of keep) { st.globalAlpha = al; st.drawImage(src, sx, sy, hc, hc, padL + sx, padT + sy, hc, hc); }
     st.globalAlpha = 1;
     cv.width = W; cv.height = H;
-    Object.assign(cv.style, { position: 'absolute', width: W / D + 'px', height: H / D + 'px', left: (-padL / D) + 'px', top: (-padV / D) + 'px' });
+    Object.assign(cv.style, { position: 'absolute', width: W / D + 'px', height: H / D + 'px', left: (-padL / D) + 'px', top: (-padT / D) + 'px' });
     host.style.height = inkH / D + 'px'; host.style.width = wd / D + 'px';
-    geo = { hc };
+    geo = { hc, padL, padT };
+  }
+  // a shard at progress p (0 = in the word, 1 = gone into the attractor): drawn in along a tightening spiral
+  function path(s, p) {
+    const vx = s.sx - s.tx, vy = s.sy - s.ty, an = -s.sw * p * p, ca = Math.cos(an), sa = Math.sin(an), rr = Math.pow(1 - p, 1.15);
+    return [s.tx + (vx * ca - vy * sa) * rr, s.ty + (vx * sa + vy * ca) * rr];
   }
   function bind() {
     host = document.querySelector('.brand h1 .t2'); if (!host) return false;
@@ -8908,11 +8922,11 @@ const TitleFX = (() => {
     if (!motion()) return;
     const hc = geo.hc, kick = kickT > 0 ? kickT / 0.3 : 0;
     for (const s of shards) {
-      const q = (t / s.P + s.ph) % 1, a = s.a * sstep(0, 0.07, q) * Math.pow(1 - q, 1.6);
+      const q = (t / s.P + s.ph) % 1, p = Math.pow(q, 1.6), a = s.a * sstep(0, 0.05, q) * (1 - sstep(0.8, 1, p));
       if (a < 0.02) continue;
-      const d = s.dist * q, jx = kick ? (s.j - 0.5) * hc * 6 * kick : 0;
-      const sz = Math.max(1, Math.round(hc * (1 - 0.45 * q)));
-      c.globalAlpha = a; c.drawImage(src, s.sx, s.sy, hc, hc, Math.round(s.hx + s.vx * d + jx), Math.round(s.hy + s.vy * d), sz, sz);
+      const P0 = path(s, p), jx = kick ? (s.j - 0.5) * hc * 6 * kick : 0;
+      const sz = Math.max(1, Math.round(hc * (1 - 0.72 * p)));
+      c.globalAlpha = a; c.drawImage(src, s.sx, s.sy, hc, hc, Math.round(geo.padL + P0[0] + jx), Math.round(geo.padT + P0[1]), sz, sz);
     }
     c.globalAlpha = 1;
   }
