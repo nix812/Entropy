@@ -1733,7 +1733,7 @@ const UI = (() => {
           ${stGrid === 'melody' ? `<button class="chip" data-act="cpDice"><i data-svg="dice"></i>Roll</button>${d.mel && d.mel.some(x => x !== null) ? '<button class="chip" data-act="cpMelClr">Clear</button>' : ''}` : '<button class="chip" data-act="cpDrumReset">Reset</button><button class="chip" data-act="cpDrumClr">Clear</button>'}
           <button class="btn small ${SFX.music.held ? 'primary' : ''} cpplay" id="cpPlayB" data-act="stPause">${SFX.music.held ? '▶ Play' : '■ Stop'}</button><button class="btn small cpsave" data-act="cpSave">Save</button></div>
         <div id="cpGridBox">${cpGridHTML()}</div>
-        <p class="note sthint">${stGrid === 'melody' ? (d.mel === null ? 'The faint notes are a rolled melody. Tap the grid to make it yours, or roll again.' : d.mel.some(x => x !== null) ? 'Your melody. Rows are steps up the scale from each chord, so it follows the chords; 1 is the chord itself.' : 'No melody yet. Tap the grid to write one (it always fits the chords), or Roll one.') : 'Tap a step to switch a hit on or off. Breakdowns still drop the drums out.'}</p>
+        <p class="note sthint">${stGrid === 'melody' ? (d.mel === null ? 'The faint notes are a rolled melody. Tap the grid to make it yours, or roll again.' : d.mel.some(x => x !== null) ? 'Your melody, one bar looping. Higher rows are higher notes; they move with the chords, so every note fits. Tap a lit square to remove it.' : 'No melody yet. Tap the grid to write one (it always fits the chords), or Roll one.') : 'One bar, looping. Each column is a step; the white column is where the song is right now. Every lit square plays: tap one to switch it on or off.'}</p>
       </div>
     </div>`;
   }

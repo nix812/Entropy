@@ -1022,11 +1022,12 @@ const SFX = (() => {
     }
     // a voice's density from effective energy and the phrase: fires when the step's level >= 10 - density*10
     function density(vk) {
+      if (P.comp) { const ph0 = P.form[Math.floor(bar / 8) % 4]; return ph0.drums === 0 ? 0 : 1; } // 5.5.6: every lit cell plays
       const E = effE(), ph = P.form[Math.floor(bar / 8) % 4], base = E * 1.15 - 0.15 + ph.d;
       const bias = { K: 0.2, S: 0.15, C: 0.1, H: 0.05, O: -0.05, R: 0, D: -0.15, P: -0.1 }[vk] || 0;
       return Math.max(0, Math.min(1, base + bias)) * (ph.drums === 0 ? 0 : ph.drums || 1);
     }
-    const lvl = (thr) => { const E = Math.max(0, effE() + P.form[Math.floor(bar / 8) % 4].d); return E >= thr ? Math.min(1, 0.55 + (E - thr) * 1.5) : 0; };
+    const lvl = (thr) => { if (P.comp) return 0.85; const E = Math.max(0, effE() + P.form[Math.floor(bar / 8) % 4].d); return E >= thr ? Math.min(1, 0.55 + (E - thr) * 1.5) : 0; };
 
     function scheduleStep(t) {
       if (API._fault) { API._fault = 0; throw new Error('test fault'); }
@@ -1120,12 +1121,11 @@ const SFX = (() => {
         const mot = (ph.motif || (barInPh >= 6 && phIdx % 2 === 1)) ? P.motifs[1] : P.motifs[0], st = (barInPh % 2) * 16 + s16;
         const tail = barInPh % 4 === 3 && barInPh !== 7 ? 1 : 0;
         for (const nn of mot) if (nn.st === st) {
-          if (tail && s16 >= 8 && chance(0.5)) continue;
+          if (tail && s16 >= 8 && !P.fixedMel && chance(0.5)) continue;
           const scaleTones = Ld.scale === 'pent' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : Ld.scale === 'pentmajor' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : P.scale;
           const strong = s16 % 4 === 0, off = scaleTones.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
           let n = degTo(P.root + 12 * Math.round((Ld.oct - P.root) / 12), off + nn.d, scaleTones);
-          if (strong) n = nearestChordTone(n, C0); if (barInPh === 7 && s16 >= 8) n = nearestPc(n, C0.root % 12);
-          if (Ld.grammar === 'drone' && !strong) continue;
+          if (!P.fixedMel) { if (strong) n = nearestChordTone(n, C0); if (barInPh === 7 && s16 >= 8) n = nearestPc(n, C0.root % 12); if (Ld.grammar === 'drone' && !strong) continue; }
           lead(n, tt + hum(), Math.max(sp16, nn.len * sp16), (Ld.kind === 'chip' ? 0.6 : 0.85) * ll, Ld.kind, Ld.duty);
         }
       }
@@ -1187,7 +1187,9 @@ const SFX = (() => {
       if (MODES[cp.mode]) { p.mode = cp.mode; p.scale = MODES[cp.mode]; }
       if (cp.key !== undefined && cp.key !== null && cp.key >= 0) p.root = S.keyR[0] + ((((cp.key | 0) - S.keyR[0]) % 12) + 12) % 12;
       if (cp.loop && Array.isArray(cp.loop.degs) && cp.loop.degs.length) p.loop = { degs: cp.loop.degs.slice(0, 8).map(x => x | 0), q: (cp.loop.q || []).slice(0, 8), bars: Math.max(1, Math.min(8, cp.loop.bars | 0 || 1)) };
-      if (cp.drums) { S.drums = {}; for (const k in cp.drums) if (/^[KSCHORDP]$/.test(k) && typeof cp.drums[k] === 'string') S.drums[k] = cp.drums[k].replace(/[^0-9]/g, '0').slice(0, 32); S.halftime = 0; }
+      if (cp.drums) { S.drums = {}; for (const k in cp.drums) if (/^[KSCHORDP]$/.test(k) && typeof cp.drums[k] === 'string') S.drums[k] = cp.drums[k].replace(/[^0-9]/g, '0').slice(0, 32); S.halftime = 0; S.fill = 'none'; }
+      S.filterLoop = 0; // no slow filter sweep hiding the first phrase
+      const on = d => ({ d, drums: 1, bass: 1, keys: 1, lead: 1, pad: 1, arp: 1 }); p.form = [on(0), on(0), on(0), on(0)]; p.dropouts = null; // what you write is what you hear
       const r0 = R; R = mulberry32((cp.melSeed >>> 0) || 7); // the automatic melody and bassline come from the comp's own seed
       if (Array.isArray(cp.bass) && cp.bass[0]) S.bass = Object.assign({ lv: 0.1 }, S.bass || {}, { kind: cp.bass[0], line: cp.bass[1] });
       p.bassPat = makeBass(S.bass);
