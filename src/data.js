@@ -571,7 +571,7 @@ const TALENTS = [
     rows: [
       [T_('vDmg', 'Null', 3, { dmgV: 10 }), T_('vHunt', 'Hunter', 3, { eliteDmg: 8 }), TECH('vTether', 'Null Tether', 'lens')],
       [T_('vMark', 'Mark', 3, { markChance: 5 }), T_('vKnock', 'Gravitic', 2, { knock: 3 }), TECH('vRepulse', 'Repulsor', 'grav')],
-      [T_('vLens', 'Null Lens', 1, { rampKeep: 1, dmgV: 8 }), T_('vSlow', 'Event Drag', 2, { markSlow: 15 })],
+      [T_('vLens', 'Implosion', 1, { collapse: 40, dmgV: 8 }) /* v5.8: was Null Lens (beams kept their ramp), a Lens-only buff */, T_('vSlow', 'Event Drag', 2, { markSlow: 15 })],
       [T_('vDark', 'Dark Matter', 1, { markVoid: 5, markMax: 3 }), T_('vHole', 'Black Hole', 1, { blackHole: 1, collapse: 30 }), T_('vPull', 'Gravitic Pull', 1, { knockMark: 1, knock: 3 })]],
     caps: [CAP('horizon', 'Event Horizon', { ks: 'horizon', doc: 4 }),
       CAP('garden', 'Gravity Garden', { ks: 'garden', lines: ['Ground enemies between two Gravity Wells (up to 5 tiles apart) are held: 75% slower and +25% damage taken', 'Gravity Wells: +25% Range', 'Void Lenses deal 20% less damage'] }),
