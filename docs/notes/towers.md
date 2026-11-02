@@ -59,14 +59,62 @@ No PROF or G fields added. No sprite frames added (recoil is an offset).
 - `test/sfxrender.py`: new names added (spec variants, hits, blasts, `flames*`, `lock`, `forge*`, `pylon`, `lure*`, `net1`).
 
 ## Simulation unchanged (proof)
-SEE_PROOF
+Recorded on the untouched 5.7.4 source (frozen copy) and again on this branch; identical on every line.
+- `node test/replay.js 6 60` (scripted player, 6 runs, std and daily): same wave / score / tick / `runHash` per run
+  (b7257dd9, 8deeb648, 9ac3a3d1, 7be93660, 40bc9873, 179f1d52), and "all replays match". The default `node test/replay.js` also passes.
+- `smartbot.js 1 40 1 1 60` with `COLS=48`, seeds 0–2, and `Math.random` replaced by a fixed-seed generator
+  (`node -r seedmath.js`, so the bot's own boon picks repeat): identical full result rows, e.g.
+  seed 0 wave 64 (44.6 min, 19632 combos, damage share lens 50 / rail 23 / emp 12), seed 1 wave 81, seed 2 wave 153 (95.2 min).
+- How it stays true: sim.js only gained extra fields on existing `Hooks.fx`/`Hooks.sfx` payloads and new Hooks calls; no `G.r()`
+  calls were added or moved (the Overvolt fx sits inside the existing stun branch), and no `Math.random` was added to sim.js
+  (it would shift the seeded bot proof). All randomness for the new effects is `Math.random` in render.js and audio.js.
 
 ## Loudness (sfxrender.py, loudest 50 ms RMS dBFS, after trims)
-SEE_LOUD
+Tiers from the comment above `TRIM`. Two renders; values vary about ±1.5 dB per render from the built-in pitch and level jitter.
+
+| Sound | rms50 dB | Tier |
+|---|---|---|
+| shot (Pulse) / shotG (Gatling) / shot2 (Twin, both taps) | −30.3 / −30.8 / −30.5 | rapid −28…−31 |
+| coil / coil1 Tesla / coil2 Overvolt | −27.2 / −26.8 / −25.8 | as the old `zap` (−27) |
+| flames roar (1 projector) / Inferno / Plasma | −29.7 / −28.4 / −28.5 | rapid |
+| ignite | −32.0 | rapid, quiet |
+| pulse (Cryo) / Glacier / Shatter | −27.9 / −27.7 / −27.4 | as before (−27.3) |
+| rail / Gauss / Splinter | −21.8 / −20.6 / −21.1 | as before (−21.7) |
+| missile / Cluster / Napalm launch | −26.8 / −25.3 / −25.2 | as before (−25.4) |
+| mortar / Blackout / Ion Barrage | −21.9 / −21.2 / −22.0 | as before (−22.1) |
+| grav / Singularity / Tidal Lock | −24.1 / −22.6 / −23.4 | 3 dB under the old −21.6 |
+| hit (generic) / hitK / hitR / hitC / hitF / hitV / hitA | −39.3 / −35.3 / −35.9 / −36.9 / −37.7 / −41.4 / −35.5 | hits −36 (frequent ones lower) |
+| boomT / boomT2 (Napalm) / empboom / empboom1 (Blackout) | −20.4 / −20.2 / −21.4 / −19.9 | as the old `boom` (−20.8) |
+| pop (bomblet) | −28.9 | small blast |
+| net / net1 (Tangle) | −25.9 / −25.8 | as before (−26.1) |
+| lure / lure2 (Long Lure) | −34.4 / −34.6 | quiet |
+| lock (Lens lock-on) | −33.3 | quiet |
+| forge / forge1 (one bell each) | −26.3 / −24.4 | notices −20…−24, a little under |
+| pylon (new link) | −32.2 | quiet |
+
+Voice budgets (gap s, polyphony): hitK 0.04/4, hitR 0.05/3, hitC 0.09/2, hitF 0.12/2, hitV 0.1/2, hitA 0.05/3, generic 0.035/5;
+coil 0.07/4, ignite 0.12/2, boomT 0.06/4, pop 0.05/3, empboom 0.06/3, lure 0.25/2, lock 0.08/2, pylon 0.3/2, forge 8 bells max.
+Frequent sounds use at most 4 layers (Tesla Crown's per-hop clicks and Ion Barrage's three thumps play on towers that fire about once a second).
 
 ## Render cost
-SEE_BENCH
+Measured on a shared, heavily loaded machine (load average 60–130 from other builders' bot batches), so single numbers swing ±50%;
+read the pairs, not the absolutes. No regression showed up in any pair.
+- `test/drawbench.py` (static busy scene, ms per `Render.draw`, 5.7.4 vs this branch, run back to back):
+  pair 1 home 148.9 / 81.5, zoomIn 109.6 / 78.3, zoomOut 122.1 / 61.7; pair 2 home 153.6 / 95.9, zoomIn 112.3 / 71.1, zoomOut 213.1 / 86.9.
+- Live 36-tower battle (every tower and spec firing, 90 enemies; `towerfx.py` bench and a draw-call counter), 5.7.4 / branch:
+  ms 60.9 / 57.4 and 91.0 / 61.8; canvas calls per frame in the heavier pair: fillRect 646 / 949, stroke 62 / 101, drawImage 261 / 316
+  (the extra calls are the new flashes, discs and wedges; frame time stays level because compositing dominates).
+- Extras skip when there are more than 600 particles or the game runs faster than 2× (`LITE`). Colour strings come from the
+  existing caches (`hexA`, `sh`, with the Lens colour quantised); the Snare mesh is drawn once per size into a cached canvas;
+  no gradients or shadowBlur.
+- `test/perfcheck.py` (music only, unaffected by this work) ran 0.66–2.47× realtime under the same load; sfx have no new ConvolverNodes.
+
+## Pictures for Nic
+Per-family GIFs (about 1 s each, real speed) and 4-frame strips: `test/out/towerfx/<family>.gif` and `<family>_strip.png`
+(pulse, rail, cryo, snare, missile, pylon, coil, forge, flame, lens, emp, grav), regenerate with `DSF=2 python3 test/towerfx.py`.
 
 ## Open issues
 - Pylon pulses and Forge sparks are small at the default zoom by design (ambient, not alerts). If Nic wants them louder visually, raise `D(b, px, py, 1.5 …)` and the spark count.
 - The flame roar is one shared voice panned centre (like the Lens hum).
+- `splashshot.py` "Nigel blinks twice" fails on this loaded machine for 5.7.4 as well (timing); unrelated to this branch.
+- `uiaudit.py` flags (help text clipping etc.) are pre-existing; this branch changes no DOM.

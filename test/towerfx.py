@@ -17,7 +17,8 @@ errs, fails = [], []
 FAMS = os.environ.get('FAMS', '').split(',') if os.environ.get('FAMS') else ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav']
 with sync_playwright() as p:
     b = p.chromium.launch()
-    pg = b.new_page(viewport={'width': 852, 'height': 393}, device_scale_factor=3, has_touch=True)
+    pg = b.new_page(viewport={'width': 852, 'height': 393}, device_scale_factor=float(os.environ.get('DSF', 3)), has_touch=True)
+    pg.set_default_timeout(240000)
     pg.on('pageerror', lambda e: errs.append('PAGEERROR ' + str(e)))
     pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'ERR_FILE' not in m.text and 'TUNNEL' not in m.text else None)
     pg.goto('file://' + page); pg.wait_for_timeout(500)
@@ -26,7 +27,7 @@ with sync_playwright() as p:
     newfx = pg.evaluate('''() => { if (UI.closeModal) UI.closeModal(); for (const s of ['#toasts', '#tip', '#bossIntro', '#feed']) { const el = document.querySelector(s); if (el) el.style.visibility = 'hidden'; }
       G.credits = 1e8; G.gridBonus = 300; G.wave = 30; G.paused = true; G.core.max = G.core.hp = 1e12;
       window.__snd = {}; const P0 = SFX.play.bind(SFX); SFX.play = (n, a, a2) => { const sp = a && a.spec ? a.spec : a2 && a2.type ? a2.type : a && a.src && a.src.spec ? 's' + a.src.spec : ''; const k = n + (sp ? ':' + sp : ''); __snd[k] = (__snd[k] || 0) + 1; return P0(n, a, a2); };
-      const F0 = SFX.flames.bind(SFX), B0 = SFX.beams.bind(SFX); window.__fl = 0; window.__bm = []; SFX.flames = (n, i, pl) => { if (n) __fl = Math.max(__fl, n); return F0(n, i, pl); }; SFX.beams = (n, r, eh, pr) => { if (n) __bm.push([n, r, eh, pr]); return B0(n, r, eh, pr); };
+      const F0 = (SFX.flames || (() => {})).bind(SFX), B0 = SFX.beams.bind(SFX); window.__fl = 0; window.__bm = []; SFX.flames = (n, i, pl) => { if (n) __fl = Math.max(__fl, n); return F0(n, i, pl); }; SFX.beams = (n, r, eh, pr) => { if (n) __bm.push([n, r, eh, pr]); return B0(n, r, eh, pr); };
       // a family's showcase: base + both specs on free tiles beside one stretch of road, tough enemies parked in range
       window.__setup = (type, D) => {
         for (const t of G.towers.slice()) sellTower(t); for (const e of G.enemies) e.dead = true; G.enemies = []; G.projs = []; G.zones = [];
@@ -52,6 +53,7 @@ with sync_playwright() as p:
           s = Render.tileToScreen(x, y); const L = Render.layout; Render.panBy(L.W / 2 - s.x, L.H / 2 - s.y); s = Render.tileToScreen(x, y);
           const r = document.querySelector('#cv').getBoundingClientRect(), k = r.width / L.W; return [r.left + s.x * k, r.top + s.y * k]; }''', [info['cx'], info['cy']])
         pg.evaluate('() => __step(45)')  # warm up: turrets aim, beams ramp
+        pg.evaluate('() => { let i = 0; for (const t of G.towers) if (t.s && t.s.rate && t.s.rate < 1) t.cd = Math.min(t.cd, 0.04 + 0.12 * i++); }')  # slow towers fire inside the clip
         if fam == 'forge': pg.evaluate('() => { let i = 0; for (const f of G.forges) { Hooks.fx("coin", { x: f.cx, y: f.cy, v: Math.round(f.s.income), forge: f }); Hooks.sfx("forge", f, i++); } }')
         frames = []
         NF = {'rail': 45, 'emp': 45, 'grav': 45, 'missile': 36}.get(fam, 30)
