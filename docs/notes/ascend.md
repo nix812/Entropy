@@ -32,7 +32,7 @@ Values in brackets are the next picks when a perk stacks.
 
 **Flame Projector.** Spreading Fire: a burning enemy that dies passes its Burn to enemies within 1.2 tiles. Wide Nozzle: cone 30% wider (+20%). Pressure Tank: +0.4 Range (+0.3). Accelerant: +15% Damage (+13%, +11%, +9%, +8%). Slag: ignores Plating. Updraft: flames hit fliers. Slow Burn (Inferno): Burn lasts 2 s longer. Ion Torch (Plasma Torch): +25% Shock chance. Legendary, Dragon's Breath: Updraft, Spreading Fire, +30% Damage.
 
-**Void Lens.** Fork: the beam forks from its target to the nearest other enemy within 2.5 tiles for 50% (ramped). Persistence: ramp holds when the beam switches target. Focal Length: +1 Range (+0.6). Quick Focus: ramps 40% faster (+25%). Brand: +15% Mark chance (+10%). Refraction: the beam Shocks (25% chance; sets up Collapse and Overload). Deep Well (Event Horizon): +0.3 max ramp. Fourth Facet (Prism Split): +1 beam. Legendary, Twin Singularity: Fork (to 75% with the perk) and Persistence.
+**Void Lens.** Fork: the beam forks from its target to the nearest other enemy within 2.5 tiles for 40% (ramped). Persistence: ramp holds when the beam switches target. Focal Length: +1 Range (+0.6). Quick Focus: ramps 40% faster (+25%). Brand: +15% Mark chance (+10%). Afterglow: its Marks last 2 s longer (+1 s). Deep Well (Event Horizon): +0.3 max ramp. Fourth Facet (Prism Split): +1 beam. Legendary, Twin Singularity: Fork (to 75% with the perk) and Persistence.
 
 **EMP Mortar.** Long Pulse: Stun +0.3 s (+0.2 s). Scatter Shell: shells split into 3 bomblets at 20% (they Stun too). Wide Burst: +0.4 Splash (+0.3). Shaped Charge: shells ignore Plating. Shield Eater: strips shields completely (normally half). Fast Breech: +15% fire rate (+12%, +10%, +8%, +7%). Ion Charge: hits Shock (60%). Lights Out (Blackout Shell): bosses stay Stunned twice as long. Fourth Shell (Ion Barrage): +1 shell. Legendary, Cascade: Scatter Shell, Stun +0.3 s.
 
@@ -67,7 +67,7 @@ When a tower has taken every perk its pool allows, further Ascends give only ×1
 
 **template.html**: `.perks`, `.perk`, `.perk.sp`, `.perks.n4`, small-height media rule, `.pfoot .btn.asc.lvup` min-height (same height whether it says Ascend or Choose a perk), `.bt .mrank`, `.mpip`, `.mgain`.
 
-**Tuning note.** Each damage tower has one five-stack damage or rate perk so late Ascends keep scaling once the one-time perks are taken; the Void Lens deliberately has none, and its perks are utility (fork, ramp, range, Mark, Shock), not raw damage. Pulse, Missile, Coil, EMP and Flame each have a perk that ignores Plating, because late-game Plating is what left the Lens (and Rail) as the only towers doing damage in long bot runs.
+**Tuning note.** Each damage tower has one five-stack damage or rate perk so late Ascends keep scaling once the one-time perks are taken; the Void Lens deliberately has none, and its perks are utility (fork, ramp, range, Mark), not raw damage. Pulse, Missile, Coil, EMP and Flame each have a perk that ignores Plating, because late-game Plating is what left the Lens (and Rail) as the only towers doing damage in long bot runs.
 
 **Bot** (`test/smartbot.js`): `PERK_PRI` (a value per perk plus noise, minus 0.4 per stack held); picks right after each Ascend. `NOPERK=1` always takes the first card. New output column `share` (every tower type's share of damage).
 

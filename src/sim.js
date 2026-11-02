@@ -1029,7 +1029,7 @@ function towerStats(t) {
   s.burn = clamp(((st.burn || 0) + (s.el === 'T' ? ost : 0) + ((A.burn || 0) + M.burnChance + (s.el === 'K' ? M.kBurn : 0)) / 100 + (M.ks.conflag ? 0.35 : 0)) * sm, 0, 1);
   s.chill = clamp(((st.chill || 0) + (s.el0 === 'C' ? ost : 0) + ((A.chill || 0) + M.chillChance) / 100) * sm, 0, 1);
   if (M.ks.conflag) { s.burn = clamp(s.burn + s.chill, 0, 1); s.chill = 0; } // Conflagration: Chill becomes Burn
-  s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + pv('ion') + pv('ionE') + pv('refract') + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
+  s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + pv('ion') + pv('ionE') + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
   s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + pv('brand') + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
   s.chillPot = (sp.chillPot || 1) * M.chillPot;
   s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur + pv('deep');
@@ -2612,7 +2612,7 @@ function applyStatuses(e, dmg, el, src, o) {
     st.shock = FX('shockLong') ? 6 : 3; st.shockEff = Math.max(st.shockEff, s.shockX * M.shockEff);
     if (s.stun && r() < s.stun && !jugg) st.stun = Math.max(st.stun, e.boss ? 0.2 : 0.6);
   }
-  if (markP > 0 && r() < markP) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
+  if (markP > 0 && r() < markP) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4 + ((s.pkv && s.pkv.linger) || 0); }
   if (M.ks.horizon && st.mark >= M.markMax && !e.yanked && !e.boss && !e.fly) { e.yanked = 1; e.d = Math.max(0, e.d - 1.5); Hooks.fx('implode', { x: e.x, y: e.y, r: 0.8 }); }
   if (M.chillVoid && st.chill > 0 && r() < M.chillVoid / 100) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
   if (M.knock && r() < M.knock && !jugg) { e.d = Math.max(0, e.d - (e.boss ? 0.15 : 0.5)); if (FX('knockMark')) { st.mark = Math.min(M.markMax, st.mark + 2); st.markT = 4; } }
