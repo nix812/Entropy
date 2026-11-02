@@ -953,7 +953,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.5.2';
+const VERSION = '5.5.3';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1132,6 +1132,7 @@ const WHATS_NEW = { ver: '5.5.0', title: 'Entropy 5.5 · The Music Studio', item
   ['Vibes', 'Calm, Club, Retro or Everything in one tap, then add or remove genres. The ▶ on a genre plays it right away.'],
   ['My Tracks', 'The heart keeps a piece, and it remembers your mixer and effects too. Tap a name to rename it. The share button copies a code that plays the same track for a friend (Add a code).'],
   ['Shape', 'One tempo slider for the genre that is playing, with energy, the mixer and effects on one screen.'],
+  ['Mono Audio (5.5.3)', 'Settings › Mono Audio plays everything in both ears, for one earbud or a single speaker. Sounds panned to one side are no longer lost.'],
   ['…and one more thing', 'Something is hidden in the Studio. Try tapping the visualizer.'],
   ['A new hangar sky (5.4.2)', 'The launch screen is redrawn: a Lorenz attractor, the classic picture of chaos, turns over a drifting nebula with comets, stars and the odd meteor.'],
 ]};
@@ -5234,7 +5235,10 @@ if (typeof module !== 'undefined') module.exports = { };
 // routed through reverb, compression and distortion. Everything is synthesized.
 const SFX = (() => {
   let ctx = null, master, sfxBus, musBus, limiter, noiseBuf, noiseLo;
-  let sfxVol = 0.8, musVol = 0.45;
+  let sfxVol = 0.8, musVol = 0.45, mono = false;
+  // v5.5.3 Mono Audio (Settings): the master gain sums left and right into one channel (the speakers rule: (L + R) / 2), then the
+  // output plays it in both ears, so nothing panned to one side is lost with a single earbud
+  function applyMono() { if (!master) return; master.channelCountMode = mono ? 'explicit' : 'max'; master.channelCount = mono ? 1 : 2; master.channelInterpretation = 'speakers'; }
   const revCache = {};
   const last = {};
   let recent = [];
@@ -5248,7 +5252,7 @@ const SFX = (() => {
     // master: a brickwall limiter just under 0 dBFS. The SFX glue compressor (in buildBuses) does the gentle work.
     limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -3; limiter.knee.value = 1; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.12;
-    master = ctx.createGain(); master.gain.value = 0.95;
+    master = ctx.createGain(); master.gain.value = 0.95; applyMono();
     sfxBus = ctx.createGain(); sfxBus.gain.value = sfxVol;
     musBus = ctx.createGain(); musBus.gain.value = musVol;
     sfxBus.connect(limiter); limiter.connect(master); master.connect(ctx.destination);
@@ -5651,7 +5655,7 @@ const SFX = (() => {
   function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; buildMasterOffline(); }
   function buildMasterOffline() {
     limiter = ctx.createDynamicsCompressor(); limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
-    master = ctx.createGain(); master.gain.value = 1; sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
+    master = ctx.createGain(); master.gain.value = 1; applyMono(); sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
     sfxBus.connect(limiter); limiter.connect(master); master.connect(ctx.destination);
     makeNoise(); buildBuses(); hookMusic();
   }
@@ -6506,7 +6510,7 @@ const SFX = (() => {
     };
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, get ready() { return !!ctx; } };
+  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -10288,6 +10292,7 @@ const UI = (() => {
       <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
       <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
       <div class="set"><span>Damage Numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
+      <div class="set"><span>Mono Audio <em class="dim">one earbud, one speaker</em></span><button class="chip ${S.mono ? 'on' : ''}" data-act="mono">${S.mono ? 'On' : 'Off'}</button></div>
       <div class="set"><span>Screen Shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
       ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
@@ -10927,7 +10932,7 @@ const UI = (() => {
           if (!raw.startsWith('ENT1:')) throw 0;
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
           P.runSnap = null; PROF = P; Save.save(); closeModal(); renderHangar(); Tree.refresh();
-          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
+          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
           toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');
         } catch (e) { toast('INVALID CODE', 'Make sure the full code was pasted', '#ff4d6a', 1); }
@@ -10941,6 +10946,7 @@ const UI = (() => {
       case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
       case 'notes': PROF.settings.notes = b.dataset.v; Save.save(); renderFeed(); openSettings(); break;
       case 'nums': PROF.settings.dmgNums = !PROF.settings.dmgNums; Render.nums = PROF.settings.dmgNums; Save.save(); openSettings(); break;
+      case 'mono': PROF.settings.mono = !PROF.settings.mono; SFX.setMono(PROF.settings.mono); Save.save(); openSettings(); break;
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;
       case 'wipe': if (!confirmReset) { confirmReset = true; openSettings(); return; } PROF = defaultProfile(); Save.save(); closeModal(); renderHangar(); toast('PROGRESS RESET', 'All progress erased', '#ff4d6a'); break;
     }
@@ -11251,7 +11257,7 @@ const Tree = (() => {
   // returning players see what changed once per version; brand-new players skip it
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900);
-  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music);
+  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)
