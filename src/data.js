@@ -134,7 +134,7 @@ const PERKS = {
     { id: 'spotter', name: 'Spotter', v: [1], d: () => 'Crits Mark all hit (2 stacks)' },
     { id: 'deflect', name: 'Deflection', v: [1], d: () => 'Ricochets once for 60%' },
     { id: 'capBank', name: 'Capacitor Bank', v: [1], d: () => 'Every 4th shot: ×2.5 Damage' },
-    { id: 'coup', name: 'Coup de Grace', v: [10, 15], d: v => `Executes non-bosses under ${v}%` },
+    { id: 'coup', name: 'Coup de Grace', v: [10, 15], d: (v, tot) => `Executes non-bosses under ${tot || v}%` },
     { id: 'bigGame', name: 'Big Game', v: [20, 32], d: v => `+${v}% Damage to bosses, elites` },
     { id: 'barrelR', name: 'Long Barrel', v: [0.8, 1.3], d: v => `+${v} Range` },
     { id: 'slug', name: 'Tungsten Slug', spec: 1, v: [50], d: () => '+50% Crit Damage' },
@@ -231,8 +231,8 @@ const PERKS = {
 };
 // the next pick's value: the step from the current stack to the next (one-time perks pass their only value)
 const perkInc = (P, n) => +(P.v[n] - (n ? P.v[n - 1] : 0)).toFixed(2);
-const perkText = (P, n) => P.d(perkInc(P, n || 0));
-const perkTotal = (P, n) => P.d(P.v[Math.min(n, P.v.length) - 1]); // what n stacks add up to
+const perkText = (P, n) => P.d(perkInc(P, n || 0), P.v[n || 0]);
+const perkTotal = (P, n) => { const v = P.v[Math.min(n, P.v.length) - 1]; return P.d(v, v); }; // what n stacks add up to
 // ---------- Tower Mastery (PROF.mastery = { v: 2, xp: { type: xp } }), earned at game over ----------
 // xp: totals for ranks 1–5. Rank 2 small stat, rank 3 turret trim, rank 4 a fourth perk choice, rank 5 the tower's legendary joins its rolls.
 const MASTERY = { xp: [0, 60, 180, 400, 750, 1250], perWave: 2.5, topW: 0.5, minShare: 0.01, stat: 0.05, offer4: 4,
