@@ -116,7 +116,6 @@ const RES = 2;
     if (g === 'shell') { // a hexagon bubble; solid while the shield holds, broken while it recharges
       const R = Math.max(hw, hh) + 2 * u, up = e.icon || e.shield > 0;
       c.beginPath(); for (let i = 0; i < 6; i++) { const a = i * 1.0472 + 0.5236, px = x + Math.cos(a) * R, py = y + Math.sin(a) * R * 0.92; i ? c.lineTo(px, py) : c.moveTo(px, py); } c.closePath();
-      if (up) { c.fillStyle = 'rgba(127,212,255,0.1)'; c.fill(); }
       c.lineWidth = u + 2; c.strokeStyle = 'rgba(9,11,22,0.75)'; if (!up) c.setLineDash([u * 2, u * 2]); c.stroke();
       c.lineWidth = u; c.strokeStyle = up ? col : 'rgba(127,212,255,0.55)'; c.stroke(); if (!up) c.setLineDash([]);
     } else if (g === 'plating') { // steel plates on both flanks and the brow
@@ -127,9 +126,9 @@ const RES = 2;
       for (const sd of [-1, 1]) { const bx = sd < 0 ? x - hw - u * 2 : x + hw; blk(bx, wy, u * 2, u, col); blk(bx + sd * u * 1.5, wy - u - f, u * 2, u, col); blk(bx + sd * u * 3, wy - u * 2 - f * 2, u * 2, u, '#e8f6ff'); }
     } else if (g === 'haste') { // speed streaks trailing behind
       const a = e._ha || 0, cx = Math.cos(a), cy = Math.sin(a), bx = x - cx * (hw + u), by = y - cy * (hh * 0.6 + u), fl = e.icon ? 1 : (frame >> 1) % 3;
-      for (let i = -1; i <= 1; i++) { const L = (i ? 3 : 5) * u + (i === fl - 1 ? u : 0), ox = -cy * i * u * 1.6, oy = cx * i * u * 1.6;
-        c.beginPath(); c.moveTo(bx + ox, by + oy); c.lineTo(bx + ox - cx * L, by + oy - cy * L);
-        c.lineWidth = u + 2; c.strokeStyle = MARK_INK; c.stroke(); c.lineWidth = u; c.strokeStyle = col; c.stroke(); }
+      c.beginPath();
+      for (let i = -1; i <= 1; i++) { const L = (i ? 3 : 5) * u + (i === fl - 1 ? u : 0), ox = -cy * i * u * 1.6, oy = cx * i * u * 1.6; c.moveTo(bx + ox, by + oy); c.lineTo(bx + ox - cx * L, by + oy - cy * L); }
+      c.lineWidth = u + 2; c.strokeStyle = MARK_INK; c.stroke(); c.lineWidth = u; c.strokeStyle = col; c.stroke();
     } else if (g === 'bulk') { // a heavy bracket under its feet
       const w = Math.max(u * 4, Math.round(hw * 1.6)); blk(x - w / 2, y + hh + u * 0.5, w, u, col); blk(x - w / 2, y + hh - u * 0.5, u, u, col); blk(x + w / 2 - u, y + hh - u * 0.5, u, u, col);
     } else if (g === 'brood') { // three eggs clinging on

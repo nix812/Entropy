@@ -137,6 +137,7 @@ const UI = (() => {
     $('#hBest').textContent = PROF.bestWave || '—';
     const hp = $('#hPts'); hp.hidden = free <= 0; hp.textContent = free + ' pt' + (free === 1 ? '' : 's');
     $('#bWebH').classList.toggle('glow', free > 0);
+    $('#bArchive').classList.toggle('hasnew', ((PROF.codex || {}).collNew || []).length > 0); // v5.8: new Swarm Collection entries
     const nv = PROF.nova || 0, done = capsHeld().length, req = novaLevelReq(nv), ready = novaReady();
     $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv;
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
@@ -2247,6 +2248,7 @@ const UI = (() => {
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
     for (const cv of document.querySelectorAll('#modal canvas[data-eico]')) Render.enemyIcon(cv.dataset.eico, cv);
     if ((PROF.codex.collNew || []).length) { PROF.codex.collNew = []; Save.save(); } // highlighted once, then they are no longer new
+    $('#bArchive').classList.remove('hasnew');
   }
   // v5.8 Swarm Collection: species × gene, three pips per cell (seen carrying it alone, in a pair, in a triple), plus the named pairs
   const collPctTxt = () => Math.floor(collHave(PROF.codex) / collMax() * 100) + '%';
