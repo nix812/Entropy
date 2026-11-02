@@ -1,4 +1,5 @@
-"""5.5.14 the music deck never sits on anything and the Music tile never overlaps an ability button: with the log and the doctrine list full, the ticker and the assault
+"""5.8: plus the bounty chip with the Bounty Purse stays in the chip row, clear of every control.
+5.5.14 the music deck never sits on anything and the Music tile never overlaps an ability button: with the log and the doctrine list full, the ticker and the assault
 banner up, the full HUD's stats box, toasts, the Map button, and a tower panel open on either side; at four screen sizes
 (including an iPhone Pro Max). usage: python3 trackcollide.py"""
 import pathlib, mkpage
@@ -15,6 +16,10 @@ JS_HITS = '''(over) => {
   for (const id of ['#mdeck']) { const r = vis(document.querySelector(id)); if (!r) continue;
     for (const o of over) { const el = document.querySelector(o); const kids = o === '#toasts' || o === '#log' || o === '#docbar' ? [...(el ? el.children : [])] : [el];
       for (const k of kids) { const q = vis(k); if (q && hit(r, q)) out.push(id + ' x ' + o); } } }
+  // 5.8: the bounty chip carries the Bounty Purse; it must sit inside the chip row, clear of every control
+  const wc = vis(document.querySelector('#chips [data-wanted]')); if (!wc) out.push('bounty chip missing');
+  else { const row = document.querySelector('#chips').getBoundingClientRect(); if (wc.right > row.right + 1 || wc.top < row.top - 1 || wc.bottom > row.bottom + 1) out.push('bounty chip outside the chip row');
+    for (const s of ['#bZoom', '#railL', '#railR', '#abils', '#log', '#docbar', '#panel', '#mdeck']) { const q = vis(document.querySelector(s)); if (q && hit(wc, q)) out.push('bounty chip x ' + s); } }
   return out; }'''
 FILL = '''() => {
   document.body.classList.add('hudfull');
@@ -24,6 +29,7 @@ FILL = '''() => {
   const tk = document.querySelector('#ticker'); tk.hidden = false; tk.style.setProperty('--c', '#ffb03a'); tk.innerHTML = '<div class="tkl"><b>SURGE</b><span>The swarm surges: +40% enemies this wave, and they come faster than before</span></div><button class="tkb">LOG</button>';
   const as = document.querySelector('#asbar'); as.hidden = false; as.innerHTML = '<b>STRAIN ASSAULT</b><span>Wave 15 · Plating · Haste</span>'; document.body.classList.add('asbar');
   UI.toast('NOW PLAYING', 'Analog Corridor · Techno', '#6ae2ff');
+  G.wantedTold = 1; G.purse = 1234567; UI._dbg.updateHud(true);
 }'''
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])

@@ -30,7 +30,7 @@ with sync_playwright() as p:
     pg.evaluate('() => { const b = document.querySelector("[data-act=boon]"); b && b.click(); }'); pg.wait_for_timeout(500)
     shot(pg, 'bounty_claimed')
     ok('Bounty Claimed card open', pg.evaluate('() => !!document.querySelector("#modal .card.hunt")'))
-    pg.click('[data-act=push]'); pg.wait_for_timeout(400)
+    pg.click('[data-act=door] >> nth=0'); pg.wait_for_timeout(400)  # 5.8: pushing on is a jump door
     ok('pushed on: ×1.25 and the next bounty is 20 waves out', pg.evaluate('() => G.pushes === 1 && !G.huntChoice && G.wanted.w === G.bounties[0].w + 20 && Math.abs(huntMult() - 1.25) < 1e-9'))
     shot(pg, 'pushed')
     # second bounty: extract

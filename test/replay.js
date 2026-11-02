@@ -3,7 +3,7 @@
 // usage: node test/replay.js [runs] [maxWave]
 const { load } = require('./harness.js');
 // 5.8: the player also picks a sector contract, jump doors at bounties and escalations at Wave 50+ boss waves. Run 4 starts late
-// with a boosted core and bank (applied identically when the recording is rebuilt) so it reaches the escalations.
+// with a boosted core, bank and damage (applied identically when the recording is rebuilt) so it reaches the escalations.
 const RUNS = +(process.argv[2] || 5), MAXW = +(process.argv[3] || 34);
 let fails = 0;
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -36,7 +36,10 @@ function play(S, opts, seed, maxw) {
 }
 module.MAXW = MAXW;
 // run 4's boost: a deep core and bank the moment the run starts, from a hook the quiet replays keep (not enumerable)
-const boost = S => Object.defineProperty(S.Hooks, 'log', { enumerable: false, configurable: true, writable: true, value: t => { if (/^Run started/.test(t) && S.G.recOpts && S.G.recOpts.seed === 1004) { S.G.credits += 4e6; S.G.core.hpBonus = 400; S.recomputeAll(); S.G.core.hp = S.G.core.max; } } });
+// (runs 0 and 4: extra tower damage too, so they claim bounties and kill Wave 50+ bosses: doors and escalations get exercised)
+const BOOST = { 1000: { dmg: 400, hp: 3 }, 1004: { dmg: 6000, hp: 400, cr: 4e6 } };
+const boost = S => Object.defineProperty(S.Hooks, 'log', { enumerable: false, configurable: true, writable: true, value: t => { const B = /^Run started/.test(t) && S.G.recOpts && BOOST[S.G.recOpts.seed];
+  if (B) { S.G.credits += B.cr || 0; S.G.core.hpBonus = B.hp; S.G.runMods.dmg = (S.G.runMods.dmg || 0) + B.dmg; S.recomputeAll(); S.G.core.hp = S.G.core.max; } } });
 for (let n = +(process.env.FROM || 0); n < RUNS; n++) {
   const S = load();
   S.PROF = S.defaultProfile(); S.PROF.bestWave = 80; S.PROF.xp = 4e6; boost(S);

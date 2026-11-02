@@ -52,20 +52,42 @@ function bestSpot(G, type, near) {
   }
   return best;
 }
+// 5.8: sectors, jump doors, escalations and the Bounty Purse. SECTOR=id forces the contract and every door into that sector,
+// PUSH=1 never extracts (the 5.3-5.7 sweeps pushed at every bounty), EXTRACT=0 likewise
+const SEC_PREF = { salvage: 3, demo: 3, drift: 2, hive: 2, tempest: 2, iron: 1, skies: 1, ghost: 1, choir: 1, oddball: 0 };
+const TW_PREF = { learn: 3, storms: 3, affix: 2, worm: 2, rifts: 1, blitz: 1, carriers: 1, twin: 0 };
+const best = (arr, f) => arr.reduce((a, x) => (f(x) + Math.random() * 0.5 > f(a) ? x : a), arr[0]);
+function pickSector(ids) { if (process.env.SECTOR) return process.env.SECTOR; return S.PROF.bestWave < 10 ? S.SECTOR_START : best(ids, id => SEC_PREF[id] || 0); }
+// a door: the riskier tiers when the defence is comfortable (core high, few recent leaks), the safest otherwise
+function pickDoor(G, doors, met) {
+  const calm = G.core.hp / G.core.max > 0.8 && met.recentMin > 0.6, shaky = met.recentMin < 0.45;
+  const tier = shaky ? 0 : calm ? (Math.random() < 0.5 ? 2 : 1) : 1;
+  if (process.env.SECTOR) { const k = doors.findIndex(d => d.tier === tier); return k < 0 ? 0 : k; }
+  let bi = 0, bs = -9; doors.forEach((d, i) => { const sc = (SEC_PREF[d.sector] || 0) - Math.abs(d.tier - tier) * 2 + Math.random(); if (sc > bs) { bs = sc; bi = i; } });
+  return bi;
+}
+// extract when the last stretch was a close call, or now and then once the purse has grown through a couple of pushes
+function wantExtract(G, met) {
+  if (process.env.PUSH || process.env.EXTRACT === '0') return false;
+  if (met.recentMin < 0.4 || G.core.hp / G.core.max < 0.5) return true;
+  return (G.pushes || 0) >= 2 && Math.random() < 0.25;
+}
 const agg = [];
 const OFF = +(process.env.SEED || 0);
 for (let run = OFF; run < OFF + runs; run++) {
   profile(4242 + run * 31);
   const met = { anoms: [], stab: 0, fills: 0, vetMax: 0, ascends: 0, maxCredits: 0, creditsAtWave: [], minCore: 1, conv: 0, mael: 0, storms: 0, bossTimes: {}, deathsByBoss: 0 };
-  S.Hooks.onDraft = o => setImmediateQ(() => S.takeBoon(o[Math.floor(Math.random() * 3)]));
+  S.Hooks.onDraft = o => setImmediateQ(() => { if (S.G.draft !== o) return; S.takeBoon(o[0] && o[0].twist ? best(o, x => TW_PREF[x.id] || 0) : o[Math.floor(Math.random() * o.length)]); });
   S.Hooks.onEntropy = () => { met.fills++; };
   S.Hooks.log = (t) => { if (/CONVERGENCE/.test(t)) met.conv++; if (/MAELSTROM FORMS/.test(t)) met.mael++; if (/rolls in/.test(t)) met.storms++; };
   let q = []; const setImmediateQ = f => q.push(f);
   S.Hooks.sfx = () => {};
-  const G = S.newRun({ seed: 1000 + run * 17, chaos, startWave: sw, cols: +(process.env.COLS || 39) });
+  const G = S.newRun({ seed: 1000 + run * 17, chaos, startWave: sw, cols: +(process.env.COLS || 39), sector: pickSector(S.sectorOffers(1000 + run * 17)) });
+  met.recentMin = 1; met.mins = []; met.doors = []; met.startSec = G.sector;
   let t = 0, act = 0, pi = 0, lastWave = G.wave;
   while (!G.over && t < 3 * 3600) {
-    if (S.G.huntChoice) S.huntPush(); // v5.3: the bot never extracts, it plays on (a stalled choice would freeze the sim)
+    if (S.G.huntChoice) { const C = S.G.huntChoice; if (wantExtract(G, met)) { met.extracted = G.wave; S.huntExtract(); break; } if (C.doors) { const i = pickDoor(G, C.doors, met); met.doors.push(C.doors[i].sector.slice(0, 4) + C.doors[i].tier); S.huntPush(i); } else S.huntPush(); }
+    if (false) S.huntPush(); // v5.3: the bot never extracts, it plays on (a stalled choice would freeze the sim)
     S.simStep(1 / 30); t += 1 / 30; if (S.G.checkpoint) S.resumeCheckpoint();
     if (process.env.BOSSLOG) {
       if (!G.dbgBoss) G.dbgBoss = {};
@@ -80,7 +102,8 @@ for (let run = OFF; run < OFF + runs; run++) {
       for (const [id, r] of seen) if (!now.has(id)) { (G._ttk || (G._ttk = [])).push({ type: r.type, el: r.el, w: r.w, fr: r.fr, life: t - r.t0 }); seen.delete(id); }
     }
     met.minCore = Math.min(met.minCore, G.core.hp / G.core.max);
-    if (G.wave !== lastWave) { lastWave = G.wave; met.creditsAtWave.push(G.credits);
+    met.waveMin = Math.min(met.waveMin == null ? 1 : met.waveMin, G.core.hp / G.core.max);
+    if (G.wave !== lastWave) { lastWave = G.wave; met.creditsAtWave.push(G.credits); met.mins.push(met.waveMin == null ? 1 : met.waveMin); met.waveMin = 1; met.recentMin = Math.min(...met.mins.slice(-10));
       if (process.env.WAVELOG) console.log(`W${G.wave} core=${Math.round(G.core.hp)}/${Math.round(G.core.max)} cr=${Math.round(G.credits)} grid=${S.gridUsed()}/${S.gridCap()} leaks=${G.stats.leaks} genes=${(() => { const c = {}; let n = 0; for (const q of G.queue.concat(G.enemies)) if (q.genes) { n++; for (const g of q.genes) c[g] = (c[g] || 0) + 1; } return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + Math.round(v / n * 100)).join(","); })()} fly=${G.enemies.filter(e => e.fly).length}/${G.enemies.length} towers=${G.towers.map(t => t.type.slice(0, 4) + t.lvl).join(',')}`);
       if (process.env.TRACE && [10, 20, 30, 40, 60, 80, 100, 120].includes(G.wave)) {
         const dps = G.towers.reduce((a, t) => a + t.dps, 0);
@@ -199,7 +222,9 @@ for (let run = OFF; run < OFF + runs; run++) {
     combos: Object.values(G.stats.combos).reduce((a, b) => a + b, 0), towers: G.towers.length,
     eff: (() => { const inv = {}; for (const tw of G.towers) inv[tw.type] = (inv[tw.type] || 0) + tw.invested; const avg = dmgAll / Object.values(inv).reduce((a, b) => a + b, 0); return Object.keys(byType).filter(k => byType[k] > 0).map(k => k.slice(0, 4) + (byType[k] / inv[k] / avg).toFixed(1)).join(' '); })(),
     top: Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ':' + Math.round(v / dmgAll * 100)).join(' '),
-    el: Object.entries(G.stats.dmgByEl).map(([k, v]) => k + Math.round(v / tot * 100)).join(' ') });
+    el: Object.entries(G.stats.dmgByEl).map(([k, v]) => k + Math.round(v / tot * 100)).join(' '),
+    sec: (met.startSec || '-').slice(0, 5) + (met.doors.length ? '>' + met.doors.join('>') : ''), ext: met.extracted || 0, tw: Object.keys(G.twists || {}).map(k => k.slice(0, 3)).join('+') || '-',
+    xp57: Math.round((G.xpRaw || G.xpEarned) * (met.extracted ? 1.5 : 1)), paid: Math.round(G.xpEarned), });
 }
 console.log(`runs=${runs} points=${points} chaos=${chaos} start=${sw} best=${bw} ks=${ks || '-'}`);
 console.table(agg);

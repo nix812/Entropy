@@ -217,7 +217,7 @@ const UI = (() => {
   function setupSectorHTML() {
     const cur = setupSector(); if (freshProfile()) return '';
     const S = SECTOR_BY[cur], P = sectorWantedName(cur);
-    return `<div class="lbl">Contract</div>
+    return `<div class="lbl">Zone</div>
       <div class="secs">${setup.secOffers.map(id => { const X = SECTOR_BY[id]; return `<button class="secb${id === cur ? ' on' : ''}" data-act="sector" data-v="${id}" style="--c:${X.col}"><b>${esc(X.name)}</b></button>`; }).join('')}</div>
       <p class="note secnote"><b style="color:${S.col}">${esc(S.pitch)}</b> ${sectorLine(S)}${P ? ` · Most Wanted: ${esc(P)}` : ''}</p>`;
   }
@@ -244,7 +244,7 @@ const UI = (() => {
             <p class="note">Same map, bounty and Nemesis for everyone. Every tower open, ${HUNT.pts} talent points each: it comes down to play. Your first run today is ranked.</p>
             <div class="hbuild"><span>Hunt build <b>${spent}/${HUNT.pts}</b> points${capN.length ? ' · ' + capN.map(c => esc(TAL[c].name)).join(', ') : ''}</span><button class="btn small" data-act="huntBuild">${spent ? 'Edit' : 'Build it'}</button></div>
             <p class="note nem"><b>Today's Nemesis: ${esc(nem.name)}.</b> It leads the first Strain Assault.</p>
-            ${spec.sector && SECTOR_BY[spec.sector] ? `<p class="note secnote">Today's contract: <b style="color:${SECTOR_BY[spec.sector].col}">${esc(SECTOR_BY[spec.sector].name)}</b>. ${sectorLine(SECTOR_BY[spec.sector])}</p>` : ''}
+            ${spec.sector && SECTOR_BY[spec.sector] ? `<p class="note secnote">Today's zone: <b style="color:${SECTOR_BY[spec.sector].col}">${esc(SECTOR_BY[spec.sector].name)}</b>. ${sectorLine(SECTOR_BY[spec.sector])}</p>` : ''}
             <div class="anlist">${spec.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>
           </div>
           <div class="col">
@@ -430,7 +430,7 @@ const UI = (() => {
     // v5.2 threat board: one chip says what is coming and what the swarm is doing (next wave, new and headline enemies, DNA, Strain Assault).
     // Tap it for the full board. Replaces the separate Next / headline / gene / DNA chips and the assault banner
     { const th = threatChip(); if (th) chips.push(th); }
-    if (G.wanted && G.wantedTold && !G.wanted.done) chips.push(`<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1">${G.wanted.nemesis ? 'Nemesis' : 'Bounty'} · W${G.wanted.w}${G.hk ? ` · <i class="purse">Purse ${fmt(G.purse)}</i>` : G.pushes ? ' · ×' + huntMult().toFixed(2) : ''}</span>`);
+    if (G.wanted && G.wantedTold && !G.wanted.done) chips.push(`<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1">${G.wanted.nemesis ? 'Nemesis' : 'Bounty'} · W${G.wanted.w}${G.hk ? ` · <i class="pz">Purse ${fmt(G.purse)}</i>` : G.pushes ? ' · ×' + huntMult().toFixed(2) : ''}</span>`);
     { const asb = $('#asbar'); if (asb && !asb.hidden) { asb.hidden = true; document.body.classList.remove('asbar'); } }
     { // Doctrine meters, bottom right of the field
       const db = $('#docbar'), parts = [];
@@ -518,7 +518,7 @@ const UI = (() => {
         <div class="evlist">${evoRowsHTML()}</div>`);
     } else sec.push(`<p class="note">${tipify(`The swarm starts to evolve at Wave ${evoCfg().start}: whatever your defence handles worst spreads through it.`)}</p>`);
     { const S = SECTOR_BY[G.sector], tw = Object.keys(G.twists || {}).map(id => { const X = TWISTS.find(t => t.id === id); return X ? X.name + (G.twists[id] > 1 ? ' ×' + G.twists[id] : '') : ''; }).filter(Boolean);
-      if (S) sec.unshift(`<p class="note secnote">Sector: <b style="color:${S.col}">${esc(S.name)}</b>${G.tier ? ` <b style="color:${DOOR_TIERS[G.tier].col}">${esc(DOOR_TIERS[G.tier].name)}</b>` : ''}. ${sectorLine(S, G.tier)}${tw.length ? ` · <span class="bad">Escalations: ${esc(tw.join(', '))}</span>` : ''}</p>`); }
+      if (S) sec.unshift(`<p class="note secnote">Zone: <b style="color:${S.col}">${esc(S.name)}</b>${G.tier ? ` <b style="color:${DOOR_TIERS[G.tier].col}">${esc(DOOR_TIERS[G.tier].name)}</b>` : ''}. ${sectorLine(S, G.tier)}${tw.length ? ` · <span class="bad">Escalations: ${esc(tw.join(', '))}</span>` : ''}</p>`); }
     modal(`<div class="card evo threat"><div class="ch"><h2>Threat Board</h2><span class="note">Wave ${G.wave || 0} · ${esc(G.CH.name)}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       ${sec.join('')}
       <div class="foot">${G.wanted && !G.wanted.done ? '<button class="btn" data-act="wantR">Most Wanted</button>' : ''}<button class="btn primary" data-act="close2">Back</button></div></div>`, 'evo');
@@ -1371,8 +1371,8 @@ const UI = (() => {
     if (opts[0] && opts[0].twist) { // 5.8 escalation: one of two permanent twists, each raising the score and XP multiplier
       const have = Object.keys(G.twists || {}).map(id => { const X = TWISTS.find(t => t.id === id); return X ? X.name + (G.twists[id] > 1 ? ' ×' + G.twists[id] : '') : ''; }).filter(Boolean);
       modal(`<div class="card narrow twist"><div class="ch"><h2 class="bad">Escalation</h2><span class="note">Wave ${G.wave} · choose a twist. It lasts the run</span></div>
-        <div class="dchoice pair">${opts.map((b, i) => `<button class="hopt tw" data-act="boon" data-v="${i}"><b>${esc(b.name)}${b.n > 1 ? ' ' + roman(b.n) : ''} <i>score ×${(1 + b.score).toFixed(2)}</i></b><span>${tipify(b.desc)}</span></button>`).join('')}</div>
-        <p class="note">Score and XP now ×${num1(G.scoreMult || 1)}${have.length ? ' · Active: ' + esc(have.join(', ')) : ''}</p></div>`, 'draft');
+        <div class="dchoice pair">${opts.map((b, i) => `<button class="hopt tw" data-act="boon" data-v="${i}"><b>${esc(b.name)}${b.n > 1 ? ' ' + roman(b.n) : ''} <i>+${Math.round(b.score * 100)}% score</i></b><span>${tipify(b.desc)}</span></button>`).join('')}</div>
+        <p class="note">Score and XP ×${(G.scoreMult || 1).toFixed(2)} now${have.length ? ' · Active: ' + esc(have.join(', ')) : ''}</p></div>`, 'draft');
       SFX.play('bosswarn');
       return;
     }
@@ -1506,11 +1506,11 @@ const UI = (() => {
   function openDoors(C) {
     const P = Math.round(G.purse), cur = SECTOR_BY[G.sector];
     modal(`<div class="card hunt doors"><div class="ch"><h2 class="amber">Bounty Claimed</h2><span class="note">Wave ${G.wave} · ${G.bounties.length} claimed this run${cur ? ' · ' + esc(cur.name) : ''}</span></div>
-      <p class="note"><b class="wname">${esc(C.name)}</b> +${fmt(C.cr)} credits and a Legendary schematic. The bounty grew your purse ×${PURSE.bounty}.</p>
-      <div class="purse"><span>Bounty Purse</span><b>${fmt(P)} XP</b><em>Extract banks all of it. If your core falls later, you keep ${Math.round(PURSE.death * 100)}%.</em></div>
+      <p class="note"><b class="wname">${esc(C.name)}</b> +${fmt(C.cr)} credits, a Legendary schematic, and your purse grew ×${PURSE.bounty}.</p>
+      <div class="pursebox"><span>Bounty Purse</span><b>${fmt(P)} XP</b><em>Extract banks all of it. Push on and fall later, and you keep ${Math.round(PURSE.death * 100)}%.</em></div>
       <div class="dchoice">
-        <button class="hopt ext" data-act="extract"><b>Extract</b><span>End the run as a win and bank ${fmt(P)} XP${G.daily ? '. Your Daily Hunt result is locked in' : ''}. Counts toward the next Chaos level.</span></button>
-        ${C.doors.map((d, i) => { const S = SECTOR_BY[d.sector], T = DOOR_TIERS[d.tier]; return `<button class="hopt door" data-act="door" data-v="${i}" style="--c:${S.col};--t:${T.col}"><b>${esc(S.name)} <i>${esc(T.name)} · purse ×${d.mult}</i></b><span>${esc(S.pitch)}</span><span>${sectorLine(S, d.tier)}</span><span class="dw">Next bounty: ${esc(d.wanted)}, Wave ${C.next}</span></button>`; }).join('')}
+        <button class="hopt ext" data-act="extract"><b>Extract</b><span>End the run as a win and bank ${fmt(P)} XP. ${G.daily ? 'Your Daily Hunt result is locked in.' : 'Counts toward the next Chaos level.'}</span><span>Or take a jump door: a new zone for 20 waves, and the purse grows.</span></button>
+        ${C.doors.map((d, i) => { const S = SECTOR_BY[d.sector], T = DOOR_TIERS[d.tier]; return `<button class="hopt door" data-act="door" data-v="${i}" style="--c:${S.col};--t:${T.col}"><b>${esc(S.name)} <i>${esc(T.name)} · purse ×${d.mult}</i></b><span class="dp">${esc(S.pitch)}</span><span>${sectorLine(S, d.tier)}</span><span class="dw">Next bounty: ${esc(d.wanted)}, Wave ${C.next}</span></button>`; }).join('')}
       </div></div>`, 'hunt');
     SFX.play('levelup');
   }
@@ -2132,6 +2132,10 @@ const UI = (() => {
         ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
         ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap Overdrive on the left rail (or in the core panel), then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
+        ['Bounty Purse', `Half of the XP you earn banks at once; the other half rides in the purse. Each bounty claimed grows it ×${PURSE.bounty}, and each push through a jump door multiplies it again (×${DOOR_TIERS.map(t => t.mult).join(', ×')} by risk). Extract to bank all of it. If your core falls you keep ${Math.round(PURSE.death * 100)}%.`],
+        ['Zone', 'The contract a run is fought under: which enemies come most, the weather, the events, the Most Wanted boss, plus a perk and a drawback. You pick one of three at the start, and a new one through a jump door at every bounty.'],
+        ['Jump door', 'After a bounty you can push on through one of three doors: a new zone for the next 20 waves at a risk tier (Steady, Hot or Deadly). Riskier doors grow the Bounty Purse more and pay more score.'],
+        ['Escalation', `From Wave ${TWIST_FROM}, each boss wave makes you choose one of two permanent twists. They stack and each one raises your score and XP.`],
         ['Cursed Cache', 'Booby-trapped pirate loot, red, from Wave 10. Double reward, but a stowaway pirate (an elite) breaks loose from a wormhole.'],
         ["Captain's Chest", 'Golden crate the pirate flagship drops once per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],
         ['Pirate Skiff', `From Wave 5, a crate left with under 8 seconds sometimes draws a skiff (1 in 4). It flies in, grabs the crate and escapes. Shoot it down for a bounty of 25 + 6 per wave credits and the loot. It never attacks the core.`],
