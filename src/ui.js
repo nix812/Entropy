@@ -196,6 +196,7 @@ const UI = (() => {
             ${PROF.nemesis ? `<p class="note nem"><b>Nemesis waiting: ${esc(PROF.nemesis.name)}.</b> ${PROF.nemesis.kind === 'boss' ? 'It takes your first bounty, mutated, for double the reward.' : 'The swarm starts already carrying it, and it leads your first Strain Assault, with a double bounty.'}</p>` : ''}
           </div>
           <div class="col">
+            ${setupSectorHTML()}
             <div class="lbl">Map</div>
             <canvas id="mapPrev" width="320" height="150"></canvas>
             <div class="row"><button class="btn small" data-act="reroll">Reroll Map</button><span class="note">Each wormhole expands the sector.</span></div>
@@ -205,6 +206,28 @@ const UI = (() => {
       </div>`, 'setup');
     Render.preview_map($('#mapPrev'), setup.map, setup.frac);
   }
+  // 5.8 sector contracts: three offers from the setup seed (a new map, new offers). A fresh profile gets the gentle default, unasked
+  // short numbers for tight chips: 940, 12K, 1.2M
+  const fmtS = n => { n = Math.round(n || 0); return n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'K' : String(n); };
+  function setupSector() {
+    if (freshProfile()) return SECTOR_START;
+    if (setup.secSeed !== setup.seed) { setup.secSeed = setup.seed; setup.secOffers = sectorOffers(setup.seed); }
+    if (!setup.secOffers.includes(setup.sector)) setup.sector = setup.secOffers[0];
+    return setup.sector;
+  }
+  function sectorLine(S, tier) {
+    const T = tier ? DOOR_TIERS[tier] : null;
+    return `<span class="good">${tipify(S.up || '')}</span>${S.down ? ` · <span class="bad">${tipify(S.down)}</span>` : ''}${T ? ` · <span style="color:${T.col}">${esc(T.desc)}</span>` : ''}`;
+  }
+  function setupSectorHTML() {
+    const cur = setupSector(); if (freshProfile()) return '';
+    const S = SECTOR_BY[cur], P = sectorWantedName(cur);
+    return `<div class="lbl">Zone</div>
+      <div class="secs">${setup.secOffers.map(id => { const X = SECTOR_BY[id]; return `<button class="secb${id === cur ? ' on' : ''}" data-act="sector" data-v="${id}" style="--c:${X.col}"><b>${esc(X.name)}</b></button>`; }).join('')}</div>
+      <p class="note secnote"><b style="color:${S.col}">${esc(S.pitch)}</b> ${sectorLine(S)}${P ? ` · Most Wanted: ${esc(P)}` : ''}</p>`;
+  }
+  // the sector's poster boss, when it can show up by the first bounty (Wave 20)
+  function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B) <= 20 ? `${M.name} ${B.name}` : ''; }
   function modeChips() {
     return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button></div>`;
   }
@@ -226,6 +249,7 @@ const UI = (() => {
             <p class="note">Same map, bounty and Nemesis for everyone. Every tower open, ${HUNT.pts} talent points each: it comes down to play. Your first run today is ranked.</p>
             <div class="hbuild"><span>Hunt build <b>${spent}/${HUNT.pts}</b> points${capN.length ? ' · ' + capN.map(c => esc(TAL[c].name)).join(', ') : ''}</span><button class="btn small" data-act="huntBuild">${spent ? 'Edit' : 'Build it'}</button></div>
             <p class="note nem"><b>Today's Nemesis: ${esc(nem.name)}.</b> It leads the first Strain Assault.</p>
+            ${spec.sector && SECTOR_BY[spec.sector] ? `<p class="note secnote">Today's zone: <b style="color:${SECTOR_BY[spec.sector].col}">${esc(SECTOR_BY[spec.sector].name)}</b>. ${sectorLine(SECTOR_BY[spec.sector])}</p>` : ''}
             <div class="anlist">${spec.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>
           </div>
           <div class="col">
@@ -248,10 +272,10 @@ const UI = (() => {
     feedLines.length = 0; renderFeed();
     if (snap && snap.rec) { const sv = PROF.runSnap; replayRun(snap.rec, { quiet: true, until: snap.rec.end }); PROF.runSnap = sv; G.resumedHunt = { tick: G.tick, h: runHash(), n: G.inputs.length, w: G.wave }; }
     else if (snap) resumeRun(snap);
-    else if (setup.mode === 'daily') { const sp = setup.daily; newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, cols: COLS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis }); }
+    else if (setup.mode === 'daily') { const sp = setup.daily; newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, cols: COLS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); }
     else {
       PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
-      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null });
+      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null, sector: setupSector() });
     }
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
@@ -411,7 +435,9 @@ const UI = (() => {
     // v5.2 threat board: one chip says what is coming and what the swarm is doing (next wave, new and headline enemies, DNA, Strain Assault).
     // Tap it for the full board. Replaces the separate Next / headline / gene / DNA chips and the assault banner
     { const th = threatChip(); if (th) chips.push(th); }
-    if (G.wanted && G.wantedTold && !G.wanted.done) chips.push(`<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1">${G.wanted.nemesis ? 'Nemesis' : 'Bounty'} · W${G.wanted.w}${G.pushes ? ' · ×' + huntMult().toFixed(2) : ''}</span>`);
+    if (G.wanted && G.wantedTold && !G.wanted.done) chips.push(G.hk // 5.8: the bounty wave and the Bounty Purse, kept short so it fits beside the threat chip on a phone
+      ? `<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1" title="Bounty on Wave ${G.wanted.w}. Bounty Purse: Extract after a bounty to bank all of it; if your core falls you keep ${Math.round(PURSE.death * 100)}%">${G.wanted.nemesis ? 'Nemesis ' : ''}W${G.wanted.w}<i class="pz">${fmtS(G.purse)} XP</i></span>`
+      : `<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1">${G.wanted.nemesis ? 'Nemesis' : 'Bounty'} · W${G.wanted.w}${G.pushes ? ' · ×' + huntMult().toFixed(2) : ''}</span>`);
     { const asb = $('#asbar'); if (asb && !asb.hidden) { asb.hidden = true; document.body.classList.remove('asbar'); } }
     { // Doctrine meters, bottom right of the field
       const db = $('#docbar'), parts = [];
@@ -517,6 +543,8 @@ const UI = (() => {
       sec.push(`<div class="lbl">Swarm DNA · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(A && A.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</div>
         <div class="evlist">${evoRowsHTML()}</div>`);
     } else sec.push(`<p class="note">${tipify(`The swarm starts to evolve at Wave ${evoCfg().start}: whatever your defence handles worst spreads through it.`)}</p>`);
+    { const S = SECTOR_BY[G.sector], tw = Object.keys(G.twists || {}).map(id => { const X = TWISTS.find(t => t.id === id); return X ? X.name + (G.twists[id] > 1 ? ' ×' + G.twists[id] : '') : ''; }).filter(Boolean);
+      if (S) sec.unshift(`<p class="note secnote">Zone: <b style="color:${S.col}">${esc(S.name)}</b>${G.tier ? ` <b style="color:${DOOR_TIERS[G.tier].col}">${esc(DOOR_TIERS[G.tier].name)}</b>` : ''}. ${sectorLine(S, G.tier)}${tw.length ? ` · <span class="bad">Escalations: ${esc(tw.join(', '))}</span>` : ''}</p>`); }
     modal(`<div class="card evo threat"><div class="ch"><h2>Threat Board</h2><span class="note">Wave ${G.wave || 0} · ${esc(G.CH.name)}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       ${sec.join('')}
       <div class="foot">${G.wanted && !G.wanted.done ? '<button class="btn" data-act="wantR">Most Wanted</button>' : ''}<button class="btn primary" data-act="close2">Back</button></div></div>`, 'evo');
@@ -1384,6 +1412,14 @@ const UI = (() => {
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
   function openDraft(opts) {
+    if (opts[0] && opts[0].twist) { // 5.8 escalation: one of two permanent twists, each raising the score and XP multiplier
+      const have = Object.keys(G.twists || {}).map(id => { const X = TWISTS.find(t => t.id === id); return X ? X.name + (G.twists[id] > 1 ? ' ×' + G.twists[id] : '') : ''; }).filter(Boolean);
+      modal(`<div class="card narrow twist"><div class="ch"><h2 class="bad">Escalation</h2><span class="note">Wave ${G.wave} · choose a twist. It lasts the run</span></div>
+        <div class="dchoice pair">${opts.map((b, i) => `<button class="hopt tw" data-act="boon" data-v="${i}"><b>${esc(b.name)}${b.n > 1 ? ' ' + roman(b.n) : ''} <i>+${Math.round(b.score * 100)}% score</i></b><span>${tipify(b.desc)}</span></button>`).join('')}</div>
+        <p class="note">Score and XP ×${(G.scoreMult || 1).toFixed(2)} now${have.length ? ' · Active: ' + esc(have.join(', ')) : ''}</p></div>`, 'draft');
+      SFX.play('bosswarn');
+      return;
+    }
     modal(`<div class="card"><div class="ch"><h2>Boss Defeated</h2><span class="note">Choose a boon. Lasts until the run ends. +1 Recalibration token.</span></div>
       <div class="boons">${opts.map((b, i) => `<button class="boon" data-act="boon" data-v="${i}"><b>${esc(b.name)}</b><span>${tipify(b.desc)}</span></button>`).join('')}</div></div>`, 'draft');
     SFX.play('milestone');
@@ -1499,6 +1535,7 @@ const UI = (() => {
   }
   function openHunt() {
     const C = G.huntChoice; if (!C) return;
+    if (G.hk && C.doors) return openDoors(C);
     const xp = Math.round(G.xpEarned * HUNT.extractXp), m2 = 1 + HUNT.pushScore * ((G.pushes || 0) + 1);
     modal(`<div class="card narrow hunt"><div class="ch"><h2 class="amber">Bounty Claimed</h2><span class="note">Wave ${G.wave} · ${G.bounties.length} claimed this run</span></div>
       <p class="wname">${esc(C.name)}</p>
@@ -1506,6 +1543,18 @@ const UI = (() => {
       <div class="hchoice">
         <button class="hopt ext" data-act="extract"><b>Extract</b><span>End the run here as a win: +${fmt(xp)} XP on top (half again), and it counts toward opening the next Chaos level${G.daily ? '. Your Daily Hunt result is locked in' : ''}.</span></button>
         <button class="hopt push" data-act="push"><b>Push on</b><span>Keep playing at score ×${m2.toFixed(2)}. Next bounty: ${esc(C.nextName)}, Wave ${C.next}. Fall before you extract and the bonus is lost.</span></button>
+      </div></div>`, 'hunt');
+    SFX.play('levelup');
+  }
+  // 5.8: the bounty card with the Bounty Purse and the jump doors (Extract, or push on through one of three sectors)
+  function openDoors(C) {
+    const P = Math.round(G.purse), cur = SECTOR_BY[G.sector];
+    modal(`<div class="card hunt doors"><div class="ch"><h2 class="amber">Bounty Claimed</h2><span class="note">Wave ${G.wave} · ${G.bounties.length} claimed this run${cur ? ' · ' + esc(cur.name) : ''}</span></div>
+      <p class="note"><b class="wname">${esc(C.name)}</b> +${fmt(C.cr)} credits, a Legendary schematic, and your purse grew ×${PURSE.bounty}.</p>
+      <div class="pursebox"><span>Bounty Purse</span><b>${fmt(P)} XP</b><em>Extract banks all of it. Push on and fall later, and you keep ${Math.round(PURSE.death * 100)}%.</em></div>
+      <div class="dchoice">
+        <button class="hopt ext" data-act="extract"><b>Extract</b><span>End the run as a win and bank ${fmt(P)} XP. ${G.daily ? 'Your Daily Hunt result is locked in.' : 'Counts toward the next Chaos level.'}</span><span>Or take a jump door: a new zone for 20 waves, and the purse grows.</span></button>
+        ${C.doors.map((d, i) => { const S = SECTOR_BY[d.sector], T = DOOR_TIERS[d.tier]; return `<button class="hopt door" data-act="door" data-v="${i}" style="--c:${S.col};--t:${T.col}"><b>${esc(S.name)} <i>${esc(T.name)} · purse ×${d.mult}</i></b><span class="dp">${esc(S.pitch)}</span><span>${sectorLine(S, d.tier)}</span><span class="dw">Next bounty: ${esc(d.wanted)}, Wave ${C.next}</span></button>`; }).join('')}
       </div></div>`, 'hunt');
     SFX.play('levelup');
   }
@@ -1579,8 +1628,9 @@ const UI = (() => {
     if (G.daily) prepHuntCode();
     modal(`<div class="card over"><div class="ch">${G.extracted ? '<h2 class="good">Extracted</h2>' : '<h2 class="bad">Core Destroyed</h2>'}<span class="note">${G.daily ? 'Daily Hunt · ' + esc(G.daily) : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>${G.daily ? 'Bounties' : 'Levels'}<b>${G.daily ? G.bounties.length : '+' + gained}</b></span></div>
-      ${G.extracted ? `<div class="why good"><b>Bounty banked</b><span>${esc(G.bounties.map(b => b.name).join(', '))}. ${G.stats.extractXp ? `+${fmt(G.stats.extractXp)} XP for getting out alive.` : ''}${G.pushes ? ` You pushed past ${G.pushes} bount${G.pushes === 1 ? 'y' : 'ies'} first.` : ''}</span></div>` : lossWhyHTML()}
-      ${!G.extracted && G.bounties.length ? `<p class="note hl" style="color:#ffd84a">Bounties claimed: ${esc(G.bounties.map(b => b.name).join(', '))}. Pushing on cost you the extraction bonus.</p>` : ''}
+      ${G.extracted ? `<div class="why good"><b>Bounty banked</b><span>${esc(G.bounties.map(b => b.name).join(', '))}. ${G.purseOut ? `Bounty Purse: +${fmt(G.purseOut.paid)} XP, all of it.` : G.stats.extractXp ? `+${fmt(G.stats.extractXp)} XP for getting out alive.` : ''}${G.pushes ? ` You pushed past ${G.pushes} bount${G.pushes === 1 ? 'y' : 'ies'} first.` : ''}</span></div>` : lossWhyHTML()}
+      ${!G.extracted && G.purseOut && G.purseOut.purse > 0 ? `<p class="note hl" style="color:#ffd84a">Bounty Purse: you kept ${Math.round(G.purseOut.share * 100)}%, +${fmt(G.purseOut.paid)} of ${fmt(G.purseOut.purse)} XP.${G.bounties.length ? ` Extracting after ${esc(G.bounties[G.bounties.length - 1].name)} would have banked all of it.` : ' Claim a bounty, then Extract, to bank all of it.'}</p>`
+        : !G.extracted && G.bounties.length ? `<p class="note hl" style="color:#ffd84a">Bounties claimed: ${esc(G.bounties.map(b => b.name).join(', '))}. Pushing on cost you the extraction bonus.</p>` : ''}
       ${G.nemDown ? `<p class="good">Nemesis down: ${esc(G.nemDown)}.</p>` : ''}
       ${N ? `<div class="why nem"><b>${N.rank > 1 ? 'It got you again' : 'New Nemesis'}</b><span>${esc(N.name)}${N.rank > 1 ? ` (rank ${N.rank})` : ''}. ${N.kind === 'boss' ? 'It will take your next bounty, mutated, for double the reward.' : 'The swarm will start your next run already carrying it, and it leads your first Strain Assault.'}</span></div>` : ''}
       ${G.daily ? `<p class="note">${ranked ? 'This was your ranked run for today.' : 'Practice run: your first run of the day is the ranked one.'}</p>${PROF.daily && PROF.daily.rec ? '<div class="row"><button class="btn small" data-act="huntWatch">Watch ranked run</button><button class="btn small" data-act="huntCode">Copy hunt code</button></div>' : ''}` : ''}
@@ -2126,6 +2176,10 @@ const UI = (() => {
         ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
         ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap Overdrive on the left rail (or in the core panel), then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
+        ['Bounty Purse', `${Math.round(PURSE.safe * 100)}% of the XP you earn banks at once; the rest rides in the purse. Each bounty claimed grows it ×${PURSE.bounty}, and each push through a jump door multiplies it again (×${DOOR_TIERS.map(t => t.mult).join(', ×')} by risk). Extract to bank all of it. If your core falls you keep ${Math.round(PURSE.death * 100)}%.`],
+        ['Zone', 'The contract a run is fought under: which enemies come most, the weather, the events, the Most Wanted boss, plus a perk and a drawback. You pick one of three at the start, and a new one through a jump door at every bounty.'],
+        ['Jump door', 'After a bounty you can push on through one of three doors: a new zone for the next 20 waves at a risk tier (Steady, Hot or Deadly). Riskier doors grow the Bounty Purse more and pay more score.'],
+        ['Escalation', `From Wave ${TWIST_FROM}, each boss wave makes you choose one of two permanent twists. They stack and each one raises your score and XP.`],
         ['Cursed Cache', 'Booby-trapped pirate loot, red, from Wave 10. Double reward, but a stowaway pirate (an elite) breaks loose from a wormhole.'],
         ["Captain's Chest", 'Golden crate the pirate flagship drops once per boss wave. Either your next tower rolls a Legendary, or triple credits plus an ability charge.'],
         ['Pirate Skiff', `From Wave 5, a crate left with under 8 seconds sometimes draws a skiff (1 in 4). It flies in, grabs the crate and escapes. Shoot it down for a bounty of 25 + 6 per wave credits and the loot. It never attacks the core.`],
@@ -2299,6 +2353,7 @@ const UI = (() => {
       case 'ch': setup.chaos = +b.dataset.v; rerollMap(); renderSetup(); break;
       case 'chLock': SFX.play('deny'); toast(CHAOS_LEVELS[+b.dataset.v].name.toUpperCase(), `Opens when you extract once on ${CHAOS_LEVELS[+b.dataset.v - 1].name}, or reach Wave ${CHAOS_GATE[+b.dataset.v]}`, '#8a8fa8', true, 'tip'); break;
       case 'reroll': rerollMap(); renderSetup(); break;
+      case 'sector': setup.sector = b.dataset.v; renderSetup(); break;
       case 'launch': launch(); break;
       case 'launchDaily': { // v5.4.1: unspent Hunt points are asked about before the run starts (the build locks once it does)
         const hb = huntBuildProf(); let sp = 0; for (const k in hb.tal) if (TAL[k]) sp += hb.tal[k]; sp += (hb.caps || []).filter(c => TAL[c]).length;
@@ -2327,13 +2382,14 @@ const UI = (() => {
       case 'vetDone': closeModal(); if (G && !G.over) G.paused = false; vetFlow.n = 0; break;
       case 'extract': closeModal(); window.act('extract'); break;
       case 'push': closeModal(); if (window.act('push')) { G.paused = false; SFX.play('levelup'); } break;
+      case 'door': closeModal(); if (window.act('push', +b.dataset.v)) { G.paused = false; SFX.play('levelup'); } break;
       case 'huntBuild': closeModal(); Tree.open('hunt'); break;
       case 'huntWatch': { const d = PROF.daily; if (d && d.rec) watchRun(d.rec, `Your Daily Hunt · ${d.date}`); break; }
       case 'huntCode': { const d = PROF.daily, tell = () => toast('HUNT CODE COPIED', 'Paste it to a friend: they can watch your exact run', '#59f0b4', true, 'tip'); if (huntCodeCache) copyText(huntCodeCache, tell); else if (d && d.rec) huntCode(d.rec).then(c => { huntCodeCache = c; copyText(c, tell); }); break; }
       case 'huntPaste': pasteCode('Paste a hunt code', v => readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', /^TRACK/.test(v) ? 'That is a track code: Music Studio › Paste a code' : 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); })); break;
       case 'huntPasteGo': { const v = ($('#huntIn') || {}).value || ''; readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); }); break; }
       case 'watchEnd': endWatch(); break;
-      case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } window.act('boon', +b.dataset.v); closeModal(); toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
+      case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } window.act('boon', +b.dataset.v); closeModal(); if (!o.twist) toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
       case 'anom': { window.act('anom', b.dataset.v); closeModal(); G.paused = false; const A = ANOMALIES.find(a => a.id === b.dataset.v); toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
       case 'stab': { window.act('stab'); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
       case 'hangar': closeModal(); G = null; show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;

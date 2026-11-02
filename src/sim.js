@@ -258,7 +258,10 @@ let G = null;
 const ENVN0 = (k, d) => (typeof process !== 'undefined' && process.env && process.env[k] ? +process.env[k] : d);
 const hpQ = w => w <= 40 ? Math.pow(1.0011, (w - 1) * (w - 1)) : Math.pow(1.0011, 1521 + 78 * (w - 40) + ENVN0('HPQ', 0.7) * (w - 40) * (w - 40));
 const hpMid = w => { const k = Math.min(1, Math.max(0, (w - 20) / 30)); return 1 + ENVN0('HPMID', 0.2) * k * k * (3 - 2 * k); };
-const hpMult = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * hpQ(w) * hpMid(w);
+const hpMult0 = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * hpQ(w) * hpMid(w);
+// 5.8: past Wave 50 the escalations carry the late game, so health grows slower there (runs on the 5.8 rules only; HKTRIM for tests)
+const HK_TRIM = ENVN0('HKTRIM', 0.9);
+const hpMult = w => G && G.hk && w > TWIST_FROM ? hpMult0(TWIST_FROM) * Math.pow(hpMult0(w) / hpMult0(TWIST_FROM), HK_TRIM) : hpMult0(w);
 // v5.0: after Wave 40 kill credits grow 1% faster per wave (Nic: late upgrades outpaced income as waves got longer)
 const crMult = w => 1.1 * (1 + 0.05 * (w - 1)) * (1 + Math.max(0, w - 40) * 0.01);
 const tIdx = (x, y) => y * COLS + x;
@@ -273,6 +276,8 @@ function wpick(r, arr, wf) {
   for (const a of arr) { x -= wf(a); if (x <= 0) return a; }
   return arr[arr.length - 1];
 }
+// the index wpick would choose (one draw, like pick)
+function wpickI(r, arr, wf) { const a = wpick(r, arr, wf); return arr.indexOf(a); }
 
 // ---------- map ----------
 function prepLane(pts) {
@@ -682,7 +687,10 @@ function newRun(opts) {
     stats: { dmgByEl: { K: 0, T: 0, C: 0, A: 0, V: 0 }, combos: {}, elites: 0, leaks: 0, bossKills: 0, peakDps: 0 },
   };
   // v5.3: the run records every input (act) from the start; with these opts it replays exactly (Daily Hunt resume, ladder checks)
-  G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS }))); G.inputs = []; G.tick = 0;
+  // 5.8: a recording carries the rules it was made under (old recordings have none: hk 0, the 5.7 rules); a fresh run gets the current ones
+  G.hk = opts.v ? (opts.hk | 0) : HOOK_VER;
+  G.sector = G.hk && SECTOR_BY[opts.sector] ? opts.sector : null; G.tier = 0; G.purse = 0; G.purseOut = null; G.twists = {}; G.twistW = 0;
+  G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
@@ -737,6 +745,7 @@ function newRun(opts) {
 function computeAf(ids) {
   const af = { coreHPx: 1, score: (G && G.laws ? G.laws.length * LAW_SCORE : 0) + (G && G.novaN ? G.novaN * NOVA_SCORE : 0) };
   for (const id of (G && G.laws) || []) { const L = LAWS.find(l => l.id === id); if (L) for (const k in L.af || {}) { if (k === 'coreHPx') af.coreHPx *= L.af[k]; else af[k] = (af[k] || 0) + L.af[k]; } }
+  for (const src of hookFx()) for (const k in src.af || {}) { const v = src.af[k] * (src.n || 1); if (k === 'coreHPx') af.coreHPx *= v; else af[k] = (af[k] || 0) + v; }
   for (const id of ids) {
     const A = ANOMALIES.find(a => a.id === id); if (!A) continue;
     af.score += G.mods && G.mods.ks.singular ? 0.1 : 0.05;
@@ -749,7 +758,16 @@ function anomMods() {
   for (const id of G.anoms) { const A = ANOMALIES.find(a => a.id === id); if (A && A.m) for (const k in A.m) m[k] = (m[k] || 0) + A.m[k]; }
   for (const id of G.laws || []) { const L = LAWS.find(l => l.id === id); if (L && L.m) for (const k in L.m) m[k] = (m[k] || 0) + L.m[k]; }
   for (const k in G.runMods) m[k] = (m[k] || 0) + G.runMods[k];
+  for (const src of hookFx()) for (const k in src.m || {}) m[k] = (m[k] || 0) + src.m[k] * (src.n || 1);
   return m;
+}
+// 5.8: what the sector, its door tier and the escalations add to the run (perk and drawback, risk, twists). Empty on the 5.7 rules
+function hookFx() {
+  const out = []; if (!G || !G.hk) return out;
+  const S = SECTOR_BY[G.sector]; if (S) out.push(S);
+  const T = DOOR_TIERS[G.tier || 0]; if (T && G.tier) out.push(T);
+  for (const id in G.twists || {}) { const X = TWISTS.find(t => t.id === id); if (X) out.push({ m: X.m, af: Object.assign({ score: X.score }, X.af), n: G.twists[id] }); }
+  return out;
 }
 function recomputeAll() {
   if (!G) return;
@@ -1193,7 +1211,8 @@ function updateStorms(dt) {
     if (G.stormT <= 0 && G.wave >= 6) {
       G.stormT = (32 + G.r() * 28) / (M.stormFreq * G.CH.storm * (1 + Math.min(G.wave, 60) / 40) * (G.af.magnet ? 3 : 1));
       const ob = G.mods.orb ? G.mods.orb.storm : {}, SK = { K: 'static', T: 'solar', C: 'cryo', A: 'ion', V: 'void' };
-      const wts = STORM_KEYS.map(k => Object.keys(ob).some(el => SK[el] === k) ? 3 : 1);
+      const sst = G.hk && SECTOR_BY[G.sector] && SECTOR_BY[G.sector].storm; // 5.8: the sector's weather rolls in most
+      const wts = STORM_KEYS.map(k => (Object.keys(ob).some(el => SK[el] === k) ? 3 : 1) * (k === sst ? 4 : 1));
       let rr = G.r() * wts.reduce((a, b) => a + b, 0), ty = STORM_KEYS[0];
       for (let i = 0; i < STORM_KEYS.length; i++) { rr -= wts[i]; if (rr <= 0) { ty = STORM_KEYS[i]; break; } }
       const edge = G.r() < 0.5, Rg = G.region;
@@ -1285,7 +1304,8 @@ function rollEvents(w) {
     const bad = list.filter(x => !x.good).length; // v5.4: never more than two bad events in one wave (Nic's Wave 88: Overcharge, Rift Breach and Blackout at once)
     const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)) && (E.good || bad < 2));
     if (!opts.length) break;
-    const E = wpick(G.r, opts, e => e.w);
+    const sev = G.hk && SECTOR_BY[G.sector] && SECTOR_BY[G.sector].ev; // 5.8: each sector has its own event mix
+    const E = wpick(G.r, opts, e => e.w * ((sev && sev[e.id]) || 1));
     ev[E.id] = 1; list.push(E);
     chance *= 0.6;
   }
@@ -1372,7 +1392,7 @@ function breedPlan(w) {
   par.sort((a, b) => b.adv - a.adv);
   const top = (typeof process !== 'undefined' && process.env && process.env.NOGA) ? [] : par.slice(0, 10); // NOGA: genes stay random (balance tests)
   // selection pressure ramps up: close to random early (you can't diversify yet), full strength from Wave 30
-  const E = evoCfg(), press = 4 * clamp((w - E.start) / 22, 0.1, 1) * (E.press || 1);
+  const E = evoCfg(), press = 4 * clamp((w - E.start) / 22, 0.1, 1) * (E.press || 1) * (G.af && G.af.learn ? 2 : 1);
   for (const p of top) p.wt = Math.exp(p.adv * press);
   // the next generation starts here: halve old evidence
   for (const k in F) { F[k].s *= 0.5; F[k].n *= 0.5; if (F[k].n < 0.25) delete F[k]; }
@@ -1470,17 +1490,20 @@ function genWave(w, ev) {
   const heads = [], fresh = types.filter(k => ENEMIES[k].from === w && w > 1);
   const pool = types.filter(k => k !== 'drone' && !fresh.includes(k));
   heads.push(...fresh.slice(0, 2));
-  while (heads.length < (w >= 25 ? 2 : 1) && pool.length) heads.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+  // 5.8 sectors: the roster leans toward the sector's enemies, and so do the headline picks (Carrier Fleet: Carriers always headline)
+  const lean = (G.hk && SECTOR_BY[G.sector] && SECTOR_BY[G.sector].lean) || null, lw = k => (lean && lean[k]) || 1;
+  if (af.carrierHead && types.includes('carrier') && !heads.includes('carrier')) { heads.push('carrier'); pool.splice(pool.indexOf('carrier'), 1); }
+  while (heads.length < (w >= 25 ? 2 : 1) + (af.carrierHead ? 1 : 0) && pool.length) heads.push(pool.splice(lean ? wpickI(r, pool, lw) : Math.floor(r() * pool.length), 1)[0]);
   const HEAD_W = 3;
   // v5.1.3: Elite Tide adds 25% (was 50%) and elites never pass 60% of a wave (late Elite Tides made 95% of a wave elite)
   let eliteP = Math.min(Math.max(0.6, (af.elite || 0) + 0.3), clamp((w - 4) * 0.012, 0, 0.45) * G.CH.elite + (ev.elite ? 0.25 : 0) + (af.elite || 0));
-  const affN = 1 + (w >= 25) + (w >= 50) + (w >= 80);
-  const interval = Math.max(0.3, 0.8 - w * 0.008);
+  const affN = 1 + (w >= 25) + (w >= 50) + (w >= 80) + (af.affN || 0);
+  const interval = Math.max(0.3, 0.8 - w * 0.008) * (1 - (af.gap || 0));
   const q = []; let t = 0;
   const plan = breedPlan(w);
   const lanes = G.map.lanes.filter(L => laneOpen(L, w));
   let rift = null;
-  if (ev.breach) {
+  if (ev.breach || af.rifts) {
     const main = lanes[0];
     const startI = Math.floor(main.tiles.length * (0.35 + r() * 0.25));
     rift = makeLane(main.tiles.slice(startI), G.map.core);
@@ -1493,7 +1516,7 @@ function genWave(w, ev) {
   };
   let n = 0;
   while (n < count) {
-    const type = wpick(r, types, k => ENEMIES[k].w * (heads.includes(k) ? HEAD_W : 1) * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1));
+    const type = wpick(r, types, k => ENEMIES[k].w * (heads.includes(k) ? HEAD_W : 1) * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1) * (lean ? lw(k) : 1));
     const lane = laneFor();
     const grp = ENEMIES[type].group || 1;
     for (let g = 0; g < grp; g++) {
@@ -1510,6 +1533,8 @@ function genWave(w, ev) {
       const bl = lanes.reduce((a, L) => (L.len > a.len ? L : a), lanes[0]);
       q.push({ t, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0 });
       t += 2;
+      // 5.8 Twin Bosses: a second copy right behind it, each at 65% (bounty waves keep their own Wanted mutation)
+      if (G.twists && G.twists.twin && !(G.wanted && !G.wanted.done && G.wanted.w === w)) { q[q.length - 1].hpX = TWIN_HP; q.push({ t: t + 1, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0, hpX: TWIN_HP, twinOf: 1 }); t += 2; }
     }
   }
   const A = G.assault;
@@ -2037,7 +2062,19 @@ function planWanted(at) {
   const pool = BOSSES.filter(B => bossFrom(B) <= w && !(G.af && G.af.oddAll && !B.odd));
   const B = pick(r, pool), M = pick(r, WANTED_MODS);
   G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w * (G.CH.cr || 1)) };
-  rlog('wanted', { boss: B.id, mod: M.id, w });
+  sectorPoster();
+  rlog('wanted', { boss: G.wanted.boss, mod: G.wanted.mod, w });
+}
+// 5.8: the sector's own Most Wanted takes the poster once its boss can appear (no draw from G.r, so a door pick can re-post it)
+function sectorWanted(sid, w) {
+  const S = SECTOR_BY[sid]; if (!S) return null;
+  const B = BOSSES.find(b => b.id === S.boss), M = WANTED_MODS.find(m => m.id === S.mod);
+  return B && M && bossFrom(B) <= w && !(G.af && G.af.oddAll && !B.odd) ? { B, M } : null;
+}
+function sectorPoster() {
+  const Wd = G.wanted; if (!G.hk || !Wd || Wd.done || Wd.nemesis || Wd.spawned) return;
+  const P = sectorWanted(G.sector, Wd.w); if (!P) return;
+  Object.assign(Wd, { boss: P.B.id, mod: P.M.id, name: `${P.M.name} ${P.B.name}`, crime: WANTED_FOR[P.B.id] || 'crimes against geometry' });
 }
 function wantedMod(e) { return e.wanted ? WANTED_MODS.find(m => m.id === e.wanted) : null; }
 function claimBounty(e) {
@@ -2053,6 +2090,17 @@ function claimBounty(e) {
   // v5.3 The Hunt: a claimed bounty is a choice. The sim holds (like a boon pick) until the player extracts or pushes on
   planWanted(Wd.w + HUNT.every); G.wanted.told = 0;
   G.huntChoice = { w: Wd.w, name: Wd.name, cr, next: G.wanted.w, nextName: G.wanted.name };
+  // 5.8: the bounty grows the purse, and three jump doors open (a sector each, one per risk tier) for the next 20 waves
+  if (G.hk) {
+    G.purse *= PURSE.bounty;
+    const pool = SECTORS.filter(S => S.id !== G.sector), doors = [];
+    for (let i = 0; i < DOOR_TIERS.length && pool.length; i++) {
+      const S = pool.splice(Math.floor(G.r() * pool.length), 1)[0], P = sectorWanted(S.id, G.wanted.w);
+      doors.push({ sector: S.id, tier: i, mult: DOOR_TIERS[i].mult, wanted: P ? `${P.M.name} ${P.B.name}` : G.wanted.name });
+    }
+    G.huntChoice.doors = doors; G.huntChoice.purse = Math.round(G.purse);
+    rlog('doors', { w: Wd.w, doors: doors.map(d => d.sector + ':' + d.tier), purse: Math.round(G.purse) });
+  }
   Hooks.huntChoice && Hooks.huntChoice(G.huntChoice);
   Hooks.toast('BOUNTY CLAIMED', `${Wd.name} brought in: +${fmt(cr)} credits, your next tower rolls a Legendary${M.loaded ? ", and the Captain's Chest it was carrying" : ''}`, '#ffd84a', true);
   Hooks.sfx('levelup'); Hooks.fx('cash', {});
@@ -2080,8 +2128,8 @@ function spawnBoss(q) {
   // %-of-max-HP, chain combos) that a lone boss never takes; one Wave 40 whale was sized at 18M HP and could not be killed.
   // Flying bosses no longer carry +30%: their straight line is usually *away* from the road towers, not into them.
   const fire = bossFire();
-  const hp = q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (1 + ((G.af && G.af.bossHP) || 0));
-  const e = { id: G.eid++, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
+  const hp = (q.hpAbs || Math.max(base, fire * BOSS_SECS(w) * (B.hp / 38)) * (1 + ((G.af && G.af.bossHP) || 0))) * (q.hpX || 1);
+  const e = { id: G.eid++, bw: w, type: 'boss', boss: B.id, bossName: gen ? (gen === 1 ? 'Gloop Jr.' : 'Glooplet') : B.name, gen, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: B.spd, fly: !!B.fly,
     armor: B.armor || 0, armorAll: B.armorAll || 0, res: {}, size: 1.15, cr: 60 * crMult(w), leak: Math.round(35 + w * 1.5),
     score: Math.round(1500 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
@@ -2239,7 +2287,7 @@ function updateEnemies(dt) {
     else {
       let spd = e.spd * (1 - Math.max(enemySlow(e), Math.min(0.75, sw.slow)));
       if (ev.surge) spd *= 1.35;
-      spd *= 1 + sw.haste + (G.af.haste || 0) + (sw.inStorm ? 0.12 + (G.af.magnet ? 0.2 : 0) : 0);
+      spd *= 1 + sw.haste + (G.af.haste || 0) + (sw.inStorm ? 0.12 + (G.af.magnet ? 0.2 : 0) + (G.af.stormHaste || 0) : 0);
       if (G.af.groundSlow && !e.fly) spd *= 1 - G.af.groundSlow;
       if (M.ks.horizon) spd *= 1.12;
       if (e.jammed) spd = 0;
@@ -2611,7 +2659,8 @@ const huntMult = () => 1 + HUNT.pushScore * ((G && G.pushes) || 0);
 function addScore(v) {
   v = v * G.CH.score * (G.scoreMult || 1) * huntMult();
   G.score += v;
-  const xp = v * 0.1 * G.mods.xp * (1 + NOVA_XP * (G.novaN || 0));
+  let xp = v * 0.1 * G.mods.xp * (1 + NOVA_XP * (G.novaN || 0));
+  if (G.hk) { G.xpRaw = (G.xpRaw || 0) + xp; G.purse += xp * (1 - PURSE.safe); xp *= PURSE.safe; } // 5.8: the rest of it rides in the Bounty Purse
   G.xpEarned += xp;
   if (!ghostRun()) { const before = profLevel().level;
   PROF.xp += xp;
@@ -2707,7 +2756,11 @@ function kill(e, src, o) {
     PROF.codex.bosses[e.boss] = (PROF.codex.bosses[e.boss] || 0) + 1;
     const bk = lootCharge();
     Hooks.log(`${e.gen ? 'Gloop' : e.bossName} defeated · +1 Recalibration token · +${FX('quarter') ? 2 : 1} ${ABILITIES[bk].short} charge`, '#59f0b4');
-    if (!G.draft) { // one boon pick at a time
+    // 5.8: from Wave 50 a boss wave offers an escalation instead of a boon (once per boss wave, twins included), and a bounty's
+    // jump doors replace its boon
+    const tw = G.hk && !G.draft && (e.bw || G.wave) >= TWIST_FROM && G.twistW !== (e.bw || G.wave) ? twistOffers() : null;
+    if (tw && tw.length) { G.twistW = e.bw || G.wave; G.draft = tw; Hooks.onDraft(tw); }
+    else if (!G.draft && !(G.hk && (e.wanted || G.huntChoice || (e.bw || G.wave) >= TWIST_FROM))) { // one boon pick at a time
       const opts = []; const pool = BOONS.slice();
       for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
       G.draft = opts;
@@ -2716,7 +2769,22 @@ function kill(e, src, o) {
   }
 }
 const depth0 = o => (o && o.depth) || 0;
+// 5.8 escalations: two offers from the twists not yet at their cap
+function twistOffers() {
+  const pool = TWISTS.filter(X => (G.twists[X.id] || 0) < X.max), out = [];
+  while (out.length < 2 && pool.length) { const X = pool.splice(Math.floor(G.r() * pool.length), 1)[0]; out.push({ id: X.id, twist: 1, name: X.name, desc: X.desc, score: X.score, n: (G.twists[X.id] || 0) + 1 }); }
+  return out;
+}
+function takeTwist(b) {
+  const X = TWISTS.find(t => t.id === b.id); if (!X) return;
+  G.twists[X.id] = (G.twists[X.id] || 0) + 1;
+  recomputeAll();
+  if (X.id === 'worm') { const L = genExtraLane(G.r, G.wave + 2); if (L) { G.mapRev = (G.mapRev || 0) + 1; Hooks.fx('wormhole', { lane: L }); Hooks.sfx('lane'); } }
+  rlog('twist', { id: X.id, n: G.twists[X.id], w: G.wave });
+  Hooks.toast('ESCALATION', `${X.name}: ${X.desc}. Score and XP ×${(G.scoreMult || 1).toFixed(2)}`, '#ff4d6a', true);
+}
 function takeBoon(b) {
+  if (b.twist) { G.draft = null; takeTwist(b); return; }
   G.boonsTaken.push(b.id); rlog('boon', { id: b.id });
   if (b.m) for (const k in b.m) G.runMods[k] = (G.runMods[k] || 0) + b.m[k];
   switch (b.special) {
@@ -3381,6 +3449,7 @@ function simStep(dt) {
 function gameOver() {
   if (G.over) return;
   G.over = true;
+  bankPurse();
   if (ghostRun()) { Hooks.onGameOver(); return; }
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
     rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain() }); }
@@ -3410,6 +3479,7 @@ function abandonRun() {
 function huntExtract() {
   const C = G && G.huntChoice; if (!C || G.over) return false;
   G.extracted = C.w; G.huntChoice = null;
+  if (G.hk) { rlog('extract', { w: C.w, purse: Math.round(G.purse) }); gameOver(); return true; } // 5.8: gameOver banks the whole purse
   const bonus = Math.round(G.xpEarned * HUNT.extractXp);
   if (!G.daily) { const before = profLevel().level; PROF.xp += bonus; const after = profLevel().level; if (after > before) Hooks.onLevel(after, after - before); }
   G.xpEarned += bonus; G.stats.extractXp = bonus;
@@ -3417,12 +3487,40 @@ function huntExtract() {
   gameOver();
   return true;
 }
-function huntPush() {
+function huntPush(door) {
   const C = G && G.huntChoice; if (!C || G.over) return false;
+  // 5.8: a jump door (index into C.doors) sets the sector and risk for the next 20 waves and multiplies the purse.
+  // No door (recordings from 5.7, or a run on the old rules) pushes on exactly as before
+  const D = G.hk && C.doors && typeof door === 'number' ? C.doors[door] : null;
+  if (G.hk && C.doors && typeof door === 'number' && !D) return false;
   G.pushes = (G.pushes || 0) + 1; G.huntChoice = null;
-  rlog('push', { w: C.w, n: G.pushes });
-  Hooks.toast('PUSHING ON', `Score ×${huntMult().toFixed(2)} from here. Next bounty: ${G.wanted.name}, Wave ${G.wanted.w}`, '#ffd84a', true);
+  if (D) { enterSector(D.sector, D.tier); G.purse *= D.mult; }
+  else if (G.hk) G.purse *= DOOR_TIERS[0].mult;
+  rlog('push', { w: C.w, n: G.pushes, door: D ? D.sector + ':' + D.tier : null, purse: G.hk ? Math.round(G.purse) : undefined });
+  if (!D) Hooks.toast('PUSHING ON', `Score ×${huntMult().toFixed(2)} from here. Next bounty: ${G.wanted.name}, Wave ${G.wanted.w}`, '#ffd84a', true);
   return true;
+}
+// 5.8: jump into a sector (its roster, weather, events, Most Wanted, perk and drawback) at a risk tier
+function enterSector(sid, tier) {
+  if (!SECTOR_BY[sid]) return false;
+  G.sector = sid; G.tier = tier || 0;
+  recomputeAll();
+  sectorPoster();
+  const S = SECTOR_BY[sid], T = DOOR_TIERS[G.tier];
+  rlog('sector', { id: sid, tier: G.tier, w: G.wave });
+  Hooks.toast('JUMP: ' + S.name.toUpperCase(), `${T.name} · ${S.up} · ${S.down}. Next bounty: ${G.wanted.name}, Wave ${G.wanted.w}`, S.col, true);
+  return true;
+}
+// 5.8 Bounty Purse: what the run banks at its end. Extracting banks it all, a fallen core a share. Replays and watching never pay
+function bankPurse() {
+  if (!G.hk || G.purseOut) return;
+  const share = G.extracted ? 1 : PURSE.death, paid = Math.round(G.purse * share);
+  G.purseOut = { purse: Math.round(G.purse), share, paid };
+  G.xpEarned += paid;
+  rlog('purse', G.purseOut);
+  if (ghostRun()) return;
+  const before = profLevel().level; PROF.xp += paid; const after = profLevel().level;
+  if (after > before) Hooks.onLevel(after, after - before);
 }
 // the Nemesis: what ended your last run, back again
 function nemesisName(N) {
@@ -3511,7 +3609,7 @@ const ACTS = {
   od: () => releaseOverdrive(),
   reloc: (x, y) => { const P = planRelocation(x, y); return !!P && !P.fail && applyRelocation(P); },
   extract: () => huntExtract(),
-  push: () => huntPush(),
+  push: door => huntPush(door == null ? undefined : door), // 5.8: the jump door's index; none (5.7 recordings) pushes on as before
   abandon: () => { abandonRun(); return true; },
 };
 function act(name, ...a) {
@@ -3572,6 +3670,7 @@ function snapshotRun(waveNum) {
     charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
+    hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -3580,7 +3679,7 @@ function snapshotRun(waveNum) {
 function snapshotNow() { if (G && !G.over) snapshotRun(G.spawningDone ? G.wave + 1 : G.wave); }
 function resumeRun(S) {
   const r = mulberry32((S.seed ^ (S.wave * 7919)) >>> 0);
-  newRun({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15 });
+  newRun({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null });
   PROF.runs--; // newRun counted it; a resume is the same run
   G.r = r;
   G.map.tiles = S.tiles.slice();
@@ -3605,7 +3704,10 @@ function resumeRun(S) {
     lanesOpened: S.lanesOpened, cpDue: S.cpDue || 0, unbreakUsed: S.unbreakUsed, boonsTaken: S.boonsTaken || [], next: 12,
     entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
   if (S.stats) G.stats = S.stats;
-  G.pushes = S.pushes || 0; G.bounties = (S.bounties || []).slice(); G.huntChoice = S.huntChoice || null; G.nemesis = S.nemesis ? JSON.parse(JSON.stringify(S.nemesis)) : null;
+  G.pushes = S.pushes || 0; G.bounties = (S.bounties || []).slice(); G.huntChoice = S.huntChoice || null;
+  // 5.8 (snapshots from 5.7 carry none of this: they continue on the new rules with no sector and an empty purse)
+  G.hk = S.hk == null ? HOOK_VER : S.hk; G.sector = G.hk && SECTOR_BY[S.sector] ? S.sector : null; G.tier = S.tier || 0; G.purse = S.purse || 0; G.xpRaw = S.xpRaw || 0;
+  G.twists = Object.assign({}, S.twists || {}); G.twistW = S.twistW || 0; G.draft = S.draft ? JSON.parse(JSON.stringify(S.draft)) : null; G.nemesis = S.nemesis ? JSON.parse(JSON.stringify(S.nemesis)) : null;
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   if (G.daily) { G.laws = []; G.novaN = 0; } // dailies never carry Cosmic Laws, resumed or not
