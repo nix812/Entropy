@@ -13,7 +13,7 @@ function defaultProfile() {
     settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
     seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
-    mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
+    mastery: { v: 2, xp: {} }, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
   };
 }
@@ -151,6 +151,17 @@ const towerUnlocked = id => huntRun() || TOWERS[id].unlock <= Math.max(1, PROF.b
 const activeCaps = () => [...new Set(capsHeld().concat((TS().remnants || []).filter(r => TAL[r])))];
 
 function masteryPick(id) { const v = PROF.mastery && PROF.mastery[id]; return v === undefined ? 0 : v; }
+// ---------- v5.8 Tower Mastery: profile side (the run only ever sees G.mastery, the ranks passed in through newRun) ----------
+function masteryProf() { // migrate whatever shape is there (the old web's {masteryId: pick}) into { v: 2, xp: {} }
+  const M = PROF.mastery;
+  if (!M || M.v !== 2 || typeof M.xp !== 'object' || !M.xp) PROF.mastery = { v: 2, xp: {} };
+  return PROF.mastery;
+}
+const masteryXp = k => masteryProf().xp[k] || 0;
+function masteryRankOf(xp) { let r = 0; while (r < 5 && xp >= MASTERY.xp[r + 1]) r++; return r; }
+function masteryRanks() { const o = {}; for (const k of TOWER_ORDER) { const r = masteryRankOf(masteryXp(k)); if (r) o[k] = r; } return o; }
+// inside a run: Daily Hunts and old recordings get {} (newRun), so this is fair and replays exactly
+const masteryRank = k => (G && G.mastery && G.mastery[k]) || 0;
 // v5.1 abilities: cooldowns fill charge slots; loot charges stack on top without limit
 const abilOnline = k => !!(G.abilOn && G.abilOn[k]);
 function abilPool() { const L = ABIL_ORDER.filter(abilOnline); return L.length ? L : ['strike']; }
@@ -662,7 +673,8 @@ function openLane(L) {
 function newRun(opts) {
   if (opts.cols) setCols(opts.cols);
   const seed = opts.seed || Math.floor(Math.random() * 1e9);
-  opts = Object.assign({}, opts, { seed });
+  const ascV = opts.ascV || (opts.v ? 1 : ASC_V); // v5.8: a recording from before Ascension perks (it carries v, no ascV) keeps the old rules
+  opts = Object.assign({}, opts, { seed, ascV });
   const r = mulberry32(seed);
   const chaos = clamp(opts.chaos ?? 1, 0, 3);
   setRows(opts.rows || CHAOS_LEVELS[chaos].rows);
@@ -684,6 +696,7 @@ function newRun(opts) {
   // v5.3: the run records every input (act) from the start; with these opts it replays exactly (Daily Hunt resume, ladder checks)
   G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS }))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
+  G.ascV = ascV; G.mastery = opts.daily || opts.huntBuild ? {} : Object.assign({}, opts.mastery || {}); // Daily Hunts: no Mastery, same for everyone
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
   G.laws = opts.daily ? [] : (PROF.laws || []).slice(); G.novaN = opts.daily ? 0 : PROF.nova || 0;
@@ -835,7 +848,7 @@ function rollAffix(t, forceTier, luckBonus, minTier, exclude) {
   let tier = rollTier(forceTier, luckBonus, minTier);
   const pool = towerPool(t.type), ban = AFFIX_BAN[TOWERS[t.type].kind] || [];
   if (tier === 3) {
-    const opts = LEGENDARIES.filter(L => L.pool === pool && !ban.includes(L.id) && !t.affixes.some(a => a.id === L.id) && !(exclude || []).includes(L.id));
+    const opts = LEGENDARIES.filter(L => L.pool === pool && (!L.tower || (L.tower === t.type && masteryRank(t.type) >= 5)) && !ban.includes(L.id) && !t.affixes.some(a => a.id === L.id) && !(exclude || []).includes(L.id));
     if (opts.length) return { id: pick(r, opts).id, tier: 3, v: 0 };
     tier = 2;
   }
@@ -901,12 +914,14 @@ function buildTower(type, x, y) {
 }
 function upgradeTower(t, specIdx) {
   if (t.lvl === 3 && !specIdx) return false;
+  if (t.lvl >= MAX_LV && t.ascPend > 0) return false; // v5.8: pick the last Ascension's perk first
   const cost = upgradeCost(t);
   if (G.credits < cost) return false;
   G.credits -= cost; t.invested += cost;
   if (t.lvl >= MAX_LV) {
     t.asc = (t.asc || 0) + 1;
     Hooks.log(`${towerLabel(t)} Ascended to A${t.asc}`, '#ff8a2a');
+    if (G.ascV >= 2 && perkPool(t).length) { t.ascPend = 1; t.aOffer = null; }
   } else t.lvl++;
   if (t.lvl === 4 && !t.spec) t.spec = specIdx;
   t.affixes.push(rollAffix(t));
@@ -915,6 +930,32 @@ function upgradeTower(t, specIdx) {
   recomputeAuras();
   Hooks.sfx('upgrade', t);
   Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: RARITY[t.affixes[t.affixes.length - 1].tier].col });
+  return true;
+}
+// ---------- v5.8 Ascension perks (PERKS in data.js) ----------
+const perkStacks = (t, id) => { let n = 0; for (const p of t.perks || []) if (p === id) n++; return n; };
+const perkDef = (type, id) => (PERKS[type] || []).find(P => P.id === id);
+function perkPool(t) { return (PERKS[t.type] || []).filter(P => (!P.spec || P.spec === t.spec) && perkStacks(t, P.id) < P.v.length); }
+// the offer for the pending pick comes from its own stream (seed, tower, Ascension count), never G.r: opening a panel
+// can't move the run's dice, and a replay or resume sees the same three cards (four at Mastery 4)
+function ascOffer(t) {
+  if (!(t.ascPend > 0)) return null;
+  if (!t.aOffer) {
+    const pool = perkPool(t), n = Math.min(pool.length, masteryRank(t.type) >= MASTERY.offer4 ? 4 : 3), o = [];
+    const r = mulberry32((G.seed ^ Math.imul(t.id, 2246822519) ^ Math.imul((t.asc || 0) + 1, 3266489917) ^ 0x2545f491) >>> 0);
+    const w = P => (P.spec ? 1.6 : 1) * (perkStacks(t, P.id) ? 0.7 : 1); // specialization perks show up a little more; repeats a little less
+    while (o.length < n) o.push(wpick(r, pool.filter(P => !o.includes(P.id)), w).id);
+    t.aOffer = o;
+  }
+  return t.aOffer;
+}
+function claimPerk(t, i) {
+  const o = ascOffer(t), id = o && o[i];
+  if (!id) return false;
+  (t.perks || (t.perks = [])).push(id); t.ascPend = 0; t.aOffer = null;
+  t.s = towerStats(t); recomputeAuras();
+  Hooks.log(`${towerLabel(t)}: ${perkDef(t.type, id).name}`, '#ff8a2a');
+  Hooks.sfx('upgrade', t); Hooks.fx('upgrade', { x: t.cx, y: t.cy, col: '#ff8a2a' });
   return true;
 }
 // v5.0: a Recalibration token pays for a reroll instead of credits
@@ -934,6 +975,7 @@ function rerollTower(t, token) {
 }
 function sellRefund(t) { return Math.round(t.invested * (G.checkpoint || G.refit ? 1 : Math.max(G.af.scav ? 0.9 : 0.7, FX('sellPct') / 100))); }
 function sellTower(t) {
+  { const D = G.stats.dmgSold || (G.stats.dmgSold = {}); D[t.type] = (D[t.type] || 0) + Math.round(t.dmgDone || 0); } // v5.8 Mastery counts sold towers' work
   G.credits += sellRefund(t);
   G.towers = G.towers.filter(o => o !== t);
   delete G.towerAt[tIdx(t.x, t.y)];
@@ -954,57 +996,63 @@ function towerStats(t) {
     else A[a.id] = (A[a.id] || 0) + a.v;
   }
   s.leg = leg; s.cur = cur;
+  // v5.8: Ascension perks and Mastery 5 legendaries (their pkv) sum into s.pkv; all zero for runs without them
+  const pkv = {};
+  if (t.perks && t.perks.length) { const n = {}; for (const id of t.perks) { const P = perkDef(t.type, id); if (P) { n[id] = (n[id] || 0) + 1; pkv[id] = P.v[Math.min(n[id], P.v.length) - 1]; } } }
+  for (const id in leg) { const L = LEGENDARIES.find(x => x.id === id); if (L && L.pkv) for (const k in L.pkv) pkv[k] = (pkv[k] || 0) + L.pkv[k]; }
+  s.pkv = pkv; const pv = k => pkv[k] || 0;
+  const mst = masteryRank(t.type) >= 2 ? 1 + MASTERY.stat : 1; // Mastery 2
   const O = M.orb || {}, oe = k => (O[k] && O[k][s.el]) || 0;
   const fluxAny = O.flux && Object.keys(O.flux).length;
-  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(1.3, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el];
-  let rate = D.rate * (sp.rateX || 1) * (1 + (A.rate || 0) / 100) * (cur.crate ? 0.85 : 1) * M.rate;
+  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(G.ascV >= 2 ? ASC_DMG : ASC_DMG_OLD, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el] * (1 + pv('hv') / 100) * mst;
+  let rate = D.rate * (sp.rateX || 1) * (1 + (A.rate || 0) / 100) * (cur.crate ? 0.85 : 1) * M.rate * (1 + (pv('rapid') + pv('comp') + pv('autoload') + pv('breech')) / 100);
   if (s.el === 'K') rate *= 1 + M.rateK;
   if (s.el === 'A') rate *= 1 + M.rateA;
   s.rate = rate * (1 + oe('rate') / 100);
-  let range = (D.range + (sp.rangeAdd || 0)) * (1 + 0.05 * (lv - 1) + 0.03 * (t.asc || 0));
+  let range = (D.range + (sp.rangeAdd || 0) + pv('barrelR') + pv('ring') + pv('tank') + pv('focal') + pv('radius') + pv('mast')) * (1 + 0.05 * (lv - 1) + 0.03 * (t.asc || 0));
   if (D.kind === 'support' || D.kind === 'snare') range *= (1 + (A.prange || 0) / 100) * M.range;
   else {
     range *= (1 + (A.range || 0) / 100) * (cur.crange ? 0.85 : 1) * M.range;
     if (t.type === 'pulse' || t.type === 'rail') range *= 1 + M.rangeKR;
   }
   s.range = range * (D.kind === 'support' || D.kind === 'snare' ? 1 : 1 + oe('range') / 100);
-  s.critC = (D.crit || 0) + (sp.critC || 0) + (A.critC || 0) + M.critC;
-  s.critM = 1.5 + (A.critM || 0) / 100 + M.critM;
+  s.critC = (D.crit || 0) + (sp.critC || 0) + (A.critC || 0) + M.critC + pv('sights');
+  s.critM = 1.5 + (A.critM || 0) / 100 + M.critM + pv('slug') / 100;
   if (s.el === 'K') { s.critC += FX('critCK'); s.critM += FX('critMK') / 100; }
-  s.pierce = (D.pierce || 0) + (sp.pierce || 0) + (A.pierce || 0) + (s.el === 'K' ? M.pierceK : 0);
-  s.chain = D.chain ? D.chain + (sp.chain || 0) + (A.chain || 0) + M.chain : (A.chain || 0);
-  s.splash = D.splash ? D.splash + (sp.splash || 0) + (A.splash || 0) + M.splash : (A.splash || 0);
-  s.multi = (sp.multi || 0) + (A.multi || 0) + (s.el === 'A' ? FX('multiA') : 0);
+  s.pierce = (D.pierce || 0) + (sp.pierce || 0) + (A.pierce || 0) + (s.el === 'K' ? M.pierceK : 0) + pv('pierce') + pv('bounce');
+  s.chain = D.chain ? D.chain + (sp.chain || 0) + (A.chain || 0) + M.chain + pv('chain') + pv('crown') : (A.chain || 0);
+  s.splash = D.splash ? D.splash + (sp.splash || 0) + (A.splash || 0) + M.splash + pv('warhead') + pv('burstE') : (A.splash || 0);
+  s.multi = (sp.multi || 0) + (A.multi || 0) + (s.el === 'A' ? FX('multiA') : 0) + pv('barrel');
   const st = D.st || {}, sm = M.stMult;
   const ost = oe('status') / 100;
   if (s.el === 'K') s.critC += oe('status');
   s.burn = clamp(((st.burn || 0) + (s.el === 'T' ? ost : 0) + ((A.burn || 0) + M.burnChance + (s.el === 'K' ? M.kBurn : 0)) / 100 + (M.ks.conflag ? 0.35 : 0)) * sm, 0, 1);
   s.chill = clamp(((st.chill || 0) + (s.el0 === 'C' ? ost : 0) + ((A.chill || 0) + M.chillChance) / 100) * sm, 0, 1);
   if (M.ks.conflag) { s.burn = clamp(s.burn + s.chill, 0, 1); s.chill = 0; } // Conflagration: Chill becomes Burn
-  s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
-  s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
+  s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + pv('ion') + pv('ionE') + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
+  s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + pv('brand') + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
   s.chillPot = (sp.chillPot || 1) * M.chillPot;
-  s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur;
-  s.shockX = sp.shockX || 1; s.burnX = sp.burnX || 1;
-  s.stun = sp.stun || 0; s.stunDur = sp.stunDur || D.stunDur || 0;
-  s.rampMax = sp.rampMax || D.rampMax || 1; s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0);
-  s.pull = (D.pull || 0) * (sp.pullX || 1); s.shells = (sp.shells || 1) + (D.kind === 'mortar' ? s.multi : 0); s.cluster = sp.cluster || 0; s.napalm = !!sp.napalm;
-  s.shred = !!sp.shred; s.shatterField = sp.shatterField || 0;
-  s.exec = A.exec || 0; s.bounty = (A.bounty || 0) / 100; s.boss = (A.boss || 0) / 100 + M.eliteDmg; s.slowd = (A.slowd || 0) / 100;
+  s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur + pv('deep');
+  s.shockX = sp.shockX || 1; s.burnX = (sp.burnX || 1) * (1 + (pv('thermite') + pv('accel')) / 100);
+  s.stun = (sp.stun || 0) + pv('taser') / 100; s.stunDur = (sp.stunDur || D.stunDur || 0) + pv('longPulse');
+  s.rampMax = (sp.rampMax || D.rampMax || 1) + pv('well'); s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0) + pv('facet');
+  s.pull = (D.pull || 0) * (sp.pullX || 1) * (1 + pv('heavy') / 100); s.shells = (sp.shells || 1) + (D.kind === 'mortar' ? s.multi : 0) + pv('shell4'); s.cluster = sp.cluster ? sp.cluster + pv('pods') : 0; s.napalm = !!sp.napalm;
+  s.shred = !!sp.shred || !!(pv('apRounds') || pv('slag')); s.shatterField = sp.shatterField ? sp.shatterField + pv('fault') : 0;
+  s.exec = (A.exec || 0) + pv('coup'); s.bounty = (A.bounty || 0) / 100; s.boss = (A.boss || 0) / 100 + M.eliteDmg + (pv('bigGame') + pv('slayer')) / 100; s.slowd = (A.slowd || 0) / 100;
   s.pspd = D.pspd || 10;
   if (D.kind === 'support') {
-    const aura = (1 + (A.aura || 0) / 100) * (leg.nexus ? 1.5 : 1), lm = 1 + 0.2 * (lv - 1) + 0.1 * (t.asc || 0);
-    s.buffDmg = Math.min(0.75, (D.buffDmg + (sp.buffDmg || 0)) * lm * aura / 100);
-    s.buffRate = Math.min(0.5, D.buffRate * lm * aura / 100);
-    s.buffCrit = Math.min(30, (sp.buffCrit || 0) * aura);
+    const aura = (1 + (A.aura || 0) / 100) * (leg.nexus ? 1.5 : 1) * mst, lm = 1 + 0.2 * (lv - 1) + 0.1 * (t.asc || 0);
+    s.buffDmg = Math.min(0.75, (D.buffDmg + (sp.buffDmg || 0) + pv('ampP')) * lm * aura / 100);
+    s.buffRate = Math.min(0.5, (D.buffRate + pv('sync')) * lm * aura / 100);
+    s.buffCrit = Math.min(30, ((sp.buffCrit || 0) + pv('grid')) * aura);
     if (leg.nexus) s.range += 1;
   }
   if (D.kind === 'snare') {
     const aura = (1 + (A.aura || 0) / 100) * (leg.nexus ? 1.5 : 1);
-    s.catches = Math.round((D.catches + (sp.catches || 0)) * (1 + 0.5 * (lv - 1) + 0.25 * (t.asc || 0)) * aura);
+    s.catches = Math.round((D.catches + (sp.catches || 0)) * (1 + 0.5 * (lv - 1) + 0.25 * (t.asc || 0)) * aura) + pv('bigNet') + (mst > 1 ? 1 : 0);
     s.netR = D.net * (1 + 0.1 * (lv - 1));
-    s.netSlow = Math.min(0.85, (sp.netSlow || D.netSlow) * Math.sqrt(aura));
-    s.hold = (sp.hold || D.hold) * (1 + 0.15 * (lv - 1));
+    s.netSlow = Math.min(0.85, (sp.netSlow || D.netSlow) * Math.sqrt(aura) + pv('tar'));
+    s.hold = (sp.hold || D.hold) * (1 + 0.15 * (lv - 1)) + pv('barbs'); s.netVuln = pv('exposed') / 100;
     if (leg.nexus) s.range += 1;
   }
   s.node = isNode(t.x, t.y);
@@ -1014,11 +1062,11 @@ function towerStats(t) {
     if (D.kind === 'snare') s.catches = Math.round(s.catches * NODE_TOWER.aura);
   }
   if (D.kind === 'eco') {
-    s.income = D.income * (1 + 0.5 * (lv - 1)) * (sp.incomeX || 1) * (1 + (A.yield || 0) / 100) * (leg.midas ? 2 : 1) * (s.node ? NODE_TOWER.aura : 1);
-    s.fbounty = (A.fbounty || 0) / 100; s.bountyAura = sp.bounty || 0; s.interest = leg.midas ? 0.01 : 0;
+    s.income = D.income * (1 + 0.5 * (lv - 1)) * (sp.incomeX || 1) * (1 + (A.yield || 0) / 100) * (leg.midas ? 2 : 1) * (s.node ? NODE_TOWER.aura : 1) * (1 + pv('overtime') / 100) * mst;
+    s.fbounty = (A.fbounty || 0) / 100 + pv('fee') / 100; s.bountyAura = sp.bounty || 0; s.interest = (leg.midas ? 0.01 : 0) + pv('compound') / 100; s.hazard = pv('hazard');
     s.range = s.bountyAura ? 3 : 0;
   }
-  s.ground = !!D.ground;
+  s.ground = !!D.ground && !(pv('updraft') || pv('anchor'));
   const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
   if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
   if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.05 + FX('aRank') / 100) * t.rank : 0.75; // v4.4: 6%/−20% measured 16 waves above no Doctrine (bots); trimmed
@@ -1682,6 +1730,7 @@ function startWave() {
   for (const f of G.forges || []) {
     let inc = f.s.income + (f.s.interest ? Math.min(G.credits * f.s.interest, 40 + w * 5) : 0);
     inc *= G.mods.credits * (G.ev.gold ? 2 : 1);
+    if (f.s.hazard && w % 10 === 0) inc *= 2; // v5.8 Forge perk: Hazard Pay
     G.credits += Math.round(inc);
     Hooks.fx('coin', { x: f.cx, y: f.cy, v: Math.round(inc) });
   }
@@ -2080,6 +2129,7 @@ function enemySlow(e) {
   if (G.mods.ks.conflag && e.st.burn) s += 0.25; // Conflagration: burning enemies are scorched (25% slow)
   if (e.st.chill > 0) s += FX('glacial') / 100;
   if (e.kSlowT > 0) s += FX('kSlow') / 100;
+  if (e.gSlowT > 0) s += e.gSlowV; // v5.8 Gravity perk: Undertow
   if (FX('markSlow') && e.st.mark >= G.mods.markMax) s += FX('markSlow') / 100;
   if (e.elite.includes('jugg')) s *= 0.3;
   if (e.boss) s *= 0.5;
@@ -2127,6 +2177,7 @@ function updateEnemies(dt) {
     }
     if (st.chill > 0) { st.chillT -= dt; if (st.chillT <= 0) { st.chill = Math.max(0, st.chill - 1); st.chillT = FX('chillSlowDecay') ? 3 : 1; } }
     if (e.kSlowT > 0) e.kSlowT -= dt;
+    if (e.gSlowT > 0) e.gSlowT -= dt;
     if (st.burn && FX('burnSpread')) { e.spreadT = (e.spreadT || 1) - dt; if (e.spreadT <= 0) { e.spreadT = 1; let best = null, bd = 1; for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.st.burn) { const d = dist2(o2.x, o2.y, e.x, e.y); if (d < bd) { bd = d; best = o2; } } if (best) best.st.burn = { dps: st.burn.dps * 0.8, t: 3 * M.burnDur, src: st.burn.src }; } }
     if (st.frozen > 0) st.frozen -= dt;
     if (st.freezeImm > 0) st.freezeImm -= dt;
@@ -2437,9 +2488,10 @@ function hit(e, dmg, el, src, o) {
   let glance = false;
   if (e.refl && !o.dot && !o.abil && src && src.s && (src.s.kind === 'bullet' || src.s.kind === 'beam' || src.s.kind === 'chain')) { mult *= 1 - e.refl; glance = true; }
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
-  if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2;
+  if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2 + ((e.lureT.s && e.lureT.s.netVuln) || 0);
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
   if (st.frozen > 0) mult *= 1 + M.frozenVuln;
+  if (st.frozen > 0 && st.brittle) mult *= 1 + st.brittle; // v5.8 Cryo perk: Brittle
   if (M.ks.abszero && st.chill > 0) mult *= 1.5;
   if (e.stormVuln) mult *= 1 + e.stormVuln;
   if (el === 'K' && e.shatterT > 0) mult *= 1 + e.shatterV;
@@ -2452,6 +2504,8 @@ function hit(e, dmg, el, src, o) {
     if ((e.boss || e.elite.length) && src.s.boss) mult *= 1 + src.s.boss;
     if (src.s.slowd && e.slow > 0.05) mult *= 1 + src.s.slowd;
     if (src.isolated && M.loneWolf) mult *= 1 + M.loneWolf;
+    const pk = src.s.pkv; // v5.8 Ascension perks
+    if (pk) { if (pk.hollow && e.hp < e.maxHp * 0.5) mult *= 1 + pk.hollow / 100; if (pk.overcur && st.shock > 0) mult *= 1 + pk.overcur / 100; }
   }
   if (e.scanned > 0) mult *= 1 + SCAN.mark / 100; // Sensor Sweep's Mark
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
@@ -2540,15 +2594,17 @@ function applyStatuses(e, dmg, el, src, o) {
   if (forced === 'burn') burnP = 1; if (forced === 'chill') chillP = 1; if (forced === 'shock') shockP = 1; if (forced === 'mark') markP = 1;
   if (burnP > 0 && r() < burnP) {
     const dps = dmg * 0.35 * s.burnX * M.burnDmg * (s.kind === 'cone' ? 1.5 : 1);
-    if (!st.burn || st.burn.dps < dps) st.burn = { dps, t: 3 * M.burnDur, src };
-    else st.burn.t = 3 * M.burnDur;
+    const bt = 3 * M.burnDur + ((s.pkv && s.pkv.slowBurn) || 0);
+    if (!st.burn || st.burn.dps < dps) st.burn = { dps, t: bt, src };
+    else st.burn.t = bt;
   }
   if (chillP > 0 && r() < chillP && !jugg) {
-    st.chill = Math.min(5, st.chill + (s.kind === 'pulse' ? 2 : 1)); st.chillT = 2.5; st.chillPot = Math.max(st.chillPot, s.chillPot);
+    st.chill = Math.min(5, st.chill + (s.kind === 'pulse' ? 2 : 1) + ((s.pkv && s.pkv.flash) || 0)); st.chillT = 2.5; st.chillPot = Math.max(st.chillPot, s.chillPot);
     if (el === 'C' && FX('chillSplash') && !o.splashed) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.elite.includes('jugg') && dist2(o2.x, o2.y, e.x, e.y) <= 1) { o2.st.chill = Math.min(5, o2.st.chill + 1); o2.st.chillT = 2.5; o2.st.chillPot = Math.max(o2.st.chillPot, s.chillPot); }
     if (s.shatterField) { e.shatterT = 2; e.shatterV = s.shatterField; }
     if (st.chill >= (FX('freezeAt') ? 4 : 5) && st.freezeImm <= 0) {
       st.frozen = (1 + s.freezeBonus) * (e.boss ? 0.4 : 1); st.freezeImm = st.frozen + 2.5 * (1 - FX('freezeImmRed') / 100); st.chill = 0;
+      if (s.pkv && (s.pkv.brittle || s.pkv.iceBurst || s.pkv.perma)) { st.brittle = (s.pkv.brittle || 0) / 100; st.frzBy = s.pkv.iceBurst ? src : null; if (s.pkv.perma) st.freezeImm = st.frozen + 2.5 * (1 - FX('freezeImmRed') / 100) * (1 - s.pkv.perma / 100); }
       Hooks.fx('freeze', { x: e.x, y: e.y }); Hooks.sfx('freeze', e);
     }
   }
@@ -2560,7 +2616,7 @@ function applyStatuses(e, dmg, el, src, o) {
   if (M.ks.horizon && st.mark >= M.markMax && !e.yanked && !e.boss && !e.fly) { e.yanked = 1; e.d = Math.max(0, e.d - 1.5); Hooks.fx('implode', { x: e.x, y: e.y, r: 0.8 }); }
   if (M.chillVoid && st.chill > 0 && r() < M.chillVoid / 100) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
   if (M.knock && r() < M.knock && !jugg) { e.d = Math.max(0, e.d - (e.boss ? 0.15 : 0.5)); if (FX('knockMark')) { st.mark = Math.min(M.markMax, st.mark + 2); st.markT = 4; } }
-  if (s.stunDur && s.kind === 'mortar' && !jugg) st.stun = Math.max(st.stun, s.stunDur * (e.boss ? 0.3 : 1));
+  if (s.stunDur && s.kind === 'mortar' && !jugg) st.stun = Math.max(st.stun, s.stunDur * (e.boss ? (s.pkv && s.pkv.blackout ? 0.6 : 0.3) : 1));
 }
 const huntMult = () => 1 + HUNT.pushScore * ((G && G.pushes) || 0);
 function addScore(v) {
@@ -2629,6 +2685,8 @@ function kill(e, src, o) {
   if (depth < 2) {
     if (e.st.burn && FX('burnBoom')) { Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * FX('burnBoom') / 100 * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth + 1 }); }
     if (e.st.shock > 0 && FX('shockBurst')) { Hooks.fx('arcs', { x: e.x, y: e.y, r: 1 }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * FX('shockBurst') / 100 * (o2.boss ? 0.3 : 1), 'A', null, { noStatus: 1, depth: depth + 1 }); }
+    if (e.st.frozen > 0 && e.st.frzBy && e.st.frzBy.s && e.st.frzBy.s.pkv.iceBurst) { const B = e.st.frzBy, v = B.s.pkv.iceBurst / 100; Hooks.fx('freeze', { x: e.x, y: e.y }); for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) hit(o2, hpBase(e) * v * (o2.boss ? 0.3 : 1), 'C', B, { noStatus: 1, depth: depth + 1 }); }
+    if (e.st.burn && e.st.burn.src && e.st.burn.src.s && e.st.burn.src.s.pkv && e.st.burn.src.s.pkv.spread) for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1.44 && (!o2.st.burn || o2.st.burn.dps < e.st.burn.dps)) o2.st.burn = { dps: e.st.burn.dps, t: 3 * M.burnDur, src: e.st.burn.src };
     if (e.st.frozen > 0 && FX('iceShards')) { Hooks.fx('freeze', { x: e.x, y: e.y }); for (const o2 of G.enemies) if (!o2.dead && !o2.elite.includes('jugg') && dist2(o2.x, o2.y, e.x, e.y) <= 1.44) { o2.st.chill = Math.min(5, o2.st.chill + 2); o2.st.chillT = 2.5; } }
   }
   if (src && src.s && M.orb && M.orb.ent[src.s.el]) addEntropy(0.08);
@@ -2784,6 +2842,7 @@ function updateTowers(dt) {
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
     if (s.leg.overloop) { t.olT = (t.olT + dt) % 8; if (t.olT < 3) rate *= 2.5; }
+    if (s.pkv.spin) { t.spin = clamp((t.spin || 0) + (G.time - (t.aimT === undefined ? -9 : t.aimT) < 0.6 ? dt / 4 : -dt / 2), 0, 1); rate *= 1 + s.pkv.spin / 100 * t.spin; }
     if (burning && s.el === 'T') rate *= 1 + Math.min(0.4, 0.02 * burning);
     if (t.hot && M.ks.wildfire) rate *= 0.75;
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
@@ -2812,10 +2871,11 @@ function towerAttack(t, range, sw) {
     case 'bullet': {
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
-      for (const e of tg) {
+      const burst = s.pkv.burst && (t.burstN = (t.burstN || 0) + 1) % 5 === 0 ? 3 : 1; // v5.8 Pulse perk: every 5th shot fires 3 rounds
+      for (const e of tg) for (let b = 0; b < burst; b++) {
         t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
         const crit = rollCrit(t);
-        G.projs.push({ k: 'bullet', x: t.cx, y: t.cy, e, spd: s.pspd, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t,
+        G.projs.push({ k: 'bullet', x: t.cx - b * 0.15 * Math.cos(t.angle), y: t.cy - b * 0.15 * Math.sin(t.angle), e, spd: s.pspd, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t,
           bounces: s.pierce + s.chain, hitSet: new Set(), splash: s.splash, life: 2 });
       }
       Hooks.sfx('shot', t);
@@ -2839,10 +2899,20 @@ function towerAttack(t, range, sw) {
       }
       hits.sort((a, b) => a[0] - b[0]);
       const crit = rollCrit(t);
-      const dmg = atkDmg(t, sw, crit);
+      let dmg = atkDmg(t, sw, crit);
+      const pk = s.pkv;
+      if (pk.capBank && (t.railN = (t.railN || 0) + 1) % 4 === 0) dmg *= 2.5; // v5.8 Rail perks
       const n = Math.min(hits.length, 1 + s.pierce);
       for (let i = 0; i < n; i++) { hit(hits[i][1], dmg, s.el, t, { crit }); }
       if (n) ricochet(t, hits[0][1], dmg, s.el);
+      if (n && (pk.spotter || pk.liveWire || pk.deflect)) {
+        for (let i = 0; i < n; i++) { const e = hits[i][1]; if (e.dead) continue;
+          if (pk.spotter && crit) { e.st.mark = Math.min(G.mods.markMax, e.st.mark + 2); e.st.markT = 4; }
+          if (pk.liveWire) { e.st.shock = FX('shockLong') ? 6 : 3; e.st.shockEff = Math.max(e.st.shockEff, s.shockX * G.mods.shockEff); } }
+        if (pk.deflect) { const last = hits[n - 1][1], hs = new Set(hits.slice(0, n).map(h => h[1])); let best = null, bd = 6.25;
+          for (const e of G.enemies) if (enemyTargetable(e) && !hs.has(e)) { const d = dist2(e.x, e.y, last.x, last.y); if (d < bd) { bd = d; best = e; } }
+          if (best) { Hooks.fx('zap', { x1: last.x, y1: last.y, x2: best.x, y2: best.y, col: EL[s.el].col }); hit(best, dmg * 0.6, s.el, t); } }
+      }
       Hooks.fx('rail', { x1: t.cx, y1: t.cy, x2: t.cx + dx * len, y2: t.cy + dy * len, col: EL[s.el].col, crit });
       }
       Hooks.sfx('rail', t);
@@ -2862,7 +2932,8 @@ function towerAttack(t, range, sw) {
     case 'missile': {
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
-      for (const e of tg) {
+      for (let i = 0, nm = tg.length + (s.pkv.tube || 0); i < nm; i++) { // v5.8 Extra Tube: more missiles than targets cycle through them
+        const e = tg[i % tg.length];
         t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
         const crit = rollCrit(t);
         G.projs.push({ k: 'missile', x: t.cx, y: t.cy, vx: Math.cos(t.angle + (G.r() - 0.5)) * 2, vy: Math.sin(t.angle + (G.r() - 0.5)) * 2,
@@ -2882,13 +2953,15 @@ function towerAttack(t, range, sw) {
         const pts = [{ x: t.cx, y: t.cy }, { x: e0.x, y: e0.y }];
         hit(e0, dmg, s.el, t, { crit });
         let cur = e0;
+        const arcR = 1.7 * (1 + (s.pkv.arc || 0) / 100);
         for (let j = 0; j < s.chain; j++) {
-          let best = null, bd = 1.7 * 1.7;
+          let best = null, bd = arcR * arcR;
           for (const e of G.enemies) if (enemyTargetable(e) && !hitSet.has(e)) { const d = dist2(e.x, e.y, cur.x, cur.y); if (d < bd) { bd = d; best = e; } }
           if (!best) break;
-          if (!FX('chainKeep')) dmg *= 0.85; hitSet.add(best); pts.push({ x: best.x, y: best.y });
+          if (!FX('chainKeep') && !s.pkv.super) dmg *= 0.85; hitSet.add(best); pts.push({ x: best.x, y: best.y });
           hit(best, dmg, s.el, t); cur = best;
         }
+        if (s.pkv.loop && cur !== e0 && !e0.dead) { pts.push({ x: e0.x, y: e0.y }); hit(e0, dmg, s.el, t); } // v5.8 Feedback Loop
         ricochet(t, e0, dmg, s.el);
         Hooks.fx('chain', { pts, col: EL[s.el].col });
       }
@@ -2904,11 +2977,11 @@ function towerAttack(t, range, sw) {
       const dmg = atkDmg(t, sw, crit);
       const r2 = (range + 0.3) * (range + 0.3);
       for (const e of G.enemies) {
-        if (!enemyTargetable(e) || e.fly) continue; // flames can't reach fliers
+        if (!enemyTargetable(e) || (e.fly && !s.pkv.updraft)) continue; // flames can't reach fliers (v5.8: Updraft can)
         if (dist2(e.x, e.y, t.cx, t.cy) > r2) continue;
         let da = Math.atan2(e.y - t.cy, e.x - t.cx) - ang;
         while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
-        if (Math.abs(da) < 0.55) hit(e, dmg, s.el, t, { crit });
+        if (Math.abs(da) < 0.55 * (1 + (s.pkv.nozzle || 0) / 100)) hit(e, dmg, s.el, t, { crit });
       }
       Hooks.fx('flame', { x: t.cx, y: t.cy, ang, range, col: EL[s.el].col });
       Hooks.sfx('flame', t);
@@ -2930,12 +3003,18 @@ function towerAttack(t, range, sw) {
     }
     case 'grav': {
       const r2 = range * range;
-      const tg = G.enemies.filter(e => enemyTargetable(e) && !e.fly && dist2(e.x, e.y, t.cx, t.cy) <= r2);
+      const pk = s.pkv;
+      const tg = G.enemies.filter(e => enemyTargetable(e) && (!e.fly || pk.anchor) && dist2(e.x, e.y, t.cx, t.cy) <= r2);
       if (!tg.length) return false;
       const dmg = towerDmg(t, sw);
       for (const e of tg) {
-        if (!e.elite.includes('jugg')) { e.pullN = (e.pullN || 0) + 1; e.d = Math.max(0, e.d - s.pull * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - 0.15 * (e.pullN - 1))); }
-        hit(e, dmg, s.el, t);
+        const jugg = e.elite.includes('jugg');
+        if (!jugg) { e.pullN = (e.pullN || 0) + 1; e.d = Math.max(0, e.d - s.pull * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - (pk.steady ? 0.075 : 0.15) * (e.pullN - 1))); }
+        hit(e, pk.crush ? dmg + e.maxHp * (e.boss || e.assault ? 0.003 : 0.01) : dmg, s.el, t);
+        if (e.dead) continue;
+        if (pk.undertow && !jugg) { e.gSlowT = 1.5; e.gSlowV = Math.max(e.gSlowV || 0, Math.min(0.5, pk.undertow / 100)); } // v5.8 Gravity perks
+        if (pk.darkMark) { e.st.mark = Math.min(G.mods.markMax, e.st.mark + 1); e.st.markT = 4; }
+        if (pk.eddy && !jugg) { e.st.chill = Math.min(5, e.st.chill + 1); e.st.chillT = 2.5; }
       }
       Hooks.fx('grav', { x: t.cx, y: t.cy, r: range });
       Hooks.sfx('grav', t);
@@ -2953,14 +3032,22 @@ function beamUpdate(t, dt, range, sw) {
     for (const e of extra) if (tg.length < s.beams) tg.push(e);
   }
   if (!tg.length) { t.beamTargets = null; t.ramp = 0; t.cd = Math.max(t.cd, 0); return; }
-  if (!t.beamTargets || t.beamTargets[0] !== tg[0]) { if (!(t.s.el === 'V' && FX('rampKeep'))) t.ramp = 0; }
+  if (!t.beamTargets || t.beamTargets[0] !== tg[0]) { if (!(t.s.el === 'V' && FX('rampKeep')) && !s.pkv.hold) t.ramp = 0; }
   t.beamTargets = tg;
-  t.ramp = Math.min(4, t.ramp + dt);
+  t.ramp = Math.min(4, t.ramp + dt * (1 + (s.pkv.quick || 0) / 100));
   t.angle = Math.atan2(tg[0].y - t.cy, tg[0].x - t.cx);
+  // v5.8 Fork: a second, weaker beam jumps from the first target to the nearest enemy the beams aren't already on
+  let fk = null;
+  if (s.pkv.fork) {
+    fk = t.forkE && enemyTargetable(t.forkE) && !tg.includes(t.forkE) && dist2(t.forkE.x, t.forkE.y, tg[0].x, tg[0].y) <= 6.25 ? t.forkE : null;
+    if (!fk) { let bd = 6.25; for (const e of G.enemies) if (enemyTargetable(e) && !tg.includes(e)) { const d = dist2(e.x, e.y, tg[0].x, tg[0].y); if (d < bd) { bd = d; fk = e; } } }
+    t.forkE = fk;
+  }
   while (t.cd <= 0) {
     t.cd += 1;
     const mult = 1 + (s.rampMax - 1) * (t.ramp / 4);
     for (const e of tg) { const crit = rollCrit(t); hit(e, atkDmg(t, sw, crit) * mult, s.el, t, { crit }); }
+    if (fk && !fk.dead) hit(fk, atkDmg(t, sw, false) * mult * Math.min(0.75, s.pkv.fork / 100), s.el, t);
   }
 }
 
@@ -3007,6 +3094,7 @@ function updateProjs(dt) {
     } else if (p.k === 'missile') {
       p.life -= dt;
       if (p.e && !p.e.dead) { p.tx = p.e.x; p.ty = p.e.y; }
+      else if (p.e && p.src.s.pkv.seek) { let best = null, bd = 6.25; for (const e of G.enemies) if (enemyTargetable(e)) { const d = dist2(e.x, e.y, p.tx, p.ty); if (d < bd) { bd = d; best = e; } } p.e = best; } // v5.8 Smart Seekers
       const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy);
       p.vx += dx / (d || 1) * p.spd * 3 * dt; p.vy += dy / (d || 1) * p.spd * 3 * dt;
       const sp = Math.hypot(p.vx, p.vy);
@@ -3036,13 +3124,18 @@ function explode(p) {
   Hooks.fx('boom', { x: p.x, y: p.y, r, col: EL[p.el].col });
   Hooks.sfx('boom', p);
   for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, p.x, p.y) <= (r + e.size) * (r + e.size)) {
-    if (p.k === 'mortar' && e.shield > 0) e.shield *= 0.5; // EMP strips shields
+    if (p.k === 'mortar' && e.shield > 0) e.shield *= s.pkv.eater ? 0 : 0.5; // EMP strips shields (v5.8 Shield Eater: all of it)
     hit(e, p.dmg, p.el, src, { crit: p.crit });
   }
   if (p.k === 'missile' && s.cluster) for (let i = 0; i < s.cluster; i++) {
     G.projs.push({ k: 'bomblet', x: p.x + (G.r() - 0.5) * 1.6, y: p.y + (G.r() - 0.5) * 1.6, t: 0.25 + i * 0.12, dmg: p.dmg * 0.45, el: p.el, src, splash: 0.6, crit: false });
   }
-  if (p.k === 'missile' && s.napalm) G.zones.push({ k: 'napalm', x: p.x, y: p.y, r: 0.85, t: 3, dps: p.dmg * 0.5, src, el: 'T' });
+  if (p.k === 'missile' && s.napalm) G.zones.push({ k: 'napalm', x: p.x, y: p.y, r: s.pkv.gel ? 1.1 : 0.85, t: s.pkv.gel ? 5 : 3, dps: p.dmg * 0.5, src, el: 'T' });
+  if (p.k === 'missile' && s.pkv.shrap) { // v5.8 Shrapnel
+    const near = G.enemies.filter(o => enemyTargetable(o) && dist2(o.x, o.y, p.x, p.y) < 6.25).sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y)).slice(0, 3);
+    for (const o of near) G.projs.push({ k: 'bullet', x: p.x, y: p.y, e: o, spd: 12, dmg: p.dmg * 0.25, crit: false, el: p.el, src, bounces: 0, hitSet: new Set(), splash: 0, life: 1, shard: 1 });
+  }
+  if (p.k === 'mortar' && s.pkv.scatter) for (let i = 0; i < 3; i++) G.projs.push({ k: 'bomblet', x: p.x + (G.r() - 0.5) * 1.8, y: p.y + (G.r() - 0.5) * 1.8, t: 0.2 + i * 0.1, dmg: p.dmg * 0.35, el: p.el, src, splash: 0.6, crit: false });
   if (p.k === 'mortar' && s.stunDur) Hooks.fx('emp', { x: p.x, y: p.y, r });
 }
 // ---- v4.2 Wildfire: burning ground enemies leave fire on the road; the more road burns, the hotter it gets ----
@@ -3341,6 +3434,7 @@ function gameOver() {
     rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain() }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
   huntEnd();
+  masteryEnd();
   if (G.daily) {
     const d = PROF.daily && PROF.daily.date === G.daily ? PROF.daily : { date: G.daily, best: 0, score: 0, tries: 0 };
     d.tries++; if (G.wave > d.best) d.best = G.wave; if (G.score > d.score) d.score = Math.round(G.score);
@@ -3354,6 +3448,27 @@ function gameOver() {
   PROF.runSnap = null;
   Hooks.sfx('gameover');
   Hooks.onGameOver();
+}
+// v5.8 Tower Mastery: XP per tower type from its share of the run's damage (support towers: how many stood at the end),
+// on a square-root curve and halved for the top damage dealer, so the towers you tried pay nearly as well as your carry
+function masteryGains() {
+  const waves = Math.max(0, G.wave - G.startWave + 1); if (waves < 3) return [];
+  const by = Object.assign({}, G.stats.dmgSold || {}), n = {};
+  for (const t of G.towers) { by[t.type] = (by[t.type] || 0) + t.dmgDone; n[t.type] = (n[t.type] || 0) + 1; }
+  const combat = k => !['support', 'snare', 'eco'].includes(TOWERS[k].kind);
+  let tot = 0, top = null; for (const k in by) if (combat(k)) { tot += by[k]; if (!top || by[k] > by[top]) top = k; }
+  const out = [];
+  for (const k of TOWER_ORDER) {
+    const share = combat(k) ? (tot > 0 ? (by[k] || 0) / tot : 0) : Math.min(0.3, 0.1 * (n[k] || 0));
+    if (share < MASTERY.minShare) continue;
+    const xp = Math.round(waves * MASTERY.perWave * Math.sqrt(share) * (k === top ? MASTERY.topW : 1));
+    if (xp > 0) out.push({ k, xp, share });
+  }
+  return out;
+}
+function masteryEnd() {
+  const M = masteryProf(), gains = masteryGains();
+  G.masteryGain = gains.map(g => { const a = M.xp[g.k] || 0, b = a + g.xp; M.xp[g.k] = b; return { k: g.k, xp: g.xp, share: g.share, r0: masteryRankOf(a), r1: masteryRankOf(b) }; });
 }
 function abandonRun() {
   if (!G || G.over) return;
@@ -3447,6 +3562,7 @@ const ACTS = {
   sell: (x, y) => { const t = twAt(x, y); if (!t) return false; sellTower(t); return true; },
   oc: (x, y, n) => { const t = twAt(x, y); return !!t && setOvercharge(t, n); },
   vet: (x, y, i) => { const t = twAt(x, y); return !!t && claimVet(t, i); },
+  ascPick: (x, y, i) => { const t = twAt(x, y); return !!t && claimPerk(t, i); }, // v5.8 Ascension perk
   mode: (x, y, m) => setTowerMode(twAt(x, y), m),
   abil: (k, x, y) => useAbility(k, x, y),
   core: kind => !!coreUpgrade(kind),
@@ -3518,7 +3634,7 @@ function snapshotRun(waveNum) {
   if (!G || G.over || ghostRun()) return;
   const gut = []; let owed = 0; for (const e of G.enemies) if (!e.dead) { if (e.gut) for (const t of e.gut) if (!G.towerAt[tIdx(t.x, t.y)]) gut.push(t); if (e.audited) owed += e.audited; }
   const tw = G.towers.concat(gut).map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
-    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0 }));
+    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0, perks: t.perks || [], ascPend: t.ascPend || 0, aOffer: t.aOffer || null }));
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
@@ -3527,6 +3643,7 @@ function snapshotRun(waveNum) {
     charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
+    ascV: G.ascV || 1, mastery: G.mastery || {}, // v5.8
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -3535,7 +3652,7 @@ function snapshotRun(waveNum) {
 function snapshotNow() { if (G && !G.over) snapshotRun(G.spawningDone ? G.wave + 1 : G.wave); }
 function resumeRun(S) {
   const r = mulberry32((S.seed ^ (S.wave * 7919)) >>> 0);
-  newRun({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15 });
+  newRun({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, ascV: S.ascV || 1, mastery: S.mastery || {} }); // v5.8: a save from before perks keeps the old Ascend
   PROF.runs--; // newRun counted it; a resume is the same run
   G.r = r;
   G.map.tiles = S.tiles.slice();
@@ -3552,7 +3669,8 @@ function resumeRun(S) {
     const t = { id: G.tid++, type: T.type, x: T.x, y: T.y, cx: T.x + 0.5, cy: T.y + 0.5, lvl: T.lvl, spec: T.spec, affixes: T.affixes, rerolls: T.rerolls,
       invested: T.invested, cd: 0.3, angle: -Math.PI / 2, kills: T.kills, dmgDone: T.dmgDone, dps: 0, dpsAcc: 0, mode: T.mode || 'first', disabled: 0,
       ramp: 0, olT: 0, buff: { dmg: 0, rate: 0, crit: 0 }, isolated: false, flash: 0,
-      vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0, vetN: T.vetN || 0 };
+      vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0, vetN: T.vetN || 0,
+      perks: (T.perks || []).slice(), ascPend: T.ascPend || 0, aOffer: T.aOffer ? T.aOffer.slice() : null };
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t;
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,

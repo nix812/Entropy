@@ -199,7 +199,8 @@ for (let run = OFF; run < OFF + runs; run++) {
     combos: Object.values(G.stats.combos).reduce((a, b) => a + b, 0), towers: G.towers.length,
     eff: (() => { const inv = {}; for (const tw of G.towers) inv[tw.type] = (inv[tw.type] || 0) + tw.invested; const avg = dmgAll / Object.values(inv).reduce((a, b) => a + b, 0); return Object.keys(byType).filter(k => byType[k] > 0).map(k => k.slice(0, 4) + (byType[k] / inv[k] / avg).toFixed(1)).join(' '); })(),
     top: Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ':' + Math.round(v / dmgAll * 100)).join(' '),
-    el: Object.entries(G.stats.dmgByEl).map(([k, v]) => k + Math.round(v / tot * 100)).join(' ') });
+    el: Object.entries(G.stats.dmgByEl).map(([k, v]) => k + Math.round(v / tot * 100)).join(' '),
+    share: Object.entries(byType).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0).map(([k, v]) => k.slice(0, 4) + ':' + Math.round(v / dmgAll * 100)).join(' ') });
 }
 console.log(`runs=${runs} points=${points} chaos=${chaos} start=${sw} best=${bw} ks=${ks || '-'}`);
 console.table(agg);
