@@ -1002,7 +1002,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.7.2';
+const VERSION = '5.7.3';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1177,7 +1177,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
 const WHATS_NEW = { ver: '5.7.0', title: 'Last Gradient 5.7 · Nigel Industries', items: [
   ['Nigel Industries presents', 'The studio has a mascot: Nigel, a small black cat, in his couch. He greets you when the game starts. Tap to skip him (he will not mind).'],
-  ['A bigger sky (5.7.2)', 'The attractor on the main menu is larger and sits in the upper right, and the pieces breaking off the title are pulled across and spiral into it. The menu buttons are see-through. Nigel also stays a little longer.'],
+  ['A bigger sky (5.7.3)', 'The attractor on the main menu fills the right-hand side, and the pieces breaking off the title are pulled across and spiral into it. The menu buttons are see-through. Nigel also stays a little longer.'],
   ['Entropy is now Last Gradient', 'Everything in the universe runs on gradients: hot next to cold, order next to chaos. When the last one flattens out, nothing moves again. You are holding it up.'],
   ['The title', 'The name on the hangar fades from cream to violet and breaks apart as you watch. With Reduce Motion on, it holds still.'],
   ['Nothing else changed', 'Your progress, talents, tracks, Hunt codes and the Entropy gauge are exactly where you left them.'],
@@ -8734,16 +8734,17 @@ const HangarFX = (() => {
     layout(); buildNebula(); buildOverlay(); seed(); fade = 0;
   }
 
-  function layout() { // v5.7.2: upper right, as large as fits between the title word, the screen edge and the utility icons
-    // (attractor extents over its whole sway, in units of s: x −29…+30, y −23…+19)
+  function layout() { // v5.7.3: the right-hand side, as large as fits: from under the utility icons to the bottom edge,
+    // from the fractured end of the title word to just past the right edge (attractor extents over its sway, in s: x −29…+30, y −23…+19)
     const r0 = cv.getBoundingClientRect(), u = document.querySelector('#hangar .util'), ur = u && u.getBoundingClientRect();
     const k = W / (r0.width || 1); // the app may be zoomed by a transform, so measure in on-screen pixels
     const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.12) - r0.top) * k + 3 * R;
-    let bR = W * 0.45; // keep clear of the title word itself (its shards drift into the attractor on purpose)
+    let left = W * 0.45;
     const words = document.querySelectorAll('#hangar .brand h1 .t1, #hangar .brand h1 .t2');
-    if (words.length) { bR = 0; for (const el of words) bR = Math.max(bR, (el.getBoundingClientRect().right - r0.left) * k + 6 * R); }
-    const s = Math.max(0.8 * R, Math.min((W - 3 * R - bR) / 60, (H * 0.8 - top) / 42.5, H * 0.032));
-    lay = { cx: Math.round(W - 3 * R - 30.5 * s), cy: Math.round(top + 23.5 * s), s };
+    if (words.length) { let wl = 1e9, wr = 0; for (const el of words) { const r = el.getBoundingClientRect(); wl = Math.min(wl, (r.left - r0.left) * k); wr = Math.max(wr, (r.right - r0.left) * k); }
+      left = Math.max(W * 0.5, wr - 0.15 * (wr - wl)); } // may sit behind the last, already-broken letters
+    const s = Math.max(0.8 * R, Math.min((W - left) / 55, (H * 0.98 - top) / 42.5, H * 0.04));
+    lay = { cx: Math.round(W - 26 * s), cy: Math.round(top + 23.5 * s), s }; // the right lobe may run 4 s past the edge
   }
   function project(cx, cy, s, a) {
     const ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(0.32), st = Math.sin(0.32);
