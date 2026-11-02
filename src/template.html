@@ -526,11 +526,25 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .pfoot .btn.reloc small { color: #8fd8bd; }
 .maxed { font-family: var(--f-pix); font-size: 10px; color: var(--core); text-align: center; padding: 6px; }
 .btn.primary.asc { background: #ff8a2a; }
+.pfoot .btn.asc.lvup { min-height: 62px; } /* v5.8: the same height whether it says Ascend or Choose a perk first */
 .vname { font-style: normal; color: var(--warn); font-family: var(--f-term); font-size: 17px; text-transform: none; letter-spacing: 0; }
 .vet { display: flex; flex-direction: column; gap: 4px; padding: 6px; box-shadow: inset 0 0 0 1px var(--warn); background: rgba(255, 225, 77, 0.06); }
 .vet .lbl { color: var(--warn); }
 .aff.pickable { border: 0; text-align: left; font: inherit; font-size: 16px; cursor: pointer; }
 .aff.pickable:active { filter: brightness(1.3); }
+/* v5.8 Ascension perk cards: fixed-height slots so nothing shifts under the finger */
+.perks { display: flex; flex-direction: column; gap: 4px; padding: 6px; box-shadow: inset 0 0 0 1px #ff8a2a; background: rgba(255, 138, 42, 0.07); }
+.perks .lbl { color: #ff8a2a; }
+.perk { background: var(--panel); border: 0; text-align: left; font: inherit; padding: 3px 8px; height: 50px; overflow: hidden; box-shadow: inset 2px 0 0 #ff8a2a; display: flex; flex-direction: column; justify-content: center; gap: 1px; cursor: pointer; color: var(--ink); }
+.perk b { font-family: var(--f-pix); font-weight: 400; font-size: 9px; text-transform: uppercase; color: #ff8a2a; display: flex; gap: 6px; align-items: baseline; }
+.perk b em { font-style: normal; color: var(--warn); } .perk b i { font-style: normal; margin-left: auto; color: var(--dim); font-size: 7px; }
+.perk span { font-size: 15px; line-height: 1.05; }
+.perk:active { filter: brightness(1.3); }
+.bt .mrank { position: absolute; right: 2px; top: 4px; z-index: 1; min-width: 11px; height: 11px; padding: 0 2px; font-family: var(--f-pix); font-size: 7px; line-height: 11px; text-align: center; color: #0b0b12; background: #c9c3a8; box-shadow: 0 0 0 1px #090b16; pointer-events: none; }
+.bt .mrank.r3, .bt .mrank.r4 { background: #ffd84a; } .bt .mrank.r5 { background: #ff8a2a; }
+.mpip { display: inline-flex; gap: 2px; vertical-align: middle; margin-right: 6px; } .mpip i { width: 6px; height: 6px; background: #2a2838; box-shadow: inset 0 0 0 1px #4a4660; } .mpip i.on { background: #ffd84a; box-shadow: none; }
+.arow em u { text-decoration: none; font-size: 14px; }
+.mgain { color: #ffd84a; } .mgain b { font-weight: 400; color: #ffd84a; }
 .sts.reson { color: #d6c8ff; }
 .sts.node { color: #8fe6ff; }
 .newslist { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 6px; }

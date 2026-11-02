@@ -122,7 +122,7 @@ const PERKS = {
   pulse: [
     { id: 'burst', name: 'Burst Fire', v: [1], d: () => 'Every 5th shot fires 3 rounds' },
     { id: 'apRounds', name: 'AP Rounds', v: [1], d: () => 'Rounds ignore Plating' },
-    { id: 'bounce', name: 'Ricochet Rounds', v: [1, 2], d: () => 'Rounds bounce to 1 more enemy' },
+    { id: 'bounce', name: 'Ricochet Rounds', v: [1, 2], d: v => `Rounds bounce to ${v} more ${v > 1 ? 'enemies' : 'enemy'}` },
     { id: 'hollow', name: 'Hollow Points', v: [25, 40], d: v => `+${v}% Damage to enemies under half health` },
     { id: 'rapid', name: 'Rapid Cycle', v: [12, 20, 26], d: v => `+${v}% Attack Speed` },
     { id: 'sights', name: 'Hair Trigger', v: [8, 14], d: v => `+${v}% Crit Chance` },
@@ -132,7 +132,7 @@ const PERKS = {
   rail: [
     { id: 'pierce', name: 'Long Bore', v: [2, 3], d: v => `+${v} Pierce` },
     { id: 'spotter', name: 'Spotter', v: [1], d: () => 'Crits Mark every enemy they hit (2 stacks)' },
-    { id: 'deflect', name: 'Deflection', v: [1], d: () => 'Shots ricochet once to a nearby enemy for 60%' },
+    { id: 'deflect', name: 'Deflection', v: [1], d: () => 'Shots ricochet to 1 more enemy for 60%' },
     { id: 'capBank', name: 'Capacitor Bank', v: [1], d: () => 'Every 4th shot deals ×2.5 Damage' },
     { id: 'coup', name: 'Coup de Grace', v: [10, 15], d: v => `Finishes non-boss enemies under ${v}% health` },
     { id: 'bigGame', name: 'Big Game', v: [20, 32], d: v => `+${v}% Damage to bosses and elites` },
@@ -141,27 +141,27 @@ const PERKS = {
     { id: 'liveWire', name: 'Live Wire', spec: 2, v: [1], d: () => 'Every enemy pierced is Shocked' },
   ],
   cryo: [
-    { id: 'iceBurst', name: 'Ice Burst', v: [25], d: () => 'Enemies it Froze burst when they die: 25% of their max HP to enemies nearby' },
-    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Enemies it Freezes take +${v}% Damage while Frozen` },
+    { id: 'iceBurst', name: 'Ice Burst', v: [25], d: () => 'Frozen kills burst: 25% of max HP to enemies nearby' },
+    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Its Frozen enemies take +${v}% Damage` },
     { id: 'deep', name: 'Deep Freeze', v: [0.4, 0.7], d: v => `Freeze lasts ${v} s longer` },
     { id: 'flash', name: 'Flash Chill', v: [1], d: () => 'Each pulse adds 1 more Chill stack' },
     { id: 'ring', name: 'Wide Ring', v: [0.5, 0.8], d: v => `+${v} Range` },
     { id: 'comp', name: 'Compressor', v: [15, 25, 32], d: v => `+${v}% pulse rate` },
-    { id: 'perma', name: 'Permafrost', spec: 1, v: [40], d: () => 'Frozen enemies can be Frozen again 40% sooner' },
+    { id: 'perma', name: 'Permafrost', spec: 1, v: [40], d: () => 'Enemies can be Frozen again 40% sooner' },
     { id: 'fault', name: 'Fault Lines', spec: 2, v: [0.3], d: () => '+30% Shatter Field bonus' },
   ],
   missile: [
-    { id: 'tube', name: 'Extra Tube', v: [1, 2], d: () => '+1 missile per volley' },
+    { id: 'tube', name: 'Extra Tube', v: [1, 2], d: v => `+${v} missile${v > 1 ? 's' : ''} per volley` },
     { id: 'seek', name: 'Smart Seekers', v: [1], d: () => 'Missiles find a new target if theirs dies' },
     { id: 'warhead', name: 'Heavy Warhead', v: [0.4, 0.7], d: v => `+${v} Splash` },
     { id: 'shrap', name: 'Shrapnel', v: [1], d: () => 'Explosions throw 3 fragments for 25%' },
     { id: 'thermite', name: 'Thermite', v: [40, 70], d: v => `+${v}% Burn damage` },
     { id: 'autoload', name: 'Autoloader', v: [15, 25, 32], d: v => `+${v}% fire rate` },
     { id: 'pods', name: 'Bigger Pods', spec: 1, v: [2], d: () => '+2 bomblets' },
-    { id: 'gel', name: 'Sticky Gel', spec: 2, v: [1], d: () => 'Burning ground lasts 2 s longer and spreads 30% wider' },
+    { id: 'gel', name: 'Sticky Gel', spec: 2, v: [1], d: () => 'Burning ground lasts 2 s longer, 30% wider' },
   ],
   coil: [
-    { id: 'chain', name: 'Extra Coil', v: [1, 2, 3], d: () => '+1 Chain' },
+    { id: 'chain', name: 'Extra Coil', v: [1, 2, 3], d: v => `+${v} Chain` },
     { id: 'loop', name: 'Feedback Loop', v: [1], d: () => 'The last arc jumps back to the first target' },
     { id: 'super', name: 'Superconductor', v: [1], d: () => 'Chains lose no damage per jump' },
     { id: 'arc', name: 'Long Arc', v: [40, 65], d: v => `Arcs jump ${v}% farther` },
@@ -171,7 +171,7 @@ const PERKS = {
     { id: 'hv', name: 'High Voltage', spec: 2, v: [30], d: () => '+30% Damage' },
   ],
   flame: [
-    { id: 'spread', name: 'Spreading Fire', v: [1], d: () => 'When a burning enemy dies, its Burn spreads to enemies nearby' },
+    { id: 'spread', name: 'Spreading Fire', v: [1], d: () => 'Burning enemies spread their Burn on death' },
     { id: 'nozzle', name: 'Wide Nozzle', v: [30, 50], d: v => `Cone ${v}% wider` },
     { id: 'tank', name: 'Pressure Tank', v: [0.4, 0.7], d: v => `+${v} Range` },
     { id: 'accel', name: 'Accelerant', v: [30, 50, 65], d: v => `+${v}% Burn damage` },
@@ -206,7 +206,7 @@ const PERKS = {
     { id: 'heavy', name: 'Heavy Core', v: [25, 40], d: v => `+${v}% pull` },
     { id: 'crush', name: 'Crush Depth', v: [1], d: () => 'Pulses also deal 1% of max HP (bosses 0.3%)' },
     { id: 'radius', name: 'Event Radius', v: [0.4, 0.7], d: v => `+${v} Range` },
-    { id: 'steady', name: 'Steady Pull', v: [1], d: () => 'Repeated pulls on one enemy weaken half as fast' },
+    { id: 'steady', name: 'Steady Pull', v: [1], d: () => 'Repeat pulls weaken half as fast' },
     { id: 'darkMark', name: 'Dark Mark', spec: 1, v: [1], d: () => 'Pulses apply 1 more Mark' },
     { id: 'eddy', name: 'Eddy', spec: 2, v: [1], d: () => 'Pulled enemies are Chilled' },
   ],
@@ -225,13 +225,14 @@ const PERKS = {
   forge: [
     { id: 'overtime', name: 'Overtime', v: [20, 35, 45], d: v => `+${v}% income` },
     { id: 'fee', name: "Finder's Fee", v: [4, 7], d: v => `+${v}% kill credits everywhere` },
-    { id: 'compound', name: 'Compound', v: [0.5], d: () => 'Earns 0.5% interest on banked credits each wave' },
+    { id: 'compound', name: 'Compound', v: [0.5], d: () => '0.5% interest on banked credits each wave' },
     { id: 'hazard', name: 'Hazard Pay', v: [1], d: () => 'Double income on boss waves' },
   ],
 };
 // the next pick's value: the step from the current stack to the next (one-time perks pass their only value)
 const perkInc = (P, n) => +(P.v[n] - (n ? P.v[n - 1] : 0)).toFixed(2);
 const perkText = (P, n) => P.d(perkInc(P, n || 0));
+const perkTotal = (P, n) => P.d(P.v[Math.min(n, P.v.length) - 1]); // what n stacks add up to
 // ---------- Tower Mastery (PROF.mastery = { v: 2, xp: { type: xp } }), earned at game over ----------
 // xp: totals for ranks 1–5. Rank 2 small stat, rank 3 turret trim, rank 4 a fourth perk choice, rank 5 the tower's legendary joins its rolls.
 const MASTERY = { xp: [0, 60, 180, 400, 750, 1250], perWave: 2.5, topW: 0.5, minShare: 0.01, stat: 0.05, offer4: 4,

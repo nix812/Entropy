@@ -15,6 +15,7 @@ function play(S, opts, seed) {
     if (G.huntChoice) { S.act(R() < 0.5 && G.wave < 30 ? 'push' : 'extract'); continue; }
     if (G.anomOffers) { if (R() < 0.5) S.act('anom', G.anomOffers[0].id || G.anomOffers[0]); else S.act('stab'); }
     if (G.checkpoint && !G.enemies.length) { S.act('cpResume', 3 + R() * 10); continue; }
+    if (guard % 25 === 12) { const t = G.towers.find(o => o.ascPend > 0); if (t && R() < 0.8) { S.ascOffer(t); S.act('ascPick', t.x, t.y, Math.floor(R() * 4)); } } // v5.8 perk picks (index 3 is refused without Mastery 4)
     if (guard % 25 === 0) {
       const x = R();
       if (x < 0.35 && S.gridFree() > 0) { const sp = spots(); if (sp.length) { const [tx, ty] = sp[Math.floor(R() * sp.length)]; const ok = S.TOWER_ORDER.filter(k => S.towerUnlocked(k)); S.act('build', ok[Math.floor(R() * ok.length)], tx, ty); } }
