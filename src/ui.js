@@ -886,8 +886,8 @@ const UI = (() => {
   // v5.8 Ascension perks: the pending pick as fixed-height cards (3, or 4 at Mastery 4), and the perks taken (Details tab)
   function perkCardsHTML(t) {
     const o = ascOffer(t); if (!o) return '';
-    return `<div class="perks"><div class="lbl">Ascension perk · choose 1</div>${o.map((id, i) => { const P = perkDef(t.type, id), n = perkStacks(t, id);
-      return `<button class="perk" data-act="perk" data-v="${i}"><b>${esc(P.name)}${n ? `<em>${roman(n + 1)}</em>` : ''}${P.spec ? '<i>' + esc(TOWERS[t.type].specs[P.spec - 1].name) + '</i>' : ''}</b><span>${esc(perkText(P, n))}</span></button>`; }).join('')}</div>`; // plain text: a tooltip word would swallow the tap
+    return `<div class="perks n${o.length}"><div class="lbl">Ascension perk · choose 1</div>${o.map((id, i) => { const P = perkDef(t.type, id), n = perkStacks(t, id);
+      return `<button class="perk${P.spec ? ' sp' : ''}" data-act="perk" data-v="${i}"${P.spec ? ` title="${esc(TOWERS[t.type].specs[P.spec - 1].name)} perk"` : ''}><b>${esc(P.name)}${n ? `<em>${roman(n + 1)}</em>` : ''}</b><span>${esc(perkText(P, n))}</span></button>`; }).join('')}</div>`; // plain text: a tooltip word would swallow the tap
   }
   function perkListHTML(t) {
     const ids = [...new Set(t.perks || [])]; if (!ids.length) return '';
