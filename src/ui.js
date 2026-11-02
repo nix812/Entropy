@@ -99,7 +99,7 @@ const Save = (() => {
         if (remote && (remote.updatedAt || 0) > (PROF.updatedAt || 0) && !(G && !G.over)) {
           PROF = remote;
           tidyCaps();
-          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'); queue(); }
+          { const mw = migrateWeb(); if (mw) { PROF.updatedAt = Date.now(); UI.toast(...talentsToast(mw)); queue(); } }
           try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
           UI.refreshAll();
         } else queue();
@@ -2657,11 +2657,16 @@ UI.splash = function (force) {
   try { document.fonts.ready.then(start); } catch (e) {} setTimeout(start, 600);
   return 4100;
 };
+// v5.8: what the one-time talent refund says (migrateWeb returns 'web' for a pre-5.0 passive web, 'rework' for the 5.8 rework)
+function talentsToast(kind) {
+  return kind === 'web' ? ['TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a']
+    : ['TALENTS REWORKED', 'Every point is refunded. New: Techniques (alternate fire modes) and play-style Capstones. Open Talents to spend them', '#ffb03a'];
+}
 (function boot() {
   const loaded = Save.loadLocal();
   if (loaded) PROF = loaded;
   const webReset = migrateWeb();
-  if (webReset) { Save.save(); setTimeout(() => UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'), 900); }
+  if (webReset) { Save.save(); setTimeout(() => UI.toast(...talentsToast(webReset)), 900); }
   const capDrop = tidyCaps();
   if (capDrop.length) { Save.save(); setTimeout(() => UI.toast('CAPSTONE REFUNDED', `One Capstone per tree now: ${capDrop.map(c => TAL[c].name).join(', ')} refunded. Spend the point elsewhere`, '#ffb03a'), 1400); }
   Render.init($('#cv'));

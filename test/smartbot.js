@@ -81,6 +81,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     }
     met.minCore = Math.min(met.minCore, G.core.hp / G.core.max);
     if (G.wave !== lastWave) { lastWave = G.wave; met.creditsAtWave.push(G.credits);
+      if (process.env.XPLOG) console.log(`XP ${G.wave} ${Math.round(G.xpEarned)} ${Math.round(G.score)}`);
       if (process.env.WAVELOG) console.log(`W${G.wave} core=${Math.round(G.core.hp)}/${Math.round(G.core.max)} cr=${Math.round(G.credits)} grid=${S.gridUsed()}/${S.gridCap()} leaks=${G.stats.leaks} genes=${(() => { const c = {}; let n = 0; for (const q of G.queue.concat(G.enemies)) if (q.genes) { n++; for (const g of q.genes) c[g] = (c[g] || 0) + 1; } return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + Math.round(v / n * 100)).join(","); })()} fly=${G.enemies.filter(e => e.fly).length}/${G.enemies.length} towers=${G.towers.map(t => t.type.slice(0, 4) + t.lvl).join(',')}`);
       if (process.env.TRACE && [10, 20, 30, 40, 60, 80, 100, 120].includes(G.wave)) {
         const dps = G.towers.reduce((a, t) => a + t.dps, 0);
