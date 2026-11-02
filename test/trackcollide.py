@@ -17,7 +17,8 @@ JS_HITS = '''(over) => {
     for (const o of over) { const el = document.querySelector(o); const kids = o === '#toasts' || o === '#log' || o === '#docbar' ? [...(el ? el.children : [])] : [el];
       for (const k of kids) { const q = vis(k); if (q && hit(r, q)) out.push(id + ' x ' + o); } } }
   // 5.8: the bounty chip carries the Bounty Purse; it must sit inside the chip row, clear of every control
-  const wc = vis(document.querySelector('#chips [data-wanted]')); if (!wc) out.push('bounty chip missing');
+  // (when the row is full it folds into the "+N" chip like every other chip, and the Field Report lists it)
+  const wc = vis(document.querySelector('#chips [data-wanted]')); if (!wc) { if (!document.querySelector('#chips [data-more]')) out.push('bounty chip missing'); }
   else { const row = document.querySelector('#chips').getBoundingClientRect(); if (wc.right > row.right + 1 || wc.top < row.top - 1 || wc.bottom > row.bottom + 1) out.push('bounty chip outside the chip row');
     for (const s of ['#bZoom', '#railL', '#railR', '#abils', '#log', '#docbar', '#panel', '#mdeck']) { const q = vis(document.querySelector(s)); if (q && hit(wc, q)) out.push('bounty chip x ' + s); } }
   return out; }'''

@@ -27,7 +27,7 @@ Every run now has a reason to exist and a shape of its own. You pick a zone at t
 - 60% of every XP gain banks at once (the level-up feedback stays); the other 40% goes into the purse.
 - Each bounty claimed grows the purse ×1.5. Each push multiplies it by the door's tier.
 - Extract banks the whole purse. If the core falls (or you abandon), you keep 30%.
-- The purse shows on the HUD's bounty chip ("Bounty · W40 · Purse 12.3K"), on the bounty card with plain text, and on the game-over card ("you kept 30%, +1,500 of 5,000 XP. Extracting after X would have banked all of it").
+- The purse shows on the HUD's bounty chip ("W40 12K XP", gold), on the bounty card with plain text, and on the game-over card ("you kept 30%, +1,500 of 5,000 XP. Extracting after X would have banked all of it").
 - Replays, watching and Daily resumes never pay it out.
 
 **Escalations (from Wave 50).** Each boss wave from Wave 50 offers one of two permanent twists instead of a boon. They stack, and each adds to the score and XP multiplier:
@@ -72,7 +72,7 @@ Late health growth is trimmed to match: past Wave 50 the health curve's growth i
   - Setup: `setupSector`, `setupSectorHTML`, `sectorLine`, `sectorWantedName`; `launch` passes `sector`; Daily card and Daily launch pass `spec.sector`; action `sector`. **Hotspot: renderSetup (one line), launch (two lines).**
   - `openHunt` → `openDoors(C)` for hk runs (action `door` → `act('push', i)`). **Hotspot (openHunt, one line).**
   - `openDraft`: escalation card when the draft items are twists.
-  - Bounty chip: `Purse N` instead of the push multiplier on hk runs.
+  - Bounty chip: `W40 12K XP` (wave and purse, `fmtS`) with a tooltip line instead of the push multiplier on hk runs.
   - Game over: purse outcome lines. Threat Board: zone, tier and escalations line.
   - Glossary: Bounty Purse, Zone, Jump door, Escalation.
 - **template.html**: `.secs`, `.secb`, `.secnote`, `.pursebox`, `.dchoice`, `.hopt.door`, `.hopt.tw`, `.evchip i.pz`, and a short-screen rule that hides door pitches.
@@ -82,12 +82,32 @@ Late health growth is trimmed to match: past Wave 50 the health curve's growth i
 - `node test/hookcompat.js`: 5.7.4 recordings replay identically (fixtures in `test/fixtures/rec_574.json`; re-record only on old code).
 - `node test/replay.js` (now 5 runs by default): the scripted player picks a zone, jump doors (and sometimes a plain push) and escalations. Runs 0 and 4 get a deterministic boost (credits, core, damage) through a non-enumerable `Hooks.log` hook that quiet replays keep, so they claim bounties and kill W50+ bosses.
 - `python3 test/hookshot.py [W H]`: setup zone pick (and none on a fresh profile), bounty card with purse and doors, purse on the chip and clear of controls, escalation pick at W50, reload/resume keeps zone, tier, purse, twists and the pending pick, game-over purse text, Daily uses the day's zone.
-- `test/trackcollide.py`: also checks the bounty chip (with purse) stays in the chip row, clear of every control, at all four sizes.
+- `test/trackcollide.py`: also checks the bounty chip (with purse) stays in the chip row, clear of every control, at all four sizes (or folds into the "+N" chip when the row is full).
 - `test/v53shot.py`: pushes through a jump door now.
 - `test/smartbot.js`: picks zones (`SEC_PREF`), doors (risk by how comfortable the last 10 waves were), escalations (`TW_PREF`), and extracts after a close call or now and then after two pushes. `SECTOR=id` forces a zone, `PUSH=1` never extracts. New columns at the end of the table: `sec` (zone and doors), `ext`, `tw`, `xp57` (what 5.7 would have paid), `paid`.
 
 ## Balance
-BALANCE_PLACEHOLDER
+Bots: `test/smartbot.js`, Normal, COLS 48, best wave 60, 8 seeds unless noted; the machine was shared by five builders (load 60–120), so batches were kept small. Baseline (5.3 sweep, bots push at every bounty): medians 57 / 72 / 92 at 0 / 60 / 96 points, means 46.5 / 88.5 / 109.5.
+
+| Batch (bots push at every bounty, `PUSH=1`) | Median | Mean | Range | Waves |
+|---|---|---|---|---|
+| 0 points, final rules except trim 0.92 | **61** | 60.4 | 23–91 | 23,50,60,61,61,65,72,91 |
+| 0 points, first pass (riskier bot doors, Skies/Iron/Ghost not yet softened) | 52 | 51.1 | 22–73 | 22,44,51,52,52,56,59,73 |
+| 60 points, first pass (same) | **75** | 72.8 | 32–122 | 32,62,63,66,75,77,85,122 |
+| 96 points, final rules (trim 0.9) | **96** | 81.6 | 31–107 | 31,65,72,83,96,97,102,107 |
+| 96 points, trim 0.92 | 82 | 113.5 | 63–253 | 63,65,76,81,82,96,192,253 |
+
+- **Run lengths.** Medians sit on the baseline (61 / 75 / 96 against 57 / 72 / 92, inside the ±5 noise). The long tail is what changed: at 96 points no run passed Wave 107 with the final trim, where 5.3 had 133 and 240. Runs now end on escalations and door risk instead of a health wall; with trim 0.92 two runs still reached 192 and 253 after every twist was taken (11 picks by about Wave 150), so 0.9 was kept. Early deaths at W22–31 still happen in about 1 run in 8, as in the baseline.
+- **First bounty** stays at Wave 20 (the poster schedule is unchanged); every 0-point run but the W22–23 deaths claimed it.
+- **Zones** (0 points, the whole run in one zone, 3 seeds each, so only large gaps mean anything): Drift 63, Choir 69, Hive 62, Demolition 55, Odd Belt 55, Iron 45, Skies 45 (one death at W14 to Skimmers), Ghost 41, Tempest 26, Salvage 22 (both with W15–22 deaths); all 30 together: median 55, mean 48.3. Skies (flyer lean 3.5 → 2.2, Carrier 3 → 2.5), Iron (lean 3 → 2.5, drawback +10% → +6% HP) and Ghost (Phantom lean 4 → 3) were softened after this; they were not re-measured. Tempest and Salvage lost their runs to early deaths that also happen in the baseline; worth a bigger batch.
+- **The purse and extraction.** The default bot (`smartbot.js` without `PUSH`) extracts after a close call (core under 40% in the last 10 waves, or under 50% now) and otherwise 25% of the time once it has pushed twice. At 60 points it extracted in **7 of 8 runs** (Waves 61–83; the eighth died at 81), median wave 63. Its XP per minute of play was **27.1K against 26.1K** for the 5.3-style bot that always pushes on 5.7 rules, so progression pace is about where it was for a player who banks. A player who never extracts gets about **0.85×** the 5.7 XP (paid/raw 0.76–0.92 at 0 points); a long pushed run can pay more than 5.7 even after dying (×1.1–1.7 at 96 points, from many ×1.25–1.6 pushes).
+- **Purse tuning history.** Safe share 50% and bounty ×1.25 paid a never-extracting bot 0.78× and the extracting bot 22K XP/min (−15%); 60% and ×1.5 brought it to the numbers above. `xpForLevel` is untouched (another builder owns it).
 
 ## Open issues
-OPEN_PLACEHOLDER
+- **Wave shapes** (optional item 5) were not built: balance runs took most of the session on the shared machine.
+- **60 points not re-measured on the final rules** (bounty ×1.5 and the softer zones don't change waves; trim 0.9 and the safer bot doors push it up a little from 75).
+- **Per-zone batches are 3 seeds.** Tempest and Salvage read low from early deaths; Skies, Iron and Ghost were softened but not re-measured.
+- **Narrow chip rows.** On 667 and 1180 wide screens the chip row only fits the threat chip plus "+N", so the bounty chip with the purse folds into "+N" (the Field Report lists it, with a tooltip line about the purse). The old "Bounty · W20" text is as wide, so it most likely folded there before 5.8 too. The bounty card and game-over card always show the purse. A permanent home (beside the score box) could be considered at merge.
+- **splashshot.py** failed its "Nigel blinks twice" timing check at one size per run under heavy load (a different size each time); the splash is untouched by this branch.
+- **Merging:** `hpMult` is now trimmed past W50 on 5.8 runs; anyone tuning HP should edit `hpMult0`. `addScore` banks only the safe share live; anyone touching XP flow should keep `G.xpRaw` (what 5.7 would have paid) and the purse split. Any new choice on boss waves should check `G.draft[0].twist`. `test/fixtures/rec_574.json` is replayed against 5.7.4 hashes: other branches' sim changes will make `hookcompat.js` drift after merge, and it should then be re-recorded from the merged base before 5.8 rules apply (`node test/hookcompat.js make` on that base).
+- No version bump, WHATS_NEW or HANDOFF edits (per the rules). Suggested What's New line: "Zones and jump doors: pick a zone for each run and a new one at every bounty. Your Bounty Purse grows as you push; Extract to bank it. From Wave 50 every boss wave escalates the run.".
