@@ -521,7 +521,9 @@ const DOCTRINES = {
 // Talent effects use the same stat keys as before (STAT_TXT), so every mechanic from the old web still exists.
 // v5.8 Techniques and play styles: every attack tower has a Technique (an alternate fire mode, TOWER_FIRE) that a one-point talent in
 // its tree unlocks, rows open every 3 points, Capstones at 12, and the ten stat-trade Capstones became play styles you see on the field.
-// 5-rank stat talents are 3 ranks with the same total. WEB_VER 5 refunds every point once (migrateWeb).
+// 5-rank stat talents are 3 ranks. A tree now costs ~19 points instead of ~26, so the damage and status talents (K T A C V) carry
+// about 80% of their old tree total (bots at 60 points went from median Wave 72 to 86 at the full total); Bastion and Command keep
+// theirs. WEB_VER 5 refunds every point once (migrateWeb).
 const WEB_VER = 5;
 const TROW = 3, TCAP = 12;
 // every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall (v5.8: 0.4 → 0.15, so
@@ -534,44 +536,44 @@ const TECH = (id, name, tower) => T_(id, name, 1, {}, { tech: tower });
 const TALENTS = [
   { id: 'K', name: 'Ballistics', col: '#efe6cf', glyph: 'K', tag: 'Kinetic guns: crits that tear through armour',
     rows: [
-      [T_('kDmg', 'Heavy Rounds', 3, { dmgK: 12 }), T_('kCrit', 'Precision', 3, { critC: 5 }), TECH('kSupp', 'Suppressor', 'pulse')],
-      [T_('kRate', 'Autoloader', 3, { rateK: 7 }), T_('kPen', 'Penetrator', 2, { armorPen: 15 }), TECH('kOver', 'Charged Shot', 'rail')],
-      [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 2, { critM: 18 })],
-      [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 2, { shredStack: 1.5, eliteDmg: 6 })]],
+      [T_('kDmg', 'Heavy Rounds', 3, { dmgK: 10 }), T_('kCrit', 'Precision', 3, { critC: 4 }), TECH('kSupp', 'Suppressor', 'pulse')],
+      [T_('kRate', 'Autoloader', 3, { rateK: 6 }), T_('kPen', 'Penetrator', 2, { armorPen: 12 }), TECH('kOver', 'Charged Shot', 'rail')],
+      [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 2, { critM: 14 })],
+      [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 2, { shredStack: 1.2, eliteDmg: 5 })]],
     caps: [CAP('marksman', 'Marksman', { ks: 'marksman', doc: 0 }),
       CAP('nest', 'Sniper Nest', { ks: 'nest', lines: ['Rail Lances with no tower beside them: +40% Range, +30% Damage, and every shot pierces every enemy in line', 'Rail Lances with a neighbour deal 25% less damage'] }),
       CAP('rico', 'Ricochet', { ks: 'rico', lines: ['Pulse Blaster rounds bounce to 3 more enemies, and the first bounce keeps full damage', 'Rail Lances fire 25% slower'] })] },
   { id: 'T', name: 'Combustion', col: '#ff7b39', glyph: 'T', tag: 'Thermal and Burn: set the swarm alight',
     rows: [
-      [T_('tDmg', 'Accelerant', 3, { dmgT: 12 }), T_('tChance', 'Kindling', 3, { burnChance: 5 }), TECH('tBack', 'Backdraft', 'flame')],
-      [T_('tBurn', 'Fuel', 3, { burnDmg: 17 }), T_('tSplash', 'Blast Radius', 2, { splash: 0.15 }), TECH('tBunk', 'Bunker Buster', 'missile')],
-      [T_('tBoom', 'Flashpoint', 1, { burnBoom: 25, dmgT: 8 }), T_('tVuln', 'Scorch', 2, { burnVuln: 10 })],
+      [T_('tDmg', 'Accelerant', 3, { dmgT: 10 }), T_('tChance', 'Kindling', 3, { burnChance: 4 }), TECH('tBack', 'Backdraft', 'flame')],
+      [T_('tBurn', 'Fuel', 3, { burnDmg: 14 }), T_('tSplash', 'Blast Radius', 2, { splash: 0.1 }), TECH('tBunk', 'Bunker Buster', 'missile')],
+      [T_('tBoom', 'Flashpoint', 1, { burnBoom: 25, dmgT: 8 }), T_('tVuln', 'Scorch', 2, { burnVuln: 8 })],
       [T_('tChain', 'Chain Ignition', 1, { chainIgnite: 1, burnDur: 20 }), T_('tNapalm', 'Napalm', 1, { napalmKill: 1, burnDmg: 10 }), T_('tCrit', 'Incendiary Rounds', 1, { burnCrit: 1 })]],
     caps: [CAP('wildfire', 'Wildfire', { ks: 'wildfire', doc: 1 }), CAP('conflag', 'Conflagration', { ks: 'conflag', lines: ['All damage becomes Thermal (Resonance unaffected)', '+50% Thermal Damage, +150% Burn damage. Burning enemies are 25% slower', 'Every 3rd Thermal hit on a burning enemy triggers Thermal Shock', 'Chill becomes Burn: cannot Chill or Freeze'] }),
       CAP('pyre', 'Pyre', { fx: { burnSpread: 1, heatSink: 1 }, lines: ['Every second, Burn spreads to the nearest enemy within 1 tile', 'Thermal towers: +2% Attack Speed per Burning enemy, up to +40%'] })] },
   { id: 'A', name: 'Voltaic', col: '#ffe14d', glyph: 'A', tag: 'Arc and speed: chains, shocks and overloads',
     rows: [
-      [T_('aDmg', 'Voltage', 3, { dmgA: 12 }), T_('aRate', 'Cadence', 3, { rate: 5 }), TECH('aFence', 'Arc Fence', 'coil')],
-      [T_('aShock', 'Static', 3, { shockChance: 5 }), T_('aDis', 'Discharge', 2, { rateA: 6 }), TECH('aMines', 'Pulse Mines', 'emp')],
-      [T_('aFork', 'Forked Lightning', 1, { chain: 1, chainKeep: 1 }), T_('aOver', 'Overvolt', 2, { shockEff: 18 })],
+      [T_('aDmg', 'Voltage', 3, { dmgA: 10 }), T_('aRate', 'Cadence', 3, { rate: 4 }), TECH('aFence', 'Arc Fence', 'coil')],
+      [T_('aShock', 'Static', 3, { shockChance: 4 }), T_('aDis', 'Discharge', 2, { rateA: 5 }), TECH('aMines', 'Pulse Mines', 'emp')],
+      [T_('aFork', 'Forked Lightning', 1, { chain: 1, chainKeep: 1 }), T_('aOver', 'Overvolt', 2, { shockEff: 14 })],
       [T_('aCap', 'Capacitors', 1, { capacitor: 1, dmgA: 10 }), T_('aIon', 'Ion Lattice', 1, { multiA: 1 }), T_('aPlasma', 'Plasma Coupling', 1, { ovlBurn: 1, overloadRad: 30 })]],
     caps: [CAP('circuit', 'Circuit', { ks: 'circuit', doc: 2 }),
       CAP('stormrider', 'Storm Rider', { ks: 'stormrider', lines: ['Storms drift toward your Arc towers and linger over them', 'Arc towers inside a storm: +60% Attack Speed, and Arc Coils chain +2', 'Storms come 30% more often'] }),
       CAP('blackout', 'Blackout', { ks: 'blackout', lines: ['EMP shells leave a static field for 3s: enemies inside are Shocked and 30% slower', 'EMP Mortars fire 25% faster', 'Arc Coils deal 15% less damage'] })] },
   { id: 'C', name: 'Cryogenics', col: '#6ae2ff', glyph: 'C', tag: 'Chill and Freeze: slow them, then shatter them',
     rows: [
-      [T_('cDmg', 'Frostbite', 3, { dmgC: 12 }), T_('cPot', 'Permafrost', 3, { chillPot: 17 }), TECH('cLance', 'Cold Lance', 'cryo')],
-      [T_('cChance', 'Frost', 3, { chillChance: 5 }), T_('cStill', 'Stillness', 2, { freezeDur: 0.15 })],
-      [T_('cDeep', 'Deep Freeze', 1, { freezeAt: 1, freezeDur: 0.3 }), T_('cBrittle', 'Brittle', 2, { frozenVuln: 12 })],
+      [T_('cDmg', 'Frostbite', 3, { dmgC: 10 }), T_('cPot', 'Permafrost', 3, { chillPot: 14 }), TECH('cLance', 'Cold Lance', 'cryo')],
+      [T_('cChance', 'Frost', 3, { chillChance: 4 }), T_('cStill', 'Stillness', 2, { freezeDur: 0.1 })],
+      [T_('cDeep', 'Deep Freeze', 1, { freezeAt: 1, freezeDur: 0.3 }), T_('cBrittle', 'Brittle', 2, { frozenVuln: 10 })],
       [T_('cLattice', 'Frost Lattice', 1, { chillSplash: 1, dmgC: 10 }), T_('cShards', 'Ice Shards', 1, { iceShards: 1 }), T_('cSuper', 'Superconductors', 1, { superChill: 1, superRad: 60 })]],
     caps: [CAP('glacier', 'Glacier', { ks: 'glacier', doc: 3 }),
       CAP('artillery', 'Cryo Artillery', { ks: 'artillery', lines: ['Cryo Emitters stop pulsing and lob frost shells at the enemy furthest along, at double range', 'Each shell bursts for ×2.5 Damage in 1.1 tiles and adds 2 Chill', 'Cryo Emitters fire 40% slower'] }),
       CAP('hoarfrost', 'Hoarfrost', { ks: 'hoarfrost', lines: ['Every Freeze leaves ice on the road for 5s', 'Ground enemies on ice are Chilled and take +25% Kinetic Damage', 'Thermal towers deal 20% less damage'] })] },
   { id: 'V', name: 'Singularity', col: '#b86cff', glyph: 'V', tag: 'Void and Marks: bend the road, collapse the strong',
     rows: [
-      [T_('vDmg', 'Null', 3, { dmgV: 10 }), T_('vHunt', 'Hunter', 3, { eliteDmg: 8 }), TECH('vTether', 'Null Tether', 'lens')],
-      [T_('vMark', 'Mark', 3, { markChance: 5 }), T_('vKnock', 'Gravitic', 2, { knock: 3 }), TECH('vRepulse', 'Repulsor', 'grav')],
-      [T_('vLens', 'Implosion', 1, { collapse: 40, dmgV: 8 }) /* v5.8: was Null Lens (beams kept their ramp), a Lens-only buff */, T_('vSlow', 'Event Drag', 2, { markSlow: 15 })],
+      [T_('vDmg', 'Null', 3, { dmgV: 8 }), T_('vHunt', 'Hunter', 3, { eliteDmg: 6 }), TECH('vTether', 'Null Tether', 'lens')],
+      [T_('vMark', 'Mark', 3, { markChance: 4 }), T_('vKnock', 'Gravitic', 2, { knock: 2.4 }), TECH('vRepulse', 'Repulsor', 'grav')],
+      [T_('vLens', 'Implosion', 1, { collapse: 40, dmgV: 8 }) /* v5.8: was Null Lens (beams kept their ramp), a Lens-only buff */, T_('vSlow', 'Event Drag', 2, { markSlow: 12 })],
       [T_('vDark', 'Dark Matter', 1, { markVoid: 5, markMax: 3 }), T_('vHole', 'Black Hole', 1, { blackHole: 1, collapse: 30 }), T_('vPull', 'Gravitic Pull', 1, { knockMark: 1, knock: 3 })]],
     caps: [CAP('horizon', 'Event Horizon', { ks: 'horizon', doc: 4 }),
       CAP('garden', 'Gravity Garden', { ks: 'garden', lines: ['Ground enemies between two Gravity Wells (up to 5 tiles apart) are held: 75% slower and +25% damage taken', 'Gravity Wells: +25% Range', 'Void Lenses deal 20% less damage'] }),
