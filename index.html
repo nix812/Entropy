@@ -953,7 +953,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.5.7';
+const VERSION = '5.5.8';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1134,6 +1134,7 @@ const WHATS_NEW = { ver: '5.5.0', title: 'Entropy 5.5 · The Music Studio', item
   ['Shape', 'One tempo slider for the genre that is playing, with energy, the mixer and effects on one screen.'],
   ['Sound keeps going (5.5.4)', 'On iPhone, an AirPod going in or out, a call or Siri could leave the game silent until a restart. The sound now wakes itself, Settings › Sound shows what it is doing, and Restart sound brings it back in one tap.'],
   ['Mono Audio (5.5.3)', 'Settings › Mono Audio plays everything in both ears, for one earbud or a single speaker. Sounds panned to one side are no longer lost.'],
+  ['A musician\'s pass (5.5.8)', 'Every chord progression was checked in every mood: none lands on a chord that does not belong any more, and each mood brings its signature moves (Lydian\'s I–II, Dorian\'s i–IV, Phrygian\'s i–♭II). Chord names read like a musician writes them, and jazz chords lose the harsh flat nine.'],
   ['…and one more thing', 'Something is hidden in the Studio. Try tapping the visualizer.'],
   ['A new hangar sky (5.4.2)', 'The launch screen is redrawn: a Lorenz attractor, the classic picture of chaos, turns over a drifting nebula with comets, stars and the odd meteor.'],
 ]};
@@ -5712,6 +5713,10 @@ const SFX = (() => {
     const MODES = { ionian: [0, 2, 4, 5, 7, 9, 11], dorian: [0, 2, 3, 5, 7, 9, 10], phrygian: [0, 1, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11],
       mixolydian: [0, 2, 4, 5, 7, 9, 10], aeolian: [0, 2, 3, 5, 7, 8, 10], harmonic: [0, 2, 3, 5, 7, 8, 11] };
     const MODE_NAME = { ionian: 'major', dorian: 'dorian', phrygian: 'phrygian', lydian: 'lydian', mixolydian: 'mixolydian', aeolian: 'minor', harmonic: 'harmonic minor' };
+    // v5.5.8 musician's pass: a triad's quality on a degree of a mode; a loop fits a mode when it lands on no diminished or
+    // augmented triad it did not ask for (the audit found 30 such combinations, e.g. Lydian I-iv°, Dorian i-vi°, minor i-ii°)
+    function triadQ(mode, d) { const sc = MODES[mode] || MODES.aeolian, dd = ((d % 7) + 7) % 7, t = (sc[(dd + 2) % 7] - sc[dd] + 12) % 12, f = (sc[(dd + 4) % 7] - sc[dd] + 12) % 12; return t === 3 && f === 6 ? 'dim' : t === 4 && f === 8 ? 'aug' : t === 3 ? 'm' : 'M'; }
+    const loopOK = (L0, mode) => L0.degs.every((d, i) => (L0.q && L0.q[i]) || !/dim|aug/.test(triadQ(mode, d)));
     const PENT = { major: [0, 2, 4, 7, 9], minor: [0, 3, 5, 7, 10] };
     // a chord loop: degrees (0 = i/I) in the mode, optional per-chord quality override ('M' major triad, 'm' minor, '7' dominant 7,
     // 's2'/'s4' sus) and bars per chord. Loops come from the research: Axis (i-VI-III-VII), Nightcall, Kerri Chandler, ii-V-I...
@@ -5875,7 +5880,12 @@ const SFX = (() => {
       const S = recipe(g, f), G0 = GENRES[g];
       let mode = pick(S.modes);
       if (!force && mood === 'boss' && (mode === 'ionian' || mode === 'lydian' || mode === 'mixolydian')) mode = 'aeolian';
-      const loop = pick(S.loops), root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
+      let loop = pick(S.loops);
+      if (!loopOK(loop, mode)) { // the next loop that fits this mode, else a mode that fits this loop (no extra dice: seeded pieces that were fine stay the same)
+        const i0 = S.loops.indexOf(loop), alt = S.loops.map((_, k) => S.loops[(i0 + 1 + k) % S.loops.length]).find(L0 => loopOK(L0, mode));
+        if (alt) loop = alt; else { const m2 = S.modes.find(m => loopOK(loop, m)); if (m2) mode = m2; }
+      }
+      const root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
       if (force && force.name) name = String(force.name).slice(0, 32); // renamed or composed tracks keep their own name
       lastG = g; lastF = f;
       P = { g, f, S, G0, seed, name, mode, scale: MODES[mode], loop, root, bar: 0,
@@ -5923,7 +5933,7 @@ const SFX = (() => {
         if (T) { const t = T.slice(); if (ext >= 5 && t.length === 4 && q !== '6' && q !== 'm6' && q !== 'mM7') t.push(14); return t; }
       }
       const r = sc[((deg % 7) + 7) % 7];
-      for (let k = 0; k < ext; k++) { const d = deg + 2 * k; out.push(sc[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7) - r - 12 * Math.floor(deg / 7)); }
+      for (let k = 0; k < ext; k++) { const d = deg + 2 * k, iv = sc[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7) - r - 12 * Math.floor(deg / 7); if (k >= 4 && iv % 12 === 1) continue; out.push(iv); } // 5.5.8: no ♭9 on the stack (the classic avoid note)
       return out;
     }
     const chordRoot = deg => P.root + P.scale[((deg % 7) + 7) % 7] + 12 * Math.floor(deg / 7);
@@ -6358,8 +6368,9 @@ const SFX = (() => {
         const tail = barInPh % 4 === 3 && barInPh !== 7 ? 1 : 0;
         for (const nn of mot) if (nn.st === st) {
           if (tail && s16 >= 8 && !P.fixedMel && chance(0.5)) continue;
-          const scaleTones = Ld.scale === 'pent' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : Ld.scale === 'pentmajor' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : P.scale;
-          const strong = s16 % 4 === 0, off = scaleTones.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
+          const abs = P.fixedMel && P.comp && P.comp.melAbs; // 5.5.8 'Fixed notes': degrees of the key, not of each chord
+          const scaleTones = abs ? P.scale : Ld.scale === 'pent' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : Ld.scale === 'pentmajor' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : P.scale;
+          const strong = s16 % 4 === 0, off = abs ? 0 : scaleTones.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
           let n = degTo(P.root + 12 * Math.round((Ld.oct - P.root) / 12), off + nn.d, scaleTones);
           if (!P.fixedMel) { if (strong) n = nearestChordTone(n, C0); if (barInPh === 7 && s16 >= 8) n = nearestPc(n, C0.root % 12); if (Ld.grammar === 'drone' && !strong) continue; }
           lead(n, tt + hum(), Math.max(sp16, nn.len * sp16), (Ld.kind === 'chip' ? 0.6 : 0.85) * ll, Ld.kind, Ld.duty);
@@ -6407,11 +6418,16 @@ const SFX = (() => {
       ['supersaw', 'Supersaw', 'trance'], ['bleep', 'Bleep', 'bleep'], ['chip', 'Chip', 'chip'], ['melodica', 'Melodica', 'call'], ['glass', 'Glass', 'sparse']];
     const DRUM_ROWS = [['K', 'Kick', 9], ['S', 'Snare', 9], ['C', 'Clap', 8], ['H', 'Hat', 6], ['O', 'Open hat', 7], ['R', 'Rim', 6], ['P', 'Shaker', 4], ['D', 'Ride', 5]];
     function drumsFor(g, f) { const d = recipe(g, f).drums, o = {}; for (const [k] of DRUM_ROWS) o[k] = (d[k] || '').slice(0, 16).padEnd(16, '0'); return o; }
-    function loopsFor(g) { const seen = new Set(), out = []; for (const F of Object.values(GENRES[g].flavours)) for (const L0 of F.loops || []) { const k = JSON.stringify(L0); if (!seen.has(k)) { seen.add(k); out.push(L0); } } return out; }
-    function numerals(degs, mode, q) { // roman numerals for a chord loop in a mode (upper case = major)
-      const sc = MODES[mode] || MODES.aeolian, R0 = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-      return degs.map((d, i) => { const dd = ((d % 7) + 7) % 7, third = (sc[(dd + 2) % 7] - sc[dd] + 12) % 12, fifth = (sc[(dd + 4) % 7] - sc[dd] + 12) % 12, qq = q && q[i];
-        const minor = qq ? /^m/.test(qq) && !/^M/.test(qq) : third === 3; let r = minor ? R0[dd].toLowerCase() : R0[dd]; if (!qq && fifth === 6) r += '°'; return r; }).join(' · ');
+    // each loop with the modes its flavours were written for (a loop that forces chord types, like Rainy Day's i-VI-V7, belongs to those moods)
+    function loopsFor(g) { const by = new Map(); for (const F of Object.values(GENRES[g].flavours)) for (const L0 of F.loops || []) { const k = JSON.stringify(L0); if (!by.has(k)) by.set(k, Object.assign({}, L0, { modes: [] })); for (const m of F.modes || []) if (!by.get(k).modes.includes(m)) by.get(k).modes.push(m); } return [...by.values()]; }
+    function numerals(degs, mode, q) { // roman numerals as a musician writes them: case for major/minor, ° and +, and the chord type
+      const sc = MODES[mode] || MODES.aeolian, R0 = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'], FLAT = { 1: [1, 2], 2: [3, 4], 5: [8, 9], 6: [10, 11] };
+      const SUF = { M: '', m: '', '7': '7', M7: 'maj7', m7: '7', m9: '9', '6': '6', m6: '6', mM7: '(maj7)', s2: 'sus2', s4: 'sus4' };
+      return degs.map((d, i) => { const dd = ((d % 7) + 7) % 7, qq = q && q[i], tq = triadQ(mode, d);
+        const minor = qq ? /^m/.test(qq) && !/^M/.test(qq) : tq === 'm' || tq === 'dim';
+        const fl = FLAT[dd] && sc[dd] === FLAT[dd][0] ? '♭' : dd === 3 && sc[3] === 6 ? '♯' : ''; // against the major scale: ♭II ♭III ♭VI ♭VII, Lydian's ♯IV
+        let r = fl + (minor ? R0[dd].toLowerCase() : R0[dd]);
+        if (!qq && tq === 'dim') r += '°'; if (!qq && tq === 'aug') r += '+'; if (qq) r += SUF[qq] || ''; return r; }).join(' · ');
     }
     function melMotif(mel) { // 16 steps (null or a scale step) into the engine's 2-bar motif; each note lasts until the next
       const on = []; for (let i = 0; i < 16; i++) if (mel[i] !== null && mel[i] !== undefined) on.push(i);
@@ -6520,7 +6536,7 @@ const SFX = (() => {
         const f = { genre: cp.genre, flav: cp.flav, seed: cp.seed >>> 0, name: cp.name, comp: cp, start: editing ? 8 : 0 };
         if (editing) { this.jump(f); return 'now'; } forceNext = f; if (P) P.skip = true; return 'next';
       },
-      compFromPiece, drumsFor, loopsFor, numerals, MOODS, BASSES, LEADS, DRUM_ROWS, NOTE,
+      compFromPiece, drumsFor, loopsFor, numerals, loopOK, triadQ, MODES, MOODS, BASSES, LEADS, DRUM_ROWS, NOTE,
       autoMel() { if (!P || !P.motifs || !P.motifs[0]) return null; const o = Array(16).fill(null); for (const n of P.motifs[0]) if (n.st < 16) { let d = n.d; while (d < 0) d += 7; while (d > 7) d -= 7; o[n.st] = d; } return o; },
       meters() { const o = {}; for (const c of CHN) o[c] = meterOf(AN[c]); return o; },
       spectrum(arr) { if (outAn) outAn.getByteFrequencyData(arr); },
@@ -6530,7 +6546,7 @@ const SFX = (() => {
       set debug(v) { EV = v ? [] : null; }, get events() { return EV; },
       renderAhead(seconds, curve) { start(); const step = 0.1; for (let t = 0; t < seconds; t += step) { if (curve) targetB = curve(t / seconds); battle += (targetB - battle) * 0.3; const h = t + step; while (nextT < h) { const tt = nextT; scheduleStep(tt); nextT += liveSpb() / 4; } } },
       get log() { return pieceLog; },
-      get piece() { if (!P) return null; const ph = P.form[Math.floor(bar / 8) % 4]; return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: 32, step: s16, seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.brk ? (ph.build ? 'Breakdown · build' : 'Breakdown') : ph.drop ? 'Drop' : ph.version ? 'Dub version' : ['Intro', 'Groove', 'Bridge', 'Return'][Math.floor(bar / 8) % 4] }; },
+      get piece() { if (!P) return null; const ph = P.form[Math.floor(bar / 8) % 4]; return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: 32, step: s16, loop: P.loop.degs.slice(), loopQ: (P.loop.q || []).slice(), seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.brk ? (ph.build ? 'Breakdown · build' : 'Breakdown') : ph.drop ? 'Drop' : ph.version ? 'Dub version' : ['Intro', 'Groove', 'Bridge', 'Return'][Math.floor(bar / 8) % 4] }; },
     };
     return API;
   })();
@@ -10441,8 +10457,28 @@ const UI = (() => {
       </div></div>`;
   }
   // ---- Compose ----
-  const CP_EXTRA = [{ degs: [0, 4, 5, 3], q: [], bars: 1 }, { degs: [0, 5, 3, 4], q: [], bars: 1 }, { degs: [0, 3], q: [], bars: 2 }, { degs: [0], q: [], bars: 4 }, { degs: [0, 6, 5, 6], q: [], bars: 1 }, { degs: [1, 4, 0, 0], q: ['m7', '7', 'M7', 'M7'], bars: 1 }];
-  function cpLoops(g) { const M = SFX.music, out = M.loopsFor(g).slice(), seen = new Set(out.map(x => JSON.stringify(x))); for (const L0 of CP_EXTRA) if (!seen.has(JSON.stringify(L0))) out.push(L0); return out; }
+  const CP_EXTRA = [{ degs: [0, 4, 5, 3], q: [], bars: 1 }, { degs: [0, 5, 3, 4], q: [], bars: 1 }, { degs: [0, 3], q: [], bars: 2 }, { degs: [0], q: [], bars: 4 }, { degs: [0, 6, 5, 6], q: [], bars: 1 }]; // the jazz ii-V-I lives in Bright only (MOOD_LOOPS)
+  // 5.5.8: each mood's signature progressions, then the style's own and the common ones, keeping only those that fit the mood
+  const L_ = (degs, q, bars) => ({ degs, q: q || [], bars: bars || 1 });
+  const MOOD_LOOPS = {
+    ionian: [L_([0, 4, 5, 3]), L_([0, 5, 3, 4]), L_([3, 0, 4, 5]), L_([0, 3, 4, 3]), L_([1, 4, 0, 0], ['m7', '7', 'M7', 'M7'])],
+    lydian: [L_([0, 1], [], 2), L_([0, 1, 0, 4]), L_([0, 1, 6, 0]), L_([0, 4, 1, 0])],
+    mixolydian: [L_([0, 6, 3, 0]), L_([0, 6], [], 2), L_([0, 3, 6, 3]), L_([0, 6, 3, 4])],
+    dorian: [L_([0, 3], [], 2), L_([0, 3, 0, 6]), L_([0, 2, 3, 0]), L_([0, 6, 3, 3])],
+    aeolian: [L_([0, 5, 2, 6]), L_([0, 3, 6, 2]), L_([0, 6, 5, 6]), L_([0, 5, 3, 4])],
+    phrygian: [L_([0, 1], [], 2), L_([0, 1, 2, 1]), L_([0, 6, 1, 0]), L_([0, 1, 6, 1])],
+    harmonic: [L_([0, 4], [], 2), L_([0, 3, 4, 0]), L_([0, 5, 4, 0]), L_([0, 3, 5, 4])],
+  };
+  function cpLoops(g, mode) {
+    const M = SFX.music, seen = new Set(), out = [];
+    for (const L0 of (MOOD_LOOPS[mode] || []).concat(M.loopsFor(g), CP_EXTRA)) {
+      const k = JSON.stringify([L0.degs, L0.bars || 1, L0.q || []]), forced = (L0.q || []).some(Boolean);
+      if (seen.has(k) || (mode && !M.loopOK(L0, mode)) || (mode && forced && L0.modes && !L0.modes.includes(mode))) continue;
+      seen.add(k); out.push({ degs: L0.degs, q: L0.q || [], bars: L0.bars || 1 });
+    }
+    return out.length ? out : M.loopsFor(g);
+  }
+  const cpLoopIdx = (L0, d) => L0.findIndex(L1 => JSON.stringify([L1.degs, L1.bars || 1, L1.q || []]) === JSON.stringify([d.loop.degs, d.loop.bars || 1, d.loop.q || []]));
   function cpStyles() { const M = SFX.music, out = []; for (const g of M.GENRE_IDS) for (const f of Object.keys(M.GENRES[g].flavours)) out.push([g, f]); return out; }
   function cpDefaults(cp) { // a style's own drums, bass, lead and tempo
     const M = SFX.music, G0 = M.GENRES[cp.genre], F = G0.flavours[cp.flav] || {};
@@ -10456,7 +10492,7 @@ const UI = (() => {
     if (!d) return `<div class="stcompose empty"><p class="note">Your first song starts here. Pick a style: it gives you a beat, a bassline and chords to build on. Then change anything, draw a melody, and save it to My Tracks.</p>
       <div class="cpstyles">${cpStyles().map(([g, f]) => `<button class="cpsty" style="--c:${G5[g].col}" data-act="cpStart" data-g="${g}" data-f="${f}"><b>${esc(G5[g].short || G5[g].name)}</b><small>${esc(M.flavName(g, f))}</small></button>`).join('')}</div>
       ${stRadio ? `<div class="strow"><button class="btn small" data-act="cpFrom">Or remix the last radio song (${esc(stRadio.name)})</button></div>` : ''}</div>`;
-    const G0 = G5[d.genre], loops = cpLoops(d.genre), li = Math.max(0, loops.findIndex(L0 => JSON.stringify(L0.degs) === JSON.stringify(d.loop.degs) && (L0.bars || 1) === (d.loop.bars || 1)));
+    const G0 = G5[d.genre];
     const mood = M.MOODS.find(m => m[0] === d.mode) || M.MOODS[4], bass = M.BASSES.find(b => d.bass && b[0] === d.bass[0] && b[1] === d.bass[1]), lead = M.LEADS.find(l => l[0] === d.lead) || M.LEADS[0];
     const st = (k, lab, val, col) => `<div class="cpst"><span class="lbl">${lab}</span><button class="stb" data-act="cpStep" data-k="${k}" data-v="-1" aria-label="Previous ${lab}">◀</button><b ${col ? `style="color:${col}"` : ''}>${val}</b><button class="stb" data-act="cpStep" data-k="${k}" data-v="1" aria-label="Next ${lab}">▶</button></div>`;
     return `<div class="stcompose">
@@ -10475,21 +10511,28 @@ const UI = (() => {
       </div>
       <div class="cpright">
         <div class="strow cpgt"><button class="chip ${stGrid === 'drums' ? 'on' : ''}" data-act="cpGrid" data-v="drums">Drums</button><button class="chip ${stGrid === 'melody' ? 'on' : ''}" data-act="cpGrid" data-v="melody">Melody</button>
-          ${stGrid === 'melody' ? `<button class="chip" data-act="cpDice"><i data-svg="dice"></i>Roll</button>${d.mel && d.mel.some(x => x !== null) ? '<button class="chip" data-act="cpMelClr">Clear</button>' : ''}` : '<button class="chip" data-act="cpDrumReset">Reset</button><button class="chip" data-act="cpDrumClr">Clear</button>'}
+          ${stGrid === 'melody' ? `<button class="chip ${d.melAbs ? 'on' : ''}" data-act="cpMelAbs">${d.melAbs ? 'Fixed notes' : 'Follow chords'}</button><button class="chip" data-act="cpDice"><i data-svg="dice"></i>Roll</button>${d.mel && d.mel.some(x => x !== null) ? '<button class="chip" data-act="cpMelClr">Clear</button>' : ''}` : '<button class="chip" data-act="cpDrumReset">Reset</button><button class="chip" data-act="cpDrumClr">Clear</button>'}
           <button class="btn small ${SFX.music.held ? 'primary' : ''} cpplay" id="cpPlayB" data-act="stPause">${SFX.music.held ? '▶ Play' : '■ Stop'}</button><button class="btn small cpsave" data-act="cpSave">Save</button></div>
         <div id="cpGridBox">${cpGridHTML()}</div>
-        <p class="note sthint">${stGrid === 'melody' ? (d.mel === null ? 'The faint notes are a rolled melody. Tap the grid to make it yours, or roll again.' : d.mel.some(x => x !== null) ? 'Your melody, one bar looping. Higher rows are higher notes; they move with the chords, so every note fits. Tap a lit square to remove it.' : 'No melody yet. Tap the grid to write one (it always fits the chords), or Roll one.') : 'One bar, looping. Each column is a step; the white column is where the song is right now. Every lit square plays: tap one to switch it on or off.'}</p>
+        <p class="note sthint">${stGrid === 'melody' ? (d.melAbs ? 'Fixed notes: each row is a note of the key (named on the left) and stays put while the chords move, the way a songwriter writes a hook. Tap to place, tap again to remove.' : d.mel === null ? 'The faint notes are a rolled melody. Tap the grid to make it yours, or roll again.' : d.mel.some(x => x !== null) ? 'Your melody, one bar looping. Higher rows are higher notes; they move with the chords, so every note fits. Tap a lit square to remove it.' : 'No melody yet. Tap the grid to write one (it always fits the chords), or Roll one.') : 'One bar, looping. Each column is a step; the white column is where the song is right now. Every lit square plays: tap one to switch it on or off.'}</p>
       </div>
     </div>`;
+  }
+  function cpRollFixed() { // a hook on the key's own notes: a rhythm cell, mostly stepwise motion, ending home or on the fifth
+    const cells = ['x...x...x.x.x...', 'x..x..x.x.......', 'x.x.x...x.x.x...', '..x.x.x...x.x.x.', 'x...x.x...x.x...'], rh = cells[Math.floor(Math.random() * cells.length)], o = Array(16).fill(null);
+    let n = [0, 2, 4][Math.floor(Math.random() * 3)]; const on = [...rh].map((ch, i) => ch === 'x' ? i : -1).filter(i => i >= 0);
+    on.forEach((i, j) => { if (j) n = Math.max(0, Math.min(7, n + [-1, 1, -1, 1, 2, -2, 0][Math.floor(Math.random() * 7)])); if (j === on.length - 1) n = Math.random() < 0.6 ? 0 : 4; o[i] = n; });
+    return o;
   }
   function cpAutoMel() { const M = SFX.music, p = M.piece; return p && p.comp && M.autoMel ? M.autoMel() : null; }
   function cpGridHTML() {
     const M = SFX.music, d = studioCfg().draft; if (!d) return '';
     const head = `<div class="cprow cph"><span></span>${Array.from({ length: 16 }, (_, i) => `<i class="${i % 4 ? '' : 'b'}">${i % 4 ? '' : i / 4 + 1}</i>`).join('')}</div>`;
     if (stGrid === 'drums') return `<div class="cpgrid drums">${head}${M.DRUM_ROWS.map(([k, lab]) => `<div class="cprow"><span>${lab.replace('Open hat', 'Open')}</span>${Array.from({ length: 16 }, (_, i) => { const v = +(d.drums[k] || '')[i] || 0; return `<button class="cell ${v ? 'on' : ''} ${i % 4 ? '' : 'b'}" style="--a:${v ? (0.35 + v / 15).toFixed(2) : 0}" data-act="cpCell" data-r="${k}" data-i="${i}" data-c="${i}" aria-label="${lab} step ${i + 1}"></button>`; }).join('')}</div>`).join('')}</div>`;
-    const mel = d.mel && d.mel.length === 16 ? d.mel : null, ghost = d.mel === null ? cpAutoMel() : null;
+    const mel = d.mel && d.mel.length === 16 ? d.mel : null, ghost = d.mel === null && !d.melAbs ? cpAutoMel() : null;
+    const sc = M.MODES[d.mode] || M.MODES.aeolian, lab = r => d.melAbs ? M.NOTE[((d.key | 0) + sc[r % 7]) % 12] : String(r + 1);
     let rows = '';
-    for (let r = 7; r >= 0; r--) rows += `<div class="cprow"><span>${r + 1}</span>${Array.from({ length: 16 }, (_, i) => { const on = mel ? mel[i] === r : false, gh = !mel && ghost && ghost[i] === r; return `<button class="cell ${on ? 'on' : ''} ${gh ? 'gh' : ''} ${i % 4 ? '' : 'b'}" data-act="cpNote" data-r="${r}" data-i="${i}" data-c="${i}" aria-label="Step ${i + 1} note ${r + 1}"></button>`; }).join('')}</div>`;
+    for (let r = 7; r >= 0; r--) rows += `<div class="cprow"><span>${lab(r)}</span>${Array.from({ length: 16 }, (_, i) => { const on = mel ? mel[i] === r : false, gh = !mel && ghost && ghost[i] === r; return `<button class="cell ${on ? 'on' : ''} ${gh ? 'gh' : ''} ${i % 4 ? '' : 'b'}" data-act="cpNote" data-r="${r}" data-i="${i}" data-c="${i}" aria-label="Step ${i + 1} note ${r + 1}"></button>`; }).join('')}</div>`;
     return `<div class="cpgrid melody">${head}${rows}</div>`;
   }
   // Compose is its own room: the radio stops when you walk in, your song loops while you work, and the radio comes back when you leave
@@ -10637,9 +10680,9 @@ const UI = (() => {
       }
       // ---- composer ----
       case 'cpStart': { // a new song from a style: its beat, bassline, chords and sound, and no melody yet
-        const g = b.dataset.g, f = b.dataset.f, G0 = M.GENRES[g], F = G0.flavours[f] || {}, L0 = cpLoops(g);
-        const n = c.favs.filter(t => t.comp).length + 1, mode = (F.modes || ['aeolian'])[0];
-        const d = { v: 1, genre: g, flav: f, seed: (Math.random() * 4294967296) >>> 0, name: 'Song ' + n, mode, key: Math.floor(Math.random() * 12), loop: JSON.parse(JSON.stringify((F.loops || L0)[0] || L0[0])), mel: [], melSeed: (Math.random() * 4294967296) >>> 0 };
+        const g = b.dataset.g, f = b.dataset.f, G0 = M.GENRES[g], F = G0.flavours[f] || {};
+        const n = c.favs.filter(t => t.comp).length + 1, mode = (F.modes || ['aeolian'])[0], own = (F.loops || []).find(L1 => M.loopOK(L1, mode));
+        const d = { v: 1, genre: g, flav: f, seed: (Math.random() * 4294967296) >>> 0, name: 'Song ' + n, mode, key: Math.floor(Math.random() * 12), loop: JSON.parse(JSON.stringify(own || cpLoops(g, mode)[0])), mel: [], melSeed: (Math.random() * 4294967296) >>> 0 };
         cpDefaults(d); if (d.lead === 'none') d.lead = 'bell';
         c.draft = d; stGrid = 'drums'; stOverArm = false; M.editing = true; cpApply(true); return true;
       }
@@ -10650,11 +10693,11 @@ const UI = (() => {
       case 'cpGrid': stGrid = b.dataset.v; openStudio(); return true;
       case 'cpStep': {
         const d = c.draft; if (!d) return true; const k = b.dataset.k, dir = +b.dataset.v, wrap = (i, n) => ((i % n) + n) % n;
-        if (k === 'style') { const L0 = cpStyles(), i = L0.findIndex(x => x[0] === d.genre && x[1] === d.flav), nx = L0[wrap(i + dir, L0.length)]; d.genre = nx[0]; d.flav = nx[1]; cpDefaults(d); const lp0 = cpLoops(d.genre); if (!lp0.some(L1 => JSON.stringify(L1.degs) === JSON.stringify(d.loop.degs))) d.loop = JSON.parse(JSON.stringify(lp0[0])); }
-        else if (k === 'mood') { const i = M.MOODS.findIndex(m => m[0] === d.mode); d.mode = M.MOODS[wrap(i + dir, M.MOODS.length)][0]; }
+        if (k === 'style') { const L0 = cpStyles(), i = L0.findIndex(x => x[0] === d.genre && x[1] === d.flav), nx = L0[wrap(i + dir, L0.length)]; d.genre = nx[0]; d.flav = nx[1]; cpDefaults(d); const lp0 = cpLoops(d.genre, d.mode); if (cpLoopIdx(lp0, d) < 0) d.loop = JSON.parse(JSON.stringify(lp0[0])); }
+        else if (k === 'mood') { const i = M.MOODS.findIndex(m => m[0] === d.mode); d.mode = M.MOODS[wrap(i + dir, M.MOODS.length)][0]; { const L0 = cpLoops(d.genre, d.mode); if (cpLoopIdx(L0, d) < 0) d.loop = JSON.parse(JSON.stringify(L0[0])); } }
         else if (k === 'key') d.key = wrap((d.key | 0) + dir, 12);
         else if (k === 'bpm') { const G0 = M.GENRES[d.genre]; d.bpm = clamp((d.bpm | 0) + dir * 2, Math.round(G0.bpm[0] * 0.8), Math.round(G0.bpm[2] * 1.15)); }
-        else if (k === 'loop') { const L0 = cpLoops(d.genre), i = L0.findIndex(L1 => JSON.stringify(L1.degs) === JSON.stringify(d.loop.degs) && (L1.bars || 1) === (d.loop.bars || 1)); d.loop = JSON.parse(JSON.stringify(L0[wrap(i + dir, L0.length)])); }
+        else if (k === 'loop') { const L0 = cpLoops(d.genre, d.mode), i = cpLoopIdx(L0, d); d.loop = JSON.parse(JSON.stringify(L0[wrap(i + dir, L0.length)])); }
         else if (k === 'bass') { const i = M.BASSES.findIndex(x => d.bass && x[0] === d.bass[0] && x[1] === d.bass[1]); const nx = M.BASSES[wrap(i + dir, M.BASSES.length)]; d.bass = [nx[0], nx[1]]; }
         else if (k === 'lead') { const i = M.LEADS.findIndex(x => x[0] === d.lead); d.lead = M.LEADS[wrap(i + dir, M.LEADS.length)][0]; }
         SFX.play('ui'); cpApply(true); return true;
@@ -10668,7 +10711,8 @@ const UI = (() => {
         if (!d.mel.some(x => x !== null)) d.mel = [];
         cpApply(true); return true;
       }
-      case 'cpDice': { const d = c.draft; if (d) { d.mel = null; d.melSeed = (Math.random() * 4294967296) >>> 0; if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); } return true; }
+      case 'cpMelAbs': { const d = c.draft; if (d) { d.melAbs = !d.melAbs; if (d.melAbs && !(d.mel && d.mel.length === 16)) d.mel = cpRollFixed(); cpApply(true); } return true; }
+      case 'cpDice': { const d = c.draft; if (d && d.melAbs) { d.mel = cpRollFixed(); if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); return true; } if (d) { d.mel = null; d.melSeed = (Math.random() * 4294967296) >>> 0; if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); } return true; }
       case 'cpMelClr': { const d = c.draft; if (d) { d.mel = []; cpApply(true); } return true; }
       case 'stClose': { cancelAnimationFrame(studioRaf); if (stInCompose) { stInCompose = false; leaveCompose(); } M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
         if (M.paused) toast('MUSIC PAUSED', 'Press play in the Music Studio to bring it back', '#ff5fa8');
