@@ -1710,7 +1710,7 @@ const UI = (() => {
     const M = SFX.music, c = studioCfg(), d = c.draft, G5 = M.GENRES;
     if (!d) return `<div class="stcompose empty"><p class="note">Your first song starts here. Pick a style: it gives you a beat, a bassline and chords to build on. Then change anything, draw a melody, and save it to My Tracks.</p>
       <div class="cpstyles">${cpStyles().map(([g, f]) => `<button class="cpsty" style="--c:${G5[g].col}" data-act="cpStart" data-g="${g}" data-f="${f}"><b>${esc(G5[g].short || G5[g].name)}</b><small>${esc(M.flavName(g, f))}</small></button>`).join('')}</div>
-      ${stRadio ? `<div class="strow"><button class="btn small" data-act="cpFrom">Or start from ${esc(stRadio.name)}</button></div>` : ''}</div>`;
+      ${stRadio ? `<div class="strow"><button class="btn small" data-act="cpFrom">Or remix the last radio song (${esc(stRadio.name)})</button></div>` : ''}</div>`;
     const G0 = G5[d.genre], loops = cpLoops(d.genre), li = Math.max(0, loops.findIndex(L0 => JSON.stringify(L0.degs) === JSON.stringify(d.loop.degs) && (L0.bars || 1) === (d.loop.bars || 1)));
     const mood = M.MOODS.find(m => m[0] === d.mode) || M.MOODS[4], bass = M.BASSES.find(b => d.bass && b[0] === d.bass[0] && b[1] === d.bass[1]), lead = M.LEADS.find(l => l[0] === d.lead) || M.LEADS[0];
     const st = (k, lab, val, col) => `<div class="cpst"><span class="lbl">${lab}</span><button class="stb" data-act="cpStep" data-k="${k}" data-v="-1" aria-label="Previous ${lab}">◀</button><b ${col ? `style="color:${col}"` : ''}>${val}</b><button class="stb" data-act="cpStep" data-k="${k}" data-v="1" aria-label="Next ${lab}">▶</button></div>`;
@@ -1731,7 +1731,7 @@ const UI = (() => {
       <div class="cpright">
         <div class="strow cpgt"><button class="chip ${stGrid === 'drums' ? 'on' : ''}" data-act="cpGrid" data-v="drums">Drums</button><button class="chip ${stGrid === 'melody' ? 'on' : ''}" data-act="cpGrid" data-v="melody">Melody</button>
           ${stGrid === 'melody' ? `<button class="chip" data-act="cpDice"><i data-svg="dice"></i>Roll</button>${d.mel && d.mel.some(x => x !== null) ? '<button class="chip" data-act="cpMelClr">Clear</button>' : ''}` : '<button class="chip" data-act="cpDrumReset">Reset</button><button class="chip" data-act="cpDrumClr">Clear</button>'}
-          <button class="btn small primary cpsave" data-act="cpSave">Save</button></div>
+          <button class="btn small ${SFX.music.held ? 'primary' : ''} cpplay" id="cpPlayB" data-act="stPause">${SFX.music.held ? '▶ Play' : '■ Stop'}</button><button class="btn small cpsave" data-act="cpSave">Save</button></div>
         <div id="cpGridBox">${cpGridHTML()}</div>
         <p class="note sthint">${stGrid === 'melody' ? (d.mel === null ? 'The faint notes are a rolled melody. Tap the grid to make it yours, or roll again.' : d.mel.some(x => x !== null) ? 'Your melody. Rows are steps up the scale from each chord, so it follows the chords; 1 is the chord itself.' : 'No melody yet. Tap the grid to write one (it always fits the chords), or Roll one.') : 'Tap a step to switch a hit on or off. Breakdowns still drop the drums out.'}</p>
       </div>
@@ -1750,17 +1750,20 @@ const UI = (() => {
   // Compose is its own room: the radio stops when you walk in, your song loops while you work, and the radio comes back when you leave
   const cpSpec = d => ({ genre: d.genre, flav: d.flav, seed: d.seed >>> 0, name: d.name, comp: d, start: 8 });
   function stPlayNow(force) { const M = SFX.music; if (M.paused || M.held) { M.setPaused(false); if (M.held) M.setHold(false); M.jump(force || null); } else M.skip(force || undefined); }
+  // 5.5.5 (Nic: "the radio just keeps playing"): walking in is always silent; your song starts with Play or with any change.
+  // In Compose the play/stop is the hold: held = your song stopped and the radio off.
   function enterCompose() {
-    const M = SFX.music, c = studioCfg(), p = M.piece; stOverArm = false; M.setPaused(false); // in Compose, pause is the song's stop
-    stRadio = p && !p.comp ? M.spec : stRadio; M.editing = true;
-    if (c.draft) { M.setHold(false); M.jump(cpSpec(c.draft)); } else M.setHold(true);
+    const M = SFX.music, p = M.piece; stOverArm = false; M.setPaused(false);
+    stRadio = p && !p.comp ? M.spec : stRadio; M.editing = true; M.setHold(true);
   }
+  function cpPlay(on) { const M = SFX.music, d = studioCfg().draft; if (on && d) { M.setPaused(false); M.setHold(false); M.jump(cpSpec(d)); } else M.setHold(true); }
   function leaveCompose() {
     const M = SFX.music; M.editing = false; M.setHold(false); M.setPaused(false);
     M.jump(stRadio ? Object.assign({}, stRadio, { start: 0 }) : null); stRadio = null;
   }
   function cpApply(rerender) { // the draft changed: save it and hear it
-    const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose'; if (M.held || M.paused) { M.setHold(false); M.setPaused(false); if (!(M.piece && M.piece.comp)) { M.jump(cpSpec(c.draft)); } else M.compose(c.draft); } else M.compose(c.draft);
+    const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose';
+    if (M.held || M.paused || !(M.piece && M.piece.comp)) cpPlay(true); else M.compose(c.draft); // any change plays your song
     if (rerender === 'grid') { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); } else if (rerender) openStudio();
   }
   // ---- the card ----
@@ -1806,13 +1809,21 @@ const UI = (() => {
         for (let y = 0; y < h; y += 3) { x.fillStyle = y > H * 0.7 ? '#ffffff' : col; x.globalAlpha = 0.35 + 0.65 * (y / H); x.fillRect(Math.round(i * bw) + 1, H - y - 3, Math.max(2, Math.round(bw) - 2), 2); }
       }
       x.globalAlpha = 1;
-      const sig = p.name + '|' + p.genre + '|' + p.seed + '|' + p.saved + '|' + M.paused + '|' + M.repeat + '|' + M.canBack + '|' + M.held;
+      const dr = stInCompose ? studioCfg().draft : null;
+      const sig = p.name + '|' + p.genre + '|' + p.seed + '|' + p.saved + '|' + M.paused + '|' + M.repeat + '|' + M.canBack + '|' + M.held + '|' + stInCompose + '|' + (dr ? dr.name + dr.genre + dr.flav + dr.mode + dr.key + dr.bpm : '');
       if (sig !== stSig) {
         const changed = stSig && stSig.split('|').slice(0, 3).join('|') !== sig.split('|').slice(0, 3).join('|'); stSig = sig;
-        if (M.held) { $('#stName').textContent = 'New song'; $('#stGen').textContent = 'Pick a style to begin'; } else { $('#stName').textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.flavName + (p.comp ? ' · composed' : ''); }
+        if (stInCompose) { // the bar is about your song, never the radio
+          const G1 = dr && M.GENRES[dr.genre], md = dr && (M.MOODS.find(m => m[0] === dr.mode) || [0, ''])[1];
+          $('#stName').textContent = dr ? dr.name : 'New song';
+          $('#stGen').textContent = dr ? `Your song · ${M.held ? 'stopped: press play' : 'playing'}` : 'Pick a style to begin';
+          $('#stKey').textContent = dr ? `${(G1.short || G1.name)} · ${M.NOTE[dr.key % 12]} ${md} · ${dr.bpm} BPM` : 'The radio is off while you compose';
+          const cb = $('#cpPlayB'); if (cb) { cb.textContent = M.held ? '▶ Play' : '■ Stop'; cb.classList.toggle('primary', M.held); }
+        } else { $('#stName').textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.flavName + (p.comp ? ' · composed' : ''); }
         const kb = $('#stKeepB'); if (kb) { kb.classList.toggle('on', p.saved); kb.innerHTML = svgIcon(p.saved ? 'heart' : 'heartO'); }
-        const pb = $('#stPauseB'); if (pb) { pb.innerHTML = svgIcon(M.paused ? 'play' : 'pause'); pb.setAttribute('aria-label', M.paused ? 'Play music' : 'Pause music'); pb.classList.toggle('on', M.paused); }
-        if (pb) pb.style.visibility = M.held ? 'hidden' : ''; const sbar = $('.stbar'); if (sbar) sbar.style.visibility = M.held ? 'hidden' : '';
+        const quiet = stInCompose ? M.held : M.paused;
+        const pb = $('#stPauseB'); if (pb) { pb.innerHTML = svgIcon(quiet ? 'play' : 'pause'); pb.setAttribute('aria-label', quiet ? 'Play' : 'Pause'); pb.classList.toggle('on', quiet); pb.style.visibility = stInCompose && !dr ? 'hidden' : ''; }
+        const sbar = $('.stbar'); if (sbar) sbar.style.visibility = M.held ? 'hidden' : '';
         const rb = $('#stRepB'); if (rb) rb.classList.toggle('on', M.repeat);
         const bb = $('#stBackB'); if (bb) bb.disabled = !M.canBack;
         const card = $('.card.studio'); if (card) card.style.setProperty('--gc', col);
@@ -1821,13 +1832,12 @@ const UI = (() => {
         if (changed && stTab === 'compose' && stGrid === 'melody' && studioCfg().draft && !studioCfg().draft.mel) { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); }
       }
       if (stSnd !== M.sndGen) { stSnd = M.sndGen; if (stTab === 'shape') openStudio(); } // a kept track brought its own sound
-      const ky = $('#stKey'); if (ky && !M.held) ky.textContent = p.key + ' · ' + p.now + ' BPM';
+      const ky = $('#stKey'); if (ky && !stInCompose) ky.textContent = p.key + ' · ' + p.now + ' BPM';
       const br = $('#stBar'); if (br) br.style.width = ((p.bar + p.step / 16) / p.bars * 100) + '%';
       const se = $('#stSec'); if (se) se.textContent = M.held ? '' : M.paused ? 'Paused' : p.section;
-      if (M.held) { const ky2 = $('#stKey'); if (ky2) ky2.textContent = 'The radio is off while you compose'; }
       if (stTab === 'shape') { const mt = M.meters(); for (const f of document.querySelectorAll('#modal .fader')) { const v = Math.min(1, Math.sqrt(mt[f.dataset.ch] || 0) * 2.6); f.firstChild.style.height = Math.round(v * 100) + '%'; } }
       if (stTab === 'compose') { // playhead on the grid while the draft plays
-        const step = p.comp && !M.paused ? p.step : -1;
+        const step = p.comp && !M.paused && !M.held ? p.step : -1;
         if (step !== stStep) { for (const el of document.querySelectorAll('#cpGridBox .cell.ph')) el.classList.remove('ph'); if (step >= 0) for (const el of document.querySelectorAll(`#cpGridBox .cell[data-c="${step}"]`)) el.classList.add('ph'); stStep = step; }
       }
     }
@@ -1857,7 +1867,7 @@ const UI = (() => {
       case 'stMute': studioTouch(); c.mute[b.dataset.v] = !c.mute[b.dataset.v]; b.classList.toggle('m', !!c.mute[b.dataset.v]); M.apply(); studioSave(); return true;
       case 'stSkip': stPlayNow(); SFX.play('ui'); return true;
       case 'stBack': { const wasQuiet = M.paused || M.held; const n = M.back(); if (n && wasQuiet) stPlayNow(M.queued); if (n) toast('BACK TO', n + ' · from the next bar', '#ff5fa8'); return true; }
-      case 'stPause': M.setPaused(!M.paused); return true;
+      case 'stPause': if (stInCompose) { cpPlay(M.held); return true; } M.setPaused(!M.paused); return true;
       case 'stRepeat': M.repeat = !M.repeat; toast(M.repeat ? 'REPEAT ON' : 'REPEAT OFF', M.repeat ? 'This piece plays again when it ends' : 'A new piece follows this one', '#ff5fa8'); return true;
       case 'stKeep': {
         if (M.isSaved()) { M.unsave(); toast('REMOVED', 'Taken out of My Tracks', '#ff5fa8'); }
@@ -1887,7 +1897,7 @@ const UI = (() => {
         cpDefaults(d); if (d.lead === 'none') d.lead = 'bell';
         c.draft = d; stGrid = 'drums'; stOverArm = false; M.editing = true; cpApply(true); return true;
       }
-      case 'cpFrom': { const cp = M.compFromPiece(); if (cp) { c.draft = cp; stGrid = 'drums'; stOverArm = false; M.editing = true; cpApply(true); } return true; }
+      case 'cpFrom': { const cp = M.compFromPiece(); if (cp) { cp.name = 'Song ' + (c.favs.filter(t => t.comp).length + 1); c.draft = cp; stGrid = 'drums'; stOverArm = false; M.editing = true; cpApply(true); } return true; }
       case 'cpOver': { if (!stOverArm) { stOverArm = true; openStudio(); return true; } stOverArm = false; c.draft = null; studioSave(); M.setHold(true); openStudio(); return true; }
       case 'cpDrumClr': { const d = c.draft; if (d) { for (const k in d.drums) d.drums[k] = '0'.repeat(16); cpApply('grid'); } return true; }
       case 'cpSave': { const d = c.draft; if (!d) return true; const nm = $('#cpName'); if (nm) d.name = nm.value.trim().slice(0, 24) || 'My Track'; M.saveComp(d); studioSave(); toast('SAVED TO MY TRACKS', d.name, '#ff5fa8'); return true; }
@@ -2148,7 +2158,7 @@ const UI = (() => {
       <p class="note">Anomalies ${an}/${ANOMALIES.length} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
   }
   function modalAction(act, b) {
-    if ((act.startsWith('st') || act.startsWith('cp')) && studioAction(act, b)) return;
+    if (act.startsWith('st') || act.startsWith('cp')) { try { if (studioAction(act, b)) return; } catch (e) { SFX.report(e, 'studio ' + act); toast('STUDIO ERROR', String(e && e.message || e).slice(0, 90) + ' · tell Claude', '#ff4d6a', true); return; } }
     SFX.play('ui');
     switch (act) {
       case 'close': closeModal(); break;
