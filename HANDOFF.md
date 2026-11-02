@@ -1,10 +1,10 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 5.7.0 · November 1, 2026**
+**Version at handoff: 5.7.1 · November 1, 2026**
 
 > **The game is now called Last Gradient (5.6.0).** Repo, URLs, save keys, code prefixes (`HUNT1:`, `TRACK1:`), file names (`dist/entropy.html`) and the in-game Entropy gauge keep the old word on purpose. Player-facing name: Last Gradient.
 
-### Start here (state at 5.7.0)
+### Start here (state at 5.7.1)
 - **Studio splash (5.7.0):** "Nigel Industries presents" on cold start (`UI.splash`, ui.js before `boot`; Nic's cat Nigel, pixel art in `docs/brand/`). It skips itself when `navigator.webdriver` is set so the other Playwright tests are not blocked; `test/splashshot.py` forces it with `UI.splash(true)`.
 - **Renamed (5.6.0):** Nic chose **Last Gradient** after a name search (section 4.17). The hangar title is a canvas effect, `TitleFX` at the end of render.js.
 - **Live:** 5.6.0 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
@@ -910,6 +910,7 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 5.7.1 | Nic: splash a little longer (blink 1.5–1.9 s, ends 3.3 s) and a bigger hangar galaxy seen through the buttons. `HangarFX.layout` now spans from the utility icons to the **bottom** of the menu (`room / 47`, cap `H × 0.024`) and picks the larger of two placements: beside the title (clear of the word's own box, `.t1`/`.t2`, not the shard canvas) or below it (iPad, where the title runs long). Hangar menu buttons and utility icons are translucent (`rgba(21,25,51,.5)`; Play amber at .86). |
 | 5.7.0 | **Nigel Industries splash** on cold start: Nigel in his couch (`NIGEL_PX`, two 64×56 frames as data URLs), wordmark in Silkscreen with the title's fringe, "presents"; content fades in once fonts are ready (≤ 0.6 s), Nigel slow-blinks at 1.15–1.5 s, ends at 2.3 s, a tap skips. What's New waits for it (`900 + spT`). Outside `#app`, sized in vh/vw. `test/splashshot.py` (3 sizes). |
 | 5.6.0 | **Renamed Last Gradient.** Hangar title: small spaced LAST over GRADIENT, which ramps cream → cyan → violet and fractures into drifting pixel shards (`TitleFX`). Home Screen name, page title, rotate screen, run-log name, What's New. Saves and codes untouched. |
 | 5.5.14 | Music controls redone (Nic did not like the corner buttons): a **Music tile** `#bMusic` (`.rb.mtile`) at the top of the left rail (`#railL`, outside `#abils` so the abilities re-render leaves it alone; `margin-bottom:auto` keeps it at the top in the space above the ability buttons), with a live five-bar equalizer (`.meq i`) in the genre's colour (`--mc`), fed by `SFX.music.spectrum()` about 12 times a second from `tick()`, dimmed when paused, held or suspended. Tapping it opens the **deck** `#mdeck` (absolute in `#stage`, top-left): ⏮ `#bTrkBack` (same single and double tap, `TRK_DBL` 350 ms) · song name, genre and section `#mdName` (tap opens the Studio) · ⏭ `#bTrkNext`. The deck closes after 5 s idle or on any tap elsewhere in the stage (a capture `pointerdown`). With a right panel, Map moves top-left, so the deck sits under it (top 48); with a left panel it opens on the right under Map; it is hidden while watching. The 5.5.12 banner shifts (`left: 50px`) are gone. Tests `trackbtns.py` (tile, equalizer, deck, auto-hide, Studio) and `trackcollide.py` (tile vs ability buttons and the rail bounds; deck vs log, doctrine list, Map, panels, watch bar, checkpoint banner; four sizes) |

@@ -1486,16 +1486,20 @@ const HangarFX = (() => {
     layout(); buildNebula(); buildOverlay(); seed(); fade = 0;
   }
 
-  function layout() { // the attractor gets the open stage above the menu column, between the utility icons and the buttons
+  function layout() { // v5.7.1: the attractor fills the column from under the utility icons to the bottom of the menu, behind the (see-through) buttons
     const r0 = cv.getBoundingClientRect(), m = document.querySelector('#hangar .menu'), u = document.querySelector('#hangar .util');
     const mr = m && m.getBoundingClientRect(), ur = u && u.getBoundingClientRect();
-    if (!mr || !mr.width) { lay = { cx: W * 0.64, cy: H * 0.47, s: Math.min(H * 0.0145, W * 0.0095) }; return; }
+    if (!mr || !mr.width) { lay = { cx: W * 0.64, cy: H * 0.5, s: Math.min(H * 0.02, W * 0.012) }; return; }
     const k = W / (r0.width || 1); // the app may be zoomed by a transform, so measure in on-screen pixels
-    const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.1) - r0.top) * k + 4 * R, bot = (mr.top - r0.top) * k - 2 * R;
-    const cx = Math.round((mr.left + mr.width / 2 - r0.left) * k), room = Math.max(H * 0.3, bot - top);
-    const br = document.querySelector('#hangar .brand h1'); let bR = 0; // keep clear of the title's letters (on iPad they run past the h1's own box)
-    if (br) { let rr = br.getBoundingClientRect().right; try { const rg = document.createRange(); rg.selectNodeContents(br); rr = Math.max(rr, rg.getBoundingClientRect().right); } catch (e) {} bR = (rr - r0.left) * k + 8 * R; }
-    lay = { cx, cy: Math.round(top + room * 0.5), s: Math.max(0.8 * R, Math.min(room / 52, mr.width * k / 54, (W - 4 * R - cx) / 29, bR ? (cx - bR) / 31 : 99, H * 0.016)) };
+    const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.1) - r0.top) * k + 2 * R, bot = (mr.bottom - r0.top) * k;
+    const cx = Math.round((mr.left + mr.width / 2 - r0.left) * k), room = Math.max(H * 0.45, bot - top);
+    let bR = 0, bB = 0; // keep clear of the title's letters (the word itself, not the canvas room its shards drift into)
+    for (const el of document.querySelectorAll('#hangar .brand h1 .t1, #hangar .brand h1 .t2')) { const r = el.getBoundingClientRect(); bR = Math.max(bR, (r.right - r0.left) * k + 4 * R); bB = Math.max(bB, (r.bottom - r0.top) * k + 6 * R); }
+    const wide = (W + 6 * R - cx) / 29, cap = H * 0.024;
+    // beside the title, or (when that is roomier, as on iPad where the title runs long) below it
+    const sA = Math.min(room / 47, wide, bR ? (cx - bR) / 31 : 99, cap);
+    const top2 = Math.max(top, bB), room2 = bot - top2, sB = bB ? Math.min(room2 / 47, wide, cap) : 0;
+    lay = sB > sA ? { cx, cy: Math.round(top2 + room2 * 0.5), s: Math.max(0.8 * R, sB) } : { cx, cy: Math.round(top + room * 0.5), s: Math.max(0.8 * R, sA) };
   }
   function project(cx, cy, s, a) {
     const ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(0.32), st = Math.sin(0.32);
