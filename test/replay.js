@@ -59,7 +59,7 @@ for (let n = +(process.env.FROM || 0); n < RUNS; n++) {
     S3.simStep(S3.SIM_STEP);
   }
   const h3 = S3.runHash(), same3 = h3 === end.hash && G3.inputs.length === end.inputs;
-  console.log(`${same && same3 ? 'ok  ' : 'FAIL'} run ${n} ${daily ? 'daily' : 'std'} wave ${end.wave} score ${end.score} tick ${end.tick} inputs ${end.inputs} bounties ${end.bounties} ${end.ext ? 'extracted W' + end.ext : end.over ? 'died' : 'stopped'} nemesis ${end.nem || '-'} · replay ${r2.wave}/${r2.score}/${h2} vs ${end.hash} · resume ${h3}`);
+  console.log(`${same && same3 ? 'ok  ' : 'FAIL'} run ${n} ${daily ? 'daily' : 'std'} wave ${end.wave} score ${end.score} tick ${end.tick} inputs ${end.inputs} (perk picks ${G1.inputs.filter(x => x[1] === 'ascPick').length}) bounties ${end.bounties} ${end.ext ? 'extracted W' + end.ext : end.over ? 'died' : 'stopped'} nemesis ${end.nem || '-'} · replay ${r2.wave}/${r2.score}/${h2} vs ${end.hash} · resume ${h3}`);
   if (!(same && same3)) fails++;
 }
 console.log(fails ? `${fails} FAILED` : 'all replays match');
