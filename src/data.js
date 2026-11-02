@@ -601,15 +601,15 @@ const CAP_RENAMED = { glass: 'nest', deadeye: 'rico', overgrid: 'stormrider', th
 // Standard and the Technique (act('fire', x, y, id); t.fire, kept apart from targeting t.mode). Each is a different job, not an upgrade.
 // m keys are read in applyFire (sim.js): dmgX, rateX, rangeAdd, rangeX, pullX multiply or add; the rest switch behaviour.
 const TOWER_FIRE = {
-  pulse: [{ id: 'supp', need: 'kSupp', name: 'Suppressor', desc: 'Rounds slow what they hit by 35% for 1.5s. ×0.6 Damage', m: { dmgX: 0.6, supSlow: 0.35, supDur: 1.5 } }],
-  rail: [{ id: 'over', need: 'kOver', name: 'Overcharge', desc: 'Every 3rd shot deals ×4 and pierces every enemy in line. ×0.5 Attack Speed', m: { rateX: 0.5, ocEvery: 3, ocX: 4 } }],
-  cryo: [{ id: 'lance', need: 'cLance', name: 'Cold Lance', desc: 'A freezing beam on one target instead of a pulse: ×3 Damage to it, pierces Plating, +0.8 Range', m: { lance: 3, rangeAdd: 0.8 } }],
-  missile: [{ id: 'bunker', need: 'tBunk', name: 'Bunker Buster', desc: 'One heavy warhead: ×2 Damage, ignores Plating and half of Armor. No splash, bomblets or napalm', m: { dmgX: 2, bunker: 1 } }],
-  coil: [{ id: 'fence', need: 'aFence', name: 'Arc Fence', desc: 'Stops chaining. Arcs a fence to the nearest Coil within 4 tiles that zaps and Shocks everything crossing it', m: { fence: 4 } }],
-  flame: [{ id: 'back', need: 'tBack', name: 'Backdraft', desc: 'Burns a full ring around the tower instead of a cone. ×0.6 Range, ×0.8 Damage', m: { ring: 1, rangeX: 0.6, dmgX: 0.8 } }],
-  lens: [{ id: 'tether', need: 'vTether', name: 'Null Tether', desc: 'No ramp. Beamed enemies are 35% slower and Marked twice as fast. ×1.25 Damage', m: { tether: 0.35, dmgX: 1.25 } }],
-  emp: [{ id: 'mines', need: 'aMines', name: 'Pulse Mines', desc: 'Shells stay on the road as mines (up to 4) that blow when a ground enemy steps on them. ×1.5 Damage. Fliers never set them off', m: { mines: 4, dmgX: 1.5 } }],
-  grav: [{ id: 'repulse', need: 'vRepulse', name: 'Repulsor', desc: 'Also hits fliers and throws them back along their flight. ×0.6 pull on the ground, ×0.5 Damage', m: { repulse: 1, pullX: 0.6, dmgX: 0.5 } }],
+  pulse: [{ id: 'supp', need: 'kSupp', name: 'Suppressor', short: 'Slows what it hits by 35%. ×0.6 Damage', desc: 'Rounds slow what they hit by 35% for 1.5s. ×0.6 Damage', m: { dmgX: 0.6, supSlow: 0.35, supDur: 1.5 } }],
+  rail: [{ id: 'over', need: 'kOver', name: 'Overcharge', short: 'Every 3rd shot ×4 and pierces all. Half speed', desc: 'Every 3rd shot deals ×4 and pierces every enemy in line. ×0.5 Attack Speed', m: { rateX: 0.5, ocEvery: 3, ocX: 4 } }],
+  cryo: [{ id: 'lance', need: 'cLance', name: 'Cold Lance', short: 'A freezing beam on one target. ×3 Damage', desc: 'A freezing beam on one target instead of a pulse: ×3 Damage to it, pierces Plating, +0.8 Range', m: { lance: 3, rangeAdd: 0.8 } }],
+  missile: [{ id: 'bunker', need: 'tBunk', name: 'Bunker Buster', short: '×2 Damage, ignores Plating. No splash', desc: 'One heavy warhead: ×2 Damage, ignores Plating and half of Armor. No splash, bomblets or napalm', m: { dmgX: 2, bunker: 1 } }],
+  coil: [{ id: 'fence', need: 'aFence', name: 'Arc Fence', short: 'Zaps a line to a Coil within 4 tiles', desc: 'Stops chaining. Arcs a fence to the nearest Coil within 4 tiles that zaps and Shocks everything crossing it', m: { fence: 4 } }],
+  flame: [{ id: 'back', need: 'tBack', name: 'Backdraft', short: 'A full ring of fire. ×0.6 Range', desc: 'Burns a full ring around the tower instead of a cone. ×0.6 Range, ×0.8 Damage', m: { ring: 1, rangeX: 0.6, dmgX: 0.8 } }],
+  lens: [{ id: 'tether', need: 'vTether', name: 'Null Tether', short: 'No ramp. Beamed enemies 35% slower', desc: 'No ramp. Beamed enemies are 35% slower and Marked twice as fast. ×1.25 Damage', m: { tether: 0.35, dmgX: 1.25 } }],
+  emp: [{ id: 'mines', need: 'aMines', name: 'Pulse Mines', short: 'Lays up to 4 road mines. ×1.5 Damage', desc: 'Shells stay on the road as mines (up to 4) that blow when a ground enemy steps on them. ×1.5 Damage. Fliers never set them off', m: { mines: 4, dmgX: 1.5 } }],
+  grav: [{ id: 'repulse', need: 'vRepulse', name: 'Repulsor', short: 'Hits fliers and throws them back', desc: 'Also hits fliers and throws them back along their flight. ×0.6 pull on the ground, ×0.5 Damage', m: { repulse: 1, pullX: 0.6, dmgX: 0.5 } }],
 };
 const fireModes = type => TOWER_FIRE[type] || [];
 const fireTalentFor = type => fireModes(type).map(f => TAL[f.need]).filter(Boolean);
@@ -635,10 +635,10 @@ function talentLines(t, rank) {
   return Object.keys(t.fx).map(k => { const v = t.fx[k]; const txt = STAT_TXT[k]; if (!txt) return k; return typeof v === 'number' && v !== 1 ? txt(+(v * r).toFixed(2)) : txt(v); });
 }
 
-// v5.8 XP curve: each level costs 400 + 160 × L^1.5 XP (XP is 10% of score). A fresh first run gives about 3-5 levels, a typical run
+// v5.8 XP curve: each level costs 350 + 120 × L^1.7 XP (XP is 10% of score). A fresh first run gives about 3-5 levels, a typical run
 // 6-12, and a deep run no longer pays 38 levels at once (the old 3000 + 250L + 3L² was flat at the top, steep at the bottom).
 // migrateWeb converts old profiles so nobody loses a level. The table is in docs/notes/talents.md.
-const xpForLevel = L => Math.round(400 + 160 * Math.pow(L, 1.5));
+const xpForLevel = L => Math.round(350 + 120 * Math.pow(L, 1.7));
 // the 5.2-5.7 curve, kept for the migration
 const xpForLevelV5 = L => L === 0 ? 800 : L === 1 ? 1600 : Math.round(3000 + 250 * L + 3 * L * L);
 function levelFromXP(xp, f) {
@@ -699,7 +699,7 @@ const LAWS = [
   { id: 'brittle', name: 'Brittle Star', up: '+60% core Damage, +1 core Range', down: '−25% core max HP', m: { coreDmg: 60, coreRange: 1 }, af: { coreHPx: 0.75 } },
 ];
 const LAW_SCORE = 0.15, NOVA_SCORE = 0.1, NOVA_XP = 0.25;
-const novaLevelReq = n => Math.min(120, 32 + 6 * n); // v5.3: 40 (was 60); extracted runs get there. v5.8: 32 + 6n on the steeper XP curve (about the same XP as 40 + 10n was)
+const novaLevelReq = n => Math.min(100, 28 + 5 * n); // v5.3: 40 (was 60); extracted runs get there. v5.8: 28 + 5n on the steeper XP curve (about the same XP as 40 + 10n was)
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',
   'Last Light', 'Gravedigger', 'Little Sun', 'Night Shift', 'Paper Moon', 'Iron Psalm', 'Red Tide', 'Cold Comfort', 'Dead Reckoning',

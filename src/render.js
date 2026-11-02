@@ -866,6 +866,24 @@ const RES = 2;
         b.lineTo(bx, by); b.stroke();
       }
     }
+    // v5.8 Techniques and play styles on the field: Arc Fences, Gravity Garden lines, Pulse Mines, Blackout static and Hoarfrost ice
+    for (const f of G.fields || []) ditherDisc(f.x * TILE, f.y * TILE, f.r * TILE, hexA(f.k === 'ice' ? '#bff4ff' : '#ffe14d', 0.18 + 0.22 * Math.min(1, f.t / 1.5)), 2, frame % 2);
+    for (const m of G.mines || []) { const X = m.x * TILE, Y = m.y * TILE, on = (frame + (m.x * 7 | 0)) % 30 < 15; R(b, X - 3, Y - 1, 6, 2, '#2a2f52'); R(b, X - 1, Y - 3, 2, 6, '#2a2f52'); R(b, X - 1, Y - 1, 2, 2, on ? '#ffe14d' : '#7a6a10'); }
+    if (G.mods.ks.garden) for (const [a, c] of G.gardens || []) {
+      if (a.disabled > 0 || c.disabled > 0) continue;
+      b.strokeStyle = hexA('#b86cff', 0.35 + 0.15 * Math.sin(frame / 9)); b.lineWidth = 2; b.setLineDash([3, 4]); b.lineDashOffset = -frame / 4;
+      b.beginPath(); b.moveTo(a.cx * TILE, a.cy * TILE); b.lineTo(c.cx * TILE, c.cy * TILE); b.stroke(); b.setLineDash([]);
+    }
+    for (const t of G.towers) {
+      const c = t.fenceTo;
+      if (!c || !t.s || !t.s.fence || t.disabled > 0 || G.towerAt[c.y * COLS + c.x] !== c || (c.fenceTo === t && c.s && c.s.fence && c.id < t.id)) continue;
+      const ax = t.cx * TILE, ay = t.cy * TILE, bx = c.cx * TILE, by = c.cy * TILE, n = Math.max(4, Math.round(Math.hypot(bx - ax, by - ay) / 8)), nx = -(by - ay), ny = bx - ax, nl = Math.hypot(nx, ny) || 1;
+      for (const [w, col, al] of [[3, '#7a6a10', 0.5], [1, '#ffe14d', 0.9]]) {
+        b.strokeStyle = hexA(col, al); b.lineWidth = w; b.beginPath(); b.moveTo(ax, ay);
+        for (let k = 1; k < n; k++) { const j = (Math.random() - 0.5) * 4; b.lineTo(ax + (bx - ax) * k / n + nx / nl * j, ay + (by - ay) * k / n + ny / nl * j); }
+        b.lineTo(bx, by); b.stroke();
+      }
+    }
     for (const t of G.towers) drawTower(t);
     // resonance links
     for (const t of G.towers) for (const o of t.resonWith || []) {
@@ -1255,6 +1273,7 @@ const RES = 2;
         lines.push({ pts: out, life: 0.14, max: 0.14, col: d.col, core: 1, w: 2 }); break;
       }
       case 'flame': for (let i = 0; i < 6; i++) { const a = d.ang + (Math.random() - 0.5) * 1.0, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x) + Math.cos(d.ang) * 10, y: T2P(d.y) + Math.sin(d.ang) * 10, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.3, max: 0.3, col: Math.random() < 0.5 ? d.col : '#ffe14d', s: 3 }); } break;
+      case 'flamering': for (let i = 0; i < 8; i++) { const an = Math.random() * 6.2832, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x), y: T2P(d.y), vx: Math.cos(an) * v, vy: Math.sin(an) * v, life: 0.28, max: 0.28, col: Math.random() < 0.5 ? d.col : '#ffe14d', s: 3 }); } break; // v5.8 Backdraft
       case 'pulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.r * TILE, life: 0.35, max: 0.35, col: d.col, fill: 1 }); break;
       case 'grav': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE, r1: 2, life: 0.5, max: 0.5, col: '#b86cff', w: 3 }); break;
       case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;

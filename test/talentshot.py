@@ -1,5 +1,5 @@
-"""v5.0 Talents: the screen opens from the hangar and in a run, rows gate at 5/10/15 points, Capstones at 20 with slots,
-refunds cost tokens mid-run, builds save and load, old webs migrate with a refund. usage: python3 talentshot.py [W H]"""
+"""v5.0 Talents (v5.8 rework): the screen opens from the hangar and in a run, rows gate at 3/6/9 points, Capstones at 12 with slots,
+Technique tiles, refunds cost tokens mid-run, builds save and load, old webs migrate with a refund. usage: python3 talentshot.py [W H]"""
 import pathlib, sys, mkpage
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent; out = root / 'test' / 'out'
@@ -16,37 +16,44 @@ with sync_playwright() as p:
       PROF = Save.merge(P); migrateWeb(); UI.renderHangar(); }''')
     pg.wait_for_timeout(200)
     st = pg.evaluate('() => ({ webV: PROF.webV, spent: pointsSpent(), free: pointsFree(), lvl: profLevel().level })')
-    check(st['webV'] == 4 and st['spent'] == 0 and st['free'] == st['lvl'], f'migration: {st}')
+    check(st['webV'] == 5 and st['spent'] == 0 and st['free'] == st['lvl'], f'migration: {st}')
     pg.click('#bWebH'); pg.wait_for_timeout(300)
     check(pg.evaluate('() => Tree.isOpen'), 'talents did not open')
     pg.screenshot(path=str(out / f'tal_empty_{W}.png'))
-    # row gate: row 2 locked until 5 points
+    # row gate: row 2 locked until 3 points
     check(pg.evaluate('() => talentBlock("kRate")') == 'row', 'row 2 should be locked')
-    for i in range(5): pg.click('[data-tact=add][data-v=kDmg]'); pg.wait_for_timeout(40)
-    check(pg.evaluate('() => talRank("kDmg")') == 5, 'kDmg ranks')
-    check(pg.evaluate('() => talentBlock("kRate")') == '', 'row 2 should open at 5')
-    pg.evaluate('() => { for (const id of ["kCrit","kCrit","kCrit","kCrit","kCrit","kRate","kRate","kRate","kRate","kRate","kPen","kPen","kPen","kHollow","kLeth","kLeth"]) talentAdd(id); Tree.refresh(); }')
-    check(pg.evaluate('() => treePts("K")') == 21, 'tree points')
-    check(pg.evaluate('() => talentBlock("marksman")') == '', 'capstone should open at 20')
+    check(pg.evaluate('() => talentBlock("kSupp")') == '', 'a row-1 Technique is open at once')
+    check(pg.evaluate('() => /technique/i.test(document.querySelector("[data-tact=sel][data-v=kSupp]").textContent)'), 'Technique tile is marked')
+    for i in range(3): pg.click('[data-tact=add][data-v=kDmg]'); pg.wait_for_timeout(40)
+    check(pg.evaluate('() => talRank("kDmg")') == 3, 'kDmg ranks')
+    check(pg.evaluate('() => talentBlock("kDmg")') == 'max', 'kDmg maxes at 3 ranks')
+    check(pg.evaluate('() => talentBlock("kRate")') == '', 'row 2 should open at 3')
+    pg.evaluate('() => { for (const id of ["kCrit","kCrit","kCrit","kRate","kRate","kRate","kPen","kPen","kHollow","kLeth","kLeth"]) talentAdd(id); Tree.refresh(); }')
+    check(pg.evaluate('() => treePts("K")') == 14, 'tree points')
+    check(pg.evaluate('() => talentBlock("marksman")') == '', 'capstone should open at 12')
     # double tap a capstone tile to take it
     pg.evaluate('() => document.querySelector("#tgrid").scrollTop = 9999'); pg.wait_for_timeout(100)
-    pg.dblclick('.ttile.cap [data-tact=sel][data-v=glass]'); pg.wait_for_timeout(200)
-    check(pg.evaluate('() => capsHeld().includes("glass")'), 'double-tap capstone')
+    pg.dblclick('.ttile.cap [data-tact=sel][data-v=nest]'); pg.wait_for_timeout(200)
+    check(pg.evaluate('() => capsHeld().includes("nest")'), 'double-tap capstone')
     check(pg.evaluate('() => talentBlock("marksman")') == 'tree', 'one Capstone per tree')
     pg.click('[data-tact=sel][data-v=kLeth]'); pg.wait_for_timeout(150)
     pg.screenshot(path=str(out / f'tal_tree_{W}.png'))
     # removing a row-1 rank that a row-3 talent needs is refused
     check(pg.evaluate('() => talentCanRemove("kDmg")') == '', 'a spare rank can be removed')
-    pg.evaluate('() => talentRemove("kDmg")')
-    check(pg.evaluate('() => talentCanRemove("kCrit")') == 'cap', 'removing below 20 with a Capstone should be refused')
-    pg.evaluate('() => talentAdd("kDmg")')
+    pg.evaluate('() => { talentRemove("kDmg"); talentRemove("kLeth"); }')
+    check(pg.evaluate('() => talentCanRemove("kCrit")') == 'cap', 'removing below 12 with a Capstone should be refused')
+    pg.evaluate('() => { talentAdd("kDmg"); talentAdd("kLeth"); }')
     pg.click('[data-tact=sum]'); pg.wait_for_timeout(150); pg.screenshot(path=str(out / f'tal_sum_{W}.png'))
     pg.click('[data-tact=builds]'); pg.wait_for_timeout(100); pg.click('[data-tact=bsave][data-v="0"]'); pg.wait_for_timeout(100)
     pg.evaluate('() => talentReset()'); check(pg.evaluate('() => pointsSpent()') == 0, 'reset')
     pg.click('[data-tact=bload][data-v="0"]'); pg.wait_for_timeout(150)
-    check(pg.evaluate('() => pointsSpent()') == 22 and pg.evaluate('() => capsHeld().includes("glass")'), 'build load')
+    check(pg.evaluate('() => pointsSpent()') == 15 and pg.evaluate('() => capsHeld().includes("nest")'), 'build load')
     pg.screenshot(path=str(out / f'tal_builds_{W}.png'))
-    check(pg.evaluate('() => computeMods(null, null).ks.glass === 1'), 'capstone ks in mods')
+    check(pg.evaluate('() => computeMods(null, null).ks.nest === 1'), 'capstone ks in mods')
+    # every tree renders (Cryogenics: Cold Lance and the new Capstones)
+    pg.click('[data-tact=tab][data-v=C]') if pg.evaluate('() => !!document.querySelector("[data-tact=tab][data-v=C]")') else pg.evaluate('() => Tree.select && Tree.select("C")')
+    pg.wait_for_timeout(200); pg.screenshot(path=str(out / f'tal_cryo_{W}.png'))
+    check(pg.evaluate('() => !!document.querySelector("[data-tact=sel][data-v=cLance]") && !!document.querySelector("[data-tact=sel][data-v=artillery]")'), 'Cryogenics shows Cold Lance and Cryo Artillery')
     pg.click('#tbar [data-tact=close]'); pg.wait_for_timeout(150)
     # in a run: refunds cost tokens
     pg.click('#bLaunch'); pg.wait_for_timeout(200); pg.click('[data-act=launch]'); pg.wait_for_timeout(500)
