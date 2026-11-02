@@ -2359,12 +2359,12 @@ const UI = (() => {
     // v5.5.11 music on the battlefield: next on the right; on the left one tap replays the song, a double tap goes to the last one
     // (the single tap waits a moment to see whether a second one follows, so a double tap never restarts the song first)
     const trkSay = again => setTimeout(() => { const p = SFX.music.piece; if (p) toast(again ? 'FROM THE TOP' : 'NOW PLAYING', `${p.name} · ${p.genreName}`, (SFX.music.GENRES[p.genre] || {}).col || '#ff5fa8'); }, 60);
-    let trkBackT = 0, trkBackTimer = 0;
+    let trkBackT = 0, trkBackTimer = 0; const TRK_DBL = 350;
     $('#bTrkNext').onclick = () => { SFX.init(); const M = SFX.music; M.setPaused(false); M.jump(null); trkSay(); };
     $('#bTrkBack').onclick = () => {
       SFX.init(); const M = SFX.music, now = performance.now();
-      if (now - trkBackT < 400) { clearTimeout(trkBackTimer); trkBackT = 0; if (M.back()) { M.setPaused(false); M.jump(M.queued); trkSay(); } else { toast('NO EARLIER SONG', 'This is the first song this session', '#ff5fa8'); } return; }
-      trkBackT = now; trkBackTimer = setTimeout(() => { trkBackT = 0; M.setPaused(false); M.restart(); trkSay(true); }, 330);
+      if (now - trkBackT < TRK_DBL) { clearTimeout(trkBackTimer); trkBackT = 0; if (M.back()) { M.setPaused(false); M.jump(M.queued); trkSay(); } else { toast('NO EARLIER SONG', 'This is the first song this session', '#ff5fa8'); } return; }
+      trkBackT = now; trkBackTimer = setTimeout(() => { trkBackT = 0; M.setPaused(false); M.restart(); trkSay(true); }, TRK_DBL); // the same 350 ms both ways: a second tap inside it is a double
     };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; G.speedWas = 0; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
