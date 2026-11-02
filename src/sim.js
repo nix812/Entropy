@@ -1029,7 +1029,7 @@ function towerStats(t) {
   s.burn = clamp(((st.burn || 0) + (s.el === 'T' ? ost : 0) + ((A.burn || 0) + M.burnChance + (s.el === 'K' ? M.kBurn : 0)) / 100 + (M.ks.conflag ? 0.35 : 0)) * sm, 0, 1);
   s.chill = clamp(((st.chill || 0) + (s.el0 === 'C' ? ost : 0) + ((A.chill || 0) + M.chillChance) / 100) * sm, 0, 1);
   if (M.ks.conflag) { s.burn = clamp(s.burn + s.chill, 0, 1); s.chill = 0; } // Conflagration: Chill becomes Burn
-  s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + pv('ion') + pv('ionE') + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
+  s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + pv('ion') + pv('ionE') + pv('refract') + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
   s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + pv('brand') + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
   s.chillPot = (sp.chillPot || 1) * M.chillPot;
   s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur + pv('deep');
@@ -1037,8 +1037,8 @@ function towerStats(t) {
   s.stun = (sp.stun || 0) + pv('taser') / 100; s.stunDur = (sp.stunDur || D.stunDur || 0) + pv('longPulse');
   s.rampMax = (sp.rampMax || D.rampMax || 1) + pv('well'); s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0) + pv('facet');
   s.pull = (D.pull || 0) * (sp.pullX || 1) * (1 + pv('heavy') / 100); s.shells = (sp.shells || 1) + (D.kind === 'mortar' ? s.multi : 0) + pv('shell4'); s.cluster = sp.cluster ? sp.cluster + pv('pods') : 0; s.napalm = !!sp.napalm;
-  s.shred = !!sp.shred || !!(pv('apRounds') || pv('slag')); s.shatterField = sp.shatterField ? sp.shatterField + pv('fault') : 0;
-  s.exec = (A.exec || 0) + pv('coup'); s.bounty = (A.bounty || 0) / 100; s.boss = (A.boss || 0) / 100 + M.eliteDmg + (pv('bigGame') + pv('slayer')) / 100; s.slowd = (A.slowd || 0) / 100;
+  s.shred = !!sp.shred || !!(pv('apRounds') || pv('slag') || pv('pen') || pv('weld') || pv('shaped')); s.shatterField = sp.shatterField ? sp.shatterField + pv('fault') : 0;
+  s.exec = (A.exec || 0) + pv('coup'); s.bounty = (A.bounty || 0) / 100; s.boss = (A.boss || 0) / 100 + M.eliteDmg + pv('bigGame') / 100; s.slowd = (A.slowd || 0) / 100;
   s.pspd = D.pspd || 10;
   if (D.kind === 'support') {
     const aura = (1 + (A.aura || 0) / 100) * (leg.nexus ? 1.5 : 1) * mst, lm = 1 + 0.2 * (lv - 1) + 0.1 * (t.asc || 0);

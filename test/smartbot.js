@@ -59,7 +59,7 @@ const PERK_PRI = { burst: 3, apRounds: 3, bounce: 2, hollow: 2, rapid: 2.5, sigh
   tube: 3, seek: 1.5, warhead: 2, shrap: 2, thermite: 2, autoload: 2.5, pods: 3, gel: 2,
   chain: 2.5, amps: 2.5, loop: 1.5, super: 3, arc: 1.5, overcur: 2.5, taser: 1.5, crown: 3, hv: 3,
   spread: 2, nozzle: 2, tank: 2, accel: 2.5, slag: 3, updraft: 2.5, slowBurn: 2, ion: 1.5,
-  fork: 3, hold: 2.5, focal: 1.5, quick: 2, brand: 1.5, slayer: 2.5, well: 3, facet: 3,
+  fork: 3, hold: 2.5, focal: 1.5, quick: 2, brand: 1.5, refract: 2, well: 3, facet: 3, pen: 3, weld: 3, shaped: 3,
   longPulse: 2, scatter: 3, burstE: 2, eater: 1.5, breech: 2.5, ionE: 2, blackout: 2, shell4: 3,
   undertow: 2.5, anchor: 1.5, heavy: 2, crush: 2.5, radius: 2, steady: 2, darkMark: 1.5, eddy: 2,
   ampP: 3, mast: 2, grid: 1.5, sync: 2.5, bigNet: 3, barbs: 2, tar: 2, exposed: 2.5, overtime: 3, fee: 2, compound: 2, hazard: 2.5 };

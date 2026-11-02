@@ -153,6 +153,7 @@ const PERKS = {
   ],
   missile: [
     { id: 'tube', name: 'Extra Tube', v: [1, 2], d: v => `+${v} half-power missile${v > 1 ? 's' : ''}` },
+    { id: 'pen', name: 'Penetrator', v: [1], d: () => 'Ignores Plating' },
     { id: 'seek', name: 'Smart Seekers', v: [1], d: () => 'Missiles retarget' },
     { id: 'warhead', name: 'Heavy Warhead', v: [0.4, 0.7], d: v => `+${v} Splash` },
     { id: 'shrap', name: 'Shrapnel', v: [1], d: () => 'Blasts throw 3 shards (25%)' },
@@ -164,6 +165,7 @@ const PERKS = {
   coil: [
     { id: 'chain', name: 'Extra Coil', v: [1, 2, 3], d: v => `+${v} Chain` },
     { id: 'amps', name: 'Amperage', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'weld', name: 'Arc Weld', v: [1], d: () => 'Ignores Plating' },
     { id: 'loop', name: 'Feedback Loop', v: [1], d: () => 'Last arc hits the first again' },
     { id: 'super', name: 'Superconductor', v: [1], d: () => 'No damage lost per jump' },
     { id: 'arc', name: 'Long Arc', v: [40, 65], d: v => `Arcs reach ${v}% farther` },
@@ -188,14 +190,15 @@ const PERKS = {
     { id: 'focal', name: 'Focal Length', v: [1, 1.6], d: v => `+${v} Range` },
     { id: 'quick', name: 'Quick Focus', v: [40, 65], d: v => `Ramps ${v}% faster` },
     { id: 'brand', name: 'Brand', v: [0.15, 0.25], d: v => `+${Math.round(v * 100)}% Mark chance` },
-    { id: 'slayer', name: 'Giant Slayer', v: [15, 25], d: v => `+${v}% Damage to bosses, elites` },
-    { id: 'well', name: 'Deep Well', spec: 1, v: [0.5], d: () => '+0.5 max ramp' },
+    { id: 'refract', name: 'Refraction', v: [0.25], d: () => 'Beam Shocks (25%)' },
+    { id: 'well', name: 'Deep Well', spec: 1, v: [0.3], d: () => '+0.3 max ramp' },
     { id: 'facet', name: 'Fourth Facet', spec: 2, v: [1], d: () => '+1 beam' },
   ],
   emp: [
     { id: 'longPulse', name: 'Long Pulse', v: [0.3, 0.5], d: v => `Stun lasts +${v} s` },
     { id: 'scatter', name: 'Scatter Shell', v: [1], d: () => 'Shells split in 3 (20%)' },
     { id: 'burstE', name: 'Wide Burst', v: [0.4, 0.7], d: v => `+${v} Splash` },
+    { id: 'shaped', name: 'Shaped Charge', v: [1], d: () => 'Ignores Plating' },
     { id: 'eater', name: 'Shield Eater', v: [1], d: () => 'Strips shields fully' },
     { id: 'breech', name: 'Fast Breech', v: [15, 27, 37, 45, 52], d: v => `+${v}% fire rate` },
     { id: 'ionE', name: 'Ion Charge', v: [0.6], d: () => 'Hits Shock' },
