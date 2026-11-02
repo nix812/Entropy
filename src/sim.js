@@ -1073,8 +1073,8 @@ function applyFire(t, s, D) {
   if (m.repulse) { s.repulse = 1; s.ground = false; }
   if (m.pullX) s.pull *= m.pullX;
 }
-// Arc Fence: a fence ticks FENCE.rate× as often for FENCE.dmg× the damage, on every enemy within FENCE.w of the line
-const FENCE = { dmg: 0.35, rate: 4, w: 0.45 };
+// Arc Fence: a fence ticks FENCE.rate× as often for FENCE.dmg× the damage, on every enemy within FENCE.w tiles of the line
+const FENCE = { dmg: 0.3, rate: 4, w: 1 }; // w 1: a fence along a road reaches the lane beside it (0.45 only worked across a road)
 // ---------- v5.8 play-style Capstones: their per-tower stat sides ----------
 function capPlay(t, s, D) {
   const ks = G.mods.ks;

@@ -601,14 +601,14 @@ const CAP_RENAMED = { glass: 'nest', deadeye: 'rico', overgrid: 'stormrider', th
 // Standard and the Technique (act('fire', x, y, id); t.fire, kept apart from targeting t.mode). Each is a different job, not an upgrade.
 // m keys are read in applyFire (sim.js): dmgX, rateX, rangeAdd, rangeX, pullX multiply or add; the rest switch behaviour.
 const TOWER_FIRE = {
-  pulse: [{ id: 'supp', need: 'kSupp', name: 'Suppressor', short: 'Slows what it hits by 35%. ×0.6 Damage', desc: 'Rounds slow what they hit by 35% for 1.5s. ×0.6 Damage', m: { dmgX: 0.6, supSlow: 0.35, supDur: 1.5 } }],
+  pulse: [{ id: 'supp', need: 'kSupp', name: 'Suppressor', short: 'Slows what it hits by 35%. ×0.75 Damage', desc: 'Rounds slow what they hit by 35% for 1.5s. ×0.75 Damage', m: { dmgX: 0.75, supSlow: 0.35, supDur: 1.5 } }],
   rail: [{ id: 'over', need: 'kOver', name: 'Charged Shot', short: 'Every 3rd shot ×4 and pierces all. Half speed', desc: 'Every 3rd shot deals ×4 and pierces every enemy in line. ×0.5 Attack Speed', m: { rateX: 0.5, ocEvery: 3, ocX: 4 } }],
   cryo: [{ id: 'lance', need: 'cLance', name: 'Cold Lance', short: 'A freezing beam on one target. ×3 Damage', desc: 'A freezing beam on one target instead of a pulse: ×3 Damage to it, pierces Plating, +0.8 Range', m: { lance: 3, rangeAdd: 0.8 } }],
   missile: [{ id: 'bunker', need: 'tBunk', name: 'Bunker Buster', short: '×2 Damage, ignores Plating. No splash', desc: 'One heavy warhead: ×2 Damage, ignores Plating and half of Armor. No splash, bomblets or napalm', m: { dmgX: 2, bunker: 1 } }],
-  coil: [{ id: 'fence', need: 'aFence', name: 'Arc Fence', short: 'Zaps a line to a Coil within 4 tiles', desc: 'Stops chaining. Arcs a fence to the nearest Coil within 4 tiles that zaps and Shocks everything crossing it', m: { fence: 4 } }],
-  flame: [{ id: 'back', need: 'tBack', name: 'Backdraft', short: 'A full ring of fire. ×0.6 Range', desc: 'Burns a full ring around the tower instead of a cone. ×0.6 Range, ×0.8 Damage', m: { ring: 1, rangeX: 0.6, dmgX: 0.8 } }],
+  coil: [{ id: 'fence', need: 'aFence', name: 'Arc Fence', short: 'Zaps a line to a Coil within 4 tiles', desc: 'Stops chaining. Arcs a fence to the nearest Coil within 4 tiles that zaps and Shocks everything within a tile of it', m: { fence: 4 } }],
+  flame: [{ id: 'back', need: 'tBack', name: 'Backdraft', short: 'A full ring of fire. ×0.7 Range', desc: 'Burns a full ring around the tower instead of a cone. ×0.7 Range, ×0.8 Damage', m: { ring: 1, rangeX: 0.7, dmgX: 0.8 } }],
   lens: [{ id: 'tether', need: 'vTether', name: 'Null Tether', short: 'No ramp. Beamed enemies 35% slower', desc: 'No ramp. Beamed enemies are 35% slower and Marked twice as fast. ×1.25 Damage', m: { tether: 0.35, dmgX: 1.25 } }],
-  emp: [{ id: 'mines', need: 'aMines', name: 'Pulse Mines', short: 'Lays up to 4 road mines. ×1.5 Damage', desc: 'Shells stay on the road as mines (up to 4) that blow when a ground enemy steps on them. ×1.5 Damage. Fliers never set them off', m: { mines: 4, dmgX: 1.5 } }],
+  emp: [{ id: 'mines', need: 'aMines', name: 'Pulse Mines', short: 'Lays up to 4 road mines. ×1.75 Damage', desc: 'Shells stay on the road as mines (up to 4) that blow when a ground enemy steps on them. ×1.75 Damage. Fliers never set them off', m: { mines: 4, dmgX: 1.75 } }],
   grav: [{ id: 'repulse', need: 'vRepulse', name: 'Repulsor', short: 'Hits fliers and throws them back', desc: 'Also hits fliers and throws them back along their flight. ×0.6 pull on the ground, ×0.5 Damage', m: { repulse: 1, pullX: 0.6, dmgX: 0.5 } }],
 };
 const fireModes = type => TOWER_FIRE[type] || [];
