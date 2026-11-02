@@ -1004,7 +1004,7 @@ function towerStats(t) {
   const mst = masteryRank(t.type) >= 2 ? 1 + MASTERY.stat : 1; // Mastery 2
   const O = M.orb || {}, oe = k => (O[k] && O[k][s.el]) || 0;
   const fluxAny = O.flux && Object.keys(O.flux).length;
-  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(G.ascV >= 2 ? ASC_DMG : ASC_DMG_OLD, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el] * (1 + pv('hv') / 100) * mst;
+  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(G.ascV >= 2 ? ASC_DMG : ASC_DMG_OLD, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el] * (1 + (pv('hv') + pv('accel')) / 100) * mst;
   let rate = D.rate * (sp.rateX || 1) * (1 + (A.rate || 0) / 100) * (cur.crate ? 0.85 : 1) * M.rate * (1 + (pv('rapid') + pv('comp') + pv('autoload') + pv('breech')) / 100);
   if (s.el === 'K') rate *= 1 + M.rateK;
   if (s.el === 'A') rate *= 1 + M.rateA;
@@ -1033,7 +1033,7 @@ function towerStats(t) {
   s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + pv('brand') + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
   s.chillPot = (sp.chillPot || 1) * M.chillPot;
   s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur + pv('deep');
-  s.shockX = sp.shockX || 1; s.burnX = (sp.burnX || 1) * (1 + (pv('thermite') + pv('accel')) / 100);
+  s.shockX = sp.shockX || 1; s.burnX = (sp.burnX || 1) * (1 + pv('thermite') / 100);
   s.stun = (sp.stun || 0) + pv('taser') / 100; s.stunDur = (sp.stunDur || D.stunDur || 0) + pv('longPulse');
   s.rampMax = (sp.rampMax || D.rampMax || 1) + pv('well'); s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0) + pv('facet');
   s.pull = (D.pull || 0) * (sp.pullX || 1) * (1 + pv('heavy') / 100); s.shells = (sp.shells || 1) + (D.kind === 'mortar' ? s.multi : 0) + pv('shell4'); s.cluster = sp.cluster ? sp.cluster + pv('pods') : 0; s.napalm = !!sp.napalm;
@@ -2901,7 +2901,7 @@ function towerAttack(t, range, sw) {
       const crit = rollCrit(t);
       let dmg = atkDmg(t, sw, crit);
       const pk = s.pkv;
-      if (pk.capBank && (t.railN = (t.railN || 0) + 1) % 4 === 0) dmg *= 2.5; // v5.8 Rail perks
+      if (pk.capBank && (t.railN = (t.railN || 0) + 1) % 3 === 0) dmg *= 2.5; // v5.8 Rail perks
       const n = Math.min(hits.length, 1 + s.pierce);
       for (let i = 0; i < n; i++) { hit(hits[i][1], dmg, s.el, t, { crit }); }
       if (n) ricochet(t, hits[0][1], dmg, s.el);
@@ -2932,12 +2932,12 @@ function towerAttack(t, range, sw) {
     case 'missile': {
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
-      for (let i = 0, nm = tg.length + (s.pkv.tube || 0); i < nm; i++) { // v5.8 Extra Tube: more missiles than targets cycle through them
+      for (let i = 0, nm = tg.length + (s.pkv.tube || 0); i < nm; i++) { // v5.8 Extra Tube: half-power extra missiles cycle through the targets
         const e = tg[i % tg.length];
         t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
         const crit = rollCrit(t);
         G.projs.push({ k: 'missile', x: t.cx, y: t.cy, vx: Math.cos(t.angle + (G.r() - 0.5)) * 2, vy: Math.sin(t.angle + (G.r() - 0.5)) * 2,
-          e, tx: e.x, ty: e.y, spd: s.pspd, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t, splash: s.splash, life: 4 });
+          e, tx: e.x, ty: e.y, spd: s.pspd, dmg: atkDmg(t, sw, crit) * (i < tg.length ? 1 : 0.5), crit, el: s.el, src: t, splash: s.splash, life: 4 });
       }
       Hooks.sfx('missile', t);
       return true;
@@ -3010,7 +3010,7 @@ function towerAttack(t, range, sw) {
       for (const e of tg) {
         const jugg = e.elite.includes('jugg');
         if (!jugg) { e.pullN = (e.pullN || 0) + 1; e.d = Math.max(0, e.d - s.pull * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - (pk.steady ? 0.075 : 0.15) * (e.pullN - 1))); }
-        hit(e, pk.crush ? dmg + e.maxHp * (e.boss || e.assault ? 0.003 : 0.01) : dmg, s.el, t);
+        hit(e, pk.crush ? dmg + e.maxHp * (e.boss || e.assault ? 0.004 : 0.015) : dmg, s.el, t);
         if (e.dead) continue;
         if (pk.undertow && !jugg) { e.gSlowT = 1.5; e.gSlowV = Math.max(e.gSlowV || 0, Math.min(0.5, pk.undertow / 100)); } // v5.8 Gravity perks
         if (pk.darkMark) { e.st.mark = Math.min(G.mods.markMax, e.st.mark + 1); e.st.markT = 4; }
@@ -3135,7 +3135,7 @@ function explode(p) {
     const near = G.enemies.filter(o => enemyTargetable(o) && dist2(o.x, o.y, p.x, p.y) < 6.25).sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y)).slice(0, 3);
     for (const o of near) G.projs.push({ k: 'bullet', x: p.x, y: p.y, e: o, spd: 12, dmg: p.dmg * 0.25, crit: false, el: p.el, src, bounces: 0, hitSet: new Set(), splash: 0, life: 1, shard: 1 });
   }
-  if (p.k === 'mortar' && s.pkv.scatter) for (let i = 0; i < 3; i++) G.projs.push({ k: 'bomblet', x: p.x + (G.r() - 0.5) * 1.8, y: p.y + (G.r() - 0.5) * 1.8, t: 0.2 + i * 0.1, dmg: p.dmg * 0.35, el: p.el, src, splash: 0.6, crit: false });
+  if (p.k === 'mortar' && s.pkv.scatter) for (let i = 0; i < 3; i++) G.projs.push({ k: 'bomblet', x: p.x + (G.r() - 0.5) * 1.8, y: p.y + (G.r() - 0.5) * 1.8, t: 0.2 + i * 0.1, dmg: p.dmg * 0.2, el: p.el, src, splash: 0.6, crit: false });
   if (p.k === 'mortar' && s.stunDur) Hooks.fx('emp', { x: p.x, y: p.y, r });
 }
 // ---- v4.2 Wildfire: burning ground enemies leave fire on the road; the more road burns, the hotter it gets ----

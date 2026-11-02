@@ -1145,7 +1145,7 @@ const RES = 2;
     //    tower is maxed, the cheapest affordable Ascension. It points at the best next upgrade, not at everything you could buy
     { const tpx = TILE * ws, cr = G.credits, big = tpx >= 17;
       let best = null, bl = Infinity, bc = Infinity;
-      if (!G.over) for (const t of G.towers) { const c0 = upgradeCost(t); if (cr < c0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } }
+      if (!G.over) for (const t of G.towers) { const c0 = upgradeCost(t); if (cr < c0 || t.ascPend > 0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } }
       for (const t of G.towers) {
         const n = towerLevel(t), col = lvTier(n).col, x0 = bx2s(t.x * TILE), x1 = bx2s(t.x * TILE + TILE), y = Math.round(by2s(t.y * TILE + TILE)), w = x1 - x0, lw = Math.max(2, Math.round(tpx / 12));
         c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x0 + w * 0.18) - 1, y - lw - 1, Math.round(w * 0.64) + 2, lw + 2);
