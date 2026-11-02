@@ -34,9 +34,16 @@ paint(cat, P['c1'], P['c3'], P['c0'], P['c2'])
 paint(arm_l, P['g2'], P['g4'], P['g1'], P['g3'])
 paint(arm_r, P['g1'], P['g3'], P['g0'], P['g2'])
 paint(front, P['g2'], P['g4'], P['g0'], P['g3'])
-# plush seams on the front cushion
+# the leg: one front leg stretched out and draped over the front cushion (his usual pose)
+leg = mask(); ld = ImageDraw.Draw(leg)
+for y in range(33, 50):
+    cx = 27.5 - (y - 33) * 0.55
+    ld.rectangle([round(cx - 2.4), y, round(cx + 2.2), y], fill=1)
+ld.ellipse([13, 46, 23, 53], fill=1)  # paw
+paint(leg, P['c1'], P['c3'], P['c0'], P['c2'])
+
 for x in range(16, 49):
-    if (x // 2) % 2 == 0: px[x, 47] = col(P['g1'])
+    if (x // 2) % 2 == 0 and not at(leg, x, 47): px[x, 47] = col(P['g1'])
 # inner ears
 for (x, y) in [(24, 12), (24, 13), (25, 13), (24, 14), (25, 14), (26, 15), (39, 12), (39, 13), (38, 13), (39, 14), (38, 14), (37, 15)]:
     px[x, y] = col(P['ear'])
@@ -49,6 +56,8 @@ for ex in (25, 35):
 px[31, 27] = col(P['nose']); px[32, 27] = col(P['nose'])
 for (x, y) in [(31, 35), (32, 35), (31, 36), (32, 36), (31, 37)]: px[x, y] = col(P['white'])
 px[31, 28] = col(P['c0']); px[32, 28] = col(P['c0']); px[30, 29] = col(P['c2']); px[33, 29] = col(P['c2'])
+# toe beans: two dark lines on the paw
+for (x, y) in [(16, 52), (18, 52), (20, 52)]: px[x, y] = col(P['c0'])
 # whiskers, faint
 for (x, y) in [(18, 27), (19, 27), (20, 28), (44, 27), (45, 27), (43, 28)]: px[x, y] = col('#6e6a85')
 img.save('nigel_px.png')
