@@ -635,10 +635,10 @@ function talentLines(t, rank) {
   return Object.keys(t.fx).map(k => { const v = t.fx[k]; const txt = STAT_TXT[k]; if (!txt) return k; return typeof v === 'number' && v !== 1 ? txt(+(v * r).toFixed(2)) : txt(v); });
 }
 
-// v5.8 XP curve: each level costs 350 + 120 × L^1.7 XP (XP is 10% of score). A fresh first run gives about 3-5 levels, a typical run
+// v5.8 XP curve: each level costs 350 + 140 × L^1.6 XP (XP is 10% of score). A fresh first run gives about 3-5 levels, a typical run
 // 6-12, and a deep run no longer pays 38 levels at once (the old 3000 + 250L + 3L² was flat at the top, steep at the bottom).
 // migrateWeb converts old profiles so nobody loses a level. The table is in docs/notes/talents.md.
-const xpForLevel = L => Math.round(350 + 120 * Math.pow(L, 1.7));
+const xpForLevel = L => Math.round(350 + 140 * Math.pow(L, 1.6));
 // the 5.2-5.7 curve, kept for the migration
 const xpForLevelV5 = L => L === 0 ? 800 : L === 1 ? 1600 : Math.round(3000 + 250 * L + 3 * L * L);
 function levelFromXP(xp, f) {
@@ -699,7 +699,7 @@ const LAWS = [
   { id: 'brittle', name: 'Brittle Star', up: '+60% core Damage, +1 core Range', down: '−25% core max HP', m: { coreDmg: 60, coreRange: 1 }, af: { coreHPx: 0.75 } },
 ];
 const LAW_SCORE = 0.15, NOVA_SCORE = 0.1, NOVA_XP = 0.25;
-const novaLevelReq = n => Math.min(100, 28 + 5 * n); // v5.3: 40 (was 60); extracted runs get there. v5.8: 28 + 5n on the steeper XP curve (about the same XP as 40 + 10n was)
+const novaLevelReq = n => Math.min(100, 30 + 5.5 * n | 0); // v5.3: 40 (was 60); extracted runs get there. v5.8: 30 + 5.5n on the steeper XP curve (about the same XP as 40 + 10n was)
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',
   'Last Light', 'Gravedigger', 'Little Sun', 'Night Shift', 'Paper Moon', 'Iron Psalm', 'Red Tide', 'Cold Comfort', 'Dead Reckoning',
