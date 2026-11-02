@@ -10,7 +10,7 @@ Every run now has a reason to exist and a shape of its own. You pick a zone at t
 |---|---|---|---|---|---|---|---|
 | Quiet Drift (start zone) | Thin traffic and kind weather | Drones (fewer Juggernauts, Skimmers) | Cryo Front | Gold Rush, Meteors, Overcharge | Colossal Behemoth | +10% Credits | −10% score |
 | The Hive | Brood nests on every lane | Swarmers, Splitters | Solar Flare | Swarm Tide, Rift Breach | Twin Hive Queen | +1 Chain, +15% Thermal | +10% enemy speed |
-| Iron Reach | Juggernauts and Aegis walls | Juggernauts, Aegis, Reflectors | Static Haze | Elite Tide, Nanite Bloom | Armored Titan (from W30) | +15% armour piercing | +10% enemy HP |
+| Iron Reach | Juggernauts and Aegis walls | Juggernauts, Aegis, Reflectors | Static Haze | Elite Tide, Nanite Bloom | Armored Titan (from W30) | +15% armour piercing | +6% enemy HP |
 | Open Skies | Skimmers and Carriers fly straight in | Skimmers, Carriers | Ion Storm | Phase Shift, Surge | Spectral Space Whale | +20% Arc, +8% Range | +10% tower cost |
 | Ghost Lanes | Phantoms flicker in and out | Phantoms, Menders, Leeches | Void Tide | Blackout, Phase Shift | Spectral Phase Wraith | +25% Void | −10% Range |
 | Salvage Belt | Rich wrecks, Leeches after your bank | Leeches, Sappers, Drones | Static Haze | Gold Rush, EMP Storm | Loaded Auditor | +25% Credits | +15% upgrade cost |
@@ -25,7 +25,7 @@ Every run now has a reason to exist and a shape of its own. You pick a zone at t
 
 **Bounty Purse.**
 - 60% of every XP gain banks at once (the level-up feedback stays); the other 40% goes into the purse.
-- Each bounty claimed grows the purse ×1.25. Each push multiplies it by the door's tier.
+- Each bounty claimed grows the purse ×1.5. Each push multiplies it by the door's tier.
 - Extract banks the whole purse. If the core falls (or you abandon), you keep 30%.
 - The purse shows on the HUD's bounty chip ("Bounty · W40 · Purse 12.3K"), on the bounty card with plain text, and on the game-over card ("you kept 30%, +1,500 of 5,000 XP. Extracting after X would have banked all of it").
 - Replays, watching and Daily resumes never pay it out.
@@ -43,7 +43,7 @@ Every run now has a reason to exist and a shape of its own. You pick a zone at t
 | Blitz | Enemies spawn 25% faster and move 6% faster | 2 | +15% |
 | New Wormhole | A new lane opens in 2 waves | 2 | +15% |
 
-Late health growth is trimmed to match: past Wave 50 the health curve's growth is raised to the power 0.92 (W60 ×0.85, W70 ×0.72, W90 ×0.49, W120 ×0.26 of the old health), so long runs end on twists and decisions rather than a pure health wall.
+Late health growth is trimmed to match: past Wave 50 the health curve's growth is raised to the power 0.9 (W60 ×0.82, W70 ×0.66, W90 ×0.41, W120 ×0.18 of the old health), so long runs end on twists and decisions rather than a pure health wall.
 
 **Boons, folded in.** Bounty waves: the jump doors replace the boon. Boss waves from Wave 50: the escalation replaces the boon. Other boss waves (W10, W30, and any boss wave before 50 without a bounty) keep their boon pick, because those early picks are the only power spikes a young run gets before its first door. If a wave has both (a bounty at W60), the escalation comes first, then the bounty card.
 
@@ -62,7 +62,7 @@ Late health growth is trimmed to match: past Wave 50 the health curve's growth i
   - `genWave`: zone roster lean (types and headline picks), Carrier Fleet headline, `af.affN`, `af.gap`, `af.rifts`, Twin Bosses queue entry (`hpX`). `spawnBoss`: `hp × q.hpX`, boss remembers its wave (`e.bw`). `wpickI` helper.
   - `rollEvents` (zone event weights), `updateStorms` (zone weather ×4), enemy speed (`af.stormHaste`), `breedPlan` (`af.learn`).
   - `planWanted` → `sectorPoster()` / `sectorWanted(sid, w)`: the zone's Most Wanted, no `G.r` draw.
-  - `claimBounty`: purse ×1.25, door offers from `G.r` on `G.huntChoice.doors`.
+  - `claimBounty`: purse ×1.5, door offers from `G.r` on `G.huntChoice.doors`.
   - `huntPush(door)`, `enterSector(sid, tier)`, `huntExtract` (hk: banks via gameOver), `bankPurse()` (called first thing in `gameOver`; never pays in `ghostRun`). **Hotspot: one line in gameOver.**
   - `addScore`: on hk, `G.xpRaw` (what 5.7 would have paid), purse share, banked share.
   - `kill()`: escalation offer at W50+ boss waves, boon skipped on bounty kills and W50+; `twistOffers()`, `takeTwist()`, `takeBoon` routes twists.

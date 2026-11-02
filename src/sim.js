@@ -260,7 +260,7 @@ const hpQ = w => w <= 40 ? Math.pow(1.0011, (w - 1) * (w - 1)) : Math.pow(1.0011
 const hpMid = w => { const k = Math.min(1, Math.max(0, (w - 20) / 30)); return 1 + ENVN0('HPMID', 0.2) * k * k * (3 - 2 * k); };
 const hpMult0 = w => (1 + 0.14 * (w - 1)) * Math.pow(1.078, w - 1) * hpQ(w) * hpMid(w);
 // 5.8: past Wave 50 the escalations carry the late game, so health grows slower there (runs on the 5.8 rules only; HKTRIM for tests)
-const HK_TRIM = ENVN0('HKTRIM', 0.92);
+const HK_TRIM = ENVN0('HKTRIM', 0.9);
 const hpMult = w => G && G.hk && w > TWIST_FROM ? hpMult0(TWIST_FROM) * Math.pow(hpMult0(w) / hpMult0(TWIST_FROM), HK_TRIM) : hpMult0(w);
 // v5.0: after Wave 40 kill credits grow 1% faster per wave (Nic: late upgrades outpaced income as waves got longer)
 const crMult = w => 1.1 * (1 + 0.05 * (w - 1)) * (1 + Math.max(0, w - 40) * 0.01);

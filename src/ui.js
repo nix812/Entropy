@@ -204,6 +204,8 @@ const UI = (() => {
     Render.preview_map($('#mapPrev'), setup.map, setup.frac);
   }
   // 5.8 sector contracts: three offers from the setup seed (a new map, new offers). A fresh profile gets the gentle default, unasked
+  // short numbers for tight chips: 940, 12K, 1.2M
+  const fmtS = n => { n = Math.round(n || 0); return n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'K' : String(n); };
   function setupSector() {
     if (freshProfile()) return SECTOR_START;
     if (setup.secSeed !== setup.seed) { setup.secSeed = setup.seed; setup.secOffers = sectorOffers(setup.seed); }
@@ -431,7 +433,7 @@ const UI = (() => {
     // Tap it for the full board. Replaces the separate Next / headline / gene / DNA chips and the assault banner
     { const th = threatChip(); if (th) chips.push(th); }
     if (G.wanted && G.wantedTold && !G.wanted.done) chips.push(G.hk // 5.8: the bounty wave and the Bounty Purse, kept short so it fits beside the threat chip on a phone
-      ? `<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1" title="Bounty on Wave ${G.wanted.w}. Bounty Purse: Extract after a bounty to bank all of it; if your core falls you keep ${Math.round(PURSE.death * 100)}%">${G.wanted.nemesis ? 'Nemesis ' : ''}W${G.wanted.w} · <i class="pz">${fmt(G.purse)} XP</i></span>`
+      ? `<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1" title="Bounty on Wave ${G.wanted.w}. Bounty Purse: Extract after a bounty to bank all of it; if your core falls you keep ${Math.round(PURSE.death * 100)}%">${G.wanted.nemesis ? 'Nemesis ' : ''}W${G.wanted.w}<i class="pz">${fmtS(G.purse)} XP</i></span>`
       : `<span class="evchip wanted${G.wanted.nemesis ? ' nem' : ''}" data-wanted="1">${G.wanted.nemesis ? 'Nemesis' : 'Bounty'} · W${G.wanted.w}${G.pushes ? ' · ×' + huntMult().toFixed(2) : ''}</span>`);
     { const asb = $('#asbar'); if (asb && !asb.hidden) { asb.hidden = true; document.body.classList.remove('asbar'); } }
     { // Doctrine meters, bottom right of the field

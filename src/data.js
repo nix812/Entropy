@@ -212,7 +212,7 @@ const HUNT = { every: 20, pushScore: 0.25, extractXp: 0.5, pts: 40 };
 const HOOK_VER = 1;
 // Bounty Purse: `safe` of all XP banks as you earn it, the rest goes in the purse. A claimed bounty grows it ×bounty, a push ×(door tier).
 // Extract banks the whole purse; a fallen core banks `death` of it.
-const PURSE = { safe: 0.6, death: 0.3, bounty: 1.25 };
+const PURSE = { safe: 0.6, death: 0.3, bounty: 1.5 };
 // jump door risk: purse multiplier on the push, and what the next 20 waves cost (enemy HP, elites) and pay (score and XP)
 const DOOR_TIERS = [
   { id: 'steady', name: 'Steady', col: '#59f0b4', mult: 1.25, af: {}, desc: 'No extra danger' },
@@ -229,13 +229,13 @@ const SECTORS = [
     lean: { swarmer: 3, splitter: 3, drone: 0.6 }, storm: 'solar', ev: { swarm: 3, breach: 1.5 }, boss: 'queen', mod: 'twins',
     up: '+1 Chain, +15% Thermal Damage', down: '+10% enemy speed', m: { chain: 1, dmgT: 15 }, af: { haste: 0.1 } },
   { id: 'iron', name: 'Iron Reach', col: '#c8ccd8', pitch: 'Juggernauts and Aegis walls grind down the road.',
-    lean: { tank: 3, shielder: 3, reflector: 1.5, swarmer: 0.5 }, storm: 'static', ev: { elite: 1.5, regen: 1.5 }, boss: 'titan', mod: 'armored',
-    up: '+15% armour piercing', down: '+10% enemy HP', m: { armorPen: 15 }, af: { hpx: 0.1 } },
+    lean: { tank: 2.5, shielder: 2.5, reflector: 1.5, swarmer: 0.6 }, storm: 'static', ev: { elite: 1.5, regen: 1.5 }, boss: 'titan', mod: 'armored',
+    up: '+15% armour piercing', down: '+6% enemy HP', m: { armorPen: 15 }, af: { hpx: 0.06 } },
   { id: 'skies', name: 'Open Skies', col: '#9ad8ff', pitch: 'No roads up here. Skimmers and Carriers fly straight in.',
-    lean: { flyer: 3.5, carrier: 3, tank: 0.5, sapper: 0.5 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
+    lean: { flyer: 2.2, carrier: 2.5, tank: 0.6, sapper: 0.6 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
     up: '+20% Arc Damage, +8% Range', down: '+10% tower cost', m: { dmgA: 20, range: 8 }, af: { costX: 0.1 } },
   { id: 'ghost', name: 'Ghost Lanes', col: '#b86cff', pitch: 'Phantoms flicker in and out. Bring eyes.',
-    lean: { phantom: 4, medic: 1.5, leech: 2 }, storm: 'void', ev: { blackout: 2, phase: 2 }, boss: 'wraith', mod: 'spectral',
+    lean: { phantom: 3, medic: 1.5, leech: 2 }, storm: 'void', ev: { blackout: 2, phase: 2 }, boss: 'wraith', mod: 'spectral',
     up: '+25% Void Damage', down: '−10% Range', m: { dmgV: 25, range: -10 } },
   { id: 'salvage', name: 'Salvage Belt', col: '#ffd84a', pitch: 'Rich wrecks, pirate traffic, and Leeches after your bank.',
     lean: { leech: 3, sapper: 2, drone: 1.3 }, storm: 'static', ev: { gold: 3, emp: 1.5 }, boss: 'auditor', mod: 'loaded',
