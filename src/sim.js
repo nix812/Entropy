@@ -1004,7 +1004,7 @@ function towerStats(t) {
   const mst = masteryRank(t.type) >= 2 ? 1 + MASTERY.stat : 1; // Mastery 2
   const O = M.orb || {}, oe = k => (O[k] && O[k][s.el]) || 0;
   const fluxAny = O.flux && Object.keys(O.flux).length;
-  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(G.ascV >= 2 ? ASC_DMG : ASC_DMG_OLD, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el] * (1 + (pv('hv') + pv('accel')) / 100) * mst;
+  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(G.ascV >= 2 ? ASC_DMG : ASC_DMG_OLD, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el] * (1 + (pv('hv') + pv('accel') + pv('overpress') + pv('amps')) / 100) * mst;
   let rate = D.rate * (sp.rateX || 1) * (1 + (A.rate || 0) / 100) * (cur.crate ? 0.85 : 1) * M.rate * (1 + (pv('rapid') + pv('comp') + pv('autoload') + pv('breech')) / 100);
   if (s.el === 'K') rate *= 1 + M.rateK;
   if (s.el === 'A') rate *= 1 + M.rateA;

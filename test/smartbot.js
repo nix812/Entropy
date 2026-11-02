@@ -54,10 +54,10 @@ function bestSpot(G, type, near) {
 }
 // v5.8 Ascension perks: a rough value per perk (damage that scales late scores high), plus noise so runs differ. NOPERK=1 takes card 0
 const PERK_PRI = { burst: 3, apRounds: 3, bounce: 2, hollow: 2, rapid: 2.5, sights: 1.5, spin: 3, barrel: 3,
-  pierce: 2.5, spotter: 1.5, deflect: 2, capBank: 3, coup: 2, bigGame: 2.5, barrelR: 1.5, slug: 2.5, liveWire: 1.5,
+  pierce: 2.5, overpress: 2.5, spotter: 1.5, deflect: 2, capBank: 3, coup: 2, bigGame: 2.5, barrelR: 1.5, slug: 2.5, liveWire: 1.5,
   iceBurst: 2, brittle: 3, deep: 2, flash: 2.5, ring: 2, comp: 2, perma: 2, fault: 2.5,
   tube: 3, seek: 1.5, warhead: 2, shrap: 2, thermite: 2, autoload: 2.5, pods: 3, gel: 2,
-  chain: 2.5, loop: 1.5, super: 3, arc: 1.5, overcur: 2.5, taser: 1.5, crown: 3, hv: 3,
+  chain: 2.5, amps: 2.5, loop: 1.5, super: 3, arc: 1.5, overcur: 2.5, taser: 1.5, crown: 3, hv: 3,
   spread: 2, nozzle: 2, tank: 2, accel: 2.5, slag: 3, updraft: 2.5, slowBurn: 2, ion: 1.5,
   fork: 3, hold: 2.5, focal: 1.5, quick: 2, brand: 1.5, slayer: 2.5, well: 3, facet: 3,
   longPulse: 2, scatter: 3, burstE: 2, eater: 1.5, breech: 2.5, ionE: 2, blackout: 2, shell4: 3,
