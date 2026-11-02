@@ -6,36 +6,53 @@ const SFX = (() => {
   let sfxVol = 0.8, musVol = 0.45, mono = false;
   // v5.5.3 Mono Audio (Settings): the master gain sums left and right into one channel (the speakers rule: (L + R) / 2), then the
   // output plays it in both ears, so nothing panned to one side is lost with a single earbud
-  function applyMono() { if (!master) return; master.channelCountMode = mono ? 'explicit' : 'max'; master.channelCount = mono ? 1 : 2; master.channelInterpretation = 'speakers'; }
+  // v5.5.4: both output paths are built once and switched by gain. Changing channelCount on a live node (5.5.3) is the kind of thing
+  // Safari handles worse than Chrome, so nothing about the channel layout changes while sound plays.
+  let monoMix = null;
+  function buildOut(src, dest) {
+    const st = ctx.createGain(); st.gain.value = mono ? 0 : 1; src.connect(st); st.connect(dest);
+    const up = ctx.createGain(); up.channelCount = 2; up.channelCountMode = 'explicit'; up.channelInterpretation = 'speakers'; // a mono signal arrives as L = R
+    const sp = ctx.createChannelSplitter(2), hl = ctx.createGain(), hr = ctx.createGain(), sum = ctx.createGain(), mg = ctx.createChannelMerger(2), mo = ctx.createGain();
+    hl.gain.value = 0.5; hr.gain.value = 0.5; mo.gain.value = mono ? 1 : 0;
+    src.connect(up); up.connect(sp); sp.connect(hl, 0); sp.connect(hr, 1); hl.connect(sum); hr.connect(sum); sum.connect(mg, 0, 0); sum.connect(mg, 0, 1); mg.connect(mo); mo.connect(dest);
+    monoMix = { st, mo };
+  }
+  function applyMono() { if (!monoMix || !ctx) return; const t = ctx.currentTime; monoMix.st.gain.setTargetAtTime(mono ? 0 : 1, t, 0.02); monoMix.mo.gain.setTargetAtTime(mono ? 1 : 0, t, 0.02); }
+  // v5.5.4 iOS: an audio-route change (an AirPod in or out, a call, Siri) can leave the context 'interrupted', not 'suspended'.
+  // Anything but 'running' gets a resume: on every tap, when the page comes back, and shortly after the state changes.
+  function wake() { if (!ctx || offline || ctx.state === 'running' || ctx.state === 'closed') return; try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+  let lastErr = null, errN = 0;
+  function noteErr(e, where) { errN++; lastErr = { msg: String((e && e.message) || e).slice(0, 120), where, at: Date.now() }; try { console.error('[Entropy audio]', where, e); } catch (x) {} }
   const revCache = {};
   const last = {};
   let recent = [];
   const now = () => ctx.currentTime;
 
   function init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) { wake(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     ctx = new AC();
     // master: a brickwall limiter just under 0 dBFS. The SFX glue compressor (in buildBuses) does the gentle work.
     limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -3; limiter.knee.value = 1; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.12;
-    master = ctx.createGain(); master.gain.value = 0.95; applyMono();
+    master = ctx.createGain(); master.gain.value = 0.95;
     sfxBus = ctx.createGain(); sfxBus.gain.value = sfxVol;
     musBus = ctx.createGain(); musBus.gain.value = musVol;
-    sfxBus.connect(limiter); limiter.connect(master); master.connect(ctx.destination);
+    sfxBus.connect(limiter); limiter.connect(master); buildOut(master, ctx.destination);
     makeNoise(); buildBuses(); hookMusic();
+    ctx.onstatechange = () => { if (ctx.state !== 'running' && !document.hidden) setTimeout(wake, 300); };
     // iOS: play one silent buffer inside the unlocking gesture
     try { const sb = ctx.createBufferSource(); sb.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); sb.connect(ctx.destination); sb.start(0); } catch (e) {}
-    Music.start();
+    try { Music.start(); } catch (e) { noteErr(e, 'start'); }
   }
   // v4.6: one soundtrack, the generative composer (Drift, below). The menu and battle scenes only steer its choices.
   function setTrack(t) { Music.setScene(t === 'game' ? 'game' : 'menu'); }
   function setSoundtrack() {}
   const synthOut = () => musBus;
   // iOS only starts audio inside a user gesture: resume on every tap until it runs
-  for (const ev of ['touchend', 'click', 'pointerup', 'keydown']) document.addEventListener(ev, () => { if (ctx && ctx.state === 'suspended') ctx.resume(); }, { passive: true });
-  document.addEventListener('visibilitychange', () => { if (!ctx || offline) return; if (document.hidden) ctx.suspend && ctx.suspend(); else ctx.resume && ctx.resume(); });
+  for (const ev of ['touchend', 'click', 'pointerup', 'keydown']) document.addEventListener(ev, wake, { passive: true });
+  document.addEventListener('visibilitychange', () => { if (!ctx || offline) return; if (document.hidden) { try { ctx.suspend && ctx.suspend(); } catch (e) {} } else wake(); });
   function setVolumes(s, m) {
     sfxVol = s; musVol = m;
     if (sfxBus) sfxBus.gain.setTargetAtTime(s, now(), 0.05);
@@ -423,8 +440,8 @@ const SFX = (() => {
   function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; buildMasterOffline(); }
   function buildMasterOffline() {
     limiter = ctx.createDynamicsCompressor(); limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
-    master = ctx.createGain(); master.gain.value = 1; applyMono(); sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
-    sfxBus.connect(limiter); limiter.connect(master); master.connect(ctx.destination);
+    master = ctx.createGain(); master.gain.value = 1; sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
+    sfxBus.connect(limiter); limiter.connect(master); buildOut(master, ctx.destination);
     makeNoise(); buildBuses(); hookMusic();
   }
   function makeNoise() {
@@ -1012,6 +1029,7 @@ const SFX = (() => {
     const lvl = (thr) => { const E = Math.max(0, effE() + P.form[Math.floor(bar / 8) % 4].d); return E >= thr ? Math.min(1, 0.55 + (E - thr) * 1.5) : 0; };
 
     function scheduleStep(t) {
+      if (API._fault) { API._fault = 0; throw new Error('test fault'); }
       if (P.skip && s16 === 0) { newPiece(nextSpec()); forceNext = null; return scheduleStep(t); }
       const S = P.S, sp16 = P.spb / 4, phIdx = Math.floor(bar / 8) % 4, ph = P.form[phIdx], barInPh = bar % 8, lastBarOfPh = barInPh === 7;
       const ch = chordAt(bar), swingOff = (s16 % 2 === 1) ? (S.swing - 0.5) * 2 * sp16 : 0, hum = () => S.human ? (R() - 0.5) * S.human / 1000 : 0;
@@ -1139,7 +1157,7 @@ const SFX = (() => {
       if (nextT < ctx.currentTime - 0.4) nextT = ctx.currentTime + 0.05;
       if (paused || held) return;
       const until = (horizon !== undefined ? horizon : ctx.currentTime + 0.3);
-      while (nextT < until) { const t = nextT; scheduleStep(t); nextT += liveSpb() / 4; }
+      while (nextT < until) { const t = nextT; try { scheduleStep(t); } catch (e) { noteErr(e, 'step ' + (P ? P.g + '/' + P.f : '')); try { forceNext = null; newPiece(null); } catch (e2) { noteErr(e2, 'recover'); nextT += 1; } } nextT += liveSpb() / 4; }
     }
     // ---------------- v5.5 composer: a piece whose parts are chosen instead of rolled ----------------
     // A comp is plain data (it travels in saved tracks and share codes): genre + flavour (the sound kit and arrangement), mode,
@@ -1208,7 +1226,7 @@ const SFX = (() => {
     }
     function meterOf(an) { if (!an) return 0; const a = new Float32Array(an.fftSize); an.getFloatTimeDomainData(a); let s = 0; for (const v of a) s += v * v; return Math.sqrt(s / a.length); }
     const flavName = (g, f) => GENRES[g] && GENRES[g].flavours[f] ? GENRES[g].flavours[f].name : '';
-    return {
+    const API = {
       start, schedule, GENRES, GENRE_IDS, CHN, DEF, flavName,
       setIntensity(v) { targetB = clamp(v, 0, 1); },
       setScene(s) { scene = s; },
@@ -1276,9 +1294,10 @@ const SFX = (() => {
       get log() { return pieceLog; },
       get piece() { if (!P) return null; const ph = P.form[Math.floor(bar / 8) % 4]; return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: 32, step: s16, seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.brk ? (ph.build ? 'Breakdown · build' : 'Breakdown') : ph.drop ? 'Drop' : ph.version ? 'Dub version' : ['Intro', 'Groove', 'Bridge', 'Return'][Math.floor(bar / 8) % 4] }; },
     };
+    return API;
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, get ready() { return !!ctx; } };
+  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------

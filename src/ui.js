@@ -1558,7 +1558,9 @@ const UI = (() => {
     modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
       <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
       <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
-      <div class="set"><span>Music Studio <em class="dim">genres, mixer, saved pieces</em></span><button class="chip on" style="--c:#ff5fa8" data-act="studioS">Open</button></div>
+      <div class="set"><span>Music Studio <em class="dim">genres, mixer, your tracks</em></span><button class="chip on" style="--c:#ff5fa8" data-act="studioS">Open</button></div>
+      <div class="set"><span>Sound <em class="dim" id="sndStat">${esc(soundStatus())}</em></span><button class="chip" data-act="sndFix">Restart sound</button></div>
+      <div class="set"><span>Mono Audio <em class="dim">one earbud, one speaker</em></span><button class="chip ${S.mono ? 'on' : ''}" data-act="mono">${S.mono ? 'On' : 'Off'}</button></div>
       <label class="set"><span>Music Tempo <em id="bpmV" class="dim">${S.bpm || 72} BPM</em></span><input id="setBpm" type="range" min="56" max="100" step="2" value="${S.bpm || 72}"></label>
       <p class="note tempo">The tempo of the Default mix. In the Music Studio each genre has its own.</p>
       ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
@@ -1572,7 +1574,6 @@ const UI = (() => {
       <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
       <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
       <div class="set"><span>Damage Numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Mono Audio <em class="dim">one earbud, one speaker</em></span><button class="chip ${S.mono ? 'on' : ''}" data-act="mono">${S.mono ? 'On' : 'Off'}</button></div>
       <div class="set"><span>Screen Shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
       <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
       ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
@@ -1584,6 +1585,17 @@ const UI = (() => {
     $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
     const bp = $('#setBpm'); if (bp) { bp.oninput = () => { PROF.settings.bpm = +bp.value; $('#bpmV').textContent = bp.value + ' BPM'; SFX.music.setBaseBpm(+bp.value); }; bp.onchange = () => Save.save(); }
+  }
+  // v5.5.4: one line on the state of the sound, for Settings (and for Nic to read out if the music ever goes quiet)
+  function soundStatus() {
+    const M = SFX.music, st = SFX.state || 'none', p = M.piece, bits = [];
+    bits.push(st === 'none' ? 'not started yet (tap anywhere)' : st === 'running' ? 'on' : st);
+    if (M.paused) bits.push('music paused'); if (M.held) bits.push('composer holding the radio');
+    if ((PROF.settings.music || 0) <= 0.01) bits.push('music volume is 0');
+    if (p && st === 'running' && !M.paused && !M.held) bits.push('playing ' + p.genreName);
+    if (SFX.mono) bits.push('mono');
+    const e = SFX.lastError; if (e) bits.push('recovered from: ' + e.msg);
+    return bits.join(' · ');
   }
   // ---------- v5.5 Music Studio: Listen / Shape / Compose, with the piece always in view ----------
   // The now-playing bar (name, visualizer, Back / Pause / Skip / Repeat / Keep) sits in the card's header so it never scrolls
@@ -2226,6 +2238,10 @@ const UI = (() => {
       case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
       case 'notes': PROF.settings.notes = b.dataset.v; Save.save(); renderFeed(); openSettings(); break;
       case 'nums': PROF.settings.dmgNums = !PROF.settings.dmgNums; Render.nums = PROF.settings.dmgNums; Save.save(); openSettings(); break;
+      case 'sndFix': { // v5.5.4: wake the audio, clear any pause or hold, start a fresh piece now
+        SFX.init(); SFX.wake(); const M = SFX.music; M.setPaused(false); if (modalOpen !== 'studio') M.setHold(false); M.jump(null);
+        setTimeout(() => { const el = $('#sndStat'); if (el) el.textContent = soundStatus(); }, 700);
+        toast('SOUND RESTARTED', soundStatus(), '#59f0b4'); break; }
       case 'mono': PROF.settings.mono = !PROF.settings.mono; SFX.setMono(PROF.settings.mono); Save.save(); openSettings(); break;
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;
       case 'wipe': if (!confirmReset) { confirmReset = true; openSettings(); return; } PROF = defaultProfile(); Save.save(); closeModal(); renderHangar(); toast('PROGRESS RESET', 'All progress erased', '#ff4d6a'); break;
@@ -2564,7 +2580,7 @@ const Tree = (() => {
   }, 1000);
   // hangar backdrop (v5.5: HangarFX in render.js)
   const bg = $('#bgfx'); const drawBg = dt => HangarFX.draw(bg, dt);
-  let last = performance.now(), acc = 0;
+  let last = performance.now(), acc = 0, wakeT = 2;
   const STEP = 1 / 30;
   function frame(ts) {
     requestAnimationFrame(frame);
@@ -2583,6 +2599,7 @@ const Tree = (() => {
       Render.draw(halted ? 0 : dt);
     } else { if (UI.screen === 'hangar') drawBg(dt); ART.idle(4); } // menus: pre-render unit art in the background
     if (Tree.isOpen) Tree.draw();
+    wakeT -= dt; if (wakeT <= 0) { wakeT = 2; if (!document.hidden) SFX.wake(); } // iOS can leave the sound 'interrupted'
     UI.tick(dt);
   }
   setTimeout(() => UNITS.warmEnemies(), 1500);
