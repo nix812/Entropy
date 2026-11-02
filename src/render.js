@@ -27,7 +27,7 @@ const RES = 2;
   // v5.8 tower character (render-only): a render clock, small screen kicks for heavy hits, hop stars and pull streaks.
   // LITE skips decorative extras on a crowded field or at high speed
   let rt = 0, kickT = -9, stars = [], drags = [], LITE = false;
-  function kick(px) { if (!doShake || rt - kickT < 0.25) return; kickT = rt; shakeAt(px * 2, 0.12); }
+  function kick(px, gap) { if (!doShake || rt - kickT < (gap || 0.25)) return; kickT = rt; shakeAt(px * 2, 0.12); }
   // flame particles age white → yellow → orange → smoke (Inferno redder, Plasma Torch blue-white)
   const FLAME_RAMP = { 1: ['#ffffff', '#fff3b0', '#ffe14d', '#ff9a3c', '#ff6a2a', '#5e5658'], 2: ['#fff0c0', '#ffd24a', '#ff8a2a', '#ff4a1a', '#c0281a', '#5a4444'],
     3: ['#ffffff', '#e6fbff', '#9fe8ff', '#6ae2ff', '#5a8aff', '#50586a'] };
@@ -980,7 +980,7 @@ const RES = 2;
       const cc = EL[t.s.el].col, k = Math.min(1, t.ramp / 4), sp = t.spec || 0, x0 = t.cx * TILE, y0 = t.cy * TILE - 3, big = t.asc ? 1 : 0;
       t.beamTargets.forEach((e, i) => {
         const ex = e.x * TILE, ey = e.y * TILE - (e.fly ? 7 : 0), dx = ex - x0, dy = ey - y0, dl = Math.hypot(dx, dy) || 1, sx = x0 + dx / dl * 4, sy = y0 + dy / dl * 4;
-        const col = sh(sp === 2 ? PRISM[i % 3] : cc, k * 0.7);
+        const col = sh(sp === 2 ? PRISM[i % 3] : cc, Math.round(k * 14) / 20); // quantised so the colour cache stays small
         b.lineCap = 'round';
         b.strokeStyle = hexA(col, 0.45 + 0.45 * k); b.lineWidth = 2 + k * 2 + big + (sp === 1 ? 1 : 0); b.beginPath(); b.moveTo(sx, sy); b.lineTo(ex, ey); b.stroke();
         if (sp === 1) { b.strokeStyle = hexA('#0a0614', 0.85); b.lineWidth = 1 + k; b.stroke();
@@ -1385,7 +1385,7 @@ const RES = 2;
           for (let i = 0, n = LITE ? 2 : bo ? 7 : 5; i < n; i++) { const a = Math.random() * 6.283, L0 = R0 * (0.6 + Math.random() * 0.45), pts = [{ x, y }];
             for (let j = 1; j <= 3; j++) { const u = j / 3; pts.push({ x: x + Math.cos(a) * L0 * u + (j < 3 ? (Math.random() - 0.5) * 7 : 0), y: y + Math.sin(a) * L0 * u + (j < 3 ? (Math.random() - 0.5) * 7 : 0) }); }
             lines.push({ pts, life: bo ? 0.22 : 0.15, max: bo ? 0.22 : 0.15, col: i % 2 ? '#fff6c0' : d.col, core: 1, w: 1.5 }); }
-          kick(2); }
+          kick(2, 0.4); }
         else if (d.k === 'missile') stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.05, max: 0.05, col: '#fff2c0', s: Math.max(3, d.r * TILE * 0.35), disc: 1 });
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: Math.max(6, d.r * TILE), life: d.big ? 0.6 : 0.25, max: d.big ? 0.6 : 0.25, col: d.col, fill: 1, w: d.big ? 3 : 2 }); burst(T2P(d.x), T2P(d.y), d.big ? 70 : 10, d.col, (d.big ? 90 : 35) * K, d.big ? 0.8 : 0.35); if (d.big) flashes.push({ col: '#ffe9b0', life: 0.25, max: 0.25, a: 0.35 }); break;
       case 'spark': burst(T2P(d.x), T2P(d.y), 3, d.col, 30 * K, 0.15); stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.03, max: 0.03, col: '#ffffff', s: 2 }); break; // v5.8: a one-frame white + on each bolt impact
@@ -1415,7 +1415,7 @@ const RES = 2;
             lines.push({ pts: [{ x: mx, y: my }, { x: mx + Math.cos(ang) * L2 * 0.5 + (Math.random() - 0.5) * 3, y: my + Math.sin(ang) * L2 * 0.5 + (Math.random() - 0.5) * 3 }, { x: mx + Math.cos(ang) * L2, y: my + Math.sin(ang) * L2 }], life: 0.12, max: 0.12, col, core: 1, w: 1, nl: 1 }); } }
         break;
       }
-      case 'ovstun': { const x = T2P(d.x), y = T2P(d.y); rings.push({ x, y, r0: 2, r1: 9, life: 0.2, max: 0.2, col: '#ff9a3c', w: 1.5 }); if (!LITE) burst(x, y, 4, '#ffd28a', 30 * K, 0.2); kick(1); break; }
+      case 'ovstun': { const x = T2P(d.x), y = T2P(d.y); rings.push({ x, y, r0: 2, r1: 9, life: 0.2, max: 0.2, col: '#ff9a3c', w: 1.5 }); if (!LITE) burst(x, y, 4, '#ffd28a', 30 * K, 0.2); kick(1, 0.8); break; }
       case 'flame': { // v5.8: wedges that grow and cool from white through orange to smoke (Inferno redder, Plasma Torch blue-white)
         const fl = d.t && d.t.spec === 1 ? 2 : d.t && d.t.spec === 2 ? 3 : 1;
         for (let i = 0, n = LITE ? 3 : 6; i < n; i++) { const a = d.ang + (Math.random() - 0.5) * 1.0, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x) + Math.cos(d.ang) * 11, y: T2P(d.y) + Math.sin(d.ang) * 11, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.32, max: 0.32, fl, s: fl === 2 ? 2.4 : 2 }); }

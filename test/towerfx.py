@@ -24,7 +24,7 @@ with sync_playwright() as p:
     pg.evaluate('() => { PROF.bestWave = 60; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 5; PROF.seenVer = VERSION; PROF.settings.briefings = "brief"; }')
     pg.click('#bLaunch'); pg.wait_for_timeout(200); pg.click('[data-act=launch]'); pg.wait_for_timeout(500)
     newfx = pg.evaluate('''() => { if (UI.closeModal) UI.closeModal(); for (const s of ['#toasts', '#tip', '#bossIntro', '#feed']) { const el = document.querySelector(s); if (el) el.style.visibility = 'hidden'; }
-      G.credits = 1e8; G.gridBonus = 300; G.wave = 30; G.paused = true;
+      G.credits = 1e8; G.gridBonus = 300; G.wave = 30; G.paused = true; G.core.max = G.core.hp = 1e12;
       window.__snd = {}; const P0 = SFX.play.bind(SFX); SFX.play = (n, a, a2) => { const sp = a && a.spec ? a.spec : a2 && a2.type ? a2.type : a && a.src && a.src.spec ? 's' + a.src.spec : ''; const k = n + (sp ? ':' + sp : ''); __snd[k] = (__snd[k] || 0) + 1; return P0(n, a, a2); };
       const F0 = SFX.flames.bind(SFX), B0 = SFX.beams.bind(SFX); window.__fl = 0; window.__bm = []; SFX.flames = (n, i, pl) => { if (n) __fl = Math.max(__fl, n); return F0(n, i, pl); }; SFX.beams = (n, r, eh, pr) => { if (n) __bm.push([n, r, eh, pr]); return B0(n, r, eh, pr); };
       // a family's showcase: base + both specs on free tiles beside one stretch of road, tough enemies parked in range
@@ -42,7 +42,7 @@ with sync_playwright() as p:
         const xs = built.map(t => t.cx), ys = built.map(t => t.cy);
         return { cx: (Math.min(...xs) + Math.max(...xs)) / 2, cy: (Math.min(...ys) + Math.max(...ys)) / 2, at: [at.x, at.y], n: built.length };
       };
-      window.__step = (n, dtR) => { for (let i = 0; i < n; i++) { G.paused = false; simStep(1 / 30); G.paused = true; Render.draw(dtR || 1 / 30); } };
+      window.__step = (n, dtR) => { for (let i = 0; i < n; i++) { G.core.hp = G.core.max; G.paused = false; simStep(1 / 30); UI.tick(1 / 30); G.paused = true; Render.draw(dtR || 1 / 30); } };
       return !!Render.fxCounts; }''')
     D = pg.evaluate('() => { const L = G.map.lanes[0]; return Math.min(L.len * 0.55, Math.max(4, L.len - 6)); }')
     shots = {}
@@ -75,7 +75,7 @@ with sync_playwright() as p:
       for (const ty of types) for (const sp of [0, 1, 2]) { let s; while ((s = spots.shift()) && !canBuildAt(s[0], s[1])); if (!s) break; const t = buildTower(ty, s[0], s[1]); if (t && sp) { upgradeTower(t); upgradeTower(t); upgradeTower(t, sp); } }
       for (let i = 0; i < 90; i++) { const e = spawnEnemy(['drone', 'swarmer', 'tank', 'flyer', 'splitter', 'medic'][i % 6], { d: (i * 0.37) % 25 }); e.hp = e.maxHp = 1e7; }
       Render.resetCam(); for (let i = 0; i < 60; i++) { __step(1, 1 / 60); }
-      let tot = 0; const N = 150; for (let i = 0; i < N; i++) { if (i % 2 === 0) { G.paused = false; simStep(1 / 30); G.paused = true; } const t0 = performance.now(); Render.draw(1 / 60); tot += performance.now() - t0; }
+      let tot = 0; const N = 150; for (let i = 0; i < N; i++) { if (i % 2 === 0) { G.core.hp = G.core.max; G.paused = false; simStep(1 / 30); G.paused = true; } const t0 = performance.now(); Render.draw(1 / 60); tot += performance.now() - t0; }
       return { ms: tot / N, fx: Render.fxCounts || null, towers: G.towers.length }; }''')
     b.close()
 print('built per family:', shots)
