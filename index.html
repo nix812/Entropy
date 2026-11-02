@@ -823,6 +823,12 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .fader .fknob { position: absolute; left: 8px; right: -2px; height: 8px; margin-bottom: -4px; background: var(--ink); box-shadow: 0 2px 0 rgba(0,0,0,0.5); pointer-events: none; }
 .fmute { font-family: var(--f-pix); font-size: 7px; text-transform: uppercase; background: var(--panel2); border: 0; width: 100%; min-height: 30px; padding: 0 1px; box-shadow: inset 0 0 0 1px var(--line2); overflow: hidden; }
 .fmute.m { background: var(--bad); color: #1a0008; box-shadow: none; text-decoration: line-through; }
+/* v5.5.11 music on the battlefield: replay/back bottom-left, next bottom-right, faint until touched */
+.trkbtn { position: absolute; bottom: 8px; z-index: 6; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 0; background: rgba(14, 17, 33, 0.6); box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; opacity: 0.6; }
+.trkbtn .svgi { width: 16px; height: 16px; }
+.trkbtn:active { opacity: 1; filter: brightness(1.4); }
+#bTrkBack { left: 8px; } #bTrkNext { right: 8px; }
+body.panel-l #bTrkBack, body.panel-r #bTrkNext, body.watching .trkbtn { display: none; }
 /* v5.5.10 typing panel (outside the scaled game layer, pinned to what the keyboard leaves visible) */
 #entry { position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(4, 5, 10, 0.94); display: flex; align-items: flex-start; justify-content: center; padding: 8px 12px; box-sizing: border-box; overflow: auto; font-family: var(--f-term); color: var(--ink); }
 #entry .enbox { width: min(560px, 100%); display: flex; flex-direction: column; gap: 6px; background: var(--panel); box-shadow: inset 0 0 0 2px var(--line2); padding: 8px 10px; }
@@ -928,6 +934,8 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
       <div id="etip" hidden></div>
       <div id="ticker" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
+      <button class="trkbtn" id="bTrkBack" aria-label="Music: tap to replay this song, double-tap for the last song" data-svg="prev"></button>
+      <button class="trkbtn" id="bTrkNext" aria-label="Music: next song" data-svg="next"></button>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">
@@ -964,7 +972,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.5.10';
+const VERSION = '5.5.11';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1145,6 +1153,7 @@ const WHATS_NEW = { ver: '5.5.0', title: 'Entropy 5.5 · The Music Studio', item
   ['Shape', 'One tempo slider for the genre that is playing, with energy, the mixer and effects on one screen.'],
   ['Sound keeps going (5.5.4)', 'On iPhone, an AirPod going in or out, a call or Siri could leave the game silent until a restart. The sound now wakes itself, Settings › Sound shows what it is doing, and Restart sound brings it back in one tap.'],
   ['Mono Audio (5.5.3)', 'Settings › Mono Audio plays everything in both ears, for one earbud or a single speaker. Sounds panned to one side are no longer lost.'],
+  ['Music on the battlefield (5.5.11)', 'Bottom right of the battlefield: next song. Bottom left: tap to play the song again from the top, double-tap for the last song.'],
   ['Codes without the keyboard (5.5.10)', 'Share the song that is playing in one tap (the share button in the Studio bar). Paste a code reads your clipboard, so there is nothing to type. When you do type (names, codes), the box sits above the keyboard instead of behind it.'],
   ['Full-length songs (5.5.9)', 'Songs were 32 bars: under a minute in Trance and Drum & Bass. Now each genre plays a radio edit shaped like the real thing (intro, grooves, breakdowns, drops, an outro that winds down into the next song). Music Studio › Shape › Song length: Short, Standard or Long.'],
   ['A musician\'s pass (5.5.8)', 'Every chord progression was checked in every mood: none lands on a chord that does not belong any more, and each mood brings its signature moves (Lydian\'s I–II, Dorian\'s i–IV, Phrygian\'s i–♭II). Chord names read like a musician writes them, and jazz chords lose the harsh flat nine.'],
@@ -6556,6 +6565,7 @@ const SFX = (() => {
         if (pauseG) { const g = pauseG.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.05); if (!paused && !held) g.setValueAtTime(1, t + 0.33); }
       },
       get spec() { return P ? specOf() : null; },
+      restart() { if (!P) return; this.jump(Object.assign(specOf(), { start: 0 })); if (hist.length >= 2) hist.splice(hist.length - 2, 1); }, // the same piece from the top, without a second history entry
       get track() { if (!P) return null; const o = specOf(); o.snd = snapshot(); return o; }, // what is playing, as a shareable track
       get queued() { return forceNext; },
       get editing() { return editing; }, set editing(v) { editing = !!v; },
@@ -11158,6 +11168,16 @@ const UI = (() => {
       else toast('POWER', `Every tower draws 1 power; Overcharge draws more. Capacity grows 1 every ${GRID.perWaves} waves, or expand the reactor from the core panel`, '#59f0b4');
     };
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (marketShut()) { toast('EXCHANGE', 'The Black Market and Cash In open at Wave 10. Score comes from kills', '#8a8fa8', true, 'tip'); return; } if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
+    // v5.5.11 music on the battlefield: next on the right; on the left one tap replays the song, a double tap goes to the last one
+    // (the single tap waits a moment to see whether a second one follows, so a double tap never restarts the song first)
+    const trkSay = again => setTimeout(() => { const p = SFX.music.piece; if (p) toast(again ? 'FROM THE TOP' : 'NOW PLAYING', `${p.name} · ${p.genreName}`, (SFX.music.GENRES[p.genre] || {}).col || '#ff5fa8'); }, 60);
+    let trkBackT = 0, trkBackTimer = 0;
+    $('#bTrkNext').onclick = () => { SFX.init(); const M = SFX.music; M.setPaused(false); M.jump(null); trkSay(); };
+    $('#bTrkBack').onclick = () => {
+      SFX.init(); const M = SFX.music, now = performance.now();
+      if (now - trkBackT < 400) { clearTimeout(trkBackTimer); trkBackT = 0; if (M.back()) { M.setPaused(false); M.jump(M.queued); trkSay(); } else { toast('NO EARLIER SONG', 'This is the first song this session', '#ff5fa8'); } return; }
+      trkBackT = now; trkBackTimer = setTimeout(() => { trkBackT = 0; M.setPaused(false); M.restart(); trkSay(true); }, 330);
+    };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; G.speedWas = 0; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
     $('#bWeb').onclick = () => { SFX.play('ui'); Tree.open(); };
