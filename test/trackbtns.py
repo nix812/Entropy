@@ -1,0 +1,26 @@
+"""5.5.11 music buttons on the battlefield: next (right) changes the song at once; back (left) one tap replays the song from the top,
+a double tap goes to the last song (and a replay never adds a history entry, so a double tap after it still goes back); a tap on
+them does not reach the board. usage: python3 trackbtns.py"""
+import pathlib, mkpage
+from playwright.sync_api import sync_playwright
+root = pathlib.Path(__file__).parent.parent; mkpage.mk(); errs = []; checks = []
+def ok(name, v): checks.append((name, bool(v))); print(('ok   ' if v else 'FAIL ') + name)
+with sync_playwright() as p:
+    b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required']); pg = b.new_page(viewport={'width': 852, 'height': 393}, device_scale_factor=2, has_touch=True)
+    pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
+    pg.evaluate('() => { PROF.seenVer = VERSION; PROF.seenHelp = true; PROF.settings.briefings = "off"; }')
+    pg.click('#bLaunch'); pg.wait_for_timeout(300); pg.evaluate('() => document.querySelector("[data-act=launch]").click()'); pg.wait_for_timeout(1500)
+    nm = lambda: pg.evaluate('() => SFX.music.piece.name')
+    a = nm(); pg.tap('#bTrkNext'); pg.wait_for_timeout(300); b2 = nm()
+    ok('next changes the song at once', b2 != a)
+    pg.wait_for_timeout(2500); bar0 = pg.evaluate('() => SFX.music.piece.bar')
+    pg.tap('#bTrkBack'); pg.wait_for_timeout(600)
+    ok('one tap on back replays this song from the top', nm() == b2 and pg.evaluate('() => SFX.music.piece.bar') < max(1, bar0))
+    pg.tap('#bTrkBack'); pg.wait_for_timeout(120); pg.tap('#bTrkBack'); pg.wait_for_timeout(600)
+    ok('a double tap goes to the last song (even after a replay)', nm() == a)
+    ok('nothing was built by tapping the buttons', pg.evaluate('() => G.towers.length === 0 && !G.selected'))
+    ok('no panel opened under them', pg.evaluate('() => document.querySelector("#panel").hidden'))
+    b.close()
+print('ERRORS:', errs[:5])
+print('FAILED:', [n for n, v in checks if not v])

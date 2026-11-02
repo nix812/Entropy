@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.5.10';
+const VERSION = '5.5.11';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -181,6 +181,7 @@ const WHATS_NEW = { ver: '5.5.0', title: 'Entropy 5.5 · The Music Studio', item
   ['Shape', 'One tempo slider for the genre that is playing, with energy, the mixer and effects on one screen.'],
   ['Sound keeps going (5.5.4)', 'On iPhone, an AirPod going in or out, a call or Siri could leave the game silent until a restart. The sound now wakes itself, Settings › Sound shows what it is doing, and Restart sound brings it back in one tap.'],
   ['Mono Audio (5.5.3)', 'Settings › Mono Audio plays everything in both ears, for one earbud or a single speaker. Sounds panned to one side are no longer lost.'],
+  ['Music on the battlefield (5.5.11)', 'Bottom right of the battlefield: next song. Bottom left: tap to play the song again from the top, double-tap for the last song.'],
   ['Codes without the keyboard (5.5.10)', 'Share the song that is playing in one tap (the share button in the Studio bar). Paste a code reads your clipboard, so there is nothing to type. When you do type (names, codes), the box sits above the keyboard instead of behind it.'],
   ['Full-length songs (5.5.9)', 'Songs were 32 bars: under a minute in Trance and Drum & Bass. Now each genre plays a radio edit shaped like the real thing (intro, grooves, breakdowns, drops, an outro that winds down into the next song). Music Studio › Shape › Song length: Short, Standard or Long.'],
   ['A musician\'s pass (5.5.8)', 'Every chord progression was checked in every mood: none lands on a chord that does not belong any more, and each mood brings its signature moves (Lydian\'s I–II, Dorian\'s i–IV, Phrygian\'s i–♭II). Chord names read like a musician writes them, and jazz chords lose the harsh flat nine.'],

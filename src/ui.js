@@ -2356,6 +2356,16 @@ const UI = (() => {
       else toast('POWER', `Every tower draws 1 power; Overcharge draws more. Capacity grows 1 every ${GRID.perWaves} waves, or expand the reactor from the core panel`, '#59f0b4');
     };
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (marketShut()) { toast('EXCHANGE', 'The Black Market and Cash In open at Wave 10. Score comes from kills', '#8a8fa8', true, 'tip'); return; } if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
+    // v5.5.11 music on the battlefield: next on the right; on the left one tap replays the song, a double tap goes to the last one
+    // (the single tap waits a moment to see whether a second one follows, so a double tap never restarts the song first)
+    const trkSay = again => setTimeout(() => { const p = SFX.music.piece; if (p) toast(again ? 'FROM THE TOP' : 'NOW PLAYING', `${p.name} · ${p.genreName}`, (SFX.music.GENRES[p.genre] || {}).col || '#ff5fa8'); }, 60);
+    let trkBackT = 0, trkBackTimer = 0;
+    $('#bTrkNext').onclick = () => { SFX.init(); const M = SFX.music; M.setPaused(false); M.jump(null); trkSay(); };
+    $('#bTrkBack').onclick = () => {
+      SFX.init(); const M = SFX.music, now = performance.now();
+      if (now - trkBackT < 400) { clearTimeout(trkBackTimer); trkBackT = 0; if (M.back()) { M.setPaused(false); M.jump(M.queued); trkSay(); } else { toast('NO EARLIER SONG', 'This is the first song this session', '#ff5fa8'); } return; }
+      trkBackT = now; trkBackTimer = setTimeout(() => { trkBackT = 0; M.setPaused(false); M.restart(); trkSay(true); }, 330);
+    };
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; G.speedWas = 0; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
     $('#bWeb').onclick = () => { SFX.play('ui'); Tree.open(); };

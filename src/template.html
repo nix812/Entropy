@@ -810,6 +810,12 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .fader .fknob { position: absolute; left: 8px; right: -2px; height: 8px; margin-bottom: -4px; background: var(--ink); box-shadow: 0 2px 0 rgba(0,0,0,0.5); pointer-events: none; }
 .fmute { font-family: var(--f-pix); font-size: 7px; text-transform: uppercase; background: var(--panel2); border: 0; width: 100%; min-height: 30px; padding: 0 1px; box-shadow: inset 0 0 0 1px var(--line2); overflow: hidden; }
 .fmute.m { background: var(--bad); color: #1a0008; box-shadow: none; text-decoration: line-through; }
+/* v5.5.11 music on the battlefield: replay/back bottom-left, next bottom-right, faint until touched */
+.trkbtn { position: absolute; bottom: 8px; z-index: 6; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 0; background: rgba(14, 17, 33, 0.6); box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; opacity: 0.6; }
+.trkbtn .svgi { width: 16px; height: 16px; }
+.trkbtn:active { opacity: 1; filter: brightness(1.4); }
+#bTrkBack { left: 8px; } #bTrkNext { right: 8px; }
+body.panel-l #bTrkBack, body.panel-r #bTrkNext, body.watching .trkbtn { display: none; }
 /* v5.5.10 typing panel (outside the scaled game layer, pinned to what the keyboard leaves visible) */
 #entry { position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(4, 5, 10, 0.94); display: flex; align-items: flex-start; justify-content: center; padding: 8px 12px; box-sizing: border-box; overflow: auto; font-family: var(--f-term); color: var(--ink); }
 #entry .enbox { width: min(560px, 100%); display: flex; flex-direction: column; gap: 6px; background: var(--panel); box-shadow: inset 0 0 0 2px var(--line2); padding: 8px 10px; }
@@ -912,6 +918,8 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
       <div id="etip" hidden></div>
       <div id="ticker" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
+      <button class="trkbtn" id="bTrkBack" aria-label="Music: tap to replay this song, double-tap for the last song" data-svg="prev"></button>
+      <button class="trkbtn" id="bTrkNext" aria-label="Music: next song" data-svg="next"></button>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">
