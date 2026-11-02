@@ -1,10 +1,10 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 5.7.3 · November 2, 2026**
+**Version at handoff: 5.7.4 · November 2, 2026**
 
 > **The game is now called Last Gradient (5.6.0).** Repo, URLs, save keys, code prefixes (`HUNT1:`, `TRACK1:`), file names (`dist/entropy.html`) and the in-game Entropy gauge keep the old word on purpose. Player-facing name: Last Gradient.
 
-### Start here (state at 5.7.3)
+### Start here (state at 5.7.4)
 - **Studio splash (5.7.0):** "Nigel Industries presents" on cold start (`UI.splash`, ui.js before `boot`; Nic's cat Nigel, pixel art in `docs/brand/`). It skips itself when `navigator.webdriver` is set so the other Playwright tests are not blocked; `test/splashshot.py` forces it with `UI.splash(true)`.
 - **Renamed (5.6.0):** Nic chose **Last Gradient** after a name search (section 4.17). The hangar title is a canvas effect, `TitleFX` at the end of render.js.
 - **Live:** 5.6.0 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
@@ -910,6 +910,7 @@ The expanding sector made every level a little easier, because the compact early
 | 3.1 | Early bosses sized from potential DPS (25–37 s fights at waves 10–40), flying bosses +30%, Gloop tougher; notification queue; Swarm DNA chip, panel and first-time intro; reactor expansion; run log with Copy and Save |
 | 3.2 | Swarm Codex (named strains), signature strain per run (recap, Hall of Fame, log), evolution profiles per difficulty (pre-adapted swarm on Unstable and Pandemonium) |
 | 3.2.1 | Overdrive button on the left rail (`#bOD`, first in `#abils`): locked label `W35`, glows when ready, two taps (`overdriveTap`, 3 s arm), `Used` after |
+| 5.7.4 | Nic: two slow blinks on the splash (closed 1.30–1.65 s and 2.15–2.55 s), ends at 3.5 s; `splashshot.py` counts the blinks. |
 | 5.7.3 | Nic: keep the placement and the pull-in, but larger, taking more of the right-hand side. `HangarFX.layout`: `s = min((W − left)/55, (0.98H − top)/42.5, 0.04H)` where `left = max(W/2, wordRight − 0.15 × wordWidth)` (it may sit behind the already-broken last letters); `cx = W − 26 s` (the right lobe may run 4 s off the edge), `cy = top + 23.5 s`. iPad ~1.35×, phone ~1.27× the 5.7.2 size; on a phone it runs behind the see-through buttons. |
 | 5.7.2 | Nic did not want the 5.7.1 galaxy pushed below the title/behind the buttons: he wanted it **larger, in the upper right, with the title pulled into it**. `HangarFX.layout` ignores the menu now: `s = min((W − bR)/60, (0.8H − top)/42.5, 0.032H)` (attractor extents over the sway: x −29…+30 s, y −23…+19 s), right-aligned under the utility icons (`cx = W − 30.5 s`, `cy = top + 23.5 s`). `HangarFX.center()` gives it in on-screen px. `TitleFX` shards now follow `path()`: a tightening spiral (angle `−sw·p²`, radius `(1−p)^1.15`) from their cell to a point jittered around that centre, `p = q^1.6` (they accelerate in), shrink to ~30% and fade in the last 20%; the canvas is sized to the union of every path, and rebuilds when the centre moves (it is part of the cache key). On a phone with Supernova showing, the attractor overlaps the top two buttons, so the Supernova button is translucent too (not when `.ready`). |
 | 5.7.1 | Nic: splash a little longer (blink 1.5–1.9 s, ends 3.3 s) and a bigger hangar galaxy seen through the buttons. `HangarFX.layout` now spans from the utility icons to the **bottom** of the menu (`room / 47`, cap `H × 0.024`) and picks the larger of two placements: beside the title (clear of the word's own box, `.t1`/`.t2`, not the shard canvas) or below it (iPad, where the title runs long). Hangar menu buttons and utility icons are translucent (`rgba(21,25,51,.5)`; Play amber at .86). |

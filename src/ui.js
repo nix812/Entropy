@@ -2651,10 +2651,11 @@ UI.splash = function (force) {
   const end = () => { if (done) return; done = true; timers.forEach(clearTimeout); el.classList.add('out'); setTimeout(() => el.remove(), 520); };
   el.addEventListener('pointerdown', e => { e.preventDefault(); end(); });
   const go = () => { if (done) return; el.classList.add('in');
-    timers.push(setTimeout(() => { img.src = NIGEL_PX[1]; }, 1500), setTimeout(() => { img.src = NIGEL_PX[0]; }, 1900), setTimeout(end, 3300)); };
+    [[1300, 1], [1650, 0], [2150, 1], [2550, 0]].forEach(([ms, f]) => timers.push(setTimeout(() => { img.src = NIGEL_PX[f]; }, ms))); // two slow blinks
+    timers.push(setTimeout(end, 3500)); };
   let started = false; const start = () => { if (!started) { started = true; go(); } };
   try { document.fonts.ready.then(start); } catch (e) {} setTimeout(start, 600);
-  return 3900;
+  return 4100;
 };
 (function boot() {
   const loaded = Save.loadLocal();
