@@ -24,6 +24,29 @@ const RES = 2;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
+  // v5.8 tower character (render-only): a render clock, small screen kicks for heavy hits, hop stars and pull streaks.
+  // LITE skips decorative extras on a crowded field or at high speed
+  let rt = 0, kickT = -9, stars = [], drags = [], LITE = false;
+  function kick(px) { if (!doShake || rt - kickT < 0.25) return; kickT = rt; shakeAt(px * 2, 0.12); }
+  // flame particles age white → yellow → orange → smoke (Inferno redder, Plasma Torch blue-white)
+  const FLAME_RAMP = { 1: ['#ffffff', '#fff3b0', '#ffe14d', '#ff9a3c', '#ff6a2a', '#5e5658'], 2: ['#fff0c0', '#ffd24a', '#ff8a2a', '#ff4a1a', '#c0281a', '#5a4444'],
+    3: ['#ffffff', '#e6fbff', '#9fe8ff', '#6ae2ff', '#5a8aff', '#50586a'] };
+  const PRISM = ['#b86cff', '#e08cff', '#8a7cff'];
+  const MUZ = { pulse: 12.5, rail: 13.5, flame: 12.5, emp: 8.5, missile: 5 }, RECOIL = { pulse: 1.5, rail: 2.5, emp: 2, flame: 0.6, missile: 1 };
+  // Snare net: a hex mesh, drawn once per size and colour
+  const meshCache = {};
+  function hexMesh(rr, col, cell) {
+    const key = rr + col + cell; if (meshCache[key]) return meshCache[key];
+    const S = Math.ceil(rr * 2 + 2), cv = document.createElement('canvas'); cv.width = cv.height = S * RES;
+    const g = cv.getContext('2d'); g.scale(RES, RES); g.translate(S / 2, S / 2);
+    g.save(); g.beginPath(); g.arc(0, 0, rr, 0, 6.283); g.clip(); g.strokeStyle = col; g.lineWidth = 0.6; g.beginPath();
+    const w = cell * 1.732, h = cell * 1.5;
+    for (let row = -Math.ceil(rr / h) - 1; row <= Math.ceil(rr / h) + 1; row++) for (let q = -Math.ceil(rr / w) - 1; q <= Math.ceil(rr / w) + 1; q++) {
+      const x = q * w + (row & 1 ? w / 2 : 0), y = row * h;
+      for (let k = 0; k < 6; k++) { const a0 = k / 6 * 6.283 + 0.5236, a1 = (k + 1) / 6 * 6.283 + 0.5236; g.moveTo(x + Math.cos(a0) * cell, y + Math.sin(a0) * cell); g.lineTo(x + Math.cos(a1) * cell, y + Math.sin(a1) * cell); }
+    }
+    g.stroke(); g.restore(); meshCache[key] = cv; return cv;
+  }
 
   // ---------- colour helpers ----------
   const shCache = new Map();
@@ -518,12 +541,26 @@ const RES = 2;
     if (t._wk !== el + (t.spec || 0)) { t._wk = el + (t.spec || 0); UNITS.warmTower(t.type, el, t.spec || 0); }
     const top = UNITS.top(t.type, el, t.spec || 0, ang, anim);
     b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 12, 11, 0, 0, 6.283); b.fill();
-    blit(top, cx, cy - (t.type === 'pylon' && (frame >> 5) % 2 ? 0.5 : 0), TW_K);
-    if (UNITS.ROT[t.type] && t.flash > 0.04 && t.type !== 'missile') { const a = t.angle || 0, L = t.type === 'rail' ? 13 : t.type === 'emp' ? 8 : 11.5; D(b, cx + Math.cos(a) * L, cy + Math.sin(a) * L, t.type === 'flame' ? 2 : 1.5, '#ffffff'); }
+    // v5.8 tower character: a shot is seen when the sim stamps t.aimT; the turret kicks back along its heading and eases home
+    if (t.aimT !== t._pa) { if (t._pa !== undefined && t.aimT !== undefined) towerFired(t, cx, cy, c); t._pa = t.aimT; }
+    const age = t._ft === undefined ? 9 : rt - t._ft, rot = UNITS.ROT[t.type], ca = Math.cos(t.angle || 0), sa = Math.sin(t.angle || 0);
+    const kb = rot && age < 0.14 ? (RECOIL[t.type] || 0) * (1 - age / 0.14) : 0;
+    blit(top, cx - ca * kb, cy - sa * kb - (t.type === 'pylon' && (frame >> 5) % 2 ? 0.5 : 0), TW_K);
+    if (rot && age < 0.055) muzzle(t, cx - ca * kb, cy - sa * kb, ca, sa, c, age);
     // live details
     switch (t.type) {
-      case 'cryo': if (t.flash > 0) { D(b, cx, cy, 3, 'rgba(255,255,255,0.8)'); } break;
-      case 'coil': if (frame % 5 < 3) for (let k = 0; k < 2; k++) { const a = Math.random() * 6.283, r = 3 + Math.random() * 6; R(b, cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1, 1, k ? '#ffffff' : '#fff6c0'); } break;
+      case 'cryo': if (t.flash > 0) { D(b, cx, cy, t.spec === 1 ? 4 : 3, 'rgba(255,255,255,0.8)'); } break;
+      case 'coil': { // sparks gather toward the dome as the next bolt charges (t.cd runs 1 → 0), then the dome flashes on the shot
+        const q = t.cd > 0 ? 1 - Math.min(1, t.cd) : 0.15, n = 1 + Math.round(q * 4), hot = t.spec === 2 ? '#ffb070' : '#fff6c0';
+        if (frame % 5 < 3 || q > 0.6) for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, r = 3 + Math.random() * (9 - q * 5); R(b, cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1, 1, k % 2 ? '#ffffff' : hot); }
+        if (age < 0.06) { const s2 = 3 + (t.asc ? 1 : 0); R(b, cx - s2, cy, s2 * 2 + 1, 1, c); R(b, cx, cy - s2, 1, s2 * 2 + 1, c); D(b, cx, cy, 1, '#ffffff'); }
+        break; }
+      case 'rail': { // charge glow at the barrel tip once the next shot is close (and a target was in range)
+        const q = t.cd > 0 && t.cd < 0.35 ? 1 - t.cd / 0.35 : t.cd <= 0 && t.aimT !== undefined && G.time - t.aimT < 3 ? 0.75 + 0.25 * Math.sin(frame / 3) : 0;
+        if (q > 0.05 && age > 0.06) { const L = MUZ.rail - 1.5, gx = cx + ca * L, gy = cy + sa * L;
+          b.strokeStyle = hexA(c, 0.25 + 0.4 * q); b.lineWidth = 1; b.beginPath(); b.moveTo(cx + ca * 3, cy + sa * 3); b.lineTo(gx, gy); b.stroke();
+          D(b, gx, gy, 1 + Math.round(q * 1.5), hexA(c, 0.35 + 0.55 * q)); if (q > 0.7) P(b, gx, gy, '#ffffff'); }
+        break; }
       case 'snare': if (t.s && (t.caught || 0) >= t.s.catches) { R(b, cx - 1, cy - 1, 2, 2, frame % 20 < 10 ? '#ff4d6a' : '#5a1020'); } break;
       case 'forge': if (frame % 9 === 0) parts.push({ x: cx + 5, y: cy - 6, vx: (Math.random() - 0.5) * 3, vy: -9, life: 0.9, max: 0.9, col: '#5a5470', s: 2 }); break;
       case 'lens': { const k = Math.min(1, (t.ramp || 0) / 3.5); if (k > 0.05) D(b, cx, cy, 1 + Math.round(k * 2), hexA('#ffffff', 0.4 + 0.5 * k)); break; }
@@ -547,6 +584,44 @@ const RES = 2;
       for (let k = 0; k < 2; k++) { const ph = ((frame >> 2) + k * 12) % 24, zx = X + 1 + k * 4, zy = Y + 6 - (ph >> 2) - k * 3; if (ph > 20) continue; R(b, zx, zy, 3, 1, zc); R(b, zx + 1, zy + 1, 1, 1, zc); R(b, zx, zy + 2, 3, 1, zc); }
     }
     if (t.oc) for (let i = 0; i < t.oc; i++) { const bx = X + 18 - i * 5, by = Y + 1, c = frame % 16 < 8 ? '#59f0b4' : '#e6fff6'; R(b, bx + 1, by, 2, 3, c); R(b, bx, by + 2, 3, 1, c); R(b, bx + 1, by + 3, 2, 3, c); }
+  }
+  // v5.8: what a shot leaves behind at the tower (render-only, Math.random): a missile launch puff, an EMP smoke ring
+  function towerFired(t, cx, cy, c) {
+    t._ft = rt; if (t.type === 'pulse' && t.spec === 1) t._gb = !t._gb;
+    if (LITE) return;
+    const ca = Math.cos(t.angle || 0), sa = Math.sin(t.angle || 0);
+    if (t.type === 'missile') {
+      for (let k = 0; k < 4; k++) parts.push({ x: cx + ca * 4 + (Math.random() - 0.5) * 6, y: cy + sa * 4 + (Math.random() - 0.5) * 6, vx: -ca * 10 + (Math.random() - 0.5) * 8, vy: -sa * 10 + (Math.random() - 0.5) * 8 - 3, life: 0.45, max: 0.45, col: '#8a8494', s: 2.5, smoke: 1 });
+      stars.push({ x: cx + ca * 5, y: cy + sa * 5, life: 0.05, max: 0.05, col: '#fff2c0', s: 2, disc: 1 });
+    } else if (t.type === 'emp') {
+      const mx = cx + ca * 9, my = cy + sa * 9;
+      rings.push({ x: mx, y: my, r0: 2, r1: 7, life: 0.4, max: 0.4, col: '#a8a894', w: 1.5, a: 0.7, nl: 1 });
+      for (let k = 0; k < 2; k++) parts.push({ x: mx, y: my, vx: ca * 8 + (Math.random() - 0.5) * 6, vy: sa * 8 - 4, life: 0.5, max: 0.5, col: '#7a7a6a', s: 2.5, smoke: 1 });
+    }
+  }
+  // v5.8 per-type muzzle flashes (about 3 frames): element colour around a white core. Pulse a cross star (one per Twin barrel,
+  // alternating Gatling barrels), Rail a hard line, Flame a cone lick, EMP and Missile a hot disc. Ascended towers flash bigger
+  function muzzle(t, x, y, ca, sa, c, age) {
+    const L = MUZ[t.type] || 11, mx = x + ca * L, my = y + sa * L, big = t.asc ? 1 : 0, f = age < 0.03 ? 1 : 0.6;
+    switch (t.type) {
+      case 'pulse': {
+        const offs = t.spec === 2 ? [-2.8, 2.8] : t.spec === 1 ? [t._gb ? 1.2 : -1.2] : [0], s2 = (t.spec === 1 ? 2 : 3) + big, col = hexA(c, f);
+        for (const o of offs) { const px = mx - sa * o, py = my + ca * o; R(b, px - s2, py, s2 * 2 + 1, 1, col); R(b, px, py - s2, 1, s2 * 2 + 1, col); R(b, px - 0.5, py - 0.5, 2, 2, '#ffffff'); }
+        break; }
+      case 'rail': {
+        const L2 = 8 + big * 2;
+        b.strokeStyle = hexA(c, f); b.lineWidth = 2.5; b.beginPath(); b.moveTo(mx, my); b.lineTo(mx + ca * L2, my + sa * L2); b.stroke();
+        b.strokeStyle = '#ffffff'; b.lineWidth = 1; b.beginPath(); b.moveTo(mx, my); b.lineTo(mx + ca * (L2 - 2), my + sa * (L2 - 2)); b.moveTo(mx - sa * 3, my + ca * 3); b.lineTo(mx + sa * 3, my - ca * 3); b.stroke();
+        break; }
+      case 'flame': {
+        const pl = t.spec === 2, L2 = 6 + big, cw = Math.cos(0.45), sw = Math.sin(0.45);
+        b.fillStyle = hexA(pl ? '#9fe8ff' : t.spec === 1 ? '#ff7a2a' : '#ffb03a', 0.85 * f); b.beginPath(); b.moveTo(mx, my);
+        b.lineTo(mx + (ca * cw - sa * sw) * L2, my + (sa * cw + ca * sw) * L2); b.lineTo(mx + (ca * cw + sa * sw) * L2, my + (sa * cw - ca * sw) * L2); b.closePath(); b.fill();
+        D(b, mx + ca, my + sa, 1 + big, pl ? '#ffffff' : '#fff3b0');
+        break; }
+      case 'emp': D(b, mx, my, 2 + big, hexA(c, f)); D(b, mx, my, 1, '#ffffff'); break;
+      case 'missile': D(b, mx, my, 1 + big, hexA('#fff2c0', f)); break;
+    }
   }
   // wormhole: swirling portal at a lane's origin. Forming portals are small and unstable; open ones are full size.
   function drawWormhole(L) {
@@ -780,12 +855,13 @@ const RES = 2;
 
   // ---------- frame ----------
   function draw(dt) {
-    frame++;
+    frame++; rt += dt;
     ART.frameStart(); ART.idle(dt > 0 ? 3 : 1.5);
     const c = ctx;
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.fillStyle = PAL.bg; c.fillRect(0, 0, cv.width, cv.height);
     if (!G) return;
+    LITE = parts.length > 600 || G.speed > 2;
     updateRegion();
     ensureBuffers();
     const key = G.seed + ':' + G.map.lanes.length + ':' + COLS + ':' + (G.mapRev || 0);
@@ -818,7 +894,9 @@ const RES = 2;
       }
       strokeRing(s.x * TILE, s.y * TILE, s.r * TILE, col, 0.35, 1, [2, 6]);
     }
-    for (const z of G.zones) ditherDisc(z.x * TILE, z.y * TILE, z.r * TILE, hexA('#ff7b39', 0.4), 2, frame % 2);
+    for (const z of G.zones) { ditherDisc(z.x * TILE, z.y * TILE, z.r * TILE, hexA('#ff7b39', 0.4), 2, frame % 2);
+      // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
+      if (z.k === 'napalm' && !LITE && frame % 4 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
     // snare nets and tethers
     for (const t of G.snares || []) {
@@ -827,11 +905,18 @@ const RES = 2;
       b.strokeStyle = spent ? 'rgba(255,77,106,0.25)' : 'rgba(89,240,180,0.32)'; b.lineWidth = 1;
       b.setLineDash([3, 3]); b.lineDashOffset = -frame / 6; b.beginPath(); b.arc(cx, cy, rr, 0, 6.283); b.stroke();
       b.setLineDash([]);
-      if (!spent) { b.globalAlpha = 0.12; for (let k = 0; k < 6; k++) { const a = k / 6 * 3.1416 + frame / 200; b.beginPath(); b.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); b.lineTo(cx - Math.cos(a) * rr, cy - Math.sin(a) * rr); b.stroke(); } b.globalAlpha = 1; }
+      // v5.8: a hex-mesh net (Tangle Web finer and brighter); Long Lure sweeps its lure range like a radar
+      if (!spent) { const m = hexMesh(rr, t.spec === 1 ? '#9fffd8' : '#59f0b4', t.spec === 1 ? 3 : 4); b.globalAlpha = (t.spec === 1 ? 0.3 : 0.2) + 0.06 * Math.sin(frame / 15 + t.id); b.drawImage(m, cx - m.width / RES / 2, cy - m.height / RES / 2, m.width / RES, m.height / RES); b.globalAlpha = 1; }
+      if (!spent && t.spec === 2 && t.disabled <= 0) { const R2 = t.s.range * TILE, a = (rt * 2.1 + t.id) % 6.283;
+        b.strokeStyle = 'rgba(89,240,180,0.22)'; b.lineWidth = 1; b.beginPath(); b.moveTo(cx, cy); b.lineTo(cx + Math.cos(a) * R2, cy + Math.sin(a) * R2); b.stroke();
+        b.strokeStyle = 'rgba(89,240,180,0.12)'; b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, R2, a - 0.5, a); b.stroke(); }
     }
     b.strokeStyle = 'rgba(89,240,180,0.45)'; b.lineWidth = 1; b.setLineDash([2, 4]);
     for (const e of G.enemies) if (e.lureT && !e.netted) { b.beginPath(); b.moveTo(e.x * TILE, e.y * TILE - 7); b.lineTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.stroke(); }
     b.setLineDash([]);
+    // v5.8: a held flier strains on a taut tether back to its beacon
+    for (const e of G.enemies) if (e.netted && e.netHold > 0 && e.lureT && !e.dead) { const ex = e.x * TILE, ey = e.y * TILE - 7, q = 0.55 + 0.35 * Math.sin(frame / 2 + e.id);
+      b.strokeStyle = hexA('#9fffd8', q); b.lineWidth = 1; b.beginPath(); b.moveTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.lineTo(ex, ey); b.stroke(); R(b, ex - 1, ey - 1, 2, 2, '#e6fff6'); }
     // Power Nodes: a pulsing cyan diamond; with a tower on top, corner brackets show the charge
     for (const q of G.nodes || []) {
       const cx = q.x * TILE + 12, cy = q.y * TILE + 12, ph = (Math.sin(frame / 12 + q.x * 1.7 + q.y) + 1) / 2;
@@ -867,21 +952,43 @@ const RES = 2;
       }
     }
     for (const t of G.towers) drawTower(t);
+    // v5.8 Relay Pylon: every 1.2 s a pulse runs out to each tower it boosts (amber Amplifier, cyan Uplink). The boosted set is
+    // re-read once per cycle with the same range test as recomputeAuras; a newly linked tower gets a soft chirp
+    for (const t of G.towers) if (t.s && t.s.kind === 'support' && t.disabled <= 0) {
+      const ph = (rt + t.id * 0.37) % 1.2;
+      if (!t._pyl || ph < (t._pph || 0)) { const r2 = t.s.range * t.s.range, was = t._pyl, now = [];
+        for (const o of G.towers) if (o !== t && o.s && o.s.kind !== 'support' && o.s.kind !== 'eco' && o.s.kind !== 'snare' && dist2(t.cx, t.cy, o.cx, o.cy) <= r2) now.push(o);
+        if (was && now.some(o => !was.includes(o))) SFX.play('pylon', t);
+        t._pyl = now; }
+      t._pph = ph;
+      const f = ph / 0.5; if (f >= 1) continue;
+      const col = t.spec === 1 ? '#ffb03a' : t.spec === 2 ? '#6ae2ff' : '#d8f0e8', x0 = t.cx * TILE, y0 = t.cy * TILE - 8, a = 1 - f * 0.4;
+      for (const o of t._pyl) { const x1 = o.cx * TILE, y1 = o.cy * TILE, px = x0 + (x1 - x0) * f, py = y0 + (y1 - y0) * f;
+        b.strokeStyle = hexA(col, 0.3 * a); b.lineWidth = 1; b.beginPath(); b.moveTo(x0 + (x1 - x0) * Math.max(0, f - 0.25), y0 + (y1 - y0) * Math.max(0, f - 0.25)); b.lineTo(px, py); b.stroke();
+        R(b, px - 1, py - 1, 2, 2, hexA(col, a)); P(b, px, py, '#ffffff'); }
+    }
     // resonance links
     for (const t of G.towers) for (const o of t.resonWith || []) {
       if (o.id < t.id && o.resonWith && o.resonWith.includes(t)) continue;
       const ax = t.cx * TILE, ay = t.cy * TILE, bx = o.cx * TILE, by = o.cy * TILE;
       for (let k = 2; k < 9; k++) { const f = k / 10, col = (k + (frame >> 3)) % 2 ? EL[t.s.el].col : EL[o.s.el].col; R(b, ax + (bx - ax) * f - 1, ay + (by - ay) * f - 1, 2, 2, hexA(col, 0.45 + 0.3 * Math.sin(frame / 6 + k))); }
     }
-    // beams
+    // beams. v5.8: they leave from the lens tip, crawl toward the target, and shift from violet to white as they ramp.
+    // Event Horizon burns with a dark inverted core and pulls sparks inward; Prism Split's three beams take three violet tints
     for (const t of G.towers) if (t.beamTargets && t.disabled <= 0) {
-      const cc = EL[t.s.el].col, k = Math.min(1, t.ramp / 4);
-      for (const e of t.beamTargets) {
-        const ex = e.x * TILE, ey = e.y * TILE - (e.fly ? 7 : 0);
-        b.strokeStyle = hexA(cc, 0.45 + 0.45 * k); b.lineWidth = 2 + k * 2; b.beginPath(); b.moveTo(t.cx * TILE, t.cy * TILE); b.lineTo(ex, ey); b.stroke();
-        if (k > 0.4) { b.strokeStyle = hexA('#ffffff', 0.6 * k); b.lineWidth = 1; b.beginPath(); b.moveTo(t.cx * TILE, t.cy * TILE); b.lineTo(ex, ey); b.stroke(); }
-        D(b, ex, ey, 2 + Math.round(k * 2), hexA('#ffffff', 0.5 + 0.4 * k));
-      }
+      const cc = EL[t.s.el].col, k = Math.min(1, t.ramp / 4), sp = t.spec || 0, x0 = t.cx * TILE, y0 = t.cy * TILE - 3, big = t.asc ? 1 : 0;
+      t.beamTargets.forEach((e, i) => {
+        const ex = e.x * TILE, ey = e.y * TILE - (e.fly ? 7 : 0), dx = ex - x0, dy = ey - y0, dl = Math.hypot(dx, dy) || 1, sx = x0 + dx / dl * 4, sy = y0 + dy / dl * 4;
+        const col = sh(sp === 2 ? PRISM[i % 3] : cc, k * 0.7);
+        b.lineCap = 'round';
+        b.strokeStyle = hexA(col, 0.45 + 0.45 * k); b.lineWidth = 2 + k * 2 + big + (sp === 1 ? 1 : 0); b.beginPath(); b.moveTo(sx, sy); b.lineTo(ex, ey); b.stroke();
+        if (sp === 1) { b.strokeStyle = hexA('#0a0614', 0.85); b.lineWidth = 1 + k; b.stroke();
+          if (!LITE && frame % 3 === 0) { const u = 0.5 + Math.random() * 0.5; parts.push({ x: sx + dx * u + (Math.random() - 0.5) * 6, y: sy + dy * u + (Math.random() - 0.5) * 6, vx: -dx / dl * 60, vy: -dy / dl * 60, life: Math.min(0.35, dl * u / 70), max: 0.35, col, s: 1.5 }); } }
+        else if (k > 0.15) { b.strokeStyle = hexA('#ffffff', 0.35 + 0.5 * k); b.lineWidth = 1; b.setLineDash([3, 4]); b.lineDashOffset = -frame * 0.9; b.stroke(); b.setLineDash([]); }
+        b.lineCap = 'butt';
+        D(b, sx, sy, 1, '#ffffff');
+        D(b, ex, ey, 2 + Math.round(k * 2), hexA(sp === 1 ? col : '#ffffff', 0.5 + 0.4 * k)); if (sp === 1) D(b, ex, ey, 1, '#0a0614');
+      });
     }
     drawCore();
     if (odReady()) { const cx = G.core.x * TILE, cy = G.core.y * TILE, k = (frame % 30) / 30;
@@ -921,10 +1028,14 @@ const RES = 2;
         const h = (p.h || 0) * TILE;
         b.fillStyle = 'rgba(0,0,0,0.4)'; b.fillRect(X - 3, Y - 1, 6, 3);
         blit(UNITS.shell(p.el && EL[p.el] ? p.el : 'A'), X, Y - h);
-      } else if (p.k === 'bomblet') { D(b, X, Y, 2, col); }
+        if (!LITE && frame % 2 === 0) parts.push({ x: X + (Math.random() - 0.5) * 3, y: Y - h + (Math.random() - 0.5) * 3, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10, life: 0.22, max: 0.22, col: Math.random() < 0.5 ? '#ffffff' : col, s: 1 });
+      } else if (p.k === 'bomblet') { // v5.8 Cluster Pods: little bomblets drop onto their spots
+        const hh = Math.max(0, p.t) * 26; b.fillStyle = 'rgba(0,0,0,0.4)'; b.fillRect(X - 1.5, Y, 3, 1.5);
+        R(b, X - 1, Y - hh - 2, 2, 3, '#5e5040'); P(b, X - 1, Y - hh - 2, frame % 4 < 2 ? '#ffffff' : col); }
     }
     // fx
     for (const L of lines) {
+      if (L.dl > 0) { L.dl -= dt; continue; }
       L.life -= dt; const a = Math.max(0, L.life / L.max);
       b.lineCap = 'round';
       b.strokeStyle = hexA(L.col, a); b.lineWidth = L.w || 3; b.beginPath(); b.moveTo(L.pts[0].x, L.pts[0].y); for (let i = 1; i < L.pts.length; i++) b.lineTo(L.pts[i].x, L.pts[i].y); b.stroke();
@@ -933,16 +1044,36 @@ const RES = 2;
     }
     lines = lines.filter(L => L.life > 0);
     for (const Rg of rings) {
+      if (Rg.dl > 0) { Rg.dl -= dt; continue; }
       Rg.life -= dt;
       const k = 1 - Math.max(0, Rg.life / Rg.max), r = Rg.r0 + (Rg.r1 - Rg.r0) * k;
       if (Rg.fill) fillRing(Rg.x, Rg.y, r, Rg.col, (1 - k) * 0.22);
-      strokeRing(Rg.x, Rg.y, r, Rg.col, (1 - k) * (Rg.a || 1), Rg.w || 2);
+      strokeRing(Rg.x, Rg.y, r, Rg.col, (1 - k) * (Rg.a || 1), Rg.w || 2, Rg.dash);
     }
     rings = rings.filter(Rg => Rg.life > 0);
+    // v5.8: hop stars and white impact discs (a few frames each), and Gravity Well drag streaks
+    for (const q of stars) {
+      if (q.dl > 0) { q.dl -= dt; continue; }
+      q.life -= dt; const a = Math.max(0, q.life / q.max);
+      if (q.disc) D(b, q.x, q.y, q.s, hexA(q.col, Math.min(1, a * 1.5)));
+      else { const s2 = q.s, col = hexA(q.col, a); R(b, q.x - s2, q.y, s2 * 2 + 1, 1, col); R(b, q.x, q.y - s2, 1, s2 * 2 + 1, col); P(b, q.x, q.y, '#ffffff'); }
+    }
+    stars = stars.filter(q => q.life > 0);
+    for (const q of drags) {
+      q.life -= dt; if (q.e.dead) continue;
+      const a = Math.max(0, q.life / 0.15), ex = q.e.x * TILE, ey = q.e.y * TILE;
+      if (Math.abs(ex - q.x0) + Math.abs(ey - q.y0) < 1) continue;
+      b.strokeStyle = hexA(q.col, 0.7 * a); b.lineWidth = 2; b.beginPath(); b.moveTo(q.x0, q.y0); b.lineTo(ex, ey); b.stroke();
+    }
+    drags = drags.filter(q => q.life > 0);
     for (const p of parts) {
       p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (p.g || 0) * dt; p.vx *= 0.96; p.vy *= 0.96;
       const k = Math.max(0, p.life / p.max);
       if (p.smoke) { const s = (p.s || 2) * (1 + (1 - k) * 1.6); b.fillStyle = hexA(p.col, k * 0.5); b.fillRect(p.x - s / 2, p.y - s / 2, s, s); continue; }
+      if (p.fl) { // v5.8 flame wedge: grows as it ages and cools from white to smoke; a smaller lick trails toward the nozzle
+        const i = Math.min(5, Math.floor((1 - k) * 6)), s = (p.s || 2) * (1 + (1 - k) * 2.2), sp = Math.hypot(p.vx, p.vy) || 1;
+        b.fillStyle = hexA(FLAME_RAMP[p.fl][i], i === 5 ? k * 0.9 : Math.min(1, k * 1.6));
+        b.fillRect(p.x - s / 2, p.y - s / 2, s, s); const s3 = s * 0.55; b.fillRect(p.x - p.vx / sp * s * 0.8 - s3 / 2, p.y - p.vy / sp * s * 0.8 - s3 / 2, s3, s3); continue; }
       b.fillStyle = hexA(p.col, k);
       const s = (p.s || 2) * (k > 0.5 ? 1 : 0.75); b.fillRect(Math.round((p.x - s / 2) * RES) / RES, Math.round((p.y - s / 2) * RES) / RES, s, s);
     }
@@ -963,8 +1094,8 @@ const RES = 2;
       else if (e.elite.length) light(e.x * TILE, e.y * TILE, TILE * 1.1, ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, 0.18);
       if (e.st.burn) light(e.x * TILE, e.y * TILE, TILE * 0.7, EL.T.col, 0.16);
     }
-    for (const Rg of rings) { const k = 1 - Math.max(0, Rg.life / Rg.max); light(Rg.x, Rg.y, (Rg.r0 + (Rg.r1 - Rg.r0) * k) * 1.3 + 6, Rg.col, (1 - k) * (Rg.fill ? 0.5 : 0.3)); }
-    for (const L of lines) { const a = Math.max(0, L.life / L.max), q = L.pts[L.pts.length - 1]; light(q.x, q.y, 16, L.col, a * 0.5); light(L.pts[0].x, L.pts[0].y, 12, L.col, a * 0.35); }
+    for (const Rg of rings) { if (Rg.nl || Rg.dl > 0) continue; const k = 1 - Math.max(0, Rg.life / Rg.max); light(Rg.x, Rg.y, (Rg.r0 + (Rg.r1 - Rg.r0) * k) * 1.3 + 6, Rg.col, (1 - k) * (Rg.fill ? 0.5 : 0.3)); }
+    for (const L of lines) { if (L.dl > 0) continue; const a = Math.max(0, L.life / L.max), q = L.pts[L.pts.length - 1]; light(q.x, q.y, 16, L.col, a * 0.5); light(L.pts[0].x, L.pts[0].y, 12, L.col, a * 0.35); }
     for (const s2 of G.storms) light(s2.x * TILE, s2.y * TILE, s2.r * TILE * 1.1, s2.mael ? '#ff4d6a' : STORMS[s2.types[0]].col, 0.13);
     for (const z of G.zones) light(z.x * TILE, z.y * TILE, z.r * TILE * 1.2, '#ff7b39', 0.22);
     for (const q of conduits) light(q.x, q.y, 14, q.col, 0.05 + 0.05 * Math.sin(frame / 20 + q.ph));
@@ -1245,18 +1376,65 @@ const RES = 2;
         text(d.x, d.y - 0.9, d.name, d.col, 13, 0.9, -1, 'Silkscreen, monospace'); texts[texts.length - 1].combo = 1;
         break;
       }
-      case 'boom': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: Math.max(6, d.r * TILE), life: d.big ? 0.6 : 0.25, max: d.big ? 0.6 : 0.25, col: d.col, fill: 1, w: d.big ? 3 : 2 }); burst(T2P(d.x), T2P(d.y), d.big ? 70 : 10, d.col, (d.big ? 90 : 35) * K, d.big ? 0.8 : 0.35); if (d.big) flashes.push({ col: '#ffe9b0', life: 0.25, max: 0.25, a: 0.35 }); break;
+      case 'boom':
+        // v5.8: each payload lands differently. Cluster bomblets pop small; EMP shells flash a white disc with jagged arcs and a kick
+        if (d.k === 'bomblet') { const x = T2P(d.x), y = T2P(d.y); rings.push({ x, y, r0: 1, r1: Math.max(5, d.r * TILE * 0.8), life: 0.18, max: 0.18, col: d.col, fill: 1, w: 1 }); burst(x, y, LITE ? 2 : 5, d.col, 25 * K, 0.2); stars.push({ x, y, life: 0.05, max: 0.05, col: '#ffffff', s: 2, disc: 1 }); break; }
+        if (d.k === 'mortar') { const x = T2P(d.x), y = T2P(d.y), R0 = d.r * TILE, bo = d.t && d.t.spec === 1;
+          stars.push({ x, y, life: 0.06, max: 0.06, col: '#ffffff', s: Math.max(5, R0 * 0.45), disc: 1 });
+          for (let i = 0, n = LITE ? 2 : bo ? 7 : 5; i < n; i++) { const a = Math.random() * 6.283, L0 = R0 * (0.6 + Math.random() * 0.45), pts = [{ x, y }];
+            for (let j = 1; j <= 3; j++) { const u = j / 3; pts.push({ x: x + Math.cos(a) * L0 * u + (j < 3 ? (Math.random() - 0.5) * 7 : 0), y: y + Math.sin(a) * L0 * u + (j < 3 ? (Math.random() - 0.5) * 7 : 0) }); }
+            lines.push({ pts, life: bo ? 0.22 : 0.15, max: bo ? 0.22 : 0.15, col: i % 2 ? '#fff6c0' : d.col, core: 1, w: 1.5 }); }
+          kick(2); }
+        else if (d.k === 'missile') stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.05, max: 0.05, col: '#fff2c0', s: Math.max(3, d.r * TILE * 0.35), disc: 1 });
+        rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: Math.max(6, d.r * TILE), life: d.big ? 0.6 : 0.25, max: d.big ? 0.6 : 0.25, col: d.col, fill: 1, w: d.big ? 3 : 2 }); burst(T2P(d.x), T2P(d.y), d.big ? 70 : 10, d.col, (d.big ? 90 : 35) * K, d.big ? 0.8 : 0.35); if (d.big) flashes.push({ col: '#ffe9b0', life: 0.25, max: 0.25, a: 0.35 }); break;
       case 'spark': burst(T2P(d.x), T2P(d.y), 3, d.col, 30 * K, 0.15); break;
-      case 'rail': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.18, max: 0.18, col: d.col, core: 1, w: d.crit ? 5 : 3 }); break;
+      case 'rail': {
+        if (!d.t) { lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.18, max: 0.18, col: d.col, core: 1, w: d.crit ? 5 : 3 }); break; }
+        // v5.8 Rail Lance: the beam fades over ~0.25 s with small rings rippling along it and a white burst on each enemy it pierces.
+        // Gauss Spire burns thicker and longer; Splinter Rail throws splinters off each pierced enemy. A crit kicks the screen
+        const sp = d.t.spec || 0, big = d.t.asc ? 1 : 0, x1 = T2P(d.x1), y1 = T2P(d.y1), x2 = T2P(d.x2), y2 = T2P(d.y2), life = sp === 1 ? 0.32 : 0.25, dx = x2 - x1, dy = y2 - y1, dl = Math.hypot(dx, dy) || 1;
+        lines.push({ pts: [{ x: x1 + dx / dl * 12, y: y1 + dy / dl * 12 }, { x: x2, y: y2 }], life, max: life, col: d.col, core: 1, w: (d.crit ? 5 : 3) + (sp === 1 ? 1.5 : 0) + big });
+        if (!LITE) for (let k = 1; k <= 3; k++) rings.push({ x: x1 + dx * k / 4, y: y1 + dy * k / 4, r0: 1, r1: 5 + (sp === 1 ? 2 : 0), life: 0.22, max: 0.22, col: d.col, w: 1, dl: k * 0.025, nl: 1 });
+        for (const q of d.hp || []) { const hx = T2P(q.x), hy = T2P(q.y); stars.push({ x: hx, y: hy, life: 0.07, max: 0.07, col: '#ffffff', s: 3 + big, disc: 1 }); if (!LITE) burst(hx, hy, 3, '#ffffff', 35 * K, 0.14);
+          if (sp === 2 && !LITE) for (const sgn of [-1, 1]) { const a = Math.atan2(dy, dx) + sgn * (0.5 + Math.random() * 0.4), L2 = 6 + Math.random() * 5; lines.push({ pts: [{ x: hx, y: hy }, { x: hx + Math.cos(a) * L2, y: hy + Math.sin(a) * L2 }], life: 0.14, max: 0.14, col: d.col, core: 1, w: 1 }); } }
+        if (d.crit) kick(1.5);
+        break; }
       case 'chain': case 'zap': {
-        const pts = d.pts || [{ x: d.x1, y: d.y1 }, { x: d.x2, y: d.y2 }], out = [];
-        for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], c2 = pts[i + 1]; for (let k = 0; k < 5; k++) { const tt = k / 5; out.push({ x: T2P(lerp(a.x, c2.x, tt)) + (k ? (Math.random() - 0.5) * 10 : 0), y: T2P(lerp(a.y, c2.y, tt)) + (k ? (Math.random() - 0.5) * 10 : 0) }); } }
-        const last = pts[pts.length - 1]; out.push({ x: T2P(last.x), y: T2P(last.y) });
-        lines.push({ pts: out, life: 0.14, max: 0.14, col: d.col, core: 1, w: 2 }); break;
+        const pts = d.pts || [{ x: d.x1, y: d.y1 }, { x: d.x2, y: d.y2 }];
+        const bolt = () => { const out = []; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], c2 = pts[i + 1]; for (let k = 0; k < 5; k++) { const tt = k / 5; out.push({ x: T2P(lerp(a.x, c2.x, tt)) + (k ? (Math.random() - 0.5) * 10 : 0), y: T2P(lerp(a.y, c2.y, tt)) + (k ? (Math.random() - 0.5) * 10 : 0) }); } }
+          const last = pts[pts.length - 1]; out.push({ x: T2P(last.x), y: T2P(last.y) }); return out; };
+        if (!d.t) { lines.push({ pts: bolt(), life: 0.14, max: 0.14, col: d.col, core: 1, w: 2 }); break; }
+        // v5.8 Arc Coil: the bolt is drawn twice with fresh jitter (a flicker) and a star lands on every hop.
+        // Tesla Crown forks at each hop; Overvolt burns a thicker orange bolt
+        const sp = d.t.spec || 0, col = sp === 2 ? '#ff9a3c' : d.col, w = (sp === 2 ? 3 : 2) + (d.t.asc ? 1 : 0);
+        lines.push({ pts: bolt(), life: 0.14, max: 0.14, col, core: 1, w });
+        if (!LITE) lines.push({ pts: bolt(), life: 0.09, max: 0.09, col, core: 1, w: Math.max(1, w - 1), dl: 0.05, nl: 1 });
+        for (let i = 1; i < pts.length; i++) { const hx = T2P(pts[i].x), hy = T2P(pts[i].y); stars.push({ x: hx, y: hy, life: 0.12, max: 0.12, col, s: sp === 2 ? 4 : 3 });
+          if (sp === 1 && !LITE) { const a0 = pts[i - 1], ang = Math.atan2(pts[i].y - a0.y, pts[i].x - a0.x) + (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.6), mx = T2P((a0.x + pts[i].x) / 2), my = T2P((a0.y + pts[i].y) / 2), L2 = 6 + Math.random() * 6;
+            lines.push({ pts: [{ x: mx, y: my }, { x: mx + Math.cos(ang) * L2 * 0.5 + (Math.random() - 0.5) * 3, y: my + Math.sin(ang) * L2 * 0.5 + (Math.random() - 0.5) * 3 }, { x: mx + Math.cos(ang) * L2, y: my + Math.sin(ang) * L2 }], life: 0.12, max: 0.12, col, core: 1, w: 1, nl: 1 }); } }
+        break;
       }
-      case 'flame': for (let i = 0; i < 6; i++) { const a = d.ang + (Math.random() - 0.5) * 1.0, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x) + Math.cos(d.ang) * 10, y: T2P(d.y) + Math.sin(d.ang) * 10, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.3, max: 0.3, col: Math.random() < 0.5 ? d.col : '#ffe14d', s: 3 }); } break;
-      case 'pulse': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.r * TILE, life: 0.35, max: 0.35, col: d.col, fill: 1 }); break;
-      case 'grav': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE, r1: 2, life: 0.5, max: 0.5, col: '#b86cff', w: 3 }); break;
+      case 'ovstun': { const x = T2P(d.x), y = T2P(d.y); rings.push({ x, y, r0: 2, r1: 9, life: 0.2, max: 0.2, col: '#ff9a3c', w: 1.5 }); if (!LITE) burst(x, y, 4, '#ffd28a', 30 * K, 0.2); kick(1); break; }
+      case 'flame': { // v5.8: wedges that grow and cool from white through orange to smoke (Inferno redder, Plasma Torch blue-white)
+        const fl = d.t && d.t.spec === 1 ? 2 : d.t && d.t.spec === 2 ? 3 : 1;
+        for (let i = 0, n = LITE ? 3 : 6; i < n; i++) { const a = d.ang + (Math.random() - 0.5) * 1.0, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x) + Math.cos(d.ang) * 11, y: T2P(d.y) + Math.sin(d.ang) * 11, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.32, max: 0.32, fl, s: fl === 2 ? 2.4 : 2 }); }
+        break; }
+      case 'pulse': { // Cryo: ice shards fly out with the ring. Glacier Core: a slower, thicker white ring. Shatter Field: a cracked ring with tinks
+        const sp = d.t ? d.t.spec || 0 : 0, x = T2P(d.x), y = T2P(d.y), R0 = d.r * TILE;
+        if (sp === 1) rings.push({ x, y, r0: 4, r1: R0, life: 0.55, max: 0.55, col: '#dff6ff', fill: 1, w: 3 });
+        else if (sp === 2) { rings.push({ x, y, r0: 4, r1: R0, life: 0.35, max: 0.35, col: d.col, fill: 1, dash: [5, 2, 2, 3] });
+          if (!LITE) for (let i = 0; i < 4; i++) { const a = Math.random() * 6.283, rr = R0 * (0.5 + Math.random() * 0.45); stars.push({ x: x + Math.cos(a) * rr, y: y + Math.sin(a) * rr, life: 0.1, max: 0.1, col: '#e6fbff', s: 2, dl: rr / R0 * 0.3 }); } }
+        else rings.push({ x, y, r0: 4, r1: R0, life: 0.35, max: 0.35, col: d.col, fill: 1 });
+        if (!LITE) { const life = sp === 1 ? 0.5 : 0.32; for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283 + Math.random() * 0.8, v = R0 / life * 0.95; parts.push({ x: x + Math.cos(a) * 4, y: y + Math.sin(a) * 4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, col: i % 2 ? '#ffffff' : '#bff4ff', s: 1.5 }); } }
+        break; }
+      case 'grav': { // Gravity Well: inward spiral arcs and a drag streak on every enemy it pulls. Singularity darker; Tidal Lock a double teal ring
+        const sp = d.t ? d.t.spec || 0 : 0, x = T2P(d.x), y = T2P(d.y), R0 = d.r * TILE, col = sp === 2 ? '#4fd8c8' : sp === 1 ? '#7a3aff' : '#b86cff';
+        rings.push({ x, y, r0: R0, r1: 2, life: sp === 2 ? 0.7 : 0.5, max: sp === 2 ? 0.7 : 0.5, col, w: 3 });
+        if (sp === 2) rings.push({ x, y, r0: R0 * 0.8, r1: 2, life: 0.7, max: 0.7, col: '#9ff2e6', w: 2, dl: 0.1 });
+        if (sp === 1) stars.push({ x, y, life: 0.25, max: 0.25, col: '#0a0614', s: 6, disc: 1 });
+        if (!LITE) for (let arm = 0; arm < 3; arm++) { const a0 = arm / 3 * 6.283 + Math.random(), pts = []; for (let j = 0; j <= 8; j++) { const u = j / 8, rr = R0 * (1 - u * 0.85), an = a0 + u * 2.4; pts.push({ x: x + Math.cos(an) * rr, y: y + Math.sin(an) * rr }); } lines.push({ pts, life: 0.4, max: 0.4, col, core: 0, w: 1.5, nl: 1 }); }
+        if (d.es) for (let i = 0; i < d.es.length && i < 24; i++) { const e = d.es[i]; drags.push({ e, x0: e.x * TILE, y0: e.y * TILE, life: 0.15, col }); }
+        break; }
       case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;
       case 'arcs': for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x) + Math.cos(a) * rr * 0.5 + (Math.random() - 0.5) * 10, y: T2P(d.y) + Math.sin(a) * rr * 0.5 }, { x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr }], life: 0.18, max: 0.18, col: '#9ff2ff', core: 1, w: 2 }); } break;
       case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' });
@@ -1272,8 +1450,10 @@ const RES = 2;
       case 'sap': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.5, max: 0.5, col: '#ff3355', core: 1, w: 2 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 4, r1: 20, life: 0.4, max: 0.4, col: '#ff3355', w: 2, fill: 1 }); burst(T2P(d.x2), T2P(d.y2), 14, '#ffa860', 40 * K, 0.4); break;
       case 'drop': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 18, life: 0.35, max: 0.35, col: '#ffe14d', w: 2 }); burst(T2P(d.x), T2P(d.y), 6, '#ffe14d', 25 * K, 0.3, 30 * K); break;
       case 'blink': burst(T2P(d.x), T2P(d.y), 14, '#b86cff', 40 * K, 0.3); break;
-      case 'lure': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.35, max: 0.35, col: '#59f0b4', core: 0, w: 1 }); break;
-      case 'net': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 3, life: 0.35, max: 0.35, col: '#59f0b4', w: 2 }); burst(T2P(d.x), T2P(d.y), 8, '#c9fff0', 20 * K, 0.3); break;
+      case 'lure': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.35, max: 0.35, col: '#59f0b4', core: 0, w: 1 });
+        if (d.t && d.t.spec === 2) rings.push({ x: T2P(d.x1), y: T2P(d.y1), r0: 4, r1: 30, life: 0.5, max: 0.5, col: '#59f0b4', w: 1, a: 0.6, nl: 1 }); break;
+      case 'net': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 3, life: 0.35, max: 0.35, col: '#59f0b4', w: 2 }); burst(T2P(d.x), T2P(d.y), 8, '#c9fff0', 20 * K, 0.3);
+        if (d.t && d.t.spec === 1) rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 20, r1: 6, life: 0.45, max: 0.45, col: '#9fffd8', w: 1, dash: [2, 2] }); break;
       case 'say': if (texts.filter(T => T.bub).length >= 4) break; text(d.x, d.y - 1.5, d.t, '#ffffff', 13, 1.6, -0.35, 'Silkscreen, monospace'); texts[texts.length - 1].bub = 1; break;
       case 'song': for (let i = 0; i < 3; i++) rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6 + i * 10, r1: d.r * TILE, life: 0.6 + i * 0.25, max: 0.6 + i * 0.25, col: '#9fe7ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 12, '#7dffb0', 30 * K, 0.6, -20 * K); break;
       case 'noodle': { const out = []; for (let k = 0; k <= 10; k++) { const t = k / 10, w = Math.sin(t * Math.PI * 3) * 8 * Math.sin(t * Math.PI); const dx = d.x2 - d.x1, dy = d.y2 - d.y1, L = Math.hypot(dx, dy) || 1; out.push({ x: T2P(lerp(d.x1, d.x2, t)) - dy / L * w, y: T2P(lerp(d.y1, d.y2, t)) + dx / L * w }); } lines.push({ pts: out, life: 0.7, max: 0.7, col: '#f2d27a', core: 0, w: 4 }); break; }
@@ -1296,7 +1476,10 @@ const RES = 2;
       case 'elite': burst(T2P(d.x), T2P(d.y), 10, '#ffe14d', 25 * K, 0.5); break;
       case 'jam': case 'fizzle': burst(T2P(d.x), T2P(d.y), 8, '#8a8aa6', 20 * K, 0.4, -20 * K); break;
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
-      case 'coin': text(d.x, d.y - 0.6, d.v < 0 ? '−' + Math.abs(d.v) : '+' + d.v, d.v < 0 ? PAL.bad : PAL.amber, 15, 1, -0.6); break;
+      case 'coin': text(d.x, d.y - 0.6, d.v < 0 ? '−' + Math.abs(d.v) : '+' + d.v, d.v < 0 ? PAL.bad : PAL.amber, 15, 1, -0.6);
+        // v5.8 Credit Forge payout: a spray of sparks out of the furnace
+        if (d.forge && !LITE) for (let i = 0; i < 10; i++) parts.push({ x: T2P(d.x) + (Math.random() - 0.5) * 8, y: T2P(d.y) - 2, vx: (Math.random() - 0.5) * 40, vy: -35 - Math.random() * 40, g: 140, life: 0.6, max: 0.6, col: Math.random() < 0.5 ? '#ffe14d' : '#ffb03a', s: 1.5 });
+        break;
       case 'shake': shakeAt(d.v, 0.3); break;
       case 'burrow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: TILE * 1.6, life: 0.5, max: 0.5, col: '#c46cff', w: 3, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: TILE * 1.8, r1: 2, life: 0.5, max: 0.5, col: '#5cf2ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 30, '#c46cff', 60 * K, 0.5); break;
       case 'swallow': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.45, max: 0.45, col: d.back ? '#59f0b4' : '#c46cff', core: 1, w: 5 }); burst(T2P(d.x1), T2P(d.y1), 24, d.back ? '#59f0b4' : '#c46cff', 50 * K, 0.5); break;
@@ -1327,7 +1510,7 @@ const RES = 2;
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     fit();
   }
-  function reset() { parts = []; rings = []; lines = []; texts = []; flashes = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
+  function reset() { parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
 
   // build-menu card art: the tower on a lit plinth against its element's colour
   function towerCard(type, canvas, locked) {
@@ -1378,6 +1561,7 @@ const RES = 2;
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
+    get fxCounts() { return { parts: parts.length, rings: rings.length, lines: lines.length, stars: stars.length, drags: drags.length, lite: LITE }; }, // v5.8 test hook
     get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, get home() { return atHome; }, get homeZoom() { return homeZ(); }, overview, markMap() { mapDirty = true; },
     set onCam(f) { onCam = f; },
     tileToScreen,

@@ -2443,7 +2443,7 @@ const UI = (() => {
     $('#cv').addEventListener('contextmenu', e => e.preventDefault());
     $('#cv').addEventListener('pointerleave', () => { Render.hover = null; Render.hoverE = null; $('#etip').hidden = true; });
     // hooks
-    Hooks.sfx = (n, a) => { SFX.play(n, a); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
+    Hooks.sfx = (n, a, b) => { SFX.play(n, a, b); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view
     SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; });
     Hooks.fx = (t, d) => Render.fx(t, d);
@@ -2491,9 +2491,23 @@ const UI = (() => {
     if (G && G.reloc && !canRelocate()) endReloc();
     // continuous sounds: the Void Lens hum and the low-hull heartbeat
     const live = screen === 'game' && G && !G.over && !G.paused && !modalOpen && !Tree.isOpen;
-    let nb = 0, rk = 0;
-    if (live) for (const t of G.towers) if (t.beamTargets && t.beamTargets.length && t.disabled <= 0) { nb++; rk = Math.max(rk, (t.ramp || 0) / (t.s.rampMax || 3.5)); }
-    SFX.beams(nb, rk);
+    // v5.8: the hum's ramp is the beam's seconds on target out of the sim's 4 s cap (it used to divide seconds by the damage multiplier),
+    // Event Horizon adds a sub octave and Prism Split a wider chorus; a Lens that locks onto a new target chirps.
+    // Flame Projectors share one continuous roar; one that starts firing gives a short ignition chirp
+    let nb = 0, rk = 0, neh = 0, npr = 0, nf = 0, nfi = 0, nfp = 0;
+    if (live) for (const t of G.towers) {
+      if (t.type === 'lens') {
+        const tg = t.disabled <= 0 && t.beamTargets && t.beamTargets.length ? t.beamTargets[0] : null;
+        if (tg) { nb++; rk = Math.max(rk, Math.min(1, (t.ramp || 0) / 4)); if (t.spec === 1) neh++; else if (t.spec === 2) npr++; if (tg !== t._lock) SFX.play('lock', t); }
+        t._lock = tg;
+      } else if (t.type === 'flame') {
+        const on = t.disabled <= 0 && t.aimT !== undefined && G.time - t.aimT < 0.3 && G.time >= t.aimT;
+        if (on) { nf++; if (t.spec === 1) nfi++; else if (t.spec === 2) nfp++; if (!t._flOn) SFX.play('ignite', t); }
+        t._flOn = on;
+      }
+    }
+    SFX.beams(nb, rk, nb ? neh / nb : 0, nb ? npr / nb : 0);
+    SFX.flames(nf, nf ? nfi / nf : 0, nf ? nfp / nf : 0);
     SFX.danger(live && G.core.hp < G.core.max * 0.35 ? 1 - G.core.hp / (G.core.max * 0.35) : 0, dt);
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }

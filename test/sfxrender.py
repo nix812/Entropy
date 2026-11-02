@@ -11,7 +11,11 @@ NAMES = ['ui', 'deny', 'shot', 'shotT', 'shotC', 'shotA', 'shotV', 'shotG', 'rai
          'combo:SHATTER', 'combo:OVERLOAD', 'combo:THERMAL SHOCK', 'combo:SUPERCONDUCT', 'combo:COLLAPSE',
          'build', 'upgrade', 'reroll', 'sell', 'cash', 'wave', 'call', 'milestone', 'levelup', 'unbreak', 'freeze', 'net', 'boom', 'emp', 'blink',
          'leak', 'bigleak', 'crack', 'storm', 'converge', 'maelstrom', 'implode', 'lane', 'strikecharge', 'strike', 'nova', 'stasis', 'overclock',
-         'boss', 'bossdie', 'gameover', 'quack', 'meow', 'whale', 'blorp']
+         'boss', 'bossdie', 'gameover', 'quack', 'meow', 'whale', 'blorp',
+         # v5.8 tower character: spec variants, per-family impacts, split blasts, the flame roar, Lens lock-on, Forge, Pylon, Snare
+         'shot2', 'rail1', 'rail2', 'pulse1', 'pulse2', 'missile1', 'missile2', 'coil', 'coil1', 'coil2', 'ignite', 'flames', 'flames1', 'flames2',
+         'mortar1', 'mortar2', 'grav1', 'grav2', 'hitK', 'hitR', 'hitC', 'hitF', 'hitV', 'hitA', 'boomT', 'boomT2', 'pop', 'empboom', 'empboom1',
+         'lure', 'lure2', 'net1', 'lock', 'forge', 'forge1', 'pylon']
 GAP = 1.6
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page()
@@ -25,7 +29,18 @@ with sync_playwright() as p:
         if (n.startsWith('die:')) { name = 'die'; arg = { type: n.slice(4) }; }
         if (n.startsWith('combo:')) { name = 'combo'; arg = n.slice(6); }
         if (n === 'upgrade') arg = { lvl: 2 };
-        SFX.play(name, arg); });
+        let arg2;
+        const m = /^(rail|pulse|missile|coil|mortar|grav|shot)([12])$/.exec(n);
+        if (m) { name = m[1]; arg = { cx: 0, cy: 0, spec: +m[2], s: { el: 'K', chain: 6 } }; }
+        if (n === 'coil') arg = { cx: 0, cy: 0, spec: 0, s: { el: 'A', chain: 3 } };
+        const HF = { hitK: 'pulse', hitR: 'rail', hitC: 'cryo', hitF: 'flame', hitV: 'lens', hitA: 'coil' };
+        if (HF[n]) { name = 'hit'; arg2 = { type: HF[n] }; }
+        if (n === 'boomT2') { name = 'boomT'; arg = { x: 0, y: 0, src: { s: { napalm: 1 } } }; }
+        if (n === 'empboom1') { name = 'empboom'; arg = { x: 0, y: 0, src: { spec: 1 } }; }
+        if (n === 'lure2' || n === 'net1') { name = n.slice(0, -1); arg2 = { spec: +n.slice(-1) }; }
+        if (n === 'forge1') { name = 'forge'; arg = { spec: 1 }; arg2 = 0; }
+        if (n.startsWith('flames')) { const k = n === 'flames1' ? 1 : 0, q = n === 'flames2' ? 1 : 0; SFX.flames(1, k, q); SFX.setT(i * gap + 0.95); SFX.flames(0, k, q); return; }
+        SFX.play(name, arg, arg2); });
       const buf = await oc.startRendering();
       const L = buf.getChannelData(0), R = buf.getChannelData(1), n = L.length, i16 = new Int16Array(n * 2);
       for (let i = 0; i < n; i++) { i16[2 * i] = Math.max(-1, Math.min(1, L[i])) * 32767; i16[2 * i + 1] = Math.max(-1, Math.min(1, R[i])) * 32767; }
