@@ -1,0 +1,54 @@
+"""5.5.12 the battlefield music buttons never sit on anything: with the log and the doctrine list full, the ticker and the assault
+banner up, the full HUD's stats box, toasts, the Map button, and a tower panel open on either side; at four screen sizes
+(including an iPhone Pro Max). usage: python3 trackcollide.py"""
+import pathlib, mkpage
+from playwright.sync_api import sync_playwright
+root = pathlib.Path(__file__).parent.parent; mkpage.mk(); errs = []; fails = []
+OVER = ['#log', '#docbar', '#ticker', '#asbar', '#dps', '#bZoom', '#toasts', '#panel', '#watchbar', '#cpBanner']
+JS_HITS = '''(over) => {
+  const vis = el => { if (!el) return null; const cs = getComputedStyle(el); if (el.hidden || cs.display === 'none' || cs.visibility === 'hidden') return null; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 ? r : null; };
+  const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+  const out = [];
+  for (const id of ['#bTrkBack', '#bTrkNext']) { const r = vis(document.querySelector(id)); if (!r) continue;
+    for (const o of over) { const el = document.querySelector(o); const kids = o === '#toasts' || o === '#log' || o === '#docbar' ? [...(el ? el.children : [])] : [el];
+      for (const k of kids) { const q = vis(k); if (q && hit(r, q)) out.push(id + ' x ' + o); } } }
+  return out; }'''
+FILL = '''() => {
+  document.body.classList.add('hudfull');
+  const dps = document.querySelector('#dps'); dps.innerHTML = '<b>DPS</b><br>Pulse 1,234<br>Rail 5,678<br>Cryo 90<br>Lens 1,111<br>Mortar 222';
+  const log = document.querySelector('#log'); log.innerHTML = Array.from({ length: 6 }, (_, i) => `<div class="fl" style="--c:#6ae2ff"><b>Now Playing</b> Analog Corridor · Techno ${i}</div>`).join('');
+  const db = document.querySelector('#docbar'); db.hidden = false; db.innerHTML = '<span class="heat">Road heat <b>40%</b><i>/100%</i></span><span class="chest">War chest <b>3/8</b><i>next at 2,400</i></span><span class="ice">Ice jam <b>2</b><i>held</i></span>';
+  const tk = document.querySelector('#ticker'); tk.hidden = false; tk.style.setProperty('--c', '#ffb03a'); tk.innerHTML = '<div class="tkl"><b>SURGE</b><span>The swarm surges: +40% enemies this wave, and they come faster than before</span></div><button class="tkb">LOG</button>';
+  const as = document.querySelector('#asbar'); as.hidden = false; as.innerHTML = '<b>STRAIN ASSAULT</b><span>Wave 15 · Plating · Haste</span>'; document.body.classList.add('asbar');
+  UI.toast('NOW PLAYING', 'Analog Corridor · Techno', '#6ae2ff');
+}'''
+with sync_playwright() as p:
+    b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
+    for W, H in [(852, 393), (932, 430), (667, 375), (1180, 820)]:
+        pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=2, has_touch=True); pg.on('pageerror', lambda e: errs.append(str(e)))
+        pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
+        pg.evaluate('() => { PROF.seenVer = VERSION; PROF.seenHelp = true; PROF.settings.briefings = "off"; PROF.bestWave = 40; }')
+        pg.click('#bLaunch'); pg.wait_for_timeout(300); pg.evaluate('() => document.querySelector("[data-act=launch]").click()'); pg.wait_for_timeout(1500)
+        pg.evaluate('() => document.querySelectorAll("[data-act=brief]").forEach(b => b.click())')
+        # towers near the left and right edges of the map, so a panel opens on each side
+        pg.evaluate('''() => { G.credits = 99999; const ok = (x, y) => canBuildAt(x, y); let L = null, R = null;
+          for (let x = 0; x < COLS && !L; x++) for (let y = 0; y < ROWS && !L; y++) if (ok(x, y) && window.act('build', 'pulse', x, y)) L = G.towers[G.towers.length - 1];
+          for (let x = COLS - 1; x >= 0 && !R; x--) for (let y = 0; y < ROWS && !R; y++) if (ok(x, y) && window.act('build', 'pulse', x, y)) R = G.towers[G.towers.length - 1];
+          window._L = L; window._R = R; }''')
+        pg.evaluate(FILL); pg.wait_for_timeout(300)
+        states = {}
+        states['field, everything up'] = pg.evaluate(JS_HITS, OVER)
+        pg.screenshot(path=str(root / 'test' / 'out' / f'trk_all_{W}.png'))
+        for side, t in [('left', '_L'), ('right', '_R')]:
+            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.wait_for_timeout(200)
+            cls = pg.evaluate('() => document.body.className')
+            states[f'tower panel ({side}: {"panel-l" if "panel-l" in cls else "panel-r" if "panel-r" in cls else "?"})'] = pg.evaluate(JS_HITS, OVER)
+            pg.screenshot(path=str(root / 'test' / 'out' / f'trk_panel_{side}_{W}.png'))
+            pg.evaluate('() => { const b = document.querySelector("#panel [data-act=close], #panel .x"); if (b) b.click(); }'); pg.wait_for_timeout(200)
+        for k, v in states.items():
+            print(f'   {W}x{H} {k}: {"clear" if not v else v}')
+            if v: fails.append(f'{W} {k}: {v}')
+        pg.close()
+    b.close()
+print('ERRORS:', errs[:5])
+print('FAILED:', fails)

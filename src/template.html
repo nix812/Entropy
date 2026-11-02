@@ -810,11 +810,19 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .fader .fknob { position: absolute; left: 8px; right: -2px; height: 8px; margin-bottom: -4px; background: var(--ink); box-shadow: 0 2px 0 rgba(0,0,0,0.5); pointer-events: none; }
 .fmute { font-family: var(--f-pix); font-size: 7px; text-transform: uppercase; background: var(--panel2); border: 0; width: 100%; min-height: 30px; padding: 0 1px; box-shadow: inset 0 0 0 1px var(--line2); overflow: hidden; }
 .fmute.m { background: var(--bad); color: #1a0008; box-shadow: none; text-decoration: line-through; }
-/* v5.5.11 music on the battlefield: replay/back bottom-left, next bottom-right, faint until touched */
-.trkbtn { position: absolute; bottom: 8px; z-index: 6; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 0; background: rgba(14, 17, 33, 0.6); box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; opacity: 0.6; }
+/* v5.5.11 music on the battlefield (5.5.12: at the top; the log and the doctrine list own the bottom corners): back/replay
+   top-left, the banners there shifted right to make room; next under the Map button. A right-side panel moves Map to the left,
+   so back drops under it. Each hides on the side a panel opens. */
+.trkbtn { position: absolute; top: 6px; z-index: 6; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 0; background: rgba(14, 17, 33, 0.6); box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; opacity: 0.6; }
 .trkbtn .svgi { width: 16px; height: 16px; }
 .trkbtn:active { opacity: 1; filter: brightness(1.4); }
-#bTrkBack { left: 8px; } #bTrkNext { right: 8px; }
+#bTrkBack { left: 6px; } #bTrkNext { right: 6px; top: 48px; }
+body.panel-r #bTrkBack { top: 48px; }
+#asbar, #ticker, #dps { left: 50px; }
+#ticker { max-width: calc(100% - 200px); } #asbar { max-width: calc(100% - 200px); }
+body.panel-r #asbar, body.panel-r #ticker { left: 50px; max-width: calc(100% - min(270px, 46%) - 64px); }
+body.watching #asbar, body.watching #ticker, body.watching #dps { left: 6px; }
+body.panel-l #asbar, body.panel-l #ticker { max-width: calc(100% - min(270px, 46%) - 64px); } /* stop short of the next-song button */
 body.panel-l #bTrkBack, body.panel-r #bTrkNext, body.watching .trkbtn { display: none; }
 /* v5.5.10 typing panel (outside the scaled game layer, pinned to what the keyboard leaves visible) */
 #entry { position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(4, 5, 10, 0.94); display: flex; align-items: flex-start; justify-content: center; padding: 8px 12px; box-sizing: border-box; overflow: auto; font-family: var(--f-term); color: var(--ink); }
