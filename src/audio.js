@@ -971,8 +971,8 @@ const SFX = (() => {
       outAn = ctx.createAnalyser(); outAn.fftSize = 256; outAn.smoothingTimeConstant = 0.75;
       pauseG = gainN(paused ? 0 : 1, comp); trimG = gainN(1, pauseG); toneLP.connect(toneHS); toneHS.connect(trimG); comp.connect(synthOut()); comp.connect(outAn); // v5.5: pauseG mutes the music (Studio Pause)
       revSend = ctx.createGain(); revRet = gainN(0.5, toneLP);
-      revA = ctx.createConvolver(); revB = ctx.createConvolver(); revAG = gainN(1, revRet); revBG = gainN(0, revRet); revA.connect(revAG); revB.connect(revBG);
-      revHP = lp(200, 0.7, null, 'highpass'); revSend.connect(revHP); revHP.connect(revA); revA.buffer = impulse(3, 0.25); // only the active reverb is fed (CPU)
+      revHP = lp(200, 0.7, null, 'highpass'); revSend.connect(revHP); selectRoom(1, ctx.currentTime); // only the active room is fed (CPU)
+      if (!offline) [3, 6, 9].forEach((s0, i) => setTimeout(() => { try { ensureRoom(i); } catch (e) {} }, s0 * 1000)); // build the other rooms in quiet moments, not at a song change
       // gated reverb for the synthwave snare: a short bright room cut by a gate opened on each snare
       gateConv = ctx.createGain(); gateCv = ctx.createConvolver(); gateCv.buffer = impulse(2.2, 0.5); gateG = gainN(0); gateCv.connect(gateG); gateG.connect(toneLP); // patched in for gated kits only
       // ping-pong echo
@@ -990,19 +990,22 @@ const SFX = (() => {
       const cr = ctx.createBufferSource(); cr.buffer = vb; cr.loop = true; vinylG = gainN(0); cr.connect(lp(2500, 0.5, vinylG, 'highpass')); vinylG.connect(toneLP); cr.start();
       const hs = ctx.createBufferSource(); hs.buffer = noiseBuf; hs.loop = true; hissG = gainN(0); hs.connect(lp(5000, 0.4, hissG, 'bandpass')); hissG.connect(toneLP); hs.start();
     }
+    const ROOMS = [[2, 0.28], [3.2, 0.25], [5.2, 0.18]], room = []; let roomNow = -1;
+    const roomFor = sz => sz <= 2.3 ? 0 : sz <= 3.8 ? 1 : 2;
+    function ensureRoom(i) { if (room[i]) return room[i]; const cv = ctx.createConvolver(); cv.buffer = impulse(ROOMS[i][0], ROOMS[i][1]); const g = gainN(0, revRet); cv.connect(g); return (room[i] = { cv, g }); }
+    function selectRoom(i, t) {
+      if (i === roomNow) return; const r = ensureRoom(i), was = roomNow; roomNow = i;
+      try { revHP.connect(r.cv); } catch (e) {} r.g.gain.setTargetAtTime(1, t, 0.4);
+      if (was >= 0) { const o = room[was]; o.g.gain.setTargetAtTime(0, t, 0.4); const off = () => { if (roomNow !== was) try { revHP.disconnect(o.cv); } catch (e) {} }; if (offline) off(); else setTimeout(off, 2500); }
+    }
     let P_flG = null, sweepLP = null, trimG = null, pauseG = null, toneHS = null, revHP = null, gateCv = null, crushOn = false, gateOn = false;
     function applyGenreMix(newGenre) {
       if (!mIn || !P) return;
       const c = live(), M = P.S.mix, t = ctx.currentTime, k = (x, d, span) => fxK(x, d, span);
       for (const ch of CHN) CH[ch].gain.setTargetAtTime(c.mute && c.mute[ch] ? 0 : (c.mix[ch] === undefined ? 1 : c.mix[ch]), t, 0.05);
-      // reverb size per genre: crossfade to the other convolver when the genre's size changes
-      const want = Math.max(0.5, M.revS || 2), key = want.toFixed(1);
-      if (newGenre && P._revKey !== key) {
-        const to = revUse ? revA : revB, from = revUse ? revB : revA, toG = revUse ? revAG : revBG, fromG = revUse ? revBG : revAG; to.buffer = impulse(want, want > 4 ? 0.18 : 0.28);
-        try { revHP.connect(to); } catch (e) {}
-        toG.gain.setTargetAtTime(1, t, 0.4); fromG.gain.setTargetAtTime(0, t, 0.4); revUse = 1 - revUse; P._revKey = key;
-        if (!offline) setTimeout(() => { try { revHP.disconnect(from); } catch (e) {} }, 2500); else try { revHP.disconnect(from); } catch (e) {}
-      }
+      // reverb size per genre: one of three rooms, crossfaded (5.5.7: the old code gave a convolver a new impulse on every song change,
+      // the heaviest thing the audio engine does, because it compared against the new piece's own empty key)
+      if (newGenre) selectRoom(roomFor(Math.max(0.5, M.revS || 2)), t);
       revRet.gain.setTargetAtTime(k(c.fx.reverb, M.rev, 0.9), t, 0.15);
       const ech = k(c.fx.echo, M.echo, 0.6); echoIn.gain.setTargetAtTime(ech > 0.01 ? 1 : 0, t, 0.1); echoRet.gain.setTargetAtTime(Math.min(1.4, ech), t, 0.1);
       echoFb.gain.setTargetAtTime(Math.min(0.78, (M.fb || 0.35) + (c.fx.echo - 0.5) * 0.35), t, 0.1);
