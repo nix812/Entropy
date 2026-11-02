@@ -89,6 +89,10 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .menu .btn.play { min-height: 66px; font-size: 17px; letter-spacing: 0.1em; }
 .menu .btn small { font-size: 17px; text-align: right; }
 .menu .btn.alt { min-height: 44px; }
+/* v5.7.1: the hangar galaxy shows through the menu buttons */
+#hangar .menu .btn:not(.primary):not(.nova) { background: rgba(21, 25, 51, 0.5); }
+#hangar .menu .btn.primary { background: rgba(255, 176, 58, 0.86); }
+#hangar .util .ib { background: rgba(21, 25, 51, 0.55); }
 .badge { font-style: normal; background: var(--core); color: #062018; font-family: var(--f-term); font-size: 17px; padding: 0 5px; line-height: 1.15; letter-spacing: 0; text-transform: none; }
 .menu .btn.glow { box-shadow: inset 0 0 0 2px var(--core); }
 .menu .btn.nova { min-height: 44px; color: #ffe9b0; background: linear-gradient(90deg, #2a1440, #3a1a2a); box-shadow: inset 0 0 0 1px #b86cff; }
@@ -997,7 +1001,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.7.0';
+const VERSION = '5.7.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1172,6 +1176,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
 const WHATS_NEW = { ver: '5.7.0', title: 'Last Gradient 5.7 · Nigel Industries', items: [
   ['Nigel Industries presents', 'The studio has a mascot: Nigel, a small black cat, in his couch. He greets you when the game starts. Tap to skip him (he will not mind).'],
+  ['A bigger sky (5.7.1)', 'The attractor on the main menu is larger and turns behind the menu buttons, which are now see-through. Nigel also stays a little longer.'],
   ['Entropy is now Last Gradient', 'Everything in the universe runs on gradients: hot next to cold, order next to chaos. When the last one flattens out, nothing moves again. You are holding it up.'],
   ['The title', 'The name on the hangar fades from cream to violet and breaks apart as you watch. With Reduce Motion on, it holds still.'],
   ['Nothing else changed', 'Your progress, talents, tracks, Hunt codes and the Entropy gauge are exactly where you left them.'],
@@ -8728,16 +8733,20 @@ const HangarFX = (() => {
     layout(); buildNebula(); buildOverlay(); seed(); fade = 0;
   }
 
-  function layout() { // the attractor gets the open stage above the menu column, between the utility icons and the buttons
+  function layout() { // v5.7.1: the attractor fills the column from under the utility icons to the bottom of the menu, behind the (see-through) buttons
     const r0 = cv.getBoundingClientRect(), m = document.querySelector('#hangar .menu'), u = document.querySelector('#hangar .util');
     const mr = m && m.getBoundingClientRect(), ur = u && u.getBoundingClientRect();
-    if (!mr || !mr.width) { lay = { cx: W * 0.64, cy: H * 0.47, s: Math.min(H * 0.0145, W * 0.0095) }; return; }
+    if (!mr || !mr.width) { lay = { cx: W * 0.64, cy: H * 0.5, s: Math.min(H * 0.02, W * 0.012) }; return; }
     const k = W / (r0.width || 1); // the app may be zoomed by a transform, so measure in on-screen pixels
-    const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.1) - r0.top) * k + 4 * R, bot = (mr.top - r0.top) * k - 2 * R;
-    const cx = Math.round((mr.left + mr.width / 2 - r0.left) * k), room = Math.max(H * 0.3, bot - top);
-    const br = document.querySelector('#hangar .brand h1'); let bR = 0; // keep clear of the title's letters (on iPad they run past the h1's own box)
-    if (br) { let rr = br.getBoundingClientRect().right; try { const rg = document.createRange(); rg.selectNodeContents(br); rr = Math.max(rr, rg.getBoundingClientRect().right); } catch (e) {} bR = (rr - r0.left) * k + 8 * R; }
-    lay = { cx, cy: Math.round(top + room * 0.5), s: Math.max(0.8 * R, Math.min(room / 52, mr.width * k / 54, (W - 4 * R - cx) / 29, bR ? (cx - bR) / 31 : 99, H * 0.016)) };
+    const top = ((ur && ur.height ? ur.bottom : r0.top + r0.height * 0.1) - r0.top) * k + 2 * R, bot = (mr.bottom - r0.top) * k;
+    const cx = Math.round((mr.left + mr.width / 2 - r0.left) * k), room = Math.max(H * 0.45, bot - top);
+    let bR = 0, bB = 0; // keep clear of the title's letters (the word itself, not the canvas room its shards drift into)
+    for (const el of document.querySelectorAll('#hangar .brand h1 .t1, #hangar .brand h1 .t2')) { const r = el.getBoundingClientRect(); bR = Math.max(bR, (r.right - r0.left) * k + 4 * R); bB = Math.max(bB, (r.bottom - r0.top) * k + 6 * R); }
+    const wide = (W + 6 * R - cx) / 29, cap = H * 0.024;
+    // beside the title, or (when that is roomier, as on iPad where the title runs long) below it
+    const sA = Math.min(room / 47, wide, bR ? (cx - bR) / 31 : 99, cap);
+    const top2 = Math.max(top, bB), room2 = bot - top2, sB = bB ? Math.min(room2 / 47, wide, cap) : 0;
+    lay = sB > sA ? { cx, cy: Math.round(top2 + room2 * 0.5), s: Math.max(0.8 * R, sB) } : { cx, cy: Math.round(top + room * 0.5), s: Math.max(0.8 * R, sA) };
   }
   function project(cx, cy, s, a) {
     const ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(0.32), st = Math.sin(0.32);
@@ -11563,10 +11572,10 @@ UI.splash = function (force) {
   const end = () => { if (done) return; done = true; timers.forEach(clearTimeout); el.classList.add('out'); setTimeout(() => el.remove(), 520); };
   el.addEventListener('pointerdown', e => { e.preventDefault(); end(); });
   const go = () => { if (done) return; el.classList.add('in');
-    timers.push(setTimeout(() => { img.src = NIGEL_PX[1]; }, 1150), setTimeout(() => { img.src = NIGEL_PX[0]; }, 1500), setTimeout(end, 2300)); };
+    timers.push(setTimeout(() => { img.src = NIGEL_PX[1]; }, 1500), setTimeout(() => { img.src = NIGEL_PX[0]; }, 1900), setTimeout(end, 3300)); };
   let started = false; const start = () => { if (!started) { started = true; go(); } };
   try { document.fonts.ready.then(start); } catch (e) {} setTimeout(start, 600);
-  return 2900;
+  return 3900;
 };
 (function boot() {
   const loaded = Save.loadLocal();
