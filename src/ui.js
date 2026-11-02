@@ -772,7 +772,7 @@ const UI = (() => {
       ['Star Ranks', 'Unlimited points spent in a finished constellation. Each rank adds a little less than the last.'],
       ['Supernova', 'Prestige. Reset your level and web for a Remnant, a Cosmic Law, and permanent score and XP bonuses.'],
       ['Cosmic Law', 'Permanent rule change chosen at a Supernova. Adds score.'],
-      ['Recalibration', 'Recalibration tokens pay for respecs during a run.'], ['Legendary', 'Highest affix rarity with a unique effect.'], ['Curse', 'A negative affix.'],
+      ['Recalibration', 'Recalibration tokens pay for respecs during a run.'], ['Technique', 'An alternate fire mode for one tower type, unlocked by a one-point talent. Switch it per tower from the tower panel (Fire row).'], ['Legendary', 'Highest affix rarity with a unique effect.'], ['Curse', 'A negative affix.'],
       ['Boss', 'Arrives every 10 waves, on the longest road.'], ['Snare Beacon', 'Pulls passing fliers off their straight line, through its net, then on to the core. Catches a set number per wave. Bosses are too big to lure.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
     ];
     const named = [
@@ -830,7 +830,7 @@ const UI = (() => {
     let stats;
     if (s.kind === 'snare') stats = `<div class="sg"><span>Catches left<b>${Math.max(0, s.catches - (t.caught || 0))}/${s.catches}</b></span><span>Lure range<b>${num1(s.range)}</b></span><span>Net slow<b>${pct(s.netSlow)}</b></span><span>Hold<b>${num1(s.hold)}s</b></span></div>`;
     else if (s.kind === 'support') stats = `<div class="sg"><span>Dmg buff<b>+${pct(s.buffDmg)}</b></span><span>Speed buff<b>+${pct(s.buffRate)}</b></span><span>Range<b>${num1(s.range)}</b></span>${s.buffCrit ? `<span>Crit buff<b>+${num1(s.buffCrit)}%</b></span>` : ''}</div>`;
-    else if (s.kind === 'eco') stats = `<div class="sg"><span>Income<b>${fmt(s.income * G.mods.credits)}/wave</b></span>${s.bountyAura ? `<span>Bounty aura<b>+${pct(s.bountyAura)}</b></span>` : ''}${s.fbounty ? `<span>All kills<b>+${pct(s.fbounty)}</b></span>` : ''}</div>`;
+    else if (s.kind === 'eco') stats = `<div class="sg"><span>Income<b>${fmt(s.income * G.mods.credits)}/wave</b></span>${s.fdmg ? `<span>Slug<b>${fmt(s.fdmg)}</b></span>` : ''}${s.bountyAura ? `<span>Bounty aura<b>+${pct(s.bountyAura)}</b></span>` : ''}${s.fbounty ? `<span>All kills<b>+${pct(s.fbounty)}</b></span>` : ''}</div>`;
     else {
       const sts = [];
       if (s.burn > 0) sts.push(`Burn ${pct(s.burn)}`); if (s.chill > 0) sts.push(`Chill ${pct(s.chill)}`);
@@ -2563,7 +2563,7 @@ const Tree = (() => {
     if (why === 'max') return 'Already at its last rank';
     if (why === 'have') return 'Already yours';
     if (why === 'locked') return 'Your Daily Hunt build is locked for this run';
-    if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${capSlots(lv)} Capstone${capSlots(lv) > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
+    if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${slotsNow()} Capstone${slotsNow() > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
     if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
     if (why === 'tree') return `One Capstone per tree. Remove ${capName(capsHeld().find(c => TAL[c].tree === T.tree))} first`;
     if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
@@ -2587,7 +2587,7 @@ const Tree = (() => {
     const capOk = pts >= TCAP;
     return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${rowsHTML}
       <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
-      <p class="note tfoot">Capstones change how you play. Pick one per tree; you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}.</p>`;
+      <p class="note tfoot">Capstones change how you play. Pick one per tree; ${TS() !== PROF ? `this build holds ${slotsNow()}` : `you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}`}.</p>`;
   }
   function sumHTML() {
     const M = computeMods(null, null), lines = [];
@@ -2616,7 +2616,7 @@ const Tree = (() => {
   }
   function refresh() {
     if (!open_) return;
-    const lv = talLevel(), free = pointsFree(), held = capsHeld().length, slots = capSlots(lv);
+    const lv = talLevel(), free = pointsFree(), held = capsHeld().length, slots = slotsNow();
     el('tree').querySelector('h2').textContent = mode === 'hunt' ? 'Hunt Build' : huntRun() ? 'Hunt Build · locked' : 'Talents';
     el('tPts').textContent = free;
     el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;

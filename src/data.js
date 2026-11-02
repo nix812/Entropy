@@ -535,7 +535,7 @@ const TALENTS = [
   { id: 'K', name: 'Ballistics', col: '#efe6cf', glyph: 'K', tag: 'Kinetic guns: crits that tear through armour',
     rows: [
       [T_('kDmg', 'Heavy Rounds', 3, { dmgK: 12 }), T_('kCrit', 'Precision', 3, { critC: 5 }), TECH('kSupp', 'Suppressor', 'pulse')],
-      [T_('kRate', 'Autoloader', 3, { rateK: 7 }), T_('kPen', 'Penetrator', 2, { armorPen: 15 }), TECH('kOver', 'Overcharge', 'rail')],
+      [T_('kRate', 'Autoloader', 3, { rateK: 7 }), T_('kPen', 'Penetrator', 2, { armorPen: 15 }), TECH('kOver', 'Charged Shot', 'rail')],
       [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 2, { critM: 18 })],
       [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 2, { shredStack: 1.5, eliteDmg: 6 })]],
     caps: [CAP('marksman', 'Marksman', { ks: 'marksman', doc: 0 }),
@@ -602,7 +602,7 @@ const CAP_RENAMED = { glass: 'nest', deadeye: 'rico', overgrid: 'stormrider', th
 // m keys are read in applyFire (sim.js): dmgX, rateX, rangeAdd, rangeX, pullX multiply or add; the rest switch behaviour.
 const TOWER_FIRE = {
   pulse: [{ id: 'supp', need: 'kSupp', name: 'Suppressor', short: 'Slows what it hits by 35%. ×0.6 Damage', desc: 'Rounds slow what they hit by 35% for 1.5s. ×0.6 Damage', m: { dmgX: 0.6, supSlow: 0.35, supDur: 1.5 } }],
-  rail: [{ id: 'over', need: 'kOver', name: 'Overcharge', short: 'Every 3rd shot ×4 and pierces all. Half speed', desc: 'Every 3rd shot deals ×4 and pierces every enemy in line. ×0.5 Attack Speed', m: { rateX: 0.5, ocEvery: 3, ocX: 4 } }],
+  rail: [{ id: 'over', need: 'kOver', name: 'Charged Shot', short: 'Every 3rd shot ×4 and pierces all. Half speed', desc: 'Every 3rd shot deals ×4 and pierces every enemy in line. ×0.5 Attack Speed', m: { rateX: 0.5, ocEvery: 3, ocX: 4 } }],
   cryo: [{ id: 'lance', need: 'cLance', name: 'Cold Lance', short: 'A freezing beam on one target. ×3 Damage', desc: 'A freezing beam on one target instead of a pulse: ×3 Damage to it, pierces Plating, +0.8 Range', m: { lance: 3, rangeAdd: 0.8 } }],
   missile: [{ id: 'bunker', need: 'tBunk', name: 'Bunker Buster', short: '×2 Damage, ignores Plating. No splash', desc: 'One heavy warhead: ×2 Damage, ignores Plating and half of Armor. No splash, bomblets or napalm', m: { dmgX: 2, bunker: 1 } }],
   coil: [{ id: 'fence', need: 'aFence', name: 'Arc Fence', short: 'Zaps a line to a Coil within 4 tiles', desc: 'Stops chaining. Arcs a fence to the nearest Coil within 4 tiles that zaps and Shocks everything crossing it', m: { fence: 4 } }],

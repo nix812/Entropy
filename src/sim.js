@@ -1065,7 +1065,7 @@ function applyFire(t, s, D) {
   if (m.ocEvery) { s.ocEvery = m.ocEvery; s.ocX = m.ocX; }
   // Cold Lance: the pulse becomes a 10-tick beam on one target worth m.lance × the pulse's damage per second; Chill lands a quarter as often per tick
   if (m.lance) { s.dmg *= m.lance * D.rate / 10; s.rate *= 10 / D.rate; s.kind = 'beam'; s.rampMax = 1; s.beams = 1 + s.multi; s.chill *= 0.25; s.lance = 1; }
-  if (m.bunker) { s.splash = 0; s.cluster = 0; s.napalm = false; s.pierceArmor = 1; }
+  if (m.bunker) { s.splash = 0; s.cluster = 0; s.napalm = false; s.pierceArmor = 1; s.bunker = 1; }
   if (m.fence) { s.fence = m.fence; s.dmg *= FENCE.dmg; s.rate *= FENCE.rate; }
   if (m.ring) s.ring = 1;
   if (m.tether) { s.tether = m.tether; s.rampMax = 1; s.mark = clamp(s.mark * 2, 0, 1); }
@@ -2924,7 +2924,7 @@ function towerAttack(t, range, sw) {
     case 'rail': {
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
-      // v5.8: Overcharge (every 3rd volley ×4, pierces all) and Sniper Nest (isolated Rails pierce all, +30%; crowded ones −25%)
+      // v5.8: Charged Shot (every 3rd volley ×4, pierces all) and Sniper Nest (isolated Rails pierce all, +30%; crowded ones −25%)
       const big = s.ocEvery ? (t.ocN = (t.ocN || 0) + 1) % s.ocEvery === 0 : false;
       const nest = G.mods.ks.nest && t.type === 'rail', all = big || (nest && t.isolated);
       for (const e0 of tg) {
@@ -2970,7 +2970,7 @@ function towerAttack(t, range, sw) {
         t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
         const crit = rollCrit(t);
         G.projs.push({ k: 'missile', x: t.cx, y: t.cy, vx: Math.cos(t.angle + (G.r() - 0.5)) * 2, vy: Math.sin(t.angle + (G.r() - 0.5)) * 2,
-          e, tx: e.x, ty: e.y, spd: s.pspd, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t, splash: s.splash, life: 4 });
+          e, tx: e.x, ty: e.y, spd: s.pspd, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t, splash: s.splash, life: 4, single: s.bunker ? 1 : 0 });
       }
       Hooks.sfx('missile', t);
       return true;
@@ -3245,6 +3245,13 @@ function shards(p, from) {
 }
 function explode(p) {
   const r = p.splash || 0.6, src = p.src, s = src.s;
+  if (p.single) { // v5.8 Bunker Buster: one warhead, one enemy (its target, else the nearest within 0.8 tiles)
+    let tg = p.e && !p.e.dead && dist2(p.e.x, p.e.y, p.x, p.y) <= 1 ? p.e : null;
+    if (!tg) { let bd = 0.64; for (const e of G.enemies) if (!e.dead && enemyTargetable(e)) { const d = dist2(e.x, e.y, p.x, p.y); if (d < bd) { bd = d; tg = e; } } }
+    Hooks.fx('boom', { x: p.x, y: p.y, r: 0.4, col: '#ffffff' }); Hooks.sfx('boom', p);
+    if (tg) hit(tg, p.dmg, p.el, src, { crit: p.crit });
+    return;
+  }
   if (G.af.fractal && p.k === 'missile') shards(p, null);
   Hooks.fx('boom', { x: p.x, y: p.y, r, col: EL[p.el].col });
   Hooks.sfx('boom', p);
