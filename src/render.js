@@ -1568,7 +1568,7 @@ const HangarFX = (() => {
     // glitch: a few rows tear sideways and the title jumps with them
     if (mv) {
       nextGlitch -= dt;
-      if (nextGlitch <= 0) { glitch = 0.2; nextGlitch = 4 + Math.random() * 6; if (title) { title.classList.remove('gl'); void title.offsetWidth; title.classList.add('gl'); } }
+      if (nextGlitch <= 0) { glitch = 0.2; nextGlitch = 4 + Math.random() * 6; if (title) { title.classList.remove('gl'); void title.offsetWidth; title.classList.add('gl'); } TitleFX.kick(); }
       if (glitch > 0) {
         glitch -= dt;
         for (let b = 0; b < 4; b++) {
@@ -1582,4 +1582,88 @@ const HangarFX = (() => {
     if (fade < 1) { c.fillStyle = rgba(C.bg, (1 - fade) * 0.85); c.fillRect(0, 0, W, H); }
   }
   return { draw };
+})();
+
+// v5.6 title: GRADIENT shades cream to cyan to violet and breaks into pixel shards toward the right edge.
+// Drawn on its own canvas inside .brand h1 .t2; the static part is built once per size, shards move per frame.
+const TitleFX = (() => {
+  let host = null, cv = null, c = null, src = null, stat = null, shards = [], t = 0, kickT = 0, key = '', geo = null, checkT = 0;
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  const sstep = (a, b, x) => { x = Math.max(0, Math.min(1, (x - a) / (b - a))); return x * x * (3 - 2 * x); };
+  const hash = (a, b) => { let h = (Math.imul(a, 374761393) + Math.imul(b, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+  const motion = () => { try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return true; } };
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function build() {
+    const cs = getComputedStyle(host), fs = parseFloat(cs.fontSize), fam = cs.fontFamily, word = host.dataset.word || 'GRADIENT';
+    const r = host.getBoundingClientRect(), scale = (host.offsetWidth ? r.width / host.offsetWidth : 1) || 1;
+    const D = Math.min(3, (window.devicePixelRatio || 1) * scale); // device px per CSS px, including the interface scale
+    const k = fs + '|' + D + '|' + word + '|' + fam; if (k === key) return; key = k;
+    const font = '700 ' + fs + 'px ' + fam, m0 = document.createElement('canvas').getContext('2d'); m0.font = font;
+    const mt = m0.measureText(word), wd = Math.ceil(mt.width * D), asc = Math.ceil((mt.actualBoundingBoxAscent || fs * 0.62) * D), inkH = asc;
+    const off = Math.round(3 * D), hc = Math.max(2, Math.round(fs / 16 * D)); // chromatic offset; shard = half a font pixel
+    const padL = off + hc, padR = Math.round(fs * 1.6 * D), padV = Math.round(fs * 0.45 * D);
+    // source: red and cyan offsets under the main word, which carries the colour ramp
+    src = document.createElement('canvas'); src.width = wd + off * 2; src.height = inkH; const sc = src.getContext('2d');
+    const main = document.createElement('canvas'); main.width = wd; main.height = inkH; const mc = main.getContext('2d');
+    mc.font = (700) + ' ' + fs * D + 'px ' + fam; mc.textBaseline = 'alphabetic'; mc.fillStyle = '#fff'; mc.fillText(word, 0, asc);
+    mc.globalCompositeOperation = 'source-atop';
+    const g = mc.createLinearGradient(0, 0, wd, 0); g.addColorStop(0, css('--ink')); g.addColorStop(0.36, css('--ink')); g.addColorStop(0.62, css('--cryo')); g.addColorStop(0.86, css('--void')); g.addColorStop(1, css('--void'));
+    mc.fillStyle = g; mc.fillRect(0, 0, wd, inkH);
+    sc.font = mc.font; sc.textBaseline = 'alphabetic';
+    const ab = document.createElement('canvas'); ab.width = src.width; ab.height = inkH; const ac = ab.getContext('2d'); // red/cyan fringe, fading with the word
+    ac.font = mc.font; ac.textBaseline = 'alphabetic'; ac.fillStyle = css('--bad'); ac.fillText(word, off * 2, asc); ac.fillStyle = css('--cryo'); ac.fillText(word, 0, asc);
+    ac.globalCompositeOperation = 'destination-in'; const am = ac.createLinearGradient(off, 0, off + wd, 0); am.addColorStop(0.4, '#000'); am.addColorStop(0.8, 'rgba(0,0,0,0.12)'); ac.fillStyle = am; ac.fillRect(0, 0, ab.width, inkH);
+    sc.drawImage(ab, 0, 0); sc.drawImage(main, off, 0);
+    // static layer: amber glow fading out, then every cell that has not broken away
+    const W = padL + src.width + padR, H = inkH + padV * 2;
+    stat = document.createElement('canvas'); stat.width = W; stat.height = H; const st = stat.getContext('2d');
+    const glow = document.createElement('canvas'); glow.width = W; glow.height = H; const gc = glow.getContext('2d');
+    gc.font = mc.font; gc.textBaseline = 'alphabetic'; gc.shadowColor = 'rgba(255, 176, 58, 0.34)'; gc.shadowBlur = 28 * D; gc.shadowOffsetX = 10000;
+    gc.fillText(word, padL + off - 10000, padV + asc); gc.shadowColor = 'transparent';
+    gc.globalCompositeOperation = 'destination-in'; const gm = gc.createLinearGradient(padL, 0, padL + wd, 0); gm.addColorStop(0.3, '#000'); gm.addColorStop(0.85, 'rgba(0,0,0,0)'); gc.fillStyle = gm; gc.fillRect(0, 0, W, H);
+    st.drawImage(glow, 0, 0);
+    const px = sc.getImageData(0, 0, src.width, src.height).data, cols = Math.ceil(src.width / hc), rows = Math.ceil(src.height / hc);
+    shards = [];
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      let lit = false;
+      for (let yy = y * hc; yy < Math.min(src.height, y * hc + hc) && !lit; yy++) for (let xx = x * hc; xx < Math.min(src.width, x * hc + hc); xx++) if (px[(yy * src.width + xx) * 4 + 3] > 40) { lit = true; break; }
+      if (!lit) continue;
+      const u = (x * hc + hc / 2 - off) / wd, f = sstep(0.6, 1.22, u);
+      const th = (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16 * 0.62 + hash(x, y) * 0.38;
+      const sx = x * hc, sy = y * hc, hx = padL + sx, hy = padV + sy;
+      if (th >= f) { st.globalAlpha = 1 - 0.4 * f; st.drawImage(src, sx, sy, hc, hc, hx, hy, hc, hc); continue; }
+      if (f > 0.8 && hash(y, x) < 0.4) continue; // the far end is simply gone
+      const h2 = hash(x + 91, y + 7), h3 = hash(x + 13, y + 57);
+      shards.push({ sx, sy, hx, hy, P: 2.6 + h2 * 3.4, ph: h3, vx: 0.55 + hash(x + 3, y + 19) * 0.9, vy: (hash(x + 5, y + 23) - 0.62) * 0.9,
+        dist: hc * (4 + 26 * f), a: 1 - 0.5 * f, j: hash(x + 7, y + 29) });
+    }
+    st.globalAlpha = 1;
+    cv.width = W; cv.height = H;
+    Object.assign(cv.style, { position: 'absolute', width: W / D + 'px', height: H / D + 'px', left: (-padL / D) + 'px', top: (-padV / D) + 'px' });
+    host.style.height = inkH / D + 'px'; host.style.width = wd / D + 'px';
+    geo = { hc };
+  }
+  function bind() {
+    host = document.querySelector('.brand h1 .t2'); if (!host) return false;
+    cv = host.querySelector('canvas'); if (!cv) { cv = document.createElement('canvas'); cv.setAttribute('aria-hidden', 'true'); host.appendChild(cv); }
+    c = cv.getContext('2d'); return true;
+  }
+  function draw(dt) {
+    if (!host && !bind()) return;
+    checkT -= dt; if (checkT <= 0 || !geo) { checkT = 0.5; try { if (!document.fonts || document.fonts.check('700 16px Silkscreen')) build(); } catch (e) { build(); } }
+    if (!geo) return;
+    t += dt; if (kickT > 0) kickT -= dt;
+    c.clearRect(0, 0, cv.width, cv.height); c.drawImage(stat, 0, 0);
+    if (!motion()) return;
+    const hc = geo.hc, kick = kickT > 0 ? kickT / 0.3 : 0;
+    for (const s of shards) {
+      const q = (t / s.P + s.ph) % 1, a = s.a * sstep(0, 0.07, q) * Math.pow(1 - q, 1.6);
+      if (a < 0.02) continue;
+      const d = s.dist * q, jx = kick ? (s.j - 0.5) * hc * 6 * kick : 0;
+      const sz = Math.max(1, Math.round(hc * (1 - 0.45 * q)));
+      c.globalAlpha = a; c.drawImage(src, s.sx, s.sy, hc, hc, Math.round(s.hx + s.vx * d + jx), Math.round(s.hy + s.vy * d), sz, sz);
+    }
+    c.globalAlpha = 1;
+  }
+  return { draw, kick: () => { kickT = 0.3; }, rebuild: () => { key = ''; } };
 })();

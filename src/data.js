@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.5.14';
+const VERSION = '5.6.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -173,20 +173,10 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.5.0', title: 'Entropy 5.5 · The Music Studio', items: [
-  ['Music Studio, rebuilt', 'Two tabs instead of one long page: Listen picks the music, Shape changes how it sounds. What is playing stays at the top the whole time.'],
-  ['Back, Pause, Repeat', 'Skipped a good one? Back plays it again. Pause stops the music; Repeat keeps the current piece going.'],
-  ['Vibes', 'Calm, Club, Retro or Everything in one tap, then add or remove genres. The ▶ on a genre plays it right away.'],
-  ['My Tracks', 'The heart keeps a piece, and it remembers your mixer and effects too. Tap a name to rename it. The share button copies a code that plays the same track for a friend (Add a code).'],
-  ['Shape', 'One tempo slider for the genre that is playing, with energy, the mixer and effects on one screen.'],
-  ['Sound keeps going (5.5.4)', 'On iPhone, an AirPod going in or out, a call or Siri could leave the game silent until a restart. The sound now wakes itself, Settings › Sound shows what it is doing, and Restart sound brings it back in one tap.'],
-  ['Mono Audio (5.5.3)', 'Settings › Mono Audio plays everything in both ears, for one earbud or a single speaker. Sounds panned to one side are no longer lost.'],
-  ['Music on the battlefield (5.5.11)', 'The Music tile at the top of the left rail shows a live equalizer. Tap it for the deck: back (tap to replay, double-tap for the last song), the song (tap for the Studio) and next.'],
-  ['Codes without the keyboard (5.5.10)', 'Share the song that is playing in one tap (the share button in the Studio bar). Paste a code reads your clipboard, so there is nothing to type. When you do type (names, codes), the box sits above the keyboard instead of behind it.'],
-  ['Full-length songs (5.5.9)', 'Songs were 32 bars: under a minute in Trance and Drum & Bass. Now each genre plays a radio edit shaped like the real thing (intro, grooves, breakdowns, drops, an outro that winds down into the next song). Music Studio › Shape › Song length: Short, Standard or Long.'],
-  ['A musician\'s pass (5.5.8)', 'Every chord progression was checked in every mood: none lands on a chord that does not belong any more, and each mood brings its signature moves (Lydian\'s I–II, Dorian\'s i–IV, Phrygian\'s i–♭II). Chord names read like a musician writes them, and jazz chords lose the harsh flat nine.'],
-  ['…and one more thing', 'Something is hidden in the Studio. Try tapping the visualizer.'],
-  ['A new hangar sky (5.4.2)', 'The launch screen is redrawn: a Lorenz attractor, the classic picture of chaos, turns over a drifting nebula with comets, stars and the odd meteor.'],
+const WHATS_NEW = { ver: '5.6.0', title: 'Last Gradient 5.6 · A New Name', items: [
+  ['Entropy is now Last Gradient', 'Everything in the universe runs on gradients: hot next to cold, order next to chaos. When the last one flattens out, nothing moves again. You are holding it up.'],
+  ['The title', 'The name on the hangar fades from cream to violet and breaks apart as you watch. With Reduce Motion on, it holds still.'],
+  ['Nothing else changed', 'Your progress, talents, tracks, Hunt codes and the Entropy gauge are exactly where you left them.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come

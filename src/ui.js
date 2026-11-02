@@ -1416,10 +1416,10 @@ const UI = (() => {
     if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(t => { t = (t || '').trim(); if (/^(TRACK|HUNT)[01]:/.test(t)) use(t); else ask(); }, ask); else ask();
   }
   function saveText(txt) {
-    const name = `entropy-run-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.txt`;
+    const name = `last-gradient-run-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.txt`;
     try {
       const file = new File([txt], name, { type: 'text/plain' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Entropy run log' }).catch(() => {}); return; }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Last Gradient run log' }).catch(() => {}); return; }
     } catch (e) {}
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
@@ -2698,7 +2698,7 @@ const Tree = (() => {
         if (n >= 10) acc = 0;
       }
       Render.draw(halted ? 0 : dt);
-    } else { if (UI.screen === 'hangar') drawBg(dt); ART.idle(4); } // menus: pre-render unit art in the background
+    } else { if (UI.screen === 'hangar') { drawBg(dt); TitleFX.draw(dt); } ART.idle(4); } // menus: pre-render unit art in the background
     if (Tree.isOpen) Tree.draw();
     wakeT -= dt; if (wakeT <= 0) { wakeT = 2; if (!document.hidden) SFX.wake(); } // iOS can leave the sound 'interrupted'
     UI.tick(dt);

@@ -13,11 +13,11 @@ pages = root / 'dist' / 'pages'; pages.mkdir(parents=True, exist_ok=True)
 i = html.index('<div id="app">')
 head_extra = ('<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">\n'
   '<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n'
-  '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="Entropy">\n'
+  '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="Last Gradient">\n'
   '<meta name="theme-color" content="#07080f">\n<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="icon-180.png">\n<link rel="icon" href="icon-192.png">\n')
 (pages / 'index.html').write_text('<!doctype html>\n<html lang="en">\n<head>\n' + head_extra + html[:i] + '\n</head>\n<body>\n' + html[i:] + '\n</body>\n</html>\n')
 import json
-(pages / 'manifest.webmanifest').write_text(json.dumps({'name': 'Entropy', 'short_name': 'Entropy', 'start_url': './', 'scope': './', 'display': 'fullscreen',
+(pages / 'manifest.webmanifest').write_text(json.dumps({'name': 'Last Gradient', 'short_name': 'Last Gradient', 'start_url': './', 'scope': './', 'display': 'fullscreen',
   'orientation': 'landscape', 'background_color': '#07080f', 'theme_color': '#07080f',
   'icons': [{'src': 'icon-192.png', 'sizes': '192x192', 'type': 'image/png'}, {'src': 'icon-512.png', 'sizes': '512x512', 'type': 'image/png'}]}, indent=1))
 from PIL import Image, ImageDraw

@@ -1,4 +1,4 @@
-<title>Entropy</title>
+<title>Last Gradient</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,6 +60,9 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .brand { grid-column: 1; grid-row: 1 / 4; align-self: center; }
 .brand h1 { font-family: var(--f-pix); font-weight: 700; font-size: clamp(40px, 8.4vw, 84px); line-height: 0.9; margin: 0; letter-spacing: 0.02em;
   text-shadow: 3px 0 0 var(--bad), -3px 0 0 var(--cryo), 0 0 28px rgba(255, 176, 58, 0.28); color: var(--ink); }
+.brand h1 .t1 { display: block; font-size: 0.42em; letter-spacing: 0.5em; margin: 0 0 0.2em 0.04em; }
+.brand h1 .t2 { display: block; position: relative; height: 0.62em; margin-bottom: 0.1em; }
+.brand h1 .t2 canvas { position: absolute; pointer-events: none; }
 .brand h1.gl { animation: glitch 0.34s steps(1); } /* v5.5: the backdrop tears and the title jumps with it */
 @keyframes glitch { 0%, 100% { transform: none; } 12% { transform: translate(3px, -1px); text-shadow: 5px 0 0 var(--bad), -4px 0 0 var(--cryo), 0 0 28px rgba(255, 176, 58, 0.28); } 40% { transform: translate(-2px, 1px); } 70% { transform: translate(1px, 0); } }
 .hmeta { display: flex; gap: 28px; margin-top: 18px; align-items: flex-start; }
@@ -880,7 +883,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 </style>
 
 <div id="app">
-  <div id="rotate"><div class="ph-icon"></div><h2>Rotate Your Device</h2><p class="note">Entropy is played in landscape.</p><button class="btn small" id="bRotate">Continue Anyway</button></div>
+  <div id="rotate"><div class="ph-icon"></div><h2>Rotate Your Device</h2><p class="note">Last Gradient is played in landscape.</p><button class="btn small" id="bRotate">Continue Anyway</button></div>
 
   <section id="hangar" class="screen">
     <canvas id="bgfx"></canvas>
@@ -893,7 +896,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
         <button class="ib" id="bSettings" aria-label="Settings" data-svg="gear"></button>
       </div>
       <div class="brand">
-        <h1>ENTROPY</h1>
+        <h1 aria-label="Last Gradient"><span class="t1" aria-hidden="true">LAST</span><span class="t2" data-word="GRADIENT" aria-hidden="true"></span></h1>
         <div class="hmeta">
           <div class="lv"><span class="lbl">Level</span><b id="hLevel">0</b><div class="xpbar"><i id="hXpFill"></i></div></div>
           <div><span class="lbl">Best Wave</span><b id="hBest">—</b></div>
