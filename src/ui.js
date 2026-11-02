@@ -1683,7 +1683,9 @@ const UI = (() => {
         ${slider('stEnergy', 'Energy', vis.energy, 0, 1, 0.01, energyWord(vis.energy))}
         ${slider('stFollow', 'Follow battle', vis.follow, 0, 1, 0.01, Math.round(vis.follow * 100) + '%')}
         ${slider('stTempo', `Tempo · <span style="color:${G5[g].col}">${esc(p.comp ? 'composed' : G5[g].short || G5[g].name)}</span>`, bpm, G5[g].bpm[0], G5[g].bpm[2], 1, bpm + ' BPM', 0, p.comp)}
-        <p class="note sthint">Energy: how full the music is. Follow: how much the battle pushes it.${p.comp ? ' A composed track sets its tempo in Compose.' : ''}</p>
+        <div class="st2"><span>Song length</span><output>${{ short: 'about 1 min', standard: 'about 3 min', long: 'about 5 min' }[c.length || 'standard']}</output></div>
+        <div class="strow stlen">${[['short', 'Short'], ['standard', 'Standard'], ['long', 'Long']].map(([k, l]) => `<button class="chip ${(c.length || 'standard') === k ? 'on' : ''}" data-act="stLen" data-v="${k}">${l}</button>`).join('')}</div>
+        <p class="note sthint">Energy: how full the music is. Follow: how much the battle pushes it. Length: Short changes song often; Standard plays a full radio edit (intro, build, drop, outro); Long an extended mix.${p.comp ? ' A composed track sets its tempo in Compose.' : ''}</p>
         <button class="btn small" data-act="stReset">Reset sound</button>
       </div>
       <div class="stcol">
@@ -1892,6 +1894,7 @@ const UI = (() => {
         openStudio(); return true;
       }
       case 'stPlayG': { const g = b.dataset.v; stPlayNow({ genre: g }); toast('NOW PLAYING', M.GENRES[g].name, M.GENRES[g].col); return true; }
+      case 'stLen': M.setLength(b.dataset.v); studioSave(); SFX.play('ui'); openStudio(); return true;
       case 'stMute': studioTouch(); c.mute[b.dataset.v] = !c.mute[b.dataset.v]; b.classList.toggle('m', !!c.mute[b.dataset.v]); M.apply(); studioSave(); return true;
       case 'stSkip': stPlayNow(); SFX.play('ui'); return true;
       case 'stBack': { const n = M.back(); if (n) stPlayNow(M.queued); if (n) toast('BACK TO', n, '#ff5fa8'); return true; }
@@ -1910,7 +1913,7 @@ const UI = (() => {
       case 'stCodeGo': { const v = ($('#stCode') || {}).value || ''; readTrackCode(v).then(f => { if (!f) { toast('TRACK CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } const t = M.addTrack(f); if (t) { stPaste = false; studioSave(); stPlayNow(t); toast('TRACK ADDED', t.name + ' · playing now', '#ff5fa8'); openStudio(); } }); return true; }
       case 'stEditT': { const f = c.favs[+b.dataset.v]; if (f && f.comp) { c.draft = Object.assign(JSON.parse(JSON.stringify(f.comp)), { name: f.name }); stTab = 'compose'; studioSave(); M.editing = true; M.compose(c.draft); openStudio(); } return true; }
       case 'stFavOnly': studioTouch(); c.favOnly = !c.favOnly; studioSave(); if (c.favOnly) stPlayNow(); openStudio(); return true;
-      case 'stReset': { const keepK = { favs: c.favs, calmBpm: c.calmBpm, draft: c.draft, composer: c.composer }; M.setConfig(keepK); PROF.settings.studio = M.config; studioSave(); stPlayNow(); openStudio(); return true; }
+      case 'stReset': { const keepK = { favs: c.favs, calmBpm: c.calmBpm, draft: c.draft, composer: c.composer, length: c.length }; M.setConfig(keepK); PROF.settings.studio = M.config; studioSave(); stPlayNow(); openStudio(); return true; }
       case 'stViz': { // the hidden door: five taps on the visualizer
         if (c.composer) return true;
         const now = performance.now(); stTaps = stTaps.filter(t => now - t < 2500); stTaps.push(now);

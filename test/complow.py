@@ -13,7 +13,7 @@ with sync_playwright() as p:
       const mel = [0, null, 2, null, 4, null, 2, null, 5, null, 4, null, 2, null, 1, null];
       const want = {}; for (const k in grid) want[k] = [...grid[k]].filter(c => c !== '0').length;
       for (const [g, f] of [['ambient', 'drift'], ['lofi', 'jazzhop'], ['downtempo', 'triphop'], ['house', 'disco'], ['techno', 'minimal'], ['trance', 'progressive'], ['dnb', 'liquid'], ['chiptune', 'nes'], ['dub', 'onedrop'], ['synthwave', 'outrun']]) {
-        M.setConfig({ custom: true, genres: [g], energy: 0.05, follow: 1 }); M.setIntensity(0.1);
+        M.setConfig({ custom: true, genres: [g], energy: 0.05, follow: 1 }); M.setIntensity(0.1); M.editing = true; // as while composing: the loop plays flat, every part on
         const cp = { v: 1, genre: g, flav: f, seed: 5, name: 'T', mode: 'aeolian', key: 9, loop: { degs: [0, 5], q: [], bars: 1 }, drums: grid, bass: ['sub', 'long'], lead: 'piano', mel, melSeed: 3, bpm: 110 };
         M.skip({ genre: g, flav: f, seed: 5, name: 'T', comp: cp, start: 8 }); clock += 4; M.renderAhead(clock);
         M.debug = true; clock += 12; M.renderAhead(clock); const ev = M.events.filter(e => e[7] === g + '/' + f); M.debug = false;

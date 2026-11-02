@@ -11,7 +11,7 @@ with sync_playwright() as p:
       const out = { combos: 0, silent: [], fails: [] };
       const M = SFX.music;
       const oc = new OfflineAudioContext(2, 44100 * 2, 44100); SFX.offlineCtx(oc); let clock = 0;
-      const render = (cp, secs) => { M.setConfig({ custom: true, genres: [cp.genre], energy: 0.6 });
+      const render = (cp, secs) => { M.editing = true; M.setConfig({ custom: true, genres: [cp.genre], energy: 0.6 });
         M.skip({ genre: cp.genre, flav: cp.flav, seed: cp.seed, name: cp.name, comp: cp, start: 8 }); clock += 3; M.renderAhead(clock); M.debug = true; clock += secs; M.renderAhead(clock); const ev = M.events; M.debug = false; return ev; };
       const base = g => { const G0 = M.GENRES[g]; return { v: 1, genre: g, seed: 12345, name: 'T', mode: 'aeolian', key: 9, loop: { degs: [0, 5, 2, 6], q: [], bars: 1 }, bass: null, lead: 'bell', mel: null, melSeed: 99, bpm: G0.bpm[1] }; };
       for (const g of M.GENRE_IDS) for (const f of Object.keys(M.GENRES[g].flavours)) {

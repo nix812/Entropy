@@ -614,7 +614,7 @@ const SFX = (() => {
     const NOUN = ['Orbit', 'Harbor', 'Signal', 'Comet', 'Lantern', 'Tide', 'Nebula', 'Circuit', 'Garden', 'Satellite', 'Echo', 'Horizon', 'Engine', 'Reef', 'Window', 'Arcade', 'Moth', 'Wavelength', 'Meadow', 'Relay', 'Aurora', 'Kettle', 'Highway', 'Lighthouse', 'Sunday', 'Pixel', 'Station', 'Current', 'Afterglow', 'Cassette', 'Skyline', 'Ferry', 'Tower', 'Corridor', 'Bloom', 'Transit'];
     // the Studio settings (Default mode ignores everything except the calm genres' tempo scale)
     const DEF_BPM = {}; for (const g of GENRE_IDS) DEF_BPM[g] = GENRES[g].bpm[1];
-    const DEF = { custom: false, genres: ['ambient', 'lofi', 'downtempo'], energy: 0.4, follow: 1, bpm: DEF_BPM, mix: { pads: 1, keys: 1, arp: 1, bass: 1, drums: 1, lead: 1 },
+    const DEF = { custom: false, length: 'standard', genres: ['ambient', 'lofi', 'downtempo'], energy: 0.4, follow: 1, bpm: DEF_BPM, mix: { pads: 1, keys: 1, arp: 1, bass: 1, drums: 1, lead: 1 },
       mute: {}, fx: { reverb: 0.5, echo: 0.5, tone: 0.5, tape: 0.5, pump: 0.5 }, favs: [], favOnly: false, calmBpm: 72 };
     const CHN = ['pads', 'keys', 'arp', 'bass', 'drums', 'lead'];
     let cfg = JSON.parse(JSON.stringify(DEF));
@@ -677,15 +677,40 @@ const SFX = (() => {
       return Math.max(G0.bpm[0] * 0.85, Math.min(G0.bpm[2] * 1.1, base * (P.S.bpmX || 1)));
     }
     // forms: per 8-bar phrase, a density offset and which roles play. 'roll' marks a build bar (the phrase's last bar)
-    function makeForm(kind) {
-      const A = (d, o) => Object.assign({ d, drums: 1, bass: 1, keys: 1, lead: 1, pad: 1, arp: 1 }, o || {});
-      if (kind === 'flow') return [A(-0.15, { lead: 0 }), A(0), A(0.1), A(-0.05)];
-      if (kind === 'song') return [A(-0.1, { lead: 0.5 }), A(0), A(-0.15, { motif: 1, drums: 0.6 }), A(0.08)];
-      if (kind === 'dub') return [A(0), A(0, { dropouts: 1 }), A(0, { keys: 0, lead: 0, version: 1, dropouts: 1 }), A(0.05)];
-      if (kind === 'trance') return [A(-0.2, { lead: 0, pad: 0 }), A(0, { lead: 0.5 }), A(-0.6, { drums: 0, bass: 0, arp: 0, brk: 1, build: 1 }), A(0.2, { drop: 1 })];
-      if (kind === 'dnb') return [A(-0.15, { lead: 0, drums: 0.5 }), A(0), A(-0.4, { drums: 0, bass: 0.5, brk: 1, build: 1 }), A(0.15, { drop: 1 })];
-      return [A(-0.2, { lead: 0, keys: 0.5 }), A(0), A(-0.35, { drums: 0.3, bass: 0, brk: 1, build: 1 }), A(0.15, { drop: 1 })]; // dance
+    // ---- arrangements (5.5.9): a piece is a list of 8-bar phrases. 'short' is the original four (about a minute in the fast
+    // genres); 'standard' is a radio edit shaped like the genre (intro, grooves, breakdowns and drops, an outro that thins out so
+    // one piece winds down into the next); 'long' repeats the body for an extended mix. No dice are drawn here, so a seeded or
+    // kept piece keeps its chords, melody and drums at any length.
+    function makeForm(kind, len) {
+      const A = (n, d, o) => Object.assign({ n, d, drums: 1, bass: 1, keys: 1, lead: 1, pad: 1, arp: 1 }, o || {});
+      len = len || cfg.length || 'standard';
+      if (len === 'short') {
+        if (kind === 'flow') return [A('Intro', -0.15, { lead: 0 }), A('Drift', 0), A('Swell', 0.1), A('Return', -0.05)];
+        if (kind === 'song') return [A('Intro', -0.1, { lead: 0.5 }), A('Groove', 0), A('Bridge', -0.15, { motif: 1, drums: 0.6 }), A('Return', 0.08)];
+        if (kind === 'dub') return [A('Riddim', 0), A('Riddim', 0, { dropouts: 1 }), A('Dub version', 0, { keys: 0, lead: 0, version: 1, dropouts: 1 }), A('Return', 0.05)];
+        if (kind === 'trance') return [A('Intro', -0.2, { lead: 0, pad: 0 }), A('Groove', 0, { lead: 0.5 }), A('Breakdown', -0.6, { drums: 0, bass: 0, arp: 0, brk: 1, build: 1 }), A('Drop', 0.2, { drop: 1 })];
+        if (kind === 'dnb') return [A('Intro', -0.15, { lead: 0, drums: 0.5 }), A('Groove', 0), A('Breakdown', -0.4, { drums: 0, bass: 0.5, brk: 1, build: 1 }), A('Drop', 0.15, { drop: 1 })];
+        return [A('Intro', -0.2, { lead: 0, keys: 0.5 }), A('Groove', 0), A('Breakdown', -0.35, { drums: 0.3, bass: 0, brk: 1, build: 1 }), A('Drop', 0.15, { drop: 1 })];
+      }
+      let f;
+      if (kind === 'flow') f = [A('Intro', -0.15, { lead: 0 }), A('Drift', 0), A('Swell', 0.1), A('Drift', 0, { motif: 1 }), A('Swell', 0.12), A('Fade', -0.25, { lead: 0, drums: 0.5 })];
+      else if (kind === 'song') f = [A('Intro', -0.15, { lead: 0, keys: 0.5 }), A('Verse', -0.05, { lead: 0.5 }), A('Verse', 0), A('Hook', 0.08), A('Bridge', -0.15, { motif: 1, drums: 0.6 }), A('Verse', 0), A('Hook', 0.1),
+        A('Outro', -0.25, { lead: 0, drums: 0.6 })];
+      else if (kind === 'dub') f = [A('Intro', -0.1, { lead: 0 }), A('Riddim', 0), A('Riddim', 0, { dropouts: 1 }), A('Dub version', 0, { keys: 0, lead: 0, version: 1, dropouts: 1 }), A('Riddim', 0.05),
+        A('Dub', 0, { dropouts: 1 }), A('Dub version', 0, { keys: 0, lead: 0, version: 1, dropouts: 1 }), A('Outro', -0.2, { lead: 0, dropouts: 1 })];
+      else if (kind === 'trance') f = [A('Intro', -0.3, { lead: 0, pad: 0, arp: 0 }), A('Intro', -0.2, { lead: 0, pad: 0 }), A('Build-in', -0.1, { lead: 0 }), A('Groove', 0, { lead: 0.5 }), A('Groove', 0.05),
+        A('Breakdown', -0.6, { drums: 0, bass: 0, arp: 0, brk: 1 }), A('Breakdown · build', -0.5, { drums: 0, bass: 0, brk: 1, build: 1 }), A('Drop', 0.2, { drop: 1 }), A('Drop', 0.2), A('Groove', 0.05),
+        A('Breakdown', -0.5, { drums: 0, bass: 0, arp: 0, brk: 1 }), A('Breakdown · build', -0.4, { drums: 0, bass: 0, brk: 1, build: 1 }), A('Drop', 0.25, { drop: 1 }), A('Drop', 0.2), A('Outro', -0.2, { lead: 0, pad: 0 }), A('Outro', -0.35, { lead: 0, pad: 0, arp: 0 })];
+      else if (kind === 'dnb') f = [A('Intro', -0.2, { lead: 0, drums: 0.5 }), A('Intro', -0.1, { lead: 0 }), A('Groove', 0), A('Groove', 0.05), A('Breakdown · build', -0.4, { drums: 0, bass: 0.5, brk: 1, build: 1 }),
+        A('Drop', 0.15, { drop: 1 }), A('Drop', 0.15), A('Groove', 0), A('Groove', 0.05), A('Breakdown', -0.45, { drums: 0, bass: 0.5, brk: 1 }), A('Breakdown · build', -0.35, { drums: 0, bass: 0.5, brk: 1, build: 1 }),
+        A('Drop', 0.2, { drop: 1 }), A('Drop', 0.2), A('Groove', 0.05), A('Outro', -0.2, { lead: 0 }), A('Outro', -0.35, { lead: 0, drums: 0.5 })];
+      else f = [A('Intro', -0.25, { lead: 0, keys: 0.5 }), A('Intro', -0.15, { lead: 0 }), A('Groove', 0), A('Groove', 0.05), A('Breakdown · build', -0.35, { drums: 0.3, bass: 0, brk: 1, build: 1 }), A('Drop', 0.15, { drop: 1 }),
+        A('Groove', 0.05), A('Groove', 0.05), A('Breakdown · build', -0.3, { drums: 0.3, bass: 0, brk: 1, build: 1 }), A('Drop', 0.2, { drop: 1 }), A('Groove', 0), A('Outro', -0.25, { lead: 0, keys: 0.5 })]; // dance
+      if (len === 'long') f = f.slice(0, -1).concat(f.slice(2, -1), f.slice(-1)); // the body twice: an extended mix
+      return f;
     }
+    const phAt = b => P.form[Math.min(P.form.length - 1, Math.floor(b / 8))];
+    const pieceBars = () => P.form.length * 8;
     // ---------------- harmony ----------------
     function chordAt(barN) {
       const L0 = P.loop, i = Math.floor(barN / L0.bars) % L0.degs.length;
@@ -1034,17 +1059,17 @@ const SFX = (() => {
     }
     // a voice's density from effective energy and the phrase: fires when the step's level >= 10 - density*10
     function density(vk) {
-      if (P.comp) { const ph0 = P.form[Math.floor(bar / 8) % 4]; return ph0.drums === 0 ? 0 : 1; } // 5.5.6: every lit cell plays
-      const E = effE(), ph = P.form[Math.floor(bar / 8) % 4], base = E * 1.15 - 0.15 + ph.d;
+      if (P.comp) { const ph0 = phAt(bar); return ph0.drums === 0 ? 0 : 1; } // 5.5.6: every lit cell plays
+      const E = effE(), ph = phAt(bar), base = E * 1.15 - 0.15 + ph.d;
       const bias = { K: 0.2, S: 0.15, C: 0.1, H: 0.05, O: -0.05, R: 0, D: -0.15, P: -0.1 }[vk] || 0;
       return Math.max(0, Math.min(1, base + bias)) * (ph.drums === 0 ? 0 : ph.drums || 1);
     }
-    const lvl = (thr) => { if (P.comp) return 0.85; const E = Math.max(0, effE() + P.form[Math.floor(bar / 8) % 4].d); return E >= thr ? Math.min(1, 0.55 + (E - thr) * 1.5) : 0; };
+    const lvl = (thr) => { if (P.comp) return 0.85; const E = Math.max(0, effE() + phAt(bar).d); return E >= thr ? Math.min(1, 0.55 + (E - thr) * 1.5) : 0; };
 
     function scheduleStep(t) {
       if (API._fault) { API._fault = 0; throw new Error('test fault'); }
       if (P.skip && s16 === 0) { newPiece(nextSpec()); forceNext = null; return scheduleStep(t); }
-      const S = P.S, sp16 = P.spb / 4, phIdx = Math.floor(bar / 8) % 4, ph = P.form[phIdx], barInPh = bar % 8, lastBarOfPh = barInPh === 7;
+      const S = P.S, sp16 = P.spb / 4, phIdx = Math.min(P.form.length - 1, Math.floor(bar / 8)), ph = P.form[phIdx], barInPh = bar % 8, lastBarOfPh = barInPh === 7;
       const ch = chordAt(bar), swingOff = (s16 % 2 === 1) ? (S.swing - 0.5) * 2 * sp16 : 0, hum = () => S.human ? (R() - 0.5) * S.human / 1000 : 0;
       const tt = t + swingOff;
       const E = effE();
@@ -1153,8 +1178,8 @@ const SFX = (() => {
       s16++;
       if (s16 >= 16) {
         s16 = 0; bar++;
-        if (bar % 8 === 0 && bar < 32 && !P.fixedMel && chance(0.6)) P.motifs[0] = varyMotif(P.motifs[0]);
-        if (bar >= 32) { newPiece(nextSpec()); forceNext = null; }
+        if (bar % 8 === 0 && bar < 32 && !P.fixedMel && chance(0.6)) P.motifs[0] = varyMotif(P.motifs[0]); // (32: the first four phrases vary exactly as before)
+        if (bar >= pieceBars()) { newPiece(nextSpec()); forceNext = null; }
       }
     }
     const AMB_LOOPS = [{ per: 19.7, d: 0 }, { per: 23.5, d: 2 }, { per: 25.9, d: 4 }, { per: 29.9, d: 7 }, { per: 31.3, d: 9 }];
@@ -1207,7 +1232,8 @@ const SFX = (() => {
       if (cp.loop && Array.isArray(cp.loop.degs) && cp.loop.degs.length) p.loop = { degs: cp.loop.degs.slice(0, 8).map(x => x | 0), q: (cp.loop.q || []).slice(0, 8), bars: Math.max(1, Math.min(8, cp.loop.bars | 0 || 1)) };
       if (cp.drums) { S.drums = {}; for (const k in cp.drums) if (/^[KSCHORDP]$/.test(k) && typeof cp.drums[k] === 'string') S.drums[k] = cp.drums[k].replace(/[^0-9]/g, '0').slice(0, 32); S.halftime = 0; S.fill = 'none'; }
       S.filterLoop = 0; // no slow filter sweep hiding the first phrase
-      const on = d => ({ d, drums: 1, bass: 1, keys: 1, lead: 1, pad: 1, arp: 1 }); p.form = [on(0), on(0), on(0), on(0)]; p.dropouts = null; // what you write is what you hear
+      const on = (n, d) => ({ n, d, drums: 1, bass: 1, keys: 1, lead: 1, pad: 1, arp: 1 }); p.dropouts = null; // what you write is what you hear
+      p.form = editing ? [on('Your loop', 0), on('Your loop', 0), on('Your loop', 0), on('Your loop', 0)] : makeForm(S.form).map(ph => Object.assign({}, ph, { dropouts: 0, version: 0 })); // played back: shaped like the genre
       const r0 = R; R = mulberry32((cp.melSeed >>> 0) || 7); // the automatic melody and bassline come from the comp's own seed
       if (Array.isArray(cp.bass) && cp.bass[0]) S.bass = Object.assign({ lv: 0.1 }, S.bass || {}, { kind: cp.bass[0], line: cp.bass[1] });
       p.bassPat = makeBass(S.bass);
@@ -1286,6 +1312,7 @@ const SFX = (() => {
       get queued() { return forceNext; },
       get editing() { return editing; }, set editing(v) { editing = !!v; },
       get sndGen() { return sndGen; },
+      setLength(v) { cfg.length = ['short', 'standard', 'long'].includes(v) ? v : 'standard'; if (P) { const keepComp = P.comp; P.form = keepComp ? P.form : makeForm(P.S.form); } }, // the playing piece takes the new shape; past its end it moves on at the next bar
       setName(n) { if (P && n) { P.name = String(n).slice(0, 32); if (hist.length) hist[hist.length - 1].name = P.name; } },
       save(extra) {
         if (!P) return null; if (cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp))) return null;
@@ -1312,7 +1339,7 @@ const SFX = (() => {
       set debug(v) { EV = v ? [] : null; }, get events() { return EV; },
       renderAhead(seconds, curve) { start(); const step = 0.1; for (let t = 0; t < seconds; t += step) { if (curve) targetB = curve(t / seconds); battle += (targetB - battle) * 0.3; const h = t + step; while (nextT < h) { const tt = nextT; scheduleStep(tt); nextT += liveSpb() / 4; } } },
       get log() { return pieceLog; },
-      get piece() { if (!P) return null; const ph = P.form[Math.floor(bar / 8) % 4]; return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: 32, step: s16, loop: P.loop.degs.slice(), loopQ: (P.loop.q || []).slice(), seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.brk ? (ph.build ? 'Breakdown · build' : 'Breakdown') : ph.drop ? 'Drop' : ph.version ? 'Dub version' : ['Intro', 'Groove', 'Bridge', 'Return'][Math.floor(bar / 8) % 4] }; },
+      get piece() { if (!P) return null; const ph = phAt(bar); return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: pieceBars(), step: s16, loop: P.loop.degs.slice(), loopQ: (P.loop.q || []).slice(), seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.n || 'Groove', length: cfg.length || 'standard' }; },
     };
     return API;
   })();
