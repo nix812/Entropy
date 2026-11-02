@@ -823,11 +823,19 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .fader .fknob { position: absolute; left: 8px; right: -2px; height: 8px; margin-bottom: -4px; background: var(--ink); box-shadow: 0 2px 0 rgba(0,0,0,0.5); pointer-events: none; }
 .fmute { font-family: var(--f-pix); font-size: 7px; text-transform: uppercase; background: var(--panel2); border: 0; width: 100%; min-height: 30px; padding: 0 1px; box-shadow: inset 0 0 0 1px var(--line2); overflow: hidden; }
 .fmute.m { background: var(--bad); color: #1a0008; box-shadow: none; text-decoration: line-through; }
-/* v5.5.11 music on the battlefield: replay/back bottom-left, next bottom-right, faint until touched */
-.trkbtn { position: absolute; bottom: 8px; z-index: 6; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 0; background: rgba(14, 17, 33, 0.6); box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; opacity: 0.6; }
+/* v5.5.11 music on the battlefield (5.5.12: at the top; the log and the doctrine list own the bottom corners): back/replay
+   top-left, the banners there shifted right to make room; next under the Map button. A right-side panel moves Map to the left,
+   so back drops under it. Each hides on the side a panel opens. */
+.trkbtn { position: absolute; top: 6px; z-index: 6; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 0; background: rgba(14, 17, 33, 0.6); box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; opacity: 0.6; }
 .trkbtn .svgi { width: 16px; height: 16px; }
 .trkbtn:active { opacity: 1; filter: brightness(1.4); }
-#bTrkBack { left: 8px; } #bTrkNext { right: 8px; }
+#bTrkBack { left: 6px; } #bTrkNext { right: 6px; top: 48px; }
+body.panel-r #bTrkBack { top: 48px; }
+#asbar, #ticker, #dps { left: 50px; }
+#ticker { max-width: calc(100% - 200px); } #asbar { max-width: calc(100% - 200px); }
+body.panel-r #asbar, body.panel-r #ticker { left: 50px; max-width: calc(100% - min(270px, 46%) - 64px); }
+body.watching #asbar, body.watching #ticker, body.watching #dps { left: 6px; }
+body.panel-l #asbar, body.panel-l #ticker { max-width: calc(100% - min(270px, 46%) - 64px); } /* stop short of the next-song button */
 body.panel-l #bTrkBack, body.panel-r #bTrkNext, body.watching .trkbtn { display: none; }
 /* v5.5.10 typing panel (outside the scaled game layer, pinned to what the keyboard leaves visible) */
 #entry { position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(4, 5, 10, 0.94); display: flex; align-items: flex-start; justify-content: center; padding: 8px 12px; box-sizing: border-box; overflow: auto; font-family: var(--f-term); color: var(--ink); }
@@ -972,7 +980,7 @@ body.panel-l #bTrkBack, body.panel-r #bTrkNext, body.watching .trkbtn { display:
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.5.11';
+const VERSION = '5.5.12';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1153,7 +1161,7 @@ const WHATS_NEW = { ver: '5.5.0', title: 'Entropy 5.5 · The Music Studio', item
   ['Shape', 'One tempo slider for the genre that is playing, with energy, the mixer and effects on one screen.'],
   ['Sound keeps going (5.5.4)', 'On iPhone, an AirPod going in or out, a call or Siri could leave the game silent until a restart. The sound now wakes itself, Settings › Sound shows what it is doing, and Restart sound brings it back in one tap.'],
   ['Mono Audio (5.5.3)', 'Settings › Mono Audio plays everything in both ears, for one earbud or a single speaker. Sounds panned to one side are no longer lost.'],
-  ['Music on the battlefield (5.5.11)', 'Bottom right of the battlefield: next song. Bottom left: tap to play the song again from the top, double-tap for the last song.'],
+  ['Music on the battlefield (5.5.11)', 'Top right of the battlefield, under Map: next song. Top left: tap to play the song again from the top, double-tap for the last song.'],
   ['Codes without the keyboard (5.5.10)', 'Share the song that is playing in one tap (the share button in the Studio bar). Paste a code reads your clipboard, so there is nothing to type. When you do type (names, codes), the box sits above the keyboard instead of behind it.'],
   ['Full-length songs (5.5.9)', 'Songs were 32 bars: under a minute in Trance and Drum & Bass. Now each genre plays a radio edit shaped like the real thing (intro, grooves, breakdowns, drops, an outro that winds down into the next song). Music Studio › Shape › Song length: Short, Standard or Long.'],
   ['A musician\'s pass (5.5.8)', 'Every chord progression was checked in every mood: none lands on a chord that does not belong any more, and each mood brings its signature moves (Lydian\'s I–II, Dorian\'s i–IV, Phrygian\'s i–♭II). Chord names read like a musician writes them, and jazz chords lose the harsh flat nine.'],
