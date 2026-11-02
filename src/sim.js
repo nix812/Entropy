@@ -12,7 +12,7 @@ function defaultProfile() {
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
     seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
-    codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '' },
+    codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '', coll: {}, collC: {}, collNew: [] },
     mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
   };
@@ -1340,12 +1340,20 @@ function prepareWave(w) {
     if (!seen[k]) { seen[k] = 1; if (ENEMIES[k].from >= 3) Hooks.newEnemy && Hooks.newEnemy(k, w); }
     else if (ENEMIES[k].from >= 18 && w <= ENEMIES[k].from + 1) (G.prep.fresh || (G.prep.fresh = [])).push(k); // v5.2: shown on the threat board, not as an alert
   }
-  // announce a trait when it takes hold (35%+), again only after it has faded below 20%
-  const told = G.geneTold || (G.geneTold = {});
-  if (!(G.assault && G.assault.w === w)) for (const k of GENE_IDS) {
-    const sh = genes[k] || 0;
-    if (sh >= 0.35 && !told[k]) { told[k] = 1; if (!PROF.seenEvo) Hooks.evoIntro && Hooks.evoIntro(k, sh); Hooks.toast('SWARM EVOLVES', `${GENES[k].name} ${Math.round(sh * 100)}% · counter: ${GENES[k].counter}`, GENES[k].col); Hooks.log(`Evolution: ${GENES[k].name} ${Math.round(sh * 100)}%`, GENES[k].col); }
-    else if (sh < 0.2 && told[k]) told[k] = 0;
+  // v5.8: a trait is announced when it reaches a tier it has not reached before in this run (I 20%, II 35%, III 50%), all gains in
+  // one notice; assault waves are skipped (the strain inflates the shares). The gains are kept for the recap timeline.
+  if (!(G.assault && G.assault.w === w)) {
+    const S = G.stats, T = S.gTier || (S.gTier = {}), log = S.evo || (S.evo = []), up = [];
+    if (G.geneTold) for (const k in G.geneTold) if (G.geneTold[k] && !T[k]) T[k] = 2; // a run saved before 5.8 already announced these
+    for (const k of GENE_IDS) { const sh = genes[k] || 0, t = geneTier(sh); if (t > (T[k] || 0)) { T[k] = t; up.push([k, t, sh]); log.push([w, k, t]); } }
+    if (log.length > 60) log.splice(0, log.length - 60);
+    if (up.length) {
+      up.sort((a, b) => b[1] - a[1] || b[2] - a[2]);
+      const [k, t, sh] = up[0];
+      if (t >= 2 && !PROF.seenEvo) Hooks.evoIntro && Hooks.evoIntro(k, sh);
+      Hooks.toast('SWARM EVOLVES', up.map(([g, tt, s]) => `${GENES[g].name} ${roman(tt)} ${Math.round(s * 100)}%`).join(' · ') + (up.length === 1 ? ` · counter: ${GENES[k].counter}` : ''), GENES[k].col);
+      Hooks.log(`Evolution: ${up.map(([g, tt]) => GENES[g].name + ' ' + roman(tt)).join(', ')}`, GENES[k].col);
+    }
   }
 }
 // ===================== v3.0: THE EVOLVING SWARM =====================
@@ -1393,6 +1401,45 @@ function topStrain() {
   const e = Object.entries(G.strainN || {}).sort((a, b) => b[1] - a[1])[0]; if (!e) return null;
   const [type, key] = e[0].split(/:(.*)/), P = parseGenes(key);
   return { name: strainName(type, P.genes, P.el), n: e[1], genes: P.genes };
+}
+// v5.8: the strain that ended the run (most leaks on the last wave), for the recap. Read-only: never touches the run RNG.
+function runEndStrain() {
+  if (!G || G.extracted || (G.stats.bossBreach && G.stats.bossBreachId)) return null;
+  const pool = Object.keys(G.leakWave || {}).length ? G.leakWave : G.leakBy || {};
+  const top = Object.keys(pool).filter(k => !k.startsWith('boss:')).sort((a, b) => pool[b] - pool[a])[0];
+  if (!top) return null;
+  const [type, ...gs] = top.split('+'), genes = gs.filter(g => GENES[g]);
+  if (!ENEMIES[type] || !genes.length) return null;
+  const A = G.assault, key = genes.slice().sort().join('+'), asl = A && A.genes && A.genes.slice().sort().join('+') === key;
+  return { name: strainName(type, genes, asl ? A.el : null), genes, n: pool[top], col: asl ? strainCol(A.genes) : GENES[genes[0]].col, assault: asl ? 1 : 0 };
+}
+// ---------- v5.8 Swarm Collection (profile only) ----------
+// The UI records sightings through Hooks.strainSeen in real runs (never in replays or watch mode), so the sim never reads it.
+// codex.coll = { species: '010230000' }: one digit per GENE_IDS entry, the largest genome (1-3) that species was seen carrying that
+// gene in. codex.collC = { 'haste+wings': 'drone' }: named pairs met. codex.collNew: cells not yet seen in the Archive.
+const collOk = (type, g) => geneOk(type, g, 999);
+function collMax() { let n = Object.keys(STRAIN_COMBO).length; for (const t of COLL_SPECIES) for (const g of GENE_IDS) if (collOk(t, g)) n += 3; return n; }
+function collHave(C) {
+  let n = 0; const X = (C && C.coll) || {};
+  for (const t of COLL_SPECIES) { const s = X[t] || ''; GENE_IDS.forEach((g, i) => { if (collOk(t, g)) n += Math.min(3, +s[i] || 0); }); }
+  return n + Object.keys((C && C.collC) || {}).filter(k => STRAIN_COMBO[k]).length;
+}
+// record one sighting; returns the cells it filled in ('drone.plating', 'c:haste+wings')
+function collAdd(C, type, genes) {
+  if (!C || !COLL_SPECIES.includes(type) || !genes || !genes.length) return [];
+  const X = C.coll || (C.coll = {}), N = C.collC || (C.collC = {}), out = [], lv = Math.min(3, genes.length);
+  const a = (X[type] || '').padEnd(GENE_IDS.length, '0').split('');
+  for (const g of genes) { const i = GENE_IDS.indexOf(g); if (i >= 0 && collOk(type, g) && (+a[i] || 0) < lv) { a[i] = String(lv); out.push(type + '.' + g); } }
+  if (out.length) X[type] = a.join('');
+  const g = genes.slice().sort();
+  for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) { const k = g[i] + '+' + g[j]; if (STRAIN_COMBO[k] && !N[k]) { N[k] = type; out.push('c:' + k); } }
+  return out;
+}
+// profiles from before 5.8 kept up to 400 strains in codex.strains; they all count towards the collection (once)
+function collMigrate(C) {
+  if (!C || C.collV) return;
+  for (const k of Object.keys(C.strains || {})) { const [type, key] = k.split(/:(.*)/), P = parseGenes(key || ''); collAdd(C, type, P.genes); }
+  C.collV = 1;
 }
 function geneShares() {
   const c = {}; let n = 0;
@@ -1934,12 +1981,9 @@ function spawnEnemy(type, q) {
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
     if (q.assault) { e.assault = 1; e.hpBase = hp0; }
-    if (genes.length && !q.assault) {
-      const sk = type + ':' + e.gkey, X = PROF.codex.strains || (PROF.codex.strains = {});
-      if (!X[sk] && Object.keys(X).length < 400) { X[sk] = { n: 0, w: G.wave }; if (genes.length >= 2) Hooks.toast('NEW STRAIN', strainName(type, genes, q.gel), GENES[genes[0]].col); }
-      if (X[sk]) X[sk].n++;
-      const RS = G.strainN || (G.strainN = {}); RS[sk] = (RS[sk] || 0) + 1;
-    }
+    if (genes.length && !q.assault) { const sk = type + ':' + e.gkey, RS = G.strainN || (G.strainN = {}); RS[sk] = (RS[sk] || 0) + 1; }
+    // v5.8: the Swarm Collection is the UI's to record (a hook, so the sim never reads or writes the profile here)
+    if (genes.length) Hooks.strainSeen && Hooks.strainSeen(type, genes, q.gel);
     for (const g of genes) {
       if (GENES[g].spd) e.spd *= GENES[g].spd;
       if (g === 'plating') e.armor = Math.min(0.7, e.armor + 0.4);

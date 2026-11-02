@@ -47,6 +47,7 @@ function hydrateIcons(root) {
     const svg = svgIcon(el.dataset.svg);
     if (el.tagName === 'I') el.outerHTML = svg; else el.innerHTML = svg;
   }
+  for (const cv of (root || document).querySelectorAll('canvas[data-gico]')) Render.geneIcon(cv.dataset.gico, cv, cv.dataset.el); // v5.8 gene marks
 }
 
 // ---------------- Saves ----------------
@@ -67,6 +68,7 @@ const Save = (() => {
     out.codex = Object.assign(defaultProfile().codex, out.codex || {});
     if (!out.seenSys && (out.bestWave || 0) >= 15) out.seenSys = { storm: 1, crate: 1, vet: 1 };
     if (!out.codex.enemies) { out.codex.enemies = {}; if ((out.bestWave || 0) >= 12) for (const k in ENEMIES) if (ENEMIES[k].from <= 12) out.codex.enemies[k] = 1; }
+    collMigrate(out.codex); // v5.8: the old strain list counts towards the Swarm Collection
     return out;
   }
   function loadLocal() { try { const s = localStorage.getItem(KEY); return s ? merge(JSON.parse(s)) : null; } catch (e) { return null; } }
@@ -135,6 +137,7 @@ const UI = (() => {
     $('#hBest').textContent = PROF.bestWave || '—';
     const hp = $('#hPts'); hp.hidden = free <= 0; hp.textContent = free + ' pt' + (free === 1 ? '' : 's');
     $('#bWebH').classList.toggle('glow', free > 0);
+    $('#bArchive').classList.toggle('hasnew', ((PROF.codex || {}).collNew || []).length > 0); // v5.8: new Swarm Collection entries
     const nv = PROF.nova || 0, done = capsHeld().length, req = novaLevelReq(nv), ready = novaReady();
     $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv;
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
@@ -470,11 +473,32 @@ const UI = (() => {
     if (!parts.length) return '';
     return `<span class="evchip threat${hot ? ' hot' : ''}${pulse}" data-threat="1">${parts.join(' · ').replace('</b> · ', '</b> ')}</span>`;
   }
+  // v5.8 Arms Race: your recent damage mix, then the counters the swarm has bred against it (share, tier, trend, the reason)
+  function wardElNow() {
+    const c = {}; for (const q of G.queue) if (q.genes && q.genes.includes('ward') && q.gel) c[q.gel] = (c[q.gel] || 0) + 1;
+    for (const e of G.enemies) if (e.wardEl && !e.dead) c[e.wardEl] = (c[e.wardEl] || 0) + 1;
+    return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || null;
+  }
+  function armsHTML() {
+    const I = G.intel || { el: {} }, et = ELS.reduce((a, k) => a + (I.el[k] || 0), 0);
+    const now = geneShares(), H = G.geneHist || [], back = H.length > 1 ? H[Math.max(0, H.length - 4)].g : {};
+    const reads = readDefence(Math.max(G.wave, 1)), T = G.stats.gTier || {};
+    const rows = GENE_IDS.map(g => ({ g, v: now[g] || 0 })).filter(r => r.v >= 0.1 || (T[r.g] && r.v >= 0.05)).sort((a, b) => b.v - a.v).slice(0, 4);
+    const fire = et > 0 ? `<div class="elbar">${ELS.filter(k => I.el[k] / et > 0.01).map(k => `<i style="flex:${(I.el[k] / et).toFixed(3)};background:${EL[k].col}"></i>`).join('')}</div><div class="ellab">${ELS.filter(k => I.el[k] / et >= 0.08).map(k => `<span style="color:${EL[k].col}">${EL[k].name} ${Math.round(I.el[k] / et * 100)}%</span>`).join('')}</div>` : '<span class="note">Nothing yet</span>';
+    const row = r => { const R = reads.find(x => x.g === r.g), d = r.v - (back[r.g] || 0), t = geneTier(r.v), el = r.g === 'ward' ? (R && R.el) || wardElNow() : null, tr = d >= 0.04 ? 'up' : d <= -0.04 ? 'dn' : '';
+      return `<div class="armrow" style="--c:${GENES[r.g].col}"><canvas width="30" height="30" data-gico="${r.g}"${el ? ` data-el="${el}"` : ''}></canvas><b>${esc(geneTxt(r.g, el))}</b><i class="tier">${t ? roman(t) : '–'}</i><div class="armbar"><i style="width:${Math.round(r.v * 100)}%"></i><s style="left:20%"></s><s style="left:35%"></s><s style="left:50%"></s></div><em class="${tr}">${Math.round(r.v * 100)}%${tr === 'up' ? ' ▲' : tr === 'dn' ? ' ▼' : ''}</em><span>${esc(R ? R.why[0].toUpperCase() + R.why.slice(1) : 'Exploits ' + GENE_VS[r.g])} · <u>${esc(GENES[r.g].counter)}</u></span></div>`; };
+    const next = reads.filter(x => (now[x.g] || 0) < 0.1).slice(0, 2);
+    return `<div class="lbl">Arms Race · how the swarm answers your defence</div>
+      <div class="arms"><div class="armfire"><small>Your fire</small>${fire}</div>
+      <div class="armrows">${rows.length ? rows.map(row).join('') : '<p class="note">No counters bred yet: the swarm is still mixing at random.</p>'}</div>
+      ${next.length ? `<p class="note">Next it may breed: ${next.map(x => `<b style="color:${GENES[x.g].col};font-weight:400">${esc(geneTxt(x.g, x.el))}</b>, ${esc(x.why)}`).join(' · ')}</p>` : ''}</div>`;
+  }
   function openThreat() {
     if (!G) return;
     if (!G.over) G.paused = true;
     const P = G.spawningDone ? G.prep : null, A = G.assault, cap = geneCap(G.wave);
     const sec = [];
+    if (cap > 0) sec.push(armsHTML());
     if (P) {
       const kinds = Object.entries(P.counts).sort((a, b) => b[1] - a[1]);
       sec.push(`<div class="lbl">Next · Wave ${P.w} · ${P.total} enemies${P.fly ? ' · ' + P.fly + ' flying' : ''}${P.elites ? ' · ' + P.elites + ' elite' : ''}${P.boss ? ' · Boss ' + (P.boss.odd ? '???' : esc(P.boss.name)) : ''}</div>
@@ -484,15 +508,13 @@ const UI = (() => {
     } else sec.push(`<div class="lbl">Wave ${G.wave} in progress · ${G.queue.length + G.enemies.length} left</div>`);
     if (A && A.state !== 'done') {
       const live = A.state === 'live', lim = live ? assaultLimit(A) : null;
-      sec.push(`<div class="lbl bad">Strain Assault · Wave ${A.w}${live ? ' · in progress' : ''}</div><h3 class="asname">${esc(A.name)}</h3>
+      sec.push(`<div class="lbl bad">Strain Assault · Wave ${A.w}${live ? ' · in progress' : ''}</div><h3 class="asname"><i class="swatch" style="background:${strainCol(A.genes)}"></i>${esc(A.name)}</h3>
         <div class="evlist">${A.genes.map(g => { const D = GENES[g]; return `<div class="evrow"><b style="color:${D.col}">${esc(geneTxt(g, A.el))}</b><div></div><em></em><span>${esc(g === 'ward' && A.el ? `Resists ${EL[A.el].name} by 50%` : D.desc)} · <u>Counter: ${esc(g === 'ward' && A.el ? `anything but ${EL[A.el].name}` : D.counter)}</u></span></div>`; }).join('')}</div>
         ${A.why && A.why.length ? `<ul class="aswhy">${A.why.map(x => `<li>${esc(x[0].toUpperCase() + x.slice(1))}</li>`).join('')}</ul>` : ''}
         <p class="note hl">${live ? `${A.n - A.killed - A.leaked} of ${A.n} left · ${A.leaked} leaked of ${lim} allowed. Hold it and it breaks: +1 power and a bounty.` : tipify(`Selling is free until Wave ${A.w} starts. Swap towers for the counters above. Let few enough through and the strain breaks: +1 power and a bounty.`)}</p>`);
     }
     if (cap > 0) {
-      const R = readDefence(Math.max(G.wave, 1)).slice(0, 2);
       sec.push(`<div class="lbl">Swarm DNA · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(A && A.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</div>
-        ${R.length ? `<ul class="aswhy">${R.map(x => `<li><b style="color:${GENES[x.g].col};font-weight:400">${GENES[x.g].name}${x.el ? ' · ' + EL[x.el].name : ''}</b>: ${esc(x.why)}</li>`).join('')}</ul>` : ''}
         <div class="evlist">${evoRowsHTML()}</div>`);
     } else sec.push(`<p class="note">${tipify(`The swarm starts to evolve at Wave ${evoCfg().start}: whatever your defence handles worst spreads through it.`)}</p>`);
     modal(`<div class="card evo threat"><div class="ch"><h2>Threat Board</h2><span class="note">Wave ${G.wave || 0} · ${esc(G.CH.name)}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
@@ -1302,7 +1324,24 @@ const UI = (() => {
       nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
       ext: G.extracted || 0, bounties: G.bounties.length, bounty: G.stats.bounty || null, elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
-      keystones: activeCaps().map(id => TAL[id].name) };
+      keystones: activeCaps().map(id => TAL[id].name), evo: (G.stats.evo || []).slice(), endStrain: runEndStrain() };
+  }
+  // v5.8 the swarm's run on one line: each tier a gene reached (tall marks for higher tiers), each Strain Assault (filled = broken),
+  // then the same as chips, and the strain that ended the run
+  function swarmTimelineHTML(R) {
+    const ev = R.evo || [], as = (R.assaults && R.assaults.list) || [];
+    if (!ev.length && !as.length && !R.endStrain) return '';
+    const w0 = R.startWave || 1, w1 = Math.max(R.wave, w0 + 1), pos = w => clamp((w - w0) / (w1 - w0) * 100, 0, 100).toFixed(1) + '%';
+    const ticks = [w0, Math.round((w0 + w1) / 2), w1].filter((w, i, a) => a.indexOf(w) === i).map(w => `<em style="left:${pos(w)}">W${w}</em>`).join('');
+    const marks = ev.map(([w, g, t]) => `<i class="t${t}" style="left:${pos(w)};--c:${GENES[g] ? GENES[g].col : '#888'}"></i>`).join('')
+      + as.map(a => `<b class="${a.won ? 'won' : ''}" style="left:${pos(a.w)};--c:${strainCol(a.genes)}"></b>`).join('');
+    let chips = ev.filter(e => GENES[e[1]] && (e[2] >= 2 || ev.length <= 8)).map(([w, g, t]) => ({ w, h: `<span class="sxc" style="--c:${GENES[g].col}"><canvas width="16" height="16" data-gico="${g}"></canvas><small>W${w}</small> ${GENES[g].name} ${roman(t)}</span>` }))
+      .concat(as.map(a => ({ w: a.w + 0.5, h: `<span class="sxc as${a.won ? '' : ' lost'}" style="--c:${strainCol(a.genes)}"><i class="swatch" style="background:${strainCol(a.genes)}"></i><small>W${a.w}</small> ${esc(a.name)} ${a.won ? 'broken' : 'held'}</span>` })))
+      .sort((a, b) => a.w - b.w);
+    if (chips.length > 12) chips = chips.slice(-12);
+    const E = R.endStrain;
+    return `<div class="lbl">Swarm Timeline</div><div class="sxtl">${marks}${ticks}</div><div class="sxev">${chips.map(c => c.h).join('')}</div>
+      ${E ? `<p class="note sxend"><i class="swatch" style="background:${E.col};display:inline-block;width:9px;height:9px;margin-right:6px"></i>Ended by <b style="color:${E.col}">${esc(E.name)}</b>${E.assault ? ' (Strain Assault)' : ''} · ${E.n} leaked on the last wave</p>` : ''}`;
   }
   function recapHTML(R) {
     const els = R.els, tot = Object.values(els).reduce((a, b) => a + b, 0) || 1, mvp = R.mvp;
@@ -1313,6 +1352,7 @@ const UI = (() => {
       <div class="ellab">${ELS.filter(e => els[e] / tot >= 0.04).map(e => `<span style="color:${EL[e].col}">${EL[e].name} ${Math.round(els[e] / tot * 100)}%</span>`).join('')}</div>
       <p class="note">${combos ? tipify('Combos: ' + combos) : 'No combos this run.'}</p>
       ${R.peakGene ? `<p class="note hl" style="color:${GENES[R.peakGene.g].col}">${tipify(`Evolution peak: ${GENES[R.peakGene.g].name} reached ${Math.round(R.peakGene.v * 100)}% of the swarm at Wave ${R.peakGene.w}`)}${R.strain ? ` · Signature strain: <b>${esc(R.strain.name)}</b> ×${fmt(R.strain.n)}` : ''}${R.pre ? ` · Arrived adapted: ${esc(R.pre.join(', '))}` : ''}</p>` : ''}
+      ${swarmTimelineHTML(R)}
       ${R.assaults && R.assaults.list.length ? `<p class="note hl">${tipify(`Strain Assaults: ${R.assaults.won} broken, ${R.assaults.lost} entrenched`)}${R.assaults.list.slice(-3).map(a => ` · W${a.w} ${esc(a.name)} ${a.won ? '✓' : '✗'}`).join('')}</p>` : ''}
       ${R.bounty ? `<p class="note hl" style="color:#ffd84a">Bounty claimed: ${esc(R.bounty)}</p>` : ''}
       ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
@@ -1352,7 +1392,7 @@ const UI = (() => {
     const now = geneShares(), H = G.geneHist || [], prev = H.length > 1 ? H[H.length - 2].g : {};
     return GENE_IDS.map(g => { const v = now[g] || 0, d = v - (prev[g] || 0), A = GENES[g];
       const locked = A.from && G.wave < A.from;
-      return `<div class="evrow ${locked ? 'dim' : ''}"><b style="color:${A.col}">${A.name}</b><div class="evbar"><i style="width:${Math.round(v * 100)}%;background:${A.col}"></i></div><em>${locked ? 'Wave ' + A.from : Math.round(v * 100) + '%' + (Math.abs(d) >= 0.05 ? (d > 0 ? ' ▲' : ' ▼') : '')}</em><span>${esc(A.desc)} · <u>${esc(A.counter)}</u></span></div>`; }).join('');
+      return `<div class="evrow ${locked ? 'dim' : ''}"><b style="color:${A.col}"><canvas width="18" height="18" data-gico="${g}"></canvas>${A.name}</b><div class="evbar"><i style="width:${Math.round(v * 100)}%;background:${A.col}"></i></div><em>${locked ? 'Wave ' + A.from : Math.round(v * 100) + '%' + (Math.abs(d) >= 0.05 ? (d > 0 ? ' ▲' : ' ▼') : '')}</em><span>${esc(A.desc)} · <u>${esc(A.counter)}</u></span></div>`; }).join('');
   }
   // v4.0 Strain Assault: the swarm's move, announced a wave ahead
   function openAssault(intro) {
@@ -2204,15 +2244,28 @@ const UI = (() => {
       <div class="col">${hallHTML()}<div class="lbl">Record</div>
         <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best Wave<b>${PROF.bestWave || '—'}</b></span><span>Best Score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Time Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
         <div class="lbl">Capstones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None yet'}</p>
-        ${codexHTML()}</div></div></div>`, 'archive');
+        ${codexHTML()}</div></div>${collHTML()}</div>`, 'archive');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
+    for (const cv of document.querySelectorAll('#modal canvas[data-eico]')) Render.enemyIcon(cv.dataset.eico, cv);
+    if ((PROF.codex.collNew || []).length) { PROF.codex.collNew = []; Save.save(); } // highlighted once, then they are no longer new
+    $('#bArchive').classList.remove('hasnew');
   }
-  function strainsHTML() {
-    const X = (PROF.codex || {}).strains || {}, ks = Object.keys(X);
-    if (!ks.length) return `<div class="codex"><em>Strains</em><span>None met yet</span></div>`;
-    const top = ks.map(k => { const [type, key] = k.split(/:(.*)/), P = parseGenes(key); return { k, type, P, n: X[k].n, w: X[k].w }; })
-      .sort((a, b) => (b.P.genes.length - a.P.genes.length) || (b.n - a.n)).slice(0, 10);
-    return `<div class="codex strains"><em>Strains · ${ks.length} met</em>${top.map(t => `<span class="on" title="First met on Wave ${t.w}">${esc(strainName(t.type, t.P.genes, t.P.el))} <small>×${fmt(t.n)}</small>${t.P.genes.map(g => `<i style="background:${GENES[g].col}"></i>`).join('')}</span>`).join('')}</div>`;
+  // v5.8 Swarm Collection: species × gene, three pips per cell (seen carrying it alone, in a pair, in a triple), plus the named pairs
+  const collPctTxt = () => Math.floor(collHave(PROF.codex) / collMax() * 100) + '%';
+  function collHTML() {
+    const C = PROF.codex || {}, X = C.coll || {}, N = C.collC || {}, nw = new Set(C.collNew || []), have = collHave(C), max = collMax();
+    const head = `<span></span>` + GENE_IDS.map(g => `<span class="gh" style="color:${GENES[g].col}"><canvas width="28" height="28" data-gico="${g}"></canvas>${GENES[g].name}</span>`).join('');
+    const rows = COLL_SPECIES.map(t => { const s = X[t] || '', met = (C.enemies || {})[t] || s.replace(/0/g, '');
+      return `<span class="sp${met ? '' : ' dim'}"><canvas width="18" height="18" data-eico="${t}"></canvas>${met ? esc(SPECIES_NICK[t] || ENEMIES[t].name) : '???'}</span>` + GENE_IDS.map((g, i) => {
+        if (!collOk(t, g)) return `<span class="ccell x"></span>`;
+        const lv = Math.min(3, +s[i] || 0);
+        return `<span class="ccell${lv >= 3 ? ' full' : ''}${nw.has(t + '.' + g) ? ' new' : ''}" style="--c:${GENES[g].col}" title="${esc(GENES[g].name)}">${[1, 2, 3].map(k => `<i class="${lv >= k ? 'on' : ''}"></i>`).join('')}</span>`; }).join(''); }).join('');
+    const named = Object.keys(STRAIN_COMBO).map(k => N[k] ? `<span class="on${nw.has('c:' + k) ? ' new' : ''}">${esc(strainName(N[k], k.split('+')))}</span>` : `<span>???</span>`).join('');
+    return `<div class="coll"><div class="lbl">Swarm Collection · ${Math.floor(have / max * 100)}% · ${have}/${max}${nw.size ? `<em>${nw.size} NEW</em>` : ''}</div>
+      <div class="collbar"><i style="width:${(have / max * 100).toFixed(1)}%"></i></div>
+      <p class="note">${tipify('Every species the swarm can evolve, and every gene it can carry. Pips: seen with it alone, in a pair, in a triple.')}</p>
+      <div class="collgrid">${head}${rows}</div>
+      <div class="lbl">Named strains · ${Object.keys(N).filter(k => STRAIN_COMBO[k]).length}/${Object.keys(STRAIN_COMBO).length}</div><div class="collc">${named}</div></div>`;
   }
   function codexHTML() {
     const C = PROF.codex || {};
@@ -2223,7 +2276,7 @@ const UI = (() => {
     return `<div class="lbl">Codex</div>
       <div class="codex"><em>Combos</em>${cb}</div>
       <div class="codex"><em>Bosses</em>${bs}</div>
-      ${strainsHTML()}
+      <p class="note">Swarm Collection ${collPctTxt()}: see below</p>
       <p class="note">Anomalies ${an}/${ANOMALIES.length} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
   }
   function modalAction(act, b) {
@@ -2463,6 +2516,16 @@ const UI = (() => {
     Hooks.onCheckpoint = w => { toast('CHECKPOINT', 'A wormhole opens next wave. Rebuild, then Resume fast for a bonus.', '#59f0b4'); if (panel && panel.kind === 'tower') renderPanel(); Save.save(); };
     Hooks.onEntropy = () => {};
     Hooks.newEnemy = k => setTimeout(() => enemyCard(k), 400);
+    let collToldW = -1;
+    // v5.8 Swarm Collection: recorded only in real runs (never replays or watch mode); only a first named strain gets a notice
+    Hooks.strainSeen = (type, genes, el) => {
+      if (!G || ghostRun()) return;
+      const got = collAdd(PROF.codex, type, genes); if (!got.length) return;
+      const N = PROF.codex.collNew || (PROF.codex.collNew = []);
+      for (const k of got) if (!N.includes(k)) N.push(k);
+      if (N.length > 150) N.splice(0, N.length - 150);
+      if (got.some(k => k.startsWith('c:')) && collToldW !== G.wave) collToldW = G.wave, toast('NEW STRAIN', `${strainName(type, genes, el)} · Collection ${collPctTxt()}`, GENES[genes[0]].col);
+    };
     Hooks.abilReady = k => { const b = document.querySelector(`[data-abil="${k}"]`); if (b) { b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping'); } };
     Hooks.scanned = e => { const nm = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type, gs = (e.genes || []).filter(g => GENES[g]);
       const beat = gs.length ? GENES[gs[0]].counter : ENEMIES[e.type] && ENEMIES[e.type].beat;

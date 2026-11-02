@@ -300,6 +300,19 @@ function strainName(type, genes, el) {
   for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) { const c = STRAIN_COMBO[g[i] + '+' + g[j]]; if (c) { const rest = g.filter((x, k) => k !== i && k !== j).map(x => x === 'ward' ? WARD_ADJ[el] || 'Warded' : GENE_ADJ[x]); return (rest.length ? rest.join(' ') + ' ' : '') + c + ' ' + sp; } }
   return g.map(x => x === 'ward' ? WARD_ADJ[el] || 'Warded' : GENE_ADJ[x]).join(' ') + ' ' + sp;
 }
+// v5.8 the visible swarm. A gene's share of the next wave reaches tiers (I 20%, II 35%, III 50%). Each tier gained in a run is
+// logged (recap timeline), announced between waves and shown on the Threat Board's Arms Race strip.
+const GENE_TIERS = [0.2, 0.35, 0.5];
+const geneTier = v => v >= GENE_TIERS[2] ? 3 : v >= GENE_TIERS[1] ? 2 : v >= GENE_TIERS[0] ? 1 : 0;
+// what each gene exploits in a defence, in a few words (Arms Race strip)
+const GENE_VS = { plating: 'fire that can\'t pierce', wings: 'ground-only towers', haste: 'a lack of slows', bulk: 'light damage', brood: 'single-target fire',
+  shell: 'a lack of Arc', regen: 'a lack of Burn', ward: 'one-element builds', cloak: 'a lack of Relay Pylons' };
+// a Strain Assault's family colour (the outline on every unit of that assault), from its genes
+const STRAIN_COLS = ['#ff4d6a', '#ff8a3d', '#e05cff', '#4dffd2', '#ffd24d', '#7a8cff', '#ff5cb0', '#9dff4d'];
+function strainCol(genes) { let h = 7; for (const ch of (genes || []).slice().sort().join('+')) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return STRAIN_COLS[h % STRAIN_COLS.length]; }
+// Swarm Collection (Archive): every species that can evolve × every gene it can carry × the genome size it was seen in
+// (I alone, II in a pair, III in a triple or more), plus the named pairs of STRAIN_COMBO. Finite, so it can be completed.
+const COLL_SPECIES = Object.keys(ENEMIES).filter(k => ENEMIES[k].from < 999);
 // v4.4: hp is also the fight-time budget (boss HP = firepower × seconds × hp/38). Fast bosses reach the core in ~40 s (duck, wraith) against ~95 s for
 // Behemoth, so their hp is set lower to keep the required fire density about the same (hp / road seconds ≈ 0.4 for most).
 const BOSSES = [
