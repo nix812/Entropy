@@ -609,7 +609,7 @@ const TOWER_FIRE = {
   missile: [{ id: 'bunker', need: 'tBunk', name: 'Bunker Buster', short: '×2 Damage, ignores Plating. No splash', desc: 'One heavy warhead: ×2 Damage, ignores Plating and half of Armor. No splash, bomblets or napalm', m: { dmgX: 2, bunker: 1 } }],
   coil: [{ id: 'fence', need: 'aFence', name: 'Arc Fence', short: 'Zaps a line to a Coil within 4 tiles', desc: 'Stops chaining. Arcs a fence to the nearest Coil within 4 tiles that zaps and Shocks everything within a tile of it', m: { fence: 4 } }],
   flame: [{ id: 'back', need: 'tBack', name: 'Backdraft', short: 'A full ring of fire. ×0.7 Range', desc: 'Burns a full ring around the tower instead of a cone. ×0.7 Range', m: { ring: 1, rangeX: 0.7 } }],
-  lens: [{ id: 'tether', need: 'vTether', name: 'Null Tether', short: 'No ramp. Beamed enemies 35% slower', desc: 'No ramp. Beamed enemies are 35% slower and Marked twice as fast. ×1.25 Damage', m: { tether: 0.35, dmgX: 1.25 } }],
+  lens: [{ id: 'tether', need: 'vTether', name: 'Null Tether', short: 'No ramp. Beamed enemies 35% slower', desc: 'No ramp: steady damage at the base rate. Beamed enemies are 35% slower and Marked twice as fast', m: { tether: 0.35 } }],
   emp: [{ id: 'mines', need: 'aMines', name: 'Pulse Mines', short: 'Lays up to 4 road mines. ×1.75 Damage', desc: 'Shells stay on the road as mines (up to 4) that blow when a ground enemy steps on them. ×1.75 Damage. Fliers never set them off', m: { mines: 4, dmgX: 1.75 } }],
   grav: [{ id: 'repulse', need: 'vRepulse', name: 'Repulsor', short: 'Hits fliers and throws them back', desc: 'Also hits fliers and throws them back along their flight. ×0.6 pull on the ground, ×0.5 Damage', m: { repulse: 1, pullX: 0.6, dmgX: 0.5 } }],
 };
