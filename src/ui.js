@@ -2356,16 +2356,22 @@ const UI = (() => {
       else toast('POWER', `Every tower draws 1 power; Overcharge draws more. Capacity grows 1 every ${GRID.perWaves} waves, or expand the reactor from the core panel`, '#59f0b4');
     };
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (marketShut()) { toast('EXCHANGE', 'The Black Market and Cash In open at Wave 10. Score comes from kills', '#8a8fa8', true, 'tip'); return; } if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
-    // v5.5.11 music on the battlefield: next on the right; on the left one tap replays the song, a double tap goes to the last one
-    // (the single tap waits a moment to see whether a second one follows, so a double tap never restarts the song first)
-    const trkSay = again => setTimeout(() => { const p = SFX.music.piece; if (p) toast(again ? 'FROM THE TOP' : 'NOW PLAYING', `${p.name} · ${p.genreName}`, (SFX.music.GENRES[p.genre] || {}).col || '#ff5fa8'); }, 60);
-    let trkBackT = 0, trkBackTimer = 0; const TRK_DBL = 350;
-    $('#bTrkNext').onclick = () => { SFX.init(); const M = SFX.music; M.setPaused(false); M.jump(null); trkSay(); };
+    // v5.5.14 music: the rail tile opens a deck (back · song · next). Back: one tap replays the song, a double tap goes to the
+    // last one (the single tap waits TRK_DBL to see whether a second follows). The deck tucks away after a few idle seconds.
+    let trkBackT = 0, trkBackTimer = 0, deckT = 0; const TRK_DBL = 350;
+    const deckFill = () => { const M = SFX.music, p = M.piece, d = $('#mdeck'); if (!d || !p) return; const col = (M.GENRES[p.genre] || {}).col || '#59f0b4';
+      d.style.setProperty('--mc', col); d.querySelector('.mdname b').textContent = p.name; d.querySelector('.mdname span').textContent = `${p.genreName} · ${p.section}${M.paused ? ' · paused' : ''}`; };
+    const deckShow = on => { const d = $('#mdeck'); d.hidden = !on; $('#bMusic').classList.toggle('on', on); clearTimeout(deckT); if (on) { deckFill(); deckT = setTimeout(() => deckShow(false), 5000); } };
+    UI.deckFill = deckFill;
+    $('#bMusic').onclick = () => { SFX.init(); SFX.play('ui'); deckShow($('#mdeck').hidden); };
+    $('#mdName').onclick = () => { deckShow(false); openStudio(); };
+    $('#bTrkNext').onclick = () => { SFX.init(); const M = SFX.music; M.setPaused(false); M.jump(null); deckShow(true); setTimeout(deckFill, 60); };
     $('#bTrkBack').onclick = () => {
-      SFX.init(); const M = SFX.music, now = performance.now();
-      if (now - trkBackT < TRK_DBL) { clearTimeout(trkBackTimer); trkBackT = 0; if (M.back()) { M.setPaused(false); M.jump(M.queued); trkSay(); } else { toast('NO EARLIER SONG', 'This is the first song this session', '#ff5fa8'); } return; }
-      trkBackT = now; trkBackTimer = setTimeout(() => { trkBackT = 0; M.setPaused(false); M.restart(); trkSay(true); }, TRK_DBL); // the same 350 ms both ways: a second tap inside it is a double
+      SFX.init(); const M = SFX.music, now = performance.now(); deckShow(true);
+      if (now - trkBackT < TRK_DBL) { clearTimeout(trkBackTimer); trkBackT = 0; if (M.back()) { M.setPaused(false); M.jump(M.queued); setTimeout(deckFill, 60); } else toast('NO EARLIER SONG', 'This is the first song this session', '#ff5fa8'); return; }
+      trkBackT = now; trkBackTimer = setTimeout(() => { trkBackT = 0; M.setPaused(false); M.restart(); setTimeout(deckFill, 60); }, TRK_DBL);
     };
+    $('#stage').addEventListener('pointerdown', e => { if (!$('#mdeck').hidden && !e.target.closest('#mdeck')) deckShow(false); }, true); // a tap on the field puts it away
     $('#bSpeed').onclick = () => { SFX.play('ui'); G.speed = G.speed >= 3 ? 1 : G.speed + 1; G.speedWas = 0; updateHud(); };
     $('#bStats').onclick = () => { SFX.play('ui'); hudFull = !hudFull; Render.full = hudFull; document.body.classList.toggle('hudfull', hudFull); updateHud(); };
     $('#bWeb').onclick = () => { SFX.play('ui'); Tree.open(); };
@@ -2462,7 +2468,12 @@ const UI = (() => {
       const beat = gs.length ? GENES[gs[0]].counter : ENEMIES[e.type] && ENEMIES[e.type].beat;
       toast('BIGGEST THREAT', `${nm}${gs.length ? ' · ' + gs.map(g => GENES[g].name).join(', ') : ''} · ${fmt(e.hp)} HP${beat ? ' · Beat it: ' + beat : ''}`, '#ffb03a', true, 'tip'); };
   }
+  let eqT = 0; const eqBuf = new Uint8Array(128);
   function tick(dt) {
+    if (screen === 'game') { eqT -= dt; if (eqT <= 0) { eqT = 0.08; const tile = $('#bMusic'); if (tile) { const M = SFX.music, p = M.piece, bars = tile.querySelectorAll('.meq i');
+      if (p) tile.style.setProperty('--mc', (M.GENRES[p.genre] || {}).col || '#59f0b4'); const quiet = !p || M.paused || M.held || SFX.state !== 'running'; tile.classList.toggle('quiet', quiet);
+      M.spectrum(eqBuf); const band = [[1, 3], [3, 7], [7, 14], [14, 28], [28, 56]]; bars.forEach((b, i) => { let v = 0; if (!quiet) for (let k = band[i][0]; k < band[i][1]; k++) v = Math.max(v, eqBuf[k]); b.style.height = Math.max(3, Math.round(v / 255 * 16)) + 'px'; });
+      if (!$('#mdeck').hidden) UI.deckFill && UI.deckFill(); } } }
     if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
     if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
     if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());

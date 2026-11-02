@@ -810,20 +810,25 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .fader .fknob { position: absolute; left: 8px; right: -2px; height: 8px; margin-bottom: -4px; background: var(--ink); box-shadow: 0 2px 0 rgba(0,0,0,0.5); pointer-events: none; }
 .fmute { font-family: var(--f-pix); font-size: 7px; text-transform: uppercase; background: var(--panel2); border: 0; width: 100%; min-height: 30px; padding: 0 1px; box-shadow: inset 0 0 0 1px var(--line2); overflow: hidden; }
 .fmute.m { background: var(--bad); color: #1a0008; box-shadow: none; text-decoration: line-through; }
-/* v5.5.11 music on the battlefield (5.5.12: at the top; the log and the doctrine list own the bottom corners): back/replay
-   top-left, the banners there shifted right to make room; next under the Map button. A right-side panel moves Map to the left,
-   so back drops under it. Each hides on the side a panel opens. */
-.trkbtn { position: absolute; top: 6px; z-index: 6; width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border: 0; background: rgba(14, 17, 33, 0.6); box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; opacity: 0.6; }
-.trkbtn .svgi { width: 16px; height: 16px; } .trkbtn { -webkit-user-select: none; user-select: none; }
-.trkbtn:active { opacity: 1; filter: brightness(1.4); }
-#bTrkBack { left: 6px; } #bTrkNext { right: 6px; top: 48px; }
-body.panel-r #bTrkBack { top: 48px; }
-#asbar, #ticker, #dps { left: 50px; }
-#ticker { max-width: calc(100% - 200px); } #asbar { max-width: calc(100% - 200px); }
-body.panel-r #asbar, body.panel-r #ticker { left: 50px; max-width: calc(100% - min(270px, 46%) - 64px); }
-body.watching #asbar, body.watching #ticker, body.watching #dps { left: 6px; }
-body.panel-l #asbar, body.panel-l #ticker { max-width: calc(100% - min(270px, 46%) - 64px); } /* stop short of the next-song button */
-body.panel-l #bTrkBack, body.panel-r #bTrkNext, body.watching .trkbtn { display: none; }
+/* v5.5.14 music: a tile in the dead space at the top of the left rail with a live five-bar equalizer in the genre's colour;
+   tapping it slides out a deck across the top of the field (back · song · next). Nothing sits on the battlefield until asked. */
+.mtile { margin-bottom: auto; --mc: #59f0b4; }
+.mtile.on { box-shadow: inset 0 0 0 2px var(--mc); }
+.meq { display: flex; gap: 2px; align-items: flex-end; height: 16px; }
+.meq i { display: block; width: 4px; height: 3px; background: var(--mc); transition: height 0.08s linear; }
+.mtile.quiet .meq i { opacity: 0.35; }
+#mdeck { position: absolute; top: 6px; left: 6px; z-index: 8; display: flex; align-items: stretch; gap: 4px; padding: 4px; max-width: calc(100% - 150px);
+  background: #07080f; box-shadow: inset 0 0 0 1px var(--mc, #59f0b4), 0 6px 18px rgba(0, 0, 0, 0.5); animation: mdin 0.16s steps(4); }
+#mdeck[hidden] { display: none; }
+@keyframes mdin { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.mdb { width: 44px; height: 40px; flex: none; display: grid; place-items: center; padding: 0; border: 0; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); color: #e9e4d4; }
+.mdb .svgi { width: 18px; height: 18px; } .mdb:active { filter: brightness(1.4); transform: translateY(1px); }
+.mdname { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 0 8px; border: 0; background: none; color: var(--ink); text-align: left; }
+.mdname b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mdname span { font-size: 14px; color: var(--mc, var(--dim)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.watching #mdeck { display: none; }
+body.panel-l #mdeck { left: auto; right: 6px; top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } /* a left panel covers the corner: the deck opens on the right, under Map */
+body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } /* Map moves to the top-left then; the deck sits under it */
 /* v5.5.10 typing panel (outside the scaled game layer, pinned to what the keyboard leaves visible) */
 #entry { position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(4, 5, 10, 0.94); display: flex; align-items: flex-start; justify-content: center; padding: 8px 12px; box-sizing: border-box; overflow: auto; font-family: var(--f-term); color: var(--ink); }
 #entry .enbox { width: min(560px, 100%); display: flex; flex-direction: column; gap: 6px; background: var(--panel); box-shadow: inset 0 0 0 2px var(--line2); padding: 8px 10px; }
@@ -914,7 +919,7 @@ body.panel-l #bTrkBack, body.panel-r #bTrkNext, body.watching .trkbtn { display:
       <div id="chips"></div>
       <button class="hs sc cashbtn" id="bCash" aria-label="Cash in credits for score"><span class="lbl">Score</span><b id="score">0</b><i class="cashtag">Market</i></button>
     </header>
-    <div class="rail" id="railL"><div id="abils" style="display:contents"></div></div>
+    <div class="rail" id="railL"><button class="rb mtile" id="bMusic" aria-label="Music"><span class="meq"><i></i><i></i><i></i><i></i><i></i></span><span>Music</span></button><div id="abils" style="display:contents"></div></div>
     <div id="stage">
       <canvas id="cv"></canvas>
       <button class="zoombtn" id="bZoom" hidden></button>
@@ -926,8 +931,7 @@ body.panel-l #bTrkBack, body.panel-r #bTrkNext, body.watching .trkbtn { display:
       <div id="etip" hidden></div>
       <div id="ticker" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
-      <button class="trkbtn" id="bTrkBack" aria-label="Music: tap to replay this song, double-tap for the last song" data-svg="prev"></button>
-      <button class="trkbtn" id="bTrkNext" aria-label="Music: next song" data-svg="next"></button>
+      <div id="mdeck" hidden><button class="mdb" id="bTrkBack" aria-label="Tap to replay this song, double-tap for the last song" data-svg="prev"></button><button class="mdname" id="mdName" aria-label="Open the Music Studio"><b></b><span></span></button><button class="mdb" id="bTrkNext" aria-label="Next song" data-svg="next"></button></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">

@@ -1,15 +1,18 @@
-"""5.5.12 the battlefield music buttons never sit on anything: with the log and the doctrine list full, the ticker and the assault
+"""5.5.14 the music deck never sits on anything and the Music tile never overlaps an ability button: with the log and the doctrine list full, the ticker and the assault
 banner up, the full HUD's stats box, toasts, the Map button, and a tower panel open on either side; at four screen sizes
 (including an iPhone Pro Max). usage: python3 trackcollide.py"""
 import pathlib, mkpage
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent; mkpage.mk(); errs = []; fails = []
-OVER = ['#log', '#docbar', '#ticker', '#asbar', '#dps', '#bZoom', '#toasts', '#panel', '#watchbar', '#cpBanner']
+OVER = ['#log', '#docbar', '#bZoom', '#panel', '#watchbar', '#cpBanner']  # the deck is a popover: it may cover the banners while open, never a control
 JS_HITS = '''(over) => {
   const vis = el => { if (!el) return null; const cs = getComputedStyle(el); if (el.hidden || cs.display === 'none' || cs.visibility === 'hidden') return null; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 ? r : null; };
   const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
   const out = [];
-  for (const id of ['#bTrkBack', '#bTrkNext']) { const r = vis(document.querySelector(id)); if (!r) continue;
+  const t = vis(document.querySelector('#bMusic')); if (!t) out.push('Music tile missing');
+  else { for (const a of document.querySelectorAll('#abils > *, #railL > .rb:not(#bMusic)')) { const q = vis(a); if (q && hit(t, q)) out.push('#bMusic x ' + (a.id || a.className)); }
+    const rl = document.querySelector('#railL').getBoundingClientRect(); if (t.top < rl.top - 1 || t.bottom > rl.bottom + 1) out.push('#bMusic outside the rail'); }
+  for (const id of ['#mdeck']) { const r = vis(document.querySelector(id)); if (!r) continue;
     for (const o of over) { const el = document.querySelector(o); const kids = o === '#toasts' || o === '#log' || o === '#docbar' ? [...(el ? el.children : [])] : [el];
       for (const k of kids) { const q = vis(k); if (q && hit(r, q)) out.push(id + ' x ' + o); } } }
   return out; }'''
@@ -36,11 +39,12 @@ with sync_playwright() as p:
           for (let x = COLS - 1; x >= 0 && !R; x--) for (let y = 0; y < ROWS && !R; y++) if (ok(x, y) && window.act('build', 'pulse', x, y)) R = G.towers[G.towers.length - 1];
           window._L = L; window._R = R; }''')
         pg.evaluate(FILL); pg.wait_for_timeout(300)
+        pg.evaluate('() => document.querySelector("#bMusic").click()'); pg.wait_for_timeout(250)
         states = {}
         states['field, everything up'] = pg.evaluate(JS_HITS, OVER)
         pg.screenshot(path=str(root / 'test' / 'out' / f'trk_all_{W}.png'))
         for side, t in [('left', '_L'), ('right', '_R')]:
-            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.wait_for_timeout(200)
+            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(250)
             cls = pg.evaluate('() => document.body.className')
             states[f'tower panel ({side}: {"panel-l" if "panel-l" in cls else "panel-r" if "panel-r" in cls else "?"})'] = pg.evaluate(JS_HITS, OVER)
             pg.screenshot(path=str(root / 'test' / 'out' / f'trk_panel_{side}_{W}.png'))

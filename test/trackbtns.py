@@ -1,4 +1,4 @@
-"""5.5.11 music buttons on the battlefield: next (right) changes the song at once; back (left) one tap replays the song from the top,
+"""5.5.14 the music tile and deck on the battlefield: the tile opens the deck; next (right) changes the song at once; back (left) one tap replays the song from the top,
 a double tap goes to the last song (and a replay never adds a history entry, so a double tap after it still goes back); a tap on
 them does not reach the board. usage: python3 trackbtns.py"""
 import pathlib, mkpage
@@ -12,6 +12,13 @@ with sync_playwright() as p:
     pg.evaluate('() => { PROF.seenVer = VERSION; PROF.seenHelp = true; PROF.settings.briefings = "off"; }')
     pg.click('#bLaunch'); pg.wait_for_timeout(300); pg.evaluate('() => document.querySelector("[data-act=launch]").click()'); pg.wait_for_timeout(1500)
     nm = lambda: pg.evaluate('() => SFX.music.piece.name')
+    ok('the deck starts tucked away', pg.evaluate('() => document.querySelector("#mdeck").hidden'))
+    pg.tap('#bMusic'); pg.wait_for_timeout(200)
+    ok('the Music tile opens the deck with the song name', pg.evaluate('() => !document.querySelector("#mdeck").hidden && document.querySelector("#mdName b").textContent === SFX.music.piece.name'))
+    pg.wait_for_timeout(1200)
+    eq = pg.evaluate('() => [...document.querySelectorAll("#bMusic .meq i")].map(i => parseFloat(i.style.height) || 0)')
+    print('   equalizer bars (px):', eq)
+    ok('the tile equalizer moves with the music', max(eq) > 3)
     a = nm(); pg.tap('#bTrkNext'); pg.wait_for_timeout(300); b2 = nm()
     ok('next changes the song at once', b2 != a)
     pg.wait_for_timeout(2500); bar0 = pg.evaluate('() => SFX.music.piece.bar')
@@ -23,6 +30,13 @@ with sync_playwright() as p:
     ok('a double tap goes to the last song (even after a replay)', nm() == a)
     ok('nothing was built by tapping the buttons', pg.evaluate('() => G.towers.length === 0 && !G.selected'))
     ok('no panel opened under them', pg.evaluate('() => document.querySelector("#panel").hidden'))
+    cx = pg.evaluate('() => { const r = document.querySelector("#cv").getBoundingClientRect(); return [r.left + r.width * 0.6, r.top + r.height * 0.6]; }')
+    pg.touchscreen.tap(cx[0], cx[1]); pg.wait_for_timeout(200)
+    ok('a tap on the battlefield tucks the deck away', pg.evaluate('() => document.querySelector("#mdeck").hidden'))
+    pg.tap('#bMusic'); pg.wait_for_timeout(5600)
+    ok('the deck tucks itself away after a few seconds', pg.evaluate('() => document.querySelector("#mdeck").hidden'))
+    pg.tap('#bMusic'); pg.wait_for_timeout(200); pg.tap('#mdName'); pg.wait_for_timeout(500)
+    ok('tapping the song name opens the Music Studio', pg.evaluate('() => !!document.querySelector(".studio, #studio, [data-act=stTab]")'))
     b.close()
 print('ERRORS:', errs[:5])
 print('FAILED:', [n for n, v in checks if not v])
