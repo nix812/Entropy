@@ -1,4 +1,4 @@
-# v5.7 studio splash: renders, blinks, ends by itself, a tap skips it, and nothing is left covering the hangar.
+# v5.7 studio splash: renders, blinks (counted by UI.splashBlinks, so slow machines don't miss a frame), ends by itself, a tap skips it, and nothing is left covering the hangar.
 # python3 splashshot.py [W H]   (default: phone 852x393, iPhone SE 667x375 and iPad 1180x820)
 import sys, pathlib
 from playwright.sync_api import sync_playwright
@@ -16,14 +16,14 @@ with sync_playwright() as p:
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto('file://' + str(out / 'page.html')); pg.wait_for_timeout(800)
         check(pg.evaluate("!document.getElementById('splash')"), f'{W}x{H} no splash under automation by default')
-        t = pg.evaluate('UI.splash(true)'); check(t > 2000, f'{W}x{H} splash reports its length ({t} ms)')
+        t = pg.evaluate('(UI.splashBlinks = 0, UI.splash(true))'); check(t > 2000, f'{W}x{H} splash reports its length ({t} ms)')
         pg.wait_for_timeout(900); pg.screenshot(path=str(out / f'splash_{W}x{H}_a.png'))
         r = pg.evaluate("(() => { const c = document.querySelector('#splash .spc').getBoundingClientRect(); return [c.top, c.bottom, c.left, c.right]; })()")
         check(r[0] >= 0 and r[1] <= H and r[2] >= 0 and r[3] <= W, f'{W}x{H} splash content fits the screen {[round(v) for v in r]}')
-        blinks = pg.evaluate("new Promise(r => { const t0 = performance.now(); let n = 0, was = false; (function poll() { const i = document.querySelector('#splash .spcat'); const now = !!i && i.src === NIGEL_PX[1]; if (now && !was) n++; was = now; if (performance.now() - t0 > 2200) return r(n); setTimeout(poll, 20); })(); })")
+        pg.wait_for_timeout(2200)
         pg.screenshot(path=str(out / f'splash_{W}x{H}_after.png'))
-        check(blinks == 2, f'{W}x{H} Nigel blinks twice ({blinks})')
         pg.wait_for_timeout(1300); check(pg.evaluate("!document.getElementById('splash')"), f'{W}x{H} splash ends by itself')
+        blinks = pg.evaluate('UI.splashBlinks'); check(blinks == 2, f'{W}x{H} Nigel blinks twice ({blinks})')
         pg.evaluate('UI.splash(true)'); pg.wait_for_timeout(700); pg.mouse.click(W / 2, H / 2); pg.wait_for_timeout(650)
         check(pg.evaluate("!document.getElementById('splash')"), f'{W}x{H} a tap skips it')
         pg.click('#bLaunch'); pg.wait_for_timeout(250)
