@@ -605,7 +605,7 @@ const RES = 2;
     const L = MUZ[t.type] || 11, mx = x + ca * L, my = y + sa * L, big = t.asc ? 1 : 0, f = age < 0.03 ? 1 : 0.6;
     switch (t.type) {
       case 'pulse': {
-        const offs = t.spec === 2 ? [-2.8, 2.8] : t.spec === 1 ? [t._gb ? 1.2 : -1.2] : [0], s2 = (t.spec === 1 ? 2 : 3) + big, col = hexA(c, f);
+        const offs = t.spec === 2 ? [-2.8, 2.8] : t.spec === 1 ? [t._gb ? 1.2 : -1.2] : [0], s2 = (t.spec === 1 ? 3 : 4) + big, col = hexA(c, f);
         for (const o of offs) { const px = mx - sa * o, py = my + ca * o; R(b, px - s2, py, s2 * 2 + 1, 1, col); R(b, px, py - s2, 1, s2 * 2 + 1, col); R(b, px - 0.5, py - 0.5, 2, 2, '#ffffff'); }
         break; }
       case 'rail': {
@@ -896,7 +896,7 @@ const RES = 2;
     }
     for (const z of G.zones) { ditherDisc(z.x * TILE, z.y * TILE, z.r * TILE, hexA('#ff7b39', 0.4), 2, frame % 2);
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
-      if (z.k === 'napalm' && !LITE && frame % 4 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
+      if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
     // snare nets and tethers
     for (const t of G.snares || []) {
@@ -906,7 +906,7 @@ const RES = 2;
       b.setLineDash([3, 3]); b.lineDashOffset = -frame / 6; b.beginPath(); b.arc(cx, cy, rr, 0, 6.283); b.stroke();
       b.setLineDash([]);
       // v5.8: a hex-mesh net (Tangle Web finer and brighter); Long Lure sweeps its lure range like a radar
-      if (!spent) { const m = hexMesh(rr, t.spec === 1 ? '#9fffd8' : '#59f0b4', t.spec === 1 ? 3 : 4); b.globalAlpha = (t.spec === 1 ? 0.3 : 0.2) + 0.06 * Math.sin(frame / 15 + t.id); b.drawImage(m, cx - m.width / RES / 2, cy - m.height / RES / 2, m.width / RES, m.height / RES); b.globalAlpha = 1; }
+      if (!spent) { const m = hexMesh(rr, t.spec === 1 ? '#9fffd8' : '#59f0b4', t.spec === 1 ? 3 : 4); b.globalAlpha = (t.spec === 1 ? 0.26 : 0.16) + 0.05 * Math.sin(frame / 15 + t.id); b.drawImage(m, cx - m.width / RES / 2, cy - m.height / RES / 2, m.width / RES, m.height / RES); b.globalAlpha = 1; }
       if (!spent && t.spec === 2 && t.disabled <= 0) { const R2 = t.s.range * TILE, a = (rt * 2.1 + t.id) % 6.283;
         b.strokeStyle = 'rgba(89,240,180,0.22)'; b.lineWidth = 1; b.beginPath(); b.moveTo(cx, cy); b.lineTo(cx + Math.cos(a) * R2, cy + Math.sin(a) * R2); b.stroke();
         b.strokeStyle = 'rgba(89,240,180,0.12)'; b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, R2, a - 0.5, a); b.stroke(); }
@@ -964,8 +964,9 @@ const RES = 2;
       const f = ph / 0.5; if (f >= 1) continue;
       const col = t.spec === 1 ? '#ffb03a' : t.spec === 2 ? '#6ae2ff' : '#d8f0e8', x0 = t.cx * TILE, y0 = t.cy * TILE - 8, a = 1 - f * 0.4;
       for (const o of t._pyl) { const x1 = o.cx * TILE, y1 = o.cy * TILE, px = x0 + (x1 - x0) * f, py = y0 + (y1 - y0) * f;
-        b.strokeStyle = hexA(col, 0.3 * a); b.lineWidth = 1; b.beginPath(); b.moveTo(x0 + (x1 - x0) * Math.max(0, f - 0.25), y0 + (y1 - y0) * Math.max(0, f - 0.25)); b.lineTo(px, py); b.stroke();
-        R(b, px - 1, py - 1, 2, 2, hexA(col, a)); P(b, px, py, '#ffffff'); }
+        b.strokeStyle = hexA(col, 0.45 * a); b.lineWidth = 1.5; b.beginPath(); b.moveTo(x0 + (x1 - x0) * Math.max(0, f - 0.3), y0 + (y1 - y0) * Math.max(0, f - 0.3)); b.lineTo(px, py); b.stroke();
+        D(b, px, py, 1.5, hexA(col, a)); R(b, px - 0.5, py - 0.5, 1, 1, '#ffffff');
+        if (f > 0.8) strokeRing(x1, y1, 4 + (f - 0.8) * 30, col, (1 - f) * 3, 1); }
     }
     // resonance links
     for (const t of G.towers) for (const o of t.resonWith || []) {
@@ -1387,7 +1388,7 @@ const RES = 2;
           kick(2); }
         else if (d.k === 'missile') stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.05, max: 0.05, col: '#fff2c0', s: Math.max(3, d.r * TILE * 0.35), disc: 1 });
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: Math.max(6, d.r * TILE), life: d.big ? 0.6 : 0.25, max: d.big ? 0.6 : 0.25, col: d.col, fill: 1, w: d.big ? 3 : 2 }); burst(T2P(d.x), T2P(d.y), d.big ? 70 : 10, d.col, (d.big ? 90 : 35) * K, d.big ? 0.8 : 0.35); if (d.big) flashes.push({ col: '#ffe9b0', life: 0.25, max: 0.25, a: 0.35 }); break;
-      case 'spark': burst(T2P(d.x), T2P(d.y), 3, d.col, 30 * K, 0.15); break;
+      case 'spark': burst(T2P(d.x), T2P(d.y), 3, d.col, 30 * K, 0.15); stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.03, max: 0.03, col: '#ffffff', s: 2 }); break; // v5.8: a one-frame white + on each bolt impact
       case 'rail': {
         if (!d.t) { lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.18, max: 0.18, col: d.col, core: 1, w: d.crit ? 5 : 3 }); break; }
         // v5.8 Rail Lance: the beam fades over ~0.25 s with small rings rippling along it and a white burst on each enemy it pierces.
@@ -1478,7 +1479,7 @@ const RES = 2;
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
       case 'coin': text(d.x, d.y - 0.6, d.v < 0 ? '−' + Math.abs(d.v) : '+' + d.v, d.v < 0 ? PAL.bad : PAL.amber, 15, 1, -0.6);
         // v5.8 Credit Forge payout: a spray of sparks out of the furnace
-        if (d.forge && !LITE) for (let i = 0; i < 10; i++) parts.push({ x: T2P(d.x) + (Math.random() - 0.5) * 8, y: T2P(d.y) - 2, vx: (Math.random() - 0.5) * 40, vy: -35 - Math.random() * 40, g: 140, life: 0.6, max: 0.6, col: Math.random() < 0.5 ? '#ffe14d' : '#ffb03a', s: 1.5 });
+        if (d.forge && !LITE) { for (let i = 0; i < 14; i++) parts.push({ x: T2P(d.x) + (Math.random() - 0.5) * 8, y: T2P(d.y) - 2, vx: (Math.random() - 0.5) * 50, vy: -40 - Math.random() * 45, g: 150, life: 0.7, max: 0.7, col: Math.random() < 0.3 ? '#ffffff' : Math.random() < 0.6 ? '#ffe14d' : '#ffb03a', s: 2 }); stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.08, max: 0.08, col: '#ffe14d', s: 4 }); }
         break;
       case 'shake': shakeAt(d.v, 0.3); break;
       case 'burrow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: TILE * 1.6, life: 0.5, max: 0.5, col: '#c46cff', w: 3, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: TILE * 1.8, r1: 2, life: 0.5, max: 0.5, col: '#5cf2ff', w: 2 }); burst(T2P(d.x), T2P(d.y), 30, '#c46cff', 60 * K, 0.5); break;

@@ -54,7 +54,8 @@ with sync_playwright() as p:
         pg.evaluate('() => __step(45)')  # warm up: turrets aim, beams ramp
         if fam == 'forge': pg.evaluate('() => { let i = 0; for (const f of G.forges) { Hooks.fx("coin", { x: f.cx, y: f.cy, v: Math.round(f.s.income), forge: f }); Hooks.sfx("forge", f, i++); } }')
         frames = []
-        for k in range(24):
+        NF = {'rail': 45, 'emp': 45, 'grav': 45, 'missile': 36}.get(fam, 30)
+        for k in range(NF):
             pg.evaluate('() => __step(1)')
             if fam == 'forge' and k == 10: pg.evaluate('() => { let i = 0; for (const f of G.forges) { Hooks.fx("coin", { x: f.cx, y: f.cy, v: Math.round(f.s.income), forge: f }); Hooks.sfx("forge", f, i++); } }')
             png = pg.screenshot(clip={'x': max(0, min(852 - 300, ctr[0] - 150)), 'y': max(0, min(393 - 170, ctr[1] - 85)), 'width': 300, 'height': 170})
@@ -62,7 +63,7 @@ with sync_playwright() as p:
         small = [f.resize((f.width // 2, f.height // 2), Image.LANCZOS) for f in frames]
         small[0].save(outd / f'{fam}.gif', save_all=True, append_images=small[1:], duration=40, loop=0)
         strip = Image.new('RGB', (small[0].width * 4, small[0].height))
-        for i, k in enumerate([2, 8, 14, 20]): strip.paste(small[k], (i * small[0].width, 0))
+        for i, k in enumerate([NF * j // 4 + 2 for j in range(4)]): strip.paste(small[k], (i * small[0].width, 0))
         strip.save(outd / f'{fam}_strip.png')
         shots[fam] = info['n']
     snd = pg.evaluate('() => __snd'); fl = pg.evaluate('() => __fl'); bm = pg.evaluate('() => __bm.slice(-3)')

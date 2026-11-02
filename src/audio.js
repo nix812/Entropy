@@ -219,9 +219,13 @@ const SFX = (() => {
   // loudness trims (dB), set from offline renders so each role lands in its tier (loudest 50 ms, dBFS):
   // UI -28 · rapid weapons -28 to -31 · single-shot weapons -24 · hits -36 · deaths -30 (heavy -24) · combos -22 ·
   // player actions -22 · notices -20 to -24 · big events -12. Measured with test/sfxrender.py.
-  const TRIM = { ui: 20, deny: 12, rail: -2, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -6, hit: 13, hitcrit: -2, hitshield: 2,
+  const TRIM = { ui: 20, deny: 12, rail: -2.3, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -9, hit: 13, hitcrit: -2, hitshield: 2,
     build: -3, upgrade: 4, reroll: 15, sell: 12, cash: 4, wave: -2, call: 11, milestone: 6, freeze: 2, net: 15, boom: -2, blink: 3, storm: 7, levelup: 2, unbreak: 4,
     converge: 4, crack: 1, stasis: 5, strikecharge: 3, overclock: 12, quack: 5,
+    // v5.8 tower character (measured with sfxrender.py; spec variants sit level with their base sound, grav trimmed 3 dB into its tier)
+    shot2: 4.4, rail1: -1.8, rail2: -2, pulse1: -2.1, pulse2: 1.1, missile1: 0.3, missile2: -0.2, coil: 1.7, coil1: 1.1, coil2: -3.7, ignite: 5,
+    mortar1: -2, mortar2: -1.1, grav1: -9.1, grav2: -8.5, hitK: 9.5, hitR: 2.3, hitC: 7.7, hitF: 3.4, hitV: 10.1, hitA: 10.9,
+    boomT: -2, boomT2: -1.8, pop: 0.5, empboom: -2.7, empboom1: -2.6, lure: 2.8, lure2: 0.7, net1: -3.3, lock: 14.7, lock2: 14.7, forge: 1.2, forge1: 2.4, pylon: 11.7,
     comboSHATTER: -2.5, comboOVERLOAD: -5, 'comboTHERMAL SHOCK': -3, comboSUPERCONDUCT: 3, comboCOLLAPSE: -7 };
   const dB = v => Math.pow(10, v / 20);
   // start a sound: bus, base volume, pitch jitter (semitones), placement and sends
@@ -292,7 +296,7 @@ const SFX = (() => {
     missile(t) {
       if (!allow('missile', 0.09, 4)) return;
       const sp = t && t.spec || 0; // v5.8: Cluster Pods launch higher and tighter, Napalm Payload lower and heavier
-      const c = ev('missile', busW, 0.5, { room: 0.18, pitch: sp === 1 ? semi(3) : sp === 2 ? semi(-3) : 1, trim: ascT(t) }, t);
+      const c = ev('missile', busW, 0.5, { room: 0.18, tn: sp ? 'missile' + sp : 'missile', pitch: sp === 1 ? semi(3) : sp === 2 ? semi(-3) : 1, trim: ascT(t) }, t);
       sub(c, 160, 70, 0.07, 0.35);
       nz(c, { f0: 700, f1: 2400, q: 1.2, d: 0.22, v: 0.3, a: 0.015 });
       nz(c, { ft: 'lowpass', f0: 900, d: 0.05, v: 0.3, lofi: 1 });
@@ -541,7 +545,7 @@ const SFX = (() => {
       flameV = { g, rg, bg, bp };
     }
     const t = T(), on = n > 0;
-    const lvl = on ? Math.min(0.2, 0.08 + 0.045 * Math.log2(1 + n)) : 0;
+    const lvl = on ? Math.min(0.3, (0.08 + 0.045 * Math.log2(1 + n)) * 1.5) : 0;
     flameV.g.gain.setTargetAtTime(lvl, t, on ? 0.04 : 0.1);
     flameV.rg.gain.setTargetAtTime(on ? 1.6 * (inf || 0) : 0, t, 0.1);
     flameV.bg.gain.setTargetAtTime(on ? 0.03 * (pl || 0) * Math.min(1, 0.5 + 0.25 * n) : 0, t, on ? 0.05 : 0.1);
