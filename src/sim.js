@@ -172,7 +172,7 @@ function abilCdMax(k) { return ABILITIES[k].cd * G.mods.abilCharge * (1 - UPLINK
 // a charge from a crate, chest, boss or milestone (Quartermaster doubles it). Returns the ability it went to
 function lootCharge(k, n) { k = k || pick(G.r, abilPool()); n = (n || 1) * (FX('quarter') ? 2 : 1); G.charges[k] = (G.charges[k] || 0) + n; return k; }
 function abilOnlineCheck(w) {
-  for (const k of ABIL_ORDER) if (!abilOnline(k) && w >= ABILITIES[k].from && !(G.tut && k !== 'strike')) { // Training teaches Strike only
+  for (const k of ABIL_ORDER) if (!abilOnline(k) && w >= ABILITIES[k].from && !(G.tut && !(G.tutS.abil || ['strike']).includes(k))) { // Training teaches Strike only
     G.abilOn[k] = 1; G.charges[k] = Math.max(G.charges[k] || 0, 1); G.abilCd[k] = abilCdMax(k);
     if (w > Math.max(1, G.startWave)) Hooks.toast(`${ABILITIES[k].name.toUpperCase()} ONLINE`, `${ABILITIES[k].desc} Recharges every ${Math.round(abilCdMax(k))}s`, '#ffe14d', true);
     rlog('abilOn', { id: k });
@@ -527,7 +527,7 @@ function rlogWave() {
 }
 // ---- v3.0 power grid ----
 // Marksman shrinks only the wave-grown part of the grid: bought (reactor) and earned (assault, Spare Reactor) power is always a whole point
-function gridCap() { if (G.tut) return TUT.grid[Math.min(TUT.grid.length - 1, G.wave || 0)] + (G.gridBonus || 0);
+function gridCap() { if (G.tut) { const g = G.tutS.grid; return (typeof g === 'number' ? g : g[clamp(tutIdx(G.wave), 0, g.length - 1)]) + (G.gridBonus || 0); }
   const base = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)), bonus = (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return (G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(base * 0.6)) : base) + bonus; }
 // Marksman: +2 free Overcharge on every attack tower, and paid Overcharge goes 2 steps higher
 const ocFree = t => G.mods && G.mods.ks.marksman && canOvercharge(t) ? 2 : 0;
@@ -702,7 +702,7 @@ function newRun(opts) {
   const seed = opts.seed || Math.floor(Math.random() * 1e9);
   opts = Object.assign({}, opts, { seed });
   const r = mulberry32(seed);
-  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? TUT : null; // 5.8 Training: its own map, rules and wave script
+  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson) : null; // 5.8 Training and lessons: own map, rules and wave script
   setRows(T ? T.rows : opts.rows || CHAOS_LEVELS[chaos].rows);
   G = {
     seed, r, chaos, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, opts.startWave || 1), cols: COLS,
@@ -725,7 +725,7 @@ function newRun(opts) {
   G.sector = G.hk && SECTOR_BY[opts.sector] ? opts.sector : null; G.tier = 0; G.purse = 0; G.purseOut = null; G.twists = {}; G.twistW = 0;
   G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
-  if (T) { G.tut = T.v; G.huntBuild = { tal: {}, caps: [], remnants: [], lvl: 0 }; } // the same for everyone: no talents, laws or Supernova
+  if (T) { G.tut = T.v; G.lesson = T.id || null; G.tutS = T; G.huntBuild = JSON.parse(JSON.stringify(T.build || { tal: {}, caps: [], remnants: [], lvl: 0 })); } // the same for everyone: no talents, laws or Supernova
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
   G.laws = opts.daily || T ? [] : (PROF.laws || []).slice(); G.novaN = opts.daily || T ? 0 : PROF.nova || 0;
@@ -1651,25 +1651,60 @@ function genWave(w, ev) {
   return { queue: q, rift, heads };
 }
 // 5.8 Training: the run's rules (called once from newRun) and its scripted waves (from genWave)
+// a lesson's run is TUT with the lesson's own fields on top (LESSONS[i].run): its waves, credits, towers, presets
+function tutSpec(id) { const L = id && LESSON_BY[id]; return L && L.run ? Object.assign({}, TUT, { boss: null, charge: null, abil: null, build: null, pre: null }, L.run, { id }) : TUT; }
+const tutIdx = w => w - (G.startWave || 1) + 1; // the script's wave number (1 = the first scripted wave)
+// the free tiles beside the road that cover the most of it, none touching another (deterministic, no G.r): lesson presets and the coach
+function tutSpots(n, avoid) {
+  const R = G.region, road = G.map.lanes[0].tiles, out = [], taken = (avoid || []).slice();
+  const cand = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) { let s = 0; for (const p of road) if (Math.hypot(p.x - x, p.y - y) <= 2.4) s++; cand.push({ x, y, s }); }
+  cand.sort((a, b) => b.s - a.s || a.y - b.y || a.x - b.x);
+  for (const c of cand) { if (out.length >= n) break; if (taken.every(o => Math.abs(o.x - c.x) > 1 || Math.abs(o.y - c.y) > 1)) { out.push(c); taken.push(c); } }
+  return out;
+}
 function tutSetup(T) {
   G.credits = T.credits; G.core.hp = G.core.max = T.coreHp;
   G.stormT = G.cacheT = 1e9; G.nextMs = 1e12; // no storms, salvage or milestones: one idea at a time
-  const B = BOSSES.find(b => b.id === T.boss.id), M = WANTED_MODS.find(m => m.id === T.boss.mod), w = T.waves.length;
-  G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w) };
+  if (T.boss && T.boss.mod) { // the script's Most Wanted (Basic Training's last wave, the Bounties lesson)
+    const B = BOSSES.find(b => b.id === T.boss.id), M = WANTED_MODS.find(m => m.id === T.boss.mod), w = G.startWave - 1 + (T.boss.w || T.waves.length);
+    G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w) };
+  } else G.wanted = null;
+  for (const P of T.pre || []) tutPreset(P);
+  recomputeAuras();
+}
+// lesson presets: the board a lesson starts on, built through the normal sim calls so a recording replays it
+function tutPreset(P) {
+  const [op, a, b, c] = P;
+  if (op === 'towers') { // [[type, lvl, spec]...] on the best spots in order
+    const sp = tutSpots(a.length);
+    a.forEach(([type, lvl, spec], i) => { const s = sp[i]; if (!s) return; G.credits += towerCost(type); const t = buildTower(type, s.x, s.y); if (!t) return;
+      for (let k = 1; k < (lvl || 1); k++) { G.credits += upgradeCost(t); upgradeTower(t, t.lvl === 3 ? spec || 1 : undefined); } t.affixes = t.affixes.filter(x => x.tier < 4); t.s = towerStats(t); });
+  }
+  else if (op === 'abil') for (const k of a) { G.abilOn[k] = 1; G.charges[k] = Math.max(G.charges[k] || 0, b || 1); G.abilCd[k] = abilCdMax(k); }
+  else if (op === 'cache') { const s = tutSpots(1)[0]; if (s) G.caches.push({ x: s.x, y: s.y, t: 999, id: G.eid++, kind: a || 'normal' }); }
+  else if (op === 'vet') { const t = G.towers[a || 0]; if (t) { t.vxp = vetThreshold(1); t.rank = 1; t.pending = 1; } }
+  else if (op === 'storm') { const t = G.towers[0], st = spawnStorm([a], t ? t.cx : G.core.x, t ? t.cy : G.core.y, 0, 0); if (st) st.life = 9999; }
+  else if (op === 'entropy') G.entropy = a || 99;
+  else if (op === 'lane') G.laneWaves = [G.startWave + (a || 1)];
+  else if (op === 'assault') { G.assault = planAssault(G.startWave); G.refit = true; }
+  else if (op === 'tokens') G.tokens = a;
 }
 function tutTopEl() { const D = G.stats.dmgByEl; let best = 'K'; for (const k of ELS) if ((D[k] || 0) > (D[best] || 0)) best = k; return best; }
 function tutWave(w) {
-  const W = TUT.waves[w - 1], q = [], lane = G.map.lanes[0]; let t = 0;
+  const T = G.tutS, W = T.waves[tutIdx(w) - 1], q = [], lanes = G.map.lanes.filter(L => laneOpen(L, w)); let t = 0, li = 0;
   if (!W) return { queue: q, rift: null, heads: [] };
   for (const [type, n, gap, hx, X] of W) {
     for (let i = 0; i < n; i++) {
-      if (type === 'boss') { const B = TUT.boss; q.push({ t, type: 'boss', boss: B.id, lane, hpm: hpMult(w) * hx, elite: 0, hpAbs: B.hp * hx }); t += gap; continue; }
+      const lane = lanes[li++ % lanes.length];
+      if (type === 'boss') { const B = (X && X.boss) || T.boss; q.push({ t, type: 'boss', boss: B.id, lane, hpm: hpMult(w) * hx, elite: 0, hpAbs: B.hp * hx }); t += gap; continue; }
       const carry = X && X.genes && Math.floor((i + 1) * X.share) > Math.floor(i * X.share);
       q.push({ t, type, lane, hpm: hpMult(w) * hx, elite: 0, genes: carry ? X.genes.slice() : null, gel: carry ? (X.gel === 'top' ? tutTopEl() : X.gel) : null });
       t += gap;
     }
     t += 1.2;
   }
+  const A = G.assault; // a lesson's Strain Assault converts most of its wave, as genWave does
+  if (A && A.w === w && A.state === 'warn') { let n = 0; for (const e of q) if (e.type !== 'boss' && n < q.length * 0.7) { e.genes = A.genes.filter(g => geneOk(e.type, g, w)); e.gel = A.el; e.assault = 1; n++; } A.n = n; }
   return { queue: q, rift: null, heads: [] };
 }
 // a leak in Training: the boss circles back to the start of the road, and the core never drops below 1 (it says so, once)
@@ -1824,7 +1859,7 @@ function startWave() {
   G.wave++;
   const w = G.wave;
   abilOnlineCheck(w);
-  if (G.tut && TUT.charge[w]) G.charges[TUT.charge[w]] = Math.max(1, G.charges[TUT.charge[w]] || 0);
+  if (G.tut && G.tutS.charge && G.tutS.charge[tutIdx(w)]) { const k = G.tutS.charge[tutIdx(w)]; G.charges[k] = Math.max(1, G.charges[k] || 0); }
   if (G.mods.ks.chaos) chaosRoll(); // v5.8 Chaos Engine
   if (!G.prep || G.prep.w !== w) prepareWave(w);
   const P = G.prep; G.prep = null;
@@ -2010,7 +2045,7 @@ function updateWaves(dt) {
     // v4.7: and while the last wave is still on the field in numbers, the countdown runs at half speed (up to 12 s), so waves
     // stop piling into each other. Calling the wave early skips all of this, for the bonus
     const crowd = !bossUp && G.enemies.reduce((n, e) => n + (!e.dead && !e.gen ? 1 : 0), 0) > 6 && (G.lagHold = (G.lagHold || 0) + dt) < 12;
-    if (G.tut && G.wave >= TUT.waves.length) return; // the script is over: Training ends at the bounty
+    if (G.tut && tutIdx(G.wave) >= G.tutS.waves.length) return; // the script is over: Training ends at the bounty, a lesson at its last step
     if (bossUp && (G.bossHold = (G.bossHold || 0) + dt) < BOSS_HOLD) G.next -= dt / 3; else G.next -= crowd ? dt / 2 : dt;
     if (G.next <= 0) { G.bossHold = 0; G.lagHold = 0; startWave(); }
     return;
