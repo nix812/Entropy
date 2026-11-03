@@ -819,10 +819,10 @@ const UI = (() => {
       plan = p || 'basic'; on = true; i = 0; cur = null; mem = {}; sig = ''; ensureEl(); el.querySelector('.cskip').textContent = skipLbl();
       document.body.classList.toggle('tut', !tour()); document.body.classList.toggle('tutent', plan === 'storms');
     }
-    function stop() { on = false; cur = null; held = false; if (el) el.hidden = true; document.body.classList.remove('tut', 'tutent'); if (G && G.tut) Render.hints = null; }
+    function stop() { on = false; cur = null; held = false; Render.spots = null; if (el) el.hidden = true; document.body.classList.remove('tut', 'tutent'); if (G && G.tut) Render.hints = null; }
     function skip() {
       const p = plan; stop(); closeModal(); closePanel();
-      if (p === 'basic') { tutState().seen = 1; Save.save(); G = null; show('hangar'); renderHangar(); openSetup(); return; }
+      if (p === 'basic') { tutState().seen = 1; Save.save(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); return; } // 6.0: never offer a new run over a saved one
       if (G && G.tut) G = null; if (Tree.isOpen) Tree.close(); show('hangar'); renderHangar(); openManual();
     }
     function next() { const S = cur; cur = null; i++; Render.hints = null; sig = ''; if (S && S.leave) S.leave(); }
@@ -3023,7 +3023,7 @@ const UI = (() => {
       case 'anom': { window.act('anom', b.dataset.v); closeModal(); G.paused = false; const A = ANOMALIES.find(a => a.id === b.dataset.v); toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
       case 'stab': { window.act('stab'); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
       case 'hangar': closeModal(); G = null; show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
-      case 'again': closeModal(); G = null; show('hangar'); renderHangar(); openSetup(); break;
+      case 'again': closeModal(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); break; // 6.0: after Training, a saved run comes first
       case 'web': closeModal(); G = null; show('hangar'); renderHangar(); Tree.open(); break;
       case 'fs': toggleFs(); break;
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
@@ -3041,7 +3041,7 @@ const UI = (() => {
         try {
           if (!raw.startsWith('ENT1:')) throw 0;
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
-          P.runSnap = null; PROF = P; Save.save(); closeModal(); renderHangar(); Tree.refresh();
+          P.runSnap = null; PROF = P; tidyCaps(); { const mw = migrateWeb(); if (mw) UI.toast(...talentsToast(mw)); } Save.save(); closeModal(); renderHangar(); Tree.refresh(); // 6.0: an old save code gets the talents migration now, not on next launch
           SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
           toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');

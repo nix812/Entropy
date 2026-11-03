@@ -871,7 +871,7 @@ function rollCoreAffix(c) {
   let tier = rollTier();
   if (tier === 3) {
     const opts = CORE_LEGS.filter(id => !c.affixes.some(a => a.id === id));
-    if (opts.length) { const id = pick(r, opts); PROF.codex.legendaries[id] = 1; return { id, tier: 3, v: 0 }; }
+    if (opts.length) { const id = pick(r, opts); if (!G.tut) PROF.codex.legendaries[id] = 1; return { id, tier: 3, v: 0 }; }
     tier = 2;
   }
   const opts = AFFIXES.filter(A => CORE_AFFIX_W(A) > 0 && (A.min || 0) <= tier && (!A.fixed || A.fixed[tier] > 0));
@@ -1505,7 +1505,7 @@ function prepareWave(w) {
   G.geneHist = (G.geneHist || []).concat([{ w, g: Object.assign({}, genes) }]).slice(-12);
   G.prep = { w, ev: E.ev, list: E.list, queue: g.queue, rift: g.rift, counts, elites, fly, boss, total: g.queue.length, genes, heads: (g.heads || []).filter(k => counts[k]) };
   // v5.1: a new kind of enemy is announced during the countdown before it lands; the first time ever, with a card
-  const seen = PROF.codex.enemies || (PROF.codex.enemies = {}), met = G.metEnemy || (G.metEnemy = {});
+  const seen = G.tut ? (G.tutSeen || (G.tutSeen = {})) : PROF.codex.enemies || (PROF.codex.enemies = {}), met = G.metEnemy || (G.metEnemy = {});
   for (const k of Object.keys(counts)) if (!met[k]) {
     met[k] = 1;
     if (!seen[k]) { seen[k] = 1; if (ENEMIES[k].from >= 3) Hooks.newEnemy && Hooks.newEnemy(k, w); }
@@ -2199,7 +2199,7 @@ function claimVet(t, i) {
   const o = vetOffer(t);
   if (!o || !o[i]) return false;
   t.affixes.push(o[i]);
-  if (o[i].tier === 3) PROF.codex.legendaries[o[i].id] = 1;
+  if (o[i].tier === 3 && !G.tut) PROF.codex.legendaries[o[i].id] = 1;
   t.pending--; t.offer = null; t.vetN = (t.vetN || 0) + 1;
   t.s = towerStats(t); recomputeAuras();
   Hooks.sfx('upgrade', t);
