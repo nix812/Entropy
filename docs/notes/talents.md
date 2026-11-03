@@ -279,7 +279,7 @@ None is a trap or runs away from the pack at this sample size. Chaos Engine is t
 | EMP | Pulse Mines‡ | 0.51 → 0.47 | 0.89 → 0.43 |
 | Gravity | Repulsor | 0.21 → 0.29 | 0.49 → 0.42 |
 
-Every Technique is within reach of Standard on its own and loses somewhere (bosses, packs, air, placement), so none is a straight upgrade. Forced Techniques in full bot runs (40 points, 2 seeds, every tower of that type switched): Backdraft 87/119, Bunker Buster 29/306, Arc Fence 51/93, Cold Lance 78/91, Charged Shot 75/107, Suppressor 22/136 (Tether, Mines and Repulsor: see the report).
+Every Technique is within reach of Standard on its own and loses somewhere (bosses, packs, air, placement), so none is a straight upgrade. Forced Techniques in full bot runs (40 points, 2 seeds, every tower of that type switched): Backdraft 87/119, Bunker Buster 29/306, Arc Fence 51/93, Cold Lance 78/91, Charged Shot 75/107, Suppressor 22/136, Pulse Mines 42/71, Null Tether 28/255 (measured at the old ×1.25), Repulsor 119/113.
 
 **Lens share** is still above the 45% target in long runs (55% at 60 points, 46% at 96; 5.7.4 measured 42% today). I removed both talent sources of Lens power (Singularity's ×2 Void and Null Lens's kept ramp) and Null Tether is not a damage gain, but the root cause the audit names (unlimited ×1.3 Ascends stacking multiplicatively on a ramping beam) is tower data, outside this branch. Cheaper rows also let builds reach the Void tree's deep Mark talents sooner.
 
