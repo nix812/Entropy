@@ -21,6 +21,10 @@ JS_HITS = '''(over) => {
   const wc = vis(document.querySelector('#chips [data-wanted]')); if (!wc) { if (!document.querySelector('#chips [data-more]')) out.push('bounty chip missing'); }
   else { const row = document.querySelector('#chips').getBoundingClientRect(); if (wc.right > row.right + 1 || wc.top < row.top - 1 || wc.bottom > row.bottom + 1) out.push('bounty chip outside the chip row');
     for (const s of ['#bZoom', '#railL', '#railR', '#abils', '#log', '#docbar', '#panel', '#mdeck']) { const q = vis(document.querySelector(s)); if (q && hit(wc, q)) out.push('bounty chip x ' + s); } }
+  // 5.8: the Ready button sits under Map, clear of every control and banner (it hides while a right-hand panel is open)
+  const rb = vis(document.querySelector('#bReady'));
+  if (!rb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Ready button missing');
+  if (rb) for (const s of ['#bZoom', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
   return out; }'''
 FILL = '''() => {
   document.body.classList.add('hudfull');
@@ -30,7 +34,7 @@ FILL = '''() => {
   const tk = document.querySelector('#ticker'); tk.hidden = false; tk.style.setProperty('--c', '#ffb03a'); tk.innerHTML = '<div class="tkl"><b>SURGE</b><span>The swarm surges: +40% enemies this wave, and they come faster than before</span></div><button class="tkb">LOG</button>';
   const as = document.querySelector('#asbar'); as.hidden = false; as.innerHTML = '<b>STRAIN ASSAULT</b><span>Wave 15 · Plating · Haste</span>'; document.body.classList.add('asbar');
   UI.toast('NOW PLAYING', 'Analog Corridor · Techno', '#6ae2ff');
-  G.wantedTold = 1; G.purse = 1234567; UI._dbg.updateHud(true);
+  G.wantedTold = 1; G.purse = 1234567; for (const t of G.towers) t.pending = 1; UI._dbg.updateHud(true);
 }'''
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])

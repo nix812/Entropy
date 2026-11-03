@@ -76,6 +76,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .menu .btn.play { min-height: 66px; font-size: 17px; letter-spacing: 0.1em; }
 .menu .btn small { font-size: 17px; text-align: right; }
 .menu .btn.alt { min-height: 44px; }
+.menu .mrow { display: flex; gap: 8px; } .menu .mrow .btn { flex: 1 1 0; min-width: 0; } /* 5.8: Tutorial sits beside Talents, always */
 /* v5.7.1: the hangar galaxy shows through the menu buttons */
 #hangar .menu .btn:not(.primary):not(.nova) { background: rgba(21, 25, 51, 0.5); }
 #hangar .menu .btn.primary { background: rgba(255, 176, 58, 0.86); }
@@ -259,6 +260,67 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
 .card.brief.boss { box-shadow: inset 0 0 0 2px #ff3355, 0 0 40px rgba(255,51,85,0.3); width: min(560px, 100%); }
 .card.brief.wanted { box-shadow: inset 0 0 0 2px #ffd84a; } .card.brief .wname { font-family: var(--f-pix); font-size: 15px; color: #ffd84a; margin: 2px 0; }
 .card.brief .foot .note { margin-right: auto; font-size: 14px; }
+/* 5.8 Training coach: a spotlight that dims the rest (box-shadow), a pulsing ring and an arrow on the target, and a card that keeps
+   clear of the target and the open panel. Everything lets taps through except the card itself */
+#coach { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+#coach.dimall { background: rgba(4, 5, 12, 0.55); }
+#coach .cspot, #coach .cring, #coach .carrow { position: absolute; pointer-events: none; }
+#coach .cspot { border-radius: 4px; }
+#coach.dim .cspot { box-shadow: 0 0 0 200vmax rgba(4, 5, 12, 0.58); }
+#coach .cring { box-shadow: 0 0 0 2px var(--amber), 0 0 12px rgba(255, 176, 58, 0.55); border-radius: 4px; animation: cpulse 1s steps(4) infinite; }
+@keyframes cpulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(1.08); } }
+#coach .carrow { width: 0; height: 0; border: 7px solid transparent; }
+#coach .carrow.l { border-left: 0; border-right: 12px solid var(--amber); animation: cbobL 0.7s steps(2) infinite alternate; }
+#coach .carrow.r { border-right: 0; border-left: 12px solid var(--amber); animation: cbobR 0.7s steps(2) infinite alternate; }
+#coach .carrow.u { border-top: 0; border-bottom: 12px solid var(--amber); animation: cbobU 0.7s steps(2) infinite alternate; }
+#coach .carrow.d { border-bottom: 0; border-top: 12px solid var(--amber); animation: cbobD 0.7s steps(2) infinite alternate; }
+@keyframes cbobL { to { transform: translateX(-3px); } } @keyframes cbobR { to { transform: translateX(3px); } }
+@keyframes cbobU { to { transform: translateY(-3px); } } @keyframes cbobD { to { transform: translateY(3px); } }
+#coach .ccard { position: absolute; width: min(290px, 44vw); pointer-events: none; background: rgba(10, 12, 24, 0.97); box-shadow: inset 0 0 0 2px var(--amber), 0 6px 22px rgba(0, 0, 0, 0.6);
+  padding: 4px 10px 9px; display: flex; flex-direction: column; gap: 3px; }
+#coach .chd { display: flex; align-items: center; gap: 8px; }
+#coach .chd em { font-style: normal; font-family: var(--f-pix); font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--amber); margin-right: auto; white-space: nowrap; }
+#coach .cskip { font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); background: none; border: 0; min-height: 30px; padding: 0 2px 0 10px; cursor: pointer; white-space: nowrap; }
+#coach .ct { font-family: var(--f-pix); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink); font-weight: 400; margin-top: -3px; }
+#coach .cb { margin: 0; font-size: 16px; line-height: 1.12; color: var(--ink); }
+#coach .cft { display: flex; justify-content: flex-end; margin-top: 3px; }
+#coach .cft .btn { min-height: 34px; min-width: 84px; justify-content: center; }
+#coach .cft .btn[hidden] { display: none; }
+#coach .ccard button { pointer-events: auto; }
+#coach.idle .ccard { box-shadow: inset 0 0 0 1px var(--line2), 0 4px 14px rgba(0, 0, 0, 0.5); background: rgba(10, 12, 24, 0.88); width: min(330px, 50vw); }
+#coach.idle .ct { font-size: 10px; color: var(--amber); } #coach.idle .cb { font-size: 15px; } #coach.idle .cft { display: none; }
+/* 5.8 Field Manual */
+.card.manual .lgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.lrow { display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto; gap: 1px 8px; text-align: left; background: var(--panel2); border: 0; color: var(--ink); padding: 8px 10px; cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--line2); min-height: 44px; }
+.lrow i { grid-row: span 2; font-style: normal; color: var(--good); font-family: var(--f-pix); font-size: 11px; align-self: center; }
+.lrow b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.5px; }
+.lrow span { font-size: 14px; line-height: 1.1; color: var(--dim); }
+.lrow.basic { box-shadow: inset 0 0 0 2px var(--amber); } .lrow.done { box-shadow: inset 0 0 0 1px #2e6b52; }
+.card.lpage { width: min(520px, 100%); }
+.lwhat { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: baseline; }
+.lwhat b { font-family: var(--f-pix); font-size: 9px; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; color: var(--amber); white-space: nowrap; }
+.lwhat span { font-size: 17px; line-height: 1.15; }
+.card.brief.intro .foot .learn { margin-right: auto; }
+.card.tutoffer, .card.tutdone { width: min(440px, 100%); }
+.card.tutoffer p, .card.tutdone p { font-size: 17px; line-height: 1.2; margin: 4px 0; }
+/* Training keeps the rail to what it teaches (visibility, so nothing moves) */
+body.tut #bWeb, body.tut #bStats, body.tut:not(.tutent) #bEnt { visibility: hidden; }
+.card.tutpick .tpick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.card.tutpick .tpick .lrow { min-height: 64px; }
+/* 5.8 Basic Training checklist: a strip in the stage's bottom-left corner that opens into the numbered list (tap to toggle) */
+#tutlist { position: absolute; left: 6px; bottom: 6px; z-index: 5; max-width: min(250px, 40%); background: rgba(10, 12, 24, 0.92); box-shadow: inset 0 0 0 1px var(--line2);
+  border: 0; color: var(--ink); text-align: left; padding: 4px 8px 5px; cursor: pointer; font: inherit; display: flex; flex-direction: column; gap: 1px; }
+#tutlist .tlh { display: flex; align-items: baseline; gap: 6px; font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--amber); white-space: nowrap; }
+#tutlist .tlh i { font-style: normal; color: var(--dim); margin-left: auto; }
+#tutlist .tlcur { font-size: 15px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tutlist ol { list-style: none; margin: 2px 0 0; padding: 0; display: none; }
+#tutlist.open ol { display: block; } #tutlist.open .tlcur { display: none; }
+#tutlist li { font-size: 14px; line-height: 1.12; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tutlist li b { display: inline-block; width: 18px; font-weight: 400; font-family: var(--f-pix); font-size: 8px; }
+#tutlist li.ok { color: var(--good); } #tutlist li.now { color: var(--ink); } #tutlist li.now b { color: var(--amber); }
+#tutlist.flash { box-shadow: inset 0 0 0 2px var(--good); }
+body.panel-l #tutlist { visibility: hidden; }
 #chips::-webkit-scrollbar { display: none; }
 .evchip { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; padding: 5px 6px; white-space: nowrap; box-shadow: inset 0 0 0 1px currentColor; }
 .evchip.bad { color: #ff8a9c; } .evchip.good { color: var(--core); } .evchip.storm { color: var(--c); }
@@ -491,6 +553,15 @@ body.panel-l #dps { display: none; }
 .zoombtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 36px; padding: 0 10px; display: flex; align-items: center; gap: 6px; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase;
   background: rgba(21, 25, 51, 0.92); border: 0; color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); clip-path: var(--cut); }
 body.panel-r .zoombtn { right: auto; left: 6px; }
+/* 5.8 Ready: towers with a veteran pick or an Ascend perk waiting. A fixed spot under Map, hidden at zero, a pulse when the count rises */
+.rdybtn { position: absolute; right: 6px; top: 48px; z-index: 4; height: 40px; padding: 0 6px 0 10px; display: flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
+  background: rgba(40, 32, 6, 0.92); box-shadow: inset 0 0 0 2px #ffd84a; color: #ffd84a; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+.rdybtn b { min-width: 26px; height: 26px; padding: 0 5px; display: grid; place-items: center; background: #ffd84a; color: #1a1004; font-weight: 400; font-size: 13px; }
+.rdybtn.pulse { animation: rdyp 0.5s steps(3) 3; } @keyframes rdyp { 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 14px rgba(255, 216, 74, 0.8); transform: scale(1.06); } }
+body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves Map, the ticker and the music deck: Ready waits until it closes */
+#modal.side { background: rgba(4, 5, 10, 0.25); justify-content: flex-end; } /* the Ready walkthrough: the card docks right, the tower stays visible */
+body.tut #log { display: none; }
+body.rdy #tutlist { bottom: 6px; }
 /* entropy gauge: vertical tube in the right rail */
 .entg { height: 78px; flex: 0 0 auto; width: 100%; border: 0; background: var(--panel2); clip-path: var(--cut); box-shadow: inset 0 0 0 1px #4a2f74; position: relative; padding: 0; color: #d6a6ff; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding-bottom: 6px; overflow: hidden; }
 .ebar { position: absolute; left: 6px; right: 6px; top: 6px; bottom: 26px; background: #1a1030; box-shadow: inset 0 0 0 1px #3a2560; }
@@ -1002,7 +1073,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       </div>
       <nav class="menu">
         <button class="btn nova" id="bNova" hidden>Supernova<small id="hNovaSub"></small></button>
-        <button class="btn" id="bWebH">Talents<em class="badge" id="hPts" hidden></em></button>
+        <div class="mrow"><button class="btn" id="bWebH">Talents<em class="badge" id="hPts" hidden></em></button><button class="btn" id="bTutH">Tutorial</button></div>
         <button class="btn alt" id="bLaunch2" hidden>New Run</button>
         <button class="btn primary play" id="bLaunch">Play<small id="hPlaySub"></small></button>
       </nav>
@@ -1022,6 +1093,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
     <div id="stage">
       <canvas id="cv"></canvas>
       <button class="zoombtn" id="bZoom" hidden></button>
+      <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>

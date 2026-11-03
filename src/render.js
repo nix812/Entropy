@@ -20,7 +20,7 @@ const RES = 2;
   // the framed sector (buffer px). It eases outward when the run's sector grows.
   const reg = { x: 0, y: 0, w: 0, h: 0 };
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
-  let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null;
+  let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
@@ -1314,6 +1314,9 @@ const RES = 2;
       c.fillStyle = '#ffd84a'; c.fillRect(x - cw / 2, y - u * 1.5, cw, u * 2); for (const dx of [-cw / 2, -u / 2, cw / 2 - u]) c.fillRect(x + dx, y - 3 * u, u, 2 * u);
       e._crown.forEach((col, i) => { c.fillStyle = col; c.fillRect(x - (n * 2 * u - u) / 2 + i * 2 * u, y - u, u, u); });
     }
+    // 5.8 Training: every tile a tower can go on, softly marked (one fill per tile, one colour per frame)
+    if (spotTiles && spotTiles.length) { const w = Math.round(TILE * ws), a = 0.16 + 0.1 * Math.sin(frame / 8); c.fillStyle = hexA(PAL.good, a);
+      for (const h of spotTiles) c.fillRect(Math.round(bx2s(h.x * TILE)) + 1, Math.round(by2s(h.y * TILE)) + 1, w - 2, w - 2); }
     // v5.3 first run: glowing build spots until the first tower goes down
     if (hintTiles) for (const h of hintTiles) {
       const x0 = bx2s(h.x * TILE), y0 = by2s(h.y * TILE), w = TILE * ws, a = 0.55 + 0.4 * Math.sin(frame / 6), u = Math.max(2, Math.round(w / 8));
@@ -1377,6 +1380,11 @@ const RES = 2;
         c.fillStyle = '#090b16'; c.fillRect(x - 1, y - 1, pw + 2, bs + 2); c.fillStyle = lvTier(n).col; c.fillRect(x, y, pw, bs);
         c.fillStyle = '#0b0b12'; c.fillText('LV' + n, x + pw / 2 + 0.5, y + bs / 2 + 0.5);
       }
+      // 5.8: a gold star over every tower with a pick waiting (veteran mutation or Ascend perk), so they stand out in a busy wave
+      { const u = clamp(Math.round(tpx / 12), 2, 3); c.fillStyle = '#ffd84a';
+        for (const t of G.towers) if (t.pending > 0 || t.ascPend > 0) { const x = Math.round(bx2s(t.x * TILE)) + u, y = Math.round(by2s(t.y * TILE)) - 3 * u - (frame % 40 < 20 ? 0 : u);
+          c.fillStyle = '#090b16'; c.fillRect(x - 1, y + u - 1, 5 * u + 2, 3 * u + 2); c.fillRect(x + 2 * u - 1, y - 1, u + 2, 5 * u + 2);
+          c.fillStyle = '#ffd84a'; c.fillRect(x, y + 2 * u, 5 * u, u); c.fillRect(x + 2 * u, y, u, 5 * u); c.fillRect(x + u, y + u, 3 * u, 3 * u); } }
       if (best && big) {
         const t = best, aw = Math.round(clamp(tpx * 0.36, 9, 15)), ax = Math.round(bx2s(t.cx * TILE)) - aw / 2, ay = Math.round(by2s(t.y * TILE)) - aw - 4 - (frame % 30 < 15 ? 0 : 2) - (t.pending > 0 ? 16 : 0), nc = lvTier(towerLevel(t) + 1).col;
         const arrow = (o, k) => { c.beginPath(); c.moveTo(ax + aw / 2, ay - o); c.lineTo(ax + aw + o, ay + aw * 0.55 + o * k); c.lineTo(ax + aw * 0.68 + o * k, ay + aw * 0.55 + o * k); c.lineTo(ax + aw * 0.68 + o * k, ay + aw + o); c.lineTo(ax + aw * 0.32 - o * k, ay + aw + o); c.lineTo(ax + aw * 0.32 - o * k, ay + aw * 0.55 + o * k); c.lineTo(ax - o, ay + aw * 0.55 + o * k); c.closePath(); c.fill(); };
@@ -1675,7 +1683,7 @@ const RES = 2;
       if (g === 'cloak') { gx.globalAlpha = 0.85; gx.drawImage(ditherOf(sp, '#c58cff'), x - sw / 2, y - sh / 2, sw, sh); gx.globalAlpha = 1; }
       if (g === 'regen') { gx.globalAlpha = 0.3; gx.drawImage(tintOf(sp, '#59f0b4'), x - sw / 2, y - sh / 2, sw, sh); gx.globalAlpha = 1; }
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
-    set hints(v) { hintTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
+    set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
       if (cv.width < sp.width * 2) { const cs = getComputedStyle(cv); cv.style.width = cs.width; cv.style.height = cs.height; cv.width = cv.height = sp.width * 2; }
       const k = Math.max(1, Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height)));
