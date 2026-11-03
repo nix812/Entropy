@@ -1038,7 +1038,8 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 </style>
 
 
-</head>
+<style>#ptFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a0f18;color:#ff8da1;border:2px solid #ff4d6a;cursor:pointer}#ptFresh.arm{background:#ff4d6a;color:#07080f}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='ptFresh';b.textContent='Test: start as new player';var t=null;b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent='Test: start as new player';},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
 <div id="app">
   <div id="rotate"><div class="ph-icon"></div><h2>Rotate Your Device</h2><p class="note">Last Gradient is played in landscape.</p><button class="btn small" id="bRotate">Continue Anyway</button></div>
