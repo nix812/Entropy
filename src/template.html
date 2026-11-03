@@ -592,6 +592,12 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .aff { font-size: 16px; padding: 3px 6px 3px 8px; box-shadow: inset 2px 0 0 var(--c); background: var(--panel); color: var(--c); }
 .aff i { font-style: normal; font-family: var(--f-pix); font-size: 7px; text-transform: uppercase; display: block; opacity: 0.8; }
 .modes { display: flex; gap: 4px; }
+/* v5.8 Techniques: the fire-mode switch in the tower panel (label inline to save a row) */
+.firerow { display: flex; gap: 4px; align-items: center; margin-top: 6px; }
+.firerow .lbl { flex: 0 0 auto; width: 34px; }
+.firerow .chip { flex: 1; padding: 0 2px; min-height: 34px; font-size: 9px; }
+.firerow .chip.lock { opacity: 0.45; box-shadow: inset 0 0 0 1px var(--line2); background: transparent; border: 1px dashed var(--line2); }
+.firedesc { font-family: var(--f-term); font-size: 14px; line-height: 1.05; color: var(--dim); margin: 3px 0 2px; }
 .modes .chip { flex: 1; padding: 0 2px; min-height: 34px; font-size: 9px; }
 .specs { display: flex; flex-direction: column; gap: 5px; }
 .elgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }

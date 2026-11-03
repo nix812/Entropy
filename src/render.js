@@ -1012,6 +1012,24 @@ const RES = 2;
         b.lineTo(bx, by); b.stroke();
       }
     }
+    // v5.8 Techniques and play styles on the field: Arc Fences, Gravity Garden lines, Pulse Mines, Blackout static and Hoarfrost ice
+    for (const f of G.fields || []) ditherDisc(f.x * TILE, f.y * TILE, f.r * TILE, hexA(f.k === 'ice' ? '#bff4ff' : '#ffe14d', 0.18 + 0.22 * Math.min(1, f.t / 1.5)), 2, frame % 2);
+    for (const m of G.mines || []) { const X = m.x * TILE, Y = m.y * TILE, on = (frame + (m.x * 7 | 0)) % 30 < 15; R(b, X - 3, Y - 1, 6, 2, '#2a2f52'); R(b, X - 1, Y - 3, 2, 6, '#2a2f52'); R(b, X - 1, Y - 1, 2, 2, on ? '#ffe14d' : '#7a6a10'); }
+    if (G.mods.ks.garden) for (const [a, c] of G.gardens || []) {
+      if (a.disabled > 0 || c.disabled > 0) continue;
+      b.strokeStyle = hexA('#b86cff', 0.35 + 0.15 * Math.sin(frame / 9)); b.lineWidth = 2; b.setLineDash([3, 4]); b.lineDashOffset = -frame / 4;
+      b.beginPath(); b.moveTo(a.cx * TILE, a.cy * TILE); b.lineTo(c.cx * TILE, c.cy * TILE); b.stroke(); b.setLineDash([]);
+    }
+    for (const t of G.towers) {
+      const c = t.fenceTo;
+      if (!c || !t.s || !t.s.fence || t.disabled > 0 || G.towerAt[c.y * COLS + c.x] !== c || (c.fenceTo === t && c.s && c.s.fence && c.id < t.id)) continue;
+      const ax = t.cx * TILE, ay = t.cy * TILE, bx = c.cx * TILE, by = c.cy * TILE, n = Math.max(4, Math.round(Math.hypot(bx - ax, by - ay) / 8)), nx = -(by - ay), ny = bx - ax, nl = Math.hypot(nx, ny) || 1;
+      for (const [w, col, al] of [[3, '#7a6a10', 0.5], [1, '#ffe14d', 0.9]]) {
+        b.strokeStyle = hexA(col, al); b.lineWidth = w; b.beginPath(); b.moveTo(ax, ay);
+        for (let k = 1; k < n; k++) { const j = (Math.random() - 0.5) * 4; b.lineTo(ax + (bx - ax) * k / n + nx / nl * j, ay + (by - ay) * k / n + ny / nl * j); }
+        b.lineTo(bx, by); b.stroke();
+      }
+    }
     for (const t of G.towers) drawTower(t);
     // v5.8 Relay Pylon: every 1.2 s a pulse runs out to each tower it boosts (amber Amplifier, cyan Uplink). The boosted set is
     // re-read once per cycle with the same range test as recomputeAuras; a newly linked tower gets a soft chirp
@@ -1505,6 +1523,7 @@ const RES = 2;
         if (!LITE) for (let arm = 0; arm < 3; arm++) { const a0 = arm / 3 * 6.283 + Math.random(), pts = []; for (let j = 0; j <= 8; j++) { const u = j / 8, rr = R0 * (1 - u * 0.85), an = a0 + u * 2.4; pts.push({ x: x + Math.cos(an) * rr, y: y + Math.sin(an) * rr }); } lines.push({ pts, life: 0.4, max: 0.4, col, core: 0, w: 1.5, nl: 1 }); }
         if (d.es) for (let i = 0; i < d.es.length && i < 24; i++) { const e = d.es[i]; drags.push({ e, x0: e.x * TILE, y0: e.y * TILE, life: 0.15, col }); }
         break; }
+      case 'flamering': for (let i = 0; i < 8; i++) { const an = Math.random() * 6.2832, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x), y: T2P(d.y), vx: Math.cos(an) * v, vy: Math.sin(an) * v, life: 0.28, max: 0.28, col: Math.random() < 0.5 ? d.col : '#ffe14d', s: 3 }); } break; // v5.8 Backdraft
       case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;
       case 'arcs': for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x) + Math.cos(a) * rr * 0.5 + (Math.random() - 0.5) * 10, y: T2P(d.y) + Math.sin(a) * rr * 0.5 }, { x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr }], life: 0.18, max: 0.18, col: '#9ff2ff', core: 1, w: 2 }); } break;
       case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' });

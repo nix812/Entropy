@@ -5,14 +5,19 @@ const [runs = 6, points = 0, chaos = 1, sw = 1, bw = 0, ks = ''] = process.argv.
 function profile(seed) {
   const P = S.defaultProfile(); P.bestWave = bw; S.PROF = P;
   if (process.env.NOVA) { const [rm, lw] = process.env.NOVA.split(':'); P.remnants = rm ? rm.split(',') : []; P.laws = lw ? lw.split(',') : []; P.nova = Math.max(P.remnants.length, P.laws.length); }
-  let xp = 0; for (let L = 0; L < points; L++) xp += 3000 + 250 * L + 3 * L * L;
-  P.xp = xp + 1;
+  P.xp = S.xpToLevel(points) + 1; // v5.8: the curve lives in data.js (xpForLevel)
   let r = seed; const rnd = () => { r = (r * 1103515245 + 12345) % 2147483648; return r / 2147483648; };
   // v5.0 talents: pick trees in a seeded order (CAP=capstoneId puts its tree first and takes it; NOCAP=1 never takes one),
   // fill each tree top to bottom with random talents, take a Capstone when one opens and a slot is free, then the next tree
   const want = process.env.CAP || process.env.DOC || ks || '';
   const order = S.TALENTS.map(t => t.id).sort(() => rnd() - 0.5);
   if (want && S.TAL[want]) { const tr = S.TAL[want].tree; order.splice(order.indexOf(tr), 1); order.unshift(tr); }
+  // v5.8 FIRE=id[,id] (or all): learn those Techniques first (opening their rows) and force the modes on every tower of that type
+  for (const F of Object.values(S.TOWER_FIRE).flat()) if (FIRE_FORCE.includes('all') || FIRE_FORCE.includes(F.id)) {
+    const T = S.TAL[F.need], tr = S.TALENTS.find(x => x.id === T.tree);
+    for (let g = 0; g < 20 && S.talentBlock(T.id) === 'row'; g++) { const f = tr.rows.flat().find(x => !x.tech && x.row < T.row && !S.talentBlock(x.id)); if (!f) break; S.talentAdd(f.id); }
+    S.talentAdd(T.id);
+  }
   let guard = 0;
   for (const tid of order) {
     const tr = S.TALENTS.find(t => t.id === tid);
@@ -26,6 +31,28 @@ function profile(seed) {
       S.talentAdd(open[Math.floor(rnd() * open.length)].id);
     }
   }
+}
+const FIRE_FORCE = (process.env.FIRE || '').split(',').filter(Boolean);
+// v5.8 Techniques: pick a fire mode per tower like a person would (some of each type, answers to the swarm's genes)
+function chooseFire(G, t) {
+  const modes = (S.TOWER_FIRE[t.type] || []).filter(f => S.fireLearned(t.type, f.id));
+  if (!modes.length) return;
+  const F = modes[0], genes = (G.prep && G.prep.genes) || {}, same = G.towers.filter(o => o.type === t.type), i = same.indexOf(t);
+  let want = '';
+  if (FIRE_FORCE.length) want = FIRE_FORCE.includes('all') || FIRE_FORCE.includes(F.id) ? F.id : '';
+  else if (process.env.NOFIRE) want = '';
+  else switch (F.id) {
+    case 'supp': want = i % 3 === 1 || (genes.haste || 0) >= 0.3 ? F.id : ''; break;
+    case 'over': want = (genes.bulk || 0) >= 0.3 || i % 2 === 1 ? F.id : ''; break;
+    case 'lance': want = i % 2 === 0 ? F.id : ''; break;
+    case 'bunker': want = (genes.plating || 0) >= 0.3 || i % 2 === 1 ? F.id : ''; break;
+    case 'fence': want = G.towers.some(o => o !== t && o.type === 'coil' && (o.cx - t.cx) ** 2 + (o.cy - t.cy) ** 2 <= 16) ? F.id : ''; break;
+    case 'back': { let ring = 0, cone = 0; const r = t.s.range; for (const L of G.map.lanes) for (const p of L.pts) { const d = (p.x - t.cx) ** 2 + (p.y - t.cy) ** 2; if (d <= (r * 0.6 + 0.3) ** 2) ring++; if (d <= (r + 0.3) ** 2) cone++; } want = ring >= Math.max(4, cone * 0.7) ? F.id : ''; break; }
+    case 'tether': want = i % 3 === 2 || (genes.haste || 0) >= 0.3 ? F.id : ''; break;
+    case 'mines': want = i % 2 === 0 ? F.id : ''; break;
+    case 'repulse': want = (genes.wings || 0) >= 0.3 ? F.id : ''; break;
+  }
+  if ((t.fire || '') !== want) S.setFireMode(t, want);
 }
 const BASE_PLAN = ['pulse', 'cryo', 'rail', 'snare', 'pulse', 'missile', 'coil', 'flame', 'pylon', 'lens', 'forge', 'emp', 'grav', 'rail', 'missile', 'flame', 'coil', 'lens', 'cryo'];
 // FORCE=type makes that tower half of every build (backbone test); the rest follows the usual mix
@@ -104,6 +131,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     met.minCore = Math.min(met.minCore, G.core.hp / G.core.max);
     met.waveMin = Math.min(met.waveMin == null ? 1 : met.waveMin, G.core.hp / G.core.max);
     if (G.wave !== lastWave) { lastWave = G.wave; met.creditsAtWave.push(G.credits); met.mins.push(met.waveMin == null ? 1 : met.waveMin); met.waveMin = 1; met.recentMin = Math.min(...met.mins.slice(-10));
+      if (process.env.XPLOG) console.log(`XP ${G.wave} ${Math.round(G.xpEarned)} ${Math.round(G.score)}`);
       if (process.env.WAVELOG) console.log(`W${G.wave} core=${Math.round(G.core.hp)}/${Math.round(G.core.max)} cr=${Math.round(G.credits)} grid=${S.gridUsed()}/${S.gridCap()} leaks=${G.stats.leaks} genes=${(() => { const c = {}; let n = 0; for (const q of G.queue.concat(G.enemies)) if (q.genes) { n++; for (const g of q.genes) c[g] = (c[g] || 0) + 1; } return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + Math.round(v / n * 100)).join(","); })()} fly=${G.enemies.filter(e => e.fly).length}/${G.enemies.length} towers=${G.towers.map(t => t.type.slice(0, 4) + t.lvl).join(',')}`);
       if (process.env.TRACE && [10, 20, 30, 40, 60, 80, 100, 120].includes(G.wave)) {
         const dps = G.towers.reduce((a, t) => a + t.dps, 0);
@@ -115,6 +143,8 @@ for (let run = OFF; run < OFF + runs; run++) {
     act = t + 0.8;
     // anomalies
     if (G.anomOffers) { if (Math.random() < 0.2 || !G.anomOffers.length) { S.stabilize(); met.stab++; } else { const id = G.anomOffers[Math.floor(Math.random() * G.anomOffers.length)]; S.takeAnomaly(id); met.anoms.push(id); } }
+    // v5.8 Techniques
+    for (const tw of G.towers) chooseFire(G, tw);
     // veterans
     for (const tw of G.towers) while (tw.pending > 0) { const o = S.vetOffer(tw); let bi = 0; o.forEach((a, i) => { if (a.tier > o[bi].tier) bi = i; }); S.claimVet(tw, bi); met.vetMax = Math.max(met.vetMax, tw.rank); }
     // abilities
@@ -210,7 +240,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     for (const k of Object.keys(B).sort()) { const o = B[k]; if (o.n < 5) continue; console.log(`TTK ${k.padEnd(18)} n=${String(o.n).padStart(5)} died<20%: ${(o.early / o.n * 100).toFixed(0).padStart(3)}%  20-75%: ${(o.mid / o.n * 100).toFixed(0).padStart(3)}%  >75%/leak: ${(o.late / o.n * 100).toFixed(0).padStart(3)}%  avg life ${(o.life / o.n).toFixed(1)}s`); }
   }
   if (process.env.ASLOG) console.log('ASSAULTS w' + G.wave + ' ' + ((G.stats.assaults || {}).list || []).map(a => `W${a.w}:${a.leaked}/${a.n}${a.won ? "+" : "X"}x${a.hpx}[${(a.genes || []).join(',')}]`).join(' '));
-  if (process.env.DUMP) for (const tw of G.towers) console.log('T', tw.type, 'L' + tw.lvl, 'A' + tw.asc, 'R' + tw.rank, 'inv', tw.invested, 'dmg', Math.round(tw.dmgDone), 'kills', tw.kills, 'at', tw.x, tw.y, tw.affixes.map(a => a.id + a.tier).join(','));
+  if (process.env.DUMP) for (const tw of G.towers) console.log('T', tw.type + (tw.fire ? '/' + tw.fire : ''), 'L' + tw.lvl, 'A' + tw.asc, 'R' + tw.rank, 'inv', tw.invested, 'dmg', Math.round(tw.dmgDone), 'kills', tw.kills, 'at', tw.x, tw.y, tw.affixes.map(a => a.id + a.tier).join(','));
   const tot = Object.values(G.stats.dmgByEl).reduce((a, b) => a + b, 0) || 1;
   const byType = {};
   for (const tw of G.towers) byType[tw.type] = (byType[tw.type] || 0) + tw.dmgDone;
