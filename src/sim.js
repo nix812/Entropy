@@ -4053,7 +4053,7 @@ function resumeRun(S) {
   G.region = regionAt(G.lanesOpened);
   G.daily = S.daily || null;
   if (G.daily) { G.laws = []; G.novaN = 0; } // dailies never carry Cosmic Laws, resumed or not
-  G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; if (G.wanted && !G.wanted.done) G.wanted.spawned = 0; // bosses aren't saved G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0;
+  G.goldAt = S.goldAt || 0; G.wanted = S.wanted ? JSON.parse(JSON.stringify(S.wanted)) : null; if (G.wanted && !G.wanted.done) G.wanted.spawned = 0; G.market = S.market ? JSON.parse(JSON.stringify(S.market)) : null; G.runUnlocks = (S.runUnlocks || []).slice(); G.bossBribe = S.bossBribe || 0; G.placing = S.placing || null; G.placingRefund = S.placingRefund || 0; // bosses aren't saved (so a pending Wanted boss spawns again)
   // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
   if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.uLvl = S.core.uLvl || 0; G.core.hLvl = S.core.hLvl || 0;
