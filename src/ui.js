@@ -465,6 +465,7 @@ const UI = (() => {
       return best;
     }
     const tw = () => G.towers[0], noTw = () => !G.towers.length;
+    const packAt = () => { if (!mem.pk) mem.pk = pack(); if (!mem.pk) { const e = G.enemies.find(x => !x.dead); if (e) mem.pk = [e.x, e.y, 1]; } return mem.pk ? worldR(mem.pk[0], mem.pk[1], 1.7) : null; };
     const shut = () => { if (panel && panel.kind === 'tower') closePanel(); }; // a new tower opens its panel; the next step needs the field
     const panT = () => panel && panel.kind === 'tower' ? panel.t : null;
     const closeM = () => { closeModal(); if (G && !G.over) G.paused = false; };
@@ -528,7 +529,7 @@ const UI = (() => {
         { id: 'strike', when: () => W() === 5 && (G.charges.strike || 0) > 0 && (pack() || [0, 0, 0])[2] >= 6, skip: () => W() >= 6, hold: 1, enter: () => { mem.c0 = G.charges.strike; },
           at: sel('#abils [data-abil=strike]'), t: 'Orbital Strike', b: 'A tight pack. Abilities live on the left. Tap Strike.', done: () => G.aimAbility === 'strike' || (G.charges.strike || 0) < mem.c0 },
         { id: 'aim', when: () => W() === 5, skip: () => W() >= 6, hold: 1, enter: () => { mem.pk = pack(); },
-          at: () => mem.pk ? worldR(mem.pk[0], mem.pk[1], 1.7) : null, t: 'Aim', b: 'Tap the middle of the pack.', done: () => (G.charges.strike || 0) < mem.c0, back: () => G.aimAbility !== 'strike' && (G.charges.strike || 0) >= mem.c0 && 'strike' },
+          at: () => packAt(), t: 'Aim', b: 'Tap the middle of the pack.', done: () => (G.charges.strike || 0) < mem.c0, back: () => G.aimAbility !== 'strike' && (G.charges.strike || 0) >= mem.c0 && 'strike' },
         info('recharge', sel('#abils [data-abil=strike]'), 'Recharging', 'The bar on the button refills over time. Then it is ready again.', { when: () => W() === 5, skip: () => W() >= 6, hold: 0 }),
         threatOpen('evo', 'The swarm adapts', 'It breeds against whatever does your damage. Open the Threat Board.', { when: () => after(5), skip: () => W() >= 6 }),
         inThreat('arms', () => appR(q('#modal .armrow')) || appR(q('#modal .arms')), 'Arms Race',
@@ -547,7 +548,7 @@ const UI = (() => {
         { id: 'spec', when: () => (after(6) || after(7)) && mem.st && mem.st.lvl >= 3, skip: () => W() >= 8 || !mem.st || mem.st.spec, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel .specs'), t: 'Pick a spec',
           b: () => G.credits >= upgradeCost(mem.st) ? `At LV 3 a tower specializes: one of two branches, for good. Read both and tap one (${fmt(upgradeCost(mem.st))} credits).` : `The spec costs ${fmt(upgradeCost(mem.st))} credits. Kills pay.`,
           done: () => !!mem.st.spec, back: () => panT() !== mem.st && G.credits >= upgradeCost(mem.st) && 'tapLv3' },
-        info('ascend', sel('#panel [data-act=up]'), 'LV 5 and Ascend', 'One more upgrade reaches LV 5, the top. After that a tower can Ascend: more damage each time, at a steep price.', { when: () => !!panT() && mem.st && mem.st.spec, skip: () => W() >= 8 || !panT() }),
+        info('ascend', sel('#panel [data-act=up]'), 'LV 5 and Ascend', `One more upgrade reaches LV 5, the top. After that a tower can Ascend: more damage${typeof PERKS !== 'undefined' ? ' and a perk' : ''} each time, at a steep price.`, { when: () => !!panT() && mem.st && mem.st.spec, skip: () => W() >= 8 || !panT() }),
         info('sell', sel('#panel [data-act=sell]'), 'Sell', 'Selling refunds 70% of what you put in. Sell a tower that sits idle and build where enemies walk.', { when: () => !!panT(), skip: () => W() >= 8 || !panT(), leave: shut }),
         info('free', () => appR(q('#chips [data-wanted]')) || appR(q('#chips [data-more]')), 'Most Wanted', () => `This chip is the bounty: a boss lands on Wave ${G.wanted ? G.wanted.w : 9}. Until then, build and upgrade as you like.`, { when: () => after(6) || after(7), skip: () => W() >= 8, hold: 0 }),
         { id: 'boss', when: () => G.enemies.some(e => e.boss && !e.gen && onField(e)), skip: () => G.huntChoice || G.over, hold: 1, ok: 'Fight', enter: () => { mem.boss = G.enemies.find(e => e.boss && !e.gen && onField(e)); },
@@ -575,7 +576,7 @@ const UI = (() => {
         { id: 'spec', hold: 1, at: sel('#panel .specs'), t: 'Specialize', b: 'At LV 3 a tower picks one of two branches, for good. Read both, tap one.', done: () => G.towers.some(t => t.type === 'pulse' && t.spec), back: () => !panT() && 'tapP' },
         info('specDone', sel('#panel .lvtag'), 'LV 4', 'The spec name now sits next to its level. Two more upgrades to LV 5.', { skip: () => !panT(), leave: shut }),
         tapTw('tapR', () => G.towers.find(t => t.type === 'rail'), 'LV 5', 'This Rail Lance is LV 5, the top. Tap it.'),
-        info('asc', sel('#panel [data-act=up]'), 'Ascend', 'Past LV 5 a tower Ascends: ×1.3 damage and a new bonus each time. The price doubles every step.', { skip: () => !panT(), leave: shut }),
+        info('asc', sel('#panel [data-act=up]'), 'Ascend', `Past LV 5 a tower Ascends: more damage${typeof PERKS !== 'undefined' ? ' and a perk you choose' : ''} each time. The price doubles every step.`, { skip: () => !panT(), leave: shut }),
         tapTw('tapC', () => G.towers.find(t => t.type === 'cryo'), 'Sell', 'This Cryo Emitter is in the way. Tap it.', { skip: () => !has('cryo') }),
         { id: 'sell', hold: 1, at: sel('#panel [data-act=sell]'), t: 'Sell', b: 'Selling refunds 70% of what you put in (100% at a checkpoint). Tap Sell.', done: () => !has('cryo'), back: () => has('cryo') && !panT() && 'tapC' },
         call('c1', 1),
@@ -605,19 +606,19 @@ const UI = (() => {
         intro('in', 'Abilities', 'Five abilities on the left rail. Each recharges on its own. Use them as the wave comes.'),
         call('c1', 1, 'Send the wave.'),
         { id: 'strike', when: () => W() >= 1 && (pack() || [0, 0, 0])[2] >= 5, hold: 1, enter: () => { mem.c0 = G.charges.strike; }, at: sel('#abils [data-abil=strike]'), t: 'Strike', b: 'Heavy damage in an area. Tap Strike.', done: () => G.aimAbility === 'strike' || G.charges.strike < mem.c0 },
-        { id: 'aim', hold: 1, enter: () => { mem.pk = pack(); }, at: () => mem.pk ? worldR(mem.pk[0], mem.pk[1], 1.7) : null, t: 'Aim', b: 'Tap the pack.', done: () => G.charges.strike < mem.c0, back: () => G.aimAbility !== 'strike' && G.charges.strike >= mem.c0 && 'strike' },
+        { id: 'aim', hold: 1, enter: () => { mem.pk = pack(); }, at: () => packAt(), t: 'Aim', b: 'Tap the pack.', done: () => G.charges.strike < mem.c0, back: () => G.aimAbility !== 'strike' && G.charges.strike >= mem.c0 && 'strike' },
         { id: 'stasis', when: () => G.enemies.filter(e => !e.dead).length >= 8, hold: 1, at: sel('#abils [data-abil=stasis]'), t: 'Stasis', b: 'Freezes every enemy for a few seconds. Tap it.', done: () => G.stasisT > 0 },
         { id: 'frenzy', hold: 1, at: sel('#abils [data-abil=overclock]'), t: 'Frenzy', b: 'Your towers fire faster for 8 seconds. Tap it.', done: () => G.overclockT > 0 },
         { id: 'nova', hold: 1, enter: () => { mem.n0 = G.charges.nova; }, at: sel('#abils [data-abil=nova]'), t: 'Nova', b: 'Damages every enemy on the map at once. Tap it.', done: () => G.charges.nova < mem.n0 },
         { id: 'scan', when: () => G.enemies.some(e => e.type === 'phantom' && onField(e)), skip: () => cleared() && W() >= 1, hold: 1, at: sel('#abils [data-abil=scan]'), t: 'Scan', b: 'Phantoms cloak. Scan reveals them and marks the biggest threat. Tap it.', done: () => G.scanT > 0 },
-        info('charges', sel('#abils'), 'Charges', 'Each bar refills over time. Crates and bosses give extra charges that stack. A full button wastes its timer: use it.', { when: () => cleared() }),
+        info('charges', sel('#abils [data-abil=strike]'), 'Charges', 'Each bar refills over time. Crates and bosses give extra charges that stack. A full button wastes its timer: use it.', { when: () => cleared() }),
         end(),
       ],
       swarm: [
         intro('in', 'The swarm adapts', 'Enemies that get furthest pass on their genes. The swarm drifts toward whatever your defence handles worst.'),
         threatOpen('threat', 'Threat Board', 'Open it.'),
         inThreat('arms', () => appR(q('#modal .armrow')) || appR(q('#modal .arms')), 'Arms Race', 'Your fire, the genes the swarm bred against it, how far each has spread (I, II, III) and why.', { okFn: null, ok: 'Next' }),
-        inThreat('dna', () => appR(q('#modal .evlist')), 'Swarm DNA', 'Every gene in the swarm right now, with its counter.', { enter: scrollTo('#modal .evlist') }),
+        inThreat('dna', () => appR(q('#modal .evlist .evrow')) || appR(q('#modal .evlist')), 'Swarm DNA', 'Every gene in the swarm right now, with its counter.', { enter: scrollTo('#modal .evlist') }),
         call('c1', 1),
         info('mark', () => enemyR(mem.pe), 'Plating', 'Steel plates on its flanks: Plating. Pulse loses a third against it; Rail ignores it. Every gene has its own mark.', { when: () => !!geneEnemy('plating'), enter: () => { mem.pe = geneEnemy('plating'); } }),
         build('rail', 'rail', 'b', 'Counter it', 'Plating is spreading. Build a Rail Lance on the marked tile.', { when: () => after(1), skip: () => W() >= 2 }),
@@ -714,6 +715,15 @@ const UI = (() => {
         tapTw('tapP', () => G.towers.find(t => t.type === 'pulse'), 'A Pulse Blaster', 'Tap it.'),
         { id: 'fire', hold: 1, at: sel('#panel .firerow'), t: 'Fire', b: 'Standard or Suppressor. Tap Suppressor.', done: () => G.towers.some(t => t.type === 'pulse' && t.fire), back: () => !panT() && 'tapP' },
         info('job', sel('#panel .firedesc'), 'A different job', 'Suppressor slows what it hits but deals less. Keep the other Pulse on Standard to finish them.', { leave: shut }),
+        call('c1', 1),
+        end(),
+      ],
+      mastery: [
+        intro('in', 'Ascend perks', 'This Rail Lance is LV 5. Ascending it adds damage and a perk you choose.'),
+        tapTw('tapR', () => G.towers.find(t => t.type === 'rail'), 'LV 5', 'Tap the Rail Lance.'),
+        { id: 'asc', hold: 1, at: sel('#panel [data-act=up]'), t: 'Ascend', b: () => `Tap Ascend: ${fmt(upgradeCost(G.towers.find(t => t.type === 'rail')))} credits.`, done: () => G.towers.some(t => t.type === 'rail' && (t.asc || 0) >= 1), back: () => !panT() && 'tapR' },
+        { id: 'perk', hold: 1, at: sel('#panel .perks'), t: 'Pick a perk', b: 'Three perks for this tower. Each changes how it works. Tap one.', done: () => G.towers.some(t => t.type === 'rail' && (t.asc || 0) >= 1 && !(t.ascPend > 0)), back: () => !panT() && 'tapR' },
+        info('mast', null, 'Tower Mastery', 'Each tower type ranks up across runs from its share of your damage: a badge, +5% damage, gold trim, a fourth perk card, its own legendary.', { leave: shut }),
         call('c1', 1),
         end(),
       ],

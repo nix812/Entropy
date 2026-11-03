@@ -717,7 +717,7 @@ function newRun(opts) {
   const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson) : null; // 5.8 Training and lessons: own map, rules and wave script
   setRows(T ? T.rows : opts.rows || CHAOS_LEVELS[chaos].rows);
   G = {
-    seed, r, chaos, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, opts.startWave || 1), cols: COLS,
+    seed, r, chaos, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, (T && T.start) || opts.startWave || 1), cols: COLS,
     time: 0, speed: 1, paused: false, over: false,
     map: T ? tutMap(r) : genMap(r), towers: [], towerAt: {}, enemies: [], projs: [], zones: [], storms: [],
     wave: 0, queue: [], spawnClock: 0, next: 18, spawningDone: true,
