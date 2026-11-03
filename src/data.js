@@ -95,7 +95,7 @@ const TOWERS = {
     // 5.8 rules (G.ascV >= 2): it hits 10 times a second, so every per-hit Mark chance (talents, affixes, Brand, Prism) counted ten
     // times over and the Lens set off nearly every Collapse (60-73% of all damage in long bot runs). markX scales its Mark chances,
     // collX the Collapses it sets off. Old recordings keep 1 and 1.
-    markX: 0.5, collX: 0.5,
+    markX: 0.35, collX: 0.35,
     blurb: 'Ramping beam. Applies Mark.',
     specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×4.3 damage', m: { rampMax: 4.3 } },
             { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.5', m: { beams: 3, rampMax: 2.5 } }] },
@@ -122,6 +122,8 @@ const lvTier = n => LV_TIERS.find(x => n <= x.max);
 const ASC_V = 2, ASC_DMG = 1.15, ASC_DMG_OLD = 1.3;
 // Ascend price per tower in perk runs: the Lens ramp already scales with late-game HP, so its Ascends cost more (bots: 66% of damage at 60 points without this)
 const ASC_COST = { lens: 1.5 };
+// per-tower Ascend damage in perk runs (balance pass: the Lens kept 50%+ of the damage at 96 points with ×1.15; old recordings keep ×1.3)
+const ASC_DMG_T = { lens: 1.08 };
 // v: cumulative value per stack (the last entry is the cap; one entry = one-time). spec: only offered with that specialization.
 // The sim reads t.s.pkv[id] (the summed value); d(inc) describes the next pick.
 const PERKS = {
@@ -755,8 +757,8 @@ const DOCTRINES = {
 const WEB_VER = 5;
 const TROW = 3, TCAP = 12;
 // every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall (v5.8: 0.4 → 0.15, so
-// specialising beats spreading)
-const TAL_PT_DMG = 0.15;
+// specialising beats spreading; balance pass: 0.15 → 0.1, 60 and 96 points ran well past their targets)
+const TAL_PT_DMG = 0.1;
 const T_ = (id, name, max, fx, extra) => Object.assign({ id, name, max, fx }, extra || {});
 const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
 // a Technique talent: one point, unlocks a fire mode for one tower type (the mode's own text lives in TOWER_FIRE)
