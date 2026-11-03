@@ -1060,6 +1060,7 @@ function towerStats(t) {
   if (M.ks.conflag) { s.burn = clamp(s.burn + s.chill, 0, 1); s.chill = 0; } // Conflagration: Chill becomes Burn
   s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + pv('ion') + pv('ionE') + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
   s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + pv('brand') + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
+  s.markX = G.ascV >= 2 && D.markX || 1; s.collX = G.ascV >= 2 && D.collX || 1; s.mark *= s.markX; // 5.8: the Lens's per-hit Mark and Collapse trims
   s.chillPot = (sp.chillPot || 1) * M.chillPot;
   s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur + pv('deep');
   s.shockX = sp.shockX || 1; s.burnX = (sp.burnX || 1) * (1 + pv('thermite') / 100);
@@ -2772,7 +2773,7 @@ function applyStatuses(e, dmg, el, src, o) {
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
       // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? 0.004 : 0.03)) * cmb, 'V', src, { noStatus: 1 });
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old)) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
     }
     if (e.dead) return;
@@ -2780,7 +2781,7 @@ function applyStatuses(e, dmg, el, src, o) {
   // statuses
   let burnP = s.burn, chillP = s.chill, shockP = s.shock, markP = s.mark;
   const forced = (M.ks.prismatic || s.leg.prism || G.af.prism) ? pick(r, M.ks.conflag ? ['burn', 'shock', 'mark'] : ['burn', 'chill', 'shock', 'mark']) : null;
-  if (forced === 'burn') burnP = 1; if (forced === 'chill') chillP = 1; if (forced === 'shock') shockP = 1; if (forced === 'mark') markP = 1;
+  if (forced === 'burn') burnP = 1; if (forced === 'chill') chillP = 1; if (forced === 'shock') shockP = 1; if (forced === 'mark') markP = s.markX || 1;
   if (burnP > 0 && r() < burnP) {
     const dps = dmg * 0.35 * s.burnX * M.burnDmg * (s.kind === 'cone' ? 1.5 : 1);
     const bt = 3 * M.burnDur + ((s.pkv && s.pkv.slowBurn) || 0);
