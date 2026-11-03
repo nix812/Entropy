@@ -460,6 +460,7 @@ const UI = (() => {
       let s = mem[key]; if (!s || !canBuildAt(s.x, s.y)) s = mem[key] = spotFor(type, lane, near);
       if (!s) return null;
       Render.hints = [s];
+      if (plan !== 'basic' && mem[key + '.cam'] !== s) { mem[key + '.cam'] = s; const p = Render.tileToScreen(s.x + 0.5, s.y + 0.5), L = Render.layout, m = 90; if (p.x < m || p.x > L.W - m || p.y < m || p.y > L.H - m) { Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); } } // 6.0: in a lesson, bring a build spot that is off screen into view, once per spot (Basic Training's fixed map keeps its own camera)
       return worldR(s.x + 0.5, s.y + 0.5, 0.62);
     }
     const flowText = (type, first) => { const D = TOWERS[type], st = flowStage(type);

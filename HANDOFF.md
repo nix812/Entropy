@@ -1,13 +1,22 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 5.7.4 · November 2, 2026**
+**Version at handoff: 6.0.0 · November 3, 2026**
 
 > **The game is now called Last Gradient (5.6.0).** Repo, URLs, save keys, code prefixes (`HUNT1:`, `TRACK1:`), file names (`dist/entropy.html`) and the in-game Entropy gauge keep the old word on purpose. Player-facing name: Last Gradient.
 
-### Start here (state at 5.7.4)
+### Start here (state at 6.0.0)
+- **6.0.0 "The big one" (Nov 2–3):** a mechanics audit (Project doc "Mechanics Audit 2026-11-02", also `docs/Mechanics-Audit-2026-11-02.md`) led to seven feature branches built in parallel and merged into one release. Each has a notes file in `docs/notes/` that is the detailed reference: **read the one for the system you touch.** Summary in section 4.18.
+  - `tutorial.md`: Basic Training (guided first run with a checklist), Field Manual (18 lessons), Tutorial button, the Ready button and walkthrough.
+  - `hook.md`: zones (internally `sector`), jump doors, Bounty Purse, late-game escalations. Gated by `G.hk` / `HOOK_VER`.
+  - `talents.md`: Techniques (alternate fire per tower), play-style Capstones, XP curve. Talent points refunded via `WEB_VER`.
+  - `ascend.md`: Ascension perks (3 cards per Ascend past LV 5), Tower Mastery (5 ranks per tower). Gated by `G.ascV` (`ASC_V`).
+  - `swarm.md`: gene marks on enemies, strain families, the Arms Race strip on the Threat Board.
+  - `towers.md`: per-tower muzzle flashes, impacts and sounds (render/audio only).
+  - `balance.md`: Lens share 70–80% → 40%, Collapse 3% → 2%, boss affix crash past W320, open balance issues.
+- **Rules gates:** old recordings must replay exactly. New sim rules check `G.hk`, `G.ascV` or recOpts flags, never `VERSION`. `test/hookcompat.js` (5.7.4 fixture) and `test/ascend.js` (v574 recording) prove it.
 - **Studio splash (5.7.0):** "Nigel Industries presents" on cold start (`UI.splash`, ui.js before `boot`; Nic's cat Nigel, pixel art in `docs/brand/`). It skips itself when `navigator.webdriver` is set so the other Playwright tests are not blocked; `test/splashshot.py` forces it with `UI.splash(true)`.
 - **Renamed (5.6.0):** Nic chose **Last Gradient** after a name search (section 4.17). The hangar title is a canvas effect, `TitleFX` at the end of render.js.
-- **Live:** 5.6.0 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
+- **Live:** 6.0.0 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
 - **Nov 1 build cycle:** a Fable design review (doc "Entropy Design Review" in the Project) found the game had no reason to start the next run. 5.2 First Hour (Threat Board, boss slow-down, first runs pay, fresh profiles see less) and 5.3 **The Hunt** (bounty win line with Extract/Push, Nemesis, Daily Hunt with a fixed build, input recording, exact replay and resume). Details in 4.15 and the version table.
 - **The sim is replayable (5.3).** Every player action goes through `act(name, ...args)` (sim.js `ACTS`): stamped with `G.tick`, appended to `G.inputs`. `newRun(G.recOpts)` + the inputs reproduce a run bit for bit (`test/replay.js`). **Any new player action must be an `ACTS` entry called through `window.act` from ui.js**, never a direct sim call or a direct write to `G`, or replays and Daily resume break (pitfall 39).
 - **Latest session (Nov 1, 5.4.2 → 5.5.14):** hangar sky backdrop, then a long Music Studio cycle: rebuilt Listen/Shape tabs, share codes (`TRACK1:`), the hidden Composer (five taps on the visualizer) that plays exactly what's written, Mono Audio, sound health and wake-up fixes, a musician's harmony pass, song length/arrangement, one-tap share, a typing panel that clears the iPhone keyboard, and battlefield music controls (Music tile + deck, 5.5.14). All in section 4.16 and the version table. Nic is happy with where music is.
@@ -646,6 +655,17 @@ Nic gave the session full creative control: review, bug hunt, balance sweep, the
 - **Title (`TitleFX`, end of render.js):** `.brand h1` holds `.t1` (small spaced LAST, CSS) and `.t2[data-word=GRADIENT]` with a canvas. `build()` (on size, device-pixel or font change; checked every 0.5 s and only once Silkscreen has loaded) draws the word with a horizontal colour ramp (`--ink` to `--cryo` to `--void`) over a red/cyan fringe that fades out, an amber glow that fades out, then cuts it into half-font-pixel cells: fade `f = smoothstep(0.6, 1.22, u)` across the word against a Bayer 4×4 + hash threshold. Intact cells go to a static layer; the rest become looping shards (2.6–6 s, drift right and slightly up by `hc·(4 + 26f)`, shrink and fade). Per frame: one static blit plus a few hundred cell blits. Driven from the hangar branch of the frame loop next to `HangarFX.draw`; the backdrop's glitch calls `TitleFX.kick()` so the shards jolt. Reduce Motion: static layer only. The canvas is absolutely positioned inside `.t2` (a negative-margin version collapsed into the parent and overlapped the Level row).
 - **Pitfall hit while shipping:** a scripted edit of `WHATS_NEW` searched for `] };` but the block ends `]};`, and it deleted the pirate, Most Wanted and Hunt definitions up to the next match. The audits failed at once (`UI is not defined`). Bound such edits by the exact closing text and check `git diff --stat` before building.
 
+### 4.18 v6.0 The big one (November 2–3 2026)
+Nic's brief: "look deeply at the game mechanics… a hook that keeps players coming… real progression felt with the talents and play styles… towers need more character… polish polish polish." He chose all five feature lines, shipped as one release. Then his brother couldn't work out how to build or upgrade, so a full tutorial joined it. Everything below is detailed in the `docs/notes/*.md` file named.
+- **Tutorial (`tutorial.md`).** `PROF.tut` {seen, done, paid, lessons}. Fresh profiles are offered Basic Training on first Play; old profiles with runs count as done. The **Tutorial** button (hangar nav, and pause menu) opens a chooser: Basic Training or Field Manual. Basic Training is 9 scripted waves on a fixed map and seed; a coach overlay rings one target and waits for the action; a 12-line checklist strip sits bottom-left. It can't be lost, pays 840 XP once and never touches records, Daily, Hall of Fame or snapshots. Lessons are a table (`LESSONS` in data.js + one step list per lesson in ui.js). `tutOffer()` is skipped under `navigator.webdriver` (like the splash) so older tests that press Play still work; tests set `window.tutOfferTest`.
+- **Ready button and walkthrough.** Counts towers with `t.pending > 0` (veteran pick) or `t.ascPend > 0` (Ascend perk); gold star on each on the board; one walkthrough ("Tower k of N") for both kinds; the game pauses while it is open (not recorded, replays unaffected).
+- **Hook (`hook.md`).** Zones with perk/drawback, jump doors at each bounty, the Bounty Purse (bank or risk), escalation twists from W50.
+- **Talents (`talents.md`).** Techniques per attack tower (a Fire row in the tower panel), play-style Capstones, a faster early XP curve. `WEB_VER` bump refunds points and clears the five saved builds (What's New says so).
+- **Ascend (`ascend.md`).** ×1.15 per Ascend (Lens ×1.08 after balance) plus perk cards; Tower Mastery from damage share at run end. Daily Hunts ignore Mastery.
+- **Swarm (`swarm.md`), Towers (`towers.md`):** readability and character; no sim changes.
+- **Balance (`balance.md`).** Lens Marks ×0.35, Lens-triggered Collapses ×0.35, Lens ramp ×0.7, Collapse max-HP 3% → 2% (all `ascV >= 2` only); `TAL_PT_DMG` 0.15% → 0.1%. Bots (Normal, 8 seeds): 0/60/96 points → median 55/106/92, Lens median share 12/40/40%. **Still too easy at 60 points** (target 72–82); next levers: Detonator trim or a per-enemy Collapse cooldown. Flame, Coil and Pulse look weak at 60 points.
+- **Merge notes:** `towerStats` order is ascend ground → ascend multiplier, Mastery and perks into `s.dmg` → talents' `applyFire` / `capPlay`. Snapshots carry tower `fire`, `wild`, `perks`, `ascPend`, `aOffer`, plus `ascV`, `mastery`, `sector`; `resumeRun` passes sector, ascV and mastery to `newRun`.
+
 ## 5. Profile (`PROF`) fields worth knowing
 `v, webV, xp, alloc[], builds[5], bestWave, bestScore, runs, seenVer (last version whose What's New was closed; the popup shows once per version for returning players), kills, playTime, settings{sfx, music, soundtrack, hud, dmgNums, shake, webView, uiScale}, seenHelp, zoomHint, runSnap, lastSetup, codex, mastery{}, loadout[], orbit{}, nova, remnants[], laws[], stars{}, hall[], novaOffer, daily, updatedAt`
 
@@ -819,6 +839,12 @@ The expanding sector made every level a little easier, because the compact early
 
 ---
 
+49. **Don't poll animation frames in tests on a loaded machine.** `splashshot.py` sampled the splash image for blinks and missed them when the box was busy (it failed even on 5.7.4). The code now counts (`UI.splashBlinks`) and the test reads the count.
+50. **Fetch a local branch into a named ref before merging** (`git fetch -q /root/wt/x x:x`). A bare `git fetch -q` from a worktree clone silently didn't update, and the merge took an old head. Untracked files that the incoming branch adds (e.g. a scratch copy of a doc) abort the merge: move them out first.
+51. **Parallel builders + one integrator.** For multi-feature releases: each builder works in its own clone on its own branch, writes `docs/notes/<name>.md`, and never edits VERSION, WHATS_NEW, HANDOFF.md or build.py. The integrator merges, resolves, runs the full suite, then bumps the version.
+
+---
+
 ## 8. Working with Nic
 - He's a non-coder who drives product direction, plays on iPhone (Home Screen app) and iPad, always in landscape.
 - He has explicitly given Claude **creative freedom** to decide what's fun and engaging. Make the call, explain briefly, and stay open to pushback. When he asks "what do you think" before a change, give the recommendation first, then build once he agrees.
@@ -830,6 +856,12 @@ The expanding sector made every level a little easier, because the compact early
 ---
 
 ## 9. Backlog and ideas discussed
+- **Open threads as of 6.0.0 (November 3, 2026):**
+  - **Tutorial playtest:** Nic's brother is the test player (he couldn't find how to build or upgrade before). Ask what he got stuck on. Known: lessons only played at 852×393 by the bot; at 667×375 the Threat step shows an "Open it" button because the chip folds into "+N".
+  - **Balance:** 60-point runs still go too long (median 106 vs 72–82 target); some seeds still have the Lens at 57–94%. See `balance.md`.
+  - **Design leftovers:** some Ascend perks do nothing under some Techniques (chain perks with Arc Fence, Wide Nozzle with Backdraft); wave shapes (audit hook item 5) not built; the purse chip folds into "+N" on narrow screens; uiaudit flags zone text on the Daily tab (probably a false hit).
+  - **Performance:** the new effects may add up to ~40% more canvas calls in heavy fights; measure on a real iPhone if Nic reports slowdowns.
+  - The test copy at `/Entropy/test/` (separate save key) was removed when 6.0 went live.
 - **Open threads as of 5.6.0 (November 1, 2026):**
   - **Name chosen: Last Gradient.** Next: Nic checks lastgradient.com; a trademark lawyer's USPTO check before the store build. If he wants, offer the store/icon art with the new title and a Settings credit line.
   - **Studio name: Nigel Industries** (Nic's black cat, Nigel, who sits in a small grey bolster cat couch). "Void Industries" was taken (a 25-person SF game-tools company) and "Void" studio names are crowded (VOID Interactive and others); Nigel Industries / Nigel Games had no matches. Logo in `docs/brand/`: pixel Nigel in his couch (`nigel_couch.py` draws it on a 64×56 grid; 1× and 8× PNGs with transparency) plus wide and stacked lockups (Silkscreen, the title's red/cyan fringe). On the App Store an individual account shows Nic's legal name; a studio name there needs an LLC + D-U-N-S (no DBAs). Possible next: a short "Nigel Industries presents" splash before the hangar.
@@ -879,6 +911,7 @@ The expanding sector made every level a little easier, because the compact early
 ## 10. Version history (this build cycle)
 | Version | What changed |
 |---|---|
+| 6.0.0 | The big one (4.18): tutorial (Basic Training, Field Manual, Tutorial button, checklist), Ready button and walkthrough, zones and jump doors, Bounty Purse, escalations, Techniques and Capstones (talent refund), Ascension perks and Tower Mastery, readable swarm, tower character pass, Lens/Collapse balance, W320 boss crash fix, resume fixes |
 | 1.6 | Flat web view, profile radar, region chips, oddball bosses |
 | 1.6.1 | Constellations |
 | 1.6.2 | Here and Center buttons |

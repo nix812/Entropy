@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '5.7.4';
+const VERSION = '6.0.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -324,12 +324,15 @@ const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '5.7.0', title: 'Last Gradient 5.7 · Nigel Industries', items: [
-  ['Nigel Industries presents', 'The studio has a mascot: Nigel, a small black cat, in his couch. He greets you when the game starts. Tap to skip him (he will not mind).'],
-  ['A bigger sky (5.7.3)', 'The attractor on the main menu fills the right-hand side, and the pieces breaking off the title are pulled across and spiral into it. The menu buttons are see-through. Nigel also stays a little longer.'],
-  ['Entropy is now Last Gradient', 'Everything in the universe runs on gradients: hot next to cold, order next to chaos. When the last one flattens out, nothing moves again. You are holding it up.'],
-  ['The title', 'The name on the hangar fades from cream to violet and breaks apart as you watch. With Reduce Motion on, it holds still.'],
-  ['Nothing else changed', 'Your progress, talents, tracks, Hunt codes and the Entropy gauge are exactly where you left them.'],
+const WHATS_NEW = { ver: '6.0.0', title: 'Last Gradient 6.0 · The big one', items: [
+  ['Tutorial', 'New to the game? The Tutorial button on the main menu walks you through everything, step by step with a checklist: build, upgrade, the core, veterans, Strike, bounties. The ? button is now the Field Manual: a short lesson for every system.'],
+  ['The Ready button', 'Towers with a veteran mutation or an Ascend perk waiting now show a gold star, and a Ready button counts them. Tap it to go through every waiting tower, one at a time. The game pauses while you choose.'],
+  ['Zones and jump doors', 'Pick a zone at the start: each has its own enemies, weather and boss. At every bounty, choose where to jump next. The Bounty Purse grows as you push on: bank it or risk it.'],
+  ['Talents, reworked', 'Every attack tower has a Technique, an alternate fire mode with its own job. New play-style Capstones. Your talent points have been refunded and the five saved builds cleared, so spend them fresh.'],
+  ['Ascend perks and Mastery', 'Each Ascend past level 5 offers three perk cards that change how that tower works. Every tower type earns Mastery ranks from the damage it deals.'],
+  ['A swarm you can read', 'Evolved enemies wear their genes: shells, plating, wings, speed streaks. The Threat Board shows what the swarm is breeding against you, and why.'],
+  ['Towers with character', 'Every tower and specialty has its own shots, impacts and sounds.'],
+  ['Balance', 'The Void Lens no longer does most of the damage on its own, and Collapse hits a little softer. A freeze past Wave 320 is fixed.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come

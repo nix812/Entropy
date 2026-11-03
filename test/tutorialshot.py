@@ -52,6 +52,7 @@ def drive(pg, tag, prefix, finished, limit=420):
                     lr = pg.evaluate("() => { const r = document.querySelector('#tutlist').getBoundingClientRect(), s = document.querySelector('#stage').getBoundingClientRect(), bad = ['#bCall', '#bZoom', '#abils [data-abil=strike]', '#chips'].filter(q => { const e = document.querySelector(q); if (!e || e.offsetParent === null) return false; const o = e.getBoundingClientRect(); return !(o.right <= r.left || o.left >= r.right || o.bottom <= r.top || o.top >= r.bottom); }); return { inside: r.left >= s.left - 1 && r.bottom <= s.bottom + 1 && r.top >= s.top - 1, bad }; }")
                     check(lr['inside'] and not lr['bad'], f'{tag}: open checklist stays in the stage and clear of controls {lr}')
                     pg.click('#tutlist'); pg.wait_for_timeout(150)
+                    continue  # the Got it tap above already moved the coach on: re-read the step
                 if c['ring']:
                     r = c['ring']; ox = max(0, min(k[0] + k[2], r[0] + r[2]) - max(k[0], r[0])); oy = max(0, min(k[1] + k[3], r[1] + r[3]) - max(k[1], r[1]))
                     check(ox * oy < 1, f'{tag}: {c["step"]} card covers its target')

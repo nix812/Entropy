@@ -35,7 +35,7 @@ with sync_playwright() as p:
     pg.evaluate('() => document.querySelector("#panel [data-act=close]").click()'); pg.wait_for_timeout(300)
     tap_tower(pg, 0)
     ok('tower panel open on the Lens', pg.evaluate('() => !!document.querySelector("#panel [data-act=up]") && /Void Lens/.test(document.querySelector("#panel").textContent)'))
-    ok('Ascend button names the perk and ×1.15', pg.evaluate('() => /Ascend to LV 6/.test(document.querySelector("#panel [data-act=up]").textContent) && /×1.15 Damage, perk/.test(document.querySelector("#panel [data-act=up]").textContent)'))
+    ok('Ascend button names the perk and ×1.08 (Lens, 6.0 balance)', pg.evaluate('() => /Ascend to LV 6/.test(document.querySelector("#panel [data-act=up]").textContent) && /×1.08 Damage, perk/.test(document.querySelector("#panel [data-act=up]").textContent)'))
     FOOT = '() => { const r = document.querySelector("#panel .pfoot .lvup").getBoundingClientRect(), q = document.querySelector("#panel .pfoot .row2").getBoundingClientRect(); return [Math.round(r.top), Math.round(r.height), Math.round(q.top)]; }'
     foot0 = pg.evaluate(FOOT)
     tap(pg, '#panel [data-act=up]')
@@ -76,6 +76,7 @@ with sync_playwright() as p:
     ok('resumed: perks kept', perks0 == pg.evaluate('() => G.towers.map(t => (t.perks || []).join(","))'))
     ok('resumed: the same perk cards are waiting', pend == pg.evaluate('() => [ascOffer(G.towers[0]) || [], ascOffer(G.towers[1]) || []].map(o => o.slice())'))
     pg.evaluate('() => { G.paused = true; }')
+    print('    hit:', pg.evaluate('() => { const t = G.towers[0], r = document.querySelector("#cv").getBoundingClientRect(), p = Render.tileToScreen(t.cx, t.cy); const x = r.left + p.x * UIS, y = r.top + p.y * UIS; const e = document.elementFromPoint(x, y); return [Math.round(x), Math.round(y), e && (e.id || e.className)]; }'))
     tap_tower(pg, 0)
     ok('resumed: the panel shows the cards', pg.evaluate('() => document.querySelectorAll("#panel .perk").length === 3'))
     print('   ', pg.evaluate('() => [document.querySelector("#modal") && !document.querySelector("#modal").hidden && document.querySelector("#modal").textContent.slice(0, 80), G.towers[0].ascPend, G.towers[0].perks]'))
