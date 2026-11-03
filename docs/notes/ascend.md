@@ -80,7 +80,21 @@ Recordings made before this build carry `recOpts.v` and no `ascV`, so `newRun` g
 - `node test/replay.js`: the scripted player now also picks perks (`ascPick`, sometimes with an invalid index) and the log shows how many: all replays match (7 and 23 picks in runs 0 and 1).
 
 ## Balance
-(see the table at the end; filled in from the bot sweeps)
+Bots (`smartbot.js` with perk picks), Normal, COLS 48, start 1, best 80, push at every bounty. Batches are small (4 seeds per row; 8 for the baseline 0-point row) because the machine was shared with four other builders and restarted once. Treat ±10 waves as noise (pitfall 16).
+
+| Build | 0 pts median | 60 pts median | 96 pts median | Lens share (mean, all runs) |
+|---|---|---|---|---|
+| Coordinator baseline (5.3 sweep) | 57 | 72 | 92 | (audit: 83% in a 40-point run) |
+| 5.7.4 frozen copy, this machine | 55.5 (8 seeds) | n/a | n/a | 29% (59% in the one W86 run) |
+| v4: Refraction, Crush 1.5% max HP | 76 | 220 | 152 | 54 / 53 / 57% (runs to W300: broken) |
+| v6: max-HP perks removed, Persistence halved | 63 | 78.5 | (1 run: 131) | 52 / 72 / 92% |
+| **v7 (shipped): + Lens Ascend ×1.5 cost, Fork 30%** | (v6: 63) | **83** | **106.5** | 61% / 73% |
+
+Shares per tower, v7 means: 60 pts Lens 61, EMP 15, Rail 9, Missile 6, Gravity 4; 96 pts Lens 73, Gravity 8, Missile 7, Rail 6, Cryo 4. Per-run damage-per-credit for Lens is 4–9× the average in long runs.
+
+**What this says.** Difficulty is back near the baseline, slightly easier at 60–96 points (+10 waves, within noise for 4 seeds). The **Lens share target (< 45%) is not met in bot runs.** In a controlled bench (`ascbench.js` in the scratch folder: LV5 + A7, bot perk choices, no affixes), a Lens deals 0.5–0.7× its old damage, and Rail, Pulse, Missile, EMP and Coil deal 0.8–1.4×. Even so, the Lens keeps carrying long bot runs. The cause is the base ramp: a Lens on a bulky late enemy gains ×2.8–4.3, which grows with late-game HP while every other tower's damage is flat. The bot also buys Ascends cheapest-first, and every one of its plans builds two Lenses. Perks and Ascend prices move the share only a few points. Levers that would work, for the towers builder or the integrator: a lower base `rampMax`, ramp reset on every retarget for Prism, or a per-tower Ascend multiplier (`ASC_DMG` per type, e.g. Lens ×1.08).
+
+Two lessons from the sweeps: (1) any perk that scales with enemy max HP (Crush Depth at 1.5%/pulse, Ice Burst at 25%) makes long runs endless, so none remain above 8%; (2) any perk that gives the Lens a second status (Refraction: Shock) lets it set off Collapse on its own at 10 hits a second.
 
 ## Open issues
 - Existing bug seen while reading `resumeRun` (not fixed, outside this lane): on the line that restores `G.goldAt`/`G.wanted`, a `// bosses aren't saved` comment swallows the rest of the line, so `G.market`, `runUnlocks`, `bossBribe`, `placing` and `placingRefund` are never restored on a normal resume.
