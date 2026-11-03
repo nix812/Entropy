@@ -73,10 +73,10 @@ ok(G2.wanted && G2.wanted.w === 50 && G2.bounties.length === 1 && G2.huntChoice,
 
 // v5.0.2: one Capstone per tree, and older saves holding two are tidied with the point back
 prof(200, 60); S.newRun({ seed: 5, chaos: 1 });
-ok(cap('abszero'), 'Absolute Zero taken');
-ok(S.talentBlock('winter') === 'tree', `a second Cryogenics Capstone is refused (${S.talentBlock('winter')})`);
-S.PROF.caps.push('winter'); const dropped = S.tidyCaps();
-ok(dropped.length === 1 && dropped[0] === 'winter' && S.capsHeld().length === 1, 'tidyCaps drops the extra and keeps the first');
+ok(cap('hoarfrost'), 'Hoarfrost taken');
+ok(S.talentBlock('artillery') === 'tree', `a second Cryogenics Capstone is refused (${S.talentBlock('artillery')})`);
+S.PROF.caps.push('artillery'); const dropped = S.tidyCaps();
+ok(dropped.length === 1 && dropped[0] === 'artillery' && S.capsHeld().length === 1, 'tidyCaps drops the extra and keeps the first');
 
 // v5.0.2: the breach warning names what got through
 prof(0, 60); G = S.newRun({ seed: 9, chaos: 1 }); S.startWave(); S.startWave();
@@ -138,3 +138,12 @@ prof(0, 60); G = S.newRun({ seed: 11, chaos: 1 }); for (let w = 0; w < 30; w++) 
   ok(says === 1, `six heavy waves in a row: one breach warning (${says}), core bar shows ${Math.round(G.breachP * 100)}%`);
   G.leakDmgW = (G.core.smax + G.core.max) * 0.9; S.startWave(); ok(says === 2, 'it speaks again when it climbs to the next band');
   S.Hooks.toast = t0; }
+
+// 5.8: a normal resume restores the Black Market, run unlocks, boss bribe and a pending beacon placement
+// (a comment on the resumeRun line used to swallow these, so they reset on every resume)
+prof(0, 60); G = S.newRun({ seed: 11, chaos: 1, startWave: 12 });
+S.marketEnsure(); G.market.beacons = 1; G.runUnlocks = ['lens']; G.bossBribe = 2; G.placing = 'beacon'; G.placingRefund = 123;
+S.snapshotNow(); { const sn = JSON.parse(JSON.stringify(S.PROF.runSnap)); const R = S.resumeRun(sn);
+  ok(JSON.stringify(R.market) === JSON.stringify(sn.market) && R.market.beacons === 1, 'resume keeps the Black Market stock and beacon count');
+  ok((R.runUnlocks || []).join() === 'lens' && R.bossBribe === 2, 'resume keeps run unlocks and the boss bribe');
+  ok(R.placing === 'beacon' && R.placingRefund === 123, 'resume keeps a pending beacon placement and its refund'); }

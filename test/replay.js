@@ -17,6 +17,7 @@ function play(S, opts, seed, maxw) {
     if (G.huntChoice) { const D = G.huntChoice.doors; if (R() < 0.75 && G.wave < MAXW - 4) S.act('push', D && R() < 0.85 ? Math.floor(R() * D.length) : undefined); else S.act('extract'); continue; }
     if (G.anomOffers) { if (R() < 0.5) S.act('anom', G.anomOffers[0].id || G.anomOffers[0]); else S.act('stab'); }
     if (G.checkpoint && !G.enemies.length) { S.act('cpResume', 3 + R() * 10); continue; }
+    if (guard % 25 === 12) { const t = G.towers.find(o => o.ascPend > 0); if (t && R() < 0.8) { S.ascOffer(t); S.act('ascPick', t.x, t.y, Math.floor(R() * 4)); } } // v5.8 perk picks (index 3 is refused without Mastery 4)
     if (guard % 25 === 0) {
       const x = R();
       if (x < 0.35 && S.gridFree() > 0) { const sp = spots(); if (sp.length) { const [tx, ty] = sp[Math.floor(R() * sp.length)]; const ok = S.TOWER_ORDER.filter(k => S.towerUnlocked(k)); S.act('build', ok[Math.floor(R() * ok.length)], tx, ty); } }
@@ -68,7 +69,7 @@ for (let n = +(process.env.FROM || 0); n < RUNS; n++) {
     S3.simStep(S3.SIM_STEP);
   }
   const h3 = S3.runHash(), same3 = h3 === end.hash && G3.inputs.length === end.inputs;
-  console.log(`${same && same3 ? 'ok  ' : 'FAIL'} run ${n} ${daily ? 'daily' : 'std'} wave ${end.wave} score ${end.score} tick ${end.tick} inputs ${end.inputs} bounties ${end.bounties} sector ${end.sec} doors ${end.doors} twists ${end.twists} purse ${end.purse} ${end.ext ? 'extracted W' + end.ext : end.over ? 'died' : 'stopped'} nemesis ${end.nem || '-'} · replay ${r2.wave}/${r2.score}/${h2} vs ${end.hash} · resume ${h3}`);
+  console.log(`${same && same3 ? 'ok  ' : 'FAIL'} run ${n} ${daily ? 'daily' : 'std'} wave ${end.wave} score ${end.score} tick ${end.tick} inputs ${end.inputs} (perk picks ${G1.inputs.filter(x => x[1] === 'ascPick').length}) bounties ${end.bounties} sector ${end.sec} doors ${end.doors} twists ${end.twists} purse ${end.purse} ${end.ext ? 'extracted W' + end.ext : end.over ? 'died' : 'stopped'} nemesis ${end.nem || '-'} · replay ${r2.wave}/${r2.score}/${h2} vs ${end.hash} · resume ${h3}`);
   if (!(same && same3)) fails++;
 }
 console.log(fails ? `${fails} FAILED` : 'all replays match');

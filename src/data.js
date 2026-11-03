@@ -113,6 +113,137 @@ const LV_TIERS = [{ max: 3, name: 'Common', col: '#ecebe4' }, { max: 6, name: 'U
   { max: 12, name: 'Epic', col: '#b86cff' }, { max: 15, name: 'Legendary', col: '#ff8a2a' }, { max: Infinity, name: 'Mythic', col: '#ff3048' }];
 const towerLevel = t => (t.lvl || 1) + (t.asc || 0);
 const lvTier = n => LV_TIERS.find(x => n <= x.max);
+// ---------- Ascension perks: each Ascend offers 1 of 3 perks for that tower (4 at Mastery 4) and ×ASC_DMG Damage ----------
+// Runs recorded before perks (recOpts.v set, no ascV) keep the old ×1.3 and no perks, so they replay exactly.
+const ASC_V = 2, ASC_DMG = 1.15, ASC_DMG_OLD = 1.3;
+// Ascend price per tower in perk runs: the Lens ramp already scales with late-game HP, so its Ascends cost more (bots: 66% of damage at 60 points without this)
+const ASC_COST = { lens: 1.5 };
+// v: cumulative value per stack (the last entry is the cap; one entry = one-time). spec: only offered with that specialization.
+// The sim reads t.s.pkv[id] (the summed value); d(inc) describes the next pick.
+const PERKS = {
+  pulse: [
+    { id: 'burst', name: 'Burst Fire', v: [1], d: () => 'Every 5th shot: 3 rounds' },
+    { id: 'apRounds', name: 'AP Rounds', v: [1], d: () => 'Ignores Plating' },
+    { id: 'bounce', name: 'Ricochet Rounds', v: [1, 2], d: v => `+${v} bounce${v > 1 ? 's' : ''} per round` },
+    { id: 'hollow', name: 'Hollow Point', v: [25, 40], d: v => `+${v}% Damage below half HP` },
+    { id: 'rapid', name: 'Rapid Cycle', v: [12, 22, 31, 39, 46], d: v => `+${v}% Attack Speed` },
+    { id: 'sights', name: 'Hair Trigger', v: [8, 14], d: v => `+${v}% Crit Chance` },
+    { id: 'spin', name: 'Spin-Up', spec: 1, v: [40], d: () => 'Speeds up while firing, to +40%' },
+    { id: 'barrel', name: 'Third Barrel', spec: 2, v: [1], d: () => '+1 target' },
+  ],
+  rail: [
+    { id: 'pierce', name: 'Long Bore', v: [2, 3], d: v => `+${v} Pierce` },
+    { id: 'overpress', name: 'Overpressure', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'spotter', name: 'Spotter', v: [1], d: () => 'Crits Mark all hit (2 stacks)' },
+    { id: 'deflect', name: 'Deflection', v: [1], d: () => 'Ricochets once for 60%' },
+    { id: 'capBank', name: 'Capacitor Bank', v: [1], d: () => 'Every 3rd shot: ×2.5 Damage' },
+    { id: 'coup', name: 'Coup de Grace', v: [10, 15], d: (v, tot) => `Executes non-bosses under ${tot || v}%` },
+    { id: 'bigGame', name: 'Big Game', v: [25, 40], d: v => `+${v}% Damage to bosses, elites` },
+    { id: 'barrelR', name: 'Long Barrel', v: [0.8, 1.3], d: v => `+${v} Range` },
+    { id: 'slug', name: 'Tungsten Slug', spec: 1, v: [50], d: () => '+50% Crit Damage' },
+    { id: 'liveWire', name: 'Live Wire', spec: 2, v: [1], d: () => 'Shocks every enemy hit' },
+  ],
+  cryo: [
+    { id: 'iceBurst', name: 'Ice Burst', v: [8], d: () => 'Frozen kills burst (8% HP)' },
+    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Its Frozen take +${v}% Damage` },
+    { id: 'deep', name: 'Deep Freeze', v: [0.4, 0.7], d: v => `Freeze lasts +${v} s` },
+    { id: 'flash', name: 'Flash Chill', v: [1], d: () => '+1 Chill per pulse' },
+    { id: 'ring', name: 'Wide Ring', v: [0.5, 0.8], d: v => `+${v} Range` },
+    { id: 'comp', name: 'Compressor', v: [15, 25, 32], d: v => `+${v}% pulse rate` },
+    { id: 'perma', name: 'Permafrost', spec: 1, v: [40], d: () => 'Refreeze 40% sooner' },
+    { id: 'fault', name: 'Fault Lines', spec: 2, v: [0.3], d: () => '+30% Shatter Field' },
+  ],
+  missile: [
+    { id: 'tube', name: 'Extra Tube', v: [1, 2], d: v => `+${v} half-power missile${v > 1 ? 's' : ''}` },
+    { id: 'pen', name: 'Penetrator', v: [1], d: () => 'Ignores Plating' },
+    { id: 'seek', name: 'Smart Seekers', v: [1], d: () => 'Missiles retarget' },
+    { id: 'warhead', name: 'Heavy Warhead', v: [0.4, 0.7], d: v => `+${v} Splash` },
+    { id: 'shrap', name: 'Shrapnel', v: [1], d: () => 'Blasts throw 3 shards (25%)' },
+    { id: 'thermite', name: 'Thermite', v: [40, 70], d: v => `+${v}% Burn damage` },
+    { id: 'autoload', name: 'Autoloader', v: [15, 27, 37, 45, 52], d: v => `+${v}% fire rate` },
+    { id: 'pods', name: 'Bigger Pods', spec: 1, v: [2], d: () => '+2 bomblets' },
+    { id: 'gel', name: 'Sticky Gel', spec: 2, v: [1], d: () => 'Fire pools +2 s, 30% wider' },
+  ],
+  coil: [
+    { id: 'chain', name: 'Extra Coil', v: [1, 2, 3], d: v => `+${v} Chain` },
+    { id: 'amps', name: 'Amperage', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'weld', name: 'Arc Weld', v: [1], d: () => 'Ignores Plating' },
+    { id: 'loop', name: 'Feedback Loop', v: [1], d: () => 'Last arc hits the first again' },
+    { id: 'super', name: 'Superconductor', v: [1], d: () => 'No damage lost per jump' },
+    { id: 'arc', name: 'Long Arc', v: [40, 65], d: v => `Arcs reach ${v}% farther` },
+    { id: 'overcur', name: 'Overcurrent', v: [20, 32], d: v => `+${v}% Damage to Shocked` },
+    { id: 'taser', name: 'Taser', v: [8, 14], d: v => `+${v}% Stun chance` },
+    { id: 'crown', name: 'Crown Jewel', spec: 1, v: [2], d: () => '+2 Chain' },
+    { id: 'hv', name: 'High Voltage', spec: 2, v: [30], d: () => '+30% Damage' },
+  ],
+  flame: [
+    { id: 'spread', name: 'Spreading Fire', v: [1], d: () => 'Burn spreads on death' },
+    { id: 'nozzle', name: 'Wide Nozzle', v: [30, 50], d: v => `Cone ${v}% wider` },
+    { id: 'tank', name: 'Pressure Tank', v: [0.4, 0.7], d: v => `+${v} Range` },
+    { id: 'accel', name: 'Accelerant', v: [15, 28, 39, 48, 56], d: v => `+${v}% Damage` },
+    { id: 'slag', name: 'Slag', v: [1], d: () => 'Ignores Plating' },
+    { id: 'updraft', name: 'Updraft', v: [1], d: () => 'Hits fliers' },
+    { id: 'slowBurn', name: 'Slow Burn', spec: 1, v: [2], d: () => 'Burn lasts +2 s' },
+    { id: 'ion', name: 'Ion Torch', spec: 2, v: [0.25], d: () => '+25% Shock chance' },
+  ],
+  lens: [
+    { id: 'fork', name: 'Fork', v: [30], d: () => 'Forks to a 2nd target (30%)' },
+    { id: 'hold', name: 'Persistence', v: [1], d: () => 'Keeps half its ramp on retarget' },
+    { id: 'focal', name: 'Focal Length', v: [1, 1.6], d: v => `+${v} Range` },
+    { id: 'quick', name: 'Quick Focus', v: [40, 65], d: v => `Ramps ${v}% faster` },
+    { id: 'brand', name: 'Brand', v: [0.15, 0.25], d: v => `+${Math.round(v * 100)}% Mark chance` },
+    { id: 'linger', name: 'Afterglow', v: [2, 3], d: v => `Its Marks last +${v} s` },
+    { id: 'well', name: 'Deep Well', spec: 1, v: [0.3], d: () => '+0.3 max ramp' },
+    { id: 'facet', name: 'Fourth Facet', spec: 2, v: [1], d: () => '+1 beam' },
+  ],
+  emp: [
+    { id: 'longPulse', name: 'Long Pulse', v: [0.3, 0.5], d: v => `Stun lasts +${v} s` },
+    { id: 'scatter', name: 'Scatter Shell', v: [1], d: () => 'Shells split in 3 (20%)' },
+    { id: 'burstE', name: 'Wide Burst', v: [0.4, 0.7], d: v => `+${v} Splash` },
+    { id: 'shaped', name: 'Shaped Charge', v: [1], d: () => 'Ignores Plating' },
+    { id: 'eater', name: 'Shield Eater', v: [1], d: () => 'Strips shields fully' },
+    { id: 'breech', name: 'Fast Breech', v: [15, 27, 37, 45, 52], d: v => `+${v}% fire rate` },
+    { id: 'ionE', name: 'Ion Charge', v: [0.6], d: () => 'Hits Shock' },
+    { id: 'blackout', name: 'Lights Out', spec: 1, v: [1], d: () => 'Bosses Stunned twice as long' },
+    { id: 'shell4', name: 'Fourth Shell', spec: 2, v: [1], d: () => '+1 shell per volley' },
+  ],
+  grav: [
+    { id: 'undertow', name: 'Undertow', v: [30], d: () => 'Pulled enemies 30% slower' },
+    { id: 'anchor', name: 'Sky Anchor', v: [1], d: () => 'Pulls fliers too' },
+    { id: 'heavy', name: 'Heavy Core', v: [25, 40], d: v => `+${v}% pull` },
+    { id: 'crush', name: 'Crush Depth', v: [40], d: () => '+40% Damage' },
+    { id: 'radius', name: 'Event Radius', v: [0.4, 0.7], d: v => `+${v} Range` },
+    { id: 'steady', name: 'Steady Pull', v: [1], d: () => 'Repeat pulls stay stronger' },
+    { id: 'darkMark', name: 'Dark Mark', spec: 1, v: [1], d: () => '+1 Mark per pulse' },
+    { id: 'eddy', name: 'Eddy', spec: 2, v: [1], d: () => 'Pulled enemies are Chilled' },
+  ],
+  pylon: [
+    { id: 'ampP', name: 'Amplifier Coil', v: [6, 10], d: v => `+${v}% Damage boost` },
+    { id: 'mast', name: 'Relay Mast', v: [0.6, 1], d: v => `+${v} Range` },
+    { id: 'grid', name: 'Targeting Grid', v: [8, 14], d: v => `+${v}% Crit boost` },
+    { id: 'sync', name: 'Clock Sync', v: [5, 8], d: v => `+${v}% Speed boost` },
+  ],
+  snare: [
+    { id: 'bigNet', name: 'Bigger Net', v: [4, 7, 9], d: v => `+${v} catches per wave` },
+    { id: 'barbs', name: 'Barbs', v: [0.5, 0.8], d: v => `Hold +${v} s` },
+    { id: 'tar', name: 'Tar', v: [0.1, 0.15], d: v => `+${Math.round(v * 100)}% net slow` },
+    { id: 'exposed', name: 'Exposed', v: [15, 25], d: v => `Netted take +${v}% Damage` },
+  ],
+  forge: [
+    { id: 'overtime', name: 'Overtime', v: [20, 35, 45], d: v => `+${v}% income` },
+    { id: 'fee', name: "Finder's Fee", v: [4, 7], d: v => `+${v}% kill credits` },
+    { id: 'compound', name: 'Compound', v: [0.5], d: () => '0.5% interest per wave' },
+    { id: 'hazard', name: 'Hazard Pay', v: [1], d: () => 'Boss waves pay double' },
+  ],
+};
+// the next pick's value: the step from the current stack to the next (one-time perks pass their only value)
+const perkInc = (P, n) => +(P.v[n] - (n ? P.v[n - 1] : 0)).toFixed(2);
+const perkText = (P, n) => P.d(perkInc(P, n || 0), P.v[n || 0]);
+const perkTotal = (P, n) => { const v = P.v[Math.min(n, P.v.length) - 1]; return P.d(v, v); }; // what n stacks add up to
+// ---------- Tower Mastery (PROF.mastery = { v: 2, xp: { type: xp } }), earned at game over ----------
+// xp: totals for ranks 1–5. Rank 2 small stat, rank 3 turret trim, rank 4 a fourth perk choice, rank 5 the tower's legendary joins its rolls.
+const MASTERY = { xp: [0, 60, 180, 400, 750, 1250], perWave: 2.5, topW: 0.5, minShare: 0.01, stat: 0.05, offer4: 4,
+  rewards: ['Mastery badge on the build card', '+5% Damage (support towers: +5% strength)', 'Gold trim on the tower', 'Ascend offers 4 perks instead of 3', 'Its own legendary affix can roll'] };
 
 // ---------- Affixes ----------
 const RARITY = [
@@ -165,6 +296,19 @@ const LEGENDARIES = [
   { id: 'entropic', pool: 'atk', name: 'Entropic Rounds', t: () => 'Hits deal a random ×0.4 to ×3 damage' },
   { id: 'nexus', pool: 'pylon', name: 'Nexus', t: () => '×1.5 Boost strength, +1 Range' },
   { id: 'midas', pool: 'forge', name: 'Midas Press', t: () => '×2 Income. Earns 1% interest on banked credits' },
+  // Mastery 5: each tower's own legendary joins that tower's rolls. Built from perk effects (pkv adds to the perk values)
+  { id: 'mPulse', pool: 'atk', tower: 'pulse', name: 'Storm of Lead', pkv: { bounce: 2, rapid: 15 }, t: () => 'Rounds bounce to 2 more enemies. +15% Attack Speed' },
+  { id: 'mRail', pool: 'atk', tower: 'rail', name: 'Railstorm', pkv: { deflect: 1, pierce: 2 }, t: () => 'Shots ricochet once for 60%. +2 Pierce' },
+  { id: 'mCryo', pool: 'atk', tower: 'cryo', name: 'Absolute Ring', pkv: { brittle: 20, flash: 1 }, t: () => 'Frozen enemies take +20% Damage. Each pulse adds 1 more Chill stack' },
+  { id: 'mMissile', pool: 'atk', tower: 'missile', name: 'Hydra', pkv: { tube: 2, seek: 1 }, t: () => '+2 half-power missiles. Missiles find a new target if theirs dies' },
+  { id: 'mCoil', pool: 'atk', tower: 'coil', name: 'Storm Crown', pkv: { chain: 2, loop: 1 }, t: () => '+2 Chain. The last arc jumps back to the first target' },
+  { id: 'mFlame', pool: 'atk', tower: 'flame', name: "Dragon's Breath", pkv: { updraft: 1, spread: 1, accel: 30 }, t: () => 'Flames reach fliers. Burn spreads on death. +30% Damage' },
+  { id: 'mLens', pool: 'atk', tower: 'lens', name: 'Twin Singularity', pkv: { fork: 50, hold: 1 }, t: () => 'Beam forks to a 2nd target for 50%. Keeps half its ramp when switching target' },
+  { id: 'mEmp', pool: 'atk', tower: 'emp', name: 'Cascade', pkv: { scatter: 1, longPulse: 0.3 }, t: () => 'Shells split into 3 bomblets. Stun lasts 0.3 s longer' },
+  { id: 'mGrav', pool: 'atk', tower: 'grav', name: 'Abyss', pkv: { anchor: 1, undertow: 30 }, t: () => 'Wells drag fliers. Pulled enemies are slowed 30%' },
+  { id: 'mPylon', pool: 'pylon', tower: 'pylon', name: 'Overmind', pkv: { ampP: 10, mast: 1 }, t: () => '+10% Damage boost. +1 Range' },
+  { id: 'mSnare', pool: 'pylon', tower: 'snare', name: 'Kraken Net', pkv: { bigNet: 8, exposed: 20 }, t: () => '+8 catches per wave. Netted fliers take +20% more damage' },
+  { id: 'mForge', pool: 'forge', tower: 'forge', name: 'Golden Goose', pkv: { overtime: 50, compound: 0.5 }, t: () => '+50% income. Earns 0.5% interest on banked credits each wave' },
   { id: 'bulwark', pool: 'core', name: 'Bulwark Matrix', t: () => 'Shield fully recharges at the start of each wave' },
   { id: 'retribution', pool: 'core', name: 'Retribution', t: () => 'When an enemy reaches the core, it blasts everything within 2.5 tiles for 4× core damage' },
 ];
