@@ -628,6 +628,7 @@ const RES = 2;
       case 'lens': { const k = Math.min(1, (t.ramp || 0) / 3.5); if (k > 0.05) D(b, cx, cy, 1 + Math.round(k * 2), hexA('#ffffff', 0.4 + 0.5 * k)); break; }
     }
     if (t.asc) { b.strokeStyle = hexA(lvTier(towerLevel(t)).col, 0.55 + 0.3 * Math.sin(frame / 8)); b.lineWidth = 1; b.strokeRect(X + 0.5, Y + 0.5, 23, 23); }
+    if (G.mastery && G.mastery[t.type] >= 3) { const g = '#ffd84a'; R(b, X + 1, Y + 21, 4, 1, g); R(b, X + 1, Y + 18, 1, 3, g); R(b, X + 19, Y + 21, 4, 1, g); R(b, X + 22, Y + 18, 1, 3, g); } // v5.8 Mastery 3: gold trim on the base corners
     // v4.7: the level now reads as a numbered badge in the overlay (drawn crisp at any zoom), see the v4.8 badge pass
     let best = -1; for (const a of t.affixes) if (a.tier < 4 && a.tier > best) best = a.tier;
     if (best >= 1) { R(b, X + 18, Y + 2, 4, 4, '#090b16'); R(b, X + 19, Y + 3, 2, 2, RARITY[best].col); }
@@ -1363,7 +1364,7 @@ const RES = 2;
     //    tower is maxed, the cheapest affordable Ascension. It points at the best next upgrade, not at everything you could buy
     { const tpx = TILE * ws, cr = G.credits, big = tpx >= 17;
       let best = null, bl = Infinity, bc = Infinity;
-      if (!G.over) for (const t of G.towers) { const c0 = upgradeCost(t); if (cr < c0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } }
+      if (!G.over) for (const t of G.towers) { const c0 = upgradeCost(t); if (cr < c0 || t.ascPend > 0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } }
       for (const t of G.towers) {
         const n = towerLevel(t), col = lvTier(n).col, x0 = bx2s(t.x * TILE), x1 = bx2s(t.x * TILE + TILE), y = Math.round(by2s(t.y * TILE + TILE)), w = x1 - x0, lw = Math.max(2, Math.round(tpx / 12));
         c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x0 + w * 0.18) - 1, y - lw - 1, Math.round(w * 0.64) + 2, lw + 2);
@@ -1388,6 +1389,11 @@ const RES = 2;
     for (const t of G.towers) if (t.pending > 0) {
       const x = Math.round(bx2s(t.x * TILE + TILE)) - 5, y = Math.round(by2s(t.y * TILE)) + 1;
       c.fillStyle = '#090b16'; c.fillRect(x - 1, y - 1, 6, 6); c.fillStyle = frame % 40 < 30 ? PAL.warn : '#fff6c0'; c.fillRect(x, y, 4, 4);
+    }
+    // v5.8 an Ascension perk waiting to be picked: the same pip in orange, under the veteran one
+    for (const t of G.towers) if (t.ascPend > 0) {
+      const x = Math.round(bx2s(t.x * TILE + TILE)) - 5, y = Math.round(by2s(t.y * TILE)) + 8;
+      c.fillStyle = '#090b16'; c.fillRect(x - 1, y - 1, 6, 6); c.fillStyle = frame % 40 < 30 ? '#ff8a2a' : '#ffd2a8'; c.fillRect(x, y, 4, 4);
     }
     c.restore();
 

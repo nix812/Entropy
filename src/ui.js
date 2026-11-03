@@ -275,7 +275,7 @@ const UI = (() => {
     else if (setup.mode === 'daily') { const sp = setup.daily; newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, cols: COLS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); }
     else {
       PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
-      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null, sector: setupSector() });
+      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks() });
     }
     Render.resetCam(); updateZoomBtn();
     if (!PROF.zoomHint) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
@@ -783,7 +783,8 @@ const UI = (() => {
       const D = TOWERS[k];
       if (!towerUnlocked(k)) return `<div class="bt locked" aria-label="${esc(D.name)} locked"><canvas class="tcard" data-card="${k}" data-lock="1"></canvas><span class="bn"><em>???</em><b>Wave ${D.unlock}</b></span></div>`;
       const cost = towerCost(k);
-      return `<button class="bt ${pick === k ? 'on' : ''}" data-act="pick" data-type="${k}" aria-label="${esc(D.name)}" style="--c:${EL[D.el].col}"><canvas class="tcard" data-card="${k}"></canvas><span class="bn"><em>${esc(TSHORT[k] || D.name)}</em><b ${costBtn(cost)}>${fmt(cost)}</b></span></button>`;
+      const mr = masteryRank(k);
+      return `<button class="bt ${pick === k ? 'on' : ''}" data-act="pick" data-type="${k}" aria-label="${esc(D.name)}" style="--c:${EL[D.el].col}">${mr ? `<span class="mrank r${mr}">${mr}</span>` : ''}<canvas class="tcard" data-card="${k}"></canvas><span class="bn"><em>${esc(TSHORT[k] || D.name)}</em><b ${costBtn(cost)}>${fmt(cost)}</b></span></button>`;
     }).join('');
     let info, foot;
     if (pick) {
@@ -895,13 +896,15 @@ const UI = (() => {
     let up = '';
     if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide lvup" style="${tierStyle(t.lvl + 1)}" data-act="up" ${costBtn(c)}>Upgrade to LV ${t.lvl + 1} · ${fmt(c)}<small>${s.kind === 'snare' ? 'more catches, longer hold, wider net' : s.kind === 'support' ? 'stronger boost' : s.kind === 'eco' ? 'more income' : 'more Damage'}, new affix</small></button>`; }
     else if (t.lvl === 3) { const c = upgradeCost(t); up = `<div class="lbl">Specialize · ${fmt(c)}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${costBtn(c)}><b>${esc(sp.name)}</b><span>${tipify(sp.desc)}</span></button>`).join('')}</div>`; }
-    else { const c = upgradeCost(t); up = `<button class="btn primary wide asc lvup" style="${tierStyle(towerLevel(t) + 1)}" data-act="up" ${costBtn(c)}>Ascend to LV ${towerLevel(t) + 1} · ${fmt(c)}<small>${lvTier(towerLevel(t) + 1).name} · ×1.3 Damage, new affix</small></button>`; }
+    else if (t.ascPend > 0) { const c = upgradeCost(t); up = `<button class="btn primary wide asc lvup" style="${tierStyle(towerLevel(t) + 1)}" disabled>Ascend to LV ${towerLevel(t) + 1} · ${fmt(c)}<small>Choose a perk ${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'} first</small></button>`; }
+    else { const c = upgradeCost(t); up = `<button class="btn primary wide asc lvup" style="${tierStyle(towerLevel(t) + 1)}" data-act="up" ${costBtn(c)}>Ascend to LV ${towerLevel(t) + 1} · ${fmt(c)}<small>${lvTier(towerLevel(t) + 1).name} · ×${G.ascV >= 2 ? ASC_DMG : ASC_DMG_OLD} Damage${G.ascV >= 2 && perkPool(t).length ? ', perk' : ''}, affix</small></button>`; }
     let vet = '';
     if (t.pending > 0) {
       const o = vetOffer(t);
       vet = `<div class="vet"><div class="lbl">Choose a mutation${t.pending > 1 ? ` · ${t.pending} ready` : ''}</div>${o.map((a, i) => `<button class="aff pickable" data-act="vet" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</button>`).join('')}</div>`;
     }
     const nextVet = vetThreshold(t.rank + 1), prevVet = t.rank ? vetThreshold(t.rank) : 0;
+    const perks = perkCardsHTML(t), perkList = perkListHTML(t);
     const rc = rerollCost(t);
     const title = esc(D.name);
     const combat = !(s.kind === 'eco' || s.kind === 'support' || s.kind === 'snare');
@@ -917,10 +920,12 @@ const UI = (() => {
       ${idle}
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
+      ${perkList}
       ${t.affixes.length ? `<div class="lbl">Affixes</div><div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>` : ''}
       ${foot}`;
     return `${head}
       ${t.lvl === 3 ? up : ''}
+      ${perks}
       ${vet}
       ${condHTML(t)}
       ${idle}
@@ -938,6 +943,16 @@ const UI = (() => {
     const line = cur ? cur.short : lock && L.length === 1 ? `Locked: learn ${lockT.name} in ${TREE_BY_ID[lockT.tree].name}` : D.blurb;
     return `<div class="firerow"><span class="lbl">Fire</span>${[{ id: '', name: 'Standard' }].concat(L).map(f => { const ok = !f.id || fireLearned(t.type, f.id), on = (cur ? cur.id : '') === f.id;
       return `<button class="chip ${on ? 'on' : ''} ${ok ? '' : 'lock'}" data-act="${ok ? 'fire' : 'fireLock'}" data-v="${f.id}">${esc(f.name)}</button>`; }).join('')}</div><div class="firedesc">${tipify(line)}</div>`;
+  }
+  // v5.8 Ascension perks: the pending pick as fixed-height cards (3, or 4 at Mastery 4), and the perks taken (Details tab)
+  function perkCardsHTML(t) {
+    const o = ascOffer(t); if (!o) return '';
+    return `<div class="perks n${o.length}"><div class="lbl">Ascension perk · choose 1</div>${o.map((id, i) => { const P = perkDef(t.type, id), n = perkStacks(t, id);
+      return `<button class="perk${P.spec ? ' sp' : ''}" data-act="perk" data-v="${i}"${P.spec ? ` title="${esc(TOWERS[t.type].specs[P.spec - 1].name)} perk"` : ''}><b>${esc(P.name)}${n ? `<em>${roman(n + 1)}</em>` : ''}</b><span>${esc(perkText(P, n))}</span></button>`; }).join('')}</div>`; // plain text: a tooltip word would swallow the tap
+  }
+  function perkListHTML(t) {
+    const ids = [...new Set(t.perks || [])]; if (!ids.length) return '';
+    return `<div class="lbl">Perks</div><div class="affs">${ids.map(id => { const P = perkDef(t.type, id), n = perkStacks(t, id); return P ? `<div class="aff" style="--c:#ff8a2a"><i>${esc(P.name)}${n > 1 ? ' ' + roman(n) : ''}</i>${tipify(perkTotal(P, n))}</div>` : ''; }).join('')}</div>`;
   }
   // v5.1: every live modifier on this tower in one place (Nic: storms weren't transparent)
   function condHTML(t) {
@@ -1021,7 +1036,7 @@ const UI = (() => {
     }
     if (panel.kind === 'tower') {
       const t = panel.t;
-      const sig = t.pending + ':' + t.rank + ':' + t.reson + ':' + t.affixes.length + ':' + t.lvl;
+      const sig = t.pending + ':' + t.rank + ':' + t.reson + ':' + t.affixes.length + ':' + t.lvl + ':' + (t.ascPend || 0) + ':' + (t.perks ? t.perks.length : 0);
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const d = el.querySelector('[data-live="dps"]'); if (d) d.textContent = fmt(t.dps);
@@ -1071,7 +1086,8 @@ const UI = (() => {
       if (act === 'mode') { window.act('mode', t.x, t.y, b.dataset.v); renderPanel(); }
       else if (act === 'fire') { if (!window.act('fire', t.x, t.y, b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'fireLock') { const F = fireModes(t.type).find(f => f.id === b.dataset.v), T = F && TAL[F.need]; if (F && T) toast(F.name.toUpperCase(), `${F.desc}. Learn ${T.name} in the ${TREE_BY_ID[T.tree].name} talents to unlock it`, TREE_BY_ID[T.tree].col, true, 'tip'); }
-      else if (act === 'up') { if (!window.act('up', t.x, t.y)) SFX.play('deny'); renderPanel(); }
+      else if (act === 'up') { if (!window.act('up', t.x, t.y)) SFX.play('deny'); else if (t.ascPend > 0) panel.tab = 'act'; renderPanel(); }
+      else if (act === 'perk') { if (!window.act('ascPick', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'spec') { if (!window.act('up', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'reroll') { if (!window.act('reroll', t.x, t.y, 0)) SFX.play('deny'); renderPanel(); }
       else if (act === 'rerollTok') { if (!window.act('reroll', t.x, t.y, 1)) SFX.play('deny'); renderPanel(); }
@@ -1651,11 +1667,19 @@ const UI = (() => {
       ${G.hallRank >= 0 ? `<p class="amber">Hall of Fame #${G.hallRank + 1}!</p>` : ''}
       ${recapHTML(G.rec)}
       ${G.unlocks && G.unlocks.length ? `<p class="good">New towers: ${G.unlocks.map(k => esc(TOWERS[k].name)).join(', ')}</p>` : ''}
+      ${masteryGainHTML(G.masteryGain)}
       ${pointsFree() > 0 ? `<p class="good">${pointsFree()} talent point${pointsFree() === 1 ? '' : 's'} to spend</p>` : ''}
       <div class="row logrow"><span class="note">Run log for analysis</span><button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button></div>
       <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Talents</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
+  // v5.8 Tower Mastery gained this run: rank-ups first ("Arc Coil Mastery 2 → 3"), then the biggest gains
+  function masteryGainHTML(L) {
+    if (!L || !L.length) return '';
+    const up = L.filter(g => g.r1 > g.r0), rest = L.filter(g => g.r1 === g.r0).sort((a, b) => b.xp - a.xp).slice(0, Math.max(0, 4 - up.length));
+    return `<p class="note mgain">${up.map(g => `<b>${esc(TOWERS[g.k].name)} Mastery ${g.r0} → ${g.r1}</b>`).concat(rest.map(g => `${esc(TOWERS[g.k].name)} +${g.xp}`)).join(' · ')}${up.length ? '' : ' Mastery XP'}</p>`;
+  }
+  const masteryPips = r => `<span class="mpip">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= r ? 'on' : ''}"></i>`).join('')}</span>`;
   const fsOK = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
   const fsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
   function toggleFs() {
@@ -2129,7 +2153,7 @@ const UI = (() => {
     { id: 'run', name: 'In a Run', rows: [
       ['Affixes', 'Random bonuses: Common, Magic, Rare, Legendary. Curses are negative.'],
       ['Veterans', 'Towers rank up from kills. When one has a mutation to pick, a "veterans ready" chip appears at the top: tap it to jump there.'],
-      ['Ascend', 'Max-level towers can Ascend for ×1.3 Damage.'],
+      ['Ascend', `Max-level towers can Ascend: ×${ASC_DMG} Damage and a perk you choose from 3.`],
       ['Entropy', 'Fills as you fight. When full, draw an Anomaly or Stabilize.'],
       ['Storms', 'Boost one element. Storms merge; 3 types form a Maelstrom.'],
       ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned 2 waves ahead.'],
@@ -2177,7 +2201,7 @@ const UI = (() => {
         ['Pierce', 'Hits pass through additional enemies.'], ['Chain', 'Attacks jump to additional nearby enemies.'], ['Splash', 'Damages enemies around the impact. Radius in tiles.'],
         ['Crit', 'Critical hit. Deals bonus Crit Damage.'], ['Ramp', 'Beam damage that grows while it holds one target.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
         ['Specialization', 'A permanent fork chosen at LV 3.'], ['Veteran', 'Rank earned from kills. Each rank offers a mutation.'], ['Mutation', 'An affix you choose when a tower ranks up.'],
-        ['Ascend', 'Upgrade past max level for ×1.3 Damage and a new affix.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
+        ['Ascend', `Upgrade past max level: ×${ASC_DMG} Damage, a new affix and a perk you choose from 3 (4 at Mastery 4).`], ['Mastery', 'Each tower type ranks up from its share of your runs. Towers that are not your top damage dealer earn nearly as much. Ranks 1 to 5: badge, +5% stat, trim, a fourth perk choice, its own legendary.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
         ['Milestone', 'Score threshold. Grants an extra ability charge and a small bonus.'], ['Conditions', 'In a tower\'s panel: every live modifier on it (storms, events, Frenzy, outages) with numbers.'], ['Headline', 'The enemy a wave leans on. Amber chip in the top bar; tap it for what beats it.'], ['IDLE', 'Tag on a tower that hasn\'t fired for three waves. Move it to where the enemies are.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
         ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
@@ -2303,11 +2327,12 @@ const UI = (() => {
     setTimeout(() => { renderHangar(); toast('GALAXY REBORN', `Supernova ${PROF.nova}. Score ×${(1 + PROF.nova * NOVA_SCORE + PROF.laws.length * LAW_SCORE).toFixed(2)}, XP +${Math.round(PROF.nova * NOVA_XP * 100)}%.`, '#ff9adf', 1); }, 900);
   }
   function openArchive() {
-    const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k); return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? '' : 'Wave ' + D.unlock}</em></div>`; }).join('');
+    const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k), xp = masteryXp(k), r = masteryRankOf(xp);
+      return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? `${masteryPips(r)}<u>${r < 5 ? `${xp}/${MASTERY.xp[r + 1]}` : esc(LEGENDARIES.find(L => L.tower === k).name)}</u>` : 'Wave ' + D.unlock}</em></div>`; }).join('');
     const ks = activeCaps().map(id => TAL[id].name);
     const hrs = Math.floor(PROF.playTime / 3600), mins = Math.floor(PROF.playTime / 60) % 60;
     modal(`<div class="card"><div class="ch"><h2>Archive</h2><button class="x" data-act="close2">✕</button></div>
-      <div class="setup-grid"><div class="col"><div class="lbl">Arsenal</div>${rows}</div>
+      <div class="setup-grid"><div class="col"><div class="lbl">Arsenal · ${tipify('Mastery')}</div>${rows}<p class="note">${MASTERY.rewards.map((x, i) => `${i + 1}: ${esc(x)}`).join(' · ')}. Towers that are not your top damage dealer earn nearly as much.</p></div>
       <div class="col">${hallHTML()}<div class="lbl">Record</div>
         <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best Wave<b>${PROF.bestWave || '—'}</b></span><span>Best Score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Time Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
         <div class="lbl">Capstones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None yet'}</p>

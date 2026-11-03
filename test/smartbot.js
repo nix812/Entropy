@@ -99,6 +99,23 @@ function wantExtract(G, met) {
   if (met.recentMin < 0.4 || G.core.hp / G.core.max < 0.5) return true;
   return (G.pushes || 0) >= 2 && Math.random() < 0.25;
 }
+// v5.8 Ascension perks: a rough value per perk (damage that scales late scores high), plus noise so runs differ. NOPERK=1 takes card 0
+const PERK_PRI = { burst: 3, apRounds: 3, bounce: 2, hollow: 2, rapid: 2.5, sights: 1.5, spin: 3, barrel: 3,
+  pierce: 2.5, overpress: 2.5, spotter: 1.5, deflect: 2, capBank: 3, coup: 2, bigGame: 2.5, barrelR: 1.5, slug: 2.5, liveWire: 1.5,
+  iceBurst: 2, brittle: 3, deep: 2, flash: 2.5, ring: 2, comp: 2, perma: 2, fault: 2.5,
+  tube: 3, seek: 1.5, warhead: 2, shrap: 2, thermite: 2, autoload: 2.5, pods: 3, gel: 2,
+  chain: 2.5, amps: 2.5, loop: 1.5, super: 3, arc: 1.5, overcur: 2.5, taser: 1.5, crown: 3, hv: 3,
+  spread: 2, nozzle: 2, tank: 2, accel: 2.5, slag: 3, updraft: 2.5, slowBurn: 2, ion: 1.5,
+  fork: 3, hold: 2.5, focal: 1.5, quick: 2, brand: 1.5, linger: 1.5, well: 3, facet: 3, pen: 3, weld: 3, shaped: 3,
+  longPulse: 2, scatter: 3, burstE: 2, eater: 1.5, breech: 2.5, ionE: 2, blackout: 2, shell4: 3,
+  undertow: 2.5, anchor: 1.5, heavy: 2, crush: 2.5, radius: 2, steady: 2, darkMark: 1.5, eddy: 2,
+  ampP: 3, mast: 2, grid: 1.5, sync: 2.5, bigNet: 3, barbs: 2, tar: 2, exposed: 2.5, overtime: 3, fee: 2, compound: 2, hazard: 2.5 };
+function botPerk(tw) {
+  const o = S.ascOffer(tw); if (!o) return;
+  let bi = 0, bv = -1;
+  if (!process.env.NOPERK) o.forEach((id, i) => { const v = (PERK_PRI[id] || 1) - 0.4 * S.perkStacks(tw, id) + Math.random() * 0.8; if (v > bv) { bv = v; bi = i; } });
+  S.claimPerk(tw, bi);
+}
 const agg = [];
 const OFF = +(process.env.SEED || 0);
 for (let run = OFF; run < OFF + runs; run++) {
@@ -146,6 +163,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     // v5.8 Techniques
     for (const tw of G.towers) chooseFire(G, tw);
     // veterans
+    for (const tw of G.towers) if (tw.ascPend > 0) botPerk(tw);
     for (const tw of G.towers) while (tw.pending > 0) { const o = S.vetOffer(tw); let bi = 0; o.forEach((a, i) => { if (a.tier > o[bi].tier) bi = i; }); S.claimVet(tw, bi); met.vetMax = Math.max(met.vetMax, tw.rank); }
     // abilities
     const alive = G.enemies.length;
@@ -226,7 +244,7 @@ for (let run = OFF; run < OFF + runs; run++) {
       if (room < 1 && G.towers.length < targetCount && G.credits >= S.reactorCost() && (!up || S.upgradeCost(up) > S.reactorCost())) { S.expandReactor(); met.reactor = (met.reactor || 0) + 1; continue; }
       if (up && G.credits >= S.upgradeCost(up) && (G.towers.length >= targetCount || room < 1 || S.upgradeCost(up) < bc * 0.7)) {
         if (up.lvl >= 5) met.ascends++;
-        S.upgradeTower(up, 1 + Math.floor(Math.random() * 2)); continue;
+        S.upgradeTower(up, 1 + Math.floor(Math.random() * 2)); if (up.ascPend > 0) botPerk(up); continue;
       }
       if (G.credits > S.coreWeaponCost() * 2.5 && G.core.wLvl < 8) { S.coreUpgrade('weapon'); continue; }
       break;
@@ -254,7 +272,8 @@ for (let run = OFF; run < OFF + runs; run++) {
     top: Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ':' + Math.round(v / dmgAll * 100)).join(' '),
     el: Object.entries(G.stats.dmgByEl).map(([k, v]) => k + Math.round(v / tot * 100)).join(' '),
     sec: (met.startSec || '-').slice(0, 5) + (met.doors.length ? '>' + met.doors.join('>') : ''), ext: met.extracted || 0, tw: Object.keys(G.twists || {}).map(k => k.slice(0, 3)).join('+') || '-',
-    xp57: Math.round((G.xpRaw || G.xpEarned) * (met.extracted ? 1.5 : 1)), paid: Math.round(G.xpEarned), });
+    xp57: Math.round((G.xpRaw || G.xpEarned) * (met.extracted ? 1.5 : 1)), paid: Math.round(G.xpEarned),
+    share: Object.entries(byType).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0).map(([k, v]) => k.slice(0, 4) + ':' + Math.round(v / dmgAll * 100)).join(' ') });
 }
 console.log(`runs=${runs} points=${points} chaos=${chaos} start=${sw} best=${bw} ks=${ks || '-'}`);
 console.table(agg);
