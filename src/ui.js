@@ -486,8 +486,8 @@ const UI = (() => {
     const tapTw = (id, get, t, b, x) => Object.assign({ id, hold: 1, at: () => towerR(get()), t, b, done: () => !!get() && panT() === get() }, x || {});
     const intro = (id, t, b) => ({ id, hold: 1, ok: 'Start', t, b });
     const end = id => ({ id: 'end', hold: 1, ok: 'Finish', t: 'Lesson complete', b: () => LESSON_BY[plan].real, okFn: () => lessonDone(plan) });
-    const threatOpen = (id, t, b, x) => Object.assign({ id, hold: 1, at: () => appR(q('#chips [data-threat]')) || appR(q('#chips [data-more]')), t, b, done: () => modalOpen === 'evo',
-      ok: () => q('#chips [data-threat]') ? null : 'Open it', okFn: () => openThreat() }, x || {}); // on a narrow top bar the chip can fold into +N: the card opens the board itself
+    const threatOpen = (id, t, b, x) => Object.assign({ id, hold: 1, at: () => appR(q('#chips [data-threat]')), t, b, done: () => modalOpen === 'evo',
+      ok: () => appR(q('#chips [data-threat]')) ? null : 'Open it', okFn: () => openThreat() }, x || {}); // on a narrow top bar the chip can fold into +N: the card opens the board itself
     const inThreat = (id, at, t, b, x) => Object.assign({ id, hold: 1, modal: 'evo', ok: 'Got it', at, t, b, okFn: closeM, skip: () => modalOpen !== 'evo' }, x || {});
     const rowOf = k => () => { const c = q(`#modal canvas[data-eico=${k}]`); return c ? appR(c.closest('.threv')) : null; };
     const scrollTo = s => () => { const n = q(s); if (n) n.scrollIntoView({ block: 'center' }); };
