@@ -840,7 +840,7 @@ const UI = (() => {
       const bk = S.back && S.back(); if (bk) { go(bk); idle(); return; }
       if ((modalOpen && S.modal !== modalOpen) || (!modalOpen && S.modal) || (Tree.isOpen && !S.tree)) { held = false; hide(); return; }
       held = !!(typeof S.hold === 'function' ? S.hold() : S.hold);
-      const r = S.at ? S.at() : null; miss = !!S.at && !r;
+      const r = S.at ? S.at() : null; miss = !!S.at && !r && !(typeof S.ok === 'function' ? S.ok() : S.ok); // a read step with a button still works without its target
       show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok);
     }
     return { start, stop, tick, get hold() { return on && held; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
