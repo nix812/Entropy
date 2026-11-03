@@ -88,9 +88,9 @@ Bots (`smartbot.js` with perk picks), Normal, COLS 48, start 1, best 80, push at
 | 5.7.4 frozen copy, this machine | 55.5 (8 seeds) | n/a | n/a | 29% (59% in the one W86 run) |
 | v4: Refraction, Crush 1.5% max HP | 76 | 220 | 152 | 54 / 53 / 57% (runs to W300: broken) |
 | v6: max-HP perks removed, Persistence halved | 63 | 78.5 | (1 run: 131) | 52 / 72 / 92% |
-| **v7 (shipped): + Lens Ascend ×1.5 cost, Fork 30%** | (v6: 63) | **83** | **106.5** | 61% / 73% |
+| **v7 (shipped): + Lens Ascend ×1.5 cost, Fork 30%** | (v6: 63) | **83** | **106.5** | 63% / 73% |
 
-Shares per tower, v7 means: 60 pts Lens 61, EMP 15, Rail 9, Missile 6, Gravity 4; 96 pts Lens 73, Gravity 8, Missile 7, Rail 6, Cryo 4. Per-run damage-per-credit for Lens is 4–9× the average in long runs.
+Shares per tower, v7 means: 60 pts Lens 63, EMP 11, Rail 9, Gravity 8, Missile 4 (waves 72, 83, 83, 134); 96 pts Lens 73, Gravity 8, Missile 7, Rail 6, Cryo 4. Per-run damage-per-credit for Lens is 4–9× the average in long runs.
 
 **What this says.** Difficulty is back near the baseline, slightly easier at 60–96 points (+10 waves, within noise for 4 seeds). The **Lens share target (< 45%) is not met in bot runs.** In a controlled bench (`ascbench.js` in the scratch folder: LV5 + A7, bot perk choices, no affixes), a Lens deals 0.5–0.7× its old damage, and Rail, Pulse, Missile, EMP and Coil deal 0.8–1.4×. Even so, the Lens keeps carrying long bot runs. The cause is the base ramp: a Lens on a bulky late enemy gains ×2.8–4.3, which grows with late-game HP while every other tower's damage is flat. The bot also buys Ascends cheapest-first, and every one of its plans builds two Lenses. Perks and Ascend prices move the share only a few points. Levers that would work, for the towers builder or the integrator: a lower base `rampMax`, ramp reset on every retarget for Prism, or a per-tower Ascend multiplier (`ASC_DMG` per type, e.g. Lens ×1.08).
 
