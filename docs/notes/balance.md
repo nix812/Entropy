@@ -39,16 +39,16 @@ Bots: `smartbot.js`, Normal, COLS 48, start 1, best 80, `PUSH=1` (push at every 
 | Step 1: markX/collX 0.5, Collapse 2% (cap 150) | | 86.5 | 146.5 | 60: 30% (37) · 96: 57% (52) |
 | Step 2: + markX/collX 0.35, `TAL_PT_DMG` 0.1 (cap 150) | 55 | | 122.5 | 0: 12% (13) · 96: 52% (46) |
 | Step 2 + Lens Ascend ×1.08 (cap 120) | | | 102 | 96: 52% (50) |
-| **After (shipped)**: + rampX 0.7 (cap 120) | 55¹ | see below | **92** | 96: **40%** (40) |
+| **After (shipped)**: + rampX 0.7 (cap 120) | 55¹ | **106** | **92** | 60: **40%** (35) · 96: **40%** (40) |
 
 ¹ Measured at step 2. The ramp and Ascend changes only touch Lenses at LV 5+ and Lens share at 0 points was 12%, so 0 points should barely move.
 
-Waves per run, shipped numbers, 96 points: 71, 80, 85, 90, 94, 120, 120, 120 (three runs hit the cap; Lens 1/65/10/35/45/57/81/22%).
+Waves per run, shipped numbers: 60 points 47, 55, 79, 92, 120, 120, 120, 120 (four at the cap; Lens 3/58/3/58/28/71/53/4%); 96 points 71, 80, 85, 90, 94, 120, 120, 120 (three at the cap; Lens 1/65/10/35/45/57/81/22%). 60 points reading above 96 points is noise. Both sets have runs at the cap, so the bots can't separate them.
 
-**Per-tower damage share at 60 points** (step 1 batch, median / mean across 8 runs; the shipped numbers trim the Lens further): Lens 30/37, Rail 10/20, EMP 8/12, Missile 4/12, Gravity 2/6, Pulse 4/4, Cryo 4/4, Coil 2/2, Flame 2/2. At 96 points, shipped numbers: Lens 40/40, Rail 12/17, EMP 4/12, Gravity 8/11, Missile 4/6, Pulse 2/5, Flame 2/4, Coil 2/4, Cryo 2/2. At 0 points (step 2): Missile 22/25, Rail 24/24, Lens 12/13, EMP 10/10, Coil 9/10, Pulse 6/8, Flame 3/6, Gravity 1/3, Cryo 2/1.
+**Per-tower damage share at 60 points, shipped numbers** (median / mean across 8 runs): Lens 40/35, Rail 12/25, Gravity 11/13, EMP 0/8, Coil 0/5, Missile 2/5, Cryo 3/4, Pulse 0/3, Flame 0/2, Forge 0/0. (Step 1: Lens 30/37, Rail 10/20, EMP 8/12, Missile 4/12, Gravity 2/6, Pulse 4/4, Cryo 4/4, Coil 2/2, Flame 2/2.) At 96 points, shipped numbers: Lens 40/40, Rail 12/17, EMP 4/12, Gravity 8/11, Missile 4/6, Pulse 2/5, Flame 2/4, Coil 2/4, Cryo 2/2. At 0 points (step 2): Missile 22/25, Rail 24/24, Lens 12/13, EMP 10/10, Coil 9/10, Pulse 6/8, Flame 3/6, Gravity 1/3, Cryo 2/1.
 
 ## Open issues
-- **60 points on the shipped numbers:** see the addendum below if it landed. Otherwise the last 60-point batch is step 1 (86.5), on weaker trims.
+- **Difficulty at 60 points is still above target** (median 106 against 72–82; half the runs hit the W120 cap). 96 points landed at 92, the bottom of its range, and 0 points at 55. The runs that go long are max-HP engine runs (see the next point). Trimming more raw damage (row-1 talents) would mostly hurt the runs that already end at W50–90. The next step is a Detonator or Collapse-frequency change, measured with 12+ seeds and a W200 cap.
 - **Lens share is bimodal.** Most runs sit at 1–45%, but 2–3 runs in 8 still reach 57–94% (always the same seeds, 1, 3, 5 and 6; maps where Lenses cover a merge point). Median and mean are under 45%; the long tail is not gone.
 - **The late game is still decided by max-HP effects** (Collapse, Detonator). Any of them that fires fast enough makes a run endless, and HP curves don't touch them. The next lever would be a per-enemy Collapse cooldown or a Detonator trim, both new rules. Not done here.
 - **Capstone spot-check not done.** The timeline was cut. The talents builder's 40-point numbers (71–134) were measured before these trims. Collapse and Lens changes should pull Cryo Artillery (134, Lens 69%) and Blackout (116) toward the pack. Nothing here buffs Ricochet (71) or Gravity Garden (73).
