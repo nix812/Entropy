@@ -2276,7 +2276,7 @@ function spawnBoss(q) {
   if (B.id === 'snail') { e.lastHit = G.time; e.armorAll = 0.2; }
   if (q.elite) {
     const pool = ELITE_AFFIXES.filter(a => a.id !== 'split');
-    for (let i = 0; i < q.elite; i++) e.elite.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
+    for (let i = 0; i < q.elite && pool.length; i++) e.elite.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id); // past Wave 320 the count outgrew the 7 affixes (crash)
     if (e.elite.includes('shielded')) e.shield = e.maxHp * 0.3;
     if (e.elite.includes('hasted')) e.spd *= 1.3;
   }

@@ -129,7 +129,7 @@ for (let run = OFF; run < OFF + runs; run++) {
   const G = S.newRun({ seed: 1000 + run * 17, chaos, startWave: sw, cols: +(process.env.COLS || 39), sector: pickSector(S.sectorOffers(1000 + run * 17)) });
   met.recentMin = 1; met.mins = []; met.doors = []; met.startSec = G.sector;
   let t = 0, act = 0, pi = 0, lastWave = G.wave;
-  while (!G.over && t < 3 * 3600) {
+  while (!G.over && t < 3 * 3600 && !(process.env.MAXW && G.wave >= +process.env.MAXW)) { // MAXW=n stops a run at Wave n (counts as n), so runaway runs don't stall a batch
     if (S.G.huntChoice) { const C = S.G.huntChoice; if (wantExtract(G, met)) { met.extracted = G.wave; S.huntExtract(); break; } if (C.doors && !process.env.SECTOR) { const i = pickDoor(G, C.doors, met); met.doors.push(C.doors[i].sector.slice(0, 4) + C.doors[i].tier); S.huntPush(i); } else S.huntPush(); }
     if (false) S.huntPush(); // v5.3: the bot never extracts, it plays on (a stalled choice would freeze the sim)
     S.simStep(1 / 30); t += 1 / 30; if (S.G.checkpoint) S.resumeCheckpoint();
