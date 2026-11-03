@@ -1033,7 +1033,7 @@ function towerStats(t) {
   const mst = masteryRank(t.type) >= 2 ? 1 + MASTERY.stat : 1; // Mastery 2
   const O = M.orb || {}, oe = k => (O[k] && O[k][s.el]) || 0;
   const fluxAny = O.flux && Object.keys(O.flux).length;
-  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(G.ascV >= 2 ? ASC_DMG : ASC_DMG_OLD, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el] * (1 + (pv('hv') + pv('accel') + pv('overpress') + pv('amps') + pv('crush')) / 100) * mst;
+  s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(G.ascV >= 2 ? ASC_DMG_T[t.type] || ASC_DMG : ASC_DMG_OLD, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el] * (1 + (pv('hv') + pv('accel') + pv('overpress') + pv('amps') + pv('crush')) / 100) * mst;
   let rate = D.rate * (sp.rateX || 1) * (1 + (A.rate || 0) / 100) * (cur.crate ? 0.85 : 1) * M.rate * (1 + (pv('rapid') + pv('comp') + pv('autoload') + pv('breech')) / 100);
   if (s.el === 'K') rate *= 1 + M.rateK;
   if (s.el === 'A') rate *= 1 + M.rateA;
@@ -1060,11 +1060,12 @@ function towerStats(t) {
   if (M.ks.conflag) { s.burn = clamp(s.burn + s.chill, 0, 1); s.chill = 0; } // Conflagration: Chill becomes Burn
   s.shock = clamp(((st.shock || 0) + (s.el === 'A' ? ost : 0) + (sp.addShock || 0) + pv('ion') + pv('ionE') + ((A.shock || 0) + M.shockChance) / 100) * sm, 0, 1);
   s.mark = clamp(((st.mark || 0) + (s.el === 'V' ? ost : 0) + (sp.addMark || 0) + pv('brand') + ((A.mark || 0) + M.markChance) / 100) * sm, 0, 1);
+  s.markX = G.ascV >= 2 && D.markX || 1; s.collX = G.ascV >= 2 && D.collX || 1; s.mark *= s.markX; // 5.8: the Lens's per-hit Mark and Collapse trims
   s.chillPot = (sp.chillPot || 1) * M.chillPot;
   s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur + pv('deep');
   s.shockX = sp.shockX || 1; s.burnX = (sp.burnX || 1) * (1 + pv('thermite') / 100);
   s.stun = (sp.stun || 0) + pv('taser') / 100; s.stunDur = (sp.stunDur || D.stunDur || 0) + pv('longPulse');
-  s.rampMax = (sp.rampMax || D.rampMax || 1) + pv('well'); s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0) + pv('facet');
+  s.rampMax = 1 + ((sp.rampMax || D.rampMax || 1) - 1) * (G.ascV >= 2 && D.rampX || 1) + pv('well'); /* 5.8: the Lens ramp trim */ s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0) + pv('facet');
   s.pull = (D.pull || 0) * (sp.pullX || 1) * (1 + pv('heavy') / 100); s.shells = (sp.shells || 1) + (D.kind === 'mortar' ? s.multi : 0) + pv('shell4'); s.cluster = sp.cluster ? sp.cluster + pv('pods') : 0; s.napalm = !!sp.napalm;
   s.shred = !!sp.shred || !!(pv('apRounds') || pv('slag') || pv('pen') || pv('weld') || pv('shaped')); s.shatterField = sp.shatterField ? sp.shatterField + pv('fault') : 0;
   s.exec = (A.exec || 0) + pv('coup'); s.bounty = (A.bounty || 0) / 100; s.boss = (A.boss || 0) / 100 + M.eliteDmg + pv('bigGame') / 100; s.slowd = (A.slowd || 0) / 100;
@@ -2276,7 +2277,7 @@ function spawnBoss(q) {
   if (B.id === 'snail') { e.lastHit = G.time; e.armorAll = 0.2; }
   if (q.elite) {
     const pool = ELITE_AFFIXES.filter(a => a.id !== 'split');
-    for (let i = 0; i < q.elite; i++) e.elite.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
+    for (let i = 0; i < q.elite && pool.length; i++) e.elite.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id); // past Wave 320 the count outgrew the 7 affixes (crash)
     if (e.elite.includes('shielded')) e.shield = e.maxHp * 0.3;
     if (e.elite.includes('hasted')) e.spd *= 1.3;
   }
@@ -2772,7 +2773,7 @@ function applyStatuses(e, dmg, el, src, o) {
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
       // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? 0.004 : 0.03)) * cmb, 'V', src, { noStatus: 1 });
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old)) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
     }
     if (e.dead) return;
@@ -2780,7 +2781,7 @@ function applyStatuses(e, dmg, el, src, o) {
   // statuses
   let burnP = s.burn, chillP = s.chill, shockP = s.shock, markP = s.mark;
   const forced = (M.ks.prismatic || s.leg.prism || G.af.prism) ? pick(r, M.ks.conflag ? ['burn', 'shock', 'mark'] : ['burn', 'chill', 'shock', 'mark']) : null;
-  if (forced === 'burn') burnP = 1; if (forced === 'chill') chillP = 1; if (forced === 'shock') shockP = 1; if (forced === 'mark') markP = 1;
+  if (forced === 'burn') burnP = 1; if (forced === 'chill') chillP = 1; if (forced === 'shock') shockP = 1; if (forced === 'mark') markP = s.markX || 1;
   if (burnP > 0 && r() < burnP) {
     const dps = dmg * 0.35 * s.burnX * M.burnDmg * (s.kind === 'cone' ? 1.5 : 1);
     const bt = 3 * M.burnDur + ((s.pkv && s.pkv.slowBurn) || 0);

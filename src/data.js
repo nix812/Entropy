@@ -92,9 +92,14 @@ const TOWERS = {
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
   lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.7, rate: 10, range: 3.2, kind: 'beam', rampMax: 2.8, // v5.4 trim: was 3.2 (4 Lenses did 71% of Nic's Wave 88 run). v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
     st: { mark: 0.15 }, unlock: 20,
+    // 5.8 rules (G.ascV >= 2): it hits 10 times a second, so every per-hit Mark chance (talents, affixes, Brand, Prism) counted ten
+    // times over and the Lens set off nearly every Collapse (60-73% of all damage in long bot runs). markX scales its Mark chances,
+    // collX the Collapses it sets off. Old recordings keep 1 and 1.
+    // rampX scales the ramp bonus (×2.8 → ×2.26, Event Horizon ×4.3 → ×3.3, Prism ×2.5 → ×2.05): late enemies live long enough that a Lens sat at full ramp
+    markX: 0.35, collX: 0.35, rampX: 0.7,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×4.3 damage', m: { rampMax: 4.3 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.5', m: { beams: 3, rampMax: 2.5 } }] },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×3.3 damage', m: { rampMax: 4.3 } }, // descs show the 5.8 ramp (rampX)
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2', m: { beams: 3, rampMax: 2.5 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
@@ -118,6 +123,8 @@ const lvTier = n => LV_TIERS.find(x => n <= x.max);
 const ASC_V = 2, ASC_DMG = 1.15, ASC_DMG_OLD = 1.3;
 // Ascend price per tower in perk runs: the Lens ramp already scales with late-game HP, so its Ascends cost more (bots: 66% of damage at 60 points without this)
 const ASC_COST = { lens: 1.5 };
+// per-tower Ascend damage in perk runs (balance pass: the Lens kept 50%+ of the damage at 96 points with ×1.15; old recordings keep ×1.3)
+const ASC_DMG_T = { lens: 1.08 };
 // v: cumulative value per stack (the last entry is the cap; one entry = one-time). spec: only offered with that specialization.
 // The sim reads t.s.pkv[id] (the summed value); d(inc) describes the next pick.
 const PERKS = {
@@ -191,7 +198,7 @@ const PERKS = {
     { id: 'hold', name: 'Persistence', v: [1], d: () => 'Keeps half its ramp on retarget' },
     { id: 'focal', name: 'Focal Length', v: [1, 1.6], d: v => `+${v} Range` },
     { id: 'quick', name: 'Quick Focus', v: [40, 65], d: v => `Ramps ${v}% faster` },
-    { id: 'brand', name: 'Brand', v: [0.15, 0.25], d: v => `+${Math.round(v * 100)}% Mark chance` },
+    { id: 'brand', name: 'Brand', v: [0.15, 0.25], d: v => `+${Math.round(v * 100 * TOWERS.lens.markX)}% Mark chance` }, // perks are 5.8 rules only, so the Lens's markX always applies
     { id: 'linger', name: 'Afterglow', v: [2, 3], d: v => `Its Marks last +${v} s` },
     { id: 'well', name: 'Deep Well', spec: 1, v: [0.3], d: () => '+0.3 max ramp' },
     { id: 'facet', name: 'Fourth Facet', spec: 2, v: [1], d: () => '+1 beam' },
@@ -751,8 +758,8 @@ const DOCTRINES = {
 const WEB_VER = 5;
 const TROW = 3, TCAP = 12;
 // every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall (v5.8: 0.4 → 0.15, so
-// specialising beats spreading)
-const TAL_PT_DMG = 0.15;
+// specialising beats spreading; balance pass: 0.15 → 0.1, 60 and 96 points ran well past their targets)
+const TAL_PT_DMG = 0.1;
 const T_ = (id, name, max, fx, extra) => Object.assign({ id, name, max, fx }, extra || {});
 const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
 // a Technique talent: one point, unlocks a fire mode for one tower type (the mode's own text lives in TOWER_FIRE)
@@ -946,6 +953,9 @@ const COMBO_DESC = {
   'SUPERCONDUCT': 'Arc hit on a Chilled enemy spreads Shock nearby',
   'COLLAPSE': 'Void hit at max Marks implodes the target',
 };
+// Collapse hits everything within 1.5 tiles for 2× the hit plus a share of each enemy's max HP. The max-HP part ignores how strong
+// the wave is, so in long runs it was the engine of almost all damage; 5.8 rules (G.ascV >= 2) use `mob`, older recordings `old`
+const COLLAPSE_HP = { mob: 0.02, old: 0.03, boss: 0.004 };
 function dailyKey(d) { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dailySpec(key) {
   let h = 2166136261; for (const ch of key) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
