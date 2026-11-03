@@ -788,7 +788,7 @@ function towerCost(type) {
 }
 function upgradeCost(t) {
   const x = G.mods.upg * (1 + (G.af.upgX || 0));
-  if (t.lvl >= MAX_LV) return Math.round(TOWERS[t.type].cost * 4 * Math.pow(2, t.asc || 0) * x); // ×2 per Ascension (v3.0 tested ×1.5 and ×1.75: both made the late game too easy) so credits stay useful under the power grid
+  if (t.lvl >= MAX_LV) return Math.round(TOWERS[t.type].cost * 4 * Math.pow(2, t.asc || 0) * x * (G.ascV >= 2 ? ASC_COST[t.type] || 1 : 1)); // v5.8: per-tower price in perk runs only // ×2 per Ascension (v3.0 tested ×1.5 and ×1.75: both made the late game too easy) so credits stay useful under the power grid
   return Math.round(TOWERS[t.type].cost * LV_COST[t.lvl + 1] * x);
 }
 function rerollCost(t) {

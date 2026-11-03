@@ -116,6 +116,8 @@ const lvTier = n => LV_TIERS.find(x => n <= x.max);
 // ---------- Ascension perks: each Ascend offers 1 of 3 perks for that tower (4 at Mastery 4) and ×ASC_DMG Damage ----------
 // Runs recorded before perks (recOpts.v set, no ascV) keep the old ×1.3 and no perks, so they replay exactly.
 const ASC_V = 2, ASC_DMG = 1.15, ASC_DMG_OLD = 1.3;
+// Ascend price per tower in perk runs: the Lens ramp already scales with late-game HP, so its Ascends cost more (bots: 66% of damage at 60 points without this)
+const ASC_COST = { lens: 1.5 };
 // v: cumulative value per stack (the last entry is the cap; one entry = one-time). spec: only offered with that specialization.
 // The sim reads t.s.pkv[id] (the summed value); d(inc) describes the next pick.
 const PERKS = {
@@ -185,7 +187,7 @@ const PERKS = {
     { id: 'ion', name: 'Ion Torch', spec: 2, v: [0.25], d: () => '+25% Shock chance' },
   ],
   lens: [
-    { id: 'fork', name: 'Fork', v: [40], d: () => 'Forks to a 2nd target (40%)' },
+    { id: 'fork', name: 'Fork', v: [30], d: () => 'Forks to a 2nd target (30%)' },
     { id: 'hold', name: 'Persistence', v: [1], d: () => 'Keeps half its ramp on retarget' },
     { id: 'focal', name: 'Focal Length', v: [1, 1.6], d: v => `+${v} Range` },
     { id: 'quick', name: 'Quick Focus', v: [40, 65], d: v => `Ramps ${v}% faster` },
