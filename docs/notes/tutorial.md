@@ -31,10 +31,12 @@ One `LESSONS` entry (data.js) and one `PLANS[id]` list (ui.js Coach), same id. S
 ## Tests
 - `node test/tutorial.js`: Basic Training (two map widths) and every lesson run replay bit for bit from `G.recOpts` + inputs; the profile is untouched. All match.
 - `python3 test/tutorialshot.py [sizes] [basic|lessons|all] [ids]`: plays Basic Training by tapping the coach's targets, checks each step appears, every target resolves to a real element, the card never covers its target, reward/PROF.tut saved, First Run, Skip (two taps), no re-prompt, old-profile migration, veteran intro-card migration, Learn more from a real-run card, lesson from a run keeps its snapshot; plays every lesson to completion. Screens in `test/out/tut/`.
-- Results at the end of this session: see the final report.
+- Results (this session): `node test/tutorial.js` all replays match. Basic Training played to the end at 852×393 and 667×375 (all 42 steps, including every optional step, at 667); lessons all played to completion at 852×393 (`towers` … `meta`, every step shown and every target resolved, after fixes). Remaining soft flags: at 667×375 the spec step's card overlaps part of the two spec buttons (the panel fills most of the stage), and the threat-chip step there uses its "Open it" button because the chip folds into +N. Definition-of-done suite: audit.py n and ipadA `ERRORS: []`, uiaudit only the known false positives plus the Daily zone line below, trackcollide `FAILED: []`, splashshot `FAILED: []` (Nigel blinks twice at all sizes), replay.js / hookcompat.js see report.
+- The Training offer on Play is skipped under automation (`navigator.webdriver`, like the splash) so older Playwright tests that press Play still reach New Run; `tutorialshot.py` sets `window.tutOfferTest`.
+- Training waits for a clear field before the next wave's countdown (a sim rule for `G.tut` only), so no between-wave lesson can be skipped by a straggler.
 
 ## Known gaps
-- tutorialshot full matrix (all lessons × 3 sizes) was not completed this session; lessons were played at 852×393 (see report), Basic Training at all three sizes.
+- tutorialshot full matrix (all lessons × 3 sizes) was not completed this session: lessons were played at 852×393 only; Basic Training at 852×393 and 667×375 (the 1180×820 Basic run was started before the last fixes and not re-run).
 - Lesson waves were calibrated headless (`test/tutorial.js` bot), not by hand; a couple (Strain Assaults, Bosses) let a few leaks through on purpose.
 - Lessons don't snapshot either: closing the app mid-lesson drops it (the real run it came from is saved).
 - Contextual cards: no new card for Strain Assault, evolution or bounties (they already have their own intro/poster/card); those intros have no Learn more button yet.

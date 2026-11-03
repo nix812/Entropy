@@ -20,7 +20,7 @@ CARD = '''() => { const c = document.querySelector('#coach'); if (!c || c.hidden
 TAPS = { 'spec': '#panel [data-act=spec]', 'pick': '#modal [data-act=vpick]', 'boon': '#modal .boons [data-act]', 'anom': '#modal [data-act=anom]', 'fire': '#panel .firerow [data-act=fire]:not(.on)', 'perk': '#panel [data-act=perk]' }
 def fresh(pg, extra=''):
     pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
-    pg.evaluate('() => { PROF = Save.merge({}); PROF.seenVer = VERSION; ' + extra + ' Save.save(); UI.renderHangar(); }')
+    pg.evaluate('() => { window.tutOfferTest = 1; PROF = Save.merge({}); PROF.seenVer = VERSION; ' + extra + ' Save.save(); UI.renderHangar(); }')
 def drive(pg, tag, prefix, finished, limit=420):
     """tap through the coach until finished() is true; returns the steps seen in order"""
     seen = []; n = 0; last = None; stuck = 0; t0 = time.time()

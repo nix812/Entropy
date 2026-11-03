@@ -350,7 +350,8 @@ const UI = (() => {
   // A fresh profile is offered Basic Training on its first Play. The Field Manual (How to Play) lists every lesson with a % complete.
   // Runs are sim data (TUT, LESSONS[].run, newRun({ tut, lesson })); the coach below only watches and holds the game.
   const tutState = () => PROF.tut || (PROF.tut = {});
-  const tutOffer = () => !PROF.runSnap && !(PROF.runs > 0) && !tutState().seen;
+  // (skipped under automation like the splash, so the older Playwright tests reach New Run; tutorialshot.py sets window.tutOfferTest)
+  const tutOffer = () => (!navigator.webdriver || window.tutOfferTest) && !PROF.runSnap && !(PROF.runs > 0) && !(PROF.bestWave > 0) && !tutState().seen;
   const tutReward = () => xpForLevel(0) + xpForLevel(1); // two talent points on a fresh profile
   function openTutOffer() {
     modal(`<div class="card narrow tutoffer"><div class="ch"><h2>First Time?</h2></div>
@@ -670,7 +671,7 @@ const UI = (() => {
         intro('in', 'Storms and anomalies', 'Weather that boosts one element, and the gauge that brings permanent twists.'),
         info('storm', () => appR(q('#chips [data-storm]')) || appR(q('#chips [data-more]')), 'A storm', 'This chip is the storm over your Missile: a Solar Flare, +40% Thermal damage inside it. Towers it boosts get an outline.'),
         { id: 'gauge', hold: 1, at: sel('#bEnt'), t: 'Entropy', b: 'Kills fill this gauge. It is full: tap it.', done: () => modalOpen === 'anomaly' || !G.anomOffers },
-        { id: 'anom', hold: 1, modal: 'anomaly', at: () => appR(q('#modal .card')), t: 'Anomalies', b: 'Each has an upside and a downside for the rest of the run. Pick one, or Stabilize for score.', done: () => !G.anomOffers },
+        { id: 'anom', hold: 1, modal: 'anomaly', at: () => appR(q('#modal [data-act=anom]')) || appR(q('#modal .card')), t: 'Anomalies', b: 'Each has an upside and a downside for the rest of the run. Pick one, or Stabilize for score.', done: () => !G.anomOffers },
         call('c1', 1),
         end(),
       ],
