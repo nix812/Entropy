@@ -1065,7 +1065,7 @@ function towerStats(t) {
   s.freezeBonus = (sp.freezeBonus || 0) + M.freezeDur + pv('deep');
   s.shockX = sp.shockX || 1; s.burnX = (sp.burnX || 1) * (1 + pv('thermite') / 100);
   s.stun = (sp.stun || 0) + pv('taser') / 100; s.stunDur = (sp.stunDur || D.stunDur || 0) + pv('longPulse');
-  s.rampMax = (sp.rampMax || D.rampMax || 1) + pv('well'); s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0) + pv('facet');
+  s.rampMax = 1 + ((sp.rampMax || D.rampMax || 1) - 1) * (G.ascV >= 2 && D.rampX || 1) + pv('well'); /* 5.8: the Lens ramp trim */ s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0) + pv('facet');
   s.pull = (D.pull || 0) * (sp.pullX || 1) * (1 + pv('heavy') / 100); s.shells = (sp.shells || 1) + (D.kind === 'mortar' ? s.multi : 0) + pv('shell4'); s.cluster = sp.cluster ? sp.cluster + pv('pods') : 0; s.napalm = !!sp.napalm;
   s.shred = !!sp.shred || !!(pv('apRounds') || pv('slag') || pv('pen') || pv('weld') || pv('shaped')); s.shatterField = sp.shatterField ? sp.shatterField + pv('fault') : 0;
   s.exec = (A.exec || 0) + pv('coup'); s.bounty = (A.bounty || 0) / 100; s.boss = (A.boss || 0) / 100 + M.eliteDmg + pv('bigGame') / 100; s.slowd = (A.slowd || 0) / 100;

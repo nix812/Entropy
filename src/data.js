@@ -95,10 +95,11 @@ const TOWERS = {
     // 5.8 rules (G.ascV >= 2): it hits 10 times a second, so every per-hit Mark chance (talents, affixes, Brand, Prism) counted ten
     // times over and the Lens set off nearly every Collapse (60-73% of all damage in long bot runs). markX scales its Mark chances,
     // collX the Collapses it sets off. Old recordings keep 1 and 1.
-    markX: 0.35, collX: 0.35,
+    // rampX scales the ramp bonus (×2.8 → ×2.26, Event Horizon ×4.3 → ×3.3, Prism ×2.5 → ×2.05): late enemies live long enough that a Lens sat at full ramp
+    markX: 0.35, collX: 0.35, rampX: 0.7,
     blurb: 'Ramping beam. Applies Mark.',
-    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×4.3 damage', m: { rampMax: 4.3 } },
-            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2.5', m: { beams: 3, rampMax: 2.5 } }] },
+    specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×3.3 damage', m: { rampMax: 4.3 } }, // descs show the 5.8 ramp (rampX)
+            { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2', m: { beams: 3, rampMax: 2.5 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
     blurb: 'Lobbed shells that Stun an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
