@@ -23,7 +23,7 @@ JS_HITS = '''(over) => {
     for (const s of ['#bZoom', '#railL', '#railR', '#abils', '#log', '#docbar', '#panel', '#mdeck']) { const q = vis(document.querySelector(s)); if (q && hit(wc, q)) out.push('bounty chip x ' + s); } }
   // 5.8: the Ready button sits under Map, clear of every control and banner (it hides while a right-hand panel is open)
   const rb = vis(document.querySelector('#bReady'));
-  if (!rb && !document.body.classList.contains('panel-r')) out.push('Ready button missing');
+  if (!rb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Ready button missing');
   if (rb) for (const s of ['#bZoom', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
   return out; }'''
 FILL = '''() => {

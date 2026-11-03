@@ -558,7 +558,7 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
   background: rgba(40, 32, 6, 0.92); box-shadow: inset 0 0 0 2px #ffd84a; color: #ffd84a; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
 .rdybtn b { min-width: 26px; height: 26px; padding: 0 5px; display: grid; place-items: center; background: #ffd84a; color: #1a1004; font-weight: 400; font-size: 13px; }
 .rdybtn.pulse { animation: rdyp 0.5s steps(3) 3; } @keyframes rdyp { 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 14px rgba(255, 216, 74, 0.8); transform: scale(1.06); } }
-body.panel-r .rdybtn { display: none; }
+body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves Map, the ticker and the music deck: Ready waits until it closes */
 #modal.side { background: rgba(4, 5, 10, 0.25); justify-content: flex-end; } /* the Ready walkthrough: the card docks right, the tower stays visible */
 body.tut #log { display: none; }
 body.rdy #tutlist { bottom: 6px; }
