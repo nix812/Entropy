@@ -486,7 +486,8 @@ const UI = (() => {
     const tapTw = (id, get, t, b, x) => Object.assign({ id, hold: 1, at: () => towerR(get()), t, b, done: () => !!get() && panT() === get() }, x || {});
     const intro = (id, t, b) => ({ id, hold: 1, ok: 'Start', t, b });
     const end = id => ({ id: 'end', hold: 1, ok: 'Finish', t: 'Lesson complete', b: () => LESSON_BY[plan].real, okFn: () => lessonDone(plan) });
-    const threatOpen = (id, t, b, x) => Object.assign({ id, hold: 1, at: sel('#chips [data-threat]'), t, b, done: () => modalOpen === 'evo' }, x || {});
+    const threatOpen = (id, t, b, x) => Object.assign({ id, hold: 1, at: () => appR(q('#chips [data-threat]')) || appR(q('#chips [data-more]')), t, b, done: () => modalOpen === 'evo',
+      ok: () => q('#chips [data-threat]') ? null : 'Open it', okFn: () => openThreat() }, x || {}); // on a narrow top bar the chip can fold into +N: the card opens the board itself
     const inThreat = (id, at, t, b, x) => Object.assign({ id, hold: 1, modal: 'evo', ok: 'Got it', at, t, b, okFn: closeM, skip: () => modalOpen !== 'evo' }, x || {});
     const rowOf = k => () => { const c = q(`#modal canvas[data-eico=${k}]`); return c ? appR(c.closest('.threv')) : null; };
     const scrollTo = s => () => { const n = q(s); if (n) n.scrollIntoView({ block: 'center' }); };
@@ -519,7 +520,7 @@ const UI = (() => {
         call('call4', 4, 'Juggernauts are slow. Let them walk into the Rail.', { when: () => after(3) }),
         { id: 'inspect', when: () => W() === 4 && G.enemies.some(e => e.type === 'tank' && onField(e)), skip: () => W() >= 5, hold: 1, enter: () => { mem.tank = G.enemies.find(e => e.type === 'tank' && onField(e)); },
           at: () => enemyR(mem.tank), t: 'Inspect', b: 'Tap the Juggernaut. Any enemy can be tapped.', done: () => panel && panel.kind === 'enemy' },
-        info('inspected', sel('#panel'), 'Enemy panel', 'Health, speed, Plating, genes and what beats it. Tap empty ground to close it.', { when: () => panel && panel.kind === 'enemy', skip: () => W() >= 5 || !(panel && panel.kind === 'enemy'), okFn: () => closePanel() }),
+        info('inspected', () => appR(q('#panel .sts.good')) || appR(q('#panel .ehp')), 'Enemy panel', 'Health, speed, Plating, genes and what beats it. Tap empty ground to close it.', { when: () => panel && panel.kind === 'enemy', skip: () => W() >= 5 || !(panel && panel.kind === 'enemy'), okFn: () => closePanel() }),
         // the second upgrade: the arrow cue
         tapTw('arrow', () => mem.au, 'The upgrade arrow', 'An arrow over a tower means you can afford its upgrade. Tap that tower.', { when: () => after(4) && !!bestUp(), skip: () => W() >= 5, enter: () => { mem.au = bestUp(); } }),
         { id: 'up2', when: () => after(4), skip: () => W() >= 5 || !mem.au, hold: 1, at: sel('#panel [data-act=up]'), t: 'Upgrade it', enter: () => { mem.b4 = stat(mem.au); },
@@ -648,7 +649,7 @@ const UI = (() => {
       veterans: [
         intro('in', 'Veterans', 'Towers that fight earn ranks. Each rank lets you pick a mutation for that tower.'),
         { id: 'chip', hold: 1, at: sel('#chips [data-ready]'), t: 'Veteran ready', b: 'This chip shows towers with a pick waiting. Tap it.', done: () => modalOpen === 'vets' || !G.towers.some(t => t.pending > 0) },
-        { id: 'pick', hold: 1, modal: 'vets', at: sel('#modal [data-act=vet]'), t: 'Pick a mutation', b: 'Three choices; the colour is its rarity. Tap one.', done: () => !G.towers.some(t => t.pending > 0) },
+        { id: 'pick', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices; the colour is its rarity. Tap one.', done: () => !G.towers.some(t => t.pending > 0) },
         tapTw('tapP', () => G.towers.find(t => t.type === 'pulse'), 'Affixes', 'Tap the Pulse Blaster.', { when: () => !modalOpen }),
         { id: 'details', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Details', b: 'Tap Details.', done: () => panel && panel.tab === 'info', back: () => !panT() && 'tapP' },
         info('affs', sel('#panel .affs'), 'Affixes', 'Bonuses this tower rolled from upgrades and mutations. Reroll swaps them for credits or a token.', { skip: () => !panT() }),
@@ -840,7 +841,7 @@ const UI = (() => {
       if ((modalOpen && S.modal !== modalOpen) || (!modalOpen && S.modal) || (Tree.isOpen && !S.tree)) { held = false; hide(); return; }
       held = !!(typeof S.hold === 'function' ? S.hold() : S.hold);
       const r = S.at ? S.at() : null; miss = !!S.at && !r;
-      show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, S.ok);
+      show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok);
     }
     return { start, stop, tick, get hold() { return on && held; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
       steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS) };

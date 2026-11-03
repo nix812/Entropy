@@ -17,7 +17,7 @@ CARD = '''() => { const c = document.querySelector('#coach'); if (!c || c.hidden
   const rr = r.hidden ? null : r.getBoundingClientRect(), ok = c.querySelector('.cok');
   return { step: UI.coach.step, miss: UI.coach.miss, held: UI.coachHold, card: [k.left, k.top, k.width, k.height], ring: rr ? [rr.left, rr.top, rr.width, rr.height] : null, ok: !ok.hidden, title: c.querySelector('.ct').textContent, vw: innerWidth, vh: innerHeight }; }'''
 # where the driver taps when the ring covers a group (the coach points at the group; a player taps one of its buttons)
-TAPS = { 'spec': '#panel [data-act=spec]', 'pick': '#modal [data-act=vet]', 'boon': '#modal .boons [data-act]', 'anom': '#modal [data-act=anom]', 'fire': '#panel .firerow [data-act=fire]:not(.on)', 'perk': '#panel [data-act=perk]' }
+TAPS = { 'spec': '#panel [data-act=spec]', 'pick': '#modal [data-act=vpick]', 'boon': '#modal .boons [data-act]', 'anom': '#modal [data-act=anom]', 'fire': '#panel .firerow [data-act=fire]:not(.on)', 'perk': '#panel [data-act=perk]' }
 def fresh(pg, extra=''):
     pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
     pg.evaluate('() => { PROF = Save.merge({}); PROF.seenVer = VERSION; ' + extra + ' Save.save(); UI.renderHangar(); }')

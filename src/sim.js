@@ -1732,7 +1732,7 @@ function tutPreset(P) {
   else if (op === 'cache') { const s = tutSpots(1)[0]; if (s) G.caches.push({ x: s.x, y: s.y, t: 999, id: G.eid++, kind: a || 'normal' }); }
   else if (op === 'vet') { const t = G.towers[a || 0]; if (t) { t.vxp = vetThreshold(1); t.rank = 1; t.pending = 1; } }
   else if (op === 'storm') { const t = G.towers[0], st = spawnStorm([a], t ? t.cx : G.core.x, t ? t.cy : G.core.y, 0, 0); if (st) st.life = 9999; }
-  else if (op === 'entropy') G.entropy = a || 99;
+  else if (op === 'entropy') { G.entropy = 100; addEntropy(0); } // full gauge: the Anomaly offers are drawn now
   else if (op === 'lane') G.laneWaves = [G.startWave + (a || 1)];
   else if (op === 'assault') { G.assault = planAssault(G.startWave); G.refit = true; }
   else if (op === 'tokens') G.tokens = a;
@@ -2095,6 +2095,7 @@ function updateWaves(dt) {
     // stop piling into each other. Calling the wave early skips all of this, for the bonus
     const crowd = !bossUp && G.enemies.reduce((n, e) => n + (!e.dead && !e.gen ? 1 : 0), 0) > 6 && (G.lagHold = (G.lagHold || 0) + dt) < 12;
     if (G.tut && tutIdx(G.wave) >= G.tutS.waves.length) return; // the script is over: Training ends at the bounty, a lesson at its last step
+    if (G.tut && G.enemies.some(e => !e.dead)) return; // Training: the next wave waits for a clear field, so every between-wave lesson gets its moment
     if (bossUp && (G.bossHold = (G.bossHold || 0) + dt) < BOSS_HOLD) G.next -= dt / 3; else G.next -= crowd ? dt / 2 : dt;
     if (G.next <= 0) { G.bossHold = 0; G.lagHold = 0; startWave(); }
     return;
