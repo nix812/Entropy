@@ -11,7 +11,7 @@ function defaultProfile() {
     v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], tal: {}, caps: [], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
-    seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
+    seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, tut: {}, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '', coll: {}, collC: {}, collNew: [] },
     mastery: {}, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
@@ -27,7 +27,7 @@ const profLevel = () => levelFromXP(PROF.xp);
 // daily ladder is about play, not hours). TAL_EDIT is the build being edited on the Talents screen; a live Hunt run locks its own copy.
 let TAL_EDIT = null;
 const huntRun = () => !!(G && !G.over && G.huntBuild);
-const ghostRun = () => !!(G && (G.replaying || G.watch));
+const ghostRun = () => !!(G && (G.replaying || G.watch || G.tut)); // 5.8: Training never touches the profile either (the coach pays its reward)
 const TS = () => huntRun() ? G.huntBuild : TAL_EDIT || PROF;
 const talLevel = () => { const S = TS(); return S === PROF ? profLevel().level : S.lvl; };
 const talRank = id => (TS().tal && TS().tal[id]) || 0;
@@ -160,7 +160,7 @@ function abilCdMax(k) { return ABILITIES[k].cd * G.mods.abilCharge * (1 - UPLINK
 // a charge from a crate, chest, boss or milestone (Quartermaster doubles it). Returns the ability it went to
 function lootCharge(k, n) { k = k || pick(G.r, abilPool()); n = (n || 1) * (FX('quarter') ? 2 : 1); G.charges[k] = (G.charges[k] || 0) + n; return k; }
 function abilOnlineCheck(w) {
-  for (const k of ABIL_ORDER) if (!abilOnline(k) && w >= ABILITIES[k].from) {
+  for (const k of ABIL_ORDER) if (!abilOnline(k) && w >= ABILITIES[k].from && !(G.tut && k !== 'strike')) { // Training teaches Strike only
     G.abilOn[k] = 1; G.charges[k] = Math.max(G.charges[k] || 0, 1); G.abilCd[k] = abilCdMax(k);
     if (w > Math.max(1, G.startWave)) Hooks.toast(`${ABILITIES[k].name.toUpperCase()} ONLINE`, `${ABILITIES[k].desc} Recharges every ${Math.round(abilCdMax(k))}s`, '#ffe14d', true);
     rlog('abilOn', { id: k });
@@ -357,6 +357,27 @@ function genMap(r) {
   }
   throw new Error('map gen failed');
 }
+// 5.8 Training map: one hand-drawn serpentine inside the starting sector. Only the sector's width follows the screen (COLS), so the
+// road keeps the same shape everywhere: in from the left edge, three long runs, then along the middle into the core
+function tutMap(r) {
+  const tiles = new Array(COLS * ROWS).fill(0);
+  const core = { x: Math.round(COLS * 0.74), y: Math.floor(ROWS / 2) };
+  const R = mapRegion(core, REGION0), top = R.y0 + 2, bot = R.y1 - 3, span = core.x - R.x0;
+  const a = R.x0 + Math.max(3, Math.round(span * 0.18)), b = R.x0 + Math.round(span * 0.45), c = R.x0 + Math.round(span * 0.7);
+  let x = R.x0, y = top; const pts = [{ x, y }];
+  const to = (nx, ny) => { while (x !== nx || y !== ny) { if (x !== nx) x += Math.sign(nx - x); else y += Math.sign(ny - y); pts.push({ x, y }); } };
+  to(a, top); to(a, bot); to(b, bot); to(b, top); to(c, top); to(c, core.y); to(core.x, core.y);
+  for (const p of pts) tiles[tIdx(p.x, p.y)] = 1;
+  tiles[tIdx(core.x, core.y)] = 4;
+  // a few rocks for texture, never on or beside the road, so every tile next to it can take a tower
+  const nearRoad = (tx, ty) => pts.some(p => Math.abs(p.x - tx) <= 1 && Math.abs(p.y - ty) <= 1);
+  for (let i = 0, n = 0; i < 60 && n < 7; i++) {
+    const tx = rngInt(r, R.x0, R.x1 - 1), ty = rngInt(r, R.y0, R.y1 - 1);
+    if (tiles[tIdx(tx, ty)] === 0 && !nearRoad(tx, ty) && Math.abs(tx - core.x) + Math.abs(ty - core.y) > 2) { tiles[tIdx(tx, ty)] = 2; n++; }
+  }
+  const deco = []; for (let i = 0; i < COLS * ROWS; i++) deco.push(Math.floor(r() * 1000));
+  return { tiles, core, lanes: [makeLane(pts, core)], deco };
+}
 
 // New lanes open from wormholes anywhere around the core (any direction, edge or interior),
 // then either merge into an existing lane or burrow straight to the core.
@@ -495,7 +516,8 @@ function rlogWave() {
 }
 // ---- v3.0 power grid ----
 // Marksman shrinks only the wave-grown part of the grid: bought (reactor) and earned (assault, Spare Reactor) power is always a whole point
-function gridCap() { const base = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)), bonus = (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return (G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(base * 0.6)) : base) + bonus; }
+function gridCap() { if (G.tut) return TUT.grid[Math.min(TUT.grid.length - 1, G.wave || 0)] + (G.gridBonus || 0);
+  const base = Math.min(GRID.max, GRID.base + Math.floor(Math.max(1, G.wave || 1) / GRID.perWaves)), bonus = (G.gridBonus || 0) + ((G.mods && G.mods.gridAdd) || 0); return (G.mods && G.mods.ks.marksman ? Math.max(3, Math.round(base * 0.6)) : base) + bonus; }
 // Marksman: +2 free Overcharge on every attack tower, and paid Overcharge goes 2 steps higher
 const ocFree = t => G.mods && G.mods.ks.marksman && canOvercharge(t) ? 2 : 0;
 const ocMax = () => OVERCHARGE.max + (G && G.mods && G.mods.ks.marksman ? 2 : 0);
@@ -669,18 +691,18 @@ function newRun(opts) {
   const seed = opts.seed || Math.floor(Math.random() * 1e9);
   opts = Object.assign({}, opts, { seed });
   const r = mulberry32(seed);
-  const chaos = clamp(opts.chaos ?? 1, 0, 3);
-  setRows(opts.rows || CHAOS_LEVELS[chaos].rows);
+  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? TUT : null; // 5.8 Training: its own map, rules and wave script
+  setRows(T ? T.rows : opts.rows || CHAOS_LEVELS[chaos].rows);
   G = {
-    seed, r, chaos, CH: CHAOS_LEVELS[chaos], startWave: Math.max(1, opts.startWave || 1), cols: COLS,
+    seed, r, chaos, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, opts.startWave || 1), cols: COLS,
     time: 0, speed: 1, paused: false, over: false,
-    map: genMap(r), towers: [], towerAt: {}, enemies: [], projs: [], zones: [], storms: [],
+    map: T ? tutMap(r) : genMap(r), towers: [], towerAt: {}, enemies: [], projs: [], zones: [], storms: [],
     wave: 0, queue: [], spawnClock: 0, next: 18, spawningDone: true,
     credits: 0, score: 0, xpEarned: 0, kills: 0, lvlStart: profLevel().level,
     charges: { strike: 1, nova: 0, stasis: 0, overclock: 0, scan: 0 }, abilCd: {}, abilOn: { strike: 1 }, aimAbility: null, scanT: 0,
     runMods: {}, mods: null, tokens: 2, legendQueue: 0, rerollDisc: false,
     nextMs: 0, msIdx: 0, ev: {}, evList: [], evT: {}, overclockT: 0, stasisT: 0,
-    stormT: 50, lanesOpened: 0, laneWaves: CHAOS_LEVELS[chaos].lanes.slice(), laneWarn: null, rows: ROWS,
+    stormT: 50, lanesOpened: 0, laneWaves: (T ? T.CH : CHAOS_LEVELS[chaos]).lanes.slice(), laneWarn: null, rows: ROWS,
     rift: null, eid: 1, tid: 1, dmgLog: { combos: 0 }, unbreakUsed: -99, boonsTaken: [],
     core: null, dpsClock: 0, coreAngle: 0,
     checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
@@ -692,9 +714,10 @@ function newRun(opts) {
   G.sector = G.hk && SECTOR_BY[opts.sector] ? opts.sector : null; G.tier = 0; G.purse = 0; G.purseOut = null; G.twists = {}; G.twistW = 0;
   G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
+  if (T) { G.tut = T.v; G.huntBuild = { tal: {}, caps: [], remnants: [], lvl: 0 }; } // the same for everyone: no talents, laws or Supernova
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
-  G.laws = opts.daily ? [] : (PROF.laws || []).slice(); G.novaN = opts.daily ? 0 : PROF.nova || 0;
+  G.laws = opts.daily || T ? [] : (PROF.laws || []).slice(); G.novaN = opts.daily || T ? 0 : PROF.nova || 0;
   G.af = computeAf([]);
   G.mods = computeMods(PROF.alloc, anomMods());
   G.scoreMult = 1 + G.af.score + gamblerScore();
@@ -708,7 +731,7 @@ function newRun(opts) {
   G.wave = sw - 1;
   G.lanesOpened = 0;
   G.region = regionAt(0);
-  placeNodes(3, G.region, null);
+  if (!T) placeNodes(3, G.region, null); // Training has no Power Nodes
   while (G.laneWaves[G.lanesOpened] !== undefined && G.laneWaves[G.lanesOpened] <= sw) {
     const P0 = G.region, grew = growRegion(G.lanesOpened + 1, true);
     genExtraLane(r); G.lanesOpened++;
@@ -718,14 +741,14 @@ function newRun(opts) {
   if (sw > 1) { G.nextMs = Math.round(G.nextMs * Math.pow(1.4, Math.floor(sw / 4))); G.tokens += Math.floor(sw / 10); }
   abilOnlineCheck(sw);
   G.next = sw > 1 ? 25 : 18;
-  PROF.runs++;
+  if (!T) PROF.runs++;
   if (opts.daily) {
     G.daily = opts.daily.date; G.anoms = opts.daily.anoms.slice();
     if (G.anoms.includes('flux')) G.flux = { el: pick(r, ELS), t: 20 };
     recomputeAll(); G.core.hp = G.core.max; G.core.shield = G.core.smax;
   }
-  planWanted();
-  if (opts.nemesis) nemesisArrive(opts.nemesis, r);
+  if (T) tutSetup(T); else planWanted();
+  if (opts.nemesis && !T) nemesisArrive(opts.nemesis, r);
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
   // harder difficulties: the swarm arrives already adapted to one or two weaknesses (seeded as strong parents)
@@ -1296,6 +1319,7 @@ function updateStorms(dt) {
 // ---------- waves ----------
 function rollEvents(w) {
   const ev = {}, list = [];
+  if (G.tut) return { ev, list };
   if (w < 5 && !(G.mods && G.mods.ks.gambler && w >= 2)) return { ev, list };
   const maxN = 1 + Math.floor(w / 18);
   let chance = Math.min(0.85, (0.28 + w * 0.012) * G.CH.ev);
@@ -1480,6 +1504,7 @@ function geneRecord(e, leaked) {
   e.gkey = undefined;
 }
 function genWave(w, ev) {
+  if (G.tut) return tutWave(w);
   const r = G.r, isBoss = w % 10 === 0, af = G.af || {};
   let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)) * (G.CH.count || 1));
   let hpm = hpMult(w) * (1 + (af.hpx || 0)) * (G.CH.hp || 1);
@@ -1547,6 +1572,40 @@ function genWave(w, ev) {
     A.n = n + extra;
   }
   return { queue: q, rift, heads };
+}
+// 5.8 Training: the run's rules (called once from newRun) and its scripted waves (from genWave)
+function tutSetup(T) {
+  G.credits = T.credits; G.core.hp = G.core.max = T.coreHp;
+  G.stormT = G.cacheT = 1e9; G.nextMs = 1e12; // no storms, salvage or milestones: one idea at a time
+  const B = BOSSES.find(b => b.id === T.boss.id), M = WANTED_MODS.find(m => m.id === T.boss.mod), w = T.waves.length;
+  G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w) };
+}
+function tutTopEl() { const D = G.stats.dmgByEl; let best = 'K'; for (const k of ELS) if ((D[k] || 0) > (D[best] || 0)) best = k; return best; }
+function tutWave(w) {
+  const W = TUT.waves[w - 1], q = [], lane = G.map.lanes[0]; let t = 0;
+  if (!W) return { queue: q, rift: null, heads: [] };
+  for (const [type, n, gap, hx, X] of W) {
+    for (let i = 0; i < n; i++) {
+      if (type === 'boss') { const B = TUT.boss; q.push({ t, type: 'boss', boss: B.id, lane, hpm: hpMult(w) * hx, elite: 0, hpAbs: B.hp * hx }); t += gap; continue; }
+      const carry = X && X.genes && Math.floor((i + 1) * X.share) > Math.floor(i * X.share);
+      q.push({ t, type, lane, hpm: hpMult(w) * hx, elite: 0, genes: carry ? X.genes.slice() : null, gel: carry ? (X.gel === 'top' ? tutTopEl() : X.gel) : null });
+      t += gap;
+    }
+    t += 1.2;
+  }
+  return { queue: q, rift: null, heads: [] };
+}
+// a leak in Training: the boss circles back to the start of the road, and the core never drops below 1 (it says so, once)
+function tutLeak(e) {
+  if (!e.boss || e.gen) return false;
+  const c = G.core; c.hp = Math.max(1, c.hp - c.max * 0.25); c.sinceHit = 0; e.d = 0; e.seg = 0; lanePos(e.L, 0, e);
+  Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
+  Hooks.toast('BOSS BREACH', `${e.bossName} hit the core and circled back. In a real run, a boss at the core ends it`, '#ff4d6a', true);
+  return true;
+}
+function tutHold() {
+  G.core.hp = 1;
+  if (!G.tutHeld) { G.tutHeld = 1; Hooks.toast('CORE HELD', 'Training keeps your core alive. In a real run, this would end it', '#ff4d6a', true); }
 }
 // ===================== v4.0: STRAIN ASSAULTS (the swarm's move) =====================
 // Every few waves the swarm reads your defence (whose damage killed it these last waves), picks the genes that beat it,
@@ -1688,6 +1747,7 @@ function startWave() {
   G.wave++;
   const w = G.wave;
   abilOnlineCheck(w);
+  if (G.tut && TUT.charge[w]) G.charges[TUT.charge[w]] = Math.max(1, G.charges[TUT.charge[w]] || 0);
   if (!G.prep || G.prep.w !== w) prepareWave(w);
   const P = G.prep; G.prep = null;
   G.ev = P.ev; G.evList = P.list; G.evT = { emp: 5, meteor: 1.2, phase: 4 };
@@ -1872,6 +1932,7 @@ function updateWaves(dt) {
     // v4.7: and while the last wave is still on the field in numbers, the countdown runs at half speed (up to 12 s), so waves
     // stop piling into each other. Calling the wave early skips all of this, for the bonus
     const crowd = !bossUp && G.enemies.reduce((n, e) => n + (!e.dead && !e.gen ? 1 : 0), 0) > 6 && (G.lagHold = (G.lagHold || 0) + dt) < 12;
+    if (G.tut && G.wave >= TUT.waves.length) return; // the script is over: Training ends at the bounty
     if (bossUp && (G.bossHold = (G.bossHold || 0) + dt) < BOSS_HOLD) G.next -= dt / 3; else G.next -= crowd ? dt / 2 : dt;
     if (G.next <= 0) { G.bossHold = 0; G.lagHold = 0; startWave(); }
     return;
@@ -1936,7 +1997,7 @@ function stabilize() {
 
 // ---------- veterans ----------
 function grantVxp(t, v) {
-  if (!t || t.vxp === undefined) return;
+  if (!t || t.vxp === undefined || G.tut) return; // no veterans in Training
   const vb = G.mods.orb && G.mods.orb.vxp[t.s.el]; if (vb) v *= 1 + vb / 100;
   if (G.mods.ks.artisan) v *= 2 * (1 + FX('aVxp') / 100);
   t.vxp += v;
@@ -2313,7 +2374,7 @@ function updateEnemies(dt) {
     if (e.boss && !e.gen && !e.redAlert && !e.dead) {
       const rem = e.L.len - e.d;
       // v5.3: a first, earlier alarm at the halfway mark while there's still time to answer
-      if (!e.halfTold && e.d >= e.L.len * 0.5 && e.hp > e.maxHp * 0.3) { e.halfTold = 1; Hooks.toast('BOSS HALFWAY', `${e.bossName} is halfway to your core with ${Math.round(e.hp / e.maxHp * 100)}% HP. If it reaches the core the run ends: slow it, Scan it, Strike it`, '#ff4d6a', true); Hooks.sfx('bosswarn'); }
+      if (!e.halfTold && e.d >= e.L.len * 0.5 && e.hp > e.maxHp * 0.3) { e.halfTold = 1; Hooks.toast('BOSS HALFWAY', `${e.bossName} is halfway to your core with ${Math.round(e.hp / e.maxHp * 100)}% HP. ${G.tut ? 'In a real run a boss at the core ends it' : 'If it reaches the core the run ends'}: slow it, Scan it, Strike it`, '#ff4d6a', true); Hooks.sfx('bosswarn'); }
       if (rem <= RED_ALERT.tiles) { e.redAlert = 1; rlog('redAlert', { id: e.boss, hp: +(e.hp / e.maxHp).toFixed(2) }); Hooks.toast('RED ALERT', `${e.bossName} is ${Math.max(1, Math.ceil(rem))} tiles from the core. Last Stand: core shells hit it ×${RED_ALERT.coreDmg}. Stasis, Strike and Overcharge now`, '#ff4d6a', true); Hooks.sfx('bosswarn'); Hooks.fx('shake', { v: 6 }); Hooks.log(`Red Alert: ${e.bossName} at the gate`, '#ff4d6a'); }
     }
     if (e.d >= e.L.len - 0.05) leak(e);
@@ -2470,6 +2531,7 @@ function bossBehavior(e, dt) {
   // swarmers spawned from behemoth should follow its lane: fix lane positions
 }
 function leak(e) {
+  if (G.tut && tutLeak(e)) return;
   e.dead = true;
   geneRecord(e, true); assaultHit(e, true);
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
@@ -2505,7 +2567,8 @@ function leak(e) {
   Hooks.sfx(e.boss ? 'bigleak' : 'leak');
   if (e.boss) Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
   if (c.hp <= 0) {
-    if (G.mods.ks.unbreakable && G.wave - G.unbreakUsed >= 10) {
+    if (G.tut) tutHold();
+    else if (G.mods.ks.unbreakable && G.wave - G.unbreakUsed >= 10) {
       G.unbreakUsed = G.wave; c.hp = c.max * 0.5;
       Hooks.toast('UNBREAKABLE', 'Lethal hit prevented', '#59f0b4');
       Hooks.sfx('unbreak');

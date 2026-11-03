@@ -274,6 +274,30 @@ const TWISTS = [
 ];
 const TWIST_FROM = 50;
 const TWIN_HP = 0.65;
+// ---------- 5.8 Training: the guided first run ----------
+// newRun({ tut: TUT.v }) plays a fixed map (tutMap), seed and wave script, one idea per wave. Everything here is sim data: the run
+// never reads the profile for it, so a recording replays exactly. The coach (ui.js Coach) only watches and pauses.
+// waves: groups of [enemy, count, gap s, hp ×, extra]; hp × multiplies the normal hpMult(w). extra.genes/gel give scripted genes
+// (gel 'top' = the element doing most of your damage); extra.share = the fraction of the group that carries them
+const TUT = {
+  v: 1, seed: 52801, rows: 22, credits: 100, coreHp: 150, reward: 800,
+  CH: { name: 'Training', ev: 0, storm: 0, elite: 0, score: 1, hp: 1, rows: 22, lanes: [99], evo: { start: 5, press: 0, first: 999, every: 999, desc: '' } },
+  grid: [2, 2, 3, 3, 3, 4, 4, 4, 5, 5],   // power capacity by G.wave (index), so the grid fills up once and the upgrade lesson follows
+  towers: ['pulse', 'rail', 'cryo'],     // what the coach offers in the build menu
+  boss: { id: 'behemoth', mod: 'colossal', hp: 1500 }, // fixed health (×1.6 Colossal), so the fight is the same for everyone
+  charge: { 5: 'strike' },               // a Strike charge waiting at the start of these waves
+  waves: [
+    [['drone', 6, 1.8, 0.9]],
+    [['drone', 5, 1.5, 1], ['swarmer', 6, 0.3, 1]],
+    [['drone', 7, 1.2, 1], ['swarmer', 8, 0.3, 1]],
+    [['drone', 4, 1.2, 1], ['tank', 3, 2.6, 0.9], ['drone', 3, 1.2, 1]],
+    [['drone', 3, 1.2, 1], ['swarmer', 18, 0.14, 1.1]],
+    [['drone', 10, 1.0, 1.05, { genes: ['ward'], gel: 'top', share: 0.6 }], ['swarmer', 6, 0.3, 1, { genes: ['haste'], share: 0.5 }]],
+    [['drone', 8, 0.9, 1, { genes: ['ward'], gel: 'top', share: 0.5 }], ['tank', 2, 2.4, 0.9], ['swarmer', 8, 0.25, 1]],
+    [['swarmer', 8, 0.25, 1], ['drone', 10, 0.8, 1, { genes: ['ward'], gel: 'top', share: 0.4 }], ['tank', 3, 2.2, 0.9]],
+    [['drone', 4, 1.2, 0.9], ['boss', 1, 3, 1], ['drone', 4, 1.6, 0.9]],
+  ],
+};
 const NEMESIS_CRIME = ['the fall of your last core','breaking and entering (your core)', 'gloating', 'returning to the scene of the crime', 'holding a grudge'];
 
 // ---------- v4.4 Red Alert: a boss within this many tiles of the core puts the core on Last Stand (shells hit it much harder) ----------
