@@ -596,74 +596,105 @@ const DOCTRINES = {
 };
 // ---------- v5.0 Talents: a clean sheet for the passive web ----------
 // Seven short trees, read top to bottom like a classic RPG talent tree. Each tree has four rows of talents with ranks, and a
-// Capstone row: pick one defining play style. Row r opens after 5 × r points in that tree; a Capstone needs 20. You can hold a
+// Capstone row: pick one defining play style. Row r opens after TROW × r points in that tree; a Capstone needs TCAP. You can hold a
 // limited number of Capstones (capSlots), so a build is "two or three things you are really good at", not 180 small bonuses.
 // Talent effects use the same stat keys as before (STAT_TXT), so every mechanic from the old web still exists.
-const WEB_VER = 4;
-const TROW = 5, TCAP = 20;
-// every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall
-const TAL_PT_DMG = 0.4;
+// v5.8 Techniques and play styles: every attack tower has a Technique (an alternate fire mode, TOWER_FIRE) that a one-point talent in
+// its tree unlocks, rows open every 3 points, Capstones at 12, and the ten stat-trade Capstones became play styles you see on the field.
+// 5-rank stat talents are 3 ranks. A tree now costs ~19 points instead of ~26, so the damage and status talents (K T A C V) carry
+// about 80% of their old tree total (bots at 60 points went from median Wave 72 to 86 at the full total); Bastion and Command keep
+// theirs. WEB_VER 5 refunds every point once (migrateWeb).
+const WEB_VER = 5;
+const TROW = 3, TCAP = 12;
+// every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall (v5.8: 0.4 → 0.15, so
+// specialising beats spreading)
+const TAL_PT_DMG = 0.15;
 const T_ = (id, name, max, fx, extra) => Object.assign({ id, name, max, fx }, extra || {});
 const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
+// a Technique talent: one point, unlocks a fire mode for one tower type (the mode's own text lives in TOWER_FIRE)
+const TECH = (id, name, tower) => T_(id, name, 1, {}, { tech: tower });
 const TALENTS = [
   { id: 'K', name: 'Ballistics', col: '#efe6cf', glyph: 'K', tag: 'Kinetic guns: crits that tear through armour',
     rows: [
-      [T_('kDmg', 'Heavy Rounds', 5, { dmgK: 7 }), T_('kCrit', 'Precision', 5, { critC: 3 })],
-      [T_('kRate', 'Autoloader', 5, { rateK: 4 }), T_('kPen', 'Penetrator', 3, { armorPen: 10 })],
-      [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 3, { critM: 12 })],
-      [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 3, { shredStack: 1, eliteDmg: 4 })]],
-    caps: [CAP('marksman', 'Marksman', { ks: 'marksman', doc: 0 }), CAP('glass', 'Glass Cannon Array', { ks: 'glass', lines: ['+60% Damage', '−40% core max HP and shield'] }),
-      CAP('deadeye', 'Deadeye', { fx: { critCK: 15, critMK: 50, pierceK: 1, pierceKeep: 1 }, lines: ['+15% Crit Chance and +50% Crit Damage for Kinetic towers', 'Kinetic shots pierce one more enemy and lose no damage doing it'] })] },
+      [T_('kDmg', 'Heavy Rounds', 3, { dmgK: 10 }), T_('kCrit', 'Precision', 3, { critC: 4 }), TECH('kSupp', 'Suppressor', 'pulse')],
+      [T_('kRate', 'Autoloader', 3, { rateK: 6 }), T_('kPen', 'Penetrator', 2, { armorPen: 12 }), TECH('kOver', 'Charged Shot', 'rail')],
+      [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 2, { critM: 14 })],
+      [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 2, { shredStack: 1.2, eliteDmg: 5 })]],
+    caps: [CAP('marksman', 'Marksman', { ks: 'marksman', doc: 0 }),
+      CAP('nest', 'Sniper Nest', { ks: 'nest', lines: ['Rail Lances with no tower beside them: +40% Range, +30% Damage, and every shot pierces every enemy in line', 'Rail Lances with a neighbour deal 25% less damage'] }),
+      CAP('rico', 'Ricochet', { ks: 'rico', lines: ['Pulse Blaster rounds bounce to 3 more enemies, and the first bounce keeps full damage', 'Rail Lances fire 25% slower'] })] },
   { id: 'T', name: 'Combustion', col: '#ff7b39', glyph: 'T', tag: 'Thermal and Burn: set the swarm alight',
     rows: [
-      [T_('tDmg', 'Accelerant', 5, { dmgT: 7 }), T_('tChance', 'Kindling', 5, { burnChance: 3 })],
-      [T_('tBurn', 'Fuel', 5, { burnDmg: 10 }), T_('tSplash', 'Blast Radius', 3, { splash: 0.1 })],
-      [T_('tBoom', 'Flashpoint', 1, { burnBoom: 25, dmgT: 8 }), T_('tVuln', 'Scorch', 3, { burnVuln: 7 })],
+      [T_('tDmg', 'Accelerant', 3, { dmgT: 10 }), T_('tChance', 'Kindling', 3, { burnChance: 4 }), TECH('tBack', 'Backdraft', 'flame')],
+      [T_('tBurn', 'Fuel', 3, { burnDmg: 14 }), T_('tSplash', 'Blast Radius', 2, { splash: 0.1 }), TECH('tBunk', 'Bunker Buster', 'missile')],
+      [T_('tBoom', 'Flashpoint', 1, { burnBoom: 25, dmgT: 8 }), T_('tVuln', 'Scorch', 2, { burnVuln: 8 })],
       [T_('tChain', 'Chain Ignition', 1, { chainIgnite: 1, burnDur: 20 }), T_('tNapalm', 'Napalm', 1, { napalmKill: 1, burnDmg: 10 }), T_('tCrit', 'Incendiary Rounds', 1, { burnCrit: 1 })]],
     caps: [CAP('wildfire', 'Wildfire', { ks: 'wildfire', doc: 1 }), CAP('conflag', 'Conflagration', { ks: 'conflag', lines: ['All damage becomes Thermal (Resonance unaffected)', '+50% Thermal Damage, +150% Burn damage. Burning enemies are 25% slower', 'Every 3rd Thermal hit on a burning enemy triggers Thermal Shock', 'Chill becomes Burn: cannot Chill or Freeze'] }),
       CAP('pyre', 'Pyre', { fx: { burnSpread: 1, heatSink: 1 }, lines: ['Every second, Burn spreads to the nearest enemy within 1 tile', 'Thermal towers: +2% Attack Speed per Burning enemy, up to +40%'] })] },
   { id: 'A', name: 'Voltaic', col: '#ffe14d', glyph: 'A', tag: 'Arc and speed: chains, shocks and overloads',
     rows: [
-      [T_('aDmg', 'Voltage', 5, { dmgA: 7 }), T_('aRate', 'Cadence', 5, { rate: 3 })],
-      [T_('aShock', 'Static', 5, { shockChance: 3 }), T_('aDis', 'Discharge', 3, { rateA: 4 })],
-      [T_('aFork', 'Forked Lightning', 1, { chain: 1, chainKeep: 1 }), T_('aOver', 'Overvolt', 3, { shockEff: 12 })],
+      [T_('aDmg', 'Voltage', 3, { dmgA: 10 }), T_('aRate', 'Cadence', 3, { rate: 4 }), TECH('aFence', 'Arc Fence', 'coil')],
+      [T_('aShock', 'Static', 3, { shockChance: 4 }), T_('aDis', 'Discharge', 2, { rateA: 5 }), TECH('aMines', 'Pulse Mines', 'emp')],
+      [T_('aFork', 'Forked Lightning', 1, { chain: 1, chainKeep: 1 }), T_('aOver', 'Overvolt', 2, { shockEff: 14 })],
       [T_('aCap', 'Capacitors', 1, { capacitor: 1, dmgA: 10 }), T_('aIon', 'Ion Lattice', 1, { multiA: 1 }), T_('aPlasma', 'Plasma Coupling', 1, { ovlBurn: 1, overloadRad: 30 })]],
-    caps: [CAP('circuit', 'Circuit', { ks: 'circuit', doc: 2 }), CAP('overgrid', 'Overclocked Grid', { ks: 'overgrid', lines: ['+40% Attack Speed', 'Attacks have a 3% chance to jam the tower for 1.5s'] }),
-      CAP('thunder', 'Thunderstrike', { fx: { thunder: 1, shockLong: 1, ovlFree: 1 }, lines: ['Every 6s, lightning strikes the toughest enemy on the map', 'Shock lasts 6s instead of 3s', 'Overload has no cooldown'] })] },
+    caps: [CAP('circuit', 'Circuit', { ks: 'circuit', doc: 2 }),
+      CAP('stormrider', 'Storm Rider', { ks: 'stormrider', lines: ['Storms drift toward your Arc towers and linger over them', 'Arc towers inside a storm: +60% Attack Speed, and Arc Coils chain +2', 'Storms come 30% more often'] }),
+      CAP('blackout', 'Blackout', { ks: 'blackout', lines: ['EMP shells leave a static field for 3s: enemies inside are Shocked and 30% slower', 'EMP Mortars fire 25% faster', 'Arc Coils deal 15% less damage'] })] },
   { id: 'C', name: 'Cryogenics', col: '#6ae2ff', glyph: 'C', tag: 'Chill and Freeze: slow them, then shatter them',
     rows: [
-      [T_('cDmg', 'Frostbite', 5, { dmgC: 7 }), T_('cPot', 'Permafrost', 5, { chillPot: 10 })],
-      [T_('cChance', 'Frost', 5, { chillChance: 3 }), T_('cStill', 'Stillness', 3, { freezeDur: 0.1 })],
-      [T_('cDeep', 'Deep Freeze', 1, { freezeAt: 1, freezeDur: 0.3 }), T_('cBrittle', 'Brittle', 3, { frozenVuln: 8 })],
+      [T_('cDmg', 'Frostbite', 3, { dmgC: 10 }), T_('cPot', 'Permafrost', 3, { chillPot: 14 }), TECH('cLance', 'Cold Lance', 'cryo')],
+      [T_('cChance', 'Frost', 3, { chillChance: 4 }), T_('cStill', 'Stillness', 2, { freezeDur: 0.1 })],
+      [T_('cDeep', 'Deep Freeze', 1, { freezeAt: 1, freezeDur: 0.3 }), T_('cBrittle', 'Brittle', 2, { frozenVuln: 10 })],
       [T_('cLattice', 'Frost Lattice', 1, { chillSplash: 1, dmgC: 10 }), T_('cShards', 'Ice Shards', 1, { iceShards: 1 }), T_('cSuper', 'Superconductors', 1, { superChill: 1, superRad: 60 })]],
-    caps: [CAP('glacier', 'Glacier', { ks: 'glacier', doc: 3 }), CAP('abszero', 'Absolute Zero', { ks: 'abszero', lines: ['Chilled enemies take +50% damage', '−50% Thermal Damage'] }),
-      CAP('winter', 'Long Winter', { fx: { chillSlowDecay: 1, coldSnap: 1, glacial: 15 }, lines: ['Chill fades 3× slower', 'Shatter also Freezes enemies within 1 tile', 'Chilled enemies move an extra 15% slower'] })] },
+    caps: [CAP('glacier', 'Glacier', { ks: 'glacier', doc: 3 }),
+      CAP('artillery', 'Cryo Artillery', { ks: 'artillery', lines: ['Cryo Emitters stop pulsing and lob frost shells at the enemy furthest along, at double range', 'Each shell bursts for ×2.5 Damage in 1.1 tiles and adds 2 Chill', 'Cryo Emitters fire 40% slower'] }),
+      CAP('hoarfrost', 'Hoarfrost', { ks: 'hoarfrost', lines: ['Every Freeze leaves ice on the road for 5s', 'Ground enemies on ice are Chilled and take +25% Kinetic Damage', 'Thermal towers deal 20% less damage'] })] },
   { id: 'V', name: 'Singularity', col: '#b86cff', glyph: 'V', tag: 'Void and Marks: bend the road, collapse the strong',
     rows: [
-      [T_('vDmg', 'Null', 5, { dmgV: 6 }), T_('vHunt', 'Hunter', 5, { eliteDmg: 5 })],
-      [T_('vMark', 'Mark', 5, { markChance: 3 }), T_('vKnock', 'Gravitic', 3, { knock: 2 })],
-      [T_('vLens', 'Null Lens', 1, { rampKeep: 1, dmgV: 8 }), T_('vSlow', 'Event Drag', 3, { markSlow: 10 })],
+      [T_('vDmg', 'Null', 3, { dmgV: 8 }), T_('vHunt', 'Hunter', 3, { eliteDmg: 6 }), TECH('vTether', 'Null Tether', 'lens')],
+      [T_('vMark', 'Mark', 3, { markChance: 4 }), T_('vKnock', 'Gravitic', 2, { knock: 2.4 }), TECH('vRepulse', 'Repulsor', 'grav')],
+      [T_('vLens', 'Implosion', 1, { collapse: 40, dmgV: 8 }) /* v5.8: was Null Lens (beams kept their ramp), a Lens-only buff */, T_('vSlow', 'Event Drag', 2, { markSlow: 12 })],
       [T_('vDark', 'Dark Matter', 1, { markVoid: 5, markMax: 3 }), T_('vHole', 'Black Hole', 1, { blackHole: 1, collapse: 30 }), T_('vPull', 'Gravitic Pull', 1, { knockMark: 1, knock: 3 })]],
-    caps: [CAP('horizon', 'Event Horizon', { ks: 'horizon', doc: 4 }), CAP('singularity', 'Singularity', { ks: 'singularity', lines: ['+100% Void Damage', '−30% all other damage'] }),
+    caps: [CAP('horizon', 'Event Horizon', { ks: 'horizon', doc: 4 }),
+      CAP('garden', 'Gravity Garden', { ks: 'garden', lines: ['Ground enemies between two Gravity Wells (up to 5 tiles apart) are held: 75% slower and +25% damage taken', 'Gravity Wells: +25% Range', 'Void Lenses deal 20% less damage'] }),
       CAP('decay', 'Entropic Decay', { fx: { markPerma: 1, voidSiphon: 1 }, lines: ['Marks never fade', 'Each Collapse fills the Entropy gauge'] })] },
   { id: 'E', name: 'Bastion', col: '#59f0b4', glyph: 'E', tag: 'Core, shield and credits: the economy wins long runs',
     rows: [
-      [T_('eHP', 'Hull Plating', 5, { coreHP: 12 }), T_('eCr', 'Salvage', 5, { credits: 4 })],
-      [T_('eShield', 'Barrier', 3, { shield: 8, shieldRegen: 15 }), T_('eCost', 'Supply Lines', 5, { costRed: 2, upgRed: 3 })],
-      [T_('eCore', 'Reinforced Core', 1, { shieldWave: 1, coreHP: 30 }), T_('eRepair', 'Field Repairs', 3, { fieldRepair: 2 })],
+      [T_('eHP', 'Hull Plating', 3, { coreHP: 20 }), T_('eCr', 'Salvage', 3, { credits: 7 })],
+      [T_('eShield', 'Barrier', 2, { shield: 12, shieldRegen: 22 }), T_('eCost', 'Supply Lines', 3, { costRed: 3, upgRed: 5 })],
+      [T_('eCore', 'Reinforced Core', 1, { shieldWave: 1, coreHP: 30 }), T_('eRepair', 'Field Repairs', 2, { fieldRepair: 3 })],
       [T_('eInt', 'Compound Interest', 1, { interest: 2 }), T_('eRet', 'Retaliation', 1, { coreDmg: 60, coreRate: 30, coreRange: 1 }), T_('eDrones', 'Salvage Drones', 1, { salvage: 1 })]],
-    caps: [CAP('wareco', 'War Economy', { ks: 'wareco', doc: 5 }), CAP('dimret', 'Diminishing Returns', { ks: 'dimret', lines: ['+50% Credits from all sources', 'Each copy of a tower costs 12% more'] }),
-      CAP('unbreakable', 'Unbreakable', { ks: 'unbreakable', lines: ['Survive a lethal hit at 50% HP, once per 10 waves', '−10% tower Damage'] })] },
+    caps: [CAP('wareco', 'War Economy', { ks: 'wareco', doc: 5 }),
+      CAP('forgeworks', 'Forge Works', { ks: 'forgeworks', lines: ['Credit Forges arm themselves: each fires Kinetic slugs at enemies within 3 tiles, hitting harder the more it earns', 'Credit Forge income −35%'] }),
+      CAP('bulwark', 'Bulwark', { ks: 'bulwark', lines: ['When an enemy reaches the core, the core throws back every enemy within 2.5 tiles and Stuns them (every 3s at most)', 'Core +40% max HP', 'Towers deal 10% less damage'] })] },
   { id: 'X', name: 'Command', col: '#ff5fa8', glyph: 'X', tag: 'Abilities, veterans, luck and storms',
     rows: [
-      [T_('xPow', 'Uplink', 5, { abilPower: 8 }), T_('xCharge', 'Telemetry', 5, { abilCharge: 5 })],
-      [T_('xLuck', 'Mutation', 3, { affixLuck: 10 }), T_('xXp', 'Insight', 3, { xp: 6 }), T_('xRange', 'Optics', 3, { range: 4 })],
+      [T_('xPow', 'Uplink', 3, { abilPower: 13 }), T_('xCharge', 'Telemetry', 3, { abilCharge: 8 })],
+      [T_('xLuck', 'Mutation', 2, { affixLuck: 15 }), T_('xXp', 'Insight', 2, { xp: 9 }), T_('xRange', 'Optics', 2, { range: 6 })],
       [T_('xCell', 'Reserve Cells', 2, { abilSlots: 1 }), T_('xLoad', 'Quartermaster', 1, { quarter: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
-      [T_('xWolf', 'Lone Wolf', 1, { loneWolf: 35 }), T_('xStasis', 'Stasis Theory', 1, { stasisDur: 3, chillVoid: 15 }), T_('xVet', 'Field Promotion', 3, { vxpAll: 30 })]],
+      [T_('xWolf', 'Lone Wolf', 1, { loneWolf: 35 }), T_('xStasis', 'Stasis Theory', 1, { stasisDur: 3, chillVoid: 15 }), T_('xVet', 'Field Promotion', 2, { vxpAll: 45 })]],
     caps: [CAP('artisan', 'Artisan', { ks: 'artisan', doc: 6 }), CAP('gambler', 'Gambler', { ks: 'gambler', doc: 7 }),
-      CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['+150% affix rarity', 'New towers also roll a Curse'] }),
+      CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['Every wave, each attack tower takes a random element for that wave (its shots, statuses, talents and Resonance follow it)', '+25% Damage'] }),
       CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 25 }, lines: ['Using an ability takes 30% off every other ability\'s cooldown', '+25% ability power'] })] },
 ];
+// v5.8: Capstones that were replaced by play styles; a Supernova Remnant of the old one becomes the new one (migrateWeb)
+const CAP_RENAMED = { glass: 'nest', deadeye: 'rico', overgrid: 'stormrider', thunder: 'blackout', abszero: 'artillery', winter: 'hoarfrost', singularity: 'garden', dimret: 'forgeworks', unbreakable: 'bulwark' };
+// v5.8 Techniques: alternate fire modes. A talent unlocks one (need), then the tower panel switches each tower of that type between
+// Standard and the Technique (act('fire', x, y, id); t.fire, kept apart from targeting t.mode). Each is a different job, not an upgrade.
+// m keys are read in applyFire (sim.js): dmgX, rateX, rangeAdd, rangeX, pullX multiply or add; the rest switch behaviour.
+const TOWER_FIRE = {
+  pulse: [{ id: 'supp', need: 'kSupp', name: 'Suppressor', short: 'Slows what it hits by 35%. ×0.75 Damage', desc: 'Rounds slow what they hit by 35% for 1.5s. ×0.75 Damage', m: { dmgX: 0.75, supSlow: 0.35, supDur: 1.5 } }],
+  rail: [{ id: 'over', need: 'kOver', name: 'Charged Shot', short: 'Every 3rd shot ×4 and pierces all. Half speed', desc: 'Every 3rd shot deals ×4 and pierces every enemy in line. ×0.5 Attack Speed', m: { rateX: 0.5, ocEvery: 3, ocX: 4 } }],
+  cryo: [{ id: 'lance', need: 'cLance', name: 'Cold Lance', short: 'A freezing beam on one target. ×3 Damage', desc: 'A freezing beam on one target instead of a pulse: ×3 Damage to it, pierces Plating, +0.8 Range', m: { lance: 3, rangeAdd: 0.8 } }],
+  missile: [{ id: 'bunker', need: 'tBunk', name: 'Bunker Buster', short: '×2 Damage, ignores Plating. No splash', desc: 'One heavy warhead: ×2 Damage, ignores Plating and half of Armor. No splash, bomblets or napalm', m: { dmgX: 2, bunker: 1 } }],
+  coil: [{ id: 'fence', need: 'aFence', name: 'Arc Fence', short: 'Zaps a line to a Coil within 4 tiles', desc: 'Stops chaining. Arcs a fence to the nearest Coil within 4 tiles that zaps and Shocks everything within a tile of it', m: { fence: 4 } }],
+  flame: [{ id: 'back', need: 'tBack', name: 'Backdraft', short: 'A full ring of fire. ×0.7 Range', desc: 'Burns a full ring around the tower instead of a cone. ×0.7 Range', m: { ring: 1, rangeX: 0.7 } }],
+  lens: [{ id: 'tether', need: 'vTether', name: 'Null Tether', short: 'No ramp. Beamed enemies 35% slower', desc: 'No ramp: steady damage at the base rate. Beamed enemies are 35% slower and Marked twice as fast', m: { tether: 0.35 } }],
+  emp: [{ id: 'mines', need: 'aMines', name: 'Pulse Mines', short: 'Lays up to 4 road mines. ×1.75 Damage', desc: 'Shells stay on the road as mines (up to 4) that blow when a ground enemy steps on them. ×1.75 Damage. Fliers never set them off', m: { mines: 4, dmgX: 1.75 } }],
+  grav: [{ id: 'repulse', need: 'vRepulse', name: 'Repulsor', short: 'Hits fliers and throws them back', desc: 'Also hits fliers and throws them back along their flight. ×0.6 pull on the ground, ×0.5 Damage', m: { repulse: 1, pullX: 0.6, dmgX: 0.5 } }],
+};
+const fireModes = type => TOWER_FIRE[type] || [];
+const fireTalentFor = type => fireModes(type).map(f => TAL[f.need]).filter(Boolean);
 // lookups: every talent and capstone by id, with its tree and row
 const TAL = {};
 for (const tr of TALENTS) {
@@ -671,21 +702,31 @@ for (const tr of TALENTS) {
   for (const c of tr.caps) { c.tree = tr.id; c.row = 4; c.max = 1; TAL[c.id] = c; }
 }
 const TREE_BY_ID = Object.fromEntries(TALENTS.map(t => [t.id, t]));
-// v4.x Doctrine seals live on as Capstones (same ks flags, same field effects)
-const capSlots = lvl => 1 + (lvl >= 50 ? 1 : 0) + (lvl >= 100 ? 1 : 0);
-const CAP_NEXT = lvl => lvl < 50 ? 50 : lvl < 100 ? 100 : 0;
+// points that fill a tree (every talent at max rank): the Talents screen's bars
+const treeMax = tid => TREE_BY_ID[tid].rows.flat().reduce((a, t) => a + t.max, 0);
+// v4.x Doctrine seals live on as Capstones (same ks flags, same field effects). v5.8: slots at Levels 25 and 60 (were 50 and 100)
+const capSlots = lvl => 1 + (lvl >= 25 ? 1 : 0) + (lvl >= 60 ? 1 : 0);
+const CAP_NEXT = lvl => lvl < 25 ? 25 : lvl < 60 ? 60 : 0;
+// v5.8: the Daily Hunt build is 30 points with one Capstone (the trees are smaller; 40 points held three)
+HUNT.pts = 30; const HUNT_CAPS = 1;
 // a talent's description at a given rank
 function talentLines(t, rank) {
   if (t.cap) return t.lines || (t.doc !== undefined ? DOCTRINES[t.doc].lines : []);
+  if (t.tech) { const F = fireModes(t.tech).find(f => f.need === t.id); return F ? [`Technique for the ${TOWERS[t.tech].name}: ${F.name}`, F.desc, 'Switch it per tower from the tower panel'] : []; }
   const r = Math.max(1, rank || 1);
   return Object.keys(t.fx).map(k => { const v = t.fx[k]; const txt = STAT_TXT[k]; if (!txt) return k; return typeof v === 'number' && v !== 1 ? txt(+(v * r).toFixed(2)) : txt(v); });
 }
 
-// v5.2: the first two levels are cheap so a first run that dies around Wave 10 still earns a talent point
-const xpForLevel = L => L === 0 ? 800 : L === 1 ? 1600 : Math.round(3000 + 250 * L + 3 * L * L);
-function levelFromXP(xp) {
-  let L = 0, need = xpForLevel(0);
-  while (xp >= need) { xp -= need; L++; need = xpForLevel(L); }
+// v5.8 XP curve: each level costs 350 + 140 × L^1.6 XP (XP is 10% of score). A fresh first run gives about 3-5 levels, a typical run
+// 6-12, and a deep run no longer pays 38 levels at once (the old 3000 + 250L + 3L² was flat at the top, steep at the bottom).
+// migrateWeb converts old profiles so nobody loses a level. The table is in docs/notes/talents.md.
+const xpForLevel = L => Math.round(350 + 140 * Math.pow(L, 1.6));
+// the 5.2-5.7 curve, kept for the migration
+const xpForLevelV5 = L => L === 0 ? 800 : L === 1 ? 1600 : Math.round(3000 + 250 * L + 3 * L * L);
+function levelFromXP(xp, f) {
+  f = f || xpForLevel;
+  let L = 0, need = f(0);
+  while (xp >= need) { xp -= need; L++; need = f(L); }
   return { level: L, into: xp, need };
 }
 
@@ -740,7 +781,7 @@ const LAWS = [
   { id: 'brittle', name: 'Brittle Star', up: '+60% core Damage, +1 core Range', down: '−25% core max HP', m: { coreDmg: 60, coreRange: 1 }, af: { coreHPx: 0.75 } },
 ];
 const LAW_SCORE = 0.15, NOVA_SCORE = 0.1, NOVA_XP = 0.25;
-const novaLevelReq = n => Math.min(150, 40 + 10 * n); // v5.3: 40 (was 60); extracted runs get there
+const novaLevelReq = n => Math.min(100, 30 + 5.5 * n | 0); // v5.3: 40 (was 60); extracted runs get there. v5.8: 30 + 5.5n on the steeper XP curve (about the same XP as 40 + 10n was)
 // ---------- Veteran towers ----------
 const VET_NAMES = ['Widowmaker', 'Old Faithful', 'Quiet Storm', 'Ninth Circle', 'Saint Static', 'The Accountant', 'Hollow King', 'Lucky Seven',
   'Last Light', 'Gravedigger', 'Little Sun', 'Night Shift', 'Paper Moon', 'Iron Psalm', 'Red Tide', 'Cold Comfort', 'Dead Reckoning',

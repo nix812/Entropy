@@ -39,6 +39,12 @@ function buildGroup(S, G, type, lv, spec, budget, near) {
 }
 function runConfig(cfg, seed) {
   const S = load(); S.PROF = S.defaultProfile(); S.PROF.bestWave = 120;
+  if (cfg.fire) { // v5.8 Technique configs: learn the talent (opening its row), then switch every tower of the group after building
+    S.PROF.xp = S.xpToLevel(30) + 1;
+    const F = S.TOWER_FIRE[cfg.type].find(f => f.id === cfg.fire), T = S.TAL[F.need], tr = S.TALENTS.find(x => x.id === T.tree);
+    for (let g = 0; g < 20 && S.talentBlock(T.id) === 'row'; g++) { const f = tr.rows.flat().find(x => !x.tech && x.row < T.row && !S.talentBlock(x.id)); if (!f) break; S.talentAdd(f.id); }
+    S.talentAdd(T.id); S.PROF.tal = { [T.id]: 1 }; // only the Technique counts, so the comparison is the mode alone
+  }
   S.Hooks.onDraft = o => S.takeBoon(o[0]);
   const G = S.newRun({ seed: 7000 + seed * 101, chaos: 1, startWave: W, cols: 46 });
   G.CH = Object.assign({}, G.CH, { ev: 0, storm: 0 }); G.stormT = 1e9; G.cacheT = 1e9; G.tokens = 0;
@@ -48,6 +54,7 @@ function runConfig(cfg, seed) {
   G.credits = budget;
   if (cfg.carrier) { G.credits = Math.round(budget * (1 - cfg.share)); buildGroup(S, G, cfg.carrier, 3, 0); G.credits += Math.round(budget * cfg.share); buildGroup(S, G, cfg.type, cfg.lv, cfg.spec, 0, true); }
   else buildGroup(S, G, cfg.type, cfg.lv, cfg.spec, budget);
+  if (cfg.fire) { S.recomputeAll(); for (const t of G.towers) if (t.type === cfg.type) S.setFireMode(t, cfg.fire); }
   const spent = budget - G.credits; G.credits = 0;
   const towers = G.towers.length;
   // fight three waves; track spawned and leaked HP
@@ -71,6 +78,8 @@ const ATK = ['pulse', 'rail', 'cryo', 'missile', 'coil', 'flame', 'lens', 'emp',
 const SUP = ['pylon', 'cryo', 'snare', 'coil', 'emp', 'grav'];
 const cfgs = [];
 for (const k of ATK) { cfgs.push({ id: k + ' L3', type: k, lv: 3 }); cfgs.push({ id: k + ' S1', type: k, lv: 4, spec: 1 }); cfgs.push({ id: k + ' S2', type: k, lv: 4, spec: 2 }); }
+// v5.8 LABFIRE=1 adds each Technique at L3 and Spec 1 (same budget, same spots), to compare with the Standard rows
+if (process.env.LABFIRE) for (const k of ATK) for (const F of (S0 => S0.TOWER_FIRE[k] || [])(load())) { cfgs.push({ id: k + ' L3 ' + F.id, type: k, lv: 3, fire: F.id }); cfgs.push({ id: k + ' S1 ' + F.id, type: k, lv: 4, spec: 1, fire: F.id }); }
 // support value: 70% of the budget in Pulse L3, 30% in the support tower (vs 100% Pulse)
 cfgs.push({ id: 'pulse-only', type: 'pulse', lv: 3 });
 for (const k of SUP) { cfgs.push({ id: 'pulse+' + k, carrier: 'pulse', share: 0.3, type: k, lv: 3 }); cfgs.push({ id: 'pulse+' + k + ' S1', carrier: 'pulse', share: 0.3, type: k, lv: 4, spec: 1 }); cfgs.push({ id: 'pulse+' + k + ' S2', carrier: 'pulse', share: 0.3, type: k, lv: 4, spec: 2 }); }

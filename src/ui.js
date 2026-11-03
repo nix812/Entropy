@@ -101,7 +101,7 @@ const Save = (() => {
         if (remote && (remote.updatedAt || 0) > (PROF.updatedAt || 0) && !(G && !G.over)) {
           PROF = remote;
           tidyCaps();
-          if (migrateWeb()) { PROF.updatedAt = Date.now(); UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'); queue(); }
+          { const mw = migrateWeb(); if (mw) { PROF.updatedAt = Date.now(); UI.toast(...talentsToast(mw)); queue(); } }
           try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
           UI.refreshAll();
         } else queue();
@@ -822,7 +822,7 @@ const UI = (() => {
       ['Star Ranks', 'Unlimited points spent in a finished constellation. Each rank adds a little less than the last.'],
       ['Supernova', 'Prestige. Reset your level and web for a Remnant, a Cosmic Law, and permanent score and XP bonuses.'],
       ['Cosmic Law', 'Permanent rule change chosen at a Supernova. Adds score.'],
-      ['Recalibration', 'Recalibration tokens pay for respecs during a run.'], ['Legendary', 'Highest affix rarity with a unique effect.'], ['Curse', 'A negative affix.'],
+      ['Recalibration', 'Recalibration tokens pay for respecs during a run.'], ['Technique', 'An alternate fire mode for one tower type, unlocked by a one-point talent. Switch it per tower from the tower panel (Fire row).'], ['Legendary', 'Highest affix rarity with a unique effect.'], ['Curse', 'A negative affix.'],
       ['Boss', 'Arrives every 10 waves, on the longest road.'], ['Snare Beacon', 'Pulls passing fliers off their straight line, through its net, then on to the core. Catches a set number per wave. Bosses are too big to lure.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
     ];
     const named = [
@@ -880,7 +880,7 @@ const UI = (() => {
     let stats;
     if (s.kind === 'snare') stats = `<div class="sg"><span>Catches left<b>${Math.max(0, s.catches - (t.caught || 0))}/${s.catches}</b></span><span>Lure range<b>${num1(s.range)}</b></span><span>Net slow<b>${pct(s.netSlow)}</b></span><span>Hold<b>${num1(s.hold)}s</b></span></div>`;
     else if (s.kind === 'support') stats = `<div class="sg"><span>Dmg buff<b>+${pct(s.buffDmg)}</b></span><span>Speed buff<b>+${pct(s.buffRate)}</b></span><span>Range<b>${num1(s.range)}</b></span>${s.buffCrit ? `<span>Crit buff<b>+${num1(s.buffCrit)}%</b></span>` : ''}</div>`;
-    else if (s.kind === 'eco') stats = `<div class="sg"><span>Income<b>${fmt(s.income * G.mods.credits)}/wave</b></span>${s.bountyAura ? `<span>Bounty aura<b>+${pct(s.bountyAura)}</b></span>` : ''}${s.fbounty ? `<span>All kills<b>+${pct(s.fbounty)}</b></span>` : ''}</div>`;
+    else if (s.kind === 'eco') stats = `<div class="sg"><span>Income<b>${fmt(s.income * G.mods.credits)}/wave</b></span>${s.fdmg ? `<span>Slug<b>${fmt(s.fdmg)}</b></span>` : ''}${s.bountyAura ? `<span>Bounty aura<b>+${pct(s.bountyAura)}</b></span>` : ''}${s.fbounty ? `<span>All kills<b>+${pct(s.fbounty)}</b></span>` : ''}</div>`;
     else {
       const sts = [];
       if (s.burn > 0) sts.push(`Burn ${pct(s.burn)}`); if (s.chill > 0) sts.push(`Chill ${pct(s.chill)}`);
@@ -890,7 +890,8 @@ const UI = (() => {
       stats = `<div class="sg"><span>Damage<b>${fmt(s.dmg * (1 + t.buff.dmg))}</b></span><span>Rate<b>${num1(s.rate * (1 + t.buff.rate))}/s</b></span><span>Range<b>${num1(t.effRange || s.range)}</b></span><span>Crit<b>${Math.round(s.critC + t.buff.crit)}%</b></span><span>DPS<b data-live="dps">${fmt(t.dps)}</b></span><span>Kills<b data-live="kills">${t.kills}</b></span></div>${sts.length ? `<div class="sts">${tipify(sts.join(' · '))}</div>` : ''}${t.isolated && G.mods.loneWolf ? `<div class="sts amber">${tipify('Lone Wolf: active')}</div>` : ''}${t.reson ? `<div class="sts reson">${tipify(`Resonance: +${Math.round(t.reson * RESON_DMG * 100)}% Damage (${t.resonWith.map(o => EL[o.s.el].name).join(', ')})`)}</div>` : ''}`;
     }
     const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' ? '' :
-      `<div class="lbl">Target</div><div class="modes">${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${{ first: 'First', last: 'Last', strong: 'Strong', close: 'Near' }[m]}</button>`).join('')}</div>`;
+      `<div class="firerow"><span class="lbl">Aim</span>${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${{ first: 'First', last: 'Last', strong: 'Strong', close: 'Near' }[m]}</button>`).join('')}</div>`; // v5.8: label inline (one row) to make room for Fire
+    const fire = fireHTML(t);
     let up = '';
     if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide lvup" style="${tierStyle(t.lvl + 1)}" data-act="up" ${costBtn(c)}>Upgrade to LV ${t.lvl + 1} · ${fmt(c)}<small>${s.kind === 'snare' ? 'more catches, longer hold, wider net' : s.kind === 'support' ? 'stronger boost' : s.kind === 'eco' ? 'more income' : 'more Damage'}, new affix</small></button>`; }
     else if (t.lvl === 3) { const c = upgradeCost(t); up = `<div class="lbl">Specialize · ${fmt(c)}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${costBtn(c)}><b>${esc(sp.name)}</b><span>${tipify(sp.desc)}</span></button>`).join('')}</div>`; }
@@ -925,8 +926,18 @@ const UI = (() => {
       ${idle}
       ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · +${Math.round((OVERCHARGE.dmg + FX('msOc') / 100) * 100)}% per step · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${ocFree(t) ? `<span class="note">Marksman: +${ocFree(t)} free</span>` : ''}${Array.from({ length: ocMax() + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n}` : 'Off'}</button>`).join('')}</div>` : ''}
       ${modes}
+      ${fire}
       ${!canOvercharge(t) && !modes ? `<div class="sg mini">${stats.replace(/^<div class="sg">|<\/div>.*$/gs, '')}</div>` : ''}
       ${foot}`;
+  }
+  // v5.8 Techniques: Standard plus each fire mode in a fixed row; a locked mode stays in its slot, dimmed, naming its talent
+  function fireHTML(t) {
+    const L = fireModes(t.type); if (!L.length) return '';
+    const cur = fireDef(t), D = TOWERS[t.type];
+    const lock = L.find(f => !fireLearned(t.type, f.id)), lockT = lock && TAL[lock.need];
+    const line = cur ? cur.short : lock && L.length === 1 ? `Locked: learn ${lockT.name} in ${TREE_BY_ID[lockT.tree].name}` : D.blurb;
+    return `<div class="firerow"><span class="lbl">Fire</span>${[{ id: '', name: 'Standard' }].concat(L).map(f => { const ok = !f.id || fireLearned(t.type, f.id), on = (cur ? cur.id : '') === f.id;
+      return `<button class="chip ${on ? 'on' : ''} ${ok ? '' : 'lock'}" data-act="${ok ? 'fire' : 'fireLock'}" data-v="${f.id}">${esc(f.name)}</button>`; }).join('')}</div><div class="firedesc">${tipify(line)}</div>`;
   }
   // v5.1: every live modifier on this tower in one place (Nic: storms weren't transparent)
   function condHTML(t) {
@@ -1058,6 +1069,8 @@ const UI = (() => {
     if (panel.kind === 'tower') {
       const t = panel.t;
       if (act === 'mode') { window.act('mode', t.x, t.y, b.dataset.v); renderPanel(); }
+      else if (act === 'fire') { if (!window.act('fire', t.x, t.y, b.dataset.v)) SFX.play('deny'); renderPanel(); }
+      else if (act === 'fireLock') { const F = fireModes(t.type).find(f => f.id === b.dataset.v), T = F && TAL[F.need]; if (F && T) toast(F.name.toUpperCase(), `${F.desc}. Learn ${T.name} in the ${TREE_BY_ID[T.tree].name} talents to unlock it`, TREE_BY_ID[T.tree].col, true, 'tip'); }
       else if (act === 'up') { if (!window.act('up', t.x, t.y)) SFX.play('deny'); renderPanel(); }
       else if (act === 'spec') { if (!window.act('up', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'reroll') { if (!window.act('reroll', t.x, t.y, 0)) SFX.play('deny'); renderPanel(); }
@@ -2136,7 +2149,7 @@ const UI = (() => {
     ] },
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 talent point.'],
-      ['Talents', 'Seven trees of permanent bonuses. Each row opens after 5 points in its tree; 20 points reach its Capstones, play styles you pick one of. You hold 1 Capstone, 2 from Level 50, 3 from Level 100. Changes are free between runs and at checkpoints; mid-run they cost Recalibration tokens.'],
+      ['Talents', `Seven trees of permanent bonuses. Each row opens after ${TROW} points in its tree; ${TCAP} points reach its Capstones, play styles you pick one of. You hold 1 Capstone, 2 from Level 25, 3 from Level 60. Techniques (one point each) unlock an alternate fire mode for a tower: switch it per tower from the tower panel. Changes are free between runs and at checkpoints; mid-run they cost Recalibration tokens.`],
       ['Capstones', 'Each tree ends in three play styles, for example Marksman (few huge guns), Wildfire (the road burns), War Economy (banked credits arm the core), Glass Cannon or Conflagration. Each changes how a run plays, often with a cost on the field.'],
       ['Recalibration', 'Tokens from boss kills, Stabilize and pirate crates. Spend one to reroll a tower\'s affixes, or to refund a talent mid-run (2 for a Capstone).'],
       ['Builds', 'Save up to five talent layouts and load one between runs (2 tokens mid-run).'],
@@ -2674,7 +2687,7 @@ const Tree = (() => {
   }
   function remove(id) {
     const why = talentCanRemove(id);
-    if (why) { SFX.play('deny'); UI.toast('CAN\'T REMOVE', why === 'tokens' ? `Refunding mid-run costs ${refundCost(id)} Recalibration token${refundCost(id) > 1 ? 's' : ''} (you have ${G ? G.tokens : 0})` : why === 'cap' ? 'Your Capstone needs 20 points in this tree' : why === 'row' ? 'A talent further down needs these points' : 'Nothing to remove', '#ff4d6a'); return; }
+    if (why) { SFX.play('deny'); UI.toast('CAN\'T REMOVE', why === 'tokens' ? `Refunding mid-run costs ${refundCost(id)} Recalibration token${refundCost(id) > 1 ? 's' : ''} (you have ${G ? G.tokens : 0})` : why === 'cap' ? `Your Capstone needs ${TCAP} points in this tree` : why === 'row' ? 'A talent further down needs these points' : 'Nothing to remove', '#ff4d6a'); return; }
     talentRemove(id); SFX.play('sell'); Save.save(); refresh();
   }
   function blockMsg(id, why) {
@@ -2683,7 +2696,7 @@ const Tree = (() => {
     if (why === 'max') return 'Already at its last rank';
     if (why === 'have') return 'Already yours';
     if (why === 'locked') return 'Your Daily Hunt build is locked for this run';
-    if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${capSlots(lv)} Capstone${capSlots(lv) > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
+    if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${slotsNow()} Capstone${slotsNow() > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
     if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
     if (why === 'tree') return `One Capstone per tree. Remove ${capName(capsHeld().find(c => TAL[c].tree === T.tree))} first`;
     if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
@@ -2695,7 +2708,8 @@ const Tree = (() => {
     const r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), canAdd = !why, locked = why === 'row', full = !T.cap && r >= T.max;
     const rem = (TS().remnants || []).includes(T.id);
     const cls = ['ttile', T.cap ? 'cap' : '', r ? 'have' : '', locked ? 'locked' : '', full ? 'full' : '', sel === T.id ? 'sel' : ''].join(' ');
-    const desc = talentLines(T, Math.max(1, r)).join(' · ');
+    const F = T.tech && fireModes(T.tech).find(f => f.need === T.id);
+    const desc = F ? `${TOWERS[T.tech].name} technique: ${F.short}` : talentLines(T, Math.max(1, r)).join(' · ');
     return `<div class="${cls}" style="--c:${tr.col}"><button class="tbody" data-tact="sel" data-v="${T.id}"><b>${esc(T.name)}${rem ? ' <em>Remnant</em>' : ''}</b>${T.cap ? '' : `<small>${r}/${T.max}</small>`}${rankPips(T, r)}<span class="td">${esc(desc)}</span></button>${canAdd ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Add a rank">+</button>` : ''}</div>`;
   }
   function treeHTML(tr) {
@@ -2706,7 +2720,7 @@ const Tree = (() => {
     const capOk = pts >= TCAP;
     return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${rowsHTML}
       <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
-      <p class="note tfoot">Capstones change how you play. Pick one per tree; you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}.</p>`;
+      <p class="note tfoot">Capstones change how you play. Pick one per tree; ${TS() !== PROF ? `this build holds ${slotsNow()}` : `you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}`}.</p>`;
   }
   function sumHTML() {
     const M = computeMods(null, null), lines = [];
@@ -2717,10 +2731,10 @@ const Tree = (() => {
     return `<div class="thead"><b>Your build</b><span>Everything your talents give you, in one place</span><em>${pointsSpent()} spent · ${pointsFree()} free</em></div>
       <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(TS().remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : '<p class="note">None yet. Spend 20 points in one tree to reach its Capstones.</p>'}
       <div class="lbl">Bonuses</div><p class="note">Every point spent: +${TAL_PT_DMG}% Damage to all towers (now +${+(pointsSpent() * TAL_PT_DMG).toFixed(1)}%).</p>${lines.length ? `<ul class="tsum">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="note">No talents yet.</p>'}
-      <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / 26 * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
+      <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / treeMax(tr.id) * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
   }
   function infoHTML() {
-    if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after 5 points in that tree. Capstones open at 20. Every point also adds +${TAL_PT_DMG}% Damage to all towers.</p></div>`;
+    if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after ${TROW} points in that tree. Capstones open at ${TCAP}. Techniques unlock a tower's alternate fire mode. Every point also adds +${TAL_PT_DMG}% Damage to all towers.</p></div>`;
     const T = TAL[sel], tr = TREE_BY_ID[T.tree], r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id);
     const now = r ? talentLines(T, r) : null, next = !T.cap && r < T.max ? talentLines(T, r + 1) : null;
     const rem = (TS().remnants || []).includes(T.id);
@@ -2735,7 +2749,7 @@ const Tree = (() => {
   }
   function refresh() {
     if (!open_) return;
-    const lv = talLevel(), free = pointsFree(), held = capsHeld().length, slots = capSlots(lv);
+    const lv = talLevel(), free = pointsFree(), held = capsHeld().length, slots = slotsNow();
     el('tree').querySelector('h2').textContent = mode === 'hunt' ? 'Hunt Build' : huntRun() ? 'Hunt Build · locked' : 'Talents';
     el('tPts').textContent = free;
     el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
@@ -2790,11 +2804,16 @@ UI.splash = function (force) {
   try { document.fonts.ready.then(start); } catch (e) {} setTimeout(start, 600);
   return 4100;
 };
+// v5.8: what the one-time talent refund says (migrateWeb returns 'web' for a pre-5.0 passive web, 'rework' for the 5.8 rework)
+function talentsToast(kind) {
+  return kind === 'web' ? ['TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a']
+    : ['TALENTS REWORKED', 'Every point is refunded. New: Techniques (alternate fire modes) and play-style Capstones. Open Talents to spend them', '#ffb03a'];
+}
 (function boot() {
   const loaded = Save.loadLocal();
   if (loaded) PROF = loaded;
   const webReset = migrateWeb();
-  if (webReset) { Save.save(); setTimeout(() => UI.toast('TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a'), 900); }
+  if (webReset) { Save.save(); setTimeout(() => UI.toast(...talentsToast(webReset)), 900); }
   const capDrop = tidyCaps();
   if (capDrop.length) { Save.save(); setTimeout(() => UI.toast('CAPSTONE REFUNDED', `One Capstone per tree now: ${capDrop.map(c => TAL[c].name).join(', ')} refunded. Spend the point elsewhere`, '#ffb03a'), 1400); }
   Render.init($('#cv'));

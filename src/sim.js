@@ -37,6 +37,8 @@ const pointsFree = () => talLevel() - pointsSpent();
 // points spent in a tree, optionally only in rows above `row`
 function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; }
 const rowNeed = r => r >= 4 ? TCAP : r * TROW;
+// Capstone slots for the build being edited: the profile's by level, the Daily Hunt build's fixed HUNT_CAPS
+const slotsNow = () => TS() === PROF ? capSlots(talLevel()) : HUNT_CAPS;
 // why a talent can't take another rank right now ('' = it can)
 function talentBlock(id) {
   const T = TAL[id]; if (!T) return 'none';
@@ -46,7 +48,7 @@ function talentBlock(id) {
     if (capsHeld().includes(id) || (TS().remnants || []).includes(id)) return 'have';
     if (treePts(T.tree) < TCAP) return 'row';
     if (capsHeld().some(c => TAL[c] && TAL[c].tree === T.tree)) return 'tree'; // v5.0.2: one Capstone per tree
-    if (capsHeld().length >= capSlots(talLevel())) return 'slots';
+    if (capsHeld().length >= slotsNow()) return 'slots';
     // Conflagration turns every Chill into Burn, so Capstones built on Chill and Freeze would do nothing beside it
     for (const [a, b] of CAP_CONFLICTS) { const other = id === a ? b : id === b ? a : null; if (other && activeCaps().includes(other)) return 'conflict:' + other; }
     return '';
@@ -65,7 +67,7 @@ function talentAdd(id) {
   return true;
 }
 // mid-run refunds cost Recalibration tokens (1 per rank, 2 for a Capstone); free between runs and at checkpoints
-const CAP_CONFLICTS = [['conflag', 'glacier'], ['conflag', 'abszero'], ['conflag', 'winter']];
+const CAP_CONFLICTS = [['conflag', 'glacier'], ['conflag', 'artillery'], ['conflag', 'hoarfrost'], ['conflag', 'chaos']]; // v5.8: Chaos Engine rolls elements, Conflagration forces Thermal
 const refundCost = id => TAL[id] && TAL[id].cap ? 2 : 1;
 const refundFree = () => !(G && !G.over && !G.checkpoint);
 // would removing one rank of id leave a talent above it without the points its row needs?
@@ -97,14 +99,24 @@ function talentRemove(id) {
 }
 // clear every talent (free between runs and at checkpoints only)
 function talentReset() { if (!refundFree() || huntRun()) return false; TS().tal = {}; TS().caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
-// v5.0 clean sheet: older webs are reset with every point refunded
+// v5.0 clean sheet: older webs are reset with every point refunded. v5.8 (WEB_VER 5): the talent rework refunds every point once,
+// in the profile and the Daily Hunt build, clears saved builds (their rows changed), renames replaced Capstone Remnants, and moves XP
+// onto the new curve so the level (and so the points) stays where it was. Returns false, 'web' (pre-5.0 web) or 'rework'
 function migrateWeb() {
   if (PROF.webV === WEB_VER) return false;
-  const had = (PROF.alloc || []).length > 1 || Object.keys(PROF.stars || {}).length > 0;
-  PROF.alloc = ['start']; PROF.stars = {}; PROF.orbit = {}; PROF.mastery = {}; PROF.tal = {}; PROF.caps = []; PROF.builds = [null, null, null, null, null];
+  const old = PROF.webV || 0;
+  const had = old < 4 ? (PROF.alloc || []).length > 1 || Object.keys(PROF.stars || {}).length > 0
+    : Object.keys(PROF.tal || {}).length > 0 || (PROF.caps || []).length > 0 || !!(PROF.huntBuild && Object.keys(PROF.huntBuild.tal || {}).length);
+  if (old < 4) { PROF.alloc = ['start']; PROF.stars = {}; PROF.orbit = {}; PROF.mastery = {}; }
+  PROF.tal = {}; PROF.caps = []; PROF.builds = [null, null, null, null, null];
+  if (PROF.huntBuild) { PROF.huntBuild.tal = {}; PROF.huntBuild.caps = []; }
+  PROF.remnants = (PROF.remnants || []).map(r => CAP_RENAMED[r] || r);
+  if (PROF.xp > 0) { const o = levelFromXP(PROF.xp, xpForLevelV5); PROF.xp = xpToLevel(o.level) + Math.round(xpForLevel(o.level) * o.into / o.need); }
   PROF.webV = WEB_VER;
-  return had;
+  return had ? (old < 4 ? 'web' : 'rework') : false;
 }
+// total XP at the start of a level (new curve)
+function xpToLevel(L) { let x = 0; for (let i = 0; i < L; i++) x += xpForLevel(i); return x; }
 // v5.0.2: one Capstone per tree. Older saves could hold two from the same tree; keep the first, the point comes back
 function tidyCaps() {
   const seen = {}, keep = [], drop = [];
@@ -123,7 +135,7 @@ function treeLoadBuild(slot) {
   // replay it rank by rank, row by row, so every gate is honoured
   TS().tal = {}; TS().caps = [];
   for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) TS().tal[k] = Math.min(T.max, b.tal[k]); }
-  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < capSlots(talLevel()) && !capsHeld().some(h => TAL[h].tree === TAL[c].tree)) TS().caps.push(c);
+  for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < slotsNow() && !capsHeld().some(h => TAL[h].tree === TAL[c].tree)) TS().caps.push(c);
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
   return 'ok';
@@ -199,7 +211,8 @@ function computeMods(alloc, runMods) {
   const orb = { dmg: {}, rate: {}, status: {}, range: {}, reson: {}, vxp: {}, flux: {}, storm: {}, vol: {}, ent: {}, rift: {}, combo: {} };
   const add = fx => { for (const k in fx) m[k] = (m[k] || 0) + fx[k]; };
   const SRC = TS();
-  for (const id in SRC.tal || {}) { const T = TAL[id], r = SRC.tal[id]; if (!T || T.cap || !r) continue; for (const k in T.fx) m[k] = (m[k] || 0) + T.fx[k] * r; }
+  const tech = {};
+  for (const id in SRC.tal || {}) { const T = TAL[id], r = Math.min(T ? T.max : 0, SRC.tal[id] || 0); if (!T || T.cap || !r) continue; if (T.tech) tech[id] = 1; for (const k in T.fx) m[k] = (m[k] || 0) + T.fx[k] * r; }
   for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add(T.fx); }
   // legacy remnants from the old web: that tree's one-point notables stay on
   for (const r of SRC.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
@@ -232,17 +245,15 @@ function computeMods(alloc, runMods) {
     knock: g('knock') / 100, xp: 1 + g('xp') / 100, chainIgnite: g('chainIgnite') > 0, loneWolf: g('loneWolf') / 100,
     kBurn: g('kBurn'), chillVoid: g('chillVoid'),
   };
-  M.fx = m; M.orb = orb;
+  M.fx = m; M.orb = orb; M.tech = tech; // v5.8: the Techniques learned (talent ids), read by fireDef
   if (m.infernoCore) { M.burnDmg *= 2; M.burnDur *= 0.6; }
-  if (ks.glass) { M.dmg *= 1.6; M.coreHP *= 0.6; M.shield *= 0.6; }
   if (ks.conflag) { M.burnDmg *= 2.5; M.el.T *= 1.5; }
-  if (ks.overgrid) M.rate *= 1.4;
-  if (ks.singularity) { for (const e of ELS) M.el[e] *= e === 'V' ? 2 : 0.7; }
-  if (ks.abszero) M.el.T *= 0.5;
-  if (ks.dimret) M.credits *= 1.5;
-  if (ks.chaos) M.affixLuck += 1.5;
+  // v5.8 play-style Capstones: their stat sides (their field behaviour lives in the code it changes: grep ks.<id>)
+  if (ks.stormrider) M.stormFreq *= 1.3;
+  if (ks.hoarfrost) M.el.T *= 0.8;
+  if (ks.bulwark) { M.coreHP *= 1.4; M.dmg *= 0.9; }
+  if (ks.chaos) M.dmg *= 1.25;
   if (ks.prismatic) M.dmg *= 0.9;
-  if (ks.unbreakable) M.dmg *= 0.9;
   if (ks.glacier) M.dmg *= 0.9;
   for (const [k2, d2] of [['cLink', 'circuit'], ['cBolt', 'circuit'], ['hPull', 'horizon'], ['hWell', 'horizon'], ['aRank', 'artisan'], ['aVxp', 'artisan'], ['gScore', 'gambler']]) if (!ks[d2]) delete m[k2];
   if (!ks.marksman) delete m.msOc; if (!ks.wildfire) { delete m.wfHeat; delete m.wfDur; } if (!ks.wareco) { delete m.weStep; delete m.weTur; }
@@ -787,7 +798,6 @@ function recomputeAll() {
 function towerCost(type) {
   const M = G.mods, D = TOWERS[type];
   let c = D.cost * M.cost * (1 + (G.af.costX || 0));
-  if (M.ks.dimret) c *= 1 + 0.12 * G.towers.filter(t => t.type === type).length;
   if (M.ks.wareco) c *= 1.2;
   return Math.round(c);
 }
@@ -907,7 +917,7 @@ function buildTower(type, x, y) {
   if (G.legendQueue > 0 && towerPool(type) !== 'eco') { G.legendQueue--; t.affixes.push(rollAffix(t, 3)); }
   else t.affixes.push(rollAffix(t));
   if (G.mods.ks.celestial && towerPool(type) !== 'eco') t.affixes.push(rollAffix(t));
-  if (G.mods.ks.chaos) t.affixes.push(rollCurse(t));
+  if (G.mods.ks.chaos && canOvercharge(t)) t.wild = pick(G.r, ELS); // v5.8 Chaos Engine: a new tower rolls its element too
   t.lastFireW = G.wave; t.builtW = G.wave;
   G.towers.push(t); G.towerAt[tIdx(x, y)] = t;
   t.s = towerStats(t);
@@ -964,6 +974,7 @@ function towerStats(t) {
   const D = TOWERS[t.type], M = G.mods, lv = t.lvl;
   const sp = t.spec ? D.specs[t.spec - 1].m : {};
   const s = { el: D.el, el0: D.el, kind: D.kind };
+  if (M.ks.chaos && t.wild && D.el !== 'N') s.el = s.el0 = t.wild; // v5.8 Chaos Engine: this wave's element (Resonance follows it)
   if (M.ks.conflag && D.el !== 'N') s.el = 'T'; // damage turns Thermal, but Resonance still reads the tower's own element (el0)
   const A = {}, leg = {}, cur = {};
   for (const a of t.affixes) {
@@ -1037,11 +1048,64 @@ function towerStats(t) {
     s.range = s.bountyAura ? 3 : 0;
   }
   s.ground = !!D.ground;
+  applyFire(t, s, D);
+  capPlay(t, s, D);
   const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
   if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
   if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.05 + FX('aRank') / 100) * t.rank : 0.75; // v4.4: 6%/−20% measured 16 waves above no Doctrine (bots); trimmed
   return s;
 }
+// ---------- v5.8 Techniques: a tower's alternate fire mode (TOWER_FIRE in data.js) ----------
+// t.fire is the chosen mode id ('' or undefined = Standard). It only counts while its talent is learned in the run's talent source
+// (G.mods.tech), so a refund at a checkpoint quietly returns the tower to Standard without touching t.fire
+function fireDef(t) { if (!t || !t.fire || !G || !G.mods) return null; const F = fireModes(t.type).find(f => f.id === t.fire); return F && G.mods.tech && G.mods.tech[F.need] ? F : null; }
+const fireLearned = (type, id) => { const F = fireModes(type).find(f => f.id === id); return !!(F && G && G.mods && G.mods.tech && G.mods.tech[F.need]); };
+function setFireMode(t, id) {
+  if (!t) return false;
+  id = id || '';
+  if (id && !fireLearned(t.type, id)) return false;
+  if ((t.fire || '') === id) return true;
+  t.fire = id || undefined;
+  t.ramp = 0; t.beamTargets = null; t.ocN = 0; t.fenceTo = null;
+  t.s = towerStats(t);
+  recomputeAuras();
+  return true;
+}
+function applyFire(t, s, D) {
+  const F = fireDef(t); s.fire = F ? F.id : '';
+  if (!F) return;
+  const m = F.m;
+  if (m.dmgX) s.dmg *= m.dmgX;
+  if (m.rateX) s.rate *= m.rateX;
+  if (m.rangeAdd) s.range += m.rangeAdd;
+  if (m.rangeX) s.range *= m.rangeX;
+  if (m.supSlow) { s.supSlow = m.supSlow; s.supDur = m.supDur; }
+  if (m.ocEvery) { s.ocEvery = m.ocEvery; s.ocX = m.ocX; }
+  // Cold Lance: the pulse becomes a 10-tick beam on one target worth m.lance × the pulse's damage per second; Chill lands a quarter as often per tick
+  if (m.lance) { s.dmg *= m.lance * D.rate / 10; s.rate *= 10 / D.rate; s.kind = 'beam'; s.rampMax = 1; s.beams = 1 + s.multi; s.chill *= 0.25; s.lance = 1; }
+  if (m.bunker) { s.splash = 0; s.cluster = 0; s.napalm = false; s.pierceArmor = 1; s.bunker = 1; }
+  if (m.fence) { s.fence = m.fence; s.dmg *= FENCE.dmg; s.rate *= FENCE.rate; }
+  if (m.ring) s.ring = 1;
+  if (m.tether) { s.tether = m.tether; s.rampMax = 1; s.mark = clamp(s.mark * 2, 0, 1); }
+  if (m.mines) s.mines = m.mines + 2 * (s.shells - 1);
+  if (m.repulse) { s.repulse = 1; s.ground = false; }
+  if (m.pullX) s.pull *= m.pullX;
+}
+// Arc Fence: a fence ticks FENCE.rate× as often for FENCE.dmg× the damage, on every enemy within FENCE.w tiles of the line
+const FENCE = { dmg: 0.5, rate: 4, w: 1 }; // w 1: a fence along a road reaches the lane beside it (0.45 only worked across a road)
+// ---------- v5.8 play-style Capstones: their per-tower stat sides ----------
+function capPlay(t, s, D) {
+  const ks = G.mods.ks;
+  if (ks.rico && t.type === 'rail') s.rate *= 0.75;
+  if (ks.blackout) { if (t.type === 'emp') s.rate *= 1.25; if (t.type === 'coil') s.dmg *= 0.85; }
+  if (ks.artillery && t.type === 'cryo' && !s.lance) { s.artillery = 1; s.range *= 2; s.rate *= 0.6; }
+  if (ks.garden) { if (t.type === 'grav') s.range *= 1.25; if (t.type === 'lens') s.dmg *= 0.8; }
+  if (ks.forgeworks && D.kind === 'eco') { s.income *= 0.65; s.fdmg = s.income * FORGE_GUN.dmg * G.mods.dmg; s.range = Math.max(s.range, FORGE_GUN.range); s.rate = FORGE_GUN.rate * G.mods.rate; s.critC = G.mods.critC; s.critM = 1.5 + G.mods.critM; }
+}
+// Chaos Engine: every attack tower takes a random element for the wave
+function chaosRoll() { for (const t of G.towers) if (canOvercharge(t)) { t.wild = pick(G.r, ELS); t.s = towerStats(t); } recomputeAuras(); }
+// Forge Works: a Forge's slug deals FORGE_GUN.dmg × its income per shot
+const FORGE_GUN = { dmg: 0.4, range: 3, rate: 1 };
 function recomputeAuras() {
   for (const t of G.towers) { t.buff = { dmg: 0, rate: 0, crit: 0 }; t.isolated = true; t.reson = 0; t.resonWith = []; }
   for (const t of G.towers) {
@@ -1077,6 +1141,8 @@ function recomputeAuras() {
   G.pylons = G.towers.filter(t => t.s.kind === 'support');
   G.forges = G.towers.filter(t => t.s.kind === 'eco');
   G.snares = G.towers.filter(t => t.s.kind === 'snare');
+  G.gardens = [];
+  if (G.mods.ks.garden) { const W = G.towers.filter(t => t.type === 'grav'); for (let i = 0; i < W.length; i++) for (let j = i + 1; j < W.length; j++) if (dist2(W[i].cx, W[i].cy, W[j].cx, W[j].cy) <= GARDEN.span * GARDEN.span) G.gardens.push([W[i], W[j]]); }
   updateLinks();
 }
 // ---------- Node Links: combat towers on Power Nodes within LINK_MAX tiles share a beam ----------
@@ -1187,6 +1253,13 @@ function towerConditions(t) {
   if (G.overclockT > 0) out.push({ t: `Frenzy: +100% Attack Speed for ${Math.ceil(G.overclockT)}s`, good: 1 });
   if (t.hot && G.mods.ks.wildfire) out.push({ t: 'Overheated (Wildfire): −25% Attack Speed', bad: 1 });
   if (G.flux && G.flux.el === s.el) out.push({ t: `Flux: ${EL[s.el].name} ×2 Damage`, good: 1 });
+  // v5.8 Techniques and play-style Capstones
+  const M = G.mods || { ks: {} };
+  if (s.fence) out.push(fencePartner(t) ? { t: 'Arc Fence: linked to a Coil', good: 1 } : { t: 'Arc Fence: no Coil within 4 tiles, so no fence', bad: 1 });
+  if (s.mines) { let n = 0; for (const m of G.mines || []) if (m.src === t) n++; out.push({ t: `Pulse Mines: ${n}/${s.mines} on the road` }); }
+  if (M.ks.stormrider && s.el0 === 'A' && G.storms.some(st => dist2(t.cx, t.cy, st.x, st.y) <= st.r * st.r)) out.push({ t: `Storm Rider: +60% Attack Speed${t.type === 'coil' && !s.fence ? ', +2 Chain' : ''}`, good: 1 });
+  if (M.ks.nest && t.type === 'rail') out.push(t.isolated ? { t: 'Sniper Nest: +40% Range, +30% Damage, pierces all', good: 1 } : { t: 'Sniper Nest: a neighbour, −25% Damage', bad: 1 });
+  if (M.ks.chaos && t.wild && EL[t.wild]) out.push({ t: `Chaos Engine: ${EL[t.wild].name} this wave`, col: EL[t.wild].col });
   return out;
 }
 function spawnStorm(types, x, y, vx, vy) {
@@ -1244,6 +1317,10 @@ function updateStorms(dt) {
         const tg = G.towers[(s.id * 7) % G.towers.length];
         const dx = tg.cx - s.x, dy = tg.cy - s.y, d = Math.hypot(dx, dy) || 1;
         s.vx += dx / d * 0.08 * dt; s.vy += dy / d * 0.08 * dt;
+      }
+      if (M.ks.stormrider) { // v5.8 Storm Rider: drawn to the nearest Arc tower, and it lingers over it
+        let best = null, bd = 1e9; for (const t of G.towers) if (t.s && t.s.el0 === 'A') { const d = dist2(t.cx, t.cy, s.x, s.y); if (d < bd) { bd = d; best = t; } }
+        if (best) { const d = Math.sqrt(bd) || 1; s.vx += (best.cx - s.x) / d * 0.12 * dt; s.vy += (best.cy - s.y) / d * 0.12 * dt; if (d < 1.5) { s.vx *= 1 - 0.8 * dt; s.vy *= 1 - 0.8 * dt; } }
       }
       const sp = Math.hypot(s.vx, s.vy);
       if (sp > 0.7) { s.vx *= 0.7 / sp; s.vy *= 0.7 / sp; }
@@ -1688,6 +1765,7 @@ function startWave() {
   G.wave++;
   const w = G.wave;
   abilOnlineCheck(w);
+  if (G.mods.ks.chaos) chaosRoll(); // v5.8 Chaos Engine
   if (!G.prep || G.prep.w !== w) prepareWave(w);
   const P = G.prep; G.prep = null;
   G.ev = P.ev; G.evList = P.list; G.evT = { emp: 5, meteor: 1.2, phase: 4 };
@@ -2174,6 +2252,7 @@ function enemySlow(e) {
   if (e.st.chill > 0) s += FX('glacial') / 100;
   if (e.kSlowT > 0) s += FX('kSlow') / 100;
   if (FX('markSlow') && e.st.mark >= G.mods.markMax) s += FX('markSlow') / 100;
+  if (e.supT > 0) s += e.supV; // v5.8 Suppressor, Null Tether, Blackout static
   if (e.elite.includes('jugg')) s *= 0.3;
   if (e.boss) s *= 0.5;
   return Math.min(0.75, s);
@@ -2205,6 +2284,17 @@ function updateEnemies(dt) {
     const r2 = t.s.range * t.s.range;
     for (const e of G.enemies) if (!e.fly && dist2(e.x, e.y, t.cx, t.cy) <= r2) e.fieldSlow = Math.max(e.fieldSlow, 0.3);
   }
+  // v5.8 Gravity Garden: ground enemies on the line between two Wells are held (75% slower, +25% damage taken)
+  if (M.ks.garden) for (const [a, b] of G.gardens || []) {
+    if (a.disabled > 0 || b.disabled > 0) continue;
+    const dx = b.cx - a.cx, dy = b.cy - a.cy, L2 = dx * dx + dy * dy || 1;
+    for (const e of G.enemies) {
+      if (e.dead || e.fly) continue;
+      const u = clamp(((e.x - a.cx) * dx + (e.y - a.cy) * dy) / L2, 0, 1);
+      if (dist2(e.x, e.y, a.cx + dx * u, a.cy + dy * u) > GARDEN.w * GARDEN.w) continue;
+      e.fieldSlow = Math.max(e.fieldSlow, GARDEN.slow); e.heldT = 0.2;
+    }
+  }
   for (const e of G.enemies) {
     if (e.dead) continue;
     const st = e.st;
@@ -2220,6 +2310,8 @@ function updateEnemies(dt) {
     }
     if (st.chill > 0) { st.chillT -= dt; if (st.chillT <= 0) { st.chill = Math.max(0, st.chill - 1); st.chillT = FX('chillSlowDecay') ? 3 : 1; } }
     if (e.kSlowT > 0) e.kSlowT -= dt;
+    if (e.supT > 0) e.supT -= dt;
+    if (e.heldT > 0) e.heldT -= dt;
     if (st.burn && FX('burnSpread')) { e.spreadT = (e.spreadT || 1) - dt; if (e.spreadT <= 0) { e.spreadT = 1; let best = null, bd = 1; for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.st.burn) { const d = dist2(o2.x, o2.y, e.x, e.y); if (d < bd) { bd = d; best = o2; } } if (best) best.st.burn = { dps: st.burn.dps * 0.8, t: 3 * M.burnDur, src: st.burn.src }; } }
     if (st.frozen > 0) st.frozen -= dt;
     if (st.freezeImm > 0) st.freezeImm -= dt;
@@ -2469,6 +2561,12 @@ function bossBehavior(e, dt) {
   }
   // swarmers spawned from behemoth should follow its lane: fix lane positions
 }
+// v5.8 Bulwark: a breach makes the core throw back every enemy within 2.5 tiles and Stun them (every 3s at most)
+function bulwarkWave(c) {
+  G.bulwarkT = G.time + 3;
+  for (const o of G.enemies) if (!o.dead && dist2(o.x, o.y, c.x, c.y) <= 6.25 && !o.elite.includes('jugg')) { o.d = Math.max(0, o.d - (o.boss ? 0.3 : 1.5)); o.st.stun = Math.max(o.st.stun, o.boss ? 0.2 : 0.6); }
+  Hooks.fx('pulse', { x: c.x, y: c.y, r: 2.5, col: '#59f0b4' }); Hooks.sfx('grav', c);
+}
 function leak(e) {
   e.dead = true;
   geneRecord(e, true); assaultHit(e, true);
@@ -2498,6 +2596,7 @@ function leak(e) {
     Hooks.fx('boom', { x: c.x, y: c.y, r: 2.5, col: '#59f0b4', big: 1 });
   }
   c.sinceHit = 0;
+  if (G.mods.ks.bulwark && G.time >= (G.bulwarkT || 0)) bulwarkWave(c);
   G.leakDmgW = (G.leakDmgW || 0) + dmg; // v5.4: the breach forecast weighs a wave's leak damage against shield + hull
   const abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs;
   c.hp -= dmg;
@@ -2505,11 +2604,7 @@ function leak(e) {
   Hooks.sfx(e.boss ? 'bigleak' : 'leak');
   if (e.boss) Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
   if (c.hp <= 0) {
-    if (G.mods.ks.unbreakable && G.wave - G.unbreakUsed >= 10) {
-      G.unbreakUsed = G.wave; c.hp = c.max * 0.5;
-      Hooks.toast('UNBREAKABLE', 'Lethal hit prevented', '#59f0b4');
-      Hooks.sfx('unbreak');
-    } else gameOver();
+    gameOver();
   }
 }
 
@@ -2524,8 +2619,8 @@ function hit(e, dmg, el, src, o) {
   mult *= 1 - res;
   // Plating (v3.0): blunts every hit except piercing fire: Rail, Void Lens beams, damage over time and abilities
   let blunt = false;
-  if (e.armor && !(o.dot || o.abil || (src && src.s && (src.s.kind === 'rail' || src.s.kind === 'beam' || src.s.shred)))) { mult *= 1 - clamp(e.armor * (1 - M.armorPen), 0, 0.7); blunt = e.armor * (1 - M.armorPen) > 0.25; }
-  if (e.armorAll) mult *= 1 - e.armorAll;
+  if (e.armor && !(o.dot || o.abil || (src && src.s && (src.s.kind === 'rail' || src.s.kind === 'beam' || src.s.shred || src.s.pierceArmor)))) { mult *= 1 - clamp(e.armor * (1 - M.armorPen), 0, 0.7); blunt = e.armor * (1 - M.armorPen) > 0.25; }
+  if (e.armorAll) mult *= 1 - e.armorAll * (src && src.s && src.s.pierceArmor ? 0.5 : 1); // v5.8 Bunker Buster halves Armor
   // v5.1 Reflector: bolts, beams and chains glance off
   let glance = false;
   if (e.refl && !o.dot && !o.abil && src && src.s && (src.s.kind === 'bullet' || src.s.kind === 'beam' || src.s.kind === 'chain')) { mult *= 1 - e.refl; glance = true; }
@@ -2533,7 +2628,6 @@ function hit(e, dmg, el, src, o) {
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2;
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
   if (st.frozen > 0) mult *= 1 + M.frozenVuln;
-  if (M.ks.abszero && st.chill > 0) mult *= 1.5;
   if (e.stormVuln) mult *= 1 + e.stormVuln;
   if (el === 'K' && e.shatterT > 0) mult *= 1 + e.shatterV;
   if (st.burn && FX('burnVuln')) mult *= 1 + FX('burnVuln') / 100;
@@ -2547,6 +2641,7 @@ function hit(e, dmg, el, src, o) {
     if (src.isolated && M.loneWolf) mult *= 1 + M.loneWolf;
   }
   if (e.scanned > 0) mult *= 1 + SCAN.mark / 100; // Sensor Sweep's Mark
+  if (e.heldT > 0) mult *= 1 + GARDEN.vuln; // v5.8 Gravity Garden
   if (e.phaseT > 0) mult *= 0.1; // phase shift: a boss shrugs off most damage for a moment
   if (src === G.core && e.redAlert && e.boss) mult *= RED_ALERT.coreDmg; // Last Stand: the core unloads on a boss at its gate
   let amt = dmg * mult;
@@ -2570,6 +2665,7 @@ function hit(e, dmg, el, src, o) {
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
   if (e.hp <= 0) { kill(e, src, o); return dealt; }
   if (el === 'K' && src && src.s && FX('kSlow')) e.kSlowT = 1;
+  if (src && src.s && src.s.supSlow && !o.dot && !e.elite.includes('jugg')) slowTag(e, src.s.supSlow, src.s.supDur); // v5.8 Suppressor
   if (src && src.s && src.s.exec && !e.boss && e.hp / e.maxHp < src.s.exec / 100) { Hooks.fx('num', { x: e.x, y: e.y, v: e.hp, combo: 'EXECUTE', col: '#ff4d6a' }); e.hp = 0; kill(e, src, o); return dealt; }
   if (!o.noStatus && src && src.s) {
     if (el === 'K' && o.crit && FX('critSplash')) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, dmg * FX('critSplash') / 100, 'K', src, { noStatus: 1 });
@@ -2643,6 +2739,7 @@ function applyStatuses(e, dmg, el, src, o) {
     if (st.chill >= (FX('freezeAt') ? 4 : 5) && st.freezeImm <= 0) {
       st.frozen = (1 + s.freezeBonus) * (e.boss ? 0.4 : 1); st.freezeImm = st.frozen + 2.5 * (1 - FX('freezeImmRed') / 100); st.chill = 0;
       Hooks.fx('freeze', { x: e.x, y: e.y }); Hooks.sfx('freeze', e);
+      if (M.ks.hoarfrost && !e.fly) addField('ice', e.x, e.y, 0.7, 5); // v5.8 Hoarfrost
     }
   }
   if (shockP > 0 && r() < shockP) {
@@ -2891,14 +2988,16 @@ function updateTowers(dt) {
     if (dpsTick) { t.dps = t.dps * 0.6 + t.dpsAcc * 0.4; t.dpsAcc = 0; }
     t.flash = Math.max(0, t.flash - dt);
     const s = t.s;
-    if (s.kind === 'support' || s.kind === 'eco' || s.kind === 'snare') continue;
+    if (s.kind === 'support' || (s.kind === 'eco' && !s.fdmg) || s.kind === 'snare') continue;
     if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) { t.stalled = false; t.disCause = null; } t.ramp = 0; t.beamTargets = null; continue; }
     const sw = stormAt(t.cx, t.cy);
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
+    if (M.ks.nest && t.type === 'rail' && t.isolated) range *= 1.4; // v5.8 Sniper Nest
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
     if (s.leg.overloop) { t.olT = (t.olT + dt) % 8; if (t.olT < 3) rate *= 2.5; }
     if (burning && s.el === 'T') rate *= 1 + Math.min(0.4, 0.02 * burning);
     if (t.hot && M.ks.wildfire) rate *= 0.75;
+    if (M.ks.stormrider && s.el0 === 'A' && sw.inStorm) rate *= 1.6; // v5.8 Storm Rider
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
     t.effRange = range;
     t.cd -= dt * rate;
@@ -2914,7 +3013,7 @@ function updateTowers(dt) {
       if (t.cd < -1) t.cd = 0;
       t.flash = 0.08;
       if ((s.leg.echo && G.r() < 0.3) || (G.af.echo && G.r() < G.af.echo)) towerAttack(t, range, sw);
-      if ((M.ks.overgrid && G.r() < 0.03) || (s.cur.jam && G.r() < 0.05) || (G.af.jam && G.r() < G.af.jam)) { t.disabled = M.ks.overgrid ? 1.5 : 1; Hooks.fx('jam', { x: t.cx, y: t.cy }); }
+      if ((s.cur.jam && G.r() < 0.05) || (G.af.jam && G.r() < G.af.jam)) { t.disabled = 1; Hooks.fx('jam', { x: t.cx, y: t.cy }); }
     } else if (t.cd < 0) t.cd = 0;
   }
 }
@@ -2925,11 +3024,12 @@ function towerAttack(t, range, sw) {
     case 'bullet': {
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
+      const rico = G.mods.ks.rico && t.type === 'pulse'; // v5.8 Ricochet: +3 bounces, the first keeps full damage
       for (const e of tg) {
         t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
         const crit = rollCrit(t);
         G.projs.push({ k: 'bullet', x: t.cx, y: t.cy, e, spd: s.pspd, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t,
-          bounces: s.pierce + s.chain, hitSet: new Set(), splash: s.splash, life: 2 });
+          bounces: s.pierce + s.chain + (rico ? 3 : 0), keep1: rico ? 1 : 0, hitSet: new Set(), splash: s.splash, life: 2 });
       }
       Hooks.sfx('shot', t);
       return true;
@@ -2937,6 +3037,9 @@ function towerAttack(t, range, sw) {
     case 'rail': {
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
+      // v5.8: Charged Shot (every 3rd volley ×4, pierces all) and Sniper Nest (isolated Rails pierce all, +30%; crowded ones −25%)
+      const big = s.ocEvery ? (t.ocN = (t.ocN || 0) + 1) % s.ocEvery === 0 : false;
+      const nest = G.mods.ks.nest && t.type === 'rail', all = big || (nest && t.isolated);
       for (const e0 of tg) {
       const ang = Math.atan2(e0.y - t.cy, e0.x - t.cx); t.angle = ang;
       const dx = Math.cos(ang), dy = Math.sin(ang);
@@ -2952,16 +3055,17 @@ function towerAttack(t, range, sw) {
       }
       hits.sort((a, b) => a[0] - b[0]);
       const crit = rollCrit(t);
-      const dmg = atkDmg(t, sw, crit);
-      const n = Math.min(hits.length, 1 + s.pierce);
+      const dmg = atkDmg(t, sw, crit) * (big ? s.ocX : 1) * (nest ? (t.isolated ? 1.3 : 0.75) : 1);
+      const n = all ? hits.length : Math.min(hits.length, 1 + s.pierce);
       for (let i = 0; i < n; i++) { hit(hits[i][1], dmg, s.el, t, { crit }); }
       if (n) ricochet(t, hits[0][1], dmg, s.el);
-      Hooks.fx('rail', { x1: t.cx, y1: t.cy, x2: t.cx + dx * len, y2: t.cy + dy * len, col: EL[s.el].col, crit, t, hp: hits.slice(0, n).map(h => ({ x: h[1].x, y: h[1].y })) });
+      Hooks.fx('rail', { x1: t.cx, y1: t.cy, x2: t.cx + dx * len, y2: t.cy + dy * len, col: big ? '#ffffff' : EL[s.el].col, crit: crit || big, big, t, hp: hits.slice(0, n).map(h => ({ x: h[1].x, y: h[1].y })) });
       }
       Hooks.sfx('rail', t);
       return true;
     }
     case 'pulse': {
+      if (s.artillery) return frostShell(t, range, sw);
       const r2 = range * range;
       const tg = G.enemies.filter(e => enemyTargetable(e) && dist2(e.x, e.y, t.cx, t.cy) <= r2);
       if (!tg.length) return false;
@@ -2979,12 +3083,13 @@ function towerAttack(t, range, sw) {
         t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
         const crit = rollCrit(t);
         G.projs.push({ k: 'missile', x: t.cx, y: t.cy, vx: Math.cos(t.angle + (G.r() - 0.5)) * 2, vy: Math.sin(t.angle + (G.r() - 0.5)) * 2,
-          e, tx: e.x, ty: e.y, spd: s.pspd, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t, splash: s.splash, life: 4 });
+          e, tx: e.x, ty: e.y, spd: s.pspd, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t, splash: s.splash, life: 4, single: s.bunker ? 1 : 0 });
       }
       Hooks.sfx('missile', t);
       return true;
     }
     case 'chain': {
+      if (s.fence) return fenceAttack(t, sw);
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
       for (const e0 of tg) {
@@ -2995,7 +3100,7 @@ function towerAttack(t, range, sw) {
         const pts = [{ x: t.cx, y: t.cy }, { x: e0.x, y: e0.y }];
         hit(e0, dmg, s.el, t, { crit });
         let cur = e0;
-        for (let j = 0; j < s.chain; j++) {
+        for (let j = 0; j < s.chain + (G.mods.ks.stormrider && sw.inStorm ? 2 : 0); j++) {
           let best = null, bd = 1.7 * 1.7;
           for (const e of G.enemies) if (enemyTargetable(e) && !hitSet.has(e)) { const d = dist2(e.x, e.y, cur.x, cur.y); if (d < bd) { bd = d; best = e; } }
           if (!best) break;
@@ -3012,6 +3117,7 @@ function towerAttack(t, range, sw) {
       const tg = findTargets(t, range, 1);
       if (!tg.length) return false;
       const e0 = tg[0];
+      if (s.ring) return flameRing(t, range, sw);
       const ang = Math.atan2(e0.y - t.cy, e0.x - t.cx); t.angle = ang;
       const crit = rollCrit(t);
       const dmg = atkDmg(t, sw, crit);
@@ -3028,6 +3134,7 @@ function towerAttack(t, range, sw) {
       return true;
     }
     case 'mortar': {
+      if (s.mines) return layMines(t, range, sw);
       const tg = findTargets(t, range, s.shells);
       if (!tg.length) return false;
       for (let i = 0; i < s.shells; i++) {
@@ -3043,20 +3150,125 @@ function towerAttack(t, range, sw) {
     }
     case 'grav': {
       const r2 = range * range;
-      const tg = G.enemies.filter(e => enemyTargetable(e) && !e.fly && dist2(e.x, e.y, t.cx, t.cy) <= r2);
+      const tg = G.enemies.filter(e => enemyTargetable(e) && (!e.fly || s.repulse) && dist2(e.x, e.y, t.cx, t.cy) <= r2);
       if (!tg.length) return false;
       const dmg = towerDmg(t, sw);
       for (const e of tg) {
-        if (!e.elite.includes('jugg')) { e.pullN = (e.pullN || 0) + 1; e.d = Math.max(0, e.d - s.pull * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - 0.15 * (e.pullN - 1))); }
+        // v5.8 Repulsor: fliers are thrown back along their flight line (REPULSE × the ground pull, which Repulsor cuts to 60%)
+        if (!e.elite.includes('jugg')) { e.pullN = (e.pullN || 0) + 1; e.d = Math.max(0, e.d - s.pull * (e.fly ? REPULSE : 1) * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - 0.15 * (e.pullN - 1))); }
         hit(e, dmg, s.el, t);
       }
       Hooks.fx('grav', { x: t.cx, y: t.cy, r: range, t, es: tg });
       Hooks.sfx('grav', t);
       return true;
     }
+    case 'eco': { // v5.8 Forge Works: a Forge fires Kinetic slugs worth part of its income
+      if (!s.fdmg) return false;
+      const tg = findTargets(t, range, 1);
+      if (!tg.length) return false;
+      const e = tg[0], crit = rollCrit(t);
+      t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
+      const d = s.fdmg * (1 + t.buff.dmg) * G.mods.el.K * (sw.K || 1) * (crit ? s.critM : 1);
+      G.projs.push({ k: 'bullet', x: t.cx, y: t.cy, e, spd: 12, dmg: d, crit, el: 'K', src: t, bounces: 0, hitSet: new Set(), splash: 0, life: 2 });
+      Hooks.sfx('shot', t);
+      return true;
+    }
   }
   return false;
 }
+// ---------- v5.8 Technique and Capstone attacks ----------
+const REPULSE = 1.6;
+const GARDEN = { span: 5, w: 0.6, slow: 0.75, vuln: 0.25 };
+// Cryo Artillery: a frost shell at the enemy furthest along (findTargets' 'first'), bursting for ×2.5 in 1.1 tiles
+function frostShell(t, range, sw) {
+  const tg = findTargets(t, range, 1);
+  if (!tg.length) return false;
+  const e = tg[0], crit = rollCrit(t);
+  t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
+  const fl = Math.hypot(e.x - t.cx, e.y - t.cy) / 5 + 0.3;
+  G.projs.push({ k: 'mortar', frost: 1, x: t.cx, y: t.cy, sx: t.cx, sy: t.cy, tx: e.x, ty: e.y, t: 0, fl, dmg: atkDmg(t, sw, crit) * 2.5, crit, el: t.s.el, src: t, splash: 1.1 });
+  Hooks.sfx('mortar', t);
+  return true;
+}
+// Arc Fence: the nearest other Coil within s.fence tiles anchors a line; every tick zaps every enemy touching it. No partner, no attack
+function fenceAttack(t, sw) {
+  const s = t.s;
+  const best = t.fenceTo = fencePartner(t);
+  if (!best) return false;
+  const ax = t.cx, ay = t.cy, dx = best.cx - ax, dy = best.cy - ay, L2 = dx * dx + dy * dy || 1, w2 = FENCE.w * FENCE.w;
+  const crit = rollCrit(t), dmg = atkDmg(t, sw, crit);
+  let any = false;
+  for (const e of G.enemies) {
+    if (!enemyTargetable(e)) continue;
+    const u = clamp(((e.x - ax) * dx + (e.y - ay) * dy) / L2, 0, 1);
+    if (dist2(e.x, e.y, ax + dx * u, ay + dy * u) > w2 + (e.boss ? 0.2 : 0)) continue;
+    hit(e, dmg, s.el, t, { crit }); any = true;
+  }
+  if (any) { Hooks.fx('zap', { x1: ax, y1: ay, x2: best.cx, y2: best.cy, col: EL[s.el].col }); Hooks.sfx('zap', t); }
+  return any;
+}
+function fencePartner(t) { let best = null, bd = (t.s.fence || 0) ** 2; for (const o of G.towers) if (o !== t && o.type === 'coil' && !(o.disabled > 0)) { const d = dist2(o.cx, o.cy, t.cx, t.cy); if (d <= bd) { bd = d; best = o; } } return best; }
+// Backdraft: every ground enemy within range, all the way round
+function flameRing(t, range, sw) {
+  const s = t.s, crit = rollCrit(t), dmg = atkDmg(t, sw, crit), r2 = (range + 0.3) * (range + 0.3);
+  for (const e of G.enemies) if (enemyTargetable(e) && !e.fly && dist2(e.x, e.y, t.cx, t.cy) <= r2) hit(e, dmg, s.el, t, { crit });
+  t.ringA = ((t.ringA || 0) + 2.4) % 6.2832; t.angle = t.ringA;
+  Hooks.fx('flamering', { x: t.cx, y: t.cy, range, col: EL[s.el].col });
+  Hooks.sfx('flame', t);
+  return true;
+}
+// Pulse Mines: shells land on the road ahead of a ground target (or on open road in range) and wait there as mines
+function layMines(t, range, sw) {
+  const s = t.s;
+  let mine = 0; for (const m of G.mines || []) if (m.src === t) mine++;
+  for (const p of G.projs) if (p.mine && p.src === t) mine++;
+  if (mine >= s.mines) return false;
+  const near = (x, y) => (G.mines || []).some(m => dist2(m.x, m.y, x, y) < 0.64) || G.projs.some(p => p.mine && dist2(p.tx, p.ty, x, y) < 0.64);
+  let spot = null;
+  const tg = findTargets(t, range, 4).filter(e => !e.fly && e.L && e.L.tiles);
+  for (const e of tg) { const q = lanePos(e.L, e.d + 1.2, { x: 0, y: 0, seg: 0 }); if (dist2(q.x, q.y, t.cx, t.cy) <= range * range && !near(q.x, q.y)) { spot = q; break; } }
+  if (!spot) {
+    const cand = [];
+    for (const L of G.map.lanes) if (!L.openWave) for (const p of L.pts) if (dist2(p.x, p.y, t.cx, t.cy) <= range * range && !near(p.x, p.y)) cand.push(p);
+    if (!cand.length) return false;
+    spot = cand[Math.floor(G.r() * cand.length)];
+  }
+  const crit = rollCrit(t);
+  t.angle = Math.atan2(spot.y - t.cy, spot.x - t.cx);
+  const fl = Math.hypot(spot.x - t.cx, spot.y - t.cy) / s.pspd + 0.3;
+  G.projs.push({ k: 'mortar', mine: 1, x: t.cx, y: t.cy, sx: t.cx, sy: t.cy, tx: spot.x, ty: spot.y, t: 0, fl, dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t, splash: s.splash });
+  Hooks.sfx('mortar', t);
+  return true;
+}
+const MINE = { life: 40, trip: 0.5, max: 40 };
+function updateMines(dt) {
+  for (const m of G.mines) {
+    m.t -= dt;
+    if (G.towerAt[tIdx(m.src.x, m.src.y)] !== m.src) { m.t = 0; continue; } // sold or swallowed: its mines go with it
+    for (const e of G.enemies) if (!e.dead && !e.fly && !(e.burrowT > 0) && dist2(e.x, e.y, m.x, m.y) <= (MINE.trip + e.size) * (MINE.trip + e.size)) {
+      m.t = 0; explode({ k: 'mortar', x: m.x, y: m.y, splash: m.splash, dmg: m.dmg, crit: m.crit, el: m.el, src: m.src }); break;
+    }
+  }
+  G.mines = G.mines.filter(m => m.t > 0);
+}
+// v5.8 fields: Blackout's static (Shock + slow) and Hoarfrost's ice (Chill + Kinetic vulnerability), on the road for a few seconds
+function addField(k, x, y, r, t) { const F = G.fields || (G.fields = []); if (F.length >= 40) F.shift(); F.push({ k, x, y, r, t, max: t }); }
+function updateFields(dt) {
+  const M = G.mods;
+  for (const f of G.fields) {
+    f.t -= dt;
+    for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, f.x, f.y) <= f.r * f.r) {
+      if (f.k === 'static') { e.st.shock = Math.max(e.st.shock, 0.4); e.st.shockEff = Math.max(e.st.shockEff, M.shockEff); slowTag(e, 0.3, 0.3); }
+      else if (f.k === 'ice' && !e.fly) {
+        e.shatterT = Math.max(e.shatterT || 0, 0.3); e.shatterV = Math.max(e.shatterV || 0, 0.25);
+        if (!e.elite.includes('jugg')) { e.iceT = (e.iceT || 0) - dt; if (e.iceT <= 0) { e.iceT = 0.5; e.st.chill = Math.min(5, e.st.chill + 1); e.st.chillT = 2.5; } }
+      }
+    }
+  }
+  G.fields = G.fields.filter(f => f.t > 0);
+}
+// a timed slow from a Technique (Suppressor rounds, Null Tether, static): the strongest running one counts
+function slowTag(e, v, dur) { if (!(e.supT > 0) || v >= e.supV) e.supV = v; e.supT = Math.max(e.supT || 0, dur); }
 function beamUpdate(t, dt, range, sw) {
   const s = t.s;
   // keep targets if still valid
@@ -3069,6 +3281,7 @@ function beamUpdate(t, dt, range, sw) {
   if (!t.beamTargets || t.beamTargets[0] !== tg[0]) { if (!(t.s.el === 'V' && FX('rampKeep'))) t.ramp = 0; }
   t.beamTargets = tg;
   t.ramp = Math.min(4, t.ramp + dt);
+  if (s.tether) for (const e of tg) if (!e.elite.includes('jugg')) slowTag(e, s.tether, 0.25); // v5.8 Null Tether
   t.angle = Math.atan2(tg[0].y - t.cy, tg[0].x - t.cx);
   while (t.cd <= 0) {
     t.cd += 1;
@@ -3109,7 +3322,7 @@ function updateProjs(dt) {
         if (G.af.fractal && !p.shard) shards(p, e);
         Hooks.fx('spark', { x: p.x, y: p.y, col: EL[p.el].col });
         if (p.bounces > 0) {
-          p.bounces--; if (!(p.el === 'K' && FX('pierceKeep'))) p.dmg *= 0.7;
+          p.bounces--; if (p.keep1) p.keep1 = 0; else if (!(p.el === 'K' && FX('pierceKeep'))) p.dmg *= 0.7;
           let best = null, bd = 2.6;
           for (const o of G.enemies) if (enemyTargetable(o) && !p.hitSet.has(o)) { const dd = dist2(o.x, o.y, p.x, p.y); if (dd < bd) { bd = dd; best = o; } }
           if (best) { p.e = best; continue; }
@@ -3130,7 +3343,7 @@ function updateProjs(dt) {
       p.t += dt;
       const k = Math.min(1, p.t / p.fl);
       p.x = lerp(p.sx, p.tx, k); p.y = lerp(p.sy, p.ty, k); p.h = Math.sin(k * Math.PI) * 1.5;
-      if (k >= 1) { explode(p); p.dead = true; }
+      if (k >= 1) { if (p.mine) (G.mines || (G.mines = [])).push({ x: p.tx, y: p.ty, splash: p.splash, dmg: p.dmg, crit: p.crit, el: p.el, src: p.src, t: MINE.life }); else explode(p); p.dead = true; }
     } else if (p.k === 'bomblet') {
       p.t -= dt;
       if (p.t <= 0) { explode(p); p.dead = true; }
@@ -3145,11 +3358,18 @@ function shards(p, from) {
 }
 function explode(p) {
   const r = p.splash || 0.6, src = p.src, s = src.s;
+  if (p.single) { // v5.8 Bunker Buster: one warhead, one enemy (its target, else the nearest within 0.8 tiles)
+    let tg = p.e && !p.e.dead && dist2(p.e.x, p.e.y, p.x, p.y) <= 1 ? p.e : null;
+    if (!tg) { let bd = 0.64; for (const e of G.enemies) if (!e.dead && enemyTargetable(e)) { const d = dist2(e.x, e.y, p.x, p.y); if (d < bd) { bd = d; tg = e; } } }
+    Hooks.fx('boom', { x: p.x, y: p.y, r: 0.4, col: '#ffffff' }); Hooks.sfx('boom', p);
+    if (tg) hit(tg, p.dmg, p.el, src, { crit: p.crit });
+    return;
+  }
   if (G.af.fractal && p.k === 'missile') shards(p, null);
   Hooks.fx('boom', { x: p.x, y: p.y, r, col: EL[p.el].col, k: p.k, t: src });
   Hooks.sfx(p.k === 'mortar' ? 'empboom' : p.k === 'bomblet' ? 'pop' : 'boomT', p); // cosmetic: each payload has its own impact
   for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, p.x, p.y) <= (r + e.size) * (r + e.size)) {
-    if (p.k === 'mortar' && e.shield > 0) e.shield *= 0.5; // EMP strips shields
+    if (p.k === 'mortar' && !p.frost && e.shield > 0) e.shield *= 0.5; // EMP strips shields
     hit(e, p.dmg, p.el, src, { crit: p.crit });
   }
   if (p.k === 'missile' && s.cluster) for (let i = 0; i < s.cluster; i++) {
@@ -3157,6 +3377,7 @@ function explode(p) {
   }
   if (p.k === 'missile' && s.napalm) G.zones.push({ k: 'napalm', x: p.x, y: p.y, r: 0.85, t: 3, dps: p.dmg * 0.5, src, el: 'T' });
   if (p.k === 'mortar' && s.stunDur) Hooks.fx('emp', { x: p.x, y: p.y, r });
+  if (p.k === 'mortar' && !p.frost && G.mods.ks.blackout && src.type === 'emp') addField('static', p.x, p.y, r, 3); // v5.8 Blackout
 }
 // ---- v4.2 Wildfire: burning ground enemies leave fire on the road; the more road burns, the hotter it gets ----
 const WILDFIRE = { r: 0.55, t: 2.2, dps: 0.5, perZone: 0.04, cap: 1, max: 70 };
@@ -3178,6 +3399,8 @@ function updateZones(dt) {
     }
   }
   G.zones = G.zones.filter(z => z.t > 0);
+  if (G.mines && G.mines.length) updateMines(dt);
+  if (G.fields && G.fields.length) updateFields(dt);
   // meteor event
   if (G.ev.meteor) {
     G.evT.meteor -= dt;
@@ -3591,6 +3814,7 @@ const ACTS = {
   oc: (x, y, n) => { const t = twAt(x, y); return !!t && setOvercharge(t, n); },
   vet: (x, y, i) => { const t = twAt(x, y); return !!t && claimVet(t, i); },
   mode: (x, y, m) => setTowerMode(twAt(x, y), m),
+  fire: (x, y, id) => setFireMode(twAt(x, y), id), // v5.8 Techniques
   abil: (k, x, y) => useAbility(k, x, y),
   core: kind => !!coreUpgrade(kind),
   coreRoll: () => !!rerollCore(),
@@ -3661,7 +3885,7 @@ function snapshotRun(waveNum) {
   if (!G || G.over || ghostRun()) return;
   const gut = []; let owed = 0; for (const e of G.enemies) if (!e.dead) { if (e.gut) for (const t of e.gut) if (!G.towerAt[tIdx(t.x, t.y)]) gut.push(t); if (e.audited) owed += e.audited; }
   const tw = G.towers.concat(gut).map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
-    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0 }));
+    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0, fire: t.fire || undefined, wild: t.wild || undefined }));
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
@@ -3696,7 +3920,7 @@ function resumeRun(S) {
     const t = { id: G.tid++, type: T.type, x: T.x, y: T.y, cx: T.x + 0.5, cy: T.y + 0.5, lvl: T.lvl, spec: T.spec, affixes: T.affixes, rerolls: T.rerolls,
       invested: T.invested, cd: 0.3, angle: -Math.PI / 2, kills: T.kills, dmgDone: T.dmgDone, dps: 0, dpsAcc: 0, mode: T.mode || 'first', disabled: 0,
       ramp: 0, olT: 0, buff: { dmg: 0, rate: 0, crit: 0 }, isolated: false, flash: 0,
-      vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0, vetN: T.vetN || 0 };
+      vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0, vetN: T.vetN || 0, fire: T.fire || undefined, wild: T.wild || undefined };
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t;
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
