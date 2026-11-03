@@ -326,7 +326,7 @@ const UI = (() => {
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
-    if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the "veterans ready" chip at the top to pick each one a mutation.', 'veterans')) return;
+    if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button under Map to pick each one a mutation.', 'veterans')) return;
     if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.', 'abilities')) return;
     // 5.8: one card for every other system, the first time it matters in a real run
     if (G.wave >= 2 && G.towers.length && !G.towers.some(t => t.lvl >= 2) && G.towers.some(t => G.credits >= upgradeCost(t)) && introCard('upg', 'Upgrades', 'Tap a tower to upgrade it: more damage and a random bonus. The arrow over a tower means you can afford it.', 'upgrades')) return;
@@ -358,6 +358,15 @@ const UI = (() => {
       <p>Basic Training is a short guided run: build, upgrade, read the swarm, claim a bounty. About 6 minutes.</p>
       <p class="note">Finishing it pays ${fmt(tutReward())} XP: two talent points. Every lesson stays in the Field Manual (the ? button).</p>
       <div class="foot"><button class="btn" data-act="tutSkip">Skip</button><button class="btn primary" data-act="tutGo">Training · 6 min</button></div></div>`, 'tutoffer');
+  }
+  // the Tutorial button (hangar and pause menu): Basic Training or the Field Manual
+  function openTutPick() {
+    if (G && !G.over) G.paused = true;
+    const inRun = !!(G && !G.over && !G.tut), S = tutState();
+    modal(`<div class="card narrow tutpick"><div class="ch"><h2>Tutorial</h2><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      <div class="tpick"><button class="lrow basic${S.done ? ' done' : ''}" data-act="tutStart"><i>${S.done ? '✓' : ''}</i><b>Basic Training</b><span>Build, upgrade, the core, a bounty: step by step, about 6 minutes.</span></button>
+      <button class="lrow" data-act="manual"><i></i><b>Field Manual</b><span>A short lesson for every system · ${lessonPct()}% done.</span></button></div>
+      ${inRun ? '<p class="note">Your run is saved first. Resume it from the main menu.</p>' : ''}</div>`, 'tutpick');
   }
   // leaving a real run for a lesson keeps it: it is saved and resumes from the hangar
   function startTut(lesson) {
@@ -420,7 +429,7 @@ const UI = (() => {
   // PLANS: one step list per lesson id ('basic' is Basic Training). A step: { id, when, skip, hold, at (target rect), t, b, ok (button
   // label for a read step), okFn, done, back (step id to return to), enter, leave, modal (the modal kind it shows over), tree, idle }.
   const Coach = (() => {
-    let on = false, plan = 'basic', i = 0, cur = null, el = null, held = false, sig = '', skipT = 0, mem = {}, miss = false;
+    let on = false, plan = 'basic', i = 0, cur = null, el = null, held = false, sig = '', skipT = -1e9, mem = {}, miss = false;
     const STEPS = () => PLANS[plan] || [];
     const W = () => G ? tutIdx(G.wave) : 0; // the script's wave number
     const cleared = () => G.spawningDone && G.enemies.every(e => e.dead);
@@ -466,6 +475,30 @@ const UI = (() => {
       return best;
     }
     const tw = () => G.towers[0], noTw = () => !G.towers.length;
+    // the Basic Training checklist, in the order the coach teaches it; each line ticks from game state, so doing things early still counts
+    const used = n => (G.inputs || []).some(x => x[1] === n), lvls = () => G.towers.reduce((a, t) => a + t.lvl - 1 + (t.asc || 0), 0);
+    const CHECK = [['Place a tower', () => G.towers.length >= 1], ['Call a wave early', () => used('call')], ['Upgrade a tower', () => lvls() >= 1], ['Read its bonus', () => !!mem.affix],
+      ['Upgrade again', () => lvls() >= 2], ['Core: Shield', () => G.core.sLvl >= 2], ['Core: Battery', () => G.core.wLvl >= 2], ['Veteran: tap Ready, pick', () => used('vet') || used('ascPick')], ['Use Strike', () => used('abil')],
+      ['Pick a specialty (LV 3)', () => G.towers.some(t => t.spec)], ['Beat the bounty boss', () => G.bounties.length > 0], ['Extract', () => !!G.extracted]];
+    let listEl = null, listSig = '', listOpen = false, flashT = 0;
+    try { listOpen = localStorage.getItem('entropy.tutlist') === '1'; } catch (e) { /* private mode: closed by default */ }
+    function list() {
+      if (plan !== 'basic' || !G || !G.tut) { if (listEl) listEl.hidden = true; return; }
+      if (!listEl || !listEl.isConnected) {
+        listEl = document.createElement('button'); listEl.id = 'tutlist'; listEl.type = 'button';
+        listEl.onclick = () => { listOpen = !listOpen; listSig = ''; SFX.play('ui'); try { localStorage.setItem('entropy.tutlist', listOpen ? '1' : '0'); } catch (e) {} };
+        $('#stage').appendChild(listEl);
+      }
+      // the full list shows while nothing waits on the player; during a held step it folds to its strip (the current task) so the coach card has room
+      const open = listOpen && !held, ok = CHECK.map(c => !!c[1]()), n = ok.filter(Boolean).length, now = ok.indexOf(false), key = ok.join('') + open + listOpen;
+      listEl.hidden = !!modalOpen && modalOpen !== 'hunt';
+      if (key === listSig) return;
+      if (listSig && n > (+listEl.dataset.n || 0)) { listEl.classList.add('flash'); clearTimeout(flashT); flashT = setTimeout(() => listEl && listEl.classList.remove('flash'), 1200); }
+      listSig = key; listEl.dataset.n = n; listEl.classList.toggle('open', open);
+      listEl.innerHTML = `<span class="tlh">Training ${n}/${CHECK.length}<i>${listOpen ? '▾ hide' : '▸ list'}</i></span><span class="tlcur">${now < 0 ? 'All done' : `${now + 1}. ${esc(CHECK[now][0])}`}</span>
+        <ol>${CHECK.map((c, k) => `<li class="${ok[k] ? 'ok' : k === now ? 'now' : ''}"><b>${ok[k] ? '✓' : k + 1}</b>${esc(c[0])}</li>`).join('')}</ol>`;
+    }
+    const allSpots = () => { const R = G.region, out = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) out.push({ x, y }); return out; };
     const packAt = () => { if (!mem.pk) mem.pk = pack(); if (!mem.pk) { const e = G.enemies.find(x => !x.dead); if (e) mem.pk = [e.x, e.y, 1]; } return mem.pk ? worldR(mem.pk[0], mem.pk[1], 1.7) : null; };
     const shut = () => { if (panel && panel.kind === 'tower') closePanel(); }; // a new tower opens its panel; the next step needs the field
     const panT = () => panel && panel.kind === 'tower' ? panel.t : null;
@@ -497,6 +530,8 @@ const UI = (() => {
         { id: 'core', hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Your core', b: 'Enemies walk the road to it. If its health runs out, the run is over.' },
         info('hp', sel('#hud .corebox'), 'Core health', () => `${Math.round(G.core.hp)} health plus ${Math.round(G.core.shield)} shield. Leaks hit the shield first; it recharges between hits.`, { ok: 'Next' }),
         { id: 'road', hold: 1, ok: 'Next', at: () => { const p = G.map.lanes[0].pts[0]; return worldR(p.x, p.y, 1); }, t: 'The road', b: 'Enemies come out of the wormhole and follow the road. Towers beside it shoot them.' },
+        { id: 'spots', hold: 1, nodim: 1, ok: 'Next', t: 'Build spots', b: 'Every green tile is a build spot: a tower fits on any of them. Beside the road is best.', enter: () => { Render.spots = allSpots(); }, leave: () => { Render.spots = null; } },
+        info('power0', sel('#hud .hs.pwr'), 'Power', () => `⚡ ${gridUsed()}/${gridCap()}: how many towers you can run. It grows as waves pass. In real runs, Power Nodes (diamond tiles) are free spots: no power used.`, { ok: 'Next' }),
         build('build1', 'pulse', 'a', 'Build a tower', 'Tap the marked tile beside the road.', { hold: 1 }),
         info('wave', () => appR(q('#hud #wave') && q('#hud #wave').closest('.hs')), 'The wave', 'Wave number and the countdown to the next one. Waves start on their own when it hits zero.', { ok: 'Next' }),
         { id: 'call1', hold: 1, at: sel('#bCall'), t: 'Start the wave', b: 'Tap Next to send Wave 1 now. Calling early pays bonus credits.', done: () => G.wave >= 1 || G.next <= 0 },
@@ -512,7 +547,10 @@ const UI = (() => {
         { id: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: 1, at: sel('#panel [data-act=up]'), t: 'The Upgrade button', enter: () => { mem.ut = panT(); mem.b4 = mem.ut && stat(mem.ut); },
           b: () => `Upgrading costs ${fmt(panT() ? upgradeCost(panT()) : 0)} credits: the price is on the button. It makes this tower stronger. Tap it.`,
           done: () => mem.ut && towerLevel(mem.ut) > mem.b4.lvl, back: () => !panT() && 'tapTower' },
-        info('upDone', sel('#panel .lvtag'), 'Upgraded', () => upLine(mem.ut, mem.b4) + ' Every upgrade rolls one.', { when: () => !!panT(), skip: () => W() >= 3 || !panT() }),
+        info('upDone', sel('#panel .lvtag'), 'Upgraded', () => upLine(mem.ut, mem.b4) + ' Every upgrade rolls one.', { when: () => !!panT(), skip: () => W() >= 3 || !panT(), ok: 'Next' }),
+        { id: 'affix', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Its bonus', b: 'That random bonus is an affix. Tap Details to see it.', skip: () => W() >= 3 || !panT(), done: () => panel && panel.tab === 'info' },
+        info('affixes', () => appR(q('#panel .affs')) || appR(q('#panel .pbody')), 'Affixes', 'Every upgrade adds one. Rarer ones are coloured gold or purple. Reroll swaps them for credits.', { skip: () => W() >= 3 || !panT(), okFn: () => { mem.affix = 1; if (panel) { panel.tab = 'act'; renderPanel(); } }, enter: scrollTo('#panel .affs') }),
+        info('rank', () => towerR(mem.ut), 'Ranking up', 'The coloured bar under a tower is its level; its panel shows the LV badge. Each level adds damage and an affix. At LV 3 it picks a specialty; LV 5 is the top.', { skip: () => W() >= 3 || !mem.ut, ok: 'Next' }),
         info('upWhy', sel('#hud .hs.pwr'), 'Why upgrade?', () => `Power is limited: ${gridUsed()} of ${gridCap()}. A new tower needs power; an upgrade costs only credits.`, { skip: () => W() >= 3, leave: shut }),
         call('call3', 3, 'Next wave when you are ready.', { when: () => after(2) }),
         threatOpen('threat', 'Threat Board', 'This chip shows the next wave. Juggernauts are coming. Tap it.', { when: () => after(3), skip: () => W() >= 4 }),
@@ -527,6 +565,16 @@ const UI = (() => {
         { id: 'up2', when: () => after(4), skip: () => W() >= 5 || !mem.au, hold: 1, at: sel('#panel [data-act=up]'), t: 'Upgrade it', enter: () => { mem.b4 = stat(mem.au); },
           b: () => `${fmt(upgradeCost(mem.au))} credits. Tap Upgrade.`, done: () => towerLevel(mem.au) > mem.b4.lvl, back: () => panT() !== mem.au && 'arrow' },
         info('up2Done', sel('#panel .lvtag'), 'Stronger', () => upLine(mem.au, mem.b4), { when: () => !!panT(), skip: () => W() >= 5 || !panT(), leave: shut }),
+        // the core's own upgrades (a supply drop lands as Wave 4 ends, so both are affordable)
+        { id: 'tapCore', when: () => after(4), skip: () => W() >= 5 || G.core.sLvl >= 2 && G.core.wLvl >= 2, hold: 1, at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core', b: 'The core has upgrades too. Tap it.', done: () => panel && panel.kind === 'core' },
+        { id: 'shield', when: () => after(4), skip: () => W() >= 5 || G.core.sLvl >= 2, hold: () => G.credits >= coreShieldCost(), enter: scrollTo('#panel [data-act=cs]'), at: sel('#panel [data-act=cs]'), t: 'Shield',
+          b: () => G.credits >= coreShieldCost() ? `Tap Shield (${fmt(coreShieldCost())}). A bigger shield soaks more leaks before the core loses health.` : `Shield costs ${fmt(coreShieldCost())} credits.`, done: () => G.core.sLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
+        { id: 'battery', when: () => after(4), skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
+          b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). The core's own gun hits harder; some levels add a module.` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
+        info('coreMore', sel('#panel [data-act=ch]'), 'Hull and Uplink', 'Later: Hull adds core health, Uplink makes abilities recharge faster.', { when: () => panel && panel.kind === 'core', skip: () => W() >= 5 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
+        { id: 'ready', when: () => after(4) && vetsReady().length > 0 && !(panel && panel.kind === 'core'), skip: () => W() >= 5 || used('vet'), hold: 1, at: sel('#bReady'), t: 'Veterans ready',
+          b: 'Towers that fight earn veteran ranks. This button counts towers with a pick waiting. Tap it.', done: () => modalOpen === 'vets' },
+        { id: 'vpick', when: () => modalOpen === 'vets', skip: () => W() >= 5 || used('vet') || modalOpen !== 'vets', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices for this tower; the colour is its rarity. Tap one. It walks you through every waiting tower.', done: () => used('vet') },
         call('call5', 5, 'A big pack is coming. Get ready to use an ability.', { when: () => after(4) }),
         { id: 'strike', when: () => W() === 5 && (G.charges.strike || 0) > 0 && (pack() || [0, 0, 0])[2] >= 6, skip: () => W() >= 6, hold: 1, enter: () => { mem.c0 = G.charges.strike; },
           at: sel('#abils [data-abil=strike]'), t: 'Orbital Strike', b: 'A tight pack. Abilities live on the left. Tap Strike.', done: () => G.aimAbility === 'strike' || (G.charges.strike || 0) < mem.c0 },
@@ -649,7 +697,7 @@ const UI = (() => {
       ],
       veterans: [
         intro('in', 'Veterans', 'Towers that fight earn ranks. Each rank lets you pick a mutation for that tower.'),
-        { id: 'chip', hold: 1, at: sel('#chips [data-ready]'), t: 'Veteran ready', b: 'This chip shows towers with a pick waiting. Tap it.', done: () => modalOpen === 'vets' || !G.towers.some(t => t.pending > 0) },
+        { id: 'chip', hold: 1, at: sel('#bReady'), t: 'Ready', b: 'This button counts towers with a pick waiting (veteran mutations and Ascend perks). A gold star marks each one on the board. Tap it.', done: () => modalOpen === 'vets' || !G.towers.some(t => t.pending > 0) },
         { id: 'pick', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices; the colour is its rarity. Tap one.', done: () => !G.towers.some(t => t.pending > 0) },
         tapTw('tapP', () => G.towers.find(t => t.type === 'pulse'), 'Affixes', 'Tap the Pulse Blaster.', { when: () => !modalOpen }),
         { id: 'details', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Details', b: 'Tap Details.', done: () => panel && panel.tab === 'info', back: () => !panT() && 'tapP' },
@@ -782,11 +830,18 @@ const UI = (() => {
     const ov = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
     const grow = (r, d) => ({ x: r.x - d, y: r.y - d, w: r.w + 2 * d, h: r.h + 2 * d });
     function place(S, r, idle) {
-      const card = el.querySelector('.ccard'), cw = card.offsetWidth, ch = card.offsetHeight, app = $('#app');
+      const card = el.querySelector('.ccard'), app = $('#app');
       const AW = app.clientWidth, AH = app.clientHeight, full = S.modal || S.tree || tour() || screen !== 'game', st = full ? { x: 0, y: 0, w: AW, h: AH } : appR($('#stage')) || { x: 0, y: 0, w: AW, h: AH };
-      const m = 6, xs = [st.x + m, st.x + (st.w - cw) / 2, st.x + st.w - cw - m], ys = [st.y + m, st.y + (st.h - ch) / 2, st.y + st.h - ch - m];
+      const pn = !full && panel ? appR($('#panel')) : null, m = 6;
+      // with a side panel open, the card lives in the free part of the stage and narrows to fit it (667 wide: the spec buttons stay clear)
+      const fr = pn ? (pn.x > st.x + st.w / 2 ? { x: st.x, w: pn.x - st.x } : { x: pn.x + pn.w, w: st.x + st.w - pn.x - pn.w }) : null;
+      card.style.width = fr ? Math.max(180, Math.min(290, fr.w - 2 * m)) + 'px' : '';
+      const cw = card.offsetWidth, ch = card.offsetHeight;
+      const xs = [st.x + m, st.x + (st.w - cw) / 2, st.x + st.w - cw - m]; if (fr) xs.push(fr.x + m, fr.x + fr.w - cw - m);
+      const ys = [st.y + m, st.y + (st.h - ch) / 2, st.y + st.h - ch - m];
       const avoid = []; if (r) avoid.push(grow(r, 26));
-      const pn = !full && panel ? appR($('#panel')) : null; if (pn) avoid.push(pn);
+      if (pn) avoid.push(pn);
+      const tl = !full && listEl && !listEl.hidden ? appR(listEl) : null; if (tl) avoid.push(tl);
       let best = null;
       for (const y of ys) for (const x of xs) {
         const c = { x, y, w: cw, h: ch }; let s = 0; for (const a of avoid) s += ov(c, a) * 100;
@@ -795,6 +850,7 @@ const UI = (() => {
         if (!best || s < best.s) best = { x, y, s };
       }
       card.style.left = Math.round(best.x) + 'px'; card.style.top = Math.round(best.y) + 'px';
+      if (listEl) listEl.style.visibility = tl && ov({ x: best.x, y: best.y, w: cw, h: ch }, tl) > 0 ? 'hidden' : ''; // no room for both: the card wins for this step
       return { x: best.x, y: best.y, w: cw, h: ch };
     }
     function show2(S, t, b, r, ok, idle) {
@@ -807,7 +863,7 @@ const UI = (() => {
         el.querySelector('.ct').textContent = t; el.querySelector('.cb').textContent = b;
         const o = el.querySelector('.cok'); o.hidden = !ok; o.textContent = ok || '';
       }
-      el.classList.toggle('dim', held && !!r); el.classList.toggle('dimall', held && !r);
+      el.classList.toggle('dim', held && !!r && !S.nodim); el.classList.toggle('dimall', held && !r && !S.nodim);
       const sp = el.querySelector('.cspot'), rg = el.querySelector('.cring'), ar = el.querySelector('.carrow');
       sp.hidden = rg.hidden = ar.hidden = !r;
       const c = place(S, r, idle);
@@ -827,7 +883,8 @@ const UI = (() => {
       show2({}, L[0], L[1], null, null, true);
     }
     function tick() {
-      if (!on) return;
+      if (!on) { if (listEl) listEl.hidden = true; return; }
+      list();
       const runOK = G && G.tut && screen === 'game' && (G.lesson || 'basic') === plan, tourOK = tour() && !G && (screen === 'hangar' || Tree.isOpen);
       if (!runOK && !tourOK) { stop(); return; }
       const P = STEPS();
@@ -970,7 +1027,8 @@ const UI = (() => {
       const h = parts.join(''); if (db && db.dataset.h !== h) { db.innerHTML = h; db.dataset.h = h; db.hidden = !h; }
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
-    { const rdy = G.towers.filter(t => t.pending > 0).length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} veteran${rdy > 1 ? 's' : ''} ready</span>`); }
+    { const rdy = vetsReady().length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} ready</span>`);
+      const rb = $('#bReady'); if (rb) { const was = +rb.dataset.n || 0; if (rdy !== was) { rb.dataset.n = rdy; $('#rdyN').textContent = rdy; rb.hidden = !rdy; if (rdy > was) { rb.classList.remove('pulse'); void rb.offsetWidth; rb.classList.add('pulse'); } } } } // 5.8 Ready button
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap${performance.now() < stormPulse ? ' pulse' : ''}" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
     G.laneWarn = null; for (const L of G.map.lanes) if (L.openWave) { const d = L.openWave - G.wave; if (d >= 1 && (!G.laneWarn || d < G.laneWarn)) G.laneWarn = d; }
@@ -1859,14 +1917,14 @@ const UI = (() => {
   function modal(html, kind) {
     if (modalOpen === 'studio' && kind !== 'studio' && stInCompose) { stInCompose = false; leaveCompose(); }
     const m = $('#modal');
-    m.innerHTML = html; m.hidden = false; modalOpen = kind || 'modal';
+    m.classList.remove('side'); m.innerHTML = html; m.hidden = false; modalOpen = kind || 'modal';
     for (const c of m.querySelectorAll(':scope > .card')) frameBox(c, 'ch', 'foot', 'cbody');
     document.body.classList.add('modal-open');
     hydrateIcons(m);
   }
   function closeModal() {
     if (modalOpen === 'studio' && stInCompose) { stInCompose = false; leaveCompose(); }
-    $('#modal').hidden = true; $('#modal').innerHTML = ''; modalOpen = null; modalFrom = null; confirmAbandon = false; confirmReset = false;
+    $('#modal').hidden = true; $('#modal').innerHTML = ''; $('#modal').classList.remove('side'); modalOpen = null; modalFrom = null; confirmAbandon = false; confirmReset = false;
     document.body.classList.remove('modal-open');
     flushToasts();
   }
@@ -1879,7 +1937,7 @@ const UI = (() => {
       <p class="note">${G.bounties.length ? `${G.bounties.length} bount${G.bounties.length === 1 ? 'y' : 'ies'} claimed · ` : ''}${G.wanted ? `Next bounty: ${esc(G.wanted.name)}, Wave ${G.wanted.w}` : ''}${G.nemesis && !G.nemesis.beaten ? ` · Nemesis: ${esc(G.nemesis.name)}` : ''}</p>
       ${G.anoms.length ? `<div class="lbl">Anomalies</div><div class="anlist">${G.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>` : ''}
       <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
-      <button class="btn" data-act="help">How to Play</button>
+      <button class="btn" data-act="tutPick">Tutorial</button>
       <button class="btn" data-act="studio">Music Studio</button>
       <button class="btn" data-act="settings">Settings</button>
       <button class="btn" data-act="exit">Save &amp; Quit</button>
@@ -2065,19 +2123,23 @@ const UI = (() => {
   // ---------- v5.3 The Hunt: the choice after a bounty, hunt codes, and watching a recorded run ----------
   // v5.3.4 Veteran Picks: the "veterans ready" chip walks through every tower with a mutation waiting, one card at a time
   const vetFlow = { ix: 0, n: 0 };
-  const vetsReady = () => G ? G.towers.filter(t => t.pending > 0) : [];
+  const vetsReady = () => G ? G.towers.filter(t => t.pending > 0 || t.ascPend > 0) : []; // 5.8: veteran picks and Ascend perks
   function showOnMap(t) { openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); }
   function openVets() {
     const rd = vetsReady();
-    if (!rd.length) { closeModal(); if (G && !G.over) G.paused = false; if (vetFlow.n) toast('VETERANS', `${vetFlow.n} mutation${vetFlow.n === 1 ? '' : 's'} picked. Every veteran is up to date`, '#ffe14d', true, 'tip'); vetFlow.n = 0; return; }
+    if (!rd.length) { closeModal(); Render.sel = null; if (G && !G.over) G.paused = false; if (vetFlow.n) toast('VETERANS', `${vetFlow.n} pick${vetFlow.n === 1 ? '' : 's'} made. Every tower is up to date`, '#ffe14d', true, 'tip'); vetFlow.n = 0; return; }
     vetFlow.ix = ((vetFlow.ix % rd.length) + rd.length) % rd.length;
-    const t = rd[vetFlow.ix], o = vetOffer(t), left = rd.reduce((a, x) => a + x.pending, 0);
+    const t = rd[vetFlow.ix], asc = !(t.pending > 0) && t.ascPend > 0, o = asc ? ascOffer(t) || [] : vetOffer(t), left = rd.reduce((a, x) => a + (x.pending || 0) + (x.ascPend > 0 ? 1 : 0), 0);
     closePanel(); G.paused = true;
-    modal(`<div class="card narrow vets"><div class="ch"><h2>Veteran Picks</h2><span class="note">Tower ${vetFlow.ix + 1} of ${rd.length} · ${left} pick${left === 1 ? '' : 's'} waiting</span><button class="x" data-act="vetDone" aria-label="Close">✕</button></div>
-      <div class="vhead"><canvas class="ico" width="32" height="32" data-ico="${t.type}"></canvas><div><b>${esc(towerLabel(t))}</b><small>${towerLabel(t) !== TOWERS[t.type].name ? esc(TOWERS[t.type].name) + ' · ' : ''}LV ${towerLevel(t)} · ${tipify('Veteran')} ${roman(t.rank)}${t.pending > 1 ? ` · ${t.pending} picks here` : ''} · choose a mutation</small></div></div>
-      <div class="vet">${o.map((a, i) => `<button class="aff pickable" data-act="vpick" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</button>`).join('')}</div>
+    // 5.8: the tower is centred in the free (left) part of the board and selected, and the card docks right over a light backdrop
+    { const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W * 0.3 - p.x, L.H / 2 - p.y); updateZoomBtn(); Render.sel = { x: t.x, y: t.y }; }
+    modal(`<div class="card narrow vets"><div class="ch"><h2>Ready</h2><span class="note">Tower ${vetFlow.ix + 1} of ${rd.length} · ${left} pick${left === 1 ? '' : 's'} waiting</span><button class="x" data-act="vetDone" aria-label="Close">✕</button></div>
+      <div class="vhead"><canvas class="ico" width="32" height="32" data-ico="${t.type}"></canvas><div><b>${esc(towerLabel(t))}</b><small>${towerLabel(t) !== TOWERS[t.type].name ? esc(TOWERS[t.type].name) + ' · ' : ''}LV ${towerLevel(t)} · ${asc ? 'Ascended · choose a perk' : `${tipify('Veteran')} ${roman(t.rank)}${t.pending > 1 ? ` · ${t.pending} picks here` : ''} · choose a mutation`}</small></div></div>
+      <div class="vet">${asc ? o.map((id, i) => { const P = perkDef(t.type, id), n = perkStacks(t, id); return `<button class="aff pickable" data-act="apick" data-v="${i}" style="--c:#ff8a2a"><i>${esc(P.name)}${n ? ' ' + roman(n + 1) : ''}</i>${esc(perkText(P, n))}</button>`; }).join('')
+        : o.map((a, i) => `<button class="aff pickable" data-act="vpick" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</button>`).join('')}</div>
       ${t.affixes.length ? `<div class="lbl">Already has</div><div class="affs mini">${t.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="foot"><button class="btn" data-act="vetMap">Show on map</button>${rd.length > 1 ? '<button class="btn" data-act="vetSkip">Next tower</button>' : ''}<button class="btn" data-act="vetDone">Later</button></div></div>`, 'vets');
+    $('#modal').classList.add('side');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
   }
   function openHunt() {
@@ -2899,6 +2961,7 @@ const UI = (() => {
       case 'close': closeModal(); break;
       case 'brief': closeModal(); if (G) { G.paused = false; G.briefing = false; } break;
       case 'tutGo': case 'tutStart': startTut(); break; // 5.8 Training and the Field Manual
+      case 'tutPick': if (modalOpen === 'pause') modalFrom = 'pause'; openTutPick(); break;
       case 'lesson': startTut(b.dataset.v); break;
       case 'lpage': openManual(b.dataset.v); break;
       case 'manual': openManual(); break;
@@ -2943,8 +3006,9 @@ const UI = (() => {
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); window.act('abandon'); break;
       case 'vpick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('vet', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; if (!(t.pending > 0)) { const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; } openVets(); break; }
       case 'vetSkip': vetFlow.ix++; openVets(); break;
+      case 'apick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('ascPick', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; openVets(); break; }
       case 'vetMap': { const t = vetsReady()[vetFlow.ix]; closeModal(); G.paused = false; vetFlow.n = 0; if (t) showOnMap(t); break; }
-      case 'vetDone': closeModal(); if (G && !G.over) G.paused = false; vetFlow.n = 0; break;
+      case 'vetDone': closeModal(); Render.sel = null; if (G && !G.over) G.paused = false; vetFlow.n = 0; break;
       case 'extract': closeModal(); window.act('extract'); break;
       case 'push': closeModal(); if (window.act('push')) { G.paused = false; SFX.play('levelup'); } break;
       case 'door': closeModal(); if (window.act('push', +b.dataset.v)) { G.paused = false; SFX.play('levelup'); } break;
@@ -3066,6 +3130,8 @@ const UI = (() => {
     $('#hHunt').addEventListener('click', e => { const b = e.target.closest('[data-hact]'); if (!b) return; SFX.init(); SFX.play('ui'); if (b.dataset.hact === 'daily') { if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); return; } openSetup(); setup.mode = 'daily'; renderSetup(); } });
     $('#bLaunch2').onclick = () => { SFX.init(); SFX.play('ui'); openSetup(); };
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
+    $('#bReady').onclick = () => { SFX.play('ui'); if (!G || G.over) return; vetFlow.ix = 0; openVets(); };
+    $('#bTutH').onclick = () => { SFX.init(); SFX.play('ui'); openTutPick(); }; // 5.8: always on the main menu
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
     $('#bSettings').onclick = () => { SFX.init(); SFX.play('ui'); openSettings(); };

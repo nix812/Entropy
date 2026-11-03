@@ -430,6 +430,7 @@ const TUT = {
   towers: ['pulse', 'rail', 'cryo'],     // what the coach offers in the build menu
   boss: { id: 'behemoth', mod: 'colossal', hp: 1500 }, // fixed health (×1.6 Colossal), so the fight is the same for everyone
   charge: { 5: 'strike' },               // a Strike charge waiting at the start of these waves
+  grant: { 5: 260, 7: 160 },             // supply drops (credits) as the wave before ends: the core upgrades and the spec are always affordable
   waves: [
     [['drone', 6, 1.8, 0.9]],
     [['drone', 5, 1.5, 1], ['swarmer', 6, 0.3, 1]],
@@ -486,7 +487,7 @@ const LESSONS = [
     real: 'In a run: tap crates as they land, or build next to where they drop.',
     run: { credits: 200, grid: 4, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2]]], ['cache']], waves: [[['drone', 6, 1.2, 1]]] } },
   { id: 'veterans', title: 'Veterans, affixes, resonance', blurb: 'Towers that earn ranks, and where to put them.',
-    what: 'Towers that fight earn veteran ranks; each rank offers a mutation. Affixes are the bonuses a tower rolls on upgrades. Towers of different elements side by side resonate: +8% damage each.', when: 'Whenever the "veterans ready" chip shows; whenever you place a tower.', todo: 'Tap the chip and pick a mutation. Build mixed elements next to each other.',
+    what: 'Towers that fight earn veteran ranks; each rank offers a mutation. Affixes are the bonuses a tower rolls on upgrades. Towers of different elements side by side resonate: +8% damage each.', when: 'Whenever the Ready button shows a count; whenever you place a tower.', todo: 'Tap Ready: it walks you through every waiting tower (a gold star marks each). Pick a mutation. Build mixed elements next to each other.',
     real: 'In a run: clear veteran picks between waves; pair Kinetic with Cryo or Arc side by side.',
     run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['cryo', 1]]], ['vet', 0]], waves: [[['drone', 8, 1, 1]]] } },
   { id: 'support', title: 'Pylon and Forge', blurb: 'Towers that never shoot.',

@@ -1489,6 +1489,7 @@ function prepareWave(w) {
   }
   if (G.wanted && !G.wanted.done && !G.wanted.spawned && w > G.wanted.w) planWanted(Math.ceil((w + 10) / 10) * 10); // its boss never showed: post it again
   assaultTick(w);
+  if (G.tut && G.tutS.grant && G.tutS.grant[tutIdx(w)] && w > G.wave) { const cr = G.tutS.grant[tutIdx(w)]; G.credits += cr; Hooks.toast('SUPPLY DROP', `+${cr} credits for Training`, '#ffb03a'); Hooks.fx('coin', { x: G.core.x, y: G.core.y - 0.6, v: cr }); }
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
   const counts = {}, genes = {}; let elites = 0, fly = 0, boss = null, ng = 0;
@@ -1700,7 +1701,7 @@ function genWave(w, ev) {
 }
 // 5.8 Training: the run's rules (called once from newRun) and its scripted waves (from genWave)
 // a lesson's run is TUT with the lesson's own fields on top (LESSONS[i].run): its waves, credits, towers, presets
-function tutSpec(id) { const L = id && LESSON_BY[id]; return L && L.run ? Object.assign({}, TUT, { boss: null, charge: null, abil: null, build: null, pre: null }, L.run, { id }) : TUT; }
+function tutSpec(id) { const L = id && LESSON_BY[id]; return L && L.run ? Object.assign({}, TUT, { boss: null, charge: null, grant: null, abil: null, build: null, pre: null }, L.run, { id }) : TUT; }
 const tutIdx = w => w - (G.startWave || 1) + 1; // the script's wave number (1 = the first scripted wave)
 // the free tiles beside the road that cover the most of it, none touching another (deterministic, no G.r): lesson presets and the coach
 function tutSpots(n, avoid) {
@@ -2160,7 +2161,7 @@ function stabilize() {
 
 // ---------- veterans ----------
 function grantVxp(t, v) {
-  if (!t || t.vxp === undefined || G.tut) return; // no veterans in Training
+  if (!t || t.vxp === undefined || (G.tut && G.lesson)) return; // lessons have no veterans; Basic Training teaches them (Ready button)
   const vb = G.mods.orb && G.mods.orb.vxp[t.s.el]; if (vb) v *= 1 + vb / 100;
   if (G.mods.ks.artisan) v *= 2 * (1 + FX('aVxp') / 100);
   t.vxp += v;

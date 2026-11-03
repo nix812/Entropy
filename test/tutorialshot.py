@@ -17,7 +17,7 @@ CARD = '''() => { const c = document.querySelector('#coach'); if (!c || c.hidden
   const rr = r.hidden ? null : r.getBoundingClientRect(), ok = c.querySelector('.cok');
   return { step: UI.coach.step, miss: UI.coach.miss, held: UI.coachHold, card: [k.left, k.top, k.width, k.height], ring: rr ? [rr.left, rr.top, rr.width, rr.height] : null, ok: !ok.hidden, title: c.querySelector('.ct').textContent, vw: innerWidth, vh: innerHeight }; }'''
 # where the driver taps when the ring covers a group (the coach points at the group; a player taps one of its buttons)
-TAPS = { 'spec': '#panel [data-act=spec]', 'pick': '#modal [data-act=vpick]', 'boon': '#modal .boons [data-act]', 'anom': '#modal [data-act=anom]', 'fire': '#panel .firerow [data-act=fire]:not(.on)', 'perk': '#panel [data-act=perk]' }
+TAPS = { 'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]', 'pick': '#modal [data-act=vpick]', 'boon': '#modal .boons [data-act]', 'anom': '#modal [data-act=anom]', 'fire': '#panel .firerow [data-act=fire]:not(.on)', 'perk': '#panel [data-act=perk]' }
 def fresh(pg, extra=''):
     pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
     pg.evaluate('() => { window.tutOfferTest = 1; PROF = Save.merge({}); PROF.seenVer = VERSION; ' + extra + ' Save.save(); UI.renderHangar(); }')
@@ -37,6 +37,21 @@ def drive(pg, tag, prefix, finished, limit=420):
                 pg.screenshot(path=str(out / f'{prefix}_{n:02d}_{c["step"]}.png')); c = pg.evaluate(CARD) or c
                 k = c['card']; check(k[0] >= -1 and k[1] >= -1 and k[0] + k[2] <= c['vw'] + 1 and k[1] + k[3] <= c['vh'] + 1, f'{tag}: {c["step"]} card on screen {k}')
                 check(not c['miss'], f'{tag}: {c["step"]} target not found')
+                tl = pg.evaluate("() => { const t = document.querySelector('#tutlist'); if (!t || t.hidden || t.offsetParent === null || t.style.visibility === 'hidden') return null; const r = t.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }")
+                if tl:
+                    ox = max(0, min(k[0] + k[2], tl[0] + tl[2]) - max(k[0], tl[0])); oy = max(0, min(k[1] + k[3], tl[1] + tl[3]) - max(k[1], tl[1]))
+                    check(ox * oy < 1, f'{tag}: {c["step"]} card covers the checklist')
+                if c['step'] == 'ready':
+                    pg.screenshot(path=str(out / f'{prefix}_ready_button.png'))
+                    rb = pg.evaluate("() => { const r = document.querySelector('#bReady').getBoundingClientRect(); return ['#bZoom', '#railR', '#chips', '#bPause', '#ticker'].filter(q => { const e = document.querySelector(q); if (!e || e.offsetParent === null || e.hidden) return false; const o = e.getBoundingClientRect(); return !(o.right <= r.left || o.left >= r.right || o.bottom <= r.top || o.top >= r.bottom); }); }")
+                    check(not rb, f'{tag}: Ready button collides with {rb}')
+                if c['step'] == 'vpick': pg.screenshot(path=str(out / f'{prefix}_ready_walkthrough.png'))
+                if c['step'] == 'upWhy' and tl:
+                    pg.click('#tutlist'); pg.wait_for_timeout(200); pg.screenshot(path=str(out / f'{prefix}_checklist_strip.png'))
+                    pg.click('#coach .cok'); pg.wait_for_timeout(250); pg.screenshot(path=str(out / f'{prefix}_checklist.png'))
+                    lr = pg.evaluate("() => { const r = document.querySelector('#tutlist').getBoundingClientRect(), s = document.querySelector('#stage').getBoundingClientRect(), bad = ['#bCall', '#bZoom', '#abils [data-abil=strike]', '#chips'].filter(q => { const e = document.querySelector(q); if (!e || e.offsetParent === null) return false; const o = e.getBoundingClientRect(); return !(o.right <= r.left || o.left >= r.right || o.bottom <= r.top || o.top >= r.bottom); }); return { inside: r.left >= s.left - 1 && r.bottom <= s.bottom + 1 && r.top >= s.top - 1, bad }; }")
+                    check(lr['inside'] and not lr['bad'], f'{tag}: open checklist stays in the stage and clear of controls {lr}')
+                    pg.click('#tutlist'); pg.wait_for_timeout(150)
                 if c['ring']:
                     r = c['ring']; ox = max(0, min(k[0] + k[2], r[0] + r[2]) - max(k[0], r[0])); oy = max(0, min(k[1] + k[3], r[1] + r[3]) - max(k[1], r[1]))
                     check(ox * oy < 1, f'{tag}: {c["step"]} card covers its target')
@@ -58,7 +73,9 @@ def basic(pg, tag):
     pg.wait_for_timeout(200); 
     steps = pg.evaluate('() => UI.coach.steps("basic")')
     seen = drive(pg, tag, tag, '() => !G || G.over', 900)
+    nl, tot = pg.evaluate("() => { const t = document.querySelector('#tutlist'); return t ? [+t.dataset.n || 0, +((t.querySelector('.tlh').textContent.match(/\\/(\\d+)/) || [0, 0])[1])] : [0, 0]; }")
     pg.wait_for_timeout(1400)
+    check(tot >= 11 and nl == tot, f'{tag}: checklist ticked {nl}/{tot} by the end')
     optional = {'arrow', 'up2', 'up2Done', 'tapLv3', 'toLv3', 'spec', 'ascend', 'sell', 'recharge', 'free', 'mark', 'inspect', 'inspected'}
     missing = [s for s in steps if s not in seen and s not in optional]
     check(not missing, f'{tag}: steps never shown: {missing}')
@@ -95,6 +112,22 @@ def lessons(pg, tag):
     check('%' in pg.evaluate("() => document.querySelector('#modal .ch .note').textContent"), f'{tag}: manual shows % complete')
     pg.screenshot(path=str(out / f'{tag}_manual.png'))
 def misc(pg, tag):
+    # the Tutorial button is always on the main menu (any profile) and opens the chooser; the pause menu has it too
+    fresh(pg, 'PROF.tut = { seen: 1, done: 1, paid: 1 }; PROF.runs = 9; PROF.bestWave = 40;')
+    check(pg.evaluate("() => { const b = document.querySelector('#bTutH'); return !!b && b.offsetParent !== null; }"), f'{tag}: Tutorial button on the main menu')
+    pg.screenshot(path=str(out / f'{tag}_hangar_tutorial.png'))
+    pg.click('#bTutH'); pg.wait_for_timeout(250)
+    check(pg.evaluate("() => UI.modalOpen === 'tutpick' && !!document.querySelector('#modal [data-act=tutStart]') && !!document.querySelector('#modal [data-act=manual]')"), f'{tag}: Tutorial opens Basic Training / Field Manual')
+    pg.screenshot(path=str(out / f'{tag}_tutorial_pick.png'))
+    pg.click('#modal [data-act=tutStart]'); pg.wait_for_timeout(900)
+    check(pg.evaluate("() => !!(G && G.tut && !G.lesson && UI.coach.on)"), f'{tag}: Basic Training starts from the chooser')
+    pg.evaluate("() => { UI.coach.stop(); G = null; UI.show('hangar'); }"); pg.wait_for_timeout(200)
+    pg.evaluate("() => { document.querySelector('#bLaunch').click(); }"); pg.wait_for_timeout(250); pg.evaluate("() => document.querySelector('[data-act=launch]').click()"); pg.wait_for_timeout(900)
+    pg.evaluate("() => document.querySelector('#bPause').click()"); pg.wait_for_timeout(250)
+    check(pg.evaluate("() => !!document.querySelector('#modal [data-act=tutPick]')"), f'{tag}: Tutorial in the pause menu')
+    pg.click('#modal [data-act=tutPick]'); pg.wait_for_timeout(200); pg.click('#modal [data-act=tutStart]'); pg.wait_for_timeout(900)
+    check(pg.evaluate("() => !!(G && G.tut && PROF.runSnap)"), f'{tag}: Tutorial from the pause menu saves the run first')
+    pg.evaluate("() => { UI.coach.stop(); G = null; UI.show('hangar'); }")
     # skip: two taps on the card, back to the New Run screen, nothing saved as done
     fresh(pg); pg.click('#bLaunch'); pg.wait_for_timeout(250); pg.click('[data-act=tutGo]'); pg.wait_for_timeout(900)
     pg.click('#coach .cskip'); pg.wait_for_timeout(150)
