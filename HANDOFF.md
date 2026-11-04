@@ -854,6 +854,7 @@ The expanding sector made every level a little easier, because the compact early
 50. **Fetch a local branch into a named ref before merging** (`git fetch -q /root/wt/x x:x`). A bare `git fetch -q` from a worktree clone silently didn't update, and the merge took an old head. Untracked files that the incoming branch adds (e.g. a scratch copy of a doc) abort the merge: move them out first.
 51. **Parallel builders + one integrator.** For multi-feature releases: each builder works in its own clone on its own branch, writes `docs/notes/<name>.md`, and never edits VERSION, WHATS_NEW, HANDOFF.md or build.py. The integrator merges, resolves, runs the full suite, then bumps the version.
 52. **Patch releases and What's New.** The sheet shows when `PROF.seenVer` is neither `VERSION` nor `WHATS_NEW.ver` (6.0.1). A patch can bump `VERSION` without a new `WHATS_NEW` and players who saw the last sheet won't get it again; a release with a new sheet sets `WHATS_NEW.ver` to its version.
+53. **Builder clones push to the local repo, not GitHub.** A clone made from /root/Entropy has `origin` = /root/Entropy, so `git push origin <branch>` there never reaches GitHub. Push feature branches to GitHub from /root/Entropy (`git push origin <branch>`), and check `git ls-remote origin <branch>` before building anything from a fresh GitHub clone (Nov 4: a fresh clone of a stale `frontier` put a lab without Frontier up for two minutes).
 
 ---
 
