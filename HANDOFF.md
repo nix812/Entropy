@@ -70,6 +70,10 @@ git add -A && git commit -m "vX.Y.Z: summary" && git push origin HEAD:main
 ```
 Pages updates in about a minute, but GitHub serves pages with a 10-minute cache. Since v1.15.2 the app checks for a newer `VERSION` at launch and when it returns from the background, and reloads itself from the main menu. The version also shows in the bottom-left of the main menu.
 
+### Test environment (the lab)
+- **nix812.github.io/Entropy/lab/** is the test copy for big experiments (first: the Frontier mode, Project doc "Frontier-Design"). Work happens on the **`frontier`** branch; `source` and the live game stay untouched until it's ready.
+- Make it with `python3 build.py && python3 tools/make_lab.py` (writes `dist/lab/`), then copy `dist/lab/*` into `lab/` on `main` and push. It has its own save keys (`lastgradient.lab.*`), the home-screen name "LG TEST", amber TEST icons (`tools/lab_icons.py`), a TEST ENVIRONMENT ribbon (a thin hazard stripe during play), and a "start as new player" button (or `?fresh`). Nic asked for the icon to make it unmistakable.
+
 ### Publish the artifact
 Publish `dist/entropy.html` to the existing URL above.
 - On the very first publish the two music files were attached with `files: {"audio/bgm-menu.mp3": ..., "audio/bgm-battle.mp3": ...}`. Later publishes keep them, so they don't need re-sending.
