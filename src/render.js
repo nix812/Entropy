@@ -13,7 +13,7 @@ const Render = (() => {
 const TW_K = 1.12, EN_K = 1.15; // v4.8 sprite scale-up (towers still sit inside their tile)
 const SIGHTED = { bullet: 1, rail: 1, beam: 1, cone: 1 };
 const RES = 2;
-  const R_ = { glow: true, sharp: true }; // v5.3 graphics switches (Settings · Glow, Pixel scaling)
+  const R_ = { glow: true, sharp: true, zfx: true }; // v5.3 graphics switches (Settings · Glow, Pixel scaling; 6.3 Zone effects)
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
   const cam = { z: 1, x: 0, y: 0 };
@@ -464,101 +464,312 @@ const RES = 2;
   const BOSS_SCALE = 1.5; // bosses draw 1.5× their 48px art (3 tiles), so they read as bosses on big maps
   function bossSprite(id) { return outlined('oboss:' + id, spr('boss:' + id, 48, 48, g => BOSS[id](g, ENEMY_COL.boss))); }
 
+  // ---------- map layer ----------
+  // 6.3 zone looks (Nic: "Let's make some choices more cosmetically different. You should know when you're in a different zone").
+  // Each zone (SECTORS, G.sector) has a board palette (ground, tile seams, road fill, edges, chevrons and glow), a backdrop past the
+  // map edge, ground decals baked into the map layer with the board, and one light ambient layer (zoneAmb). '_' is the board from
+  // before 6.3 (Training, runs without a zone). Render only: decals draw from the map seed through their own stream, never G.r.
+  const c255 = v => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+  const rgbH = (a, k, add) => '#' + ((1 << 24) | (c255(a[0] * k + (add || 0)) << 16) | (c255(a[1] * k + (add || 0)) << 8) | c255(a[2] * k + (add || 0))).toString(16).slice(1);
+  const mixc = (a, c, t) => [a[0] + (c[0] - a[0]) * t, a[1] + (c[1] - a[1]) * t, a[2] + (c[2] - a[2]) * t];
+  // a zone's tile bevels, scratches and bolts, rocks and crates, from its ground colour g and a seam tint t
+  function zpal(g, t) {
+    const s = mixc(g, t, 0.4);
+    return { seam: [rgbH(s, 1.6, 5), rgbH(s, 1.35, 3), rgbH(s, 1.15, 2), rgbH(g, 0.42), rgbH(g, 0.66)],
+      mk: [rgbH(g, 0.8), rgbH(s, 1.2, 2), rgbH(g, 0.55), rgbH(s, 1.75, 4), rgbH(s, 2.7, 10), rgbH(g, 0.6), rgbH(s, 1.4, 3)],
+      rock: [rgbH(g, 0.5), rgbH(s, 1.9, 6), rgbH(s, 2.6, 10), rgbH(s, 2.2, 8), rgbH(s, 3.8, 22)],
+      crate: [rgbH(g, 0.5), rgbH(s, 1.65, 6), rgbH(s, 2.3, 8), rgbH(s, 1.95, 7), '#ffb03a', '#1a1408', rgbH(g, 1.15, 2)] };
+  }
+  const ZL0 = { g: [17, 20, 37], gv: [1, 1, 2], seam: ['#262d55', '#1f2548', '#1a1f3c', '#080a15', '#0e1120'],
+    mk: ['#141a2f', '#1d2340', '#0c0f1e', '#2c3460', '#4a5590', '#0b0d1b', '#222949'], mkf: [3, 5, 17, 23, 61], // scratch, bolts, vent, dots, gem
+    road: '#2b2048', rsp: ['#2f254c', '#1f1834', '#2a2045'], edge: ['#5a46a0', '#8a6ee0', '#0d0a18'], chev: '#6650a8', glow: [150, 90, 255], dot: '#b86cff',
+    rsv: ['#120f22', '#3a2560'], rock: ['#0a0c19', '#30365a', '#454d7e', '#3a4170', '#6a74a8'], crate: ['#0a0c19', '#2a2f4d', '#3c4470', '#343b62', '#ffb03a', '#1a1408', '#1c2038'],
+    cond: ['#0b0e1c', '#1d3346'], emit: ['#59f0b4', '#6ae2ff', '#b86cff'], bg: '#07080f', neb: null, stars: 0, line: '#b86cff', amb: null };
+  const ZLOOK = { _: ZL0 };
+  function zlook(id, g, t, o) { ZLOOK[id] = Object.assign({}, ZL0, zpal(g, t), { g, line: (SECTOR_BY[id] || {}).col || ZL0.line }, o); }
+  // the half-unit pixel painters the decals use (the map layer is 2 px per world unit)
+  const hp = (m, x, y, c) => { m.fillStyle = c; m.fillRect(Math.round(x * 2) / 2, Math.round(y * 2) / 2, 0.5, 0.5); };
+  function hline(m, x0, y0, x1, y1, c, w) { // a pixel-stepped line in half units
+    m.fillStyle = c; w = w || 0.5; const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 2));
+    for (let i = 0; i <= n; i++) m.fillRect(Math.round((x0 + (x1 - x0) * i / n) * 2) / 2, Math.round((y0 + (y1 - y0) * i / n) * 2) / 2, w, w);
+  }
+  function ell(m, cx, cy, rx, ry, c) { m.fillStyle = c; for (let dy = -ry; dy <= ry; dy += 0.5) { const hw = rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry))); if (hw < 0.25) continue; m.fillRect(Math.round((cx - hw) * 2) / 2, Math.round((cy + dy) * 2) / 2, Math.round(hw * 4) / 2, 0.5); } }
+  // smooth value noise for patchy decals (honeycomb nests, moss, mist banks)
+  function vn(x, y, s) {
+    const h = (i, j) => { let n = (i * 374761393 + j * 668265263 + s * 2246822519) | 0; n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
+    const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+    return h(xi, yi) * (1 - u) * (1 - v) + h(xi + 1, yi) * u * (1 - v) + h(xi, yi + 1) * (1 - u) * v + h(xi + 1, yi + 1) * u * v;
+  }
+  // the honeycomb stamp: flat-top hexes 8×6 units, tiled seamlessly across a 24-unit tile (4 variants with brood and honey cells)
+  const combCache = [];
+  function combStamp(k) {
+    if (combCache[k]) return combCache[k];
+    const cv = document.createElement('canvas'); cv.width = cv.height = TILE * RES; const g = cv.getContext('2d'); g.scale(RES, RES);
+    const r = mulberry32(0x6c0b + k * 977);
+    for (let c = -1; c <= 4; c++) for (let row = -1; row <= 4; row++) {
+      const x = c * 6, y = row * 6 + (c & 1 ? 3 : 0), q = r();
+      if (q < 0.22) { g.fillStyle = q < 0.08 ? '#5a2a14' : '#3a1630'; g.fillRect(x + 2, y + 0.5, 4, 5); g.fillRect(x + 1, y + 1.5, 6, 3); if (q < 0.08) { g.fillStyle = '#a8602a'; g.fillRect(x + 2.5, y + 1, 2, 0.5); } else { g.fillStyle = '#8a3a70'; g.fillRect(x + 3, y + 2, 2, 2); g.fillStyle = '#d07ab0'; g.fillRect(x + 3, y + 2, 0.5, 0.5); } }
+      for (const [a0, a1, b0, b1] of [[2, 0, 6, 0], [6, 0, 8, 3], [8, 3, 6, 6], [6, 6, 2, 6], [2, 6, 0, 3], [0, 3, 2, 0]]) hline(g, x + a0, y + a1, x + b0, y + b1, '#4a2240');
+      hline(g, x + 2, y + 0.5, x + 6, y + 0.5, '#5e2c50');
+    }
+    return (combCache[k] = cv);
+  }
+  // a little rubber duck (The Odd Belt), 7×6 units, facing right
+  function duck(m, x, y, s) {
+    const Y = '#ffd23a', D = '#c8941a';
+    R(m, x + 1, y + 3, 5, 2, Y); R(m, x, y + 2, 2, 2, Y); R(m, x + 3, y, 3, 3, Y); R(m, x + 1, y + 5, 5, 1, D); R(m, x + 6, y + 1.5, 1.5, 1, '#ff8a2a');
+    hp(m, x + 4.5, y + 1, '#1a1408'); hp(m, x + 3.5, y + 0.5, '#fff6c0'); R(m, x + 2, y + 3, 2, 1, D);
+  }
+  function paw(m, x, y, c) { ell(m, x + 2.5, y + 4, 1.6, 1.3, c); for (const [dx, dy] of [[0.4, 1.4], [1.8, 0.4], [3.4, 0.4], [4.6, 1.4]]) ell(m, x + dx, y + dy, 0.6, 0.6, c); }
+  // per-tile ground decals, then the decals that span tiles (under the roads) and those over the road edges
+  const ZDECO = {
+    drift(m, X, Y, d) { // calm and sparse: a few soft lights and still ripples
+      if (d % 43 === 0) { R(m, X + 11, Y + 11, 2, 2, '#1f4a62'); hp(m, X + 11.5, Y + 11.5, '#6ae2ff'); for (const [dx, dy] of [[-1, 0], [2, 0], [0, -1], [0, 2]]) R(m, X + 11 + dx, Y + 11 + dy, 1, 1, '#14304a'); }
+      if (d % 89 === 7) { O(m, X + 12, Y + 12, 9, 1, '#152a40'); O(m, X + 12, Y + 12, 4, 1, '#183248'); }
+    },
+    hive(m, X, Y, d, tx, ty, C) {
+      if (C.sw ? (tx + ty) % 2 === 0 : vn(tx / 4.5, ty / 4.5, 11) > 0.55) m.drawImage(combStamp(d & 3), X, Y, TILE, TILE);
+      if (d % 7 === 0) { const a = d % 4; hline(m, X + 1, Y + 6 + a * 3, X + 8, Y + 9 + a * 2, '#3a1430'); hline(m, X + 8, Y + 9 + a * 2, X + 16, Y + 7 + a * 3, '#3a1430'); hline(m, X + 16, Y + 7 + a * 3, X + 23, Y + 12, '#2e1028'); }
+      if (d % 19 === 3) { // egg sacs: a cluster of glossy pods
+        const n = 2 + d % 3; for (let k = 0; k < n; k++) { const ex = X + 6 + ((d * (k + 2) * 7) % 12), ey = Y + 6 + ((d * (k + 3) * 5) % 11), rx = 2.5 + (k % 2), ry = 3 + ((d + k) % 2);
+          ell(m, ex, ey + 0.5, rx + 0.5, ry + 0.5, '#12050d'); ell(m, ex, ey, rx, ry, '#4a1e40'); ell(m, ex - 0.5, ey + 0.5, rx - 1, ry - 1.2, '#5e2a54'); hp(m, ex - rx * 0.5, ey - ry * 0.5, '#b07aa0'); hp(m, ex - rx * 0.5 + 0.5, ey - ry * 0.5, '#7a4070'); }
+      }
+    },
+    iron(m, X, Y, d) { // every tile a raised, riveted plate; treadplate, weld seams and grilles
+      m.fillStyle = '#4a5262'; m.fillRect(X + 1, Y + 1, TILE - 2, 0.5); m.fillRect(X + 1, Y + 1, 0.5, TILE - 2); m.fillStyle = '#14161c'; m.fillRect(X + 1, Y + TILE - 1.5, TILE - 2, 0.5); m.fillRect(X + TILE - 1.5, Y + 1, 0.5, TILE - 2);
+      for (const [bx, by] of [[2, 2], [20.5, 2], [2, 20.5], [20.5, 20.5]]) { m.fillStyle = '#0c0d11'; m.fillRect(X + bx + 0.5, Y + by + 0.5, 1.5, 1.5); m.fillStyle = '#4a5160'; m.fillRect(X + bx, Y + by, 1.5, 1.5); m.fillStyle = '#8a93a8'; m.fillRect(X + bx, Y + by, 0.5, 0.5); }
+      if (d % 3 === 1) for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { const x = X + 4.5 + i * 4, y = Y + 4.5 + j * 4; if ((i + j) & 1) { R(m, x, y, 2, 1, '#323846'); hp(m, x, y, '#4a5262'); } else { R(m, x + 0.5, y - 0.5, 1, 2, '#323846'); hp(m, x + 0.5, y - 0.5, '#4a5262'); } }
+      if (d % 9 === 4) for (let k = 0; k < 20; k += 2) { hp(m, X + 2 + k, Y + 12, '#4a3a2c'); hp(m, X + 2.5 + k, Y + 12.5, '#6a523a'); }
+      if (d % 29 === 6) { R(m, X + 7, Y + 7, 10, 10, '#0c0d11'); for (let k = 0; k < 4; k++) { R(m, X + 8, Y + 8 + k * 2.5, 8, 1, '#3c4250'); } }
+    },
+    skies(m, X, Y, d) { if (d % 61 === 3) { hp(m, X + 6, Y + 9, '#5a7ab0'); hp(m, X + 17, Y + 15, '#4a6aa0'); } },
+    ghost(m, X, Y, d) { if (d % 31 === 5) { hp(m, X + 8, Y + 10, '#4a4466'); hp(m, X + 15, Y + 6, '#3a3454'); } },
+    salvage(m, X, Y, d, tx, ty, C) {
+      for (let k = 0; k < 5; k++) hp(m, X + ((d * (k + 7) * 13) % 46) / 2, Y + ((d * (k + 11) * 7) % 46) / 2, k & 1 ? '#3a2c20' : '#140e0a');
+      if (d % 5 === 2) { // a hull fragment: a bent plate with rivets and rust
+        const w = 6 + d % 7, h = 4 + (d >> 3) % 5, x = X + 3 + (d % 11), y = Y + 4 + ((d >> 2) % 12);
+        R(m, x + 1, y + 1, w, h, '#0e0a08'); R(m, x, y, w, h, '#4a4e5a'); R(m, x, y, w, 1, '#6e7484'); R(m, x + w - 1, y + 1, 1, h - 1, '#34363e');
+        if (d & 1) R(m, x + 1, y + h - 2, Math.ceil(w / 2), 1.5, '#7a4a26'); hp(m, x + 1, y + 1.5, '#22242a'); hp(m, x + w - 2, y + 1.5, '#22242a');
+        if (d % 3 === 0) { R(m, x + w - 2, y - 1, 2, 1, '#4a4e5a'); }
+      }
+      if (d % 9 === 5) { const y0 = Y + 6 + d % 12; for (let k = 0; k < 22; k++) hp(m, X + 1 + k, y0 + Math.round(Math.sin(k / 3 + d) * 2.5 * 2) / 2, k % 7 === 3 ? '#d07a3a' : '#26262c'); }
+      if (d % 13 === 4) { hp(m, X + 9, Y + 15, '#ffe08a'); hp(m, X + 9.5, Y + 15, '#a07a30'); C.glints.push(X + 9.25, Y + 15.25); }
+    },
+    tempest(m, X, Y, d) {
+      if (d % 4 === 1) { const cx = X + 7 + d % 10, cy = Y + 8 + (d >> 2) % 9, rx = 5 + d % 4; ell(m, cx, cy, rx, rx * 0.45, '#07080f'); ell(m, cx, cy - 0.5, rx - 1, rx * 0.3, '#121a2c'); hline(m, cx - rx + 1.5, cy - 0.5, cx - 0.5, cy - 0.5, '#4a6a8a'); hp(m, cx + 1, cy, '#ffe14d'); }
+      if (d % 3 === 0) for (let k = 0; k < 3; k++) { const x = X + 3 + ((d * (k + 3)) % 17), y = Y + 2 + ((d * (k + 5)) % 15); hline(m, x, y, x + 1.5, y + 3, '#1c2836'); }
+    },
+    demo(m, X, Y, d) {
+      if (d % 4 === 1) { let x = X + 2 + d % 8, y = Y + 3 + (d >> 3) % 6; for (let k = 0; k < 5; k++) { const nx = x + 2 + ((d >> k) & 3), ny = y + ((d >> (k + 1)) & 1 ? 3 : -1) + 1.5; hline(m, x, y, nx, ny, '#14120f'); hline(m, x, y + 0.5, nx, ny + 0.5, '#4e4a44'); x = nx; y = ny; if (x > X + 22 || y > Y + 22 || y < Y + 1) break; } }
+      if (d % 6 === 3) for (let k = 0; k < 3; k++) { const x = X + 3 + ((d * (k + 2) * 5) % 17), y = Y + 3 + ((d * (k + 4) * 3) % 17); R(m, x, y, 2, 1.5, '#4a4640'); hp(m, x, y, '#6a645a'); hp(m, x + 1.5, y + 1, '#1a1814'); }
+      if (d % 31 === 9) { // a hazard plate, bolted down
+        R(m, X + 3, Y + 9, 18, 7, '#0e0c0a'); R(m, X + 3.5, Y + 9.5, 17, 6, '#b88a1c');
+        for (let k = -6; k < 18; k += 4) for (let j = 0; j < 12; j++) { const x = X + 3.5 + k + j * 0.5, y = Y + 9.5 + j * 0.5; if (x >= X + 3.5 && x < X + 20.5 && j < 12) m.fillStyle = '#1a1610', m.fillRect(x, y, 1.5, 0.5); }
+        hp(m, X + 4, Y + 10, '#6a5a2a'); hp(m, X + 19.5, Y + 14.5, '#6a5a2a');
+      }
+    },
+    choir(m, X, Y, d, tx, ty) {
+      for (let k = 0; k < 4; k++) hp(m, X + ((d * (k + 5) * 11) % 46) / 2, Y + ((d * (k + 9) * 7) % 46) / 2, k & 1 ? '#1e4a2a' : '#0a1a10');
+      if (vn(tx / 3.5, ty / 3.5, 29) > 0.6) for (let k = 0; k < 9; k++) { const x = X + ((d * (k + 3) * 7) % 44) / 2, y = Y + ((d * (k + 2) * 13) % 44) / 2; R(m, x, y, 1.5, 1, '#1c4426'); hp(m, x + 0.5, y, '#2e6a36'); }
+      if (d % 5 === 1) { // a vine along the tile's top seam, leaves on it
+        const y0 = Y + 1.5; for (let k = 0; k < 24; k += 0.5) { const yy = y0 + Math.round(Math.sin(k / 2.2 + d) * 1.2 * 2) / 2; m.fillStyle = '#2a6a32'; m.fillRect(X + k, yy, 0.5, 0.5); }
+        for (let k = 3; k < 22; k += 6) { const yy = y0 + Math.round(Math.sin(k / 2.2 + d) * 1.2 * 2) / 2; R(m, X + k, yy + 0.5, 2, 1, '#4aa848'); hp(m, X + k, yy + 0.5, '#9ae86a'); }
+      }
+      if (d % 19 === 2) { const x = X + 6 + d % 12, y = Y + 7 + (d >> 2) % 10; for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1]]) R(m, x + dx, y + dy, 1, 1, d & 1 ? '#c890b8' : '#8ab0d0'); R(m, x, y, 1, 1, '#ffd23a'); }
+      if (d % 17 === 8) { const x = X + 14, y = Y + 13; ell(m, x, y + 1, 2, 2.5, '#1e4a22'); ell(m, x, y, 1.5, 2, '#3a7a2e'); hp(m, x, y - 2, '#c8ff8a'); hp(m, x - 0.5, y - 1, '#7ad85a'); }
+    },
+    oddball(m, X, Y, d, tx, ty) {
+      if (d % 9 === 2) for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) if ((i + j) & 1) R(m, X + 4 + i * 4, Y + 4 + j * 4, 4, 4, (tx + ty) & 1 ? '#1a2a36' : '#281c3a'); // a checker inside the checker
+      if (d % 13 === 5) for (let k = 0; k < 24; k += 0.5) { m.fillStyle = '#3a2c54'; m.fillRect(X + k, Y + 12 + Math.round(Math.sin(k / 3) * 2.5 * 2) / 2, 0.5, 0.5); } // a seam that forgot to be straight
+      if (d % 97 === 11) duck(m, X + 8, Y + 9);
+      if (d % 41 === 20) { paw(m, X + 4, Y + 5, '#2c2240'); paw(m, X + 13, Y + 12, '#2c2240'); }
+      if (d % 7 === 3) { hp(m, X + 5, Y + 17, '#5a4a20'); hp(m, X + 18, Y + 6, '#5a4a20'); }
+    },
+  };
+  const ZUNDER = {
+    skies(m, C) { // pale cloud banks drifting under the board
+      const n = Math.max(C.sw ? 2 : 0, Math.round(C.cols * C.rows / 30));
+      for (let k = 0; k < n; k++) { const cx = C.zr() * C.cols * TILE, cy = C.zr() * C.rows * TILE, w = 20 + C.zr() * 40;
+        for (let j = 0; j < 4; j++) { const ex = cx + (j - 1.5) * w * 0.3, ey = cy + (C.zr() - 0.5) * 6, rx = w * (0.25 + C.zr() * 0.2), ry = rx * 0.42;
+          for (let dy = -ry; dy <= ry; dy += 0.5) { const hw = rx * Math.sqrt(Math.max(0, 1 - dy * dy / (ry * ry))); for (let x = Math.round((ex - hw) * 2) / 2; x < ex + hw; x += 0.5) if ((((x * 2) | 0) + ((dy * 2) | 0)) & 1) { m.fillStyle = dy < -ry * 0.3 ? '#2c4a7c' : '#24406c'; m.fillRect(x, ey + dy, 0.5, 0.5); } } } }
+    },
+    ghost(m, C) { // broken lane markings, and old lanes that lead nowhere
+      for (let ty = 0; ty < C.rows; ty++) for (let tx = 0; tx < C.cols; tx++) { if (vn(tx / 5, ty / 4, 41) < 0.56 || C.isP(tx, ty)) continue; // banks of fog
+        m.fillStyle = '#211d33'; for (let y = 0; y < TILE; y += 1) for (let x = (y & 1); x < TILE; x += 2) m.fillRect(tx * TILE + x, ty * TILE + y, 0.5, 0.5); }
+      const n = Math.max(C.sw ? 4 : 0, Math.round(C.cols * C.rows / 40));
+      for (let k = 0; k < n; k++) { const hz = C.zr() < 0.5, x0 = Math.floor(C.zr() * C.cols), y0 = Math.floor(C.zr() * C.rows), len = 3 + Math.floor(C.zr() * 6);
+        for (let s = 0; s < len * 3; s++) { const tx = hz ? x0 + s / 3 : x0, ty = hz ? y0 : y0 + s / 3; if (C.isP(Math.floor(tx), Math.floor(ty)) || C.zr() < 0.3) continue;
+          const X = tx * TILE + (hz ? 2 : 11), Y = ty * TILE + (hz ? 11 : 2), f = C.zr() < 0.25 ? 2 : 4; R(m, X, Y, hz ? f : 1.5, hz ? 1.5 : f, '#3a3654'); hp(m, X, Y, '#5e5880'); } }
+      const lanes = Math.round(C.cols / 14);
+      for (let k = 0; k < lanes; k++) { let x = Math.floor(C.zr() * C.cols), y = Math.floor(C.zr() * C.rows), dir = Math.floor(C.zr() * 4);
+        for (let s = 0; s < 12; s++) { let near = false; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (C.isP(x + dx, y + dy)) near = true;
+          if (near || x < 0 || y < 0 || x >= C.cols || y >= C.rows) break;
+          const X = x * TILE, Y = y * TILE; R(m, X + 2, Y + 2, TILE - 4, TILE - 4, '#191628'); for (let q = 3; q < 21; q += 5) { hp(m, X + q, Y + 2, '#3a3454'); hp(m, X + 2, Y + q, '#3a3454'); }
+          if (C.zr() < 0.3) dir = (dir + (C.zr() < 0.5 ? 1 : 3)) % 4; x += [1, 0, -1, 0][dir]; y += [0, 1, 0, -1][dir]; } }
+    },
+  };
+  const ZOVER = {
+    skies(m, C, X, Y, side) { // runway lights along the sky lanes
+      if (((X + Y) / TILE) % 2) return; const [x, y] = side === 0 ? [X + 11.5, Y + 1] : side === 1 ? [X + 11.5, Y + 22.5] : side === 2 ? [X + 1, Y + 11.5] : [X + 22.5, Y + 11.5];
+      R(m, x - 0.5, y - 0.5, 2, 2, '#2a3c70'); hp(m, x, y, '#fff6c0'); hp(m, x + 0.5, y, '#cfe0ff');
+    },
+    choir(m, C, X, Y, side, d) { // vines creeping along the outside of the road edge
+      if (d % 3) return; const H = side < 2;
+      for (let k = 0; k < 24; k += 0.5) { const w = Math.round(Math.sin(k / 2 + d) * 1.1 * 2) / 2, o = side === 0 ? -1.5 : side === 1 ? 25 : side === 2 ? -1.5 : 25; m.fillStyle = '#2a6a32'; H ? m.fillRect(X + k, Y + o + w, 0.5, 0.5) : m.fillRect(X + o + w, Y + k, 0.5, 0.5); }
+      for (let k = 2 + d % 4; k < 22; k += 7) { const o = side === 0 || side === 2 ? -2.5 : 24.5; if (H) { R(m, X + k, Y + o, 2, 1, '#4aa848'); hp(m, X + k, Y + o, '#9ae86a'); } else { R(m, X + o, Y + k, 1, 2, '#4aa848'); hp(m, X + o, Y + k, '#9ae86a'); } }
+    },
+    demo(m, C, X, Y, side, d) { // hazard striping on the curb, here and there
+      if (d % 4) return; const H = side < 2, o = side === 0 ? -1.5 : side === 1 ? 24 : side === 2 ? -1.5 : 24;
+      for (let k = 0; k < 24; k += 3) { const c = (k / 3) & 1 ? '#14110c' : '#c89a1e'; m.fillStyle = c; H ? m.fillRect(X + k, Y + o, 3, 1.5) : m.fillRect(X + o, Y + k, 1.5, 3); }
+    },
+  };
+  zlook('drift', [12, 22, 36], [60, 150, 190], { gv: [1, 1, 1], mkf: [7, 11, 0, 0, 0], road: '#272453', rsp: ['#2c2a5c', '#1c1a40', '#25234e'], edge: ['#4f58a8', '#8a98f0', '#0a0c1c'], chev: '#5c64b4', glow: [110, 130, 255], dot: '#8a98f0',
+    cond: ['#08121c', '#1a3a4a'], emit: ['#6ae2ff', '#9ad8ff', '#59f0b4'], bg: '#04080e', neb: [[16, 48, 72], [14, 40, 56]], stars: 0.6, amb: 'motes', salt: 0x11 });
+  zlook('hive', [30, 14, 24], [120, 40, 90], { gv: [2, 1, 1], mkf: [5, 0, 0, 0, 0], road: '#33220f', rsp: ['#3c2a14', '#24180a', '#30200e'], edge: ['#9a5e22', '#ffb84a', '#0e0804'], chev: '#b8742e', glow: [255, 150, 60], dot: '#ffb84a',
+    cond: ['#0e0509', '#3a1630'], emit: ['#ff9ad5', '#ffb84a', '#ff9ad5'], bg: '#0a0408', neb: [[70, 18, 52], [60, 30, 10]], stars: 0.4, amb: 'spores', salt: 0x22,
+    rock: ['#14060f', '#4a1c3c', '#6a2a58', '#5a2448', '#c070a8'], crate: ['#14060f', '#4a1c3c', '#6a2a58', '#5a2448', '#ffb84a', '#1a0a04', '#2a0e20'] });
+  zlook('iron', [33, 37, 45], [110, 120, 140], { gv: [1, 1, 1], mkf: [0, 0, 17, 0, 0], road: '#2a2244', rsp: ['#30284c', '#1e1832', '#2a2244'], edge: ['#6a58b0', '#a090f0', '#0a0814'], chev: '#7464bc', glow: [150, 110, 255], dot: '#a090f0',
+    cond: ['#0c0d11', '#3a404e'], emit: ['#ffb03a', '#c8ccd8', '#6ae2ff'], bg: '#08090c', neb: [[40, 44, 56], [56, 36, 24]], stars: 0.5, amb: 'sparks', salt: 0x33 });
+  zlook('skies', [18, 34, 64], [120, 170, 255], { gv: [1, 1, 1], mkf: [0, 0, 0, 0, 0], road: '#262e5e', rsp: ['#2c3466', '#1e2450', '#283060'], edge: ['#6a84e0', '#e6f0ff', '#0a1024'], chev: '#8aa4f0', glow: [140, 180, 255], dot: '#cfe0ff',
+    cond: ['#0e1a30', '#2a4a7a'], emit: ['#ffffff', '#9ad8ff', '#7fb4ff'], bg: '#0a1426', neb: [[40, 70, 120], [70, 90, 140]], stars: 0.25, amb: 'clouds', salt: 0x44,
+    rock: ['#0e1a30', '#5a76a8', '#8aa4cc', '#6a86b8', '#e6f0ff'] });
+  zlook('ghost', [13, 12, 22], [140, 120, 200], { gv: [1, 1, 1], mkf: [9, 0, 0, 23, 0], road: '#221c38', rsp: ['#28203f', '#18142a', '#221c38'], edge: ['#7a5ab8', '#d8c4ff', '#0a0814'], chev: '#8a6ac8', glow: [190, 140, 255], dot: '#d8c4ff',
+    cond: ['#0a0910', '#2a2640'], emit: ['#d6d2ff', '#b86cff', '#d6d2ff'], bg: '#06050a', neb: [[48, 30, 72], [30, 30, 50]], stars: 0.5, amb: 'mist', salt: 0x55 });
+  zlook('salvage', [28, 21, 16], [150, 110, 70], { gv: [1, 1, 1], mkf: [4, 7, 0, 0, 0], cond: ['#0c0806', '#3e3024'], emit: ['#e0a458', '#ffd84a', '#6ae2ff'], bg: '#0a0705', neb: [[64, 40, 20], [40, 30, 30]], stars: 0.5, amb: 'glints', salt: 0x66,
+    crate: ['#0e0a08', '#5a3a22', '#7a4e2a', '#6a4426', '#e0a458', '#1a1008', '#2a1c12'] });
+  zlook('tempest', [17, 18, 31], [120, 120, 180], { gv: [1, 1, 1], mkf: [0, 9, 0, 0, 0], road: '#241e40', rsp: ['#2a2448', '#1a1630', '#241e40'], edge: ['#5a50a8', '#9ad0ff', '#06050e'], chev: '#6a62b8', glow: [120, 150, 255], dot: '#9ad0ff',
+    cond: ['#06090c', '#22303e'], emit: ['#ffe14d', '#9ad0ff', '#ffe14d'], bg: '#05070a', neb: [[30, 40, 56], [50, 50, 30]], stars: 0.15, amb: 'rain', salt: 0x77 });
+  zlook('demo', [33, 31, 29], [120, 110, 100], { gv: [1, 1, 1], mkf: [0, 6, 0, 0, 0], road: '#232026', rsp: ['#2a262c', '#18161a', '#211e24'], edge: ['#a0581c', '#ff9a3c', '#0c0a08'], chev: '#9a5a34', glow: [255, 130, 50], dot: '#ff9a3c',
+    rsv: ['#141210', '#c89a1e'], cond: ['#0e0d0c', '#46423c'], emit: ['#ff7b39', '#ffb03a', '#ff7b39'], bg: '#090807', neb: [[60, 36, 20], [40, 38, 36]], stars: 0.4, amb: 'dust', salt: 0x88 });
+  zlook('choir', [11, 25, 17], [60, 160, 90], { gv: [1, 1, 1], mkf: [0, 0, 0, 0, 0], cond: ['#050a07', '#1e3c28'], emit: ['#8ee35a', '#c8ff8a', '#59f0b4'], bg: '#040805', neb: [[20, 64, 36], [40, 60, 20]], stars: 0.5, amb: 'choir', salt: 0x99,
+    rock: ['#060c08', '#3a4a3a', '#566a52', '#465a44', '#9ae86a'] });
+  zlook('oddball', [24, 16, 36], [140, 110, 190], { g2: [14, 28, 34], gv: [1, 1, 1], mkf: [0, 0, 0, 0, 0], road: '#2b2048', edge: ['#a8801a', '#ffd23a', '#0d0a18'], chev: '#ffd23a', glow: [255, 200, 70], dot: '#ffd23a',
+    cond: ['#0a0812', '#3a2c54'], emit: ['#ffd23a', '#7ff0d8', '#ff8ad8'], bg: '#08060c', neb: [[64, 24, 64], [16, 56, 60]], stars: 0.6, amb: 'odd', salt: 0xaa });
+  const zoneId = () => (G && G.sector && ZLOOK[G.sector]) ? G.sector : '_';
+  let mapZone = null, oldLayer = null, wipe = null, zGlints = [];
   // crate palettes: frame, body, lid, beacon
   const CACHE_PAL = { normal: ['#3a2a10', '#a8741c', '#e0a640', '#ffe14d'], cursed: ['#2a0a18', '#8a1a3a', '#c8325a', '#ff4d6a'], gold: ['#5a4206', '#e8b820', '#fff0a0', '#ffffff'] };
-  // ---------- map layer ----------
-  function drawMap() {
-    if (mapLayer.width !== BW * RES || mapLayer.height !== BH * RES) { mapLayer.width = BW * RES; mapLayer.height = BH * RES; }
-    const m = mapLayer.getContext('2d'), map = G.map, cols = COLS;
-    m.setTransform(RES, 0, 0, RES, 0, 0); m.imageSmoothingEnabled = false;
-    m.clearRect(0, 0, BW, BH);
-    const isP = (x, y) => x >= 0 && y >= 0 && x < cols && y < ROWS && (map.tiles[y * cols + x] === 1 || map.tiles[y * cols + x] === 4);
-    for (let ty = 0; ty < ROWS; ty++) for (let tx = 0; tx < cols; tx++) {
+  // bakes a board into m (world units): ground and its decals, obstacles, roads, edges and chevrons, conduits and the road glow.
+  // B = { tiles, deco, lanes, cols, rows, seed }. Used for the map layer, the zone wipe and the zone swatches (glow off)
+  function bakeBoard(m, B, zid, glow) {
+    const Z = ZLOOK[zid] || ZL0, cols = B.cols, rows = B.rows, map = B;
+    const isP = (x, y) => x >= 0 && y >= 0 && x < cols && y < rows && (map.tiles[y * cols + x] === 1 || map.tiles[y * cols + x] === 4);
+    const C = { cols, rows, isP, zr: mulberry32(((B.seed || 1) ^ (Z.salt || 0) * 0x9e3779b1) >>> 0), glints: [], conds: [], sw: B.sw };
+    const dec = ZDECO[zid], S = Z.seam, M = Z.mk, F = Z.mkf;
+    for (let ty = 0; ty < rows; ty++) for (let tx = 0; tx < cols; tx++) {
+      const i = ty * cols + tx, t = map.tiles[i], d = map.deco[i], X = tx * TILE, Y = ty * TILE;
+      if (t === 1 || t === 4 || t === 5) continue;
+      const v = (d % 7) - 3, g = Z.g2 && ((tx + ty) & 1) ? Z.g2 : Z.g;
+      R(m, X, Y, TILE, TILE, `rgb(${g[0] + v * Z.gv[0]},${g[1] + v * Z.gv[1]},${g[2] + v * Z.gv[2]})`);
+      m.fillStyle = S[0]; m.fillRect(X, Y, TILE, 0.5); m.fillStyle = S[1]; m.fillRect(X, Y + 0.5, 0.5, TILE - 0.5); m.fillStyle = S[2]; m.fillRect(X + 0.5, Y + 0.5, TILE - 1, 0.5);
+      m.fillStyle = S[3]; m.fillRect(X, Y + TILE - 0.5, TILE, 0.5); m.fillRect(X + TILE - 0.5, Y, 0.5, TILE); m.fillStyle = S[4]; m.fillRect(X + 0.5, Y + TILE - 1, TILE - 1, 0.5);
+      if (F[0] && d % F[0] === 0) { R(m, X + 3, Y + 11, 18, 1, M[0]); R(m, X + 3, Y + 12, 18, 1, M[1]); }
+      if (F[1] && d % F[1] === 0) for (const [bx, by] of [[3, 3], [19.5, 3], [3, 19.5], [19.5, 19.5]]) { m.fillStyle = M[2]; m.fillRect(X + bx + 0.5, Y + by + 0.5, 1.5, 1.5); m.fillStyle = M[3]; m.fillRect(X + bx, Y + by, 1.5, 1.5); m.fillStyle = M[4]; m.fillRect(X + bx, Y + by, 0.5, 0.5); }
+      if (F[2] && d % F[2] === 0) for (let k = 0; k < 3; k++) { R(m, X + 7, Y + 8 + k * 3, 10, 1, M[5]); R(m, X + 7, Y + 9 + k * 3, 10, 1, M[6]); }
+      if (F[3] && d % F[3] === 0) for (let k = 0; k < 7; k++) P(m, X + 5 + k * 2, Y + 6 + k + (k % 2), M[2]);
+      if (F[4] && d % F[4] === 0) { R(m, X + 11, Y + 11, 2, 2, '#1f6b55'); P(m, X + 11, Y + 11, '#59f0b4'); }
+      if (dec && t === 0) dec(m, X, Y, d, tx, ty, C);
+    }
+    if (ZUNDER[zid]) ZUNDER[zid](m, C);
+    for (let ty = 0; ty < rows; ty++) for (let tx = 0; tx < cols; tx++) {
       const i = ty * cols + tx, t = map.tiles[i], d = map.deco[i], X = tx * TILE, Y = ty * TILE;
       if (t === 5) {
         // reserved by a forming wormhole lane: darker ground with a hazard grid, no building
-        R(m, X, Y, TILE, TILE, '#120f22');
-        for (let k = 0; k < TILE; k += 6) { R(m, X + k, Y, 3, 1, '#3a2560'); R(m, X + k, Y + TILE - 1, 3, 1, '#3a2560'); R(m, X, Y + k, 1, 3, '#3a2560'); R(m, X + TILE - 1, Y + k, 1, 3, '#3a2560'); }
-        continue;
-      }
-      if (t === 1 || t === 4) {
-        R(m, X, Y, TILE, TILE, '#2b2048');
-        for (let k = 0; k < 14; k++) { m.fillStyle = k % 3 === 0 ? '#2f254c' : k % 3 === 1 ? '#1f1834' : '#2a2045'; m.fillRect(X + ((d * (k + 3) * 7) % 48) / 2, Y + ((d * (k + 5) * 11) % 48) / 2, 0.5, 0.5); }
-        continue;
-      }
-      const v = (d % 7) - 3;
-      R(m, X, Y, TILE, TILE, `rgb(${17 + v},${20 + v},${37 + v * 2})`);
-      m.fillStyle = '#262d55'; m.fillRect(X, Y, TILE, 0.5); m.fillStyle = '#1f2548'; m.fillRect(X, Y + 0.5, 0.5, TILE - 0.5); m.fillStyle = '#1a1f3c'; m.fillRect(X + 0.5, Y + 0.5, TILE - 1, 0.5);
-      m.fillStyle = '#080a15'; m.fillRect(X, Y + TILE - 0.5, TILE, 0.5); m.fillRect(X + TILE - 0.5, Y, 0.5, TILE); m.fillStyle = '#0e1120'; m.fillRect(X + 0.5, Y + TILE - 1, TILE - 1, 0.5);
-      if (d % 3 === 0) { R(m, X + 3, Y + 11, 18, 1, '#141a2f'); R(m, X + 3, Y + 12, 18, 1, '#1d2340'); }
-      if (d % 5 === 0) for (const [bx, by] of [[3, 3], [19.5, 3], [3, 19.5], [19.5, 19.5]]) { m.fillStyle = '#0c0f1e'; m.fillRect(X + bx + 0.5, Y + by + 0.5, 1.5, 1.5); m.fillStyle = '#2c3460'; m.fillRect(X + bx, Y + by, 1.5, 1.5); m.fillStyle = '#4a5590'; m.fillRect(X + bx, Y + by, 0.5, 0.5); }
-      if (d % 17 === 0) for (let k = 0; k < 3; k++) { R(m, X + 7, Y + 8 + k * 3, 10, 1, '#0b0d1b'); R(m, X + 7, Y + 9 + k * 3, 10, 1, '#222949'); }
-      if (d % 23 === 0) for (let k = 0; k < 7; k++) P(m, X + 5 + k * 2, Y + 6 + k + (k % 2), '#0c0f1e');
-      if (d % 61 === 0) { R(m, X + 11, Y + 11, 2, 2, '#1f6b55'); P(m, X + 11, Y + 11, '#59f0b4'); }
-      if (t === 2) {
-        if (d % 2) {
+        R(m, X, Y, TILE, TILE, Z.rsv[0]);
+        for (let k = 0; k < TILE; k += 6) { R(m, X + k, Y, 3, 1, Z.rsv[1]); R(m, X + k, Y + TILE - 1, 3, 1, Z.rsv[1]); R(m, X, Y + k, 1, 3, Z.rsv[1]); R(m, X + TILE - 1, Y + k, 1, 3, Z.rsv[1]); }
+      } else if (t === 1 || t === 4) {
+        R(m, X, Y, TILE, TILE, Z.road);
+        for (let k = 0; k < 14; k++) { m.fillStyle = Z.rsp[k % 3]; m.fillRect(X + ((d * (k + 3) * 7) % 48) / 2, Y + ((d * (k + 5) * 11) % 48) / 2, 0.5, 0.5); }
+      } else if (t === 2) {
+        const K = Z.crate, Q = Z.rock;
+        if (zid === 'hive') { // brood mounds instead of rocks
+          ell(m, X + 12, Y + 16, 9, 6, '#14060f'); ell(m, X + 12, Y + 14, 8, 6, '#4a1c3c'); ell(m, X + 11, Y + 13, 6, 4, '#6a2a58');
+          for (const [px, py] of [[8, 12], [13, 11], [15, 15], [10, 16]]) { ell(m, X + px, Y + py, 1.2, 1, '#1a0814'); hp(m, X + px - 0.5, Y + py - 0.5, '#c070a8'); }
+        } else if (d % 2) {
           R(m, X + 2, Y + 4, 21, 19, 'rgba(0,0,0,0.5)');
-          R(m, X + 2, Y + 2, 20, 19, '#0a0c19'); R(m, X + 3, Y + 3, 18, 17, '#2a2f4d'); R(m, X + 3, Y + 3, 18, 2, '#3c4470'); R(m, X + 3, Y + 5, 2, 15, '#343b62');
-          for (let k = 0; k < 18; k += 4) { R(m, X + 3 + k, Y + 10, 2, 3, '#ffb03a'); R(m, X + 5 + k, Y + 10, 2, 3, '#1a1408'); }
-          R(m, X + 3, Y + 18, 18, 2, '#1c2038');
+          R(m, X + 2, Y + 2, 20, 19, K[0]); R(m, X + 3, Y + 3, 18, 17, K[1]); R(m, X + 3, Y + 3, 18, 2, K[2]); R(m, X + 3, Y + 5, 2, 15, K[3]);
+          for (let k = 0; k < 18; k += 4) { R(m, X + 3 + k, Y + 10, 2, 3, K[4]); R(m, X + 5 + k, Y + 10, 2, 3, K[5]); }
+          R(m, X + 3, Y + 18, 18, 2, K[6]);
+          if (zid === 'salvage') { R(m, X + 13, Y + 4, 6, 3, '#7a4a26'); R(m, X + 4, Y + 15, 4, 2, '#7a4a26'); }
         } else {
-          D(m, X + 9, Y + 14, 7, '#0a0c19'); D(m, X + 9, Y + 13, 6, '#30365a'); D(m, X + 7, Y + 11, 3, '#454d7e');
-          D(m, X + 17, Y + 9, 5, '#0a0c19'); D(m, X + 17, Y + 8, 4, '#3a4170'); P(m, X + 15, Y + 6, '#6a74a8');
+          D(m, X + 9, Y + 14, 7, Q[0]); D(m, X + 9, Y + 13, 6, Q[1]); D(m, X + 7, Y + 11, 3, Q[2]);
+          D(m, X + 17, Y + 9, 5, Q[0]); D(m, X + 17, Y + 8, 4, Q[3]); P(m, X + 15, Y + 6, Q[4]);
+          if (zid === 'choir') { R(m, X + 5, Y + 7, 7, 2, '#3a8a3a'); R(m, X + 14, Y + 4, 5, 2, '#3a8a3a'); hp(m, X + 6, Y + 7, '#9ae86a'); hp(m, X + 15, Y + 4, '#9ae86a'); }
+          if (zid === 'salvage') { R(m, X + 6, Y + 9, 5, 2, '#7a4a26'); hp(m, X + 16, Y + 6, '#ffe08a'); C.glints.push(X + 16.25, Y + 6.25); }
         }
       }
     }
     // path borders and direction chevrons
+    const E = Z.edge, ov = ZOVER[zid];
     for (const L of map.lanes) {
       if (L.openWave) continue;
       L.tiles.forEach((p, k) => {
         const X = p.x * TILE, Y = p.y * TILE;
-        if (!isP(p.x, p.y - 1)) { R(m, X, Y, TILE, 2, '#5a46a0'); R(m, X, Y + 2, TILE, 1, '#8a6ee0'); }
-        if (!isP(p.x, p.y + 1)) { R(m, X, Y + TILE - 2, TILE, 2, '#0d0a18'); R(m, X, Y + TILE - 3, TILE, 1, '#5a46a0'); }
-        if (!isP(p.x - 1, p.y)) { R(m, X, Y, 2, TILE, '#5a46a0'); R(m, X + 2, Y, 1, TILE, '#8a6ee0'); }
-        if (!isP(p.x + 1, p.y)) { R(m, X + TILE - 2, Y, 2, TILE, '#0d0a18'); R(m, X + TILE - 3, Y, 1, TILE, '#5a46a0'); }
+        if (!isP(p.x, p.y - 1)) { R(m, X, Y, TILE, 2, E[0]); R(m, X, Y + 2, TILE, 1, E[1]); }
+        if (!isP(p.x, p.y + 1)) { R(m, X, Y + TILE - 2, TILE, 2, E[2]); R(m, X, Y + TILE - 3, TILE, 1, E[0]); }
+        if (!isP(p.x - 1, p.y)) { R(m, X, Y, 2, TILE, E[0]); R(m, X + 2, Y, 1, TILE, E[1]); }
+        if (!isP(p.x + 1, p.y)) { R(m, X + TILE - 2, Y, 2, TILE, E[2]); R(m, X + TILE - 3, Y, 1, TILE, E[0]); }
         if (!isP(p.x, p.y - 1)) R(m, X, Y + 3, TILE, 3, 'rgba(6,4,14,0.28)');
         if (!isP(p.x - 1, p.y)) R(m, X + 3, Y, 3, TILE, 'rgba(6,4,14,0.22)');
         const nx = L.tiles[k + 1];
         if (nx && k % 2 === 0) {
           const dx = nx.x - p.x, dy = nx.y - p.y, cx = X + 12, cy = Y + 12;
-          for (let s = -4; s <= 4; s++) { const a = Math.abs(s); R(m, cx + dx * (2 - a * 0.75) - dy * s, cy + dy * (2 - a * 0.75) + dx * s, 2, 2, '#6650a8'); }
+          for (let s = -4; s <= 4; s++) { const a = Math.abs(s); R(m, cx + dx * (2 - a * 0.75) - dy * s, cy + dy * (2 - a * 0.75) + dx * s, 2, 2, Z.chev); }
         }
+        if (ov) { const d = map.deco[p.y * cols + p.x]; [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(([ex, ey], sd) => { const qx = p.x + ex, qy = p.y + ey; if (!isP(qx, qy) && qx >= 0 && qy >= 0 && qx < cols && qy < rows && map.tiles[qy * cols + qx] !== 5) ov(m, C, X, Y, sd, d); }); }
       });
     }
     // circuit conduits etched into the deck: dim traces along tile seams that end in small emitters
-    conduits = [];
-    const cr = mulberry32((G.seed ^ 0x5bd1e995) >>> 0), nC = Math.round(cols / 2.2);
+    const cr = mulberry32((B.seed ^ 0x5bd1e995) >>> 0), nC = Math.round(cols / 2.2);
     const nearPath = (vx, vy) => isP(vx, vy) || isP(vx - 1, vy) || isP(vx, vy - 1) || isP(vx - 1, vy - 1);
     for (let k = 0; k < nC; k++) {
-      let x = 1 + Math.floor(cr() * (cols - 1)), y = 1 + Math.floor(cr() * (ROWS - 1));
+      let x = 1 + Math.floor(cr() * (cols - 1)), y = 1 + Math.floor(cr() * (rows - 1));
       if (nearPath(x, y)) continue;
       let dir = Math.floor(cr() * 4), len = 3 + Math.floor(cr() * 7);
       const pts = [[x, y]];
       for (let st = 0; st < len; st++) {
         if (cr() < 0.3) dir = (dir + (cr() < 0.5 ? 1 : 3)) % 4;
         const nx = x + [1, 0, -1, 0][dir], ny = y + [0, 1, 0, -1][dir];
-        if (nx < 1 || ny < 1 || nx >= cols || ny >= ROWS || nearPath(nx, ny)) break;
+        if (nx < 1 || ny < 1 || nx >= cols || ny >= rows || nearPath(nx, ny)) break;
         x = nx; y = ny; pts.push([x, y]);
       }
       if (pts.length < 3) continue;
       for (let i = 0; i < pts.length - 1; i++) {
         const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
         const X0 = Math.min(ax, bx) * TILE, Y0 = Math.min(ay, by) * TILE;
-        if (ay === by) { R(m, X0, Y0 - 1, TILE, 1, '#0b0e1c'); R(m, X0, Y0, TILE + 1, 1, '#1d3346'); }
-        else { R(m, X0 - 1, Y0, 1, TILE, '#0b0e1c'); R(m, X0, Y0, 1, TILE + 1, '#1d3346'); }
+        if (ay === by) { R(m, X0, Y0 - 1, TILE, 1, Z.cond[0]); R(m, X0, Y0, TILE + 1, 1, Z.cond[1]); }
+        else { R(m, X0 - 1, Y0, 1, TILE, Z.cond[0]); R(m, X0, Y0, 1, TILE + 1, Z.cond[1]); }
       }
-      const col = ['#59f0b4', '#6ae2ff', '#b86cff'][Math.floor(cr() * 3)];
-      for (const [ex, ey] of [pts[0], pts[pts.length - 1]]) { R(m, ex * TILE - 2, ey * TILE - 2, 5, 5, '#0a0c19'); R(m, ex * TILE - 1, ey * TILE - 1, 3, 3, sh(col, -0.45)); P(m, ex * TILE, ey * TILE, col); conduits.push({ x: ex * TILE, y: ey * TILE, col, ph: cr() * 6.28 }); }
+      const col = Z.emit[Math.floor(cr() * 3)];
+      for (const [ex, ey] of [pts[0], pts[pts.length - 1]]) { R(m, ex * TILE - 2, ey * TILE - 2, 5, 5, '#0a0c19'); R(m, ex * TILE - 1, ey * TILE - 1, 3, 3, sh(col, -0.45)); P(m, ex * TILE, ey * TILE, col); C.conds.push({ x: ex * TILE, y: ey * TILE, col, ph: cr() * 6.28 }); }
     }
     // soft emissive glow under the path, built once per map at quarter resolution
-    const gs = 4;
-    if (!glowLayer) glowLayer = document.createElement('canvas');
-    glowLayer.width = Math.ceil(BW / gs); glowLayer.height = Math.ceil(BH / gs);
-    const gg = glowLayer.getContext('2d'); gg.clearRect(0, 0, glowLayer.width, glowLayer.height);
-    const gr = gg.createRadialGradient(0, 0, 0, 0, 0, TILE * 1.1 / gs); gr.addColorStop(0, 'rgba(150,90,255,0.32)'); gr.addColorStop(1, 'rgba(150,90,255,0)');
-    gg.fillStyle = gr;
-    for (const L of map.lanes) if (!L.openWave) for (const p of L.tiles) { gg.save(); gg.translate((p.x + 0.5) * TILE / gs, (p.y + 0.5) * TILE / gs); gg.fillRect(-TILE / gs * 1.2, -TILE / gs * 1.2, TILE / gs * 2.4, TILE / gs * 2.4); gg.restore(); }
-    m.save(); m.globalCompositeOperation = 'lighter'; m.globalAlpha = 0.5; m.imageSmoothingEnabled = true; m.drawImage(glowLayer, 0, 0, BW, BH); m.restore();
+    if (glow) {
+      const gs = 4, BWm = cols * TILE, BHm = rows * TILE;
+      if (!glowLayer) glowLayer = document.createElement('canvas');
+      glowLayer.width = Math.ceil(BWm / gs); glowLayer.height = Math.ceil(BHm / gs);
+      const gg = glowLayer.getContext('2d'); gg.clearRect(0, 0, glowLayer.width, glowLayer.height);
+      const gc = Z.glow, gr = gg.createRadialGradient(0, 0, 0, 0, 0, TILE * 1.1 / gs); gr.addColorStop(0, `rgba(${gc[0]},${gc[1]},${gc[2]},0.32)`); gr.addColorStop(1, `rgba(${gc[0]},${gc[1]},${gc[2]},0)`);
+      gg.fillStyle = gr;
+      for (const L of map.lanes) if (!L.openWave) for (const p of L.tiles) { gg.save(); gg.translate((p.x + 0.5) * TILE / gs, (p.y + 0.5) * TILE / gs); gg.fillRect(-TILE / gs * 1.2, -TILE / gs * 1.2, TILE / gs * 2.4, TILE / gs * 2.4); gg.restore(); }
+      m.save(); m.globalCompositeOperation = 'lighter'; m.globalAlpha = 0.5; m.imageSmoothingEnabled = true; m.drawImage(glowLayer, 0, 0, BWm, BHm); m.restore();
+    }
+    return C;
+  }
+  function drawMap() {
+    if (mapLayer.width !== BW * RES || mapLayer.height !== BH * RES) { mapLayer.width = BW * RES; mapLayer.height = BH * RES; }
+    const m = mapLayer.getContext('2d'), zid = zoneId(), B = { tiles: G.map.tiles, deco: G.map.deco, lanes: G.map.lanes, cols: COLS, rows: ROWS, seed: G.seed };
+    // 6.3: a new zone washes over the board from the core (the old board is kept for the wipe). On a run's first frame the plain
+    // board is the "before"
+    if (zid !== mapZone) {
+      if (mapZone !== null) startWipe(true);
+      else if (zid !== '_') { startWipe(false); const o = oldLayer.getContext('2d'); o.setTransform(RES, 0, 0, RES, 0, 0); o.imageSmoothingEnabled = false; o.clearRect(0, 0, BW, BH); bakeBoard(o, B, '_', true); }
+      mapZone = zid; zoneAmbReset();
+    }
+    m.setTransform(RES, 0, 0, RES, 0, 0); m.imageSmoothingEnabled = false;
+    m.clearRect(0, 0, BW, BH);
+    const C = bakeBoard(m, B, zid, true);
+    conduits = C.conds; zGlints = C.glints;
     mapDirty = false;
   }
 
@@ -569,8 +780,145 @@ const RES = 2;
     if (full) return;
     b.fillStyle = 'rgba(4,5,11,0.66)';
     b.fillRect(0, 0, BW, y0); b.fillRect(0, y1, BW, BH - y1); b.fillRect(0, y0, x0, y1 - y0); b.fillRect(x1, y0, BW - x1, y1 - y0);
-    b.strokeStyle = 'rgba(184,108,255,0.38)'; b.setLineDash([4, 4]); b.lineDashOffset = -frame / 8;
+    b.strokeStyle = hexA((ZLOOK[mapZone] || ZL0).line, 0.38); b.setLineDash([4, 4]); b.lineDashOffset = -frame / 8;
     b.strokeRect(x0 - 0.5, y0 - 0.5, x1 - x0 + 1, y1 - y0 + 1); b.setLineDash([]);
+  }
+
+  // ---------- 6.3 zone change wipe, backdrop past the map edge, ambient layer ----------
+  function startWipe(copy) {
+    if (!oldLayer) oldLayer = document.createElement('canvas');
+    if (oldLayer.width !== mapLayer.width || oldLayer.height !== mapLayer.height) { oldLayer.width = mapLayer.width; oldLayer.height = mapLayer.height; }
+    if (copy) { const o = oldLayer.getContext('2d'); o.setTransform(1, 0, 0, 1, 0, 0); o.clearRect(0, 0, oldLayer.width, oldLayer.height); o.drawImage(mapLayer, 0, 0); }
+    wipe = { at: performance.now() + (copy ? 0 : 350) }; // a run's first board shows plain for a moment before the zone arrives
+  }
+  // the backdrop: a dithered two-colour nebula and stars, one canvas per zone and screen size at a third of CSS resolution, drawn
+  // (pixelated) only when the view reaches past the map
+  let bdCv = null, bdKey = '';
+  function backdrop(zid) {
+    const Z = ZLOOK[zid]; if (!Z || !Z.neb) return null;
+    const w = Math.ceil(W / 3), h = Math.ceil(H / 3), key = zid + ':' + w + 'x' + h;
+    if (key === bdKey) return bdCv;
+    if (!bdCv) bdCv = document.createElement('canvas');
+    bdCv.width = w; bdCv.height = h; bdKey = key;
+    const g = bdCv.getContext('2d'), img = g.createImageData(w, h), Dt = img.data, n = parseInt(Z.bg.slice(1), 16), bg = [n >> 16 & 255, n >> 8 & 255, n & 255];
+    const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], s = Z.salt || 1, [n1, n2] = Z.neb;
+    const fbm = (x, y, k) => vn(x, y, k) * 0.55 + vn(x * 2.1, y * 2.1, k + 1) * 0.3 + vn(x * 4.3, y * 4.3, k + 2) * 0.15;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const th = BAY[(y & 3) * 4 + (x & 3)] / 16, a = Math.floor(Math.max(0, fbm(x / 38, y / 30, s) * 2 - 0.75) * 4 + th) / 4, c = Math.floor(Math.max(0, fbm(x / 26 + 40, y / 22, s + 7) * 2 - 0.85) * 4 + th) / 4, o = (y * w + x) * 4;
+      const ka = Math.min(1, a) * 0.7, kc = Math.min(1, c) * 0.55;
+      for (let ch = 0; ch < 3; ch++) Dt[o + ch] = c255(bg[ch] + (n1[ch] - bg[ch]) * ka + (n2[ch] - bg[ch]) * kc * (1 - ka * 0.5));
+      Dt[o + 3] = 255;
+    }
+    const r = mulberry32(s * 7919), ns = Math.round(w * h / 60 * Z.stars), lc = parseInt(Z.line.slice(1), 16);
+    for (let i = 0; i < ns; i++) { const x = Math.floor(r() * w), y = Math.floor(r() * h), o = (y * w + x) * 4, br = r(), tint = r() < 0.3;
+      const cr = tint ? [lc >> 16 & 255, lc >> 8 & 255, lc & 255] : [235, 235, 250], k = 0.35 + br * 0.65;
+      for (let ch = 0; ch < 3; ch++) Dt[o + ch] = c255(Dt[o + ch] + (cr[ch] - Dt[o + ch]) * k); }
+    g.putImageData(img, 0, 0); return bdCv;
+  }
+  // ambient: one light particle layer per zone, in world units under the units. Pooled (objects reused, swap-remove), capped,
+  // halved on a crowded field (LITE) and with Simple pixel scaling, off with Settings · Zone effects. Real time, so weather
+  // keeps moving at a checkpoint
+  const AMB = { motes: [16, 2.5], spores: [26, 6], sparks: [40, 0], clouds: [6, 0.4], mist: [10, 1.2], glints: [14, 4], rain: [90, 240], dust: [24, 4], choir: [26, 5], odd: [16, 2.5] }; // cap, spawns per second
+  const AMBC = { motes: ['#6ae2ff', '#bff4ff', '#8a98f0'], spores: ['#ff9ad5', '#ffb84a', '#ffd0e8'], sparks: ['#fff0c0', '#ffb03a', '#ff7b29'], glints: ['#8a7458', '#6a5a44'], dust: ['#8a8278', '#6a645a', '#ff7b39'], choir: ['#b8ff8a', '#8ee35a', '#e8ffd0'], odd: ['#ffd23a', '#7ff0d8', '#ff8ad8'] };
+  const zp = []; let zn = 0, zLast = 0, zAcc = 0, zFlash = -1, zNext = 6, zBurst = 0, zChime = 1, zDuckT = 8;
+  function zoneAmbReset() { zn = 0; zAcc = 0; zFlash = -1; zNext = 5 + Math.random() * 6; zBurst = 0.5; zChime = 1; zDuckT = 6 + Math.random() * 6; }
+  function zSpawn() { let p = zp[zn]; if (!p) zp[zn] = p = { x: 0, y: 0, vx: 0, vy: 0, t: 0, life: 1, s: 1, c: 0, k: 0, ph: 0, a: 1 }; zn++; p.t = 0; p.k = 0; p.ph = Math.random() * 6.28; p.a = 1; return p; }
+  // soft pixel clouds (Open Skies) and mist banks (Ghost Lanes): unions of ellipses with a dithered rim, made once
+  const puffs = {};
+  function puffSprites(kind) {
+    if (puffs[kind]) return puffs[kind];
+    const out = [], col = kind === 'clouds' ? ['#f4f8ff', '#c8d8f4'] : ['#d8ccff', '#a898d8'];
+    for (let v = 0; v < 3; v++) {
+      const r = mulberry32(0xc10d + v * 131 + (kind === 'clouds' ? 0 : 999)), w = kind === 'clouds' ? 44 + v * 14 : 70 + v * 16, h = kind === 'clouds' ? 16 + v * 3 : 14 + v * 2;
+      const cv = document.createElement('canvas'); cv.width = w * RES; cv.height = h * RES; const g = cv.getContext('2d'); g.scale(RES, RES);
+      const blobs = []; for (let k = 0; k < 5; k++) { const rx = w * (0.16 + r() * 0.12), ry = h * (kind === 'clouds' ? 0.3 + r() * 0.15 : 0.22 + r() * 0.1); blobs.push([rx + 1 + r() * (w - 2 * rx - 2), h - ry - 1 - r() * (kind === 'clouds' ? h * 0.2 : h - 2 * ry - 2), rx, ry]); }
+      for (let y = 0; y < h; y += 0.5) for (let x = 0; x < w; x += 0.5) {
+        let best = 9; for (const [bx, by, rx, ry] of blobs) best = Math.min(best, ((x - bx) / rx) ** 2 + ((y - by) / ry) ** 2);
+        if (best > 1) continue; if (best > 0.7 && ((x * 2 + y * 2) & 1)) continue;
+        g.fillStyle = kind === 'clouds' && y > h * 0.62 ? col[1] : col[0]; g.fillRect(x, y, 0.5, 0.5);
+      }
+      cv.u = w; cv.v = h; out.push(cv);
+    }
+    return (puffs[kind] = out);
+  }
+  function zoneAmb(v) {
+    const now = performance.now() / 1000, dt = Math.min(0.1, zLast ? now - zLast : 0); zLast = now;
+    const Z = ZLOOK[mapZone], kind = Z && Z.amb; if (!kind || !R_.zfx) return;
+    const x0 = Math.max(0, v.vx), y0 = Math.max(0, v.vy), x1 = Math.min(BW, v.vx + v.vw), y1 = Math.min(BH, v.vy + v.vh), vw = x1 - x0, vh = y1 - y0; if (vw <= 0 || vh <= 0) return;
+    const A = AMB[kind], C = AMBC[kind], cap = Math.max(1, Math.round(A[0] * (R_.sharp === false ? 0.5 : 1) * (LITE ? 0.5 : 1))), rnd = Math.random;
+    const inV = (x, y, m) => x > x0 - m && x < x1 + m && y > y0 - m && y < y1 + m;
+    // spawning
+    if (kind === 'sparks') { zBurst -= dt; if (zBurst <= 0) { zBurst = 0.5 + rnd() * 1.1; const Ls = G.map.lanes.filter(L => !L.openWave);
+      for (let tr = 0; tr < 8 && Ls.length; tr++) { const L = Ls[Math.floor(rnd() * Ls.length)], q = L.tiles[Math.floor(rnd() * L.tiles.length)], sx = (q.x + (rnd() < 0.5 ? 0.08 : 0.92)) * TILE, sy = (q.y + rnd()) * TILE;
+        if (!inV(sx, sy, 0)) continue; for (let k = 4 + Math.floor(rnd() * 4); k > 0 && zn < cap; k--) { const p = zSpawn(); p.x = sx; p.y = sy; p.vx = (rnd() - 0.5) * 36; p.vy = -10 - rnd() * 18; p.life = 0.3 + rnd() * 0.35; p.c = Math.floor(rnd() * 3); } break; } } }
+    else if (kind === 'clouds' || kind === 'mist') { if (zn === 0) zAcc = cap; }
+    zAcc += dt * A[1]; if (zAcc > cap) zAcc = cap;
+    while (zAcc >= 1 && zn < cap && kind !== 'sparks') {
+      zAcc -= 1; const p = zSpawn(); p.x = x0 + rnd() * vw; p.y = y0 + rnd() * vh; p.c = Math.floor(rnd() * 3);
+      if (kind === 'motes') { p.vx = (rnd() - 0.5) * 5; p.vy = -0.5 - rnd() * 1.8; p.life = 5 + rnd() * 5; p.s = rnd() < 0.3 ? 1 : 0.5; }
+      else if (kind === 'spores') { p.vx = (rnd() - 0.5) * 3; p.vy = -2 - rnd() * 4; p.life = 4 + rnd() * 3; p.s = rnd() < 0.4 ? 1 : 0.5; }
+      else if (kind === 'clouds') { const S = puffSprites(kind); p.c = Math.floor(rnd() * 3); p.vx = 3 + rnd() * 4; p.vy = 0; p.life = 18 + rnd() * 10; p.a = 0.1 + rnd() * 0.07; p.x = x0 - S[p.c].u * (zn > 2 ? 1 : rnd()) + (zn <= 2 ? rnd() * vw : 0); }
+      else if (kind === 'mist') { if (rnd() < 0.4) { p.k = 1; p.life = 1.2 + rnd(); p.vx = 0; p.vy = -1; } else { const S = puffSprites(kind); p.c = Math.floor(rnd() * 3); p.x -= S[p.c].u / 2; p.vx = (rnd() - 0.5) * 4; p.vy = 0; p.life = 8 + rnd() * 7; p.a = 0.1 + rnd() * 0.08; } }
+      else if (kind === 'glints') { const n = zGlints.length / 2; let ok = false; if (rnd() < 0.55 && n) for (let tr = 0; tr < 6; tr++) { const i = Math.floor(rnd() * n) * 2; if (inV(zGlints[i], zGlints[i + 1], -2)) { p.x = zGlints[i]; p.y = zGlints[i + 1]; p.k = 1; p.life = 0.7; ok = true; break; } }
+        if (!ok) { p.vx = 1.5 + rnd() * 3; p.vy = (rnd() - 0.5) * 1.5; p.life = 5 + rnd() * 4; p.s = 0.5; p.c = rnd() < 0.5 ? 0 : 1; } }
+      else if (kind === 'rain') { p.y = y0 - 8 + rnd() * (vh + 8); p.x = x0 + rnd() * (vw + 40); p.vx = -40; p.vy = 160 + rnd() * 40; p.life = 9; p.s = y0 + rnd() * vh; if (p.s < p.y) p.y = p.s - rnd() * 40; }
+      else if (kind === 'dust') { if (rnd() < 0.18) { p.k = 1; p.vx = (rnd() - 0.5) * 2; p.vy = -3 - rnd() * 3; p.life = 1.5 + rnd() * 1.5; p.c = 2; } else { p.vx = 2 + rnd() * 4; p.vy = (rnd() - 0.5) * 1.5; p.life = 6 + rnd() * 4; p.s = rnd() < 0.3 ? 1 : 0.5; p.c = rnd() < 0.5 ? 0 : 1; } }
+      else if (kind === 'choir') { p.vx = (rnd() - 0.5) * 2; p.vy = -1.5 - rnd() * 2.5; p.life = 5 + rnd() * 3; }
+      else if (kind === 'odd') { p.vx = 0; p.vy = 1.5 + rnd() * 2; p.life = 6 + rnd() * 3; }
+    }
+    if (kind === 'choir') { zChime -= dt; if (zChime <= 0 && zn < cap) { zChime = 1 + rnd() * 1.2; const p = zSpawn(); p.k = 2; p.x = x0 + rnd() * vw; p.y = y0 + rnd() * vh; p.life = 0.9; } }
+    if (kind === 'odd') { zDuckT -= dt; if (zDuckT <= 0 && zn < cap) { zDuckT = 12 + rnd() * 8; const p = zSpawn(); p.k = 1; p.x = x0 - 8; p.y = y0 + 8 + rnd() * Math.max(1, vh - 16); p.vx = 7; p.vy = 0; p.life = (vw + 16) / 7; } }
+    // update and draw
+    let rainPath = false;
+    for (let i = 0; i < zn; i++) {
+      const p = zp[i]; p.t += dt;
+      if (p.t >= p.life || !inV(p.x, p.y, 90)) { const q = zp[zn - 1]; zp[zn - 1] = p; zp[i] = q; zn--; i--; continue; }
+      const f = p.t / p.life, fade = Math.min(1, f * 5, (1 - f) * 4);
+      if (kind === 'sparks') { p.vy += 70 * dt; p.x += p.vx * dt; p.y += p.vy * dt; b.globalAlpha = 1 - f; b.fillStyle = C[p.c]; b.fillRect(p.x, p.y, 0.5, 0.5); continue; }
+      if (kind === 'rain') { if (p.k) { b.globalAlpha = 0.6 * (1 - f); b.fillStyle = '#9ad0ff'; b.fillRect(p.x - 0.5, p.y, 1.5, 0.5); continue; }
+        p.x += p.vx * dt; p.y += p.vy * dt; if (p.y >= p.s) { p.k = 1; p.t = 0; p.life = 0.16; p.y = p.s; continue; }
+        if (!rainPath) { b.beginPath(); rainPath = true; } b.moveTo(p.x, p.y); b.lineTo(p.x - p.vx * 0.04, p.y - p.vy * 0.04); continue; }
+      if (kind === 'clouds' || (kind === 'mist' && !p.k)) { p.x += p.vx * dt; const S = puffSprites(kind)[p.c], wob = kind === 'mist' ? 0.6 + 0.4 * Math.sin(now * 0.7 + p.ph) : 1;
+        b.globalAlpha = p.a * fade * wob; b.drawImage(S, Math.round(p.x * 2) / 2, Math.round(p.y * 2) / 2, S.u, S.v); continue; }
+      p.x += (p.vx + (kind === 'spores' || kind === 'choir' || kind === 'odd' ? Math.sin(now * 1.3 + p.ph) * 2.2 : 0)) * dt; p.y += p.vy * dt;
+      const X = Math.round(p.x * 2) / 2, Y = Math.round(p.y * 2) / 2;
+      if (kind === 'motes') { b.globalAlpha = fade * (0.45 + 0.3 * Math.sin(now * 2.2 + p.ph)); b.fillStyle = C[p.c]; b.fillRect(X, Y, p.s, p.s); }
+      else if (kind === 'spores') { b.globalAlpha = fade * 0.7; b.fillStyle = C[p.c]; b.fillRect(X, Y, p.s, p.s); }
+      else if (kind === 'mist') { b.globalAlpha = Math.floor(p.t * 9 + p.ph) % 3 ? 0.65 * fade : 0; b.fillStyle = '#e6e2ff'; b.fillRect(X, Y, 1, 1); b.globalAlpha *= 0.3; b.fillRect(X - 0.5, Y - 0.5, 2, 2); }
+      else if (kind === 'glints') { if (p.k) { const a = Math.sin(Math.PI * f) * 3; b.globalAlpha = 0.9; b.fillStyle = '#ffe08a'; b.fillRect(X - a, Y, a * 2 + 0.5, 0.5); b.fillRect(X, Y - a, 0.5, a * 2 + 0.5); b.fillStyle = '#ffffff'; b.fillRect(X - 0.5, Y - 0.5, 1.5, 1.5); }
+        else { b.globalAlpha = fade * 0.55; b.fillStyle = C[p.c]; b.fillRect(X, Y, 0.5, 0.5); } }
+      else if (kind === 'dust') { b.globalAlpha = p.k ? fade * (0.5 + 0.5 * Math.sin(now * 13 + p.ph)) : fade * 0.45; b.fillStyle = C[p.c]; b.fillRect(X, Y, p.k ? 0.5 : p.s, p.k ? 0.5 : p.s); }
+      else if (kind === 'choir') { if (p.k === 2) { const rr = 2 + f * 9; b.globalAlpha = 1; strokeRing(p.x, p.y, rr, '#d8ffb0', 0.55 * (1 - f), 0.5); b.globalAlpha = 0.8 * (1 - f); b.fillStyle = '#f0ffe0'; for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) b.fillRect(Math.round((p.x + dx * rr) * 2) / 2, Math.round((p.y + dy * rr) * 2) / 2, 0.5, 0.5); }
+        else { const al = fade * (0.5 + 0.25 * Math.sin(now * 3 + p.ph)); b.globalAlpha = al * 0.25; b.fillStyle = C[p.c]; b.fillRect(X - 0.5, Y - 0.5, 1.5, 1.5); b.globalAlpha = al; b.fillStyle = C[2]; b.fillRect(X, Y, 0.5, 0.5); } }
+      else if (kind === 'odd') { if (p.k) { b.globalAlpha = 0.85; duck(b, Math.round(p.x), Math.round(p.y + Math.sin(now * 3) * 0.75)); }
+        else { b.globalAlpha = fade * 0.5; b.fillStyle = C[(Math.floor(now * 0.8 + p.ph) % 3 + 3) % 3]; b.fillRect(X, Y, 1, 1); } }
+    }
+    if (rainPath) { b.globalAlpha = 1; b.strokeStyle = 'rgba(180,210,255,0.45)'; b.lineWidth = 0.5; b.stroke(); }
+    b.globalAlpha = 1;
+    // Tempest Front: lightning lights the board now and then (a bright flicker, then a softer one)
+    if (kind === 'rain') { zNext -= dt; if (zNext <= 0) { zNext = 7 + rnd() * 9; zFlash = 0; }
+      if (zFlash >= 0) { zFlash += dt; const a = zFlash < 0.06 ? 0.11 : zFlash < 0.13 ? 0 : zFlash < 0.24 ? 0.07 : zFlash < 0.4 ? 0.03 : -1;
+        if (a < 0) zFlash = -1; else if (a > 0) { b.fillStyle = hexA('#d8e6ff', a); b.fillRect(x0, y0, vw, vh); } } }
+  }
+  // a board patch in a zone's look (jump doors, the New Run zone buttons). The patch bakes once per zone and shape
+  const SIG = { drift: [43, 96, 0], hive: [3, 14, 22], iron: [1, 13, 6], skies: [3, 0], ghost: [5, 9], salvage: [2, 5, 4, 7], tempest: [1, 6, 0], demo: [1, 9, 3], choir: [1, 2, 8, 6], oddball: [11, 20, 2, 5] };
+  const swCache = {};
+  function swatchPatch(zid, cols, rows) {
+    const key = zid + cols + 'x' + rows; if (swCache[key]) return swCache[key];
+    const r = mulberry32(0x5a7 + cols * 31 + rows), tiles = [], deco = [], ry = rows >> 1, road = [], branch = [];
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { tiles.push(y === ry ? 1 : 0); deco.push(Math.floor(r() * 1000)); }
+    for (let x = cols - 1; x >= 0; x--) road.push({ x, y: ry });
+    const bx = Math.min(cols - 2, 2); if (rows > 2 && cols > 3) for (let y = 0; y <= ry; y++) { tiles[y * cols + bx] = 1; branch.push({ x: bx, y }); }
+    if (cols > 5) tiles[(rows - 1) * cols + cols - 2] = 2;
+    let k = 0; const sig = SIG[zid] || []; for (let i = 0; i < tiles.length && k < sig.length; i++) if (!tiles[i] && i % 3 === 0) deco[i] = sig[k++];
+    const cv = document.createElement('canvas'); cv.width = cols * TILE * RES; cv.height = rows * TILE * RES; const g = cv.getContext('2d'); g.setTransform(RES, 0, 0, RES, 0, 0); g.imageSmoothingEnabled = false;
+    bakeBoard(g, { tiles, deco, lanes: branch.length ? [{ tiles: road }, { tiles: branch }] : [{ tiles: road }], cols, rows, seed: 7, sw: 1 }, zid, false);
+    return (swCache[key] = cv);
+  }
+  function zoneSwatch(cv, zid, cols, rows) {
+    const p = swatchPatch(ZLOOK[zid] ? zid : '_', cols || 6, rows || 3), g = cv.getContext('2d');
+    const k = Math.max(cv.width / p.width, cv.height / p.height), w = p.width * k, h = p.height * k;
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height); g.drawImage(p, Math.round((cv.width - w) / 2), Math.round((cv.height - h) / 2), Math.round(w), Math.round(h));
   }
 
   // ---------- screen-space lighting ----------
@@ -1026,10 +1374,20 @@ const RES = 2;
     b.setTransform(1, 0, 0, 1, 0, 0); b.clearRect(0, 0, bw, bh); b.imageSmoothingEnabled = false;
     b.setTransform(RES, 0, 0, RES, -vxI * RES, -vyI * RES);
     { const x0 = Math.max(0, vxI), y0 = Math.max(0, vyI), x1 = Math.min(BW, vxI + vwI), y1 = Math.min(BH, vyI + vhI);
-      if (x1 > x0 && y1 > y0) b.drawImage(mapLayer, x0 * RES, y0 * RES, (x1 - x0) * RES, (y1 - y0) * RES, x0, y0, x1 - x0, y1 - y0); }
+      const blitL = L => { if (x1 > x0 && y1 > y0) b.drawImage(L, x0 * RES, y0 * RES, (x1 - x0) * RES, (y1 - y0) * RES, x0, y0, x1 - x0, y1 - y0); };
+      if (wipe) { // 6.3: the new zone's board spreads out from the core behind a ring in the zone's colour (a plain fade with Zone effects off)
+        const f = clamp((performance.now() - wipe.at) / 1000, 0, 1), e = 1 - (1 - f) * (1 - f) * (1 - f), Z = ZLOOK[mapZone] || ZL0;
+        blitL(oldLayer);
+        if (f > 0 && R_.zfx) { const cx = G.core.x * TILE, cy = G.core.y * TILE, rr = e * Math.hypot(Math.max(cx, BW - cx), Math.max(cy, BH - cy)) + 1;
+          b.save(); b.beginPath(); b.arc(cx, cy, rr, 0, 6.283); b.clip(); blitL(mapLayer); b.restore();
+          if (f < 1) { strokeRing(cx, cy, rr, Z.line, 0.8 * (1 - f * f), 3); strokeRing(cx, cy, Math.max(1, rr - 7), Z.line, 0.3 * (1 - f), 2); } }
+        else if (f > 0) { b.globalAlpha = e; blitL(mapLayer); b.globalAlpha = 1; }
+        if (f >= 1) { wipe = null; oldLayer.width = oldLayer.height = 1; }
+      } else blitL(mapLayer); }
     drawVeil();
     // animated path glow running toward the core
-    if (frame % 2 === 0) for (const L of G.map.lanes) if (!L.openWave) { const k = (frame >> 1) % L.tiles.length; for (let j = k; j < L.tiles.length; j += 9) { const p = L.tiles[j]; R(b, p.x * TILE + 11, p.y * TILE + 11, 2, 2, 'rgba(184,108,255,0.35)'); } }
+    if (frame % 2 === 0) { const dc = hexA((ZLOOK[mapZone] || ZL0).dot, 0.35); for (const L of G.map.lanes) if (!L.openWave) { const k = (frame >> 1) % L.tiles.length; for (let j = k; j < L.tiles.length; j += 9) { const p = L.tiles[j]; R(b, p.x * TILE + 11, p.y * TILE + 11, 2, 2, dc); } } }
+    zoneAmb(v); // 6.3: the zone's weather and particles, under everything that matters
     if (G.rift && !G.spawningDone) { const p = G.rift.pts[0]; strokeRing(p.x * TILE, p.y * TILE, 9 + Math.sin(frame / 5) * 2, '#b86cff', 0.9, 2); strokeRing(p.x * TILE, p.y * TILE, 5 + Math.sin(frame / 3), '#ff4d6a', 0.9, 2); }
     if (G.spawningDone && G.prep && G.prep.fly) for (const L of G.map.lanes) if (!L.openWave) {
       const a = L.fly.pts[0], c2 = L.fly.pts[1];
@@ -1305,6 +1663,8 @@ const RES = 2;
       mctx.imageSmoothingEnabled = false; mctx.clearRect(0, 0, mid.width, mid.height);
       mctx.drawImage(buf, 0, 0, bw, bh, 0, 0, bw * k, bh * k); src = mid;
     }
+    // 6.3: past the map edge, the zone's backdrop (only drawn when the view reaches past the map)
+    if (v.vx < 0 || v.vy < 0 || v.vx + v.vw > BW || v.vy + v.vh > BH) { const bd = backdrop(mapZone); if (bd) { c.imageSmoothingEnabled = false; c.drawImage(bd, 0, 0, bd.width * 3, bd.height * 3); } }
     c.imageSmoothingEnabled = true;
     const DW = W, DH = H, X0 = sx, Y0 = sy, KR = RES * k;
     c.drawImage(src, (v.vx - vxI) * KR, (v.vy - vyI) * KR, v.vw * KR, v.vh * KR, X0, Y0, DW, DH);
@@ -1807,7 +2167,7 @@ const RES = 2;
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     fit();
   }
-  function reset() { nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
+  function reset() { mapZone = null; wipe = null; zoneAmbReset(); nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
 
   // build-menu card art: the tower on a lit plinth against its element's colour
   function towerCard(type, canvas, locked) {
@@ -1837,24 +2197,27 @@ const RES = 2;
     g.drawImage(UNITS.icon(type, el), 0, 0);
   }
   // setup preview: the whole map dimmed, with the starting sector lit and outlined
-  function preview_map(canvas, map, frac) {
-    const g = canvas.getContext('2d'), cols = map.tiles.length / ROWS, s = canvas.width / cols;
+  function preview_map(canvas, map, frac, zid) { // 6.3: in the chosen zone's colours (zid), or the plain board
+    const g = canvas.getContext('2d'), cols = map.tiles.length / ROWS, s = canvas.width / cols, Z = ZLOOK[zid];
     canvas.height = Math.round(canvas.width * ROWS / cols);
-    g.fillStyle = PAL.bg; g.fillRect(0, 0, canvas.width, canvas.height);
+    g.fillStyle = Z ? Z.bg : PAL.bg; g.fillRect(0, 0, canvas.width, canvas.height);
     const Rg = mapRegion(map.core, frac || REGION0);
+    const pc = Z ? { road: sh(Z.edge[0], -0.3), rsv: Z.rsv[0], rock: Z.rock[2], rock2: Z.rock[1] } : null;
     for (let y = 0; y < ROWS; y++) for (let x = 0; x < cols; x++) {
-      const t = map.tiles[y * cols + x], inR = inRegion(x, y, Rg);
-      g.fillStyle = t === 1 ? '#3a2f58' : t === 5 ? '#2a1d44' : t === 2 ? (inR ? '#3c4470' : '#1c2038') : t === 4 ? PAL.core : inR ? '#141831' : '#0c0e1d';
+      const t = map.tiles[y * cols + x], inR = inRegion(x, y, Rg), gz = Z && (Z.g2 && ((x + y) & 1) ? Z.g2 : Z.g);
+      g.fillStyle = Z ? (t === 1 ? pc.road : t === 5 ? pc.rsv : t === 2 ? (inR ? pc.rock : pc.rock2) : t === 4 ? PAL.core : rgbH(gz, inR ? 1.15 : 0.6, inR ? 2 : 0))
+        : t === 1 ? '#3a2f58' : t === 5 ? '#2a1d44' : t === 2 ? (inR ? '#3c4470' : '#1c2038') : t === 4 ? PAL.core : inR ? '#141831' : '#0c0e1d';
       g.fillRect(Math.floor(x * s), Math.floor(y * s), Math.ceil(s) - (t === 0 ? 1 : 0), Math.ceil(s) - (t === 0 ? 1 : 0));
     }
     const p = map.lanes[0].tiles[0];
     g.fillStyle = PAL.bad; g.fillRect(Math.floor(p.x * s), Math.floor(p.y * s), Math.ceil(s), Math.ceil(s));
-    g.strokeStyle = 'rgba(184,108,255,0.8)'; g.lineWidth = 1; g.setLineDash([3, 3]);
+    g.strokeStyle = Z ? hexA(Z.line, 0.8) : 'rgba(184,108,255,0.8)'; g.lineWidth = 1; g.setLineDash([3, 3]);
     g.strokeRect(Math.round(Rg.x0 * s) + 0.5, Math.round(Rg.y0 * s) + 0.5, Math.round((Rg.x1 - Rg.x0) * s) - 1, Math.round((Rg.y1 - Rg.y0) * s) - 1);
     g.setLineDash([]);
   }
   return {
-    set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; },
+    set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
+    zoneSwatch, get zoneWipe() { return !!wipe; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
