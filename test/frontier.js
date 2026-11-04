@@ -32,7 +32,7 @@ const till = (S, f, cap) => { for (let i = 0; i < (cap || 60000) && !f() && !S.G
   const S2 = fresh(); S2.newRun({ seed: 21, chaos: 1, cols: 64, rows: 36 });
   const w = 20, qa = S.genWave(w, {}).queue.filter(q => q.type !== 'boss'), qb = S2.genWave(w, {}).queue.filter(q => q.type !== 'boss');
   ok(qa.length < qb.length * 0.8, `fewer units per wave (${qa.length} vs Classic ${qb.length})`);
-  ok(qa[0].hpm > qb[0].hpm * 1.9, 'each unit is about twice as tough');
+  ok(Math.abs(qa[0].hpm / qb[0].hpm - S.FRONTIER.hp) < 1e-9 && S.FRONTIER.hp > 1.5, `each unit is ×${S.FRONTIER.hp} as tough`);
   const span = q => q[q.length - 1].t - q[0].t; ok(span(qa) > span(qb) * 0.7, `the wave still takes as long to arrive (${span(qa).toFixed(1)} s vs ${span(qb).toFixed(1)} s)`);
   const heavy = q => q.filter(x => x.type === 'tank').length / q.length; ok(heavy(qa) > heavy(qb), 'a heavier roster (more Juggernauts)');
   for (const [ch, rows] of [[0, 30], [2, 40], [3, 40]]) { const S3 = fresh(); S3.newRun({ seed: 5, chaos: ch, frontier: 1 }); ok(S3.ROWS === rows && S3.COLS === S3.frCols(rows), `chaos ${ch}: ${S3.COLS}x${S3.ROWS}`); }

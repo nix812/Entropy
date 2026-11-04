@@ -327,8 +327,8 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // links to the towers around it, and towers that can move. Every tunable lives here (docs/notes/frontier.md)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
-  spd: 0.6, count: 0.6, hp: 2.0, bossHp: 1.5,    // enemies 60% speed; 60% as many per wave, each 2× HP (wave HP ×1.2); bosses 1.5× HP
-  gap: 15,                                         // seconds between waves (Classic 13): the walk is longer
+  spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
+  gap: 13,                                         // seconds between waves (as Classic: slower walks already stretch the run)
   w: { tank: 2.5, splitter: 1.6, carrier: 2, reflector: 1.5, shielder: 1.3, medic: 1.3, swarmer: 0.4, drone: 0.6 }, // heavier rosters
   flySpd: 3, flyMin: 1, cd: 3,                     // flight 3 tiles/s (at least 1 s); lift-off cooldown in waves after landing
   cdUplink: 4,                                     // every 4 Uplink levels: −1 wave of cooldown (never below 1)

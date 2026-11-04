@@ -24,7 +24,11 @@ JS_HITS = '''(over) => {
   // 5.8: the Ready button sits under Map, clear of every control and banner (it hides while a right-hand panel is open)
   const rb = vis(document.querySelector('#bReady'));
   if (!rb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Ready button missing');
-  if (rb) for (const s of ['#bZoom', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
+  if (rb) for (const s of ['#bZoom', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#bLift']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
+  // Frontier: Lift Off sits under Map, above Ready, clear of every control and banner (it hides while a side panel is open)
+  if (G && G.fr) { const lb = vis(document.querySelector('#bLift'));
+    if (!lb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Lift Off button missing');
+    if (lb) for (const s of ['#bZoom', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(lb, q)) out.push('Lift Off x ' + s); } } }
   return out; }'''
 FILL = '''() => {
   document.body.classList.add('hudfull');
@@ -38,11 +42,13 @@ FILL = '''() => {
 }'''
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
-    for W, H in [(852, 393), (932, 430), (667, 375), (1180, 820)]:
+    for W, H, MODE in [(852, 393, 'std'), (932, 430, 'std'), (667, 375, 'std'), (1180, 820, 'std'), (852, 393, 'fr'), (667, 375, 'fr'), (1180, 820, 'fr')]:
         pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=2, has_touch=True); pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
         pg.evaluate('() => { PROF.seenVer = VERSION; PROF.seenHelp = true; PROF.settings.briefings = "off"; PROF.bestWave = 40; }')
-        pg.click('#bLaunch'); pg.wait_for_timeout(300); pg.evaluate('() => document.querySelector("[data-act=launch]").click()'); pg.wait_for_timeout(1500)
+        pg.click('#bLaunch'); pg.wait_for_timeout(300)
+        if MODE == 'fr': pg.evaluate('() => document.querySelector("[data-act=mode][data-v=fr]").click()'); pg.wait_for_timeout(300)  # Frontier: the Lift Off button joins the right column
+        pg.evaluate('() => document.querySelector("[data-act=launch]").click()'); pg.wait_for_timeout(1500)
         pg.evaluate('() => document.querySelectorAll("[data-act=brief]").forEach(b => b.click())')
         # towers near the left and right edges of the map, so a panel opens on each side
         pg.evaluate('''() => { G.credits = 99999; const ok = (x, y) => canBuildAt(x, y); let L = null, R = null;
@@ -53,16 +59,16 @@ with sync_playwright() as p:
         pg.evaluate('() => document.querySelector("#bMusic").click()'); pg.wait_for_timeout(250)
         states = {}
         states['field, everything up'] = pg.evaluate(JS_HITS, OVER)
-        pg.screenshot(path=str(root / 'test' / 'out' / f'trk_all_{W}.png'))
+        pg.screenshot(path=str(root / 'test' / 'out' / f'trk_all_{W}{"_fr" if MODE == "fr" else ""}.png'))
         for side, t in [('left', '_L'), ('right', '_R')]:
             pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(250)
             cls = pg.evaluate('() => document.body.className')
             states[f'tower panel ({side}: {"panel-l" if "panel-l" in cls else "panel-r" if "panel-r" in cls else "?"})'] = pg.evaluate(JS_HITS, OVER)
-            pg.screenshot(path=str(root / 'test' / 'out' / f'trk_panel_{side}_{W}.png'))
+            pg.screenshot(path=str(root / 'test' / 'out' / f'trk_panel_{side}_{W}{"_fr" if MODE == "fr" else ""}.png'))
             pg.evaluate('() => { const b = document.querySelector("#panel [data-act=close], #panel .x"); if (b) b.click(); }'); pg.wait_for_timeout(200)
         for k, v in states.items():
-            print(f'   {W}x{H} {k}: {"clear" if not v else v}')
-            if v: fails.append(f'{W} {k}: {v}')
+            print(f'   {W}x{H}{" frontier" if MODE == "fr" else ""} {k}: {"clear" if not v else v}')
+            if v: fails.append(f'{W}{MODE} {k}: {v}')
         pg.close()
     b.close()
 print('ERRORS:', errs[:5])

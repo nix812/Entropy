@@ -1575,7 +1575,7 @@ const UI = (() => {
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
       ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="sts">${tipify(`Power grid ${gridUsed()}/${gridCap()}${G.reactorN ? ` · ${G.reactorN} reactor expansion${G.reactorN > 1 ? 's' : ''}` : ''}. Each expansion adds +1 power for the rest of the run and costs more than the last`)}</div>
-      ${canRelocate() ? '' : relocHTML()}
+      ${canRelocate() || G.fr ? '' : relocHTML()}
       ${foot}`;
   }
   // ---------- Frontier: the core panel's flight block, the landing picker and preview, and moving a tower ----------
