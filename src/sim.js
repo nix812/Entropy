@@ -214,7 +214,10 @@ function abilExtend(k, cur, dur) {
 }
 const abilLeft = k => ABIL_TIMER[k] && G[ABIL_TIMER[k]] > 0 ? G[ABIL_TIMER[k]] : 0;
 // Sensor Sweep's pick: the enemy most likely to cost you the run
-function threatScore(e) { const prog = e.L && e.L.len ? e.d / e.L.len : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
+// how far along its road an enemy is (0 at the wormhole, 1 at the core). A Frontier re-route gives each walking enemy its own short
+// lane from where it stands; L.pre (FR_VER 2) is the road it already has behind it, so it keeps its place in line ('First' targeting)
+const eProg = e => e.L.pre ? (e.L.pre + e.d) / (e.L.pre + e.L.len) : e.d / e.L.len;
+function threatScore(e) { const prog = e.L && e.L.len ? eProg(e) : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
   // v5.0: alloc is ignored (kept in the signature for old callers); talents, Capstones and Remnants come from PROF
@@ -714,11 +717,11 @@ function newRun(opts) {
   const ascV = opts.ascV || (opts.v ? 1 : ASC_V); // v5.8: a recording from before Ascension perks (it carries v, no ascV) keeps the old rules
   opts = Object.assign({}, opts, { seed, ascV });
   const r = mulberry32(seed);
-  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson) : null; // 5.8 Training and lessons: own map, rules and wave script
+  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson, opts.frontier) : null; // 5.8 Training and lessons: own map, rules and wave script (Frontier: TUT.fr)
   setRows(T ? T.rows : opts.rows || (opts.frontier ? frRows(chaos) : CHAOS_LEVELS[chaos].rows));
   if (opts.frontier && !opts.cols) setCols(frCols(ROWS)); // Frontier: the bigger board (the UI passes both; tests may not)
   G = {
-    seed, r, chaos, fr: opts.frontier && !T && !opts.daily ? 1 : 0, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, (T && T.start) || opts.startWave || 1), cols: COLS,
+    seed, r, chaos, fr: opts.frontier ? 1 : 0, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, (T && T.start) || opts.startWave || 1), cols: COLS,
     time: 0, speed: 1, paused: false, over: false,
     map: T ? tutMap(r) : genMap(r), towers: [], towerAt: {}, enemies: [], projs: [], zones: [], storms: [],
     wave: 0, queue: [], spawnClock: 0, next: 18, spawningDone: true,
@@ -735,8 +738,9 @@ function newRun(opts) {
   // v5.3: the run records every input (act) from the start; with these opts it replays exactly (Daily Hunt resume, ladder checks)
   // 5.8: a recording carries the rules it was made under (old recordings have none: hk 0, the 5.7 rules); a fresh run gets the current ones
   G.hk = opts.v ? (opts.hk | 0) : HOOK_VER;
+  G.frV = !G.fr ? 0 : opts.v ? (opts.frV | 0) || 1 : FR_VER; // Frontier rules version (1: the lab prototype; 2: the baseline game)
   G.sector = G.hk && SECTOR_BY[opts.sector] ? opts.sector : null; G.tier = 0; G.purse = 0; G.purseOut = null; G.twists = {}; G.twistW = 0;
-  G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }))); G.inputs = []; G.tick = 0;
+  G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }, G.fr ? { frontier: 1, frV: G.frV } : {}))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
   if (T) { G.tut = T.v; G.lesson = T.id || null; G.tutS = T; G.huntBuild = JSON.parse(JSON.stringify(T.build || { tal: {}, caps: [], remnants: [], lvl: 0 })); } // the same for everyone: no talents, laws or Supernova
   G.ascV = ascV; G.mastery = opts.daily || opts.huntBuild ? {} : Object.assign({}, opts.mastery || {}); // Daily Hunts: no Mastery, same for everyone
@@ -1503,6 +1507,7 @@ function prepareWave(w) {
   }
   if (G.wanted && !G.wanted.done && !G.wanted.spawned && w > G.wanted.w) planWanted(Math.ceil((w + 10) / 10) * 10); // its boss never showed: post it again
   assaultTick(w);
+  if (G.tut && G.tutS.vetAt === tutIdx(w) && w > G.wave && !G.lesson && !G.towers.some(t => t.rank > 0)) { const t = topTower(); if (t) grantVxp(t, Math.max(0, vetThreshold(1) - t.vxp)); } // Frontier Training: fewer kills, so the busiest tower is a Veteran by Wave 5 (the Ready step)
   if (G.tut && G.tutS.grant && G.tutS.grant[tutIdx(w)] && w > G.wave) { const cr = G.tutS.grant[tutIdx(w)]; G.credits += cr; Hooks.toast('SUPPLY DROP', `+${cr} credits for Training`, '#ffb03a'); Hooks.fx('coin', { x: G.core.x, y: G.core.y - 0.6, v: cr }); }
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
@@ -1635,7 +1640,7 @@ function geneShares() {
 }
 function geneRecord(e, leaked) {
   if (e.gkey === undefined) return;
-  const prog = leaked ? 1.5 : clamp(e.d / (e.L.len || 1), 0, 1);
+  const prog = leaked ? 1.5 : clamp(e.L.pre ? eProg(e) : e.d / (e.L.len || 1), 0, 1);
   const X = G.geneExp || (G.geneExp = {});
   const exp = X[e.type] === undefined ? prog : X[e.type];
   X[e.type] = exp * 0.97 + prog * 0.03;
@@ -1717,7 +1722,7 @@ function genWave(w, ev) {
 }
 // 5.8 Training: the run's rules (called once from newRun) and its scripted waves (from genWave)
 // a lesson's run is TUT with the lesson's own fields on top (LESSONS[i].run): its waves, credits, towers, presets
-function tutSpec(id) { const L = id && LESSON_BY[id]; return L && L.run ? Object.assign({}, TUT, { boss: null, charge: null, grant: null, abil: null, build: null, pre: null }, L.run, { id }) : TUT; }
+function tutSpec(id, fr) { const L = id && LESSON_BY[id], B = fr ? Object.assign({}, TUT, TUT.fr) : TUT; return L && L.run ? Object.assign({}, B, { boss: null, charge: null, grant: null, abil: null, build: null, pre: null }, L.run, { id }) : B; } // fr: Frontier Training (TUT.fr: its board and wave script)
 const tutIdx = w => w - (G.startWave || 1) + 1; // the script's wave number (1 = the first scripted wave)
 // the free tiles beside the road that cover the most of it, none touching another (deterministic, no G.r): lesson presets and the coach
 function tutSpots(n, avoid) {
@@ -1744,6 +1749,15 @@ function tutPreset(P) {
     const sp = tutSpots(a.length);
     a.forEach(([type, lvl, spec], i) => { const s = sp[i]; if (!s) return; G.credits += towerCost(type); const t = buildTower(type, s.x, s.y); if (!t) return;
       for (let k = 1; k < (lvl || 1); k++) { G.credits += upgradeCost(t); upgradeTower(t, t.lvl === 3 ? spec || 1 : undefined); } t.affixes = t.affixes.filter(x => x.tier < 4); t.s = towerStats(t); });
+  }
+  else if (op === 'road') { // 6.1: [[type, lvl, frac, spec]...], each beside the main road at that share of its length (the nearest free tile)
+    const L = G.map.lanes[0].tiles;
+    for (const [type, lvl, f, spec] of a) {
+      let s = null; const k0 = Math.round(f * (L.length - 1));
+      for (let dk = 0; dk < L.length && !s; dk++) for (const k of [k0 + dk, k0 - dk]) { const p = L[k]; if (!p || s) continue; for (const [dx, dy] of [[0, -1], [0, 1], [1, 0], [-1, 0]]) if (!s && canBuildAt(p.x + dx, p.y + dy) && !G.towers.some(t => Math.abs(t.x - p.x - dx) <= 1 && Math.abs(t.y - p.y - dy) <= 1)) s = { x: p.x + dx, y: p.y + dy }; }
+      if (!s) continue; G.credits += towerCost(type); const t = buildTower(type, s.x, s.y); if (!t) continue;
+      for (let j = 1; j < (lvl || 1); j++) { G.credits += upgradeCost(t); upgradeTower(t, t.lvl === 3 ? spec || 1 : undefined); } t.affixes = t.affixes.filter(x => x.tier < 4); t.s = towerStats(t);
+    }
   }
   else if (op === 'abil') for (const k of a) { G.abilOn[k] = 1; G.charges[k] = Math.max(G.charges[k] || 0, b || 1); G.abilCd[k] = abilCdMax(k); }
   else if (op === 'cache') { const s = tutSpots(1)[0]; if (s) G.caches.push({ x: s.x, y: s.y, t: 999, id: G.eid++, kind: a || 'normal' }); }
@@ -1775,7 +1789,7 @@ function tutWave(w) {
 // a leak in Training: the boss circles back to the start of the road, and the core never drops below 1 (it says so, once)
 function tutLeak(e) {
   if (!e.boss || e.gen) return false;
-  const c = G.core; c.hp = Math.max(1, c.hp - c.max * 0.25); c.sinceHit = 0; e.d = 0; e.seg = 0; lanePos(e.L, 0, e);
+  const c = G.core; c.hp = Math.max(1, c.hp - c.max * 0.25); c.sinceHit = 0; if (G.fr && !G.map.lanes.includes(e.L)) e.L = G.map.lanes[0]; e.d = 0; e.seg = 0; lanePos(e.L, 0, e); // (Frontier: off a re-routed lane, back to the main road)
   Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
   Hooks.toast('BOSS BREACH', `${e.bossName} hit the core and circled back. In a real run, a boss at the core ends it`, '#ff4d6a', true);
   return true;
@@ -3087,8 +3101,8 @@ function findTargets(t, range, n, exclude) {
   }
   if (!cand.length) return out;
   const mode = t.mode;
-  const key = mode === 'first' ? e => -(e.d / e.L.len) - (e.L.len - e.d < 6 ? 1 : 0)
-    : mode === 'last' ? e => e.d / e.L.len
+  const key = mode === 'first' ? e => -eProg(e) - (e.L.len - e.d < 6 ? 1 : 0)
+    : mode === 'last' ? e => eProg(e)
     : mode === 'strong' ? e => -e.hp
     : e => dist2(e.x, e.y, t.cx, t.cy);
   cand.sort((a, b) => key(a) - key(b));
@@ -3914,15 +3928,19 @@ function frReroute(old) {
       if (dist[v] + step < dist[u]) { dist[u] = dist[v] + step; nxt[u] = v; push(dist[u], u); }
     }
   }
+  // FR_VER 2: the new lane remembers the road already behind the enemy (L.pre), measured against the new road of the lane it walked
+  const keep = G.frV >= 2, mainOf = e => { const k = old.indexOf(e.L), M = map.lanes[k >= 0 ? k : 0]; return M; };
   for (const e of G.enemies) {
     if (e.dead || e.pirate || !e.L) continue;
-    if (e.fly && !e.boss) { e.L = prepLane([{ x: e.x, y: e.y }, { x: gx, y: gy }]); e.d = 0; e.seg = 0; e.lureT = null; continue; }
+    if (e.fly && !e.boss) { const M = keep ? mainOf(e) : null; e.L = prepLane([{ x: e.x, y: e.y }, { x: gx, y: gy }]); e.d = 0; e.seg = 0; e.lureT = null;
+      if (M) { const p0 = M.tiles[0], tot = Math.hypot(p0.x + 0.5 - gx, p0.y + 0.5 - gy); if (tot > e.L.len) e.L.pre = tot - e.L.len; } continue; }
     const s = tIdx(clamp(Math.floor(e.x), 0, COLS - 1), clamp(Math.floor(e.y), 0, ROWS - 1));
     if (s !== goal && nxt[s] < 0) continue; // walled in: it keeps its old road
     const tiles = [{ x: s % COLS, y: (s / COLS) | 0 }], pts = [{ x: e.x, y: e.y }];
     for (let c = s, g = 0; c !== goal && g < N; g++) { c = nxt[c]; tiles.push({ x: c % COLS, y: (c / COLS) | 0 }); pts.push({ x: c % COLS + 0.5, y: ((c / COLS) | 0) + 0.5 }); }
     if (pts.length < 2) pts.push({ x: gx, y: gy });
     const L = prepLane(pts); L.tiles = tiles; L.fly = prepLane([pts[0], { x: gx, y: gy }]);
+    if (keep) { const M = mainOf(e); if (M && M.len > L.len) L.pre = M.len - L.len; }
     e.L = L; e.d = 0; e.seg = 0;
   }
 }

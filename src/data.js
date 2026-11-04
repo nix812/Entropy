@@ -323,8 +323,11 @@ const LEGENDARIES = [
 const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 'prism', 'echo'];
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
-// Frontier (prototype mode, newRun({ frontier: 1 }) → G.fr): a bigger, slower map, a core that lifts off, docks on a tower and
-// links to the towers around it, and towers that can move. Every tunable lives here (docs/notes/frontier.md)
+// Frontier (newRun({ frontier: 1 }) → G.fr; every new run since 6.1, Daily Hunts and Training included): a bigger, slower map, a core
+// that lifts off, docks on a tower and links to the towers around it, and towers that can move. Every tunable lives here
+// (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
+// FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
+const FR_VER = 2;
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -470,6 +473,21 @@ const TUT = {
     [['swarmer', 8, 0.25, 1], ['drone', 10, 0.8, 1, { genes: ['ward'], gel: 'top', share: 0.4 }], ['tank', 3, 2.2, 0.9]],
     [['drone', 4, 1.2, 0.9], ['boss', 1, 3, 1], ['drone', 4, 1.6, 0.9]],
   ],
+  // 6.1 Frontier Training (newRun({ tut, frontier: 1 }), every Training and lesson since 6.1): a bigger board (16:9, the same on every
+  // screen) and a wave script with fewer, tougher units (they walk at 60% speed and each pays 1/0.6 of a Classic kill)
+  fr: { rows: 26, grant: { 4: 120, 5: 260, 7: 160 }, vetAt: 5, // (an extra drop as Wave 3 ends: the Rail Lance and the Move fee are always affordable;
+    // fewer kills per wave, so the busiest tower is made a Veteran as Wave 4 ends if none is yet: the Ready step)
+    waves: [
+      [['drone', 5, 2.2, 1.3]],
+      [['drone', 3, 2.2, 1.4], ['swarmer', 8, 0.45, 1.2]],
+      [['drone', 4, 1.9, 1.5], ['swarmer', 10, 0.4, 1.3]],
+      [['drone', 4, 1.6, 1.4], ['tank', 2, 3.6, 1.4], ['drone', 4, 1.6, 1.4]],
+      [['drone', 2, 1.8, 1.6], ['swarmer', 11, 0.24, 1.6]],
+      [['drone', 6, 1.6, 1.6, { genes: ['ward'], gel: 'top', share: 0.6 }], ['swarmer', 4, 0.5, 1.6, { genes: ['haste'], share: 0.5 }]],
+      [['drone', 5, 1.5, 1.6, { genes: ['ward'], gel: 'top', share: 0.5 }], ['tank', 2, 3.4, 1.4], ['swarmer', 5, 0.4, 1.6]],
+      [['swarmer', 5, 0.4, 1.6], ['drone', 6, 1.3, 1.6, { genes: ['ward'], gel: 'top', share: 0.4 }], ['tank', 2, 3.2, 1.5]],
+      [['drone', 3, 1.8, 1.4], ['boss', 1, 3, 1], ['drone', 3, 2.4, 1.4]],
+    ] },
 };
 // ---------- 5.8 Field Manual: the lessons ----------
 // One entry per lesson. what / when / todo are the manual page (and the intro cards' Learn more); real is the line a lesson ends on.
@@ -491,6 +509,10 @@ const LESSONS = [
     what: 'Each tower draws 1 power. Capacity grows by 1 every 3 waves; the reactor adds more for credits. The core has its own upgrades: Weapon, Shield, Hull and Uplink.', when: 'When the ⚡ readout is full and you still have credits.', todo: 'Upgrade towers first. Expand the reactor when you have credits to spare. Hull makes the core sturdier, Uplink recharges abilities faster.',
     real: 'In a run: a full grid means upgrade. Spare credits late go into the reactor and the core’s Hull.',
     run: { credits: 1600, grid: 3, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['rail', 1], ['cryo', 1]]]], waves: [[['drone', 10, 1, 1.2]]] } },
+  { id: 'lift', title: 'Lift Off and docking', blurb: 'Fly the core, dock it on a tower, link and move towers.',
+    what: 'Your core can fly. Tap Lift Off, pick a landing spot and read the preview. Land on an attack tower to dock it: the core fires that tower’s weapon at ×2 damage and +1 range. The landed core links its 3 nearest attack towers within 4 tiles (+10% damage and rate each). Any tower can Move from its panel.', when: 'Whenever the swarm shifts: a new road, a strain warded against your main element, a boss on the way. After a landing, Lift Off recharges for 3 waves.', todo: 'Dock on the tower that answers the next wave. Read the road line in the preview: a shorter road means enemies arrive sooner. Move stranded towers instead of selling them.',
+    real: 'In a run: dock where the next wave hurts most, then move towers into link reach.',
+    run: { credits: 260, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['road', [['rail', 3, 0.78, 1], ['pulse', 2, 0.66], ['pulse', 2, 0.42]]]], waves: [[['drone', 6, 1.6, 1.4], ['tank', 2, 3.2, 1.2]]] } },
   { id: 'overcharge', title: 'Overcharge', blurb: 'Put spare power into one tower.',
     what: 'Overcharge spends spare power on a tower: +35% damage per step, 1 power per step.', when: 'When you have power left over and one tower doing most of the work.', todo: 'Open the tower panel and tap +1, +2 or +3. Tap the ⚡ readout to Overcharge your top tower in one go.',
     real: 'In a run: never leave power unused. Overcharge your best tower.',
@@ -527,7 +549,7 @@ const LESSONS = [
     real: 'In a run: build into storms of your element; draw Anomalies that match your towers.',
     run: { start: 8, credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo', 'missile'], pre: [['towers', [['missile', 2], ['pulse', 2]]], ['storm', 'solar'], ['entropy', 100]], waves: [[['drone', 10, 0.9, 0.7]]] } },
   { id: 'wormholes', title: 'Wormholes and checkpoints', blurb: 'New roads, a bigger map, a breather.',
-    what: 'Every so often a wormhole opens a new road and the map grows. The wave before it lands is a checkpoint: full refunds and a free respec until you resume.', when: 'At set waves (Normal: 15, 28, 42…).', todo: 'At a checkpoint, sell and rebuild to cover the new road, then tap Next. Resuming fast pays a bonus.',
+    what: 'Every so often a wormhole opens a new road and the map grows. Nothing can be built within 6 tiles of a wormhole. The wave before it lands is a checkpoint: full refunds and a free respec until you resume.', when: 'At set waves (Normal: 15, 28, 42…).', todo: 'At a checkpoint, move towers (or sell and rebuild) to cover the new road, then tap Next. Resuming fast pays a bonus.',
     real: 'In a run: at a checkpoint, move towers to cover both roads before you resume.',
     run: { credits: 400, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['pulse', 1]]], ['lane', 1]], waves: [[['drone', 6, 1.2, 1]], [['drone', 10, 0.9, 1]]] } },
   { id: 'assault', title: 'Strain Assaults', blurb: 'The swarm commits a whole wave to beat you.',
