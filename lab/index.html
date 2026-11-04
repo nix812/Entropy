@@ -563,22 +563,21 @@ body.panel-l #dps { display: none; }
 .drow span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .drow i { height: 4px; display: block; }
 .drow b { font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; }
-.zoombtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 36px; padding: 0 10px; display: flex; align-items: center; gap: 6px; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase;
-  background: rgba(21, 25, 51, 0.92); border: 0; color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); clip-path: var(--cut); }
-body.panel-r .zoombtn { right: auto; left: 6px; }
-/* 5.8 Ready: towers with a veteran pick or an Ascend perk waiting. A fixed spot under Map, hidden at zero, a pulse when the count rises */
-.rdybtn { position: absolute; right: 6px; top: 48px; z-index: 4; height: 40px; padding: 0 6px 0 10px; display: flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
+/* 6.2: the Home/Map camera button is gone (Nic: wasted space; pinch, drag, double-tap and the green core arrow cover it). The right
+   column starts at the top: Lift Off (Frontier), then Ready */
+/* 5.8 Ready: towers with a veteran pick or an Ascend perk waiting. A fixed spot at the top right, hidden at zero, a pulse when the count rises */
+.rdybtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 40px; padding: 0 6px 0 10px; display: flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
   background: rgba(40, 32, 6, 0.92); box-shadow: inset 0 0 0 2px #ffd84a; color: #ffd84a; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
 .rdybtn b { min-width: 26px; height: 26px; padding: 0 5px; display: grid; place-items: center; background: #ffd84a; color: #1a1004; font-weight: 400; font-size: 13px; }
 .rdybtn.pulse { animation: rdyp 0.5s steps(3) 3; } @keyframes rdyp { 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 14px rgba(255, 216, 74, 0.8); transform: scale(1.06); } }
-body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves Map, the ticker and the music deck: Ready waits until it closes */
-/* Frontier: Lift Off sits under Map (Ready moves down one slot); it waits while a side panel is open, like Ready */
-.liftbtn { position: absolute; right: 6px; top: 48px; z-index: 4; height: 40px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
+body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves the ticker and the music deck: Ready waits until it closes */
+/* Frontier: Lift Off tops the right column (Ready moves down one slot); it waits while a side panel is open, like Ready */
+.liftbtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 40px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
   background: rgba(6, 34, 26, 0.92); box-shadow: inset 0 0 0 2px var(--core); color: var(--core); font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
 .liftbtn.cool { color: #6f9c8c; box-shadow: inset 0 0 0 1px #3d6a5a; background: rgba(12, 22, 20, 0.88); }
 .liftbtn.fly { color: #e6fff6; animation: pulse 0.8s infinite; }
 .liftbtn.go:not(.cool):not(.fly) { animation: liftp 1.6s steps(4) infinite; } @keyframes liftp { 50% { box-shadow: inset 0 0 0 2px #e6fff6, 0 0 10px rgba(89, 240, 180, 0.6); } }
-body.fr .rdybtn { top: 94px; }
+body.fr .rdybtn { top: 52px; }
 body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
 .note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
 .sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
@@ -710,6 +709,7 @@ body.rdy #tutlist { bottom: 6px; }
 .mgain { color: #ffd84a; } .mgain b { font-weight: 400; color: #ffd84a; }
 .sts.reson { color: #d6c8ff; }
 .sts.node { color: #8fe6ff; }
+.sts.grow { color: #bfeee0; box-shadow: inset 3px 0 0 var(--core); padding-left: 8px; } .sts.grow b { color: var(--core); font-weight: 400; } .sts.grow small { display: block; font-size: 13px; color: var(--dim); } /* 6.2 support growth */
 .newslist { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 6px; }
 .newslist div { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; background: var(--panel2); box-shadow: inset 2px 0 0 var(--amber); }
 .newslist b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amber); }
@@ -787,6 +787,56 @@ h2.void { color: #d6a6ff; }
 .over h2 { font-size: 22px; }
 .set { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .set input[type=range] { width: 50%; }
+/* ---------- 6.2 Settings: a tab rail on the left, one scrolling pane on the right (console-style options screen) ---------- */
+.card.settings { width: min(880px, 100%); height: min(560px, 100%); }
+.card.settings > .ch { margin-bottom: 0; box-shadow: 0 1px 0 var(--line); }
+.card.settings > .cbody { display: flex; overflow: hidden; padding: 0; margin: 0 -14px -12px; }
+.setwrap { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 168px minmax(0, 1fr); }
+.setrail { display: flex; flex-direction: column; gap: 2px; padding: 10px 0 10px 8px; background: #0a0c19; box-shadow: inset -1px 0 0 var(--line); min-height: 0; }
+.settab { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 12px; border: 0; background: none; color: var(--dim); text-align: left;
+  font-family: var(--f-pix); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.settab .svgi { width: 18px; height: 18px; }
+.settab.on { margin-right: -1px; color: var(--ink); background: var(--panel); box-shadow: inset 3px 0 0 var(--amber), inset 0 1px 0 var(--line), inset 0 -1px 0 var(--line); }
+.settab.on .svgi { color: var(--amber); }
+.settab:active { filter: brightness(1.3); }
+.setver { margin-top: auto; padding: 0 12px 2px; font-family: var(--f-pix); font-size: 8px; letter-spacing: 0.08em; color: #4c4f72; }
+.setpane { min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; padding: 2px 18px 16px; }
+.ssec { display: flex; align-items: center; gap: 10px; margin: 14px 0 2px; font-family: var(--f-pix); font-weight: 400; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); }
+.ssec::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.setrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center; min-height: 54px; padding: 5px 0; border-bottom: 1px solid rgba(42, 47, 82, 0.55); }
+.setx { min-width: 0; }
+.setx b { display: block; font-weight: 400; font-size: 19px; line-height: 1.05; color: var(--ink); }
+.setx span { display: block; font-size: 15px; line-height: 1.1; color: var(--dim); margin-top: 2px; }
+.setx em { font-style: normal; }
+.setc { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.setc .btn { min-height: 44px; min-width: 64px; justify-content: center; }
+.setc input[type=range] { width: 190px; height: 44px; }
+.card.settings .x { width: 44px; height: 44px; top: 6px !important; }
+.sval { min-width: 52px; text-align: right; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+/* switch: a pixel track with a square knob; the word says the state */
+.sw { display: flex; align-items: center; gap: 10px; min-height: 44px; min-width: 88px; justify-content: flex-end; padding: 0 2px; border: 0; background: none;
+  font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+.sw i { position: relative; width: 42px; height: 22px; background: #1b1f3a; box-shadow: inset 0 0 0 2px var(--line2); flex: none; }
+.sw i::after { content: ''; position: absolute; top: 5px; left: 5px; width: 12px; height: 12px; background: var(--dim); }
+.sw.on { color: var(--ink); }
+.sw.on i { background: var(--amber); box-shadow: inset 0 0 0 2px #c98423; }
+.sw.on i::after { left: 25px; background: #1a1004; }
+/* segmented choice: one strip, the chosen part filled */
+.seg { display: flex; box-shadow: inset 0 0 0 1px var(--line2); background: var(--panel2); }
+.seg button { min-height: 44px; min-width: 62px; padding: 0 10px; border: 0; background: none; font-family: var(--f-pix); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); }
+.seg button + button { box-shadow: inset 1px 0 0 var(--line2); }
+.seg button.on { background: var(--amber); color: #1a1004; box-shadow: none; }
+.seg button:active:not(.on) { filter: brightness(1.3); }
+.setrow.danger .setx b { color: #ff9aac; }
+@media (max-width: 760px) {
+  .setwrap { grid-template-columns: 124px minmax(0, 1fr); }
+  .settab { padding: 0 8px; gap: 8px; font-size: 10px; letter-spacing: 0.03em; } .settab .svgi { width: 16px; height: 16px; }
+  .setpane { padding: 0 12px 12px; }
+  .setrow { gap: 4px 10px; min-height: 50px; }
+  .setx b { font-size: 18px; } .setx span { font-size: 14px; }
+  .setc input[type=range] { width: 130px; } .sval { min-width: 44px; font-size: 16px; }
+  .seg button { min-width: 50px; padding: 0 7px; font-size: 9px; }
+}
 /* v4.8 pixel sliders: a chunky track filled up to the thumb (--p is set by paintRange in ui.js), square thumb, 44px touch row */
 input[type=range] { -webkit-appearance: none; appearance: none; height: 30px; background: transparent; margin: 0; cursor: pointer; touch-action: pan-y; --fc: var(--amber); }
 input[type=range]::-webkit-slider-runnable-track { height: 8px; background: linear-gradient(to right, var(--fc) 0 var(--p, 50%), #232845 var(--p, 50%) 100%); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.06); }
@@ -953,6 +1003,19 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .strow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
 .stcode, .stren, #cpName { flex: 1 1 140px; min-width: 0; background: #05060c; border: 0; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); font-family: var(--f-term); font-size: 17px; padding: 6px 8px; min-height: 36px; }
 .stcode:focus, .stren:focus, #cpName:focus { outline: 2px solid var(--gc, var(--amber)); outline-offset: -2px; }
+/* 6.2 the ? sheet: covers the Studio card, same three tabs, Controls then Advanced */
+.card.studio > .ch .sthq { margin-left: auto; font-family: var(--f-pix); font-size: 13px; color: var(--amber); }
+.sthelp { position: absolute; inset: 2px; z-index: 6; display: flex; flex-direction: column; background: var(--panel); }
+.shh { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px 8px; box-shadow: 0 1px 0 var(--line); }
+.shh > b { font-family: var(--f-pix); font-weight: 700; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.shh .shx { margin-left: auto; font-size: 18px; }
+.shbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; padding: 0 16px 14px; }
+.shcols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0 24px; }
+.shdl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 12px; }
+.shdl dt { font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gc, var(--amber)); padding-top: 3px; max-width: 110px; }
+.shdl dd { margin: 0; font-size: 16px; line-height: 1.15; color: var(--ink); }
+.shadv .shdl dd { color: #cfcbe0; }
+@media (max-width: 760px) { .shcols { grid-template-columns: minmax(0, 1fr); } .shdl dt { max-width: 92px; } .shh { gap: 6px; padding: 8px 10px 6px; } .shh > b { display: none; } }
 /* Listen */
 .stlisten { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; }
 .stvibe { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -1012,6 +1075,12 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .mdname b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mdname span { font-size: 14px; color: var(--mc, var(--dim)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.watching #mdeck { display: none; }
+/* 6.2 like from the battlefield: the same ♥ as the Studio's Keep; filled when the song is in My Tracks, a short pop and a line to confirm */
+.mdb.mdlike { color: #c9c6dc; } .mdb.mdlike.on { color: #ff5fa8; box-shadow: inset 0 0 0 2px #ff5fa8; }
+.mdb.mdlike.pop .svgi { animation: mdpop 0.36s steps(3); }
+@keyframes mdpop { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+.mdname span.liked { color: #ff5fa8; }
+@media (prefers-reduced-motion: reduce) { .mdb.mdlike.pop .svgi { animation: none; } }
 body.panel-l #mdeck { left: auto; right: 6px; top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } /* a left panel covers the corner: the deck opens on the right, under Map */
 body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } /* Map moves to the top-left then; the deck sits under it */
 /* v5.5.10 typing panel (outside the scaled game layer, pinned to what the keyboard leaves visible) */
@@ -1081,7 +1150,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.1.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.2.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -1128,7 +1197,6 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
     <div class="rail" id="railL"><button class="rb mtile" id="bMusic" aria-label="Music"><span class="meq"><i></i><i></i><i></i><i></i><i></i></span><span>Music</span></button><div id="abils" style="display:contents"></div></div>
     <div id="stage">
       <canvas id="cv"></canvas>
-      <button class="zoombtn" id="bZoom" hidden></button>
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
       <div id="log"></div>
@@ -1139,7 +1207,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
       <div id="etip" hidden></div>
       <div id="ticker" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
-      <div id="mdeck" hidden><button class="mdb" id="bTrkBack" aria-label="Tap to replay this song, double-tap for the last song" data-svg="prev"></button><button class="mdname" id="mdName" aria-label="Open the Music Studio"><b></b><span></span></button><button class="mdb" id="bTrkNext" aria-label="Next song" data-svg="next"></button></div>
+      <div id="mdeck" hidden><button class="mdb" id="bTrkBack" aria-label="Tap to replay this song, double-tap for the last song" data-svg="prev"></button><button class="mdname" id="mdName" aria-label="Open the Music Studio"><b></b><span></span></button><button class="mdb mdlike" id="bTrkLike" aria-label="Keep this song in My Tracks" aria-pressed="false" data-svg="heartO"></button><button class="mdb" id="bTrkNext" aria-label="Next song" data-svg="next"></button></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">
@@ -1176,7 +1244,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.1.0';
+const VERSION = '6.2.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1503,7 +1571,8 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // that lifts off, docks on a tower and links to the towers around it, and towers that can move. Every tunable lives here
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
-const FR_VER = 2;
+// 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
+const FR_VER = 3;
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -1521,15 +1590,16 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.1.0', title: 'Last Gradient 6.1 · Lift Off', items: [
-  ['Your core flies', 'Every run is now played on the big Frontier map. Tap Lift Off, pick a spot, and your core flies there. Land it on a tower and the core fires that weapon, twice as hard.'],
-  ['Docking and links', 'The landed core links its 3 nearest attack towers: +10% damage and fire rate each. The core panel shows the docked weapon\'s damage, rate, range and kills.'],
-  ['Move towers', 'Pick up a tower and set it down somewhere better, for 10% of what it cost and 4 seconds offline. No more selling stranded towers.'],
-  ['No-build zones', 'You can\'t build within 6 tiles of a wormhole, so enemies get a moment on the map before they meet your guns. A red ring flashes if you try.'],
-  ['Getting around', 'Pan and pinch to explore the bigger map. Edge arrows point back to your core.'],
-  ['Daily Hunts on Frontier', 'Daily Hunts use the same Frontier board on every device, so scores are fair.'],
-  ['Training, updated', 'Basic Training now teaches Lift Off, docking, links and moving towers, and there is a new Field Manual lesson for them.'],
-  ['Old saves', 'A run saved before this update resumes on the old rules.'],
+const WHATS_NEW = { ver: '6.2.0', title: 'Last Gradient 6.2 · Fallout', items: [
+  ['Nuke', 'Overdrive is now the Nuke. Same one-shot board clear, now with a white-out flash, a fireball, a shockwave and a mushroom cloud.'],
+  ['Support towers grow', 'Relay Pylons and Snare Beacons level up for free to match the attack towers around them. At LV 3 they offer a free Specialization.'],
+  ['Treasure arrows', 'Yellow arrows at the screen edge point at crates you can\'t see. Tap one to look there. Crates also claim from a tap up to a tile and a half away.'],
+  ['Cleaner view', 'The Home button is gone. Tap the green core arrow at the screen edge to come back home.'],
+  ['Sound you can place', 'Towers sound louder near the middle of the screen and quieter far away, with a little left and right.'],
+  ['Power Nodes', 'Power Nodes never sit in a wormhole\'s no-build zone. A node caught by a new wormhole moves.'],
+  ['Settings in tabs', 'General, Sound, Graphics and Interface, each setting with a line on what it does.'],
+  ['Music', 'The composer is open by default. A ? in the Studio explains every control. Keep the song playing with the ♥ on the battlefield music deck.'],
+  ['Calmer tutorial', 'Training lessons are spaced out so you get to play between them, and new tips in a run arrive at least 30 seconds apart. New: a pan and zoom tip.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
@@ -1777,7 +1847,7 @@ const MARKET_ITEMS = [
   { id: 'starmap', name: 'Fake Star Map', desc: 'The swarm forgets what it learned: evolution starts over and the next Strain Assault is pushed back 3 waves', base: 220, col: '#b86cff' },
   { id: 'mutagen', name: 'Mutagen Vial', desc: 'Every tower gains a random affix', base: 300, col: '#ff9ad5' },
   { id: 'medal', name: 'Battle Medal', desc: 'Your top-damage tower gains a Veteran rank', base: 190, col: '#ffe14d' },
-  { id: 'recharge', name: 'Spare Overdrive', desc: 'Recharges Overdrive after you have used it', base: 900, col: '#59f0b4' },
+  { id: 'recharge', name: 'Spare Nuke', desc: 'Rearms the Nuke after you have used it', base: 900, col: '#59f0b4' },
 ];
 const MARKET_LINES = ['No refunds. Ever.', 'Fell off a freighter', "Don't ask where it's from", 'Cash only. Space cash', 'You never bought this', 'Warranty void in all galaxies', 'Pleasure doing crimes with you', 'Restocked after the boss', 'Prices go up. Always up', 'Tell your friends. Not the authorities'];
 // Core Battery (v1.20): a long-range support gun. Weak per shot early; the expensive late levels make it a real weapon.
@@ -2873,6 +2943,7 @@ function placeNodes(n, R, P) {
   for (let k = 0; k < 300 && placed < n; k++) {
     const x = rngInt(r, R.x0 + 1, R.x1 - 2), y = rngInt(r, R.y0 + 1, R.y1 - 2), i = tIdx(x, y);
     if ((P && inRegion(x, y, P)) || map.tiles[i] !== 0 || G.towerAt[i]) continue;
+    if (G.frV >= 3 && frNearWorm(x, y)) continue; // FR_VER 3: never inside a wormhole's no-build zone
     if (Math.abs(x - map.core.x) + Math.abs(y - map.core.y) < 3) continue;
     if (list.some(q => Math.abs(q.x - x) + Math.abs(q.y - y) < 6)) continue;
     if (k < 200 && !nearRoad(x, y)) continue;
@@ -2881,6 +2952,20 @@ function placeNodes(n, R, P) {
   setNodes(list);
   if (placed) G.mapRev = (G.mapRev || 0) + 1;
   return placed;
+}
+// FR_VER 3: a Power Node that a wormhole's no-build zone covers (a wormhole detected after the node appeared) moves: it is
+// dropped and a replacement appears elsewhere in the sector. A node with a tower or the core on it stays put until that tile
+// is free again (sold, moved, lifted off), so nothing the player built loses its bonus. Called when a wormhole appears, every
+// wave, and when a tower leaves a tile.
+function frNodeFix() {
+  if (!(G.frV >= 3) || !G.nodes || !G.nodes.length) return 0;
+  const bad = G.nodes.filter(q => frNearWorm(q.x, q.y) && G.map.tiles[tIdx(q.x, q.y)] === 0 && !G.towerAt[tIdx(q.x, q.y)]);
+  if (!bad.length) return 0;
+  setNodes(G.nodes.filter(q => !bad.includes(q)));
+  placeNodes(bad.length, G.region, null);
+  G.mapRev = (G.mapRev || 0) + 1;
+  Hooks.log(bad.length > 1 ? `${bad.length} Power Nodes moved out of a wormhole zone` : 'Power Node moved out of a wormhole zone', '#6ae2ff');
+  return bad.length;
 }
 
 // ---------- Salvage caches: drop in during waves, tap to claim before they decay ----------
@@ -3071,6 +3156,7 @@ function newRun(opts) {
   while (G.laneWaves[G.lanesOpened] !== undefined && G.laneWaves[G.lanesOpened] <= sw) {
     const P0 = G.region, grew = growRegion(G.lanesOpened + 1, true);
     genExtraLane(r); G.lanesOpened++;
+    frNodeFix();
     if (grew) placeNodes(1, G.region, P0);
   }
   G.nextMs = 1500;
@@ -3287,7 +3373,7 @@ function buildTower(type, x, y) {
 function upgradeTower(t, specIdx) {
   if (t.lvl === 3 && !specIdx) return false;
   if (t.lvl >= MAX_LV && t.ascPend > 0) return false; // v5.8: pick the last Ascension's perk first
-  const cost = upgradeCost(t);
+  const cost = t.grow > 0 && t.lvl === 3 && G.frV >= 3 ? 0 : upgradeCost(t); // FR_VER 3: a grown support tower's Specialization is free
   if (G.credits < cost) return false;
   G.credits -= cost; t.invested += cost;
   if (t.lvl >= MAX_LV) {
@@ -3351,7 +3437,7 @@ function sellTower(t) {
   G.credits += sellRefund(t);
   G.towers = G.towers.filter(o => o !== t);
   delete G.towerAt[tIdx(t.x, t.y)];
-  recomputeAuras();
+  recomputeAuras(); frNodeFix();
   Hooks.sfx('sell', t);
   Hooks.fx('sell', { x: t.cx, y: t.cy });
 }
@@ -3500,7 +3586,37 @@ function capPlay(t, s, D) {
 function chaosRoll() { for (const t of G.towers) if (canOvercharge(t)) { t.wild = pick(G.r, ELS); t.s = towerStats(t); } recomputeAuras(); }
 // Forge Works: a Forge's slug deals FORGE_GUN.dmg × its income per shot
 const FORGE_GUN = { dmg: 0.4, range: 3, rate: 1 };
+// FR_VER 3: support towers (Relay Pylon, Snare Beacon) grow for free with the attack towers they serve. A support tower's level
+// rises to the rounded-down average level of the attack towers in its range (LV 1-5; Ascension stays paid). Free levels roll an
+// affix like a paid one but add nothing to the sell value (invested is what was paid), and levels never go down. LV 3 → 4 needs
+// a Specialization: growth stops there and t.grow = 1 marks a free pick (Ready lists it, the spec costs nothing). Runs inside
+// the sim (from recomputeAuras, so after every build, upgrade, sell and move): no player action, nothing recorded.
+const supKind = k => k === 'support' || k === 'snare';
+function supTarget(t) {
+  if (!t.s || !(t.s.range > 0)) return 0;
+  const r2 = t.s.range * t.s.range; let n = 0, sum = 0;
+  for (const o of G.towers) if (o !== t && canOvercharge(o) && dist2(t.cx, t.cy, o.cx, o.cy) <= r2) { n++; sum += Math.min(MAX_LV, o.lvl); }
+  return n ? Math.min(MAX_LV, Math.floor(sum / n)) : 0;
+}
+function supGrow() {
+  for (const t of G.towers) {
+    if (!t.s || !supKind(t.s.kind)) continue;
+    const want = supTarget(t); let n = 0;
+    while (t.lvl < want && t.lvl < MAX_LV && !(t.lvl === 3 && !t.spec)) {
+      t.lvl++; n++; t.affixes.push(rollAffix(t));
+      if (G.mods.ks.celestial) t.affixes.push(rollAffix(t));
+    }
+    t.grow = want >= 4 && t.lvl === 3 && !t.spec ? 1 : 0;
+    if (n) {
+      t.freeLv = (t.freeLv || 0) + n; t.s = towerStats(t);
+      G.stats.supGrow = (G.stats.supGrow || 0) + n;
+      Hooks.fx('grow', { x: t.cx, y: t.cy, lv: t.lvl }); Hooks.sfx('upgrade', t);
+      Hooks.log(`${towerLabel(t)} grew to LV ${t.lvl} with its towers`, '#59f0b4');
+    }
+  }
+}
 function recomputeAuras() {
+  if (G.frV >= 3) supGrow();
   for (const t of G.towers) { t.buff = { dmg: 0, rate: 0, crit: 0 }; t.isolated = true; t.reson = 0; t.resonWith = []; }
   for (const t of G.towers) {
     const els = new Set();
@@ -3567,10 +3683,10 @@ function updateLinkBeams(dt) {
   }
 }
 
-// ---------- Core Overdrive: once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
+// ---------- Core Overdrive (the Nuke since 6.2; internal ids stay od*): once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
 const OD_WAVE = 35, OD_BOSS = 0.2;
 const odReady = () => !!(G && !G.over && !G.odUsed && G.wave >= OD_WAVE);
-function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('OVERDRIVE ONLINE', 'Tap Overdrive on the left: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
+function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('NUKE ONLINE', 'Tap Nuke on the left: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
 function releaseOverdrive() {
   if (G.over) return 'over';
   if (G.odUsed) return 'used';
@@ -3583,13 +3699,13 @@ function releaseOverdrive() {
   for (let pass = 0; pass < 6; pass++) {
     const tg = G.enemies.filter(e => !e.dead && !e.boss);
     if (!tg.length) break;
-    for (const e of tg) { if (e.dead) continue; Hooks.fx('spark', { x: e.x, y: e.y, col: PAL_CORE }); kill(e, null, { abil: 1 }); n++; }
+    for (const e of tg) { if (e.dead) continue; Hooks.fx('spark', { x: e.x, y: e.y, col: '#ffcf6a' }); kill(e, null, { abil: 1 }); n++; } // 6.2: vaporised by the Nuke (cosmetic colour)
   }
   // bosses ride it out: they lose a chunk of their remaining HP but never die to it
   for (const e of G.enemies) if (!e.dead && e.boss) { e.hp = Math.max(1, e.hp * (1 - OD_BOSS)); e.st.stun = Math.max(e.st.stun || 0, 0.6); }
   G.stats.odKills = n;
-  Hooks.fx('overdrive', { x: c.x, y: c.y, r: Math.hypot(COLS, ROWS) }); Hooks.sfx('nova'); Hooks.fx('shake', { v: 10 });
-  Hooks.log(`Overdrive · ${n} enemies erased`, '#59f0b4');
+  Hooks.fx('overdrive', { x: c.x, y: c.y, r: Math.hypot(COLS, ROWS) }); Hooks.sfx('nuke'); Hooks.fx('shake', { v: 10 }); // 6.2: shown and heard as the Nuke
+  Hooks.log(`Nuke · ${n} enemies erased`, '#59f0b4');
   return 'ok';
 }
 const PAL_CORE = '#59f0b4';
@@ -3789,11 +3905,13 @@ function rollEvents(w) {
 }
 function prepareWave(w) {
   // build the next wave during the countdown so the player can see it coming
+  frNodeFix(); // FR_VER 3: a node freed since the last wave (the core lifted off it, a resumed older save) leaves the zone
   // a wormhole appears two waves before its lane opens
   if (G.laneWaves[G.lanesOpened] === w + 1) {
     const P0 = G.region, grew = growRegion(G.lanesOpened + 1);
     const L = genExtraLane(G.r, w + 1);
     G.lanesOpened++;
+    frNodeFix();
     if (grew && placeNodes(1, G.region, P0)) Hooks.log('New Power Node in the expanded sector', '#6ae2ff');
     if (L) {
       G.mapRev = (G.mapRev || 0) + 1;
@@ -4395,6 +4513,7 @@ function marketBuy(id) {
 // Node Beacon: the tile becomes a Power Node (towers there draw no power and hit harder)
 function marketPlaceNode(x, y) {
   if (G.placing !== 'beacon' || !inRegion(x, y, G.region) || G.map.tiles[tIdx(x, y)] !== 0 || isNode(x, y)) return false;
+  if (G.frV >= 3 && frNearWorm(x, y)) return false; // FR_VER 3: no Power Nodes in a wormhole's no-build zone
   if (Math.abs(x - G.map.core.x) + Math.abs(y - G.map.core.y) < 2) return false;
   G.placing = null; G.placingRefund = 0; setNodes(G.nodes.concat([{ x, y }])); G.market.beacons = (G.market.beacons || 0) + 1; G.mapRev = (G.mapRev || 0) + 1;
   for (const t of G.towers) t.s = towerStats(t); recomputeAuras();
@@ -6266,6 +6385,7 @@ function frMoveTower(t, x, y) {
   t.ramp = 0; t.beamTargets = null; t.fenceTo = null;
   t.s = towerStats(t); recomputeAuras();
   if (t.s.kind === 'snare') lureAll();
+  frNodeFix();
   rlog('frMove', { type: t.type, x, y, fee });
   Hooks.sfx('build', t); Hooks.fx('sell', { x: t.mvFrom.x, y: t.mvFrom.y });
   return true;
@@ -6603,7 +6723,7 @@ function snapshotRun(waveNum) {
   if (!G || G.over || ghostRun()) return;
   const gut = []; let owed = 0; for (const e of G.enemies) if (!e.dead) { if (e.gut) for (const t of e.gut) if (!G.towerAt[tIdx(t.x, t.y)]) gut.push(t); if (e.audited) owed += e.audited; }
   const tw = G.towers.concat(gut).map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
-    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0, fire: t.fire || undefined, wild: t.wild || undefined, perks: t.perks || [], ascPend: t.ascPend || 0, aOffer: t.aOffer || null }));
+    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0, fire: t.fire || undefined, wild: t.wild || undefined, perks: t.perks || [], ascPend: t.ascPend || 0, aOffer: t.aOffer || null, grow: t.grow || 0, freeLv: t.freeLv || 0 }));
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
@@ -6641,7 +6761,7 @@ function resumeRun(S) {
       invested: T.invested, cd: 0.3, angle: -Math.PI / 2, kills: T.kills, dmgDone: T.dmgDone, dps: 0, dpsAcc: 0, mode: T.mode || 'first', disabled: 0,
       ramp: 0, olT: 0, buff: { dmg: 0, rate: 0, crit: 0 }, isolated: false, flash: 0,
       vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0, vetN: T.vetN || 0, fire: T.fire || undefined, wild: T.wild || undefined,
-      perks: (T.perks || []).slice(), ascPend: T.ascPend || 0, aOffer: T.aOffer ? T.aOffer.slice() : null };
+      perks: (T.perks || []).slice(), ascPend: T.ascPend || 0, aOffer: T.aOffer ? T.aOffer.slice() : null, grow: T.grow || 0, freeLv: T.freeLv || 0 };
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t;
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
@@ -6886,6 +7006,21 @@ const SFX = (() => {
     const L = locate(x, y); if (!L) return { pan: 0, k: 1, dull: false };
     return { pan: Math.max(-0.75, Math.min(0.75, L.px * 0.75)), k: L.on ? 1 : 0.45, dull: !L.on };
   }
+  // 6.2 tower fire and impacts follow the camera (Nic: "closer to the center the louder"): volume and a gentle pan from the
+  // source's distance to the screen centre, in units of the half-view (1 = the screen edge), so zooming changes it too.
+  // Full within 0.6, easing down to PROX_FLOOR by 2.2 (well off screen) and never silent; off screen is also dulled.
+  // Worked out once per sound (no per-frame work); a far, quiet sound plays at most every 0.25 s per sound name, so a busy
+  // battle off screen costs a fraction of the voices it used to.
+  const PROX_FLOOR = 0.2, PROX_IN = 0.6, PROX_OUT = 2.2;
+  let curP = null;
+  function prox(arg) {
+    const x = arg && (arg.cx !== undefined ? arg.cx : arg.x), y = arg && (arg.cy !== undefined ? arg.cy : arg.y);
+    if (x === undefined || !locate) return null;
+    const L = locate(x, y); if (!L) return null;
+    const ny = L.py === undefined ? 0 : L.py, r = Math.sqrt(L.px * L.px + ny * ny), u = Math.min(1, Math.max(0, (r - PROX_IN) / (PROX_OUT - PROX_IN)));
+    const k = 1 - (1 - PROX_FLOOR) * u * u * (3 - 2 * u);
+    return { pan: Math.max(-0.6, Math.min(0.6, L.px * 0.5)), k, dull: !L.on, far: u >= 0.85 };
+  }
   function duck(db, att, hold, rel, mus) {
     if (!duckW) return;
     const t = T(), v = Math.pow(10, db / 20);
@@ -6899,7 +7034,7 @@ const SFX = (() => {
   // player actions -22 · notices -20 to -24 · big events -12. Measured with test/sfxrender.py.
   const TRIM = { ui: 20, deny: 12, rail: -2.3, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -9, hit: 13, hitcrit: -2, hitshield: 2,
     build: -3, upgrade: 4, reroll: 15, sell: 12, cash: 4, wave: -2, call: 11, milestone: 6, freeze: 2, net: 15, boom: -2, blink: 3, storm: 7, levelup: 2, unbreak: 4,
-    converge: 4, crack: 1, stasis: 5, strikecharge: 3, overclock: 12, quack: 5,
+    converge: 4, crack: 1, stasis: 5, strikecharge: 3, overclock: 12, quack: 5, nuke: -1.5, // 6.2 the Nuke: the loudest big event, by a dB
     // v5.8 tower character (measured with sfxrender.py; spec variants sit level with their base sound, grav trimmed 3 dB into its tier)
     shot2: 4.4, rail1: -1.8, rail2: -2, pulse1: -2.1, pulse2: 1.1, missile1: 0.3, missile2: -0.2, coil: 1.7, coil1: 1.1, coil2: -3.7, ignite: 5,
     mortar1: -2, mortar2: -1.1, grav1: -9.1, grav2: -8.5, hitK: 9.5, hitR: 2.3, hitC: 7.7, hitF: 3.4, hitV: 10.1, hitA: 10.9,
@@ -6909,8 +7044,8 @@ const SFX = (() => {
   // start a sound: bus, base volume, pitch jitter (semitones), placement and sends
   function ev(name, bus, vol, o, arg) {
     o = o || {};
-    const P = place(arg), jit = o.jit === undefined ? 0.6 : o.jit;
-    const dens = bus === busW || bus === busH ? density() : 1;
+    const wh = bus === busW || bus === busH, P = (wh && (curP || prox(arg))) || place(arg), jit = o.jit === undefined ? 0.6 : o.jit; // 6.2: weapons and impacts follow the camera
+    const dens = wh ? density() : 1;
     const c = chain(bus, { vol: vol * dB((TRIM[o.tn || name] || 0) + (o.trim || 0)) * P.k * dens * rnd(0.9, 1.05), pan: o.pan !== undefined ? o.pan : P.pan, dull: P.dull, room: o.room, hall: o.hall, pitch: (o.pitch || 1) * semi(rnd(-jit, jit)) });
     c.name = name; return c;
   }
@@ -7156,6 +7291,14 @@ const SFX = (() => {
     strikecharge() { const c = ev('strikecharge', busE, 0.55, { hall: 0.3, pan: 0 }); tone(c, { w: 0.25, f0: 220, f1: 1760, slide: 0.55, d: 0.6, v: 0.09, lp: 3000, lp1: 8000 }); nz(c, { ft: 'highpass', f0: 2000, f1: 8000, d: 0.55, v: 0.15, a: 0.3 }); done(c); },
     strike(p) { duck(-6, 0.005, 0.2, 0.6, true); const c = ev('strike', busE, 0.9, { hall: 0.45 }, p); click(c, 0.8, 0, 2500); sub(c, 120, 30, 0.45, 0.8); nz(c, { ft: 'lowpass', f0: 5000, f1: 120, d: 0.6, v: 0.6, lofi: 1 }); fmv(c, { f0: 1200, f1: 40, r: 10, i: 8, i1: 0.2, d: 0.15, v: 0.25 }); done(c); },
     nova() { duck(-8, 0.02, 0.6, 1.2, true); const c = ev('nova', busE, 0.9, { hall: 0.6, pan: 0 }); sub(c, 80, 25, 1.2, 0.7); fmv(c, { f0: 300, f1: 60, r: 3, i: 4, d: 1, v: 0.2 }); nz(c, { ft: 'lowpass', f0: 3000, f1: 100, d: 1, v: 0.45 }); arp(c, [81, 76, 69, 64], 0.08, { w: 'sawtooth', v: 0.06, d: 0.4, lp: 3000, at: 0.05 }); done(c); },
+    // 6.2 the Nuke: a crack and a bright blast, two long falling subs, a rumble that rolls on for three seconds and a second,
+    // lower roar as the shockwave lands. Deeper and longer than any other sound; music and weapons duck under it
+    nuke() { duck(-13, 0.01, 1.6, 2.4, true); const c = ev('nuke', busE, 0.95, { hall: 0.8, pan: 0, jit: 0 });
+      click(c, 0.9, 0, 1500); nz(c, { ft: 'lowpass', f0: 7000, f1: 260, d: 0.55, v: 0.6, lofi: 1 });
+      sub(c, 72, 17, 2.8, 0.95); sub(c, 46, 20, 3.3, 0.55, 0.12);
+      nz(c, { ft: 'lowpass', f0: 1100, f1: 55, q: 0.7, d: 3.3, v: 0.5, a: 0.06 });
+      fmv(c, { f0: 88, f1: 26, r: 1.41, i: 5, i1: 0.4, d: 2.5, v: 0.16, at: 0.04, mw: 'sawtooth' });
+      nz(c, { ft: 'lowpass', f0: 420, f1: 70, q: 0.8, d: 2.3, v: 0.4, a: 0.25, at: 0.55, lofi: 1 }); done(c); },
     stasis() { duck(-5, 0.05, 0.5, 1, true); const c = ev('stasis', busE, 0.7, { hall: 0.55, pan: 0 }); fmv(c, { f0: 880, f1: 2640, r: 2, i: 0.5, d: 0.6, v: 0.14 }); fmv(c, { f0: 4186, f1: 220, r: 3.5, i: 1.2, d: 0.5, v: 0.08 }); nz(c, { ft: 'highpass', f0: 7000, d: 0.5, v: 0.15, a: 0.05 }); done(c); },
     // v5.1 Sensor Sweep: a sonar ping and a rising sweep
     scan() { const c = ev('scan', busE, 0.6, { hall: 0.55, pan: 0 }); tone(c, { w: 'sine', f0: 1568, f1: 1568, d: 0.5, v: 0.12, a: 0.003 }); tone(c, { w: 'sine', f0: 1568, f1: 1560, d: 0.35, v: 0.05, at: 0.32 }); nz(c, { f0: 600, f1: 4000, q: 3, d: 0.6, v: 0.12, a: 0.25, curve: 'lin' }); done(c); },
@@ -7172,9 +7315,9 @@ const SFX = (() => {
   };
   function play(name, arg, arg2) {
     if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
-    if (WEAP[name]) return WEAP[name](arg, arg2);
-    if (HIT[name]) return HIT[name](arg, arg2);
-    if (name === 'die') return die(arg);
+    if (WEAP[name] || HIT[name] || name === 'die') { // 6.2: placed once by camera distance; a far one is thinned out before it builds anything
+      const P = prox(arg); if (P && P.far && !allow(name + '~far', 0.25, 1)) return;
+      curP = P; try { return WEAP[name] ? WEAP[name](arg, arg2) : HIT[name] ? HIT[name](arg, arg2) : die(arg); } finally { curP = null; } }
     if (name === 'bosswarn') return EVT.boss(arg);
     if (name === 'combo') { const n = typeof arg === 'string' ? arg : arg && arg.n; if (!COMBO[n] || !allow('combo' + n, 0.12, 2)) return; const c = ev('combo' + n, busE, 0.6, { room: 0.3 }, typeof arg === 'object' ? arg : null); COMBO[n](c); done(c); return; }
     if (name === 'ui' || name === 'deny') { if (!allow(name, name === 'ui' ? 0.03 : 0.1)) return; return UIS[name](); }
@@ -7183,7 +7326,8 @@ const SFX = (() => {
   // Void Lens: one shared beam hum. Its level follows how many beams are firing; its pitch climbs as they ramp up.
   // v5.8: eh / pr = share of firing Lenses that are Event Horizon (a sub octave under the hum) or Prism Split (a wider chorus)
   let beamOn = 0, beamOff = 0;
-  function beams(n, ramp, eh, pr) {
+  // 6.2: pk = the firing Lenses' average camera-distance gain (prox), so the hum fades when the beams are off screen
+  function beams(n, ramp, eh, pr, pk) {
     if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
     if (!beamV) {
       const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator(), o4 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
@@ -7199,7 +7343,7 @@ const SFX = (() => {
     // after 2.5 s of steady firing; a fresh burst after a second of silence swells back to full
     if (on) { if (!beamOn || t - beamOff > 1) beamOn = t; beamOff = t; } else if (beamOn && t - beamOff > 1) beamOn = 0;
     const settle = on && beamOn && t - beamOn > 2.5 ? 0.65 : 1;
-    beamV.g.gain.setTargetAtTime(on ? Math.min(0.055, 0.022 + 0.012 * Math.log2(1 + n)) * settle : 0, t, on ? (settle < 1 ? 0.8 : 0.05) : 0.12);
+    beamV.g.gain.setTargetAtTime(on ? Math.min(0.055, 0.022 + 0.012 * Math.log2(1 + n)) * settle * (pk === undefined ? 1 : pk) : 0, t, on ? (settle < 1 ? 0.8 : 0.05) : 0.12);
     const f0 = 98 * semi(k * 12), w = 0.005 + 0.012 * (pr || 0);
     beamV.o1.frequency.setTargetAtTime(f0, t, 0.1); beamV.o2.frequency.setTargetAtTime(f0 * (1 + w), t, 0.1); beamV.o4.frequency.setTargetAtTime(f0 * (1 - w), t, 0.1);
     beamV.o3.frequency.setTargetAtTime(f0 / 2, t, 0.1);
@@ -8151,7 +8295,7 @@ const SFX = (() => {
     return API;
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -8814,7 +8958,8 @@ const RES = 2;
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let wormFlashAt = 0; // Frontier: when the no-build ring around the wormholes was last flashed
-  let frSel = null, frArrows = []; // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
+  let nuke = null, nukeSpr = null; // 6.2 the Nuke's detonation (one at a time) and its pre-rendered puffs
+  let frSel = null, frArrows = [], keepOut = []; // keepOut: stage rects of buttons and banners the edge arrows slide clear of (set by the UI) // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
   // v5.8 tower character (render-only): a render clock, small screen kicks for heavy hits, hop stars and pull streaks.
@@ -9650,6 +9795,71 @@ const RES = 2;
   function fillRing(x, y, r, col, a) { if (r <= 0) return; b.fillStyle = hexA(col, a); b.beginPath(); b.arc(x, y, r, 0, 6.283); b.fill(); }
   // dithered discs (storms, ranges) cached per radius/colour/phase
   const discCache = new Map();
+  // 6.2 the Nuke: chunky pixel puffs, pre-rendered once per colour stage (white-hot, yellow, orange, dark red, hot smoke, ash).
+  // Lit from the top-left like the rest of the art, with a dithered rim; scaled with smoothing off so they stay blocky.
+  const NUKE_RAMP = [['#ffffff', '#fffbe8', '#fff0b8'], ['#fff6b0', '#ffd84a', '#f0a428'], ['#ffc04a', '#ff8a2a', '#c8501a'], ['#e0602a', '#a8361a', '#6a2014'],
+    ['#9a7a66', '#6e564a', '#43342f'], ['#77706c', '#55504f', '#36323a']];
+  function nukeSprites() {
+    if (nukeSpr) return nukeSpr;
+    nukeSpr = NUKE_RAMP.map(([hi, mid, lo]) => {
+      const R0 = 11, N = R0 * 2, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
+      for (let y = 0; y < N; y += 2) for (let x = 0; x < N; x += 2) {
+        const dx = x + 1 - R0, dy = y + 1 - R0, d = Math.hypot(dx, dy) / R0;
+        if (d > 1 || (d > 0.8 && ((x + y) >> 1) % 2)) continue;
+        const l = (-dx - dy) / (R0 * 1.41) * 0.65 + (1 - d) * 0.6;
+        g.fillStyle = l > 0.5 ? hi : l > 0.1 ? mid : lo; g.fillRect(x, y, 2, 2);
+      }
+      return c;
+    });
+    return nukeSpr;
+  }
+  function startNuke(x, y, rr) {
+    nukeSprites(); nuke = { x, y, t: 0, seed: Math.random() * 6.283, ash: 0 };
+    flashes.push({ col: '#ffffff', life: 0.5, max: 0.5, a: 0.95 }); flashes.push({ col: '#ffc76a', life: 1.6, max: 1.6, a: 0.28 });
+    const far = Math.max(rr, Math.hypot(BW, BH) / TILE) * TILE;
+    rings.push({ x, y, r0: 8, r1: far, life: 1.5, max: 1.5, col: '#fff0c0', w: 4, a: 0.9 }); // the shockwave races across the board
+    rings.push({ x, y, r0: 6, r1: far * 0.55, life: 1.9, max: 1.9, col: '#d08a4a', w: 7, fill: 1, a: 0.55, nl: 1 }); // a dust front behind it
+    rings.push({ x, y, r0: 4, r1: TILE * 5, life: 0.5, max: 0.5, col: '#ffffff', w: 3, fill: 1 });
+    for (let i = 0; i < (LITE ? 30 : 70); i++) { const a = Math.random() * 6.283, sp = 30 + Math.random() * 110;
+      parts.push({ x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6 - 40 - Math.random() * 50, g: 45, life: 1.2 + Math.random() * 1.4, max: 2.6, col: ['#ffffff', '#ffe14d', '#ffb03a', '#ff7b29'][i % 4], s: 2 }); }
+    shakeAt(16, 1.1);
+  }
+  // one frame of the detonation in the world buffer (about 3.3 s): fireball, stem, rolling cap, then ash and embers
+  // vy, vh: the camera view's top and height (world units). The cloud is sized to the view once (about 40% of its height, never
+  // smaller than the base size) and its cap never rises above the top edge, so a core high on screen still shows the whole cloud
+  function drawNuke(dt, vy, vh) {
+    const N = nuke; N.t += dt; const t = N.t, T = 3.3;
+    if (!N.Z) N.Z = Math.max(1, Math.min(2.4, vh / (TILE * 13)));
+    const TL = TILE * N.Z;
+    if (t > T) { nuke = null; return; }
+    const S = nukeSpr, cl = (v, a, z) => v < a ? a : v > z ? z : v, eo = v => 1 - (1 - v) * (1 - v);
+    const pf = (st, x, y, r, a) => { if (a <= 0.02 || r < 1) return; b.globalAlpha = a > 1 ? 1 : a; const q = Math.round(r * RES) / RES; b.drawImage(S[cl(st | 0, 0, 5)], Math.round((x - q) * RES) / RES, Math.round((y - q) * RES) / RES, q * 2, q * 2); };
+    const X = N.x, Y = N.y, fade = 1 - cl((t - 2.5) / 0.8, 0, 1);
+    // fireball: swells fast, then cools white → yellow → orange → dark red and sinks into the stem's foot
+    const fr = TL * (0.45 + 1.35 * eo(cl(t / 0.45, 0, 1)) + 0.25 * cl(t / 2, 0, 1)), fst = cl(t / 0.42, 0, 3.6), fa = 1 - cl((t - 1.5) / 1, 0, 1);
+    for (let i = 0; i < 6; i++) { const a = N.seed + i * 1.047 + t * 0.7; pf(fst + 0.6, X + Math.cos(a) * fr * 0.55, Y + Math.sin(a) * fr * 0.3, fr * 0.55, fa); }
+    pf(fst, X, Y - fr * 0.1, fr * 0.8, fa);
+    // stem: a column of puffs rising from the blast, hotter at the top while it climbs
+    const rise = eo(cl((t - 0.2) / 1.5, 0, 1)), top = Math.max(Y - TL * (0.6 + 3.6 * rise), Math.min(Y - TL * 0.6, vy + TL * 1.5)), cst = cl(1 + t / 0.75, 1, 5);
+    if (t > 0.2) for (let yy = Y - TL * 0.3, k = 0; yy > top + TL * 0.3; yy -= TL * 0.32, k++) {
+      const u = (Y - yy) / Math.max(1, Y - top), w = TL * (0.34 + 0.12 * Math.sin(k * 1.7 + t * 3)) * (0.8 + 0.4 * u);
+      pf(cst + 0.6 - u * 0.8, X + Math.sin(k * 0.9 + t * 2.2) * TL * 0.08, yy, w, fade * (0.92 - 0.15 * u));
+    }
+    // cap: a rolling ring of puffs around a domed core; the back half first (darker), the underside glows while it is hot
+    if (t > 0.3) {
+      const g = eo(cl((t - 0.3) / 1.6, 0, 1)), rx = TL * (0.55 + 1.25 * g), ry = rx * 0.42, pr = TL * (0.4 + 0.42 * g), ph = N.seed + t * 1.5, n = 10;
+      const ring = []; for (let i = 0; i < n; i++) { const a = ph + i * 6.283 / n; ring.push({ a, x: X + Math.cos(a) * rx, y: top + Math.sin(a) * ry }); }
+      for (const q of ring) if (Math.sin(q.a) < 0) pf(cst + 0.9, q.x, q.y, pr, fade);
+      pf(cst + 0.3, X, top - ry * 0.8, pr * 1.55, fade); pf(cst, X - rx * 0.35, top - ry * 1.3, pr * 1.05, fade); pf(cst, X + rx * 0.3, top - ry * 1.5, pr * 0.95, fade);
+      for (const q of ring) if (Math.sin(q.a) >= 0) pf(cst - 0.5 * (1 - cl((t - 1) / 1.2, 0, 1)), q.x, q.y, pr, fade);
+    }
+    b.globalAlpha = 1;
+    // ash drifts down off the cap; embers lift off the stem
+    if (!LITE && t > 0.5 && t < 2.9) { N.ash += dt * 26; while (N.ash >= 1) { N.ash--;
+      const rx = TL * 1.6, ax = X + (Math.random() - 0.5) * rx * 2;
+      if (Math.random() < 0.6) parts.push({ x: ax, y: top + (Math.random() - 0.3) * TL * 0.6, vx: 6 + Math.random() * 10, vy: 6 + Math.random() * 10, life: 1.6, max: 1.6, col: Math.random() < 0.5 ? '#8a8486' : '#5e585c', s: 2 });
+      else parts.push({ x: X + (Math.random() - 0.5) * TL * 0.6, y: Y - Math.random() * (Y - top), vx: (Math.random() - 0.5) * 14, vy: -18 - Math.random() * 16, life: 0.9, max: 0.9, col: Math.random() < 0.5 ? '#ffb03a' : '#ff7b29', s: 1.5 }); } }
+  }
   function ditherDisc(cx, cy, r, col, dither, phase) {
     const R0 = Math.max(1, Math.round(r)), key = R0 + col + dither + ':' + (phase % dither);
     let c = discCache.get(key);
@@ -9989,6 +10199,7 @@ const RES = 2;
     }
     parts = parts.filter(p => p.life > 0);
     if (parts.length > 800) parts.splice(0, parts.length - 800);
+    if (nuke) drawNuke(dt, v.vy, v.vh);
     if (G.aimAbility && aimPos) D(b, aimPos.x * TILE, aimPos.y * TILE, 2, '#ffffff');
 
     // ---------- light sources (buffer coords) ----------
@@ -10012,6 +10223,7 @@ const RES = 2;
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
     for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
+    if (nuke) { const t = nuke.t; light(nuke.x, nuke.y, TILE * (3 + 3 * Math.min(1, t / 0.4)), t < 0.6 ? '#fff0c0' : '#ff8a2a', Math.max(0, 0.9 - t * 0.3)); light(nuke.x, nuke.y - TILE * 3.5 * Math.min(1, t / 1.5), TILE * 3, '#ff7b29', Math.max(0, 0.45 - t * 0.14)); }
     if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
@@ -10124,27 +10336,58 @@ const RES = 2;
         if (t.s.range) ringS(gx, gy, t.s.range * TILE, EL[t.s.el].col, 0.85, 1.5, 0.07);
       }
     }
-    // Frontier edge arrows: bosses, and enemies close to the core, that are off screen (tap one to look)
+    // Edge arrows for things off screen (tap one to look): bosses and enemies close to the core (Frontier), the core (green),
+    // and 6.2 pirate treasure: one yellow arrow with a chest per crate, nearby ones merged with a count, at most 3.
+    // An arrow that would sit under a button or banner (keepOut, from the UI) slides along the edge clear of it.
     frArrows.length = 0;
-    if (G.fr && !G.over) {
-      const pad = 16, th = [];
-      for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0))) continue; const near = e.L && e.L.len - e.d < 10; if (!e.boss && !near) continue; th.push(e); }
-      th.sort((p, q) => (q.boss ? 1 : 0) - (p.boss ? 1 : 0) || (p.L.len - p.d) - (q.L.len - q.d));
-      const homeOff = (() => { const x = bx2s(G.core.x * TILE) - ox, y = by2s(G.core.y * TILE) - oy; return x < 0 || y < 0 || x > DW || y > DH; })();
-      const list = th.slice(0, 6).map(e => ({ x: e.x, y: e.y, col: e.boss ? PAL.bad : PAL.amber, big: !!e.boss }));
-      if (homeOff) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
-      const cx0 = ox + DW / 2, cy0 = oy + DH / 2;
+    if (!G.over) {
+      const pad = 16, cx0 = ox + DW / 2, cy0 = oy + DH / 2, list = [];
+      const onS = (sx2, sy2) => sx2 >= ox && sy2 >= oy && sx2 <= ox + DW && sy2 <= oy + DH;
+      if (G.fr) { const th = [];
+        for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0))) continue; const near = e.L && e.L.len - e.d < 10; if (!e.boss && !near) continue; th.push(e); }
+        th.sort((p, q) => (q.boss ? 1 : 0) - (p.boss ? 1 : 0) || (p.L.len - p.d) - (q.L.len - q.d));
+        for (const e of th.slice(0, 6)) list.push({ x: e.x, y: e.y, col: e.boss ? PAL.bad : PAL.amber, big: !!e.boss }); }
+      if (!onS(bx2s(G.core.x * TILE), by2s(G.core.y * TILE))) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
+      // treasure: project each off-screen crate to the edge, merge crates whose arrows would land within 34 px, keep the 3 closest
+      const edge = (sx2, sy2) => { const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy))); return { px: cx0 + dx * k, py: cy0 + dy * k }; };
+      const tre = [];
+      for (const cc of G.caches || []) { const x = cc.x + 0.5, y = cc.y + 0.5, sx2 = bx2s(x * TILE), sy2 = by2s(y * TILE); if (onS(sx2, sy2)) continue;
+        const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = tre.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
+        if (m) { m.n++; if (d < m.d) Object.assign(m, { x, y, d }); } else tre.push({ x, y, d, px: E.px, py: E.py, n: 1, col: '#ffe14d', tre: 1 }); }
+      tre.sort((p, q) => p.d - q.d); for (const A of tre.slice(0, 3)) list.push(A);
+      const ko = keepOut;
       for (const A of list) {
         const sx2 = bx2s(A.x * TILE), sy2 = by2s(A.y * TILE);
-        if (sx2 >= ox && sy2 >= oy && sx2 <= ox + DW && sy2 <= oy + DH) continue;
-        const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy)));
-        const px = cx0 + dx * k, py = cy0 + dy * k, an = Math.atan2(dy, dx), r = A.big ? 11 : 8, pl = 0.75 + 0.25 * Math.sin(frame / 6);
+        if (onS(sx2, sy2)) continue;
+        let { px, py } = edge(sx2, sy2); const r = A.big ? 11 : 8, side = Math.abs(Math.abs(px - cx0) - (DW / 2 - pad)) < 0.5;
+        { // the rects crossing this edge become blocked spans along it (merged); an arrow inside one moves to the nearer free end,
+          // or, when both ends are off screen (a tall side panel), steps inward past the rect
+          const m = r + 5, sp = [];
+          for (const q of ko) if (side ? px >= q.l - m && px <= q.r + m : py >= q.t - m && py <= q.b + m) sp.push(side ? [q.t - m, q.b + m, q] : [q.l - m, q.r + m, q]);
+          sp.sort((p, q) => p[0] - q[0]); const mg = [];
+          for (const v of sp) { const L = mg[mg.length - 1]; if (L && v[0] <= L[1]) { L[1] = Math.max(L[1], v[1]); L[2].push(v[2]); } else mg.push([v[0], v[1], [v[2]]]); }
+          const pos = side ? py : px, lo = (side ? oy : ox) + pad, hi = (side ? oy + DH : ox + DW) - pad;
+          for (const [a0, a1, qs] of mg) if (pos > a0 && pos < a1) {
+            const okA = a0 - 1 >= lo, okB = a1 + 1 <= hi, to = okA && (!okB || pos - a0 <= a1 - pos) ? a0 - 1 : okB ? a1 + 1 : null;
+            if (to !== null) { if (side) py = to; else px = to; }
+            else if (side) px = px > cx0 ? Math.min(...qs.map(q => q.l)) - m - 1 : Math.max(...qs.map(q => q.r)) + m + 1;
+            else py = py > cy0 ? Math.min(...qs.map(q => q.t)) - m - 1 : Math.max(...qs.map(q => q.b)) + m + 1;
+            break; }
+        }
+        if (ko.some(q => px > q.l - r - 3 && px < q.r + r + 3 && py > q.t - r - 3 && py < q.b + r + 3)) continue; // no clear spot left: no arrow (it could not be tapped)
+        const an = Math.atan2(sy2 - py, sx2 - px), pl = A.tre ? 1 : 0.75 + 0.25 * Math.sin(frame / 6); // treasure stays solid yellow
         if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) continue;
         c.save(); c.translate(px, py); c.rotate(an);
         c.fillStyle = 'rgba(7,8,15,0.75)'; c.beginPath(); c.moveTo(r + 3, 0); c.lineTo(-r + 1, -r); c.lineTo(-r * 0.4, 0); c.lineTo(-r + 1, r); c.closePath(); c.fill();
         c.fillStyle = hexA(A.col, pl); c.beginPath(); c.moveTo(r, 0); c.lineTo(-r + 3, -r + 2.5); c.lineTo(-r * 0.4 + 1, 0); c.lineTo(-r + 3, r - 2.5); c.closePath(); c.fill();
         c.restore();
-        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home });
+        if (A.tre) { // a little chest behind the arrow (toward the centre), and the count when crates were merged
+          const ux = Math.cos(an), uy = Math.sin(an), qx = Math.round(px - ux * (r + 9)), qy = Math.round(py - uy * (r + 9));
+          c.fillStyle = 'rgba(7,8,15,0.85)'; c.fillRect(qx - 6, qy - 5, 12, 10);
+          c.fillStyle = '#b07a20'; c.fillRect(qx - 5, qy - 4, 10, 8); c.fillStyle = '#ffe14d'; c.fillRect(qx - 5, qy - 4, 10, 3); c.fillStyle = '#3a2410'; c.fillRect(qx - 5, qy - 1, 10, 1); c.fillStyle = '#fff6c0'; c.fillRect(qx - 1, qy - 2, 2, 3);
+          if (A.n > 1) { c.font = '9px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(7,8,15,0.9)'; c.fillRect(qx + 4, qy - 11, 10, 9); c.fillStyle = '#ffe14d'; c.fillText(String(A.n), qx + 9, qy - 6); c.textBaseline = 'alphabetic'; }
+        }
+        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home, tre: !!A.tre });
       }
     }
     // the old sector border fades out as the camera pulls back
@@ -10264,7 +10507,7 @@ const RES = 2;
       }
       // 5.8: a gold star over every tower with a pick waiting (veteran mutation or Ascend perk), so they stand out in a busy wave
       { const u = clamp(Math.round(tpx / 12), 2, 3); c.fillStyle = '#ffd84a';
-        for (const t of G.towers) if (t.pending > 0 || t.ascPend > 0) { const x = Math.round(bx2s(t.x * TILE)) + u, y = Math.round(by2s(t.y * TILE)) - 3 * u - (frame % 40 < 20 ? 0 : u);
+        for (const t of G.towers) if (t.pending > 0 || t.ascPend > 0 || t.grow > 0) { const x = Math.round(bx2s(t.x * TILE)) + u, y = Math.round(by2s(t.y * TILE)) - 3 * u - (frame % 40 < 20 ? 0 : u);
           c.fillStyle = '#090b16'; c.fillRect(x - 1, y + u - 1, 5 * u + 2, 3 * u + 2); c.fillRect(x + 2 * u - 1, y - 1, u + 2, 5 * u + 2);
           c.fillStyle = '#ffd84a'; c.fillRect(x, y + 2 * u, 5 * u, u); c.fillRect(x + 2 * u, y, u, 5 * u); c.fillRect(x + u, y + u, 3 * u, 3 * u); } }
       if (best && big) {
@@ -10452,7 +10695,11 @@ const RES = 2;
       case 'scan': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: BW * 1.2, life: 1.1, max: 1.1, col: '#7dffb0', w: 3 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: BW * 0.7, life: 0.8, max: 0.8, col: '#c9fff0', w: 1 }); flashes.push({ col: '#7dffb0', life: 0.25, max: 0.25, a: 0.12 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
-      case 'overdrive': flashes.push({ col: '#e6fff6', life: 0.25, max: 0.25, a: 0.6 }); flashes.push({ col: PAL.core, life: 0.9, max: 0.9, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
+      case 'overdrive': startNuke(T2P(d.x), T2P(d.y), d.r); break; // 6.2: the Nuke (the fx id stays 'overdrive')
+      // 6.2: a support tower grew a level with its towers: a soft double ring, rising motes and the new level
+      case 'grow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 20, life: 0.5, max: 0.5, col: PAL.core, w: 2 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 12, life: 0.7, max: 0.7, col: '#e6fff6', w: 1 });
+        for (let i = 0; i < 10; i++) parts.push({ x: T2P(d.x) + (Math.random() - 0.5) * 16, y: T2P(d.y) + 4, vx: (Math.random() - 0.5) * 6, vy: -22 - Math.random() * 18, life: 0.8, max: 0.8, col: i % 3 ? PAL.core : '#e6fff6', s: 2 });
+        text(d.x, d.y - 0.7, 'LV ' + d.lv, PAL.core, 14, 1.2, -0.6, 'Silkscreen, monospace'); break;
       case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
       case 'cacheClaim': { const cc = CACHE_PAL[d.kind || 'normal'][3]; rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.kind === 'gold' ? 60 : 34, life: 0.5, max: 0.5, col: cc, w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), d.kind === 'gold' ? 50 : 22, cc, 50 * K, 0.6); break; }
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
@@ -10495,7 +10742,7 @@ const RES = 2;
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     fit();
   }
-  function reset() { parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
+  function reset() { nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
 
   // build-menu card art: the tower on a lit plinth against its element's colour
   function towerCard(type, canvas, locked) {
@@ -10567,7 +10814,7 @@ const RES = 2;
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     flashWorm() { wormFlashAt = performance.now(); },
-    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, // Frontier picker and edge arrows
+    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
     lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
@@ -10889,7 +11136,7 @@ const ICONS = {
   archive: ['#########', '#########', '.........', '.#######.', '.#.....#.', '.#.###.#.', '.#.....#.', '.#######.', '.........'],
   help: ['..#####..', '.##...##.', '......##.', '.....##..', '....##...', '....##...', '.........', '....##...', '....##...'],
   gear: ['...#.#...', '.#######.', '.##...##.', '##.....##', '.#..#..#.', '##.....##', '.##...##.', '.#######.', '...#.#...'],
-  overdrive: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#.#.#.#.#', '#.#...#.#', '#..###..#', '.#.....#.', '..#####..'],
+  overdrive: ['##.....##', '###...###', '####.####', '.##...##.', '....#....', '.........', '...###...', '..#####..', '..#####..'], // 6.2: the Nuke's radiation trefoil
   music: ['...######', '...######', '...#....#', '...#....#', '...#....#', '.###..###', '####.####', '####.####', '.##...##.'],
   fit: ['###...###', '#.......#', '#.......#', '.........', '.........', '.........', '#.......#', '#.......#', '###...###'],  // v5.5 Music Studio transport
   play: ['.#.......', '.##......', '.###.....', '.####....', '.#####...', '.####....', '.###.....', '.##......', '.#.......'],
@@ -10899,6 +11146,9 @@ const ICONS = {
   heartO: ['.........', '.##...##.', '#..#.#..#', '#...#...#', '#.......#', '.#.....#.', '..#...#..', '...#.#...', '....#....'],
   share: ['....#....', '...###...', '..#.#.#..', '....#....', '....#....', '#...#...#', '#.......#', '#.......#', '#########'],
   edit: ['......##.', '.....#..#', '....#..#.', '...#..#..', '..#..#...', '.#..#....', '#..#.....', '##.......', '###......'],
+  speaker: ['....#....', '...##.#..', '..#.#..#.', '###.#.#.#', '#...#.#.#', '###.#.#.#', '..#.#..#.', '...##.#..', '....#....'], // 6.2 Settings tabs
+  screen: ['#########', '#.......#', '#.......#', '#.......#', '#.......#', '#########', '....#....', '...###...', '.........'],
+  sliders: ['.##......', '#########', '.##......', '......##.', '#########', '......##.', '...##....', '#########', '...##....'],
   dice: ['#########', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#########'],
 };
 function svgIcon(name, size) {
@@ -10920,6 +11170,13 @@ function hydrateIcons(root) {
   for (const cv of (root || document).querySelectorAll('canvas[data-gico]')) Render.geneIcon(cv.dataset.gico, cv, cv.dataset.el); // v5.8 gene marks
 }
 
+// 6.2 (Nic: "Make the music full composer visible by default"): the Compose tab no longer hides behind five taps on the visualizer.
+// Fresh profiles get it on; existing ones are switched on once (cmpV), so the flag stays a plain setting from then on.
+function studioMig(st) {
+  st = st && typeof st === 'object' ? st : {};
+  if (!st.cmpV) { st.composer = true; st.cmpV = 1; }
+  return st;
+}
 // ---------------- Saves ----------------
 const Save = (() => {
   const KEY = 'lastgradient.lab.v1';
@@ -10929,6 +11186,7 @@ const Save = (() => {
     if (!p || typeof p !== 'object') return d;
     const out = Object.assign(d, p);
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
+    out.settings.studio = studioMig(out.settings.studio);
     out.webV = p.webV || 1;
     out.alloc = ['start'];
     out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
@@ -11156,7 +11414,6 @@ const UI = (() => {
     }
     Render.resetCam(); updateZoomBtn();
     frModeUI();
-    if (!PROF.zoomHint && !G.tut) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave; G.fresh = freshProfile() || !!G.tut;
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
@@ -11168,7 +11425,7 @@ const UI = (() => {
     Save.save();
     try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
     // v5.3: no wall of rules on the first run. Glowing tiles show where to build; How to Play waits in the pause menu
-    if (!PROF.seenHelp && !G.tut) { PROF.seenHelp = true; setTimeout(() => toast('WELCOME', 'Enemies walk the road to your core. Tap a glowing tile beside it to build a tower. How to Play is in the pause menu', '#59f0b4', true, 'alert'), 900); }
+    // (6.2: the WELCOME line and the camera tip now wait their turn in onboardingTick, with every other first-time card)
     G.wantedTold = !!snap || briefMode() === 'off' || !!G.tut;
     G.hints = !snap && !G.tut && !tutState().done && (PROF.bestWave || 0) < 10 && G.wave <= 1 ? buildHints() : null; Render.hints = G.hints; // 5.8: Training covers it
     if (G.tut) Coach.start(G.lesson || 'basic'); else Coach.stop();
@@ -11182,11 +11439,28 @@ const UI = (() => {
     for (const c of cands) { if (out.length >= 3) break; if (out.every(o => Math.abs(o.x - c.x) + Math.abs(o.y - c.y) >= 4)) out.push(c); }
     return out;
   }
+  // 6.2 pacing (a friend's feedback: "you get spammed with dialog boxes"): every first-time card, teaching tip and nudge in a real
+  // run goes through one gate. No two within TEACH_GAP seconds of play (G.time stops while a card holds the game), and never in a
+  // busy moment: a tap in the last 2.5 s, aiming, the core picker or flight, enemies at the core, a boss closing in. A card that
+  // has to wait is asked again next frame (its seen flag is set only when it shows). UI state only: nothing is written to G.
+  const TEACH_GAP = 30;
+  const TEACH_NOW = { boss: 1, wormhole: 1 }; // 6.2: these warn about the next wave, so they never wait behind the 30 s gap
+  let teachG = null, teachAt = -1e9, teachTap = 0, camUser = 0; // camUser: camera moves made by the player (the Training camera step)
+  const teachClock = () => { if (teachG !== G) { teachG = G; teachAt = -1e9; } return G ? G.time : 0; };
+  function teachBusy() {
+    if (!G) return false;
+    if (performance.now() - teachTap < 2500 || G.aimAbility || frSel || G.frFly) return true;
+    let n = 0; for (const e of G.enemies) if (!e.dead && !e.gen && e.L && e.L.len && e.d > e.L.len - 3.5) { if (e.boss) return true; n++; }
+    return n >= 2 || G.enemies.some(e => e.boss && !e.dead && !e.gen && e.L && e.d > e.L.len * 0.6);
+  }
+  const teachOK = () => !!G && !G.tut && teachClock() - teachAt >= TEACH_GAP && !teachBusy();
+  const teachMark = () => { teachClock(); if (G) teachAt = G.time; };
   // v5.3 one-time intro cards: each system says what it is the first time it shows up, in two lines
   function introCard(key, title, body, lesson) { // 5.8: lesson = the Field Manual entry its Learn more opens
     const S = PROF.seenSys || (PROF.seenSys = { v58: 1 }); if (S[key]) return false;
     if (modalOpen || Tree.isOpen || (G && G.draft)) return false;
-    S[key] = 1; Save.save();
+    if (!TEACH_NOW[key] && !teachOK()) return true; // 6.2: it waits its turn (true: nothing after it in onboardingTick jumps the queue this frame); warnings tied to a moment skip the queue
+    S[key] = 1; Save.save(); teachMark();
     if (briefMode() !== 'pause') { toast(title.toUpperCase(), body, '#6ae2ff', true, 'alert'); return true; }
     closePanel(); G.paused = true; G.briefing = true;
     modal(`<div class="card narrow brief intro"><div class="bi"><em>New</em><h3>${esc(title)}</h3><p class="desc">${tipify(body)}</p></div>
@@ -11197,11 +11471,14 @@ const UI = (() => {
   function onboardingTick() {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
+    if (!PROF.seenHelp && G.time > 1) { if (!teachOK()) return; PROF.seenHelp = true; Save.save(); teachMark(); toast('WELCOME', 'Enemies walk the road to your core. Tap a glowing tile beside it to build a tower. How to Play is in the pause menu', '#59f0b4', true, 'alert'); return; }
     if (G.fr && G.time > 1 && introCard('frontier', 'Lift Off', `Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. Towers near the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slow but tough. No building within ${FRONTIER.wormBuild} tiles of a wormhole.`, 'lift')) return;
-    if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
+    // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
+    if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
+    if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
-    if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button under Map to pick each one a mutation.', 'veterans')) return;
+    if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button at the top right to pick each one a mutation.', 'veterans')) return;
     if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.', 'abilities')) return;
     // 5.8: one card for every other system, the first time it matters in a real run
     if (G.wave >= 2 && G.towers.length && !G.towers.some(t => t.lvl >= 2) && G.towers.some(t => G.credits >= upgradeCost(t)) && introCard('upg', 'Upgrades', 'Tap a tower to upgrade it: more damage and a random bonus. The arrow over a tower means you can afford it.', 'upgrades')) return;
@@ -11216,7 +11493,7 @@ const UI = (() => {
     // credits piling up: say so once in a while, with what to do about it
     if (G.spawningDone && G.wave >= 6 && G.wave - nudgeW >= 8 && G.towers.length) {
       const cheap = Math.min(...G.towers.map(t => upgradeCost(t))), lim = Math.max(900, cheap * 4, 250 * G.wave);
-      if (G.credits > lim) { nudgeW = G.wave; toast('CREDITS PILING UP', `${fmt(G.credits)} credits banked. Spend them: the arrow marks your best upgrade, or build, expand the reactor, or reinforce the core's Hull${G.wave >= 28 ? '. Leeches steal from big banks' : ''}`, '#ffb03a', false, 'alert'); }
+      if (G.credits > lim && teachOK()) { nudgeW = G.wave; teachMark(); toast('CREDITS PILING UP', `${fmt(G.credits)} credits banked. Spend them: the arrow marks your best upgrade, or build, expand the reactor, or reinforce the core's Hull${G.wave >= 28 ? '. Leeches steal from big banks' : ''}`, '#ffb03a', false, 'alert'); }
     }
   }
 
@@ -11410,7 +11687,7 @@ const UI = (() => {
     }
     // ---- step builders ----
     const info = (id, at, t, b, x) => Object.assign({ id, hold: 1, ok: 'Got it', at, t, b }, x || {});
-    const call = (id, w, b, x) => Object.assign({ id, at: sel('#bCall'), t: () => `Wave ${(G.startWave || 1) - 1 + w}`, b: b || 'Tap Next, or let the timer run.', done: () => W() >= w || (G.next <= 0 && G.spawningDone), skip: () => W() >= w }, x || {});
+    const call = (id, w, b, x) => Object.assign({ id, free: 1, at: sel('#bCall'), t: () => `Wave ${(G.startWave || 1) - 1 + w}`, b: b || 'Tap Next, or let the timer run.', done: () => W() >= w || (G.next <= 0 && G.spawningDone), skip: () => W() >= w }, x || {});
     const build = (id, type, key, t, first, x) => Object.assign({ id, hold: () => afford(type) && gridFree() >= 1, at: () => flowAt(type, key), t,
       b: () => !afford(type) ? `${TOWERS[type].name} costs ${fmt(towerCost(type))} credits. Kills pay; the next wave is coming.` : gridFree() < 1 ? 'The grid is full: upgrade instead.' : flowText(type, first), done: () => has(type), leave: shut }, x || {});
     const tapTw = (id, get, t, b, x) => Object.assign({ id, hold: 1, at: () => towerR(get()), t, b, done: () => !!get() && panT() === get() }, x || {});
@@ -11446,7 +11723,7 @@ const UI = (() => {
     function frSteps(when, gone) { // when: the steps may start; gone: the moment has passed (the next wave began)
       const off = () => !frOn() || gone(), back = () => !inPick('land') && !flew() && frCanFly() && 'lift', mvBack = () => !panT() && !inPick('move') && !used('frMove') && 'mvTap';
       return [
-        { id: 'lift', when, hold: 1, at: sel('#bLift'), t: 'Lift Off', enter: () => { closePanel(); mem.dock = dockPick(); mem.land = mem.dock ? null : landPick(); mem.fn0 = G.frN || 0; },
+        { id: 'lift', ls: 'lift', when, hold: 1, at: sel('#bLift'), t: 'Lift Off', enter: () => { closePanel(); mem.dock = dockPick(); mem.land = mem.dock ? null : landPick(); mem.fn0 = G.frN || 0; },
           b: () => dockT() ? `Your core can fly. Land it on your ${TOWERS[dockT().type].name} and the core fires it, twice as hard. Tap Lift Off.` : 'Your core can fly, and the roads follow wherever it lands. Tap Lift Off.',
           done: () => inPick('land'), skip: () => off() || (!frCanFly() && !inPick('land')) },
         { id: 'pick', hold: 1, at: () => dockT() ? towerR(dockT()) : mem.land ? worldR(mem.land.x + 0.5, mem.land.y + 0.5, 0.62) : null, t: 'Pick a landing spot',
@@ -11462,7 +11739,7 @@ const UI = (() => {
         { id: 'links', when: () => !G.frFly, hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Links', skip: off,
           b: () => { const n = (G.frLinks || []).length; return `${n ? `The green lines link ${n} tower${n === 1 ? '' : 's'} to the core` : 'No tower is linked yet'}. The landed core links the ${frLinkN()} nearest attack towers within ${FRONTIER.linkR} tiles: each gets +${pct(FRONTIER.linkDmg)} damage and rate, and the core +${pct(FRONTIER.linkCore)} per link.`; } },
         tapTw('mvTap', mvT, 'Move a tower', () => `${mem.mvL ? `Towers can move too. Your ${TOWERS[mvT().type].name} can cover more road` : roadIn(mvT().x, mvT().y, mvT().s.range) ? `Your ${TOWERS[mvT().type].name} is out of link reach` : `Your ${TOWERS[mvT().type].name} guards empty ground now`}. Tap it.`,
-          { when: () => !G.frFly, skip: () => off() || used('frMove') || !mvT() }),
+          { ls: 'move', when: () => !G.frFly, skip: () => off() || used('frMove') || !mvT() }),
         { id: 'mvBtn', hold: 1, at: sel('#panel [data-act=frmove]'), t: 'Move', b: () => `Tap Move: ${fmt(frMoveFee(mvT()))} credits, ${pct(FRONTIER.moveFee)} of what it cost.`, done: () => inPick('move'), skip: () => off() || used('frMove') || !mvT(), back: mvBack },
         { id: 'mvPick', hold: 1, at: () => { const d = mvTo(); if (!d) return null; Render.hints = [d]; return worldR(d.x + 0.5, d.y + 0.5, 0.62); }, t: 'Its new tile',
           b: () => mvNear(mvTo()) ? `Tap the marked tile: in reach of the core, so it ${mem.mvL ? 'stays linked' : 'links'}.` : 'Tap the marked tile: it covers more road.', done: () => inPick('move') && !!frSel.dest, skip: () => off() || used('frMove'), back: mvBack },
@@ -11473,22 +11750,24 @@ const UI = (() => {
     }
     const PLANS = {
       basic: [
-        { id: 'core', hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Your core', b: 'Enemies walk the road to it. If its health runs out, the run is over.' },
+        // 6.2 pacing: each ls starts a lesson; a new lesson waits for ~20 s of play or the end of a wave (Coach.paced)
+        { id: 'core', ls: 'start', hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Your core', b: 'Enemies walk the road to it. If its health runs out, the run is over.' },
         info('hp', sel('#hud .corebox'), 'Core health', () => `${Math.round(G.core.hp)} health plus ${Math.round(G.core.shield)} shield. Leaks hit the shield first; it recharges between hits.`, { ok: 'Next' }),
         { id: 'road', hold: 1, ok: 'Next', at: () => { const p = G.map.lanes[0].pts[0]; return worldR(p.x, p.y, 1); }, t: 'The road', b: 'Enemies come out of the wormhole and follow the road. Towers beside it shoot them.' },
         { id: 'spots', hold: 1, nodim: 1, ok: 'Next', t: 'Build spots', b: () => `Every green tile is a build spot: a tower fits on any of them. Beside the road is best.${G.fr ? ` Nothing can be built within ${FRONTIER.wormBuild} tiles of a wormhole.` : ''}`, enter: () => { Render.spots = allSpots(); }, leave: () => { Render.spots = null; } },
-        info('power0', sel('#hud .hs.pwr'), 'Power', () => `⚡ ${gridUsed()}/${gridCap()}: how many towers you can run. It grows as waves pass. In real runs, Power Nodes (diamond tiles) are free spots: no power used.`, { ok: 'Next' }),
         build('build1', 'pulse', 'a', 'Build a tower', 'Tap the marked tile beside the road.', { hold: 1 }),
-        info('wave', () => appR(q('#hud #wave') && q('#hud #wave').closest('.hs')), 'The wave', 'Wave number and the countdown to the next one. Waves start on their own when it hits zero.', { ok: 'Next' }),
-        { id: 'call1', hold: 1, at: sel('#bCall'), t: 'Start the wave', b: 'Tap Next to send Wave 1 now. Calling early pays bonus credits.', done: () => G.wave >= 1 || G.next <= 0 },
-        info('credits', sel('#hud .hs.cr'), 'Credits', 'Every kill pays credits. You spend them on towers and upgrades.', { when: () => G.kills >= 1 }),
-        info('score', sel('#bCash'), 'Score', 'Kills and waves raise your score. It turns into XP: levels and talent points.', { when: () => after(1), skip: () => W() >= 2 }),
-        build('build2', 'pulse', 'b', 'A second tower', 'Build another one on the marked tile.', { when: () => after(1), skip: () => W() >= 2, done: () => G.towers.length >= 2,
+        { id: 'call1', hold: 1, at: sel('#bCall'), t: 'Start the wave', b: 'The top bar counts down to each wave; at zero it starts on its own. Tap Next to send Wave 1 now: calling early pays bonus credits.', done: () => G.wave >= 1 || G.next <= 0 },
+        // the camera (6.2), once the first wave is under way
+        { id: 'camera', ls: 'camera', hold: 1, nodim: 1, ok: 'Got it', when: () => W() >= 1, skip: () => W() >= 3, enter: () => { mem.cu0 = camUser; }, done: () => camUser - mem.cu0 > 12, t: 'Look around',
+          b: 'Drag to pan, pinch to zoom. When something is off screen, an arrow at the edge points to it: tap one to look there. Tap the core arrow to come back home.' },
+        info('credits', sel('#hud .hs.cr'), 'Credits', 'Every kill pays credits. You spend them on towers and upgrades.', { ls: 'money', when: () => G.kills >= 1, skip: () => W() >= 3 }),
+        info('score', sel('#bCash'), 'Score', 'Kills and waves raise your score. It turns into XP: levels and talent points.', { skip: () => W() >= 3 }),
+        build('build2', 'pulse', 'b', 'A second tower', 'Build another one on the marked tile.', { ls: 'power', when: () => after(1), skip: () => W() >= 2, done: () => G.towers.length >= 2,
           at: () => flowAt(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'b'), b: () => afford('pulse') ? flowText(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'Build another one on the marked tile. Any tower works.') : `Towers start at ${towerCost('pulse')} credits. Kills pay.` }),
-        info('power', sel('#hud .hs.pwr'), 'Power', () => `${gridUsed()} of ${gridCap()} used: full. Each tower draws 1 power. Capacity grows as waves pass.`, { when: () => after(1), skip: () => W() >= 2 }),
+        info('power', sel('#hud .hs.pwr'), 'Power', () => `⚡ ${gridUsed()}/${gridCap()}: full. Each tower draws 1 power, and capacity grows as waves pass. In real runs, towers on Power Nodes (diamond tiles) use none.`, { when: () => after(1), skip: () => W() >= 2 }),
         call('call2', 2, 'Tap Next, or let the timer run. Power is full, so the next credits go into upgrades.', { when: () => after(1) }),
         // upgrading, step by step (Nic's brother: "didn't understand how to upgrade towers or what that meant")
-        tapTw('tapTower', tw, 'Upgrade', 'Towers you built can be tapped. Tap your first tower to open its panel.', { when: () => after(2), skip: () => W() >= 3 || noTw(), hold: () => G.credits >= upgradeCost(tw()),
+        tapTw('tapTower', tw, 'Upgrade', 'Towers you built can be tapped. Tap your first tower to open its panel.', { ls: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: () => G.credits >= upgradeCost(tw()),
           b: () => G.credits >= upgradeCost(tw()) ? 'Towers you built can be tapped. Tap your first tower to open its panel.' : `An upgrade costs ${upgradeCost(tw())} credits. Kills pay.`, done: () => !!panT() }),
         { id: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: 1, at: sel('#panel [data-act=up]'), t: 'The Upgrade button', enter: () => { mem.ut = panT(); mem.b4 = mem.ut && stat(mem.ut); },
           b: () => `Upgrading costs ${fmt(panT() ? upgradeCost(panT()) : 0)} credits: the price is on the button. It makes this tower stronger. Tap it.`,
@@ -11496,61 +11775,62 @@ const UI = (() => {
         info('upDone', sel('#panel .lvtag'), 'Upgraded', () => upLine(mem.ut, mem.b4) + ' Every upgrade rolls one.', { when: () => !!panT(), skip: () => W() >= 3 || !panT(), ok: 'Next' }),
         { id: 'affix', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Its bonus', b: 'That random bonus is an affix. Tap Details to see it.', skip: () => W() >= 3 || !panT(), done: () => panel && panel.tab === 'info' },
         info('affixes', () => appR(q('#panel .affs')) || appR(q('#panel .pbody')), 'Affixes', 'Every upgrade adds one. Rarer ones are coloured gold or purple. Reroll swaps them for credits.', { skip: () => W() >= 3 || !panT(), okFn: () => { mem.affix = 1; if (panel) { panel.tab = 'act'; renderPanel(); } }, enter: scrollTo('#panel .affs') }),
-        info('rank', () => towerR(mem.ut), 'Ranking up', 'The coloured bar under a tower is its level; its panel shows the LV badge. Each level adds damage and an affix. At LV 3 it picks a specialty; LV 5 is the top.', { skip: () => W() >= 3 || !mem.ut, ok: 'Next' }),
-        info('upWhy', sel('#hud .hs.pwr'), 'Why upgrade?', () => `Power is limited: ${gridUsed()} of ${gridCap()}. A new tower needs power; an upgrade costs only credits.`, { skip: () => W() >= 3, leave: shut }),
         call('call3', 3, 'Next wave when you are ready.', { when: () => after(2) }),
-        threatOpen('threat', 'Threat Board', 'This chip shows the next wave. Juggernauts are coming. Tap it.', { when: () => after(3), skip: () => W() >= 4 }),
+        // (6.2: ranking up waits for some play in Wave 3 instead of following the upgrade at once)
+        info('rank', () => towerR(mem.ut), 'Ranking up', 'The coloured bar under a tower is its level; its panel shows the LV badge. Each level adds damage and an affix. At LV 3 it picks a specialty; LV 5 is the top.', { ls: 'rank', when: () => W() >= 3, skip: () => W() >= 4 || !mem.ut || !G.towers.includes(mem.ut), ok: 'Next', enter: shut }),
+        info('upWhy', sel('#hud .hs.pwr'), 'Why upgrade?', () => `Power is limited: ${gridUsed()} of ${gridCap()}. A new tower needs power; an upgrade costs only credits.`, { skip: () => W() >= 4, leave: shut }),
+        threatOpen('threat', 'Threat Board', 'This chip shows the next wave. Juggernauts are coming. Tap it.', { ls: 'threat', when: () => after(3), skip: () => W() >= 4 }),
         inThreat('jugg', rowOf('tank'), 'Juggernaut', 'Plated: Pulse shots lose a third. A Rail Lance pierces Plating.', { when: () => after(3), skip: () => W() >= 4 || modalOpen !== 'evo', enter: () => { const c = q('#modal canvas[data-eico=tank]'); if (c) c.closest('.threv').scrollIntoView({ block: 'center' }); } }),
         build('rail', 'rail', 'c', 'Build a Rail Lance', 'Tap the marked tile.', { when: () => after(3), skip: () => W() >= 4, at: () => flowAt('rail', 'c', null, false, frOn() ? dockable : null) }),
-        ...frSteps(() => after(3), () => W() >= 4), // 6.1: dock on the Rail, links, Move
         call('call4', 4, 'Juggernauts are slow. Let them walk into the Rail.', { when: () => after(3) }),
-        { id: 'inspect', when: () => W() === 4 && G.enemies.some(e => e.type === 'tank' && onField(e)), skip: () => W() >= 5, hold: 1, enter: () => { mem.tank = G.enemies.find(e => e.type === 'tank' && onField(e)); },
+        ...frSteps(() => W() >= 4, () => W() >= 5), // 6.1: dock on the Rail, links, Move (6.2: during Wave 4, one lesson at a time)
+        { id: 'inspect', ls: 'inspect', when: () => W() === 4 && G.enemies.some(e => e.type === 'tank' && onField(e)), skip: () => W() >= 5 || !G.enemies.some(e => e.type === 'tank' && onField(e)), hold: 1, enter: () => { mem.tank = G.enemies.find(e => e.type === 'tank' && onField(e)); },
           at: () => enemyR(mem.tank), t: 'Inspect', b: 'Tap the Juggernaut. Any enemy can be tapped.', done: () => panel && panel.kind === 'enemy' },
         info('inspected', () => appR(q('#panel .sts.good')) || appR(q('#panel .ehp')), 'Enemy panel', 'Health, speed, Plating, genes and what beats it. Tap empty ground to close it.', { when: () => panel && panel.kind === 'enemy', skip: () => W() >= 5 || !(panel && panel.kind === 'enemy'), okFn: () => closePanel() }),
         // the second upgrade: the arrow cue
-        tapTw('arrow', () => mem.au, 'The upgrade arrow', 'An arrow over a tower means you can afford its upgrade. Tap that tower.', { when: () => after(4) && !!bestUp(), skip: () => W() >= 5, enter: () => { mem.au = bestUp(); } }),
+        tapTw('arrow', () => mem.au, 'The upgrade arrow', 'An arrow over a tower means you can afford its upgrade. Tap that tower.', { ls: 'arrow', when: () => after(4) && !!bestUp(), skip: () => W() >= 5, enter: () => { mem.au = bestUp(); } }),
         { id: 'up2', when: () => after(4), skip: () => W() >= 5 || !mem.au, hold: 1, at: sel('#panel [data-act=up]'), t: 'Upgrade it', enter: () => { mem.b4 = stat(mem.au); },
           b: () => `${fmt(upgradeCost(mem.au))} credits. Tap Upgrade.`, done: () => towerLevel(mem.au) > mem.b4.lvl, back: () => panT() !== mem.au && 'arrow' },
         info('up2Done', sel('#panel .lvtag'), 'Stronger', () => upLine(mem.au, mem.b4), { when: () => !!panT(), skip: () => W() >= 5 || !panT(), leave: shut }),
-        // the core's own upgrades (a supply drop lands as Wave 4 ends, so both are affordable)
-        { id: 'tapCore', when: () => after(4), skip: () => W() >= 5 || G.core.sLvl >= 2 && G.core.wLvl >= 2, hold: 1, at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core', b: 'The core has upgrades too. Tap it.', done: () => panel && panel.kind === 'core' },
-        { id: 'shield', when: () => after(4), skip: () => W() >= 5 || G.core.sLvl >= 2, hold: () => G.credits >= coreShieldCost(), enter: scrollTo('#panel [data-act=cs]'), at: sel('#panel [data-act=cs]'), t: 'Shield',
-          b: () => G.credits >= coreShieldCost() ? `Tap Shield (${fmt(coreShieldCost())}). A bigger shield soaks more leaks before the core loses health.` : `Shield costs ${fmt(coreShieldCost())} credits.`, done: () => G.core.sLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
-        { id: 'battery', when: () => after(4), skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
-          b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). ${G.fr && frDockT() ? `The docked ${TOWERS[frDockT().type].name} hits ${pct(FRONTIER.dockBat)} harder per level, and so does the plain cannon.` : "The core's own gun hits harder; some levels add a module."}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
-        info('coreMore', sel('#panel [data-act=ch]'), 'Hull and Uplink', () => G.fr ? `Later: Hull adds core health. Uplink makes abilities recharge faster, adds a link every ${FRONTIER.linkUplink} levels and shortens the lift-off wait every ${FRONTIER.cdUplink}.` : 'Later: Hull adds core health, Uplink makes abilities recharge faster.', { when: () => panel && panel.kind === 'core', skip: () => W() >= 5 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
-        { id: 'ready', when: () => after(4) && vetsReady().length > 0 && !panel, skip: () => W() >= 5 || used('vet'), hold: 1, at: sel('#bReady'), t: 'Veterans ready',
-          b: 'Towers that fight earn veteran ranks. This button counts towers with a pick waiting. Tap it.', done: () => modalOpen === 'vets' },
-        { id: 'vpick', when: () => modalOpen === 'vets', skip: () => W() >= 5 || used('vet') || modalOpen !== 'vets', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices for this tower; the colour is its rarity. Tap one. It walks you through every waiting tower.', done: () => used('vet') },
         call('call5', 5, 'A big pack is coming. Get ready to use an ability.', { when: () => after(4) }),
-        { id: 'strike', when: () => W() === 5 && (G.charges.strike || 0) > 0 && (pack() || [0, 0, 0])[2] >= 6, skip: () => W() >= 6, hold: 1, enter: () => { mem.c0 = G.charges.strike; },
+        { id: 'strike', ls: 'strike', gap: 12, busyOK: 1, when: () => W() === 5 && (G.charges.strike || 0) > 0 && (pack() || [0, 0, 0])[2] >= 6, skip: () => W() >= 6, hold: 1, enter: () => { mem.c0 = G.charges.strike; },
           at: sel('#abils [data-abil=strike]'), t: 'Orbital Strike', b: 'A tight pack. Abilities live on the left. Tap Strike.', done: () => G.aimAbility === 'strike' || (G.charges.strike || 0) < mem.c0 },
         { id: 'aim', when: () => W() === 5, skip: () => W() >= 6, hold: 1, enter: () => { mem.pk = pack(); },
           at: () => packAt(), t: 'Aim', b: 'Tap the middle of the pack.', done: () => (G.charges.strike || 0) < mem.c0, back: () => G.aimAbility !== 'strike' && (G.charges.strike || 0) >= mem.c0 && 'strike' },
         info('recharge', sel('#abils [data-abil=strike]'), 'Recharging', 'The bar on the button refills over time. Then it is ready again.', { when: () => W() === 5, skip: () => W() >= 6, hold: 0 }),
-        threatOpen('evo', 'The swarm adapts', 'It breeds against whatever does your damage. Open the Threat Board.', { when: () => after(5), skip: () => W() >= 6 }),
+        { id: 'ready', ls: 'vets', when: () => W() >= 5 && vetsReady().length > 0 && !panel, skip: () => W() >= 8 || used('vet'), hold: 1, at: sel('#bReady'), t: 'Veterans ready',
+          b: 'Towers that fight earn veteran ranks. This button counts towers with a pick waiting. Tap it.', done: () => modalOpen === 'vets' },
+        { id: 'vpick', when: () => modalOpen === 'vets', skip: () => W() >= 8 || used('vet') || modalOpen !== 'vets', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices for this tower; the colour is its rarity. Tap one. It walks you through every waiting tower.', done: () => used('vet') },
+        threatOpen('evo', 'The swarm adapts', 'It breeds against whatever does your damage. Open the Threat Board.', { ls: 'evo', when: () => after(5), skip: () => W() >= 6 }),
         inThreat('arms', () => appR(q('#modal .armrow')) || appR(q('#modal .arms')), 'Arms Race',
           () => { const I = G.stats.dmgByEl, tot = ELS.reduce((a, k) => a + (I[k] || 0), 0) || 1, k = topEl(); return `${Math.round((I[k] || 0) / tot * 100)}% of your damage is ${EL[k].name}, so the swarm bred ${EL[k].name} Ward. Mix elements to stay ahead.`; },
           { when: () => after(5), skip: () => W() >= 6 || modalOpen !== 'evo' }),
         build('counter', 'cryo', 'd', 'Answer it', '', { when: () => after(5), skip: () => W() >= 6, at: () => flowAt(counterOf(), 'd'), hold: () => afford(counterOf()) && gridFree() >= 1, done: () => has(counterOf()),
           b: () => { const c = counterOf(), D = TOWERS[c]; return !afford(c) ? `A ${D.name} costs ${towerCost(c)} credits.` : gridFree() < 1 ? 'The grid is full: this wave, upgrade instead.' : flowText(c, `Build a ${D.name}: ${EL[D.el].name} damage goes straight through ${EL[topEl()].name} Ward.`); } }),
         call('call6', 6, 'Warded enemies are coming.', { when: () => after(5) }),
+        // the core's own upgrades, during Wave 6 (6.2; supply drops as Waves 3 and 4 end pay for them)
+        { id: 'tapCore', ls: 'core', when: () => W() >= 6 && !G.frFly, skip: () => W() >= 8 || G.core.sLvl >= 2 && G.core.wLvl >= 2, hold: 1, at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core', b: 'The core has upgrades too. Tap it.', done: () => panel && panel.kind === 'core' },
+        { id: 'shield', when: () => W() >= 6, skip: () => W() >= 8 || G.core.sLvl >= 2, hold: () => G.credits >= coreShieldCost(), enter: scrollTo('#panel [data-act=cs]'), at: sel('#panel [data-act=cs]'), t: 'Shield',
+          b: () => G.credits >= coreShieldCost() ? `Tap Shield (${fmt(coreShieldCost())}). A bigger shield soaks more leaks before the core loses health.` : `Shield costs ${fmt(coreShieldCost())} credits.`, done: () => G.core.sLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
+        { id: 'battery', when: () => W() >= 6, skip: () => W() >= 8 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
+          b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). ${G.fr && frDockT() ? `The docked ${TOWERS[frDockT().type].name} hits ${pct(FRONTIER.dockBat)} harder per level, and so does the plain cannon.` : "The core's own gun hits harder; some levels add a module."}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
+        info('coreMore', sel('#panel [data-act=ch]'), 'Hull and Uplink', () => G.fr ? `Later: Hull adds core health. Uplink makes abilities recharge faster, adds a link every ${FRONTIER.linkUplink} levels and shortens the lift-off wait every ${FRONTIER.cdUplink}.` : 'Later: Hull adds core health, Uplink makes abilities recharge faster.', { when: () => panel && panel.kind === 'core', skip: () => W() >= 8 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
         info('mark', () => enemyR(mem.we), 'Gene marks', () => `The ring is Ward: this one shrugs off half your ${EL[(mem.we && mem.we.gel) || 'K'].name} damage. Marks show what each enemy evolved.`,
-          { when: () => W() === 6 && !!geneEnemy('ward'), skip: () => W() >= 7, enter: () => { mem.we = geneEnemy('ward'); } }),
+          { ls: 'mark', when: () => W() === 6 && !!geneEnemy('ward'), skip: () => W() >= 7 || !geneEnemy('ward'), enter: () => { mem.we = geneEnemy('ward'); } }),
         // the spec: a permanent branch at LV 3, then Ascend and Sell, briefly
         tapTw('tapLv3', () => mem.st, 'Specialize', () => G.credits >= upgradeCost(mem.st) ? 'Tap your strongest tower. Get it to LV 3.' : `Next upgrade: ${fmt(upgradeCost(mem.st))} credits. Kills pay.`,
-          { when: () => after(6), skip: () => W() >= 8 || noTw(), hold: () => G.credits >= upgradeCost(mem.st), enter: () => { mem.st = G.towers.slice().sort((a, b) => b.lvl - a.lvl || b.dmgDone - a.dmgDone)[0]; } }),
-        { id: 'toLv3', when: () => after(6) || after(7), skip: () => W() >= 8 || !mem.st || mem.st.lvl >= 3, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel [data-act=up]'), t: 'To LV 3',
+          { ls: 'spec', when: () => after(6) || W() >= 7, skip: () => W() >= 8 || noTw(), hold: () => G.credits >= upgradeCost(mem.st), enter: () => { mem.st = G.towers.slice().sort((a, b) => b.lvl - a.lvl || b.dmgDone - a.dmgDone)[0]; } }),
+        { id: 'toLv3', when: () => after(6) || W() >= 7, skip: () => W() >= 8 || !mem.st || mem.st.lvl >= 3, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel [data-act=up]'), t: 'To LV 3',
           b: () => `Upgrade to LV ${mem.st.lvl + 1}: ${fmt(upgradeCost(mem.st))} credits.`, done: () => mem.st.lvl >= 3, back: () => panT() !== mem.st && 'tapLv3' },
-        { id: 'spec', when: () => (after(6) || after(7)) && mem.st && mem.st.lvl >= 3, skip: () => W() >= 8 || !mem.st || mem.st.spec, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel .specs'), t: 'Pick a spec',
+        { id: 'spec', when: () => (after(6) || W() >= 7) && mem.st && mem.st.lvl >= 3, skip: () => W() >= 8 || !mem.st || mem.st.spec, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel .specs'), t: 'Pick a spec',
           b: () => G.credits >= upgradeCost(mem.st) ? `At LV 3 a tower specializes: one of two branches, for good. Read both and tap one (${fmt(upgradeCost(mem.st))} credits).` : `The spec costs ${fmt(upgradeCost(mem.st))} credits. Kills pay.`,
           done: () => !!mem.st.spec, back: () => panT() !== mem.st && G.credits >= upgradeCost(mem.st) && 'tapLv3' },
         info('ascend', sel('#panel [data-act=up]'), 'LV 5 and Ascend', `One more upgrade reaches LV 5, the top. After that a tower can Ascend: more damage${typeof PERKS !== 'undefined' ? ' and a perk' : ''} each time, at a steep price.`, { when: () => !!panT() && mem.st && mem.st.spec, skip: () => W() >= 8 || !panT() }),
         info('sell', sel('#panel [data-act=sell]'), 'Sell', 'Selling refunds 70% of what you put in. Sell a tower that sits idle and build where enemies walk.', { when: () => !!panT(), skip: () => W() >= 8 || !panT(), leave: shut }),
-        info('free', () => appR(q('#chips [data-wanted]')) || appR(q('#chips [data-more]')), 'Most Wanted', () => `This chip is the bounty: a boss lands on Wave ${G.wanted ? G.wanted.w : 9}. Until then, build and upgrade as you like.`, { when: () => after(6) || after(7), skip: () => W() >= 8, hold: 0 }),
-        { id: 'boss', when: () => G.enemies.some(e => e.boss && !e.gen && onField(e)), skip: () => G.huntChoice || G.over, hold: 1, ok: 'Fight', enter: () => { mem.boss = G.enemies.find(e => e.boss && !e.gen && onField(e)); },
+        info('free', () => appR(q('#chips [data-wanted]')) || appR(q('#chips [data-more]')), 'Most Wanted', () => `This chip is the bounty: a boss lands on Wave ${G.wanted ? G.wanted.w : 9}. Until then, build and upgrade as you like.`, { ls: 'wanted', when: () => W() >= 7, skip: () => W() >= 9, hold: 0 }),
+        { id: 'boss', ls: 'boss', gap: 0, busyOK: 1, when: () => G.enemies.some(e => e.boss && !e.gen && onField(e)), skip: () => G.huntChoice || G.over, hold: 1, ok: 'Fight', enter: () => { mem.boss = G.enemies.find(e => e.boss && !e.gen && onField(e)); },
           at: () => enemyR(mem.boss), t: () => mem.boss ? mem.boss.bossName : 'Boss', b: 'The Most Wanted boss: huge health, Plated, slow. Kill it to claim the bounty. Strike helps.' },
-        { id: 'bounty', when: () => modalOpen === 'hunt', hold: 1, modal: 'hunt', at: sel('#modal [data-act=extract]'), t: 'Bounty claimed',
+        { id: 'bounty', ls: 'bounty', gap: 0, busyOK: 1, when: () => modalOpen === 'hunt', hold: 1, modal: 'hunt', at: sel('#modal [data-act=extract]'), t: 'Bounty claimed',
           b: `Extract banks your Bounty Purse and ends the run as a win. In real runs a jump door pushes on for a bigger purse; fall later and you keep ${Math.round(PURSE.death * 100)}%.`, done: () => G.over },
       ],
       towers: [
@@ -11778,7 +12058,22 @@ const UI = (() => {
       if (p === 'basic') { tutState().seen = 1; Save.save(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); return; } // 6.0: never offer a new run over a saved one
       if (G && G.tut) G = null; if (Tree.isOpen) Tree.close(); show('hangar'); renderHangar(); openManual();
     }
-    function next() { const S = cur; cur = null; i++; Render.hints = null; sig = ''; if (S && S.leave) S.leave(); }
+    function next() { const S = cur; cur = null; i++; Render.hints = null; sig = ''; if (S && mem.shownId === S.id && !S.free && G) { mem.gapT = G.time; mem.gapW = W(); mem.gapC = cleared(); } if (S && S.leave) S.leave(); }
+    // 6.2 pacing (Basic Training): steps that start a new lesson carry ls. One lesson's steps run back to back (an action chain); a
+    // new lesson waits for PACE_GAP seconds of play since the last card (G.time stops while a card holds the game) or for a wave to
+    // end with at least 10 s of play since, and for a calm moment (teachBusy). With the countdown nearly out between waves it goes ahead, so a lesson that belongs
+    // to this break is never lost. Call prompts (free) neither wait nor reset the clock. Field Manual lessons are one topic each: no gap.
+    const PACE_GAP = 22;
+    function paced(S) {
+      if (plan !== 'basic' || S.free || mem.gapT === undefined || !G || lessonOf(i) === mem.lastLs) return true;
+      const gap = S.gap !== undefined ? S.gap : PACE_GAP, quiet = G.time - mem.gapT;
+      const waveEnd = cleared() && (W() > mem.gapW || !mem.gapC) && quiet >= 10, late = cleared() && G.next < 5 && W() < G.tutS.waves.length;
+      if (!(quiet >= gap || waveEnd || late)) return false;
+      if (S.busyOK || late) return true;
+      if (!teachBusy()) { mem.busyT = undefined; return true; }
+      if (mem.busyT === undefined) mem.busyT = G.time; return G.time - mem.busyT > 25; // a busy spell can't hold a lesson for ever
+    }
+    const lessonOf = k => { const P = STEPS(); for (let j = Math.min(k, P.length - 1); j >= 0; j--) if (P[j].ls) return P[j].ls; return null; };
     function go(id) { const k = STEPS().findIndex(s => s.id === id); if (k >= 0) { cur = null; i = k; sig = ''; Render.hints = null; } }
     function hide() { if (el && !el.hidden) el.hidden = true; }
     const ov = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
@@ -11810,7 +12105,7 @@ const UI = (() => {
     }
     function show2(S, t, b, r, ok, idle) {
       const key = plan + i + '|' + t + '|' + b + '|' + (ok || '') + (idle ? 'i' : ''); // (the button too: a chip that folds into +N brings up "Open it")
-      el.hidden = false; el.classList.toggle('idle', !!idle);
+      el.hidden = false; el.classList.toggle('idle', !!idle); if (!idle && S.id) { mem.shownId = S.id; if (!S.free) mem.lastLs = lessonOf(i); }
       if (key !== sig) {
         sig = key;
         const T = G && G.tutS, n = T ? T.waves.length : 0, Lt = LESSON_BY[plan];
@@ -11848,7 +12143,7 @@ const UI = (() => {
       const S = P[i];
       if (!S) { if (tour() || (G && G.lesson)) lessonDone(plan); else idle(); return; }
       if (G && G.over && plan === 'basic') { held = false; hide(); return; }
-      if (!cur) { if (S.when && !S.when()) { idle(); return; } cur = S; sig = ''; if (S.enter) S.enter(); }
+      if (!cur) { if ((S.when && !S.when()) || !paced(S)) { idle(); return; } cur = S; sig = ''; if (S.enter) S.enter(); }
       if (S.done && S.done()) { next(); idle(); return; }
       if (S.skip && S.skip()) { next(); idle(); return; }
       const bk = S.back && S.back(); if (bk) { go(bk); idle(); return; }
@@ -11859,6 +12154,7 @@ const UI = (() => {
       if (!panned && r && c) see(S, r, c);
     }
     return { start, stop, tick, get hold() { return on && held; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
+      get chain() { return on && cur ? lessonOf(i) : null; }, // 6.2: the lesson the current step belongs to (test/tutcadence.py)
       steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS) };
   })();
 
@@ -11878,24 +12174,24 @@ const UI = (() => {
     toast('MOST WANTED', `${Wd.name} · Wave ${Wd.w} · wanted for ${Wd.crime}. ${M ? M.desc + '. ' : ''}Reward: ${fmt(Wd.bounty)} credits and a Legendary schematic${M && M.loaded ? ' (double, plus a Captain\'s Chest)' : ''}`, '#ffd84a', true);
   }
   // ---------- HUD ----------
-  // Overdrive from the rail: first tap arms it for 3 s, second tap releases
+  // the Nuke (internally Overdrive) from the rail: first tap arms it for 3 s, second tap releases
   let odArm = false, odArmT = null;
   function overdriveTap() {
     if (!G || G.over) return;
     SFX.play('ui');
-    if (G.odUsed) { toast('OVERDRIVE', `Already used on Wave ${G.odUsed}. One per run`, '#8a8fa8'); return; }
-    if (!odReady()) { toast('OVERDRIVE', `Charges at Wave ${OD_WAVE}: one board clear per run (bosses survive)`, '#8a8fa8'); return; }
-    if (!odArm) { odArm = true; clearTimeout(odArmT); odArmT = setTimeout(() => { odArm = false; updateHud(); }, 3000); updateHud(); toast('OVERDRIVE ARMED', 'Tap again to erase every non-boss enemy. One use per run', '#59f0b4', true); return; }
+    if (G.odUsed) { toast('NUKE', `Already used on Wave ${G.odUsed}. One per run`, '#8a8fa8'); return; }
+    if (!odReady()) { toast('NUKE', `Arms at Wave ${OD_WAVE}: one board clear per run (bosses survive)`, '#8a8fa8'); return; }
+    if (!odArm) { odArm = true; clearTimeout(odArmT); odArmT = setTimeout(() => { odArm = false; updateHud(); }, 3000); updateHud(); toast('NUKE ARMED', 'Tap again to erase every non-boss enemy. One use per run', '#59f0b4', true); return; }
     odArm = false; clearTimeout(odArmT);
     const r = window.act('od');
-    if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); }
+    if (r === 'empty') { SFX.play('deny'); toast('NUKE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); }
     else if (r !== 'ok') SFX.play('deny');
-    else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); }
+    else { closePanel(); toast('NUKE', `${G.stats.odKills} enemies erased`, '#59f0b4'); }
     updateHud();
   }
   const marketShut = () => !!(G && G.fresh && G.wave < 10);
   function buildAbilityBar() {
-    $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Overdrive">${svgIcon('overdrive')}<span>Overdrive</span></button>` +
+    $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Nuke">${svgIcon('overdrive')}<span>Nuke</span></button>` +
       ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt"></em><i class="cdf"></i></button>`).join('');
   }
   function updateHud(force) {
@@ -11922,7 +12218,7 @@ const UI = (() => {
     if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); $('#cpBanner').querySelector('span').textContent = cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'; $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
     const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
-    { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Overdrive') : 'W' + OD_WAVE;
+    { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Nuke') : 'W' + OD_WAVE;
       ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready); ob.classList.toggle('ghost', !!G.fresh && !ready && !G.odUsed);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
     // v5.1: every ability keeps its place on the rail. Empty ones dim and fill as they recharge; offline ones show their wave
@@ -12114,8 +12410,8 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
-  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
+  const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|NUKE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|NUKE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
   const KEY_RE = /^(BOSS HALFWAY|NEW ENEMY|BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   // v5.1.2 notices in a game go to one slim ticker under the top bar, never over the field. URGENT ones (the run is at stake)
   // flash the screen edge and buzz; everything is kept in noteLog, read back from the ticker or the +N chip (Field Report)
@@ -12212,19 +12508,21 @@ const UI = (() => {
   let bossT = null;
   const briefMode = () => G && G.watch ? 'off' : PROF.settings.briefings || 'pause';
   // v5.1: the first time you meet an enemy, a short card says what it is and what beats it (queued if something is open)
-  const enemyCards = []; let readyIx = -1;
+  const enemyCards = []; let readyIx = -1, evoWait = false;
   function enemyCard(k) {
     const D = ENEMIES[k]; if (!D) return;
+    if (screen === 'game' && G && !G.over && !teachOK()) { if (!enemyCards.includes(k)) enemyCards.push(k); return; } // 6.2: waits its turn like every first-time card
+    teachMark();
     if (briefMode() !== 'pause' || screen !== 'game') { toast('NEW ENEMY · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ff4d6a', true); return; }
     if (modalOpen || Tree.isOpen || (G && G.draft)) { if (!enemyCards.includes(k)) enemyCards.push(k); return; }
     closePanel(); if (G && !G.over) { G.paused = true; G.briefing = true; }
-    modal(`<div class="card narrow brief ecard"><div class="erow"><canvas width="88" height="88" data-eico="${k}"></canvas><div class="bi"><em>New enemy · next wave</em><h3>${esc(D.name)}</h3><p class="desc">${tipify(D.desc)}.</p><p class="ph good">Beat it: ${tipify(D.beat)}</p></div></div>
+    modal(`<div class="card narrow brief ecard"><div class="erow"><canvas width="88" height="88" data-eico="${k}"></canvas><div class="bi"><em>${G && G.enemies.some(e => e.type === k && !e.dead) ? 'New enemy · on the field' : 'New enemy · next wave'}</em><h3>${esc(D.name)}</h3><p class="desc">${tipify(D.desc)}.</p><p class="ph good">Beat it: ${tipify(D.beat)}</p></div></div>
       <div class="foot"><span class="note">Tap any enemy on the field to inspect it</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
     const cv = $('#modal canvas[data-eico]'); if (cv) Render.enemyIcon(k, cv);
   }
   function bossIntro(e, B) {
     const box = $('#bossIntro'); if (!box || (G && G.tut)) return; // 5.8: the Training coach introduces its boss
-    const first = !PROF.codex.bosses[B.id];
+    const first = !PROF.codex.bosses[B.id]; if (first) teachMark(); // 6.2: a first boss counts as a first-time card (it can't wait; the next card does)
     if (briefMode() === 'off') { log(`${B.name} incoming`, '#ff4d6a'); return; }
     if (briefMode() === 'pause' && !modalOpen && !Tree.isOpen && screen === 'game') {
       const tag = e.wanted ? `Most Wanted · ${(WANTED_MODS.find(m => m.id === e.wanted) || { name: '' }).name} · ${fmt(G.wanted ? G.wanted.bounty * (e.wantedLoaded ? 2 : 1) : 0)} bounty` : first ? 'New boss · first encounter' : B.odd ? 'Boss?!' : 'Boss incoming';
@@ -12413,6 +12711,13 @@ const UI = (() => {
     if (box && !box.hidden) box.hidden = true;
   }, true);
   function affixHTML(a) { return `<div class="aff" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</div>`; }
+  // 6.2 (frV 3): a Relay Pylon or Snare Beacon grows with the attack towers in its range (supGrow in sim.js)
+  function growHTML(t) {
+    if (!(G.frV >= 3) || !t.s || !supKind(t.s.kind)) return '';
+    const r2 = t.s.range * t.s.range, n = G.towers.filter(o => o !== t && canOvercharge(o) && dist2(t.cx, t.cy, o.cx, o.cy) <= r2).length, want = supTarget(t);
+    const tail = t.grow > 0 ? ' · Specialize free' : !n ? ' · none in range' : t.lvl >= MAX_LV ? '' : want > t.lvl ? '' : ` · now LV ${want}`;
+    return `<div class="sts grow">Grows with nearby attack towers${t.freeLv ? ` <b>+${t.freeLv} LV free</b>` : ''}<small>${n} in range${tail}</small></div>`;
+  }
   function towerPanelHTML(t) {
     const D = TOWERS[t.type], s = t.s;
     const spec = t.spec ? D.specs[t.spec - 1].name : '';
@@ -12433,7 +12738,7 @@ const UI = (() => {
     const fire = fireHTML(t);
     let up = '';
     if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide lvup" style="${tierStyle(t.lvl + 1)}" data-act="up" ${costBtn(c)}>Upgrade to LV ${t.lvl + 1} · ${fmt(c)}<small>${s.kind === 'snare' ? 'more catches, longer hold, wider net' : s.kind === 'support' ? 'stronger boost' : s.kind === 'eco' ? 'more income' : 'more Damage'}, new affix</small></button>`; }
-    else if (t.lvl === 3) { const c = upgradeCost(t); up = `<div class="lbl">Specialize · ${fmt(c)}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${costBtn(c)}><b>${esc(sp.name)}</b><span>${tipify(sp.desc)}</span></button>`).join('')}</div>`; }
+    else if (t.lvl === 3) { const c = t.grow > 0 ? 0 : upgradeCost(t); up = `<div class="lbl">Specialize · ${c ? fmt(c) : 'Free: grown with its towers'}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${c ? costBtn(c) : ''}><b>${esc(sp.name)}</b><span>${tipify(sp.desc)}</span></button>`).join('')}</div>`; }
     else if (t.ascPend > 0) { const c = upgradeCost(t); up = `<button class="btn primary wide asc lvup" style="${tierStyle(towerLevel(t) + 1)}" disabled>Ascend to LV ${towerLevel(t) + 1} · ${fmt(c)}<small>Choose a perk ${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'} first</small></button>`; }
     else { const c = upgradeCost(t); up = `<button class="btn primary wide asc lvup" style="${tierStyle(towerLevel(t) + 1)}" data-act="up" ${costBtn(c)}>Ascend to LV ${towerLevel(t) + 1} · ${fmt(c)}<small>${lvTier(towerLevel(t) + 1).name} · ×${G.ascV >= 2 ? ASC_DMG_T[t.type] || ASC_DMG : ASC_DMG_OLD} Damage${G.ascV >= 2 && perkPool(t).length ? ', perk' : ''}, affix</small></button>`; }
     let vet = '';
@@ -12456,12 +12761,14 @@ const UI = (() => {
       ${stats}
       ${condHTML(t)}
       ${idle}
+      ${growHTML(t)}
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       ${perkList}
       ${t.affixes.length ? `<div class="lbl">Affixes</div><div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>` : ''}
       ${foot}`;
     return `${head}
+      ${growHTML(t)}
       ${t.lvl === 3 ? up : ''}
       ${perks}
       ${vet}
@@ -12529,7 +12836,7 @@ const UI = (() => {
       <div class="lbl">Command Uplink · LV ${c.uLvl || 0}/${UPLINK.max} · −${UPLINK.cd * (c.uLvl || 0)}% cooldowns${G.fr ? ` · +1 link per ${FRONTIER.linkUplink} levels, lift-off wait −1 wave per ${FRONTIER.cdUplink}` : ''}</div>
       <div class="cmods">${UPLINK.mods.map(m => `<span class="${(c.uLvl || 0) >= m.lv ? 'on' : ''}"><b>${(c.uLvl || 0) >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
-      <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Overdrive: used on Wave ${G.odUsed}` : odReady() ? 'Overdrive: ready · release it from the left rail. One board clear this run' : `Overdrive: unlocks at Wave ${OD_WAVE} · once per run`)}</div>
+      <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Nuke: used on Wave ${G.odUsed}` : odReady() ? 'Nuke: ready · launch it from the left rail. One board clear this run' : `Nuke: arms at Wave ${OD_WAVE} · once per run`)}</div>
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
       ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="sts">${tipify(`Power grid ${gridUsed()}/${gridCap()}${G.reactorN ? ` · ${G.reactorN} reactor expansion${G.reactorN > 1 ? 's' : ''}` : ''}. Each expansion adds +1 power for the rest of the run and costs more than the last`)}</div>
@@ -12728,9 +13035,9 @@ const UI = (() => {
         if (!panel.odArm) { panel.odArm = true; renderPanel(); setTimeout(() => { if (panel && panel.kind === 'core' && panel.odArm) { panel.odArm = false; renderPanel(); } }, 3000); return; }
         panel.odArm = false;
         const r = window.act('od');
-        if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); renderPanel(); }
+        if (r === 'empty') { SFX.play('deny'); toast('NUKE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); renderPanel(); }
         else if (r !== 'ok') { SFX.play('deny'); renderPanel(); }
-        else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
+        else { closePanel(); toast('NUKE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
       }
       else if (act === 'reloc') startReloc();
       else if (act === 'frlift') startLift();
@@ -12844,12 +13151,12 @@ const UI = (() => {
     p.x = (e.clientX / UIS); p.y = (e.clientY / UIS);
     if (gesture.kind === 'pinch' && ptrs.size >= 2) {
       const [a, b] = [...ptrs.values()], d = Math.max(20, Math.hypot(a.x - b.x, a.y - b.y));
-      Render.zoomAt((a.x + b.x) / 2 - (r.left / UIS), (a.y + b.y) / 2 - (r.top / UIS), d / gesture.d);
+      Render.zoomAt((a.x + b.x) / 2 - (r.left / UIS), (a.y + b.y) / 2 - (r.top / UIS), d / gesture.d); camUser++;
       gesture.d = d; updateZoomBtn();
     } else if (gesture.kind === 'tap' || gesture.kind === 'pan') {
       gesture.moved += Math.abs(dx) + Math.abs(dy);
       if (gesture.moved > 12) gesture.kind = 'pan';
-      if (gesture.kind === 'pan') { Render.panBy(dx, dy); updateZoomBtn(); if (e.pointerType === 'mouse') $('#cv').style.cursor = 'grabbing'; }
+      if (gesture.kind === 'pan') { Render.panBy(dx, dy); updateZoomBtn(); camUser++; if (e.pointerType === 'mouse') $('#cv').style.cursor = 'grabbing'; }
     }
   }
   // v5.0.1 mouse hover: faint corners on the tile under the cursor, a range ring on towers, and a pointer cursor on anything you can click
@@ -12863,7 +13170,7 @@ const UI = (() => {
     if (en) { const I = enemyInfo(en); tip.innerHTML = `<b>${esc(I.name)}</b><span>${esc(I.beat ? 'Beat it: ' + I.beat : I.desc || '')}</span>`; tip.hidden = false;
       const sr = $('#stage').getBoundingClientRect(), x = e.clientX - sr.left, y = e.clientY - sr.top; tip.style.left = Math.round(Math.min(sr.width - 230, x + 14) / UIS) + 'px'; tip.style.top = Math.round(Math.max(0, y - 46) / UIS) + 'px'; }
     else tip.hidden = true;
-    const live = en || inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheAt(tx, ty));
+    const live = en || inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheNear(p, tx, ty));
     $('#cv').style.cursor = G.aimAbility ? 'crosshair' : live ? 'pointer' : 'default';
   }
   function canvasUp(e) {
@@ -12886,10 +13193,20 @@ const UI = (() => {
       updateZoomBtn(); SFX.play('ui'); return;
     }
     lastTap = { t: now, x: sx, y: sy };
-    if (G.fr) { const A = Render.arrowAt(sx, sy); if (A) { lastTap = null; if (A.home) Render.resetCam(); else Render.lookAt(A.x, A.y); updateZoomBtn(); SFX.play('ui'); return; } } // Frontier edge arrows
+    { const A = Render.arrowAt(sx, sy); if (A) { lastTap = null; if (A.home) Render.resetCam(); else Render.lookAt(A.x, A.y); updateZoomBtn(); SFX.play('ui'); return; } } // edge arrows: the core goes home, the rest look there
     tapTile(Render.screenToTile(sx, sy));
   }
   let lastTap = null;
+  // 6.2 (Nic: "1 square buffer, I miss them sometimes"): a tap within about a tile of a crate claims it (the nearest one; the
+  // claim is recorded with the crate's own tile). A tap on a tower or the core still opens that, so building and selecting work
+  const CACHE_REACH = 1.5;
+  function cacheNear(p, tx, ty) {
+    const on = cacheAt(tx, ty); if (on) return on;
+    if (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y)) return null;
+    let best = null, bd = CACHE_REACH;
+    for (const c of G.caches || []) { const d = Math.hypot(p.x - (c.x + 0.5), p.y - (c.y + 0.5)); if (d <= bd) { bd = d; best = c; } }
+    return best;
+  }
   function tapTile(p) {
     if (G.watch) return; // a replay plays itself
     if (G.aimAbility) {
@@ -12918,9 +13235,9 @@ const UI = (() => {
       if (!P) { SFX.play('deny'); toast('NO ROUTE', 'A road cannot reach that tile', '#ff4d6a'); return; }
       SFX.play('ui'); G.reloc.plan = P; Render.sel = { x: tx, y: ty }; renderPanel(); return;
     }
-    if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
-    const cc = cacheAt(tx, ty);
-    if (cc) { const kind = cc.kind, m = window.act('cache', tx, ty); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
+    const cc = cacheNear(p, tx, ty);
+    if (!cc && !inRegion(tx, ty, G.region)) { closePanel(); return; }
+    if (cc) { const kind = cc.kind, m = window.act('cache', cc.x, cc.y); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
     const isCore = tx === G.map.core.x && ty === G.map.core.y;
     const t = G.towerAt[tIdx(tx, ty)];
     if (!isCore && !t) { const en = enemyAt(p); if (en) { SFX.play('ui'); if (panel && panel.kind === 'enemy' && panel.e === en) { closePanel(); return; } openEnemy(en); return; } }
@@ -12942,7 +13259,7 @@ const UI = (() => {
     const r = $('#cv').getBoundingClientRect();
     // v5.0.1: scale by how far the wheel moved, so trackpads (small deltas, pinch = ctrl+wheel) zoom smoothly and mouse notches still step
     const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, k = Math.exp(-clamp(dy, -120, 120) * (e.ctrlKey ? 0.01 : 0.0012));
-    Render.zoomAt((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS), k);
+    Render.zoomAt((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS), k); camUser++;
     updateZoomBtn();
   }
   // right click: cancel whatever is in progress (aiming an ability, placing a beacon), otherwise close the open panel
@@ -12951,6 +13268,7 @@ const UI = (() => {
     if (G.aimAbility) { G.aimAbility = null; Render.aim = null; updateHud(); SFX.play('ui'); return; }
     if (panel) { closePanel(); SFX.play('ui'); }
   }
+  // 6.2: the Home/Map button was removed; callers still tell the camera UI it moved (kept as the one hook for that)
   function updateZoomBtn() { const b = $('#bZoom'); if (b) { const close = Render.homeZoom > 1.05; b.hidden = Render.home && !close; b.innerHTML = svgIcon('fit', 16) + (Render.home ? 'Map' : G && G.fr ? 'Home' : 'Fit · ' + (Render.zoom / Render.homeZoom).toFixed(1) + '×'); } } // Frontier: Home recentres on the core
   function fitCols() {
     // measure the playfield the game screen will have: app minus safe areas, the two thumb rails and the status bar
@@ -13046,7 +13364,7 @@ const UI = (() => {
       ${swarmTimelineHTML(R)}
       ${R.assaults && R.assaults.list.length ? `<p class="note hl">${tipify(`Strain Assaults: ${R.assaults.won} broken, ${R.assaults.lost} entrenched`)}${R.assaults.list.slice(-3).map(a => ` · W${a.w} ${esc(a.name)} ${a.won ? '✓' : '✗'}`).join('')}</p>` : ''}
       ${R.bounty ? `<p class="note hl" style="color:#ffd84a">Bounty claimed: ${esc(R.bounty)}</p>` : ''}
-      ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
+      ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Nuke erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
   }
@@ -13181,19 +13499,19 @@ const UI = (() => {
   // ---------- v5.3 The Hunt: the choice after a bounty, hunt codes, and watching a recorded run ----------
   // v5.3.4 Veteran Picks: the "veterans ready" chip walks through every tower with a mutation waiting, one card at a time
   const vetFlow = { ix: 0, n: 0 };
-  const vetsReady = () => G ? G.towers.filter(t => t.pending > 0 || t.ascPend > 0) : []; // 5.8: veteran picks and Ascend perks
+  const vetsReady = () => G ? G.towers.filter(t => t.pending > 0 || t.ascPend > 0 || t.grow > 0) : []; // 5.8: veteran picks and Ascend perks; 6.2: a grown support tower's free Specialization
   function showOnMap(t) { openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); }
   function openVets() {
     const rd = vetsReady();
     if (!rd.length) { closeModal(); Render.sel = null; if (G && !G.over) G.paused = false; if (vetFlow.n) toast('VETERANS', `${vetFlow.n} pick${vetFlow.n === 1 ? '' : 's'} made. Every tower is up to date`, '#ffe14d', true, 'tip'); vetFlow.n = 0; return; }
     vetFlow.ix = ((vetFlow.ix % rd.length) + rd.length) % rd.length;
-    const t = rd[vetFlow.ix], asc = !(t.pending > 0) && t.ascPend > 0, o = asc ? ascOffer(t) || [] : vetOffer(t), left = rd.reduce((a, x) => a + (x.pending || 0) + (x.ascPend > 0 ? 1 : 0), 0);
+    const t = rd[vetFlow.ix], asc = !(t.pending > 0) && t.ascPend > 0, grow = !(t.pending > 0) && !asc && t.grow > 0, o = grow ? [] : asc ? ascOffer(t) || [] : vetOffer(t), left = rd.reduce((a, x) => a + (x.pending || 0) + (x.ascPend > 0 ? 1 : 0) + (x.grow > 0 ? 1 : 0), 0);
     closePanel(); G.paused = true;
     // 5.8: the tower is centred in the free (left) part of the board and selected, and the card docks right over a light backdrop
     { const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W * 0.3 - p.x, L.H / 2 - p.y); updateZoomBtn(); Render.sel = { x: t.x, y: t.y }; }
     modal(`<div class="card narrow vets"><div class="ch"><h2>Ready</h2><span class="note">Tower ${vetFlow.ix + 1} of ${rd.length} · ${left} pick${left === 1 ? '' : 's'} waiting</span><button class="x" data-act="vetDone" aria-label="Close">✕</button></div>
-      <div class="vhead"><canvas class="ico" width="32" height="32" data-ico="${t.type}"></canvas><div><b>${esc(towerLabel(t))}</b><small>${towerLabel(t) !== TOWERS[t.type].name ? esc(TOWERS[t.type].name) + ' · ' : ''}LV ${towerLevel(t)} · ${asc ? 'Ascended · choose a perk' : `${tipify('Veteran')} ${roman(t.rank)}${t.pending > 1 ? ` · ${t.pending} picks here` : ''} · choose a mutation`}</small></div></div>
-      <div class="vet">${asc ? o.map((id, i) => { const P = perkDef(t.type, id), n = perkStacks(t, id); return `<button class="aff pickable" data-act="apick" data-v="${i}" style="--c:#ff8a2a"><i>${esc(P.name)}${n ? ' ' + roman(n + 1) : ''}</i>${esc(perkText(P, n))}</button>`; }).join('')
+      <div class="vhead"><canvas class="ico" width="32" height="32" data-ico="${t.type}"></canvas><div><b>${esc(towerLabel(t))}</b><small>${towerLabel(t) !== TOWERS[t.type].name ? esc(TOWERS[t.type].name) + ' · ' : ''}LV ${towerLevel(t)} · ${grow ? 'Grew with its towers · free Specialization' : asc ? 'Ascended · choose a perk' : `${tipify('Veteran')} ${roman(t.rank)}${t.pending > 1 ? ` · ${t.pending} picks here` : ''} · choose a mutation`}</small></div></div>
+      <div class="vet">${grow ? TOWERS[t.type].specs.map((sp, i) => `<button class="aff pickable" data-act="gpick" data-v="${i + 1}" style="--c:#59f0b4"><i>${esc(sp.name)} · Free</i>${tipify(sp.desc)}</button>`).join('') : asc ? o.map((id, i) => { const P = perkDef(t.type, id), n = perkStacks(t, id); return `<button class="aff pickable" data-act="apick" data-v="${i}" style="--c:#ff8a2a"><i>${esc(P.name)}${n ? ' ' + roman(n + 1) : ''}</i>${esc(perkText(P, n))}</button>`; }).join('')
         : o.map((a, i) => `<button class="aff pickable" data-act="vpick" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</button>`).join('')}</div>
       ${t.affixes.length ? `<div class="lbl">Already has</div><div class="affs mini">${t.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="foot"><button class="btn" data-act="vetMap">Show on map</button>${rd.length > 1 ? '<button class="btn" data-act="vetSkip">Next tower</button>' : ''}<button class="btn" data-act="vetDone">Later</button></div></div>`, 'vets');
@@ -13343,38 +13661,72 @@ const UI = (() => {
   }
   // v4.8: buttons that raise a level wear the colour of the tier they lead to
   const tierStyle = n => { const T = lvTier(n); return `--tc:${T.col}`; };
+  // 6.2 Settings (Nic: "it's getting really crowded"): tabs on a left rail (General · Sound · Graphics · Interface) and one scrolling
+  // pane, like a console game's options screen. Every row: a name, one line on what it does, and its control on the right (a switch,
+  // a segmented choice, a slider or a button). All four pages are in the DOM (inactive ones hidden), so a tab switch is instant and
+  // older tests that click a control by data-act still find it. The open tab is remembered for the session.
+  let setTab = 'general';
+  const SET_TABS = [['general', 'General', 'gear'], ['sound', 'Sound', 'speaker'], ['graphics', 'Graphics', 'screen'], ['interface', 'Interface', 'sliders']];
   function openSettings() {
-    const S = PROF.settings;
-    modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
-      <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
-      <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
-      <div class="set"><span>Music Studio <em class="dim">genres, mixer, your tracks</em></span><button class="chip on" style="--c:#ff5fa8" data-act="studioS">Open</button></div>
-      <div class="set"><span>Sound <em class="dim" id="sndStat">${esc(soundStatus())}</em></span><button class="chip" data-act="sndFix">Restart sound</button></div>
-      <div class="set"><span>Mono Audio <em class="dim">one earbud, one speaker</em></span><button class="chip ${S.mono ? 'on' : ''}" data-act="mono">${S.mono ? 'On' : 'Off'}</button></div>
-      <label class="set"><span>Music Tempo <em id="bpmV" class="dim">${S.bpm || 72} BPM</em></span><input id="setBpm" type="range" min="56" max="100" step="2" value="${S.bpm || 72}"></label>
-      <p class="note tempo">The tempo of the Default mix. In the Music Studio each genre has its own.</p>
-      ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
-      <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
-      <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Haptics <em class="dim">buzz when the core is hit</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.haptics !== false) === v ? 'on' : ''}" data-act="haptic" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Glow <em class="dim">soft lighting on the field</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.glow !== false) === v ? 'on' : ''}" data-act="gfx" data-k="glow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Pixel scaling <em class="dim">Sharp is crisper; Simple is lighter work</em></span><div class="chips">${[[true, 'Sharp'], [false, 'Simple']].map(([v, l]) => `<button class="chip ${(S.sharp !== false) === v ? 'on' : ''}" data-act="gfx" data-k="sharp" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Boss slow-down <em class="dim">drop to 1× when a boss arrives</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.autoSlow !== false) === v ? 'on' : ''}" data-act="autoslow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
-      <div class="set"><span>Damage Numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Screen Shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
-      ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
-      ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
-      <p class="note credits">Music: Drift, a generative score written live as you play, in ten genres. No two runs sound the same.</p>
-      <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div>
-      <div class="row"><p class="note">${lastLogText() ? 'Last run log' : 'No run log yet'}</p>${lastLogText() ? '<button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button>' : ''}</div></div>`, 'settings');
-    $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
-    $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
+    const S = PROF.settings, inRun = !!(G && !G.over);
+    const prev = $('#modal .card.settings .setpane'), keep = prev && prev.dataset.tab === setTab ? prev.scrollTop : 0;
+    const row = (name, desc, ctl, cls) => `<div class="setrow${cls ? ' ' + cls : ''}"><div class="setx"><b>${name}</b>${desc ? `<span>${desc}</span>` : ''}</div><div class="setc">${ctl}</div></div>`;
+    const sec = t => `<h3 class="ssec">${t}</h3>`;
+    const sw = (on, act, attrs) => `<button class="sw ${on ? 'on' : ''}" data-act="${act}" ${attrs || ''} aria-pressed="${on}"><span>${on ? 'On' : 'Off'}</span><i></i></button>`;
+    const flip = (on, act, extra) => sw(on, act, `${extra || ''} data-v="${on ? 0 : 1}"`); // the actions that take the new value
+    const seg = (act, opts, cur, extra) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button class="${cur === v ? 'on' : ''}" data-act="${act}" data-v="${v}" ${extra || ''} aria-pressed="${cur === v}">${l}</button>`).join('')}</div>`;
+    const rng = (id, v, min, max, step, out, oid) => `<input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}"><output class="sval" id="${oid}">${out}</output>`;
+    const pctV = v => Math.round(v * 100) + '%';
+    const pages = {
+      general: sec('Gameplay')
+        + row('Boss slow-down', 'Drop to 1× speed when a boss arrives', flip(S.autoSlow !== false, 'autoslow'))
+        + row('Briefings', 'Boss and bounty cards. Pause holds the game until you tap Fight', seg('briefs', [['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']], S.briefings || 'pause'))
+        + row('Haptics', 'A buzz when the core is hit', flip(S.haptics !== false, 'haptic'))
+        + sec('Save')
+        + row('Save location', cloudOk ? 'Synced to your Claude account' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
+        + (inRun ? '' : row('Transfer save', 'Move your progress to another device with a code', '<button class="btn small" data-act="xcopy">Export</button><button class="btn small" data-act="xpaste">Import</button>'))
+        + row('Run log', lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
+        + sec('About')
+        + row("What's New", `Version ${VERSION}`, `<button class="btn small" data-act="news">Open</button>`)
+        + row('Music', 'Drift: a generative score written live as you play, in ten genres', '')
+        + (inRun ? '' : row('Reset progress', 'Erase everything on this device. There is no undo', `<button class="btn small danger" data-act="wipe">${confirmReset ? 'Tap again to erase' : 'Reset'}</button>`, 'danger')),
+      sound: sec('Volume')
+        + row('Sound effects', 'Weapons, impacts and alerts', rng('setSfx', S.sfx, 0, 1, 0.05, pctV(S.sfx), 'sfxV'))
+        + row('Music', 'The score that follows the battle', rng('setMus', S.music, 0, 1, 0.05, pctV(S.music), 'musV'))
+        + sec('Music')
+        + row('Music Studio', 'Genres, mixer, your tracks and the composer', '<button class="btn small" data-act="studioS">Open</button>')
+        + row('Music tempo', 'Average tempo of the default mix. Each genre in the Studio has its own', rng('setBpm', S.bpm || 72, 56, 100, 2, (S.bpm || 72) + ' BPM', 'bpmV'))
+        + row('Mono audio', 'One earbud or one speaker', sw(!!S.mono, 'mono'))
+        + sec('Troubleshooting')
+        + row('Sound', `<em id="sndStat">${esc(soundStatus())}</em>`, '<button class="btn small" data-act="sndFix">Restart sound</button>'),
+      graphics: sec('Effects')
+        + row('Glow', 'Soft lighting on the field', flip(S.glow !== false, 'gfx', 'data-k="glow"'))
+        + row('Screen shake', 'Big hits shake the view', sw(!!S.shake, 'shake'))
+        + sec('Display')
+        + row('Pixel scaling', 'Sharp is crisper. Simple is lighter work for older devices', seg('gfx', [['1', 'Sharp'], ['0', 'Simple']], S.sharp !== false ? '1' : '0', 'data-k="sharp"'))
+        + (fsOK() ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
+      interface: sec('Layout')
+        + row('HUD', 'Detailed shows more numbers during a run', seg('hud', [['lean', 'Minimal'], ['full', 'Detailed']], S.hud === 'full' ? 'full' : 'lean'))
+        + row('Interface size', 'Scale of buttons and text', seg('uis', [['auto', 'Auto'], ['0.85', 'Small'], ['1.2', 'Large']], String(S.uiScale || 'auto')))
+        + sec('Information')
+        + row('Notifications', 'Key keeps only what needs a reaction: Red Alert, wormholes, assaults, checkpoints, pirates', seg('notes', [['all', 'All'], ['key', 'Key'], ['off', 'Off']], S.notes || 'all'))
+        + row('Damage numbers', 'Floating damage over enemies', sw(!!S.dmgNums, 'nums')),
+    };
+    modal(`<div class="card settings"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      <div class="setwrap"><nav class="setrail" role="tablist">${SET_TABS.map(([k, l, ic]) => `<button class="settab ${setTab === k ? 'on' : ''}" data-act="setTab" data-v="${k}" role="tab" aria-selected="${setTab === k}"><i data-svg="${ic}"></i><span>${l}</span></button>`).join('')}<span class="setver">v${VERSION}</span></nav>
+      <div class="setpane" data-tab="${setTab}">${SET_TABS.map(([k]) => `<div class="spg" data-pg="${k}" ${setTab === k ? '' : 'hidden'}>${pages[k]}</div>`).join('')}</div></div></div>`, 'settings');
+    const pane = $('#modal .setpane'); if (pane) pane.scrollTop = keep;
+    const vol = () => { SFX.setVolumes(S.sfx, S.music); $('#sfxV').textContent = pctV(S.sfx); $('#musV').textContent = pctV(S.music); };
+    $('#setSfx').oninput = e => { S.sfx = +e.target.value; vol(); };
+    $('#setMus').oninput = e => { S.music = +e.target.value; vol(); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
     const bp = $('#setBpm'); if (bp) { bp.oninput = () => { PROF.settings.bpm = +bp.value; $('#bpmV').textContent = bp.value + ' BPM'; SFX.music.setBaseBpm(+bp.value); }; bp.onchange = () => Save.save(); }
+  }
+  function setSettingsTab(k) { // in place: no re-render, so the rail never loses a tap
+    if (!SET_TABS.some(t => t[0] === k)) return; setTab = k;
+    for (const b of document.querySelectorAll('#modal .settab')) { const on = b.dataset.v === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }
+    for (const p of document.querySelectorAll('#modal .spg')) p.hidden = p.dataset.pg !== k;
+    const pane = $('#modal .setpane'); if (pane) { pane.dataset.tab = k; pane.scrollTop = 0; }
   }
   // v5.5.4: one line on the state of the sound, for Settings (and for Nic to read out if the music ever goes quiet)
   function soundStatus() {
@@ -13587,6 +13939,89 @@ const UI = (() => {
     if (M.held || M.paused || !(M.piece && M.piece.comp)) cpPlay(true); else M.compose(c.draft); // any change plays your song
     if (rerender === 'grid') { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); } else if (rerender) openStudio();
   }
+  // ---- 6.2 the ? sheet (Nic: "a ? button that has all the details regarding the music overlay and some advanced notes"). It covers the
+  // Studio card, opens on the tab you were on and has the same three tabs; each explains every control there, then Advanced: how the
+  // controls interact, recipes for moods, and how seeds, likes and playlists work. Every line is checked against audio.js and this file.
+  let stHelp = null; // null, or the help tab showing
+  const ST_HELP = {
+    listen: { rows: [
+      ['Now playing', 'The bar at the top stays put on every tab: song name, genre and style, key, tempo, the section it is in (intro, groove, drop) and how far through it is.'],
+      ['⏮ Back', 'The previous song. The Studio remembers the last 40 this session.'],
+      ['⏸ Pause', 'Silences the music. Game sounds keep playing.'],
+      ['⏭ Skip', 'A new song now, from the genres you have on.'],
+      ['Repeat', 'This song plays again when it ends instead of moving on. Lasts until you close the game.'],
+      ['♥ Keep', 'Adds the song to My Tracks with your current sound. Tap again to take it out.'],
+      ['Share', 'Copies a track code for the song playing.'],
+      ['Vibe', 'Sets the genre list in one tap. Calm: Ambient, Lo-fi, Trip Hop. Club: House, Techno, Trance, Drum & Bass. Retro: Synthwave, Chiptune. Everything: all ten.'],
+      ['Genres', 'Tap one to add it to the rotation or take it out (one always stays on). A genre you add plays at once. ▶ plays one song of that genre now without changing the list.'],
+      ['My Tracks', 'Every song you keep. ▶ plays it, the pencil opens a composed song in Compose, share copies its code, ✕ deletes it (tap twice). Tap a name to rename it.'],
+      ['Only my tracks', 'The radio plays your kept songs in turn instead of new ones.'],
+      ['Paste a code', 'Adds a friend’s TRACK code to My Tracks and plays it.'],
+    ], adv: [
+      ['Seeds', 'Every song grows from a seed. The same seed, genre and style always give the same chords, melody and drums, on any device. A kept song or a code is that seed plus a name, so it plays back exactly.'],
+      ['Likes keep the sound', 'Keeping a song also stores your sound: Energy, Follow, the mixer, mutes, effects and that genre’s tempo. Playing it brings that sound back, so your Shape sliders move to match.'],
+      ['Likes on the battlefield', 'The ♥ on the Music deck (tap the Music tile at the top of the left rail) keeps the song playing into the same My Tracks list.'],
+      ['Build a playlist', 'Keep songs as they come up, rename and delete to taste, then turn on Only my tracks. My Tracks holds 80; past that the oldest drops off.'],
+      ['Default mix', 'Until you change something, the Studio plays the default mix: the Calm genres, steered by the battle, at the tempo in Settings › Sound. Your first change switches to your own settings. Shape › Reset sound goes back.'],
+      ['Boss fights', 'During a boss, new songs avoid major keys. The default mix also switches to Trip Hop.'],
+    ] },
+    shape: { rows: [
+      ['Energy', 'How full the music is: Still, Chill, Groove, Peak. Low energy thins the music to its core; high energy brings in more parts and picks the harder styles of each genre.'],
+      ['Follow battle', 'How much the fight moves Energy. At 100% a calm menu pulls it down and a boss wave pushes it up. At 0% the music stays where you set it.'],
+      ['Tempo', 'BPM for the genre playing now; each genre keeps its own. Greyed out for composed songs: they carry their own tempo.'],
+      ['Song length', 'Short changes song about every minute. Standard is a radio edit (intro, build, drop, outro), about 3 minutes. Long is an extended mix, about 5. The song playing takes the new shape at once.'],
+      ['Reset sound', 'Back to the default mix. Keeps My Tracks, your Compose song and the song length.'],
+      ['Mixer', 'Pads, Keys, Arps, Bass, Drums and Lead, up to 125%. Drag a fader; double-tap it for 100%. Tap a name to mute that part. The thin bar inside a fader is its live level.'],
+      ['Effects', 'Reverb, Echo, Tone, Tape & Vinyl and Pump. The middle is the genre’s own amount; left takes it down to off, right adds up to double. Tone is darker to the left, brighter to the right. Pump makes the music duck on each kick.'],
+    ], adv: [
+      ['Energy plus Follow', 'The music runs at Energy, plus Follow times how hard the battle is. The menu reads as calm, so with Follow high the hangar sounds thinner than the slider says, and a boss wave fuller.'],
+      ['Composed songs', 'A composed song always plays every part you wrote. Energy and Follow shape the radio’s songs, not yours.'],
+      ['Mute to compare', 'A muted part comes back at its old level, so muting is quicker than dragging a fader down and back.'],
+      ['Keep after shaping', 'A kept song saves this whole panel. Set the sound first, then press ♥.'],
+      ['Settings tempo', 'Settings › Sound › Music tempo moves only the default mix. After your first change here, each genre uses its own Tempo slider.'],
+    ], recipes: [
+      ['Focus', 'Calm vibe, Energy at Chill, Follow 0%, Reverb and Tape & Vinyl right of middle, Pump off.'],
+      ['Tension', 'Club vibe, Follow 100%, Pump up, Echo down. Boss waves hit hardest.'],
+      ['Night drive', 'Synthwave only, Energy at Groove, Echo and Reverb right of middle.'],
+      ['Console', 'Chiptune only, Reverb and Tape & Vinyl off for a dry 8-bit sound.'],
+    ] },
+    compose: { rows: [
+      ['Start', 'Pick a style to start a song: you get its beat, bassline and chords, and no melody yet. Or remix the last radio song.'],
+      ['Name', 'Tap the name to rename your song.'],
+      ['Style', 'Genre and flavour. Changing it resets drums, bass, lead and tempo to that style’s own.'],
+      ['Mood', 'The scale: Bright, Dreamy, Bluesy, Soulful, Moody, Dark, Exotic. If the chords don’t fit the new mood, they change to ones that do.'],
+      ['Key', 'The home note. Everything moves with it.'],
+      ['Tempo', 'In steps of 2 BPM, a little past either end of the style’s range.'],
+      ['Chords', 'Progressions that fit the mood, written as numerals (I V vi IV). ×2 means two bars on each chord.'],
+      ['Bass', 'Fifteen bass lines. Style means the style’s own.'],
+      ['Lead', 'The instrument that plays the melody. None silences it.'],
+      ['Drums', 'One bar of 16 steps, looping, one row per drum. Every lit square plays; tap to switch it. The white column is where the song is. Reset brings back the style’s beat; Clear empties the grid.'],
+      ['Melody', 'Eight rows; higher rows are higher notes. Follow chords: rows are steps above each chord’s root, so every note fits. Fixed notes: rows are notes of the key (named on the left) and stay put while the chords move. Faint squares are a rolled melody: tap the grid to make it yours. Roll writes a new one; Clear removes it.'],
+      ['Play / Stop', 'Your song loops while you work. Walking into Compose stops the radio; any change starts your song; leaving brings the radio back.'],
+      ['Save', 'Adds the song to My Tracks with your current sound.'],
+      ['New song', 'Starts again from the style list. Tap twice: unsaved changes go.'],
+    ], adv: [
+      ['Live edits', 'Changes are heard at once while your song plays. Your draft is saved as you go: close the Studio and it is still here.'],
+      ['Safe or bold', 'Follow chords can’t clash: notes on strong beats snap to the chord. Fixed notes is how a hook works: the same notes over moving chords, so some land as tension. Give it a slow loop with few chords.'],
+      ['Groove', 'A kick on 1, 5, 9 and 13 is four on the floor. A kick on 1 with the snare on 9 is a half-time feel. Hats on every other step drive it; Shaker or Ride add motion without weight.'],
+      ['Saved songs', 'A saved song keeps everything: style, mood, key, tempo, chords, parts, drums, melody and your sound. Its code carries all of it, so a friend hears exactly your song.'],
+      ['Editing a kept song', 'The pencil in My Tracks opens a saved song as your draft. Save adds a new copy; the old one stays until you delete it.'],
+    ], recipes: [
+      ['Uplifting', 'Bright, chords I V vi IV, Piano or Bell lead.'],
+      ['Melancholy', 'Moody, Lo-fi style, Upright bass, a sparse melody in Follow chords.'],
+      ['Menace', 'Dark, Techno or Drum & Bass, Acid 303 or Reese bass.'],
+      ['Floaty', 'Dreamy, a two-chord loop, Glass or Theremin lead, few drums.'],
+    ] },
+  };
+  function stHelpHTML() {
+    const k = ST_HELP[stHelp] ? stHelp : 'listen', H = ST_HELP[k];
+    const dl = L => `<dl class="shdl">${L.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>`;
+    return `<div class="sthelp" role="dialog" aria-label="How the Music Studio works"><div class="shh"><b>How it works</b>
+      <div class="chips sttabs">${[['listen', 'Listen'], ['shape', 'Shape'], ['compose', 'Compose']].map(([v, l]) => `<button class="chip ${k === v ? 'on' : ''}" data-act="stHelpTab" data-v="${v}">${l}</button>`).join('')}</div>
+      <button class="stb shx" data-act="stHelpX" aria-label="Back to the Studio">✕</button></div>
+      <div class="shbody" data-tab="${k}"><div class="shcols"><section><h3 class="ssec">Controls</h3>${dl(H.rows)}</section>
+      <section class="shadv"><h3 class="ssec">Advanced</h3>${dl(H.adv)}${H.recipes ? `<h3 class="ssec">Moods to try</h3>${dl(H.recipes)}` : ''}</section></div></div></div>`;
+  }
   // ---- the card ----
   function openStudio(from) {
     SFX.init(); if (from) studioBack = from;
@@ -13595,9 +14030,11 @@ const UI = (() => {
     if (stTab === 'compose' && !c.composer) stTab = 'listen';
     const tabs = [['listen', 'Listen'], ['shape', 'Shape']].concat(c.composer ? [['compose', 'Compose']] : []);
     const prev = $('#modal .card.studio .cbody'), keep = prev ? prev.scrollTop : 0, wasTab = prev ? prev.dataset.tab : '';
-    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2><div class="chips sttabs">${tabs.map(([k, l]) => `<button class="chip ${stTab === k ? 'on' : ''}" data-act="stTab" data-v="${k}">${l}</button>`).join('')}</div><button class="x" data-act="stClose" aria-label="Close">✕</button>
+    const hPrev = $('#modal .sthelp .shbody'), hKeep = hPrev && hPrev.dataset.tab === stHelp ? hPrev.scrollTop : 0;
+    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2><div class="chips sttabs">${tabs.map(([k, l]) => `<button class="chip ${stTab === k ? 'on' : ''}" data-act="stTab" data-v="${k}">${l}</button>`).join('')}</div><button class="stb sthq" data-act="stHelp" aria-label="How the Music Studio works">?</button><button class="x" data-act="stClose" aria-label="Close">✕</button>
       ${stNowHTML()}</div>
       ${stTab === 'shape' ? stShapeHTML() : stTab === 'compose' ? stComposeHTML() : stListenHTML()}</div>`, 'studio');
+    if (stHelp) { const cd = $('#modal .card.studio'); if (cd) { cd.insertAdjacentHTML('beforeend', stHelpHTML()); const hb = cd.querySelector('.shbody'); if (hb) hb.scrollTop = hKeep; } }
     const body = $('#modal .card.studio .cbody'); if (body) { body.dataset.tab = stTab; if (wasTab === stTab) body.scrollTop = keep; }
     if (stTab === 'compose' && !stInCompose) { stInCompose = true; enterCompose(); } else if (stTab !== 'compose' && stInCompose) { stInCompose = false; leaveCompose(); }
     const card = $('#modal .card.studio'); if (card) card.classList.toggle('composing', stTab === 'compose');
@@ -13677,6 +14114,9 @@ const UI = (() => {
     if (act !== 'stDel') stDelArm = -1; if (act !== 'cpOver') stOverArm = false;
     switch (act) {
       case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; SFX.play('ui'); openStudio(); return true;
+      case 'stHelp': stHelp = stTab; SFX.play('ui'); openStudio(); return true; // 6.2 the ? sheet, on the tab you are on
+      case 'stHelpTab': stHelp = b.dataset.v; SFX.play('ui'); openStudio(); return true;
+      case 'stHelpX': stHelp = null; SFX.play('ui'); openStudio(); return true;
       case 'stVibe': {
         studioTouch(); const v = ST_VIBES.find(x => x[0] === b.dataset.v); c.genres = (v[2] || M.GENRE_IDS).slice(); c.favOnly = false;
         M.apply(); studioSave(); if (M.piece && !c.genres.includes(M.piece.genre)) stPlayNow(); openStudio(); return true;
@@ -13759,7 +14199,7 @@ const UI = (() => {
       case 'cpMelAbs': { const d = c.draft; if (d) { d.melAbs = !d.melAbs; if (d.melAbs && !(d.mel && d.mel.length === 16)) d.mel = cpRollFixed(); cpApply(true); } return true; }
       case 'cpDice': { const d = c.draft; if (d && d.melAbs) { d.mel = cpRollFixed(); if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); return true; } if (d) { d.mel = null; d.melSeed = (Math.random() * 4294967296) >>> 0; if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); } return true; }
       case 'cpMelClr': { const d = c.draft; if (d) { d.mel = []; cpApply(true); } return true; }
-      case 'stClose': { cancelAnimationFrame(studioRaf); if (stInCompose) { stInCompose = false; leaveCompose(); } M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
+      case 'stClose': { stHelp = null; cancelAnimationFrame(studioRaf); if (stInCompose) { stInCompose = false; leaveCompose(); } M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
         if (M.paused) toast('MUSIC PAUSED', 'Press play in the Music Studio to bring it back', '#ff5fa8');
         if (back === 'settings') { if (G && !G.over && screen === 'game') modalFrom = 'pause'; openSettings(); }
         else if (back === 'pause' && G && !G.over && screen === 'game') openPause();
@@ -13777,13 +14217,13 @@ const UI = (() => {
       ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
       ['Specialize', 'At LV 3, choose one of two specializations.'],
       ['Core Battery', 'The core is a long-range gun that shells whatever is closest to reaching it, almost anywhere on the map. It starts as light support; Battery upgrades are expensive but make it a real weapon, with Twin Battery at LV 4, Siege Shells at LV 8 and Orbital Uplink at LV 12. Tap the core to upgrade, repair or reroll it.'],
-      ['Lift Off', `The core flies. Tap Lift Off (under Map, or in the core panel), then a tile to land on: the preview shows the new roads, what the core will fire and the towers it will link. Every road swings to the landing spot. In the air the gun is offline and the shield is down. After landing it recharges for ${FRONTIER.cd} waves.`],
+      ['Lift Off', `The core flies. Tap Lift Off (top right, or in the core panel), then a tile to land on: the preview shows the new roads, what the core will fire and the towers it will link. Every road swings to the landing spot. In the air the gun is offline and the shield is down. After landing it recharges for ${FRONTIER.cd} waves.`],
       ['Dock', `Land the core on an attack tower and the core fires that tower's weapon: ×${FRONTIER.dockDmg} Damage, +${FRONTIER.dockRange} Range, +${pct(FRONTIER.dockBat)} per Battery level. Lift off again and the tower is set back down, intact.`],
       ['Links', `The landed core links its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate each, and the core +${pct(FRONTIER.linkCore)} per link. Flying breaks them.`],
       ['Move', `Tap a tower, then Move, then a new tile. It is offline for ${FRONTIER.moveT} s and costs ${pct(FRONTIER.moveFee)} of what it cost. No towers within ${FRONTIER.wormBuild} tiles of a wormhole.`],
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
-      ['Zoom', 'Pinch to zoom, drag to pan. Tap Home to return to the core, Map to see the whole sector. Edge arrows point at bosses and enemies near the core that are off screen: tap one to look there.'],
+      ['Zoom', 'Pinch to zoom, drag to pan, double-tap to zoom in or back out. Edge arrows point at what is off screen: bosses and enemies near the core, pirate treasure (yellow, with a chest) and the core itself (green). Tap one to look there; the green one brings the camera home.'],
       ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V B abilities, Space pause, 1–3 speed, Esc close.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
@@ -13811,7 +14251,7 @@ const UI = (() => {
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds and a free respec; a lift-off lands at once. Resume fast for a bonus.'],
       ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Land the core on one for a bigger boost. Each sector expansion reveals a new one.'],
       ['Space Pirates', "Pirate ships fly over during waves and drop salvage crates. Tap a crate before its ring runs out for credits, a charge, Entropy, score or a token. Red crates are booby-trapped: double loot, but a stowaway elite breaks loose. Boss waves bring the Captain's Chest. Leave a crate too long and a Pirate Skiff may come to steal it; shoot it down to get the loot back plus a bounty."],
-      ['Overdrive', `Your one emergency button. From Wave ${OD_WAVE}, tap the core to erase every enemy on the map except bosses. Once per run.`],
+      ['Nuke', `Your one emergency button. From Wave ${OD_WAVE}, tap Nuke on the left rail to erase every enemy on the map except bosses. Once per run.`],
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
@@ -13854,7 +14294,7 @@ const UI = (() => {
         ['Evolution', 'From Wave 8 enemies carry genes: up to 1 until Wave 22, 2 until Wave 45, then 3. Each gene trades HP or speed for an edge. Waves are bred from the enemies that got furthest, so traits your defence handles badly spread. The next-wave chips show what is spreading; tap one for its counter.'],
         ['Ground-only', 'Flame Projector and Gravity Well cannot hit fliers (including enemies that evolve Wings).'],
         ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
-        ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap Overdrive on the left rail (or in the core panel), then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
+        ['Nuke', `Once per run, from Wave ${OD_WAVE}: tap Nuke on the left rail, then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
         ['Bounty Purse', `${Math.round(PURSE.safe * 100)}% of the XP you earn banks at once; the rest rides in the purse. Each bounty claimed grows it ×${PURSE.bounty}, and each push through a jump door multiplies it again (×${DOOR_TIERS.map(t => t.mult).join(', ×')} by risk). Extract to bank all of it. If your core falls you keep ${Math.round(PURSE.death * 100)}%.`],
         ['Zone', 'The contract a run is fought under: which enemies come most, the weather, the events, the Most Wanted boss, plus a perk and a drawback. You pick one of three at the start, and a new one through a jump door at every bounty.'],
@@ -14065,12 +14505,14 @@ const UI = (() => {
       case 'htab': openHelp(b.dataset.v); break;
       case 'dcat': dictCat = b.dataset.v; openHelp(); break;
       case 'settings': if (modalOpen === 'pause') modalFrom = 'pause'; openSettings(); break;
+      case 'setTab': setSettingsTab(b.dataset.v); break;
       case 'studio': openStudio('pause'); break;
       case 'studioS': openStudio('settings'); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); window.act('abandon'); break;
       case 'vpick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('vet', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; if (!(t.pending > 0)) { const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; } openVets(); break; }
       case 'vetSkip': vetFlow.ix++; openVets(); break;
+      case 'gpick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('up', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; openVets(); break; } // 6.2 grown support tower: the free Specialization
       case 'apick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('ascPick', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; openVets(); break; }
       case 'vetMap': { const t = vetsReady()[vetFlow.ix]; closeModal(); G.paused = false; vetFlow.n = 0; if (t) showOnMap(t); break; }
       case 'vetDone': closeModal(); Render.sel = null; if (G && !G.over) G.paused = false; vetFlow.n = 0; break;
@@ -14132,6 +14574,7 @@ const UI = (() => {
 
   // ---------- wiring ----------
   function wire() {
+    $('#app').addEventListener('pointerdown', () => { teachTap = performance.now(); }, true); // 6.2: a busy hand delays teaching cards
     $('#panel').addEventListener('pointerdown', () => { panelHeld = true; });
     const panelLift = () => { if (!panelHeld) return; panelHeld = false; if (panelDirty) setTimeout(() => { if (panelDirty && !panelHeld) renderPanel(); }, 30); };
     window.addEventListener('pointerup', panelLift, true); window.addEventListener('pointercancel', panelLift, true);
@@ -14143,7 +14586,6 @@ const UI = (() => {
     cv.addEventListener('pointerup', canvasUp);
     cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); if (!ptrs.size) gesture = null; });
     cv.addEventListener('wheel', canvasWheel, { passive: false });
-    $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = window.act('cpResume', G.cpT); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = window.act('call'); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openThreat(); };
     $('#ticker').onclick = e => { if (!e.target.closest('.tkb')) return; SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
@@ -14161,13 +14603,24 @@ const UI = (() => {
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (marketShut()) { toast('EXCHANGE', 'The Black Market and Cash In open at Wave 10. Score comes from kills', '#8a8fa8', true, 'tip'); return; } if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     // v5.5.14 music: the rail tile opens a deck (back · song · next). Back: one tap replays the song, a double tap goes to the
     // last one (the single tap waits TRK_DBL to see whether a second follows). The deck tucks away after a few idle seconds.
-    let trkBackT = 0, trkBackTimer = 0, deckT = 0; const TRK_DBL = 350;
+    let trkBackT = 0, trkBackTimer = 0, deckT = 0, deckNoteT = 0; const TRK_DBL = 350;
     const deckFill = () => { const M = SFX.music, p = M.piece, d = $('#mdeck'); if (!d || !p) return; const col = (M.GENRES[p.genre] || {}).col || '#59f0b4';
-      d.style.setProperty('--mc', col); d.querySelector('.mdname b').textContent = p.name; d.querySelector('.mdname span').textContent = `${p.genreName} · ${p.section}${M.paused ? ' · paused' : ''}`; };
+      d.style.setProperty('--mc', col); d.querySelector('.mdname b').textContent = p.name;
+      const sp = d.querySelector('.mdname span'); if (performance.now() > deckNoteT) { sp.textContent = `${p.genreName} · ${p.section}${M.paused ? ' · paused' : ''}`; sp.classList.remove('liked'); }
+      const lk = $('#bTrkLike'), on = M.isSaved(); if (lk && lk.dataset.on !== String(on)) { lk.dataset.on = on; lk.innerHTML = svgIcon(on ? 'heart' : 'heartO'); lk.classList.toggle('on', on); lk.setAttribute('aria-pressed', on); lk.setAttribute('aria-label', on ? 'Remove this song from My Tracks' : 'Keep this song in My Tracks'); } };
     const deckShow = on => { const d = $('#mdeck'); d.hidden = !on; $('#bMusic').classList.toggle('on', on); clearTimeout(deckT); if (on) { deckFill(); deckT = setTimeout(() => deckShow(false), 5000); } };
     UI.deckFill = deckFill;
     $('#bMusic').onclick = () => { SFX.init(); SFX.play('ui'); deckShow($('#mdeck').hidden); };
     $('#mdName').onclick = () => { deckShow(false); openStudio(); };
+    // 6.2 (Nic: "let people like songs to their playlist there while they're on the battle field"): Keep, as in the Studio
+    $('#bTrkLike').onclick = () => {
+      SFX.init(); const M = SFX.music; if (!M.piece) return; let line = '';
+      if (M.isSaved()) { M.unsave(); line = 'Removed from My Tracks'; } else if (M.save()) line = '♥ Kept in My Tracks';
+      studioSave(); SFX.play('ui'); deckShow(true);
+      const d = $('#mdeck'), sp = d && d.querySelector('.mdname span'), lk = $('#bTrkLike');
+      deckFill(); if (sp && line) { sp.textContent = line; sp.classList.add('liked'); deckNoteT = performance.now() + 1800; }
+      if (lk) { lk.classList.remove('pop'); void lk.offsetWidth; lk.classList.add('pop'); }
+    };
     $('#bTrkNext').onclick = () => { SFX.init(); const M = SFX.music; M.setPaused(false); M.jump(null); deckShow(true); setTimeout(deckFill, 60); };
     $('#bTrkBack').onclick = () => {
       SFX.init(); const M = SFX.music, now = performance.now(); deckShow(true);
@@ -14235,11 +14688,11 @@ const UI = (() => {
       if (modalOpen || Tree.isOpen || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase(), P = 70;
       const pan = { arrowleft: [P, 0], a: [P, 0], arrowright: [-P, 0], d: [-P, 0], arrowup: [0, P], w: [0, P], arrowdown: [0, -P], s: [0, -P] }[k];
-      if (pan) { e.preventDefault(); Render.panBy(pan[0], pan[1]); updateZoomBtn(); return; }
+      if (pan) { e.preventDefault(); Render.panBy(pan[0], pan[1]); updateZoomBtn(); camUser++; return; }
       const L = Render.layout;
       if (k === '=' || k === '+') { Render.zoomAt(L.W / 2, L.H / 2, 1.2); updateZoomBtn(); return; }
       if (k === '-' || k === '_') { Render.zoomAt(L.W / 2, L.H / 2, 1 / 1.2); updateZoomBtn(); return; }
-      if (k === 'f') { $('#bZoom').hidden ? Render.overview() : $('#bZoom').click(); updateZoomBtn(); return; }
+      if (k === 'f') { if (Render.home) Render.overview(); else Render.resetCam(); updateZoomBtn(); return; } // desktop: F toggles the whole map and home
       if (k === 'n') { $('#bCall').click(); return; }
       if (k === 't') { SFX.play('ui'); Tree.open(); return; }
       if (k === 'u' && panel && panel.kind === 'tower') { const b = $('#panel [data-act=up]'); if (b && !b.disabled) b.click(); else SFX.play('deny'); return; }
@@ -14251,11 +14704,11 @@ const UI = (() => {
     // hooks
     Hooks.sfx = (n, a, b) => { SFX.play(n, a, b); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view
-    SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; });
+    SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, py: p.y / L.H * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; }); // 6.2: py for the camera-distance mix
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
-    Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
-    Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) openAssault(true); }, 700); };
+    Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && screen === 'game') evoWait = true; }; // 6.2: shown by tick when the teaching gate allows
+    Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) { teachMark(); openAssault(true); } }, 700); }; // (an assault can't wait: it is this wave)
     Hooks.frLanded = d => { if (!G || G.replaying) return; const n = (G.frLinks || []).length; // Frontier
       toast(d ? 'DOCKED' : 'LANDED', `${d ? `The core fires the ${TOWERS[d.type].name}: ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range` : 'Plain cannon'} · ${n} link${n === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, d ? EL[d.s.el].col : '#59f0b4');
       if (panel && (panel.kind === 'core' || panel.kind === 'tower')) renderPanel(); updateHud(true); };
@@ -14288,14 +14741,35 @@ const UI = (() => {
       toast('BIGGEST THREAT', `${nm}${gs.length ? ' · ' + gs.map(g => GENES[g].name).join(', ') : ''} · ${fmt(e.hp)} HP${beat ? ' · Beat it: ' + beat : ''}`, '#ffb03a', true, 'tip'); };
   }
   let eqT = 0; const eqBuf = new Uint8Array(128);
+  // 6.2: the buttons and banners over the battlefield, in stage px, so the edge arrows (Render) never hide under one
+  let koT = 0, koCls = '', beamKT = 0, beamK = 1;
+  const KEEP_OUT = '#bLift, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
+  // koT: wall-clock time of the next read (4 Hz; frame dt is capped, so a slow frame rate would stretch a dt timer).
+  // The rects are re-read soon after a log line, toast or banner comes or goes (a MutationObserver flags it; no per-frame work)
+  let koObs = null;
+  function koWatch() {
+    if (koObs || typeof MutationObserver === 'undefined') return;
+    koObs = new MutationObserver(() => { koT = Math.min(koT, performance.now() + 230); }); // just after a new line's 0.2 s slide-in
+    for (const q of ['#log', '#toasts']) { const el = $(q); if (el) koObs.observe(el, { childList: true }); }
+    const st = $('#stage'); if (st) koObs.observe(st, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+  }
+  function keepOutRects() {
+    const cv = $('#cv'); if (!cv) return []; const o = cv.getBoundingClientRect(), out = [];
+    for (const el of document.querySelectorAll(KEEP_OUT)) { if (el.hidden) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) continue;
+      const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      out.push({ l: (r.left - o.left) / UIS, t: (r.top - o.top) / UIS, r: (r.right - o.left) / UIS, b: (r.bottom - o.top) / UIS }); }
+    return out;
+  }
   function tick(dt) {
     if (screen === 'game') { eqT -= dt; if (eqT <= 0) { eqT = 0.08; const tile = $('#bMusic'); if (tile) { const M = SFX.music, p = M.piece, bars = tile.querySelectorAll('.meq i');
       if (p) tile.style.setProperty('--mc', (M.GENRES[p.genre] || {}).col || '#59f0b4'); const quiet = !p || M.paused || M.held || SFX.state !== 'running'; tile.classList.toggle('quiet', quiet);
       M.spectrum(eqBuf); const band = [[1, 3], [3, 7], [7, 14], [14, 28], [28, 56]]; bars.forEach((b, i) => { let v = 0; if (!quiet) for (let k = band[i][0]; k < band[i][1]; k++) v = Math.max(v, eqBuf[k]); b.style.height = Math.max(3, Math.round(v / 255 * 16)) + 'px'; });
       if (!$('#mdeck').hidden) UI.deckFill && UI.deckFill(); } } }
+    if (screen === 'game') { koWatch(); const bc = document.body.className, now = performance.now(); if (now >= koT || bc !== koCls) { koT = now + 250; koCls = bc; Render.keepOut = keepOutRects(); } } // 6.2: edge arrows slide clear of these (at once when a panel or banner moves the layout)
     if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
     if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
-    if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());
+    if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) enemyCard(enemyCards.shift());
+    if (evoWait && screen === 'game' && G && !G.over && !G.tut && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) { evoWait = false; if (!PROF.seenEvo) { teachMark(); openEvo(true); } }
     onboardingTick(); Coach.tick();
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
     // v5.2: fast-forward is safe to leave on. A boss arriving (or reaching Red Alert) drops the game to 1×; the old speed comes back when it falls.
@@ -14313,11 +14787,11 @@ const UI = (() => {
     // v5.8: the hum's ramp is the beam's seconds on target out of the sim's 4 s cap (it used to divide seconds by the damage multiplier),
     // Event Horizon adds a sub octave and Prism Split a wider chorus; a Lens that locks onto a new target chirps.
     // Flame Projectors share one continuous roar; one that starts firing gives a short ignition chirp
-    let nb = 0, rk = 0, neh = 0, npr = 0, nf = 0, nfi = 0, nfp = 0;
+    let nb = 0, rk = 0, neh = 0, npr = 0, nf = 0, nfi = 0, nfp = 0, pkS = 0; beamKT -= dt; const pkNow = beamKT <= 0; if (pkNow) beamKT = 0.25;
     if (live) for (const t of G.towers) {
       if (t.type === 'lens') {
         const tg = t.disabled <= 0 && t.beamTargets && t.beamTargets.length ? t.beamTargets[0] : null;
-        if (tg) { nb++; rk = Math.max(rk, Math.min(1, (t.ramp || 0) / 4)); if (t.spec === 1) neh++; else if (t.spec === 2) npr++; if (tg !== t._lock) SFX.play('lock', t); }
+        if (tg) { nb++; if (pkNow) pkS += SFX.proxK(t.cx, t.cy); rk = Math.max(rk, Math.min(1, (t.ramp || 0) / 4)); if (t.spec === 1) neh++; else if (t.spec === 2) npr++; if (tg !== t._lock) SFX.play('lock', t); }
         t._lock = tg;
       } else if (t.type === 'flame') {
         const on = t.disabled <= 0 && t.aimT !== undefined && G.time - t.aimT < 0.3 && G.time >= t.aimT;
@@ -14325,7 +14799,8 @@ const UI = (() => {
         t._flOn = on;
       }
     }
-    SFX.beams(nb, rk, nb ? neh / nb : 0, nb ? npr / nb : 0);
+    if (pkNow) beamK = nb ? pkS / nb : 1; // 6.2: the hum follows the beams' average distance from the screen centre (4 times a second)
+    SFX.beams(nb, rk, nb ? neh / nb : 0, nb ? npr / nb : 0, beamK);
     SFX.flames(nf, nf ? nfi / nf : 0, nf ? nfp / nf : 0);
     SFX.danger(live && G.core.hp < G.core.max * 0.35 ? 1 - G.core.hp / (G.core.max * 0.35) : 0, dt);
   }
@@ -14334,7 +14809,7 @@ const UI = (() => {
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
-    _dbg: { openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
+    _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
   };
 })();
 
@@ -14515,7 +14990,7 @@ function talentsToast(kind) {
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
-  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
+  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)
   // and reload onto it from the main menu, never mid-run
