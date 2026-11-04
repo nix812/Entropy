@@ -7,19 +7,20 @@ root = pathlib.Path(__file__).parent.parent; mkpage.mk(); errs = []
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(300)
-    res = pg.evaluate('''async () => {
+    JS = '''async (only) => {
       const out = { combos: 0, silent: [], fails: [] };
       const M = SFX.music;
-      const oc = new OfflineAudioContext(2, 44100 * 2, 44100); SFX.offlineCtx(oc); let clock = 0;
+      const oc = new OfflineAudioContext(2, 44100 * 2, 44100); SFX.offlineCtx(oc); let clock = 0.2; M.renderAhead(clock); // start the music first: skip() needs a piece playing
       const render = (cp, secs) => { M.editing = true; M.setConfig({ custom: true, genres: [cp.genre], energy: 0.6 });
         M.skip({ genre: cp.genre, flav: cp.flav, seed: cp.seed, name: cp.name, comp: cp, start: 8 }); clock += 3; M.renderAhead(clock); M.debug = true; clock += secs; M.renderAhead(clock); const ev = M.events; M.debug = false; return ev; };
       const base = g => { const G0 = M.GENRES[g]; return { v: 1, genre: g, seed: 12345, name: 'T', mode: 'aeolian', key: 9, loop: { degs: [0, 5, 2, 6], q: [], bars: 1 }, bass: null, lead: 'bell', mel: null, melSeed: 99, bpm: G0.bpm[1] }; };
-      for (const g of M.GENRE_IDS) for (const f of Object.keys(M.GENRES[g].flavours)) {
+      for (const g of M.GENRE_IDS.filter(g => only.includes(g))) for (const f of Object.keys(M.GENRES[g].flavours)) {
         const cp = base(g); cp.flav = f; cp.drums = M.drumsFor(g, f);
         for (const B of M.BASSES) { cp.bass = [B[0], B[1]]; try { const ev = render(cp, 4); out.combos++; if (!ev.some(e => e[1] === 'bass')) out.silent.push(g + '/' + f + ' bass ' + B[2]); } catch (e) { out.fails.push(g + '/' + f + ' bass ' + B[2] + ': ' + e.message); } }
         cp.bass = [M.BASSES[0][0], M.BASSES[0][1]];
         for (const L of M.LEADS) { cp.lead = L[0]; try { const ev = render(cp, 6); out.combos++; if (L[0] !== 'none' && !ev.some(e => e[1] === 'lead')) out.silent.push(g + '/' + f + ' lead ' + L[1]); } catch (e) { out.fails.push(g + '/' + f + ' lead ' + L[1] + ': ' + e.message); } }
       }
+      if (only.length) return out;
       // a composed piece plays its grid: only kicks where the grid has kicks
       const cp = base('house'); cp.flav = 'deep'; cp.drums = { K: '9000000000000000', S: '0000000000000000', C: '0000000000000000', H: '0000000000000000', O: '0000000000000000', R: '0000000000000000', P: '0000000000000000', D: '0000000000000000' };
       cp.mel = [0, null, null, null, 2, null, null, null, 4, null, null, null, 7, null, null, null]; cp.lead = 'piano';
@@ -34,7 +35,13 @@ with sync_playwright() as p:
       const a1 = sig(), a2 = sig();
       out.deterministic = a1 === a2 && a1.length > 0;
       return out;
-    }''')
+    }'''
+    # 6.3: one page per genre (40 styles x 34 parts in one offline context ran out of memory)
+    res = { 'combos': 0, 'silent': [], 'fails': [] }
+    for g in pg.evaluate('() => SFX.music.GENRE_IDS') + [None]:
+        pg.reload(); pg.wait_for_timeout(200); r = pg.evaluate(JS, [g] if g else [])
+        res['combos'] += r['combos']; res['silent'] += r['silent']; res['fails'] += r['fails']
+        if not g: res.update({ k: r[k] for k in ('gridKicksOnBeat1', 'gridOnlyKicks', 'melSteps', 'deterministic') })
     b.close()
 print('combos rendered:', res['combos'])
 print('failures:', res['fails'][:10])

@@ -1,0 +1,218 @@
+{
+"ambient/drift": {
+"n": 64,
+"h": "49feb874",
+"key": "F mixolydian",
+"bpm": 72,
+"loop": "0,5,3,0",
+"name": "x"
+},
+"ambient/glass": {
+"n": 100,
+"h": "3ecb1eb7",
+"key": "E\u266d major",
+"bpm": 72,
+"loop": "5,3,0,4",
+"name": "x"
+},
+"ambient/nocturne": {
+"n": 109,
+"h": "fca9c13",
+"key": "F\u266f dorian",
+"bpm": 72,
+"loop": "0,3,0,4",
+"name": "x"
+},
+"lofi/jazzhop": {
+"n": 321,
+"h": "4a3b6f5d",
+"key": "B\u266d dorian",
+"bpm": 80,
+"loop": "1,4,0,0",
+"name": "x"
+},
+"lofi/rainy": {
+"n": 318,
+"h": "d50b2457",
+"key": "D minor",
+"bpm": 80,
+"loop": "0,3",
+"name": "x"
+},
+"downtempo/triphop": {
+"n": 375,
+"h": "d1c78cca",
+"key": "C\u266f phrygian",
+"bpm": 88,
+"loop": "0,0,0,0",
+"name": "x"
+},
+"downtempo/chillout": {
+"n": 351,
+"h": "668ca56f",
+"key": "B\u266d dorian",
+"bpm": 88,
+"loop": "0,3,6,2",
+"name": "x"
+},
+"synthwave/outrun": {
+"n": 582,
+"h": "dfe8c898",
+"key": "E minor",
+"bpm": 104,
+"loop": "0,5,6,5",
+"name": "x"
+},
+"synthwave/dreamwave": {
+"n": 512,
+"h": "e30e3734",
+"key": "E\u266d minor",
+"bpm": 96,
+"loop": "5,3,0,4",
+"name": "x"
+},
+"synthwave/darksynth": {
+"n": 706,
+"h": "c68d1933",
+"key": "E\u266d harmonic minor",
+"bpm": 120,
+"loop": "0,5,1,4",
+"name": "x"
+},
+"house/deep": {
+"n": 674,
+"h": "7b5e1ee0",
+"key": "G minor",
+"bpm": 122,
+"loop": "0,2,4",
+"name": "x"
+},
+"house/disco": {
+"n": 869,
+"h": "48985d9e",
+"key": "B\u266d dorian",
+"bpm": 125,
+"loop": "1,4",
+"name": "x"
+},
+"house/piano": {
+"n": 616,
+"h": "dcce80b",
+"key": "C\u266f mixolydian",
+"bpm": 124,
+"loop": "0,4,5,3",
+"name": "x"
+},
+"techno/detroit": {
+"n": 489,
+"h": "859697d2",
+"key": "C dorian",
+"bpm": 124,
+"loop": "0",
+"name": "x"
+},
+"techno/minimal": {
+"n": 533,
+"h": "9dc4c7f5",
+"key": "F minor",
+"bpm": 128,
+"loop": "0,6",
+"name": "x"
+},
+"techno/acid": {
+"n": 425,
+"h": "190fa04d",
+"key": "C minor",
+"bpm": 133,
+"loop": "0,6",
+"name": "x"
+},
+"trance/uplifting": {
+"n": 639,
+"h": "141ee424",
+"key": "B\u266d minor",
+"bpm": 138,
+"loop": "0,5,2,6",
+"name": "x"
+},
+"trance/progressive": {
+"n": 511,
+"h": "e265f82f",
+"key": "B\u266d dorian",
+"bpm": 130,
+"loop": "0,3",
+"name": "x"
+},
+"dnb/liquid": {
+"n": 652,
+"h": "ef4f0ce7",
+"key": "B\u266d dorian",
+"bpm": 174,
+"loop": "0,2,4,0",
+"name": "x"
+},
+"dnb/roller": {
+"n": 445,
+"h": "d0b62676",
+"key": "F minor",
+"bpm": 174,
+"loop": "0,5",
+"name": "x"
+},
+"chiptune/nes": {
+"n": 1263,
+"h": "d7a469f0",
+"key": "E\u266d minor",
+"bpm": 150,
+"loop": "0,5,6,0",
+"name": "x"
+},
+"chiptune/gameboy": {
+"n": 1052,
+"h": "3f28c329",
+"key": "F dorian",
+"bpm": 128,
+"loop": "0,3,0,4",
+"name": "x"
+},
+"chiptune/saveroom": {
+"n": 564,
+"h": "feab3e1",
+"key": "G major",
+"bpm": 95,
+"loop": "0,3",
+"name": "x"
+},
+"dub/onedrop": {
+"n": 228,
+"h": "a5d6eb94",
+"key": "B\u266d minor",
+"bpm": 72,
+"loop": "0,6",
+"name": "x"
+},
+"dub/rockers": {
+"n": 274,
+"h": "e0a29a3b",
+"key": "G mixolydian",
+"bpm": 72,
+"loop": "0,3",
+"name": "x"
+},
+"dub/steppers": {
+"n": 237,
+"h": "d04c7902",
+"key": "B\u266d minor",
+"bpm": 72,
+"loop": "0",
+"name": "x"
+},
+"lofi/jazzhop+comp": {
+"n": 548,
+"h": "6f5b07b0",
+"key": "D dorian",
+"bpm": 88,
+"loop": "0,3,4,5",
+"name": "T"
+}
+}
