@@ -34,6 +34,9 @@ JS_HITS = '''(over) => {
     if (lb) for (const s of ['#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(lb, q)) out.push('Lift Off x ' + s); } } }
   // 6.2: no Home button; the edge arrows stay clear of every control and banner and of each other
   if (document.querySelector('#bZoom')) out.push('the Home button is back');
+  // the page re-reads these rects 4 times a second (and soon after a log line or toast changes); log lines fade and reflow, so
+  // check the placement logic against a fresh read and one drawn frame rather than race that refresh
+  Render.keepOut = UI._dbg.keepOutRects(); Render.draw(0);
   const cvr = document.querySelector('#cv').getBoundingClientRect(), arr = Render.frArrows;
   if (arr.filter(a => a.tre).length > 3) out.push('more than 3 treasure arrows');
   if (window._wantTre && !arr.some(a => a.tre)) out.push('no treasure arrow');

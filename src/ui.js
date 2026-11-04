@@ -3441,6 +3441,15 @@ const UI = (() => {
   // 6.2: the buttons and banners over the battlefield, in stage px, so the edge arrows (Render) never hide under one
   let koT = 0, koCls = '', beamKT = 0, beamK = 1;
   const KEEP_OUT = '#bLift, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
+  // koT: wall-clock time of the next read (4 Hz; frame dt is capped, so a slow frame rate would stretch a dt timer).
+  // The rects are re-read soon after a log line, toast or banner comes or goes (a MutationObserver flags it; no per-frame work)
+  let koObs = null;
+  function koWatch() {
+    if (koObs || typeof MutationObserver === 'undefined') return;
+    koObs = new MutationObserver(() => { koT = Math.min(koT, performance.now() + 230); }); // just after a new line's 0.2 s slide-in
+    for (const q of ['#log', '#toasts']) { const el = $(q); if (el) koObs.observe(el, { childList: true }); }
+    const st = $('#stage'); if (st) koObs.observe(st, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+  }
   function keepOutRects() {
     const cv = $('#cv'); if (!cv) return []; const o = cv.getBoundingClientRect(), out = [];
     for (const el of document.querySelectorAll(KEEP_OUT)) { if (el.hidden) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) continue;
@@ -3453,7 +3462,7 @@ const UI = (() => {
       if (p) tile.style.setProperty('--mc', (M.GENRES[p.genre] || {}).col || '#59f0b4'); const quiet = !p || M.paused || M.held || SFX.state !== 'running'; tile.classList.toggle('quiet', quiet);
       M.spectrum(eqBuf); const band = [[1, 3], [3, 7], [7, 14], [14, 28], [28, 56]]; bars.forEach((b, i) => { let v = 0; if (!quiet) for (let k = band[i][0]; k < band[i][1]; k++) v = Math.max(v, eqBuf[k]); b.style.height = Math.max(3, Math.round(v / 255 * 16)) + 'px'; });
       if (!$('#mdeck').hidden) UI.deckFill && UI.deckFill(); } } }
-    if (screen === 'game') { koT -= dt; const lg = $('#log'), tl = $('#toasts'), bc = document.body.className + (lg ? lg.childElementCount : 0) + ':' + (tl ? tl.childElementCount : 0); if (koT <= 0 || bc !== koCls) { koT = 0.25; koCls = bc; Render.keepOut = keepOutRects(); } } // 6.2: edge arrows slide clear of these (at once when a panel or banner moves the layout)
+    if (screen === 'game') { koWatch(); const bc = document.body.className, now = performance.now(); if (now >= koT || bc !== koCls) { koT = now + 250; koCls = bc; Render.keepOut = keepOutRects(); } } // 6.2: edge arrows slide clear of these (at once when a panel or banner moves the layout)
     if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
     if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
     if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());
@@ -3496,7 +3505,7 @@ const UI = (() => {
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
-    _dbg: { openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
+    _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
   };
 })();
 

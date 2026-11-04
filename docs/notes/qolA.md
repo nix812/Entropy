@@ -109,7 +109,50 @@ Nic played on a flight and asked for seven things. All seven are built. Two of t
   `test/drawbench.py` (`NUKE=1`), `test/sfxrender.py` (`nuke` last), `test/harness.js` (exports `frNodeFix`,
   `frNearWorm`, `setNodes`, `supGrow`, `supTarget`).
 
-RESULTS_PLACEHOLDER
+## Results
+
+Gate: `^FAIL `, a non-empty `FAILED: [...]`, `ERRORS: [...]` or a Traceback. Browser suites one at a time.
+
+| Suite | Result |
+|---|---|
+| `audit.py n`, `audit.py ipadA 1180 820 0,0,20`, `uiaudit.py`, `splashshot.py` | ERRORS: [] / FAILED: [] |
+| `trackcollide.py` (6 configurations, 18 states) | FAILED: [] |
+| `node replay.js` | all replays match |
+| `node test/qola.js` | 28/28 |
+| `frontier.js` 92/92, `tutorial.js` (all replays match), `hook.js` 36, `hookcompat.js`, `ascend.js`, `resume.js`, `fixes.js` 44 ok | clean |
+| `qolashot.py` (667×375, 1180×820) | FAILED: [] |
+| `soundcheck.py` | FAILED: [] |
+
+`frontier.js` needed one change: its scripted Daily (seed 4) used to claim a bounty by luck; frV 3 moves nodes, which
+reshuffles that run's dice, and it fell at Wave 11 (most seeds do, in 6.1 too). Its start-of-run boost went from +400% damage
+and hull bonus 40 to +1500% and 200 so the bounty and jump door are exercised whatever the dice.
+
+**Balance** (smartbot `FR=1`, Normal, 0 points, best wave 40, 8 seeds, frozen copies, run back to back):
+
+| Build | Waves reached (sorted) | Median |
+|---|---|---|
+| 6.1.0 (996905d), same day | 11 41 51 52 60 64 65 65 | **56** |
+| qolA | 31 41 42 52 55 55 63 72 | **53.5** |
+
+A 2.5-wave gap is inside bot noise (pitfall 16; the 6.1 notes recorded 42.5–47 on another day with the same setup). Support
+growth is small for the bot (one Pylon and one Snare in its plan), so no shift was expected; node moves change maps, not difficulty.
+
+**Render** (`drawbench.py` is swamped by the other builder's load: the same build read 43–73 ms at home). An interleaved A/B in
+one page (busy scene, 3× pixel density, 8 alternating 40-frame blocks, third-best block): home 41.5 ms plain vs 44.7 ms
+during the Nuke's first second; zoomed in 35.8 vs 36.2 ms. No gradients or shadowBlur; the puffs are 6 pre-rendered 22 px
+sprites; about 25 drawImage calls a frame for 3.3 s. `NUKE=1 python3 drawbench.py` repeats it.
+
+**Sound** (`sfxload.py`: the same fixed stream in both builds, 12 tower sounds every 50 ms at seeded spots across the sector, 6 s):
+
+| View | 6.1.0 voices started | qolA voices started | JS in `SFX.play`, 6.1.0 → qolA |
+|---|---|---|---|
+| home (everything on screen) | 536 | 543 | 54 → 44 ms/s |
+| zoomed in, middle | 536 | 331 (−38%) | 42 → 23 ms/s |
+| zoomed in, corner | 517 | 258 (−50%) | 39 → 20 ms/s |
+
+`perfcheck.py` (music only, untouched): JS scheduling 0.1–0.7% after vs 0.1–1.2% before; the render-time ratios moved with the
+machine's load (0.2–0.8× before, 0.4–1.1× and then 0.4–0.7× after on reruns) and the genre flavours differ per run.
+`sfxrender.py`: the Nuke peaks −1.7 dBFS, loudest 50 ms −9.1 dBFS before its −1.5 dB trim (big events −10 to −12).
 
 ## Open issues
 
@@ -118,4 +161,6 @@ RESULTS_PLACEHOLDER
 - A tap on an empty tile beside a crate claims the crate instead of opening the build menu. Crates last 22 s, so I
   favoured the crate as Nic asked; if building next to crates feels sticky, shrink `CACHE_REACH` to 1.2.
 - Support growth counts the attack towers in range now, including ones moved in; moving all towers away leaves the level.
+- The keep-out rects can be up to 0.25 s stale while log lines fade and reflow; an arrow may sit under a fading log line
+  for that long (the log is translucent and lets taps through). `trackcollide.py` checks the placement against a fresh read.
 - smartbot was not taught anything: it still upgrades support towers as before and simply finds them cheaper.
