@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.0.2';
+const VERSION = '6.1.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -345,15 +345,15 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.0.0', title: 'Last Gradient 6.0 · The big one', items: [
-  ['Tutorial', 'New to the game? The Tutorial button on the main menu walks you through everything, step by step with a checklist: build, upgrade, the core, veterans, Strike, bounties. The ? button is now the Field Manual: a short lesson for every system.'],
-  ['The Ready button', 'Towers with a veteran mutation or an Ascend perk waiting now show a gold star, and a Ready button counts them. Tap it to go through every waiting tower, one at a time. The game pauses while you choose.'],
-  ['Zones and jump doors', 'Pick a zone at the start: each has its own enemies, weather and boss. At every bounty, choose where to jump next. The Bounty Purse grows as you push on: bank it or risk it.'],
-  ['Talents, reworked', 'Every attack tower has a Technique, an alternate fire mode with its own job. New play-style Capstones. Your talent points have been refunded and the five saved builds cleared, so spend them fresh.'],
-  ['Ascend perks and Mastery', 'Each Ascend past level 5 offers three perk cards that change how that tower works. Every tower type earns Mastery ranks from the damage it deals.'],
-  ['A swarm you can read', 'Evolved enemies wear their genes: shells, plating, wings, speed streaks. The Threat Board shows what the swarm is breeding against you, and why.'],
-  ['Towers with character', 'Every tower and specialty has its own shots, impacts and sounds.'],
-  ['Balance', 'The Void Lens no longer does most of the damage on its own, and Collapse hits a little softer. A freeze past Wave 320 is fixed.'],
+const WHATS_NEW = { ver: '6.1.0', title: 'Last Gradient 6.1 · Lift Off', items: [
+  ['Your core flies', 'Every run is now played on the big Frontier map. Tap Lift Off, pick a spot, and your core flies there. Land it on a tower and the core fires that weapon, twice as hard.'],
+  ['Docking and links', 'The landed core links its 3 nearest attack towers: +10% damage and fire rate each. The core panel shows the docked weapon\'s damage, rate, range and kills.'],
+  ['Move towers', 'Pick up a tower and set it down somewhere better, for 10% of what it cost and 4 seconds offline. No more selling stranded towers.'],
+  ['No-build zones', 'You can\'t build within 6 tiles of a wormhole, so enemies get a moment on the map before they meet your guns. A red ring flashes if you try.'],
+  ['Getting around', 'Pan and pinch to explore the bigger map. Edge arrows point back to your core.'],
+  ['Daily Hunts on Frontier', 'Daily Hunts use the same Frontier board on every device, so scores are fair.'],
+  ['Training, updated', 'Basic Training now teaches Lift Off, docking, links and moving towers, and there is a new Field Manual lesson for them.'],
+  ['Old saves', 'A run saved before this update resumes on the old rules.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
