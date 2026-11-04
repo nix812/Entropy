@@ -1,11 +1,14 @@
 """5.8: plus the bounty chip with the Bounty Purse stays in the chip row, clear of every control.
 5.5.14 the music deck never sits on anything and the Music tile never overlaps an ability button: with the log and the doctrine list full, the ticker and the assault
 banner up, the full HUD's stats box, toasts, the Map button, and a tower panel open on either side; at four screen sizes
-(including an iPhone Pro Max). usage: python3 trackcollide.py"""
+(including an iPhone Pro Max).
+6.2: the Home/Map button is gone (Lift Off, then Ready, top the right column); the edge arrows (yellow treasure arrows with a
+chest, the green core arrow) never sit under a control or banner, never overlap each other, and at most 3 treasure arrows show.
+usage: python3 trackcollide.py"""
 import pathlib, mkpage
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent; mkpage.mk(); errs = []; fails = []
-OVER = ['#log', '#docbar', '#bZoom', '#panel', '#watchbar', '#cpBanner']  # the deck is a popover: it may cover the banners while open, never a control
+OVER = ['#log', '#docbar', '#panel', '#watchbar', '#cpBanner']  # the deck is a popover: it may cover the banners while open, never a control
 JS_HITS = '''(over) => {
   const vis = el => { if (!el) return null; const cs = getComputedStyle(el); if (el.hidden || cs.display === 'none' || cs.visibility === 'hidden') return null; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 ? r : null; };
   const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
@@ -20,16 +23,29 @@ JS_HITS = '''(over) => {
   // (when the row is full it folds into the "+N" chip like every other chip, and the Field Report lists it)
   const wc = vis(document.querySelector('#chips [data-wanted]')); if (!wc) { if (!document.querySelector('#chips [data-more]')) out.push('bounty chip missing'); }
   else { const row = document.querySelector('#chips').getBoundingClientRect(); if (wc.right > row.right + 1 || wc.top < row.top - 1 || wc.bottom > row.bottom + 1) out.push('bounty chip outside the chip row');
-    for (const s of ['#bZoom', '#railL', '#railR', '#abils', '#log', '#docbar', '#panel', '#mdeck']) { const q = vis(document.querySelector(s)); if (q && hit(wc, q)) out.push('bounty chip x ' + s); } }
-  // 5.8: the Ready button sits under Map, clear of every control and banner (it hides while a right-hand panel is open)
+    for (const s of ['#bLift', '#railL', '#railR', '#abils', '#log', '#docbar', '#panel', '#mdeck']) { const q = vis(document.querySelector(s)); if (q && hit(wc, q)) out.push('bounty chip x ' + s); } }
+  // 5.8: the Ready button sits at the top right (under Lift Off on Frontier), clear of every control and banner (it hides while a right-hand panel is open)
   const rb = vis(document.querySelector('#bReady'));
   if (!rb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Ready button missing');
-  if (rb) for (const s of ['#bZoom', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#bLift']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
-  // Frontier: Lift Off sits under Map, above Ready, clear of every control and banner (it hides while a side panel is open)
+  if (rb) for (const s of ['#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#bLift']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
+  // Frontier: Lift Off tops the right column, above Ready, clear of every control and banner (it hides while a side panel is open)
   if (G && G.fr) { const lb = vis(document.querySelector('#bLift'));
     if (!lb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Lift Off button missing');
-    if (lb) for (const s of ['#bZoom', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(lb, q)) out.push('Lift Off x ' + s); } } }
+    if (lb) for (const s of ['#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(lb, q)) out.push('Lift Off x ' + s); } } }
+  // 6.2: no Home button; the edge arrows stay clear of every control and banner and of each other
+  if (document.querySelector('#bZoom')) out.push('the Home button is back');
+  const cvr = document.querySelector('#cv').getBoundingClientRect(), arr = Render.frArrows;
+  if (arr.filter(a => a.tre).length > 3) out.push('more than 3 treasure arrows');
+  if (window._wantTre && !arr.some(a => a.tre)) out.push('no treasure arrow');
+  for (let i = 0; i < arr.length; i++) { const a = arr[i], x = cvr.left + a.sx * UIS, y = cvr.top + a.sy * UIS, h = 11 * UIS;
+    const box = { left: x - h, right: x + h, top: y - h, bottom: y + h };
+    for (const o of arr.slice(i + 1)) if (Math.hypot(o.sx - a.sx, o.sy - a.sy) < 18) out.push('arrows overlap');
+    for (const s of ['#bLift', '#bReady', '#railL', '#railR', '#panel', '#mdeck', '#ticker', '#asbar', '#docbar', '#log > *', '#dps', '#cpBanner', '#tip', '#toasts > *']) for (const el of document.querySelectorAll(s)) { const q = vis(el); if (q && hit(box, q)) out.push((a.tre ? 'treasure' : a.home ? 'core' : 'enemy') + ' arrow x ' + s); } }
   return out; }'''
+TRE = '''() => { // crates all around the sector edges, the camera zoomed in on the middle: arrows on every side
+  const R = G.region, pts = [[R.x0 + 1, R.y0 + 1], [R.x1 - 2, R.y0 + 1], [R.x0 + 1, R.y1 - 2], [R.x1 - 2, R.y1 - 2], [(R.x0 + R.x1) >> 1, R.y0 + 1], [(R.x0 + R.x1) >> 1, R.y1 - 2], [R.x0 + 1, (R.y0 + R.y1) >> 1], [R.x1 - 2, (R.y0 + R.y1) >> 1], [R.x1 - 3, R.y0 + 2], [R.x1 - 2, R.y0 + 3]];
+  G.caches = pts.map(([x, y], i) => ({ x, y, t: 999, id: 9000 + i, kind: i % 3 ? 'normal' : 'gold' })); window._wantTre = 1;
+  const L = Render.layout; Render.resetCam(); Render.zoomAt(L.W / 2, L.H / 2, 2.6); }'''
 FILL = '''() => {
   document.body.classList.add('hudfull');
   const dps = document.querySelector('#dps'); dps.innerHTML = '<b>DPS</b><br>Pulse 1,234<br>Rail 5,678<br>Cryo 90<br>Lens 1,111<br>Mortar 222';
@@ -57,13 +73,13 @@ with sync_playwright() as p:
           for (let x = 0; x < COLS && !L; x++) for (let y = 0; y < ROWS && !L; y++) if (ok(x, y) && window.act('build', 'pulse', x, y)) L = G.towers[G.towers.length - 1];
           for (let x = COLS - 1; x >= 0 && !R; x--) for (let y = 0; y < ROWS && !R; y++) if (ok(x, y) && window.act('build', 'pulse', x, y)) R = G.towers[G.towers.length - 1];
           window._L = L; window._R = R; }''')
-        pg.evaluate(FILL); pg.wait_for_timeout(300)
-        pg.evaluate('() => document.querySelector("#bMusic").click()'); pg.wait_for_timeout(250)
+        pg.evaluate(FILL); pg.evaluate(TRE); pg.wait_for_timeout(600)
+        pg.evaluate('() => document.querySelector("#bMusic").click()'); pg.wait_for_timeout(450)
         states = {}
         states['field, everything up'] = pg.evaluate(JS_HITS, OVER)
         pg.screenshot(path=str(root / 'test' / 'out' / f'trk_all_{W}{"_cls" if MODE == "cls" else ""}.png'))
         for side, t in [('left', '_L'), ('right', '_R')]:
-            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(250)
+            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(450)
             cls = pg.evaluate('() => document.body.className')
             states[f'tower panel ({side}: {"panel-l" if "panel-l" in cls else "panel-r" if "panel-r" in cls else "?"})'] = pg.evaluate(JS_HITS, OVER)
             pg.screenshot(path=str(root / 'test' / 'out' / f'trk_panel_{side}_{W}{"_cls" if MODE == "cls" else ""}.png'))

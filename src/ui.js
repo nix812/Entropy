@@ -331,7 +331,7 @@ const UI = (() => {
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
-    if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button under Map to pick each one a mutation.', 'veterans')) return;
+    if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button at the top right to pick each one a mutation.', 'veterans')) return;
     if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.', 'abilities')) return;
     // 5.8: one card for every other system, the first time it matters in a real run
     if (G.wave >= 2 && G.towers.length && !G.towers.some(t => t.lvl >= 2) && G.towers.some(t => G.credits >= upgradeCost(t)) && introCard('upg', 'Upgrades', 'Tap a tower to upgrade it: more damage and a random bonus. The arrow over a tower means you can afford it.', 'upgrades')) return;
@@ -2025,7 +2025,7 @@ const UI = (() => {
       updateZoomBtn(); SFX.play('ui'); return;
     }
     lastTap = { t: now, x: sx, y: sy };
-    if (G.fr) { const A = Render.arrowAt(sx, sy); if (A) { lastTap = null; if (A.home) Render.resetCam(); else Render.lookAt(A.x, A.y); updateZoomBtn(); SFX.play('ui'); return; } } // Frontier edge arrows
+    { const A = Render.arrowAt(sx, sy); if (A) { lastTap = null; if (A.home) Render.resetCam(); else Render.lookAt(A.x, A.y); updateZoomBtn(); SFX.play('ui'); return; } } // edge arrows: the core goes home, the rest look there
     tapTile(Render.screenToTile(sx, sy));
   }
   let lastTap = null;
@@ -2090,6 +2090,7 @@ const UI = (() => {
     if (G.aimAbility) { G.aimAbility = null; Render.aim = null; updateHud(); SFX.play('ui'); return; }
     if (panel) { closePanel(); SFX.play('ui'); }
   }
+  // 6.2: the Home/Map button was removed; callers still tell the camera UI it moved (kept as the one hook for that)
   function updateZoomBtn() { const b = $('#bZoom'); if (b) { const close = Render.homeZoom > 1.05; b.hidden = Render.home && !close; b.innerHTML = svgIcon('fit', 16) + (Render.home ? 'Map' : G && G.fr ? 'Home' : 'Fit · ' + (Render.zoom / Render.homeZoom).toFixed(1) + '×'); } } // Frontier: Home recentres on the core
   function fitCols() {
     // measure the playfield the game screen will have: app minus safe areas, the two thumb rails and the status bar
@@ -2916,13 +2917,13 @@ const UI = (() => {
       ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
       ['Specialize', 'At LV 3, choose one of two specializations.'],
       ['Core Battery', 'The core is a long-range gun that shells whatever is closest to reaching it, almost anywhere on the map. It starts as light support; Battery upgrades are expensive but make it a real weapon, with Twin Battery at LV 4, Siege Shells at LV 8 and Orbital Uplink at LV 12. Tap the core to upgrade, repair or reroll it.'],
-      ['Lift Off', `The core flies. Tap Lift Off (under Map, or in the core panel), then a tile to land on: the preview shows the new roads, what the core will fire and the towers it will link. Every road swings to the landing spot. In the air the gun is offline and the shield is down. After landing it recharges for ${FRONTIER.cd} waves.`],
+      ['Lift Off', `The core flies. Tap Lift Off (top right, or in the core panel), then a tile to land on: the preview shows the new roads, what the core will fire and the towers it will link. Every road swings to the landing spot. In the air the gun is offline and the shield is down. After landing it recharges for ${FRONTIER.cd} waves.`],
       ['Dock', `Land the core on an attack tower and the core fires that tower's weapon: ×${FRONTIER.dockDmg} Damage, +${FRONTIER.dockRange} Range, +${pct(FRONTIER.dockBat)} per Battery level. Lift off again and the tower is set back down, intact.`],
       ['Links', `The landed core links its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate each, and the core +${pct(FRONTIER.linkCore)} per link. Flying breaks them.`],
       ['Move', `Tap a tower, then Move, then a new tile. It is offline for ${FRONTIER.moveT} s and costs ${pct(FRONTIER.moveFee)} of what it cost. No towers within ${FRONTIER.wormBuild} tiles of a wormhole.`],
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
-      ['Zoom', 'Pinch to zoom, drag to pan. Tap Home to return to the core, Map to see the whole sector. Edge arrows point at bosses and enemies near the core that are off screen: tap one to look there.'],
+      ['Zoom', 'Pinch to zoom, drag to pan, double-tap to zoom in or back out. Edge arrows point at what is off screen: bosses and enemies near the core, pirate treasure (yellow, with a chest) and the core itself (green). Tap one to look there; the green one brings the camera home.'],
       ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V B abilities, Space pause, 1–3 speed, Esc close.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
@@ -3283,7 +3284,6 @@ const UI = (() => {
     cv.addEventListener('pointerup', canvasUp);
     cv.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); if (!ptrs.size) gesture = null; });
     cv.addEventListener('wheel', canvasWheel, { passive: false });
-    $('#bZoom').onclick = () => { SFX.play('ui'); if (Render.home && Render.homeZoom > 1.05) Render.overview(); else Render.resetCam(); updateZoomBtn(); };
     $('#bCall').onclick = () => { SFX.init(); if (G && G.checkpoint) { const B = window.act('cpResume', G.cpT); if (B && B.cr) toast('SPEED BONUS', `+${fmt(B.cr)} credits · +${fmt(B.sc)} score`, '#59f0b4'); updateHud(); return; } const v = window.act('call'); if (v) toast('WAVE CALLED', `+${fmt(v)} credits`, '#ffb03a'); updateHud(); };
     $('#asbar').onclick = () => { SFX.play('ui'); openThreat(); };
     $('#ticker').onclick = e => { if (!e.target.closest('.tkb')) return; SFX.play('ui'); clearTimeout(tickT); $('#ticker').hidden = true; toastBusy = false; toastNQ.length = 0; openReport(); };
@@ -3379,7 +3379,7 @@ const UI = (() => {
       const L = Render.layout;
       if (k === '=' || k === '+') { Render.zoomAt(L.W / 2, L.H / 2, 1.2); updateZoomBtn(); return; }
       if (k === '-' || k === '_') { Render.zoomAt(L.W / 2, L.H / 2, 1 / 1.2); updateZoomBtn(); return; }
-      if (k === 'f') { $('#bZoom').hidden ? Render.overview() : $('#bZoom').click(); updateZoomBtn(); return; }
+      if (k === 'f') { if (Render.home) Render.overview(); else Render.resetCam(); updateZoomBtn(); return; } // desktop: F toggles the whole map and home
       if (k === 'n') { $('#bCall').click(); return; }
       if (k === 't') { SFX.play('ui'); Tree.open(); return; }
       if (k === 'u' && panel && panel.kind === 'tower') { const b = $('#panel [data-act=up]'); if (b && !b.disabled) b.click(); else SFX.play('deny'); return; }
@@ -3428,11 +3428,22 @@ const UI = (() => {
       toast('BIGGEST THREAT', `${nm}${gs.length ? ' · ' + gs.map(g => GENES[g].name).join(', ') : ''} · ${fmt(e.hp)} HP${beat ? ' · Beat it: ' + beat : ''}`, '#ffb03a', true, 'tip'); };
   }
   let eqT = 0; const eqBuf = new Uint8Array(128);
+  // 6.2: the buttons and banners over the battlefield, in stage px, so the edge arrows (Render) never hide under one
+  let koT = 0;
+  const KEEP_OUT = '#bLift, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
+  function keepOutRects() {
+    const cv = $('#cv'); if (!cv) return []; const o = cv.getBoundingClientRect(), out = [];
+    for (const el of document.querySelectorAll(KEEP_OUT)) { if (el.hidden) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) continue;
+      const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      out.push({ l: (r.left - o.left) / UIS, t: (r.top - o.top) / UIS, r: (r.right - o.left) / UIS, b: (r.bottom - o.top) / UIS }); }
+    return out;
+  }
   function tick(dt) {
     if (screen === 'game') { eqT -= dt; if (eqT <= 0) { eqT = 0.08; const tile = $('#bMusic'); if (tile) { const M = SFX.music, p = M.piece, bars = tile.querySelectorAll('.meq i');
       if (p) tile.style.setProperty('--mc', (M.GENRES[p.genre] || {}).col || '#59f0b4'); const quiet = !p || M.paused || M.held || SFX.state !== 'running'; tile.classList.toggle('quiet', quiet);
       M.spectrum(eqBuf); const band = [[1, 3], [3, 7], [7, 14], [14, 28], [28, 56]]; bars.forEach((b, i) => { let v = 0; if (!quiet) for (let k = band[i][0]; k < band[i][1]; k++) v = Math.max(v, eqBuf[k]); b.style.height = Math.max(3, Math.round(v / 255 * 16)) + 'px'; });
       if (!$('#mdeck').hidden) UI.deckFill && UI.deckFill(); } } }
+    if (screen === 'game') { koT -= dt; if (koT <= 0) { koT = 0.25; Render.keepOut = keepOutRects(); } } // 6.2: edge arrows slide clear of these
     if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
     if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
     if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());

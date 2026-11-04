@@ -122,9 +122,13 @@ with sync_playwright() as p:
         if arr:
             r = pg.evaluate('() => { const r = document.querySelector("#cv").getBoundingClientRect(); return [r.left, r.top]; }'); u = pg.evaluate('UIS')
             clear(pg); pg.mouse.click(r[0] + arr[0][0] * u, r[1] + arr[0][1] * u); pg.wait_for_timeout(400)
-            check(pg.evaluate('() => !Render.home') and 'home' in pg.inner_text('#bZoom').lower(), 'tapping the arrow looks there; the Fit button says Home', tag)
-            clear(pg); pg.click('#bZoom'); pg.wait_for_timeout(300)
-            check(pg.evaluate('() => Render.home'), 'Home recentres on the core', tag)
+            check(pg.evaluate('() => !Render.home'), 'tapping the arrow looks there', tag)
+            # 6.2: no Home button; the green core arrow brings the camera home
+            check(pg.evaluate("() => !document.querySelector('#bZoom')"), 'the Home button is gone', tag)
+            pg.wait_for_timeout(400); ha = pg.evaluate('() => Render.frArrows.filter(a => a.home).map(a => [a.sx, a.sy])')
+            check(len(ha) == 1, 'a green arrow points at the off-screen core', tag)
+            if ha: clear(pg); pg.mouse.click(r[0] + ha[0][0] * u, r[1] + ha[0][1] * u); pg.wait_for_timeout(300)
+            check(pg.evaluate('() => Render.home'), 'tapping the core arrow recentres on the core', tag)
         # 9. the bigger board, zoomed all the way out
         pg.evaluate('() => { G.lanesOpened = G.laneWaves.length; G.region = { x0: 0, y0: 0, x1: COLS, y1: ROWS }; }'); pg.wait_for_timeout(2900)
         pg.evaluate('() => { Render.overview(); Render.zoomAt(200, 150, 0.2); UI.zoomChanged(); }'); pg.wait_for_timeout(400)

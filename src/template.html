@@ -550,22 +550,21 @@ body.panel-l #dps { display: none; }
 .drow span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .drow i { height: 4px; display: block; }
 .drow b { font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; }
-.zoombtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 36px; padding: 0 10px; display: flex; align-items: center; gap: 6px; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase;
-  background: rgba(21, 25, 51, 0.92); border: 0; color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); clip-path: var(--cut); }
-body.panel-r .zoombtn { right: auto; left: 6px; }
-/* 5.8 Ready: towers with a veteran pick or an Ascend perk waiting. A fixed spot under Map, hidden at zero, a pulse when the count rises */
-.rdybtn { position: absolute; right: 6px; top: 48px; z-index: 4; height: 40px; padding: 0 6px 0 10px; display: flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
+/* 6.2: the Home/Map camera button is gone (Nic: wasted space; pinch, drag, double-tap and the green core arrow cover it). The right
+   column starts at the top: Lift Off (Frontier), then Ready */
+/* 5.8 Ready: towers with a veteran pick or an Ascend perk waiting. A fixed spot at the top right, hidden at zero, a pulse when the count rises */
+.rdybtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 40px; padding: 0 6px 0 10px; display: flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
   background: rgba(40, 32, 6, 0.92); box-shadow: inset 0 0 0 2px #ffd84a; color: #ffd84a; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
 .rdybtn b { min-width: 26px; height: 26px; padding: 0 5px; display: grid; place-items: center; background: #ffd84a; color: #1a1004; font-weight: 400; font-size: 13px; }
 .rdybtn.pulse { animation: rdyp 0.5s steps(3) 3; } @keyframes rdyp { 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 14px rgba(255, 216, 74, 0.8); transform: scale(1.06); } }
-body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves Map, the ticker and the music deck: Ready waits until it closes */
-/* Frontier: Lift Off sits under Map (Ready moves down one slot); it waits while a side panel is open, like Ready */
-.liftbtn { position: absolute; right: 6px; top: 48px; z-index: 4; height: 40px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
+body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves the ticker and the music deck: Ready waits until it closes */
+/* Frontier: Lift Off tops the right column (Ready moves down one slot); it waits while a side panel is open, like Ready */
+.liftbtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 40px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
   background: rgba(6, 34, 26, 0.92); box-shadow: inset 0 0 0 2px var(--core); color: var(--core); font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
 .liftbtn.cool { color: #6f9c8c; box-shadow: inset 0 0 0 1px #3d6a5a; background: rgba(12, 22, 20, 0.88); }
 .liftbtn.fly { color: #e6fff6; animation: pulse 0.8s infinite; }
 .liftbtn.go:not(.cool):not(.fly) { animation: liftp 1.6s steps(4) infinite; } @keyframes liftp { 50% { box-shadow: inset 0 0 0 2px #e6fff6, 0 0 10px rgba(89, 240, 180, 0.6); } }
-body.fr .rdybtn { top: 94px; }
+body.fr .rdybtn { top: 52px; }
 body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
 .note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
 .sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
@@ -1105,7 +1104,6 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
     <div class="rail" id="railL"><button class="rb mtile" id="bMusic" aria-label="Music"><span class="meq"><i></i><i></i><i></i><i></i><i></i></span><span>Music</span></button><div id="abils" style="display:contents"></div></div>
     <div id="stage">
       <canvas id="cv"></canvas>
-      <button class="zoombtn" id="bZoom" hidden></button>
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
       <div id="log"></div>

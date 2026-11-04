@@ -24,7 +24,7 @@ const RES = 2;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let wormFlashAt = 0; // Frontier: when the no-build ring around the wormholes was last flashed
   let nuke = null, nukeSpr = null; // 6.2 the Nuke's detonation (one at a time) and its pre-rendered puffs
-  let frSel = null, frArrows = []; // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
+  let frSel = null, frArrows = [], keepOut = []; // keepOut: stage rects of buttons and banners the edge arrows slide clear of (set by the UI) // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
   // v5.8 tower character (render-only): a render clock, small screen kicks for heavy hits, hop stars and pull streaks.
@@ -1397,27 +1397,57 @@ const RES = 2;
         if (t.s.range) ringS(gx, gy, t.s.range * TILE, EL[t.s.el].col, 0.85, 1.5, 0.07);
       }
     }
-    // Frontier edge arrows: bosses, and enemies close to the core, that are off screen (tap one to look)
+    // Edge arrows for things off screen (tap one to look): bosses and enemies close to the core (Frontier), the core (green),
+    // and 6.2 pirate treasure: one yellow arrow with a chest per crate, nearby ones merged with a count, at most 3.
+    // An arrow that would sit under a button or banner (keepOut, from the UI) slides along the edge clear of it.
     frArrows.length = 0;
-    if (G.fr && !G.over) {
-      const pad = 16, th = [];
-      for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0))) continue; const near = e.L && e.L.len - e.d < 10; if (!e.boss && !near) continue; th.push(e); }
-      th.sort((p, q) => (q.boss ? 1 : 0) - (p.boss ? 1 : 0) || (p.L.len - p.d) - (q.L.len - q.d));
-      const homeOff = (() => { const x = bx2s(G.core.x * TILE) - ox, y = by2s(G.core.y * TILE) - oy; return x < 0 || y < 0 || x > DW || y > DH; })();
-      const list = th.slice(0, 6).map(e => ({ x: e.x, y: e.y, col: e.boss ? PAL.bad : PAL.amber, big: !!e.boss }));
-      if (homeOff) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
-      const cx0 = ox + DW / 2, cy0 = oy + DH / 2;
+    if (!G.over) {
+      const pad = 16, cx0 = ox + DW / 2, cy0 = oy + DH / 2, list = [];
+      const onS = (sx2, sy2) => sx2 >= ox && sy2 >= oy && sx2 <= ox + DW && sy2 <= oy + DH;
+      if (G.fr) { const th = [];
+        for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0))) continue; const near = e.L && e.L.len - e.d < 10; if (!e.boss && !near) continue; th.push(e); }
+        th.sort((p, q) => (q.boss ? 1 : 0) - (p.boss ? 1 : 0) || (p.L.len - p.d) - (q.L.len - q.d));
+        for (const e of th.slice(0, 6)) list.push({ x: e.x, y: e.y, col: e.boss ? PAL.bad : PAL.amber, big: !!e.boss }); }
+      if (!onS(bx2s(G.core.x * TILE), by2s(G.core.y * TILE))) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
+      // treasure: project each off-screen crate to the edge, merge crates whose arrows would land within 34 px, keep the 3 closest
+      const edge = (sx2, sy2) => { const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy))); return { px: cx0 + dx * k, py: cy0 + dy * k }; };
+      const tre = [];
+      for (const cc of G.caches || []) { const x = cc.x + 0.5, y = cc.y + 0.5, sx2 = bx2s(x * TILE), sy2 = by2s(y * TILE); if (onS(sx2, sy2)) continue;
+        const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = tre.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
+        if (m) { m.n++; if (d < m.d) Object.assign(m, { x, y, d }); } else tre.push({ x, y, d, px: E.px, py: E.py, n: 1, col: '#ffe14d', tre: 1 }); }
+      tre.sort((p, q) => p.d - q.d); for (const A of tre.slice(0, 3)) list.push(A);
+      const ko = keepOut;
       for (const A of list) {
         const sx2 = bx2s(A.x * TILE), sy2 = by2s(A.y * TILE);
-        if (sx2 >= ox && sy2 >= oy && sx2 <= ox + DW && sy2 <= oy + DH) continue;
-        const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy)));
-        const px = cx0 + dx * k, py = cy0 + dy * k, an = Math.atan2(dy, dx), r = A.big ? 11 : 8, pl = 0.75 + 0.25 * Math.sin(frame / 6);
+        if (onS(sx2, sy2)) continue;
+        let { px, py } = edge(sx2, sy2); const r = A.big ? 11 : 8, side = Math.abs(Math.abs(px - cx0) - (DW / 2 - pad)) < 0.5;
+        { // the rects crossing this edge become blocked spans along it (merged); an arrow inside one moves to the nearer free end,
+          // or, when both ends are off screen (a tall side panel), steps inward past the rect
+          const m = r + 5, sp = [];
+          for (const q of ko) if (side ? px >= q.l - m && px <= q.r + m : py >= q.t - m && py <= q.b + m) sp.push(side ? [q.t - m, q.b + m, q] : [q.l - m, q.r + m, q]);
+          sp.sort((p, q) => p[0] - q[0]); const mg = [];
+          for (const v of sp) { const L = mg[mg.length - 1]; if (L && v[0] <= L[1]) { L[1] = Math.max(L[1], v[1]); L[2].push(v[2]); } else mg.push([v[0], v[1], [v[2]]]); }
+          const pos = side ? py : px, lo = (side ? oy : ox) + pad, hi = (side ? oy + DH : ox + DW) - pad;
+          for (const [a0, a1, qs] of mg) if (pos > a0 && pos < a1) {
+            const okA = a0 - 1 >= lo, okB = a1 + 1 <= hi, to = okA && (!okB || pos - a0 <= a1 - pos) ? a0 - 1 : okB ? a1 + 1 : null;
+            if (to !== null) { if (side) py = to; else px = to; }
+            else if (side) px = px > cx0 ? Math.min(...qs.map(q => q.l)) - m - 1 : Math.max(...qs.map(q => q.r)) + m + 1;
+            else py = py > cy0 ? Math.min(...qs.map(q => q.t)) - m - 1 : Math.max(...qs.map(q => q.b)) + m + 1;
+            break; }
+        }
+        const an = Math.atan2(sy2 - py, sx2 - px), pl = A.tre ? 1 : 0.75 + 0.25 * Math.sin(frame / 6); // treasure stays solid yellow
         if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) continue;
         c.save(); c.translate(px, py); c.rotate(an);
         c.fillStyle = 'rgba(7,8,15,0.75)'; c.beginPath(); c.moveTo(r + 3, 0); c.lineTo(-r + 1, -r); c.lineTo(-r * 0.4, 0); c.lineTo(-r + 1, r); c.closePath(); c.fill();
         c.fillStyle = hexA(A.col, pl); c.beginPath(); c.moveTo(r, 0); c.lineTo(-r + 3, -r + 2.5); c.lineTo(-r * 0.4 + 1, 0); c.lineTo(-r + 3, r - 2.5); c.closePath(); c.fill();
         c.restore();
-        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home });
+        if (A.tre) { // a little chest behind the arrow (toward the centre), and the count when crates were merged
+          const ux = Math.cos(an), uy = Math.sin(an), qx = Math.round(px - ux * (r + 9)), qy = Math.round(py - uy * (r + 9));
+          c.fillStyle = 'rgba(7,8,15,0.85)'; c.fillRect(qx - 6, qy - 5, 12, 10);
+          c.fillStyle = '#b07a20'; c.fillRect(qx - 5, qy - 4, 10, 8); c.fillStyle = '#ffe14d'; c.fillRect(qx - 5, qy - 4, 10, 3); c.fillStyle = '#3a2410'; c.fillRect(qx - 5, qy - 1, 10, 1); c.fillStyle = '#fff6c0'; c.fillRect(qx - 1, qy - 2, 2, 3);
+          if (A.n > 1) { c.font = '9px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(7,8,15,0.9)'; c.fillRect(qx + 4, qy - 11, 10, 9); c.fillStyle = '#ffe14d'; c.fillText(String(A.n), qx + 9, qy - 6); c.textBaseline = 'alphabetic'; }
+        }
+        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home, tre: !!A.tre });
       }
     }
     // the old sector border fades out as the camera pulls back
@@ -1844,7 +1874,7 @@ const RES = 2;
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     flashWorm() { wormFlashAt = performance.now(); },
-    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, // Frontier picker and edge arrows
+    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
     lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');

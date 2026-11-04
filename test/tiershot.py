@@ -22,6 +22,6 @@ with sync_playwright() as p:
     pg.evaluate('() => Render.resetCam()')
     c = pg.evaluate('([x, y]) => { const r = document.querySelector("#cv").getBoundingClientRect(); const p = Render.tileToScreen(x + 0.5, y + 0.5); return [r.left + p.x * UIS, r.top + p.y * UIS]; }', t)
     pg.mouse.click(c[0], c[1]); pg.wait_for_timeout(300); pg.screenshot(path=str(out / 'tier_panel.png'))
-    pg.evaluate('() => UI.closePanel()'); pg.click('#bZoom'); pg.wait_for_timeout(300); pg.screenshot(path=str(out / 'tier_map.png'))
+    pg.evaluate('() => UI.closePanel()'); pg.evaluate('() => Render.overview()'); pg.wait_for_timeout(300); pg.screenshot(path=str(out / 'tier_map.png'))
     b.close()
 print('ERRORS:', errs[:5])
