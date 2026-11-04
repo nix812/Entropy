@@ -116,6 +116,23 @@ function botPerk(tw) {
   if (!process.env.NOPERK) o.forEach((id, i) => { const v = (PERK_PRI[id] || 1) - 0.4 * S.perkStacks(tw, id) + Math.random() * 0.8; if (v > bv) { bv = v; bi = i; } });
   S.claimPerk(tw, bi);
 }
+// 6.4 Anomalies: generated cards are scored by what they give this build minus what they cost (an element part counts by
+// that element's share of the attack towers, crit parts by the crit share, ability and storm parts at half), plus noise.
+// Classic cards get a flat guess. A best score under -5 stabilizes. ANOMPICK=rand keeps the old random pick
+const ANOM_HALF = { abilPower: 1, stormPow: 1, fill: 1 };
+function anomVal(o, B) {
+  if (typeof o === 'string') return 6 + Math.random() * 14;
+  const part = ([id, x]) => { const P = S.ANOM_PART[id]; let v = P.sp ? P.p : x * P.p;
+    if (P.el) v *= 2 * B.sh[P.el]; if (P.need === 'crit') v *= 2 * B.crit; else if (P.need) v *= 0.3 + 2 * B.sh[P.need]; if (ANOM_HALF[P.k]) v *= 0.5; return v; };
+  return o.up.reduce((a, p) => a + part(p), 0) - o.dn.reduce((a, p) => a + part(p), 0) + (Math.random() - 0.5) * 12;
+}
+function botAnom(G) {
+  const O = G.anomOffers;
+  if (process.env.ANOMPICK === 'rand' || !S.anomBuild) return O[Math.floor(Math.random() * O.length)];
+  const B = S.anomBuild(); let best = null, bv = -Infinity;
+  for (const o of O) { const v = anomVal(o, B); if (v > bv) { bv = v; best = o; } }
+  return bv < -5 ? null : best;
+}
 const agg = [];
 const OFF = +(process.env.SEED || 0);
 for (let run = OFF; run < OFF + runs; run++) {
@@ -162,7 +179,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     if (t < act) continue;
     act = t + 0.8;
     // anomalies
-    if (G.anomOffers) { if (Math.random() < 0.2 || !G.anomOffers.length) { S.stabilize(); met.stab++; } else { const id = G.anomOffers[Math.floor(Math.random() * G.anomOffers.length)]; S.takeAnomaly(id); met.anoms.push(id); } }
+    if (G.anomOffers) { if (Math.random() < 0.2 || !G.anomOffers.length) { S.stabilize(); met.stab++; } else { const o = botAnom(G); if (!o) { S.stabilize(); met.stab++; } else { const id = o.id || o; S.takeAnomaly(id); met.anoms.push(id); } } }
     // v5.8 Techniques
     for (const tw of G.towers) chooseFire(G, tw);
     // veterans

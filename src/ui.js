@@ -1136,7 +1136,7 @@ const UI = (() => {
     $('#entFill').style.height = pct(Math.min(1, G.entropy / 100));
     $('#entTxt').textContent = G.anomOffers ? 'DRAW' : Math.floor(G.entropy) + '%';
     eb.classList.toggle('ready', !!G.anomOffers);
-    $('#entCount').textContent = G.anoms.length ? '×' + G.anoms.length : '';
+    $('#entCount').textContent = anomCount() ? '×' + anomCount() : '';
     $('#webBadge').textContent = free > 0 ? free : '';
     $('#webBadge').hidden = free <= 0;
     // chips: events + storms
@@ -2213,7 +2213,7 @@ const UI = (() => {
     modal(`<div class="card narrow"><div class="ch"><h2>Paused</h2></div>
       <p class="note">Wave ${G.wave} · Score ${fmt(G.score)} · Multiplier ×${(G.scoreMult * huntMult()).toFixed(2)}</p>
       <p class="note">${G.bounties.length ? `${G.bounties.length} bount${G.bounties.length === 1 ? 'y' : 'ies'} claimed · ` : ''}${G.wanted ? `Next bounty: ${esc(G.wanted.name)}, Wave ${G.wanted.w}` : ''}${G.nemesis && !G.nemesis.beaten ? ` · Nemesis: ${esc(G.nemesis.name)}` : ''}</p>
-      ${G.anoms.length ? `<div class="lbl">Anomalies</div><div class="anlist">${G.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>` : ''}
+      ${anomCount() ? `<div class="lbl">Anomalies</div><div class="anlist">${anomTaken().map(A => `<div><b style="color:${A.col}">${esc(A.name)}<i class="arar">${A.label}</i></b>${A.up.map(l => `<span class="good">${tipify(l)}</span>`).join('')}${A.dn.map(l => `<span class="bad">${tipify(l)}</span>`).join('')}</div>`).join('')}</div>` : ''}
       <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
       <button class="btn" data-act="tutPick">Tutorial</button>
       <button class="btn" data-act="studio">Music Studio</button>
@@ -2225,14 +2225,14 @@ const UI = (() => {
     if (!G || !G.anomOffers) return;
     G.paused = true;
     modal(`<div class="card anom"><div class="ch"><h2 class="void">Anomaly</h2><span class="note">Choose one. Each Anomaly also grants +5% score.</span></div>
-      <div class="boons four">${G.anomOffers.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<button class="boon anomaly" data-act="anom" data-v="${id}"><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><i class="lbl cost">Cost</i><span class="bad">${tipify(A.down)}</span></button>`; }).join('')}
+      <div class="boons four">${G.anomOffers.map(o => { const A = anomInfo(o); if (!A) return ''; return `<button class="boon anomaly ar-${A.rar}" data-act="anom" data-v="${A.id}" style="--ac:${A.col}"><i class="arar">${A.label}</i><b>${esc(A.name)}</b>${A.up.map(l => `<span class="good">${tipify(l)}</span>`).join('')}<i class="lbl cost">Cost</i>${A.dn.map(l => `<span class="bad">${tipify(l)}</span>`).join('')}</button>`; }).join('')}
       <button class="boon stab" data-act="stab"><b>Stabilize</b><span class="good">+10% score</span><span class="good">+1 Recalibration token</span><span class="dim">No other changes</span></button></div></div>`, 'anomaly');
   }
   function runRecord() {
     const byDmg = G.towers.slice().sort((a, b) => b.dmgDone - a.dmgDone), mvp = byDmg[0];
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
-      nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
+      nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.concat((G.ganoms || []).map(a => a.name)), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
       ext: G.extracted || 0, bounties: G.bounties.length, bounty: G.stats.bounty || null, elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: activeCaps().map(id => TAL[id].name), evo: (G.stats.evo || []).slice(), endStrain: runEndStrain() };
@@ -3251,7 +3251,8 @@ const UI = (() => {
         ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
       { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
-      { id: 'anom', name: 'Anomalies', rows: ANOMALIES.map(A => [A.name, `${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff']) },
+      { id: 'anom', name: 'Anomalies', rows: [['How cards are made', `Most cards are built at each draw: 1 boon and 1 cost, sized to a fair trade. <span style="color:${ANOM_RARITY[1].col}">Rare</span> and <span style="color:${ANOM_RARITY[2].col}">Exotic</span> cards swing harder. Exotic cards carry 2 boons. Later draws swing harder. Offers favor the elements you field. Each slot has a 1 in 4 chance to hold a Classic card. A Classic card never repeats in a run.`, '#d6a6ff']]
+        .concat(ANOMALIES.map(A => [A.name, `Classic. ${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff'])) },
       { id: 'talent', name: 'Talents', rows: TALENTS.flatMap(tr => tr.rows.flat().map(T => [T.name, `${talentLines(T, T.max).join('. ')}. <em>${esc(tr.name)} · ${T.max > 1 ? 'at ' + T.max + ' ranks' : 'one rank'}</em>`, tr.col])) },
       { id: 'cap', name: 'Capstones', rows: TALENTS.flatMap(tr => tr.caps.map(T => [T.name, `${talentLines(T).join('. ')}. <em>${esc(tr.name)} Capstone</em>`, tr.col])) },
       { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
@@ -3381,7 +3382,7 @@ const UI = (() => {
       <div class="codex"><em>Combos</em>${cb}</div>
       <div class="codex"><em>Bosses</em>${bs}</div>
       <p class="note">Swarm Collection ${collPctTxt()}: see below</p>
-      <p class="note">Anomalies ${an}/${ANOMALIES.length} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
+      <p class="note">Anomalies ${an}/${ANOMALIES.length}${C.gen && C.gen.n ? ` · Generated ${C.gen.n} (Rare ${C.gen.r[1] || 0}, Exotic ${C.gen.r[2] || 0}) · Parts found ${Object.keys(C.gen.parts || {}).length}/${Object.keys(ANOM_PART).length}` : ''} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
   }
   function modalAction(act, b) {
     if (act.startsWith('st') || act.startsWith('cp')) { try { if (studioAction(act, b)) return; } catch (e) { SFX.report(e, 'studio ' + act); toast('STUDIO ERROR', String(e && e.message || e).slice(0, 90) + ' · tell Claude', '#ff4d6a', true); return; } }
@@ -3450,7 +3451,7 @@ const UI = (() => {
       case 'huntPasteGo': { const v = ($('#huntIn') || {}).value || ''; readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); }); break; }
       case 'watchEnd': endWatch(); break;
       case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } window.act('boon', +b.dataset.v); closeModal(); if (!o.twist) toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
-      case 'anom': { window.act('anom', b.dataset.v); closeModal(); G.paused = false; const A = ANOMALIES.find(a => a.id === b.dataset.v); toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
+      case 'anom': { const A = anomInfo((G.anomOffers || []).find(o => o === b.dataset.v || (o && o.id === b.dataset.v))); if (!A) { closeModal(); break; } window.act('anom', b.dataset.v); closeModal(); G.paused = false; toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
       case 'stab': { window.act('stab'); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
       case 'hangar': closeModal(); G = null; show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'again': closeModal(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); break; // 6.0: after Training, a saved run comes first

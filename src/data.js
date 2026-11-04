@@ -328,7 +328,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 3;
+const FR_VER = 4;
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -1078,6 +1078,98 @@ const ANOMALIES = [
   { id: 'mutagen', name: 'Mutagen', up: 'Each wave, a random tower gains an affix', down: 'Every 3rd wave, it gains a Curse instead', af: { mutagen: 1 } },
   { id: 'inversion', name: 'Gravity Inversion', up: '−15% ground enemy speed', down: '3× as many Skimmers', af: { groundSlow: 0.15, flyers: 2 } },
 ];
+// 6.4 generated Anomalies (FR_VER 4, G.frV >= 4): a card is a boon part plus a drawback part, sized from a power budget so it is a
+// fair trade. Values are in display units (percent); af parts store v / 100 in G.af. p: power per unit (1 power ≈ +1% Damage).
+// lo/hi: the range on one card. cap: the most the run's Anomalies (classic and generated) can add to that key in total
+// (for a drawback: the most they can take away). st: rounding step. w: base weight. el / need: the build it suits (offers lean
+// toward what the player fields). grp: parts of one group never meet on a card. sp: a fixed special (Exotic only, once a run).
+// words: first name word (boons). nouns: second name word (drawbacks).
+const ANOM_RARITY = [
+  { id: 'common', name: 'Common', col: '#cfcade', b: 30, w: 70 },
+  { id: 'rare', name: 'Rare', col: '#6ae2ff', b: 40, w: 24 },
+  { id: 'exotic', name: 'Exotic', col: '#ffb03a', b: 50, w: 6 },
+];
+// classic: share of offer slots that hold a classic card. dr: drawback power per boon power. Budget ×(1 + grow per draw, up to growN
+// draws, + wave / waveDiv, wave counted up to waveMax)
+const ANOM_GEN = { classic: 0.25, dr: 0.8, grow: 0.08, growN: 6, waveDiv: 600, waveMax: 120 };
+const ANOM_UP = [
+  { id: 'dmg', k: 'dmg', p: 1, lo: 10, hi: 60, cap: 120, st: 5, w: 1.2, words: ['Brutal', 'Savage', 'Heavy', 'Feral'] },
+  { id: 'dmgK', k: 'dmgK', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'K', words: ['Iron', 'Steel', 'Tungsten', 'Ballistic'] },
+  { id: 'dmgT', k: 'dmgT', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'T', words: ['Solar', 'Cinder', 'Ember', 'Furnace'] },
+  { id: 'dmgC', k: 'dmgC', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'C', words: ['Glacial', 'Rime', 'Polar', 'Winter'] },
+  { id: 'dmgA', k: 'dmgA', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'A', words: ['Storm', 'Volt', 'Ion', 'Thunder'] },
+  { id: 'dmgV', k: 'dmgV', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'V', words: ['Hollow', 'Abyssal', 'Umbral', 'Null'] },
+  { id: 'rate', k: 'rate', p: 1.2, lo: 10, hi: 50, cap: 90, st: 5, w: 1.1, words: ['Rapid', 'Quickfire', 'Frantic', 'Twitchy'] },
+  { id: 'range', k: 'range', p: 1.8, lo: 5, hi: 30, cap: 45, st: 5, w: 0.9, words: ['Farsight', 'Longshot', 'Wide', 'Distant'] },
+  { id: 'critC', k: 'critC', p: 0.9, lo: 10, hi: 40, cap: 60, st: 5, need: 'crit', words: ['Lucky', 'Keen', 'Sharp'] },
+  { id: 'critM', k: 'critM', p: 0.35, lo: 30, hi: 120, cap: 200, st: 10, need: 'crit', words: ['Cruel', 'Lethal', 'Vicious'] },
+  { id: 'credits', k: 'credits', p: 0.8, lo: 10, hi: 50, cap: 100, st: 5, words: ['Gilded', 'Golden', 'Rich'] },
+  { id: 'costRed', k: 'costRed', p: 1.6, lo: 5, hi: 25, cap: 30, st: 5, w: 0.7, grp: 'cost', words: ['Thrifty', 'Bargain', 'Discount'] },
+  { id: 'upgRed', k: 'upgRed', p: 1, lo: 10, hi: 35, cap: 40, st: 5, w: 0.7, grp: 'upg', words: ['Tinker', 'Retrofit', 'Workshop'] },
+  { id: 'coreDmg', k: 'coreDmg', p: 0.15, lo: 60, hi: 300, cap: 400, st: 20, w: 0.6, words: ['Wrathful', 'Angry', 'Furious'] },
+  { id: 'burnChance', k: 'burnChance', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, w: 0.6, words: ['Kindled', 'Smoking', 'Torch'] },
+  { id: 'chillChance', k: 'chillChance', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, w: 0.6, words: ['Frosted', 'Shivering', 'Numb'] },
+  { id: 'shockChance', k: 'shockChance', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, w: 0.6, words: ['Charged', 'Crackling', 'Sparking'] },
+  { id: 'markChance', k: 'markChance', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, need: 'V', words: ['Marked', 'Branded', 'Cursed'] },
+  { id: 'chillPot', k: 'chillPot', p: 0.3, lo: 30, hi: 120, cap: 200, st: 10, need: 'C', words: ['Deepfreeze', 'Frostbite', 'Icebound'] },
+  { id: 'burnDmg', k: 'burnDmg', p: 0.4, lo: 25, hi: 100, cap: 150, st: 5, need: 'T', words: ['Napalm', 'Scorching', 'Blazing'] },
+  { id: 'shockEff', k: 'shockEff', p: 0.4, lo: 25, hi: 100, cap: 150, st: 5, need: 'A', words: ['Overcharged', 'Live', 'Arcing'] },
+  { id: 'armorPen', k: 'armorPen', p: 0.8, lo: 10, hi: 40, cap: 60, st: 5, w: 0.7, words: ['Piercing', 'Drilling', 'Breaching'] },
+  { id: 'eliteDmg', k: 'eliteDmg', p: 0.5, lo: 20, hi: 100, cap: 150, st: 5, w: 0.8, words: ['Hunting', 'Kingslayer', 'Trophy'] },
+  { id: 'shield', k: 'shield', p: 1, lo: 10, hi: 50, cap: 80, st: 5, w: 0.5, grp: 'shield', words: ['Warded', 'Shielded', 'Aegis'] },
+  { id: 'coreHP', k: 'coreHP', p: 0.5, lo: 20, hi: 100, cap: 150, st: 10, w: 0.5, grp: 'hull', words: ['Armored', 'Stout', 'Bastion'] },
+  { id: 'abilPower', k: 'abilPower', p: 0.5, lo: 20, hi: 80, cap: 120, st: 5, w: 0.4, words: ['Orbital', 'Uplinked', 'Command'] },
+  { id: 'stormPow', k: 'stormPow', p: 0.4, lo: 25, hi: 100, cap: 150, st: 5, w: 0.4, words: ['Tempest', 'Squall', 'Monsoon'] },
+  { id: 'echo', k: 'echo', t: 'af', p: 1.1, lo: 5, hi: 25, cap: 30, st: 5, w: 0.8, words: ['Echoing', 'Twin', 'Doubled'] },
+  { id: 'groundSlow', k: 'groundSlow', t: 'af', p: 2, lo: 5, hi: 20, cap: 30, st: 5, w: 0.7, words: ['Molasses', 'Sticky', 'Tarpit'] },
+  { id: 'boom', k: 'boom', t: 'af', p: 1.2, lo: 5, hi: 25, cap: 30, st: 5, w: 0.7, words: ['Volatile', 'Unstable', 'Popping'] },
+  { id: 'fractal', k: 'fractal', t: 'af', sp: 1, p: 30, words: ['Fractal', 'Splintered'] },
+  { id: 'prism', k: 'prism', t: 'af', sp: 1, p: 25, words: ['Prismatic', 'Spectral'] },
+  { id: 'fill', k: 'fill', t: 'af', sp: 1, p: 20, words: ['Restless', 'Feedback'] },
+];
+const ANOM_DN = [
+  { id: '-dmg', k: 'dmg', p: 1, lo: 5, hi: 30, cap: 30, st: 5, nouns: ['Fatigue', 'Rust', 'Malaise'] },
+  { id: '-rate', k: 'rate', p: 1.2, lo: 5, hi: 25, cap: 30, st: 5, nouns: ['Lull', 'Drag', 'Sloth'] },
+  { id: '-range', k: 'range', p: 1.8, lo: 5, hi: 20, cap: 30, st: 5, nouns: ['Myopia', 'Fog', 'Haze'] },
+  { id: '-dmgK', k: 'dmgK', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'K', w: 0.4, nouns: ['Corrosion', 'Dents'] },
+  { id: '-dmgT', k: 'dmgT', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'T', w: 0.4, nouns: ['Damp', 'Drizzle'] },
+  { id: '-dmgC', k: 'dmgC', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'C', w: 0.4, nouns: ['Thaw', 'Meltdown'] },
+  { id: '-dmgA', k: 'dmgA', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'A', w: 0.4, nouns: ['Short', 'Blackout'] },
+  { id: '-dmgV', k: 'dmgV', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'V', w: 0.4, nouns: ['Daylight', 'Glare'] },
+  { id: '-credits', k: 'credits', p: 0.8, lo: 10, hi: 35, cap: 40, st: 5, nouns: ['Tax', 'Debt', 'Tithe'] },
+  { id: '-costX', k: 'costX', t: 'af', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, grp: 'cost', nouns: ['Toll', 'Markup', 'Tariff'] },
+  { id: '-upgX', k: 'upgX', t: 'af', p: 1, lo: 10, hi: 35, cap: 50, st: 5, grp: 'upg', nouns: ['Red Tape', 'Overhead'] },
+  { id: '-regen', k: 'regen', t: 'af', p: 30, lo: 0.5, hi: 1.5, cap: 2.5, st: 0.5, nouns: ['Hydra', 'Regrowth', 'Bloom'] },
+  { id: '-haste', k: 'haste', t: 'af', p: 2, lo: 5, hi: 20, cap: 30, st: 5, nouns: ['Stampede', 'Rush', 'Panic'] },
+  { id: '-hpx', k: 'hpx', t: 'af', p: 1.2, lo: 10, hi: 35, cap: 60, st: 5, nouns: ['Giants', 'Swell', 'Bulk'] },
+  { id: '-jam', k: 'jam', t: 'af', p: 15, lo: 1, hi: 3, cap: 5, st: 1, nouns: ['Gremlins', 'Glitch', 'Lemons'] },
+  { id: '-coreDrain', k: 'coreDrain', t: 'af', p: 7, lo: 2, hi: 5, cap: 8, st: 1, w: 0.7, nouns: ['Leech', 'Hunger', 'Parasite'] },
+  { id: '-coreHPx', k: 'coreHPx', t: 'af', p: 1, lo: 10, hi: 35, cap: 50, st: 5, w: 0.8, grp: 'hull', nouns: ['Fracture', 'Fault', 'Crack'] },
+  { id: '-elite', k: 'elite', t: 'af', p: 1.2, lo: 5, hi: 25, cap: 40, st: 5, nouns: ['Crown', 'Royals', 'Pageant'] },
+  { id: '-flyers', k: 'flyers', t: 'af', p: 0.3, lo: 50, hi: 200, cap: 300, st: 50, nouns: ['Flock', 'Migration', 'Swarm'] },
+  { id: '-noShield', k: 'noShield', t: 'af', sp: 1, p: 30, w: 0.5, grp: 'shield', nouns: ['Exposure', 'Bare Wire'] },
+];
+const ANOM_EXOTIC_NOUNS = ['Paradox', 'Singularity', 'Eclipse', 'Covenant', 'Engine', 'Requiem'];
+const ANOM_PART = {};
+for (const P of ANOM_UP) ANOM_PART[P.id] = Object.assign({ t: 'm', w: 1, side: 1 }, P);
+for (const P of ANOM_DN) ANOM_PART[P.id] = Object.assign({ t: 'm', w: 1, side: -1 }, P);
+const ANOM_UPS = ANOM_UP.map(P => ANOM_PART[P.id]), ANOM_DNS = ANOM_DN.map(P => ANOM_PART[P.id]);
+// one card line per part (v in display units)
+const ANOM_TXT = {
+  costRed: v => `−${v}% tower cost`, upgRed: v => `−${v}% upgrade cost`, coreHP: v => `+${v} core max HP`,
+  echo: v => `Towers have a ${v}% chance to attack twice`, groundSlow: v => `−${v}% ground enemy speed`, boom: v => `Enemies explode on death for ${v}% of max HP`,
+  fractal: () => 'Bullets and missiles split into 2 shards', prism: () => 'Hits apply a random status', fill: () => 'Entropy fills 2× faster',
+  '-costX': v => `+${v}% tower cost`, '-upgX': v => `+${v}% upgrade cost`, '-regen': v => `Enemies regenerate ${v}% HP per second`,
+  '-haste': v => `+${v}% enemy speed`, '-hpx': v => `+${v}% enemy HP`, '-jam': v => `Attacks have a ${v}% chance to jam`,
+  '-coreDrain': v => `Core loses ${v}% HP each wave`, '-coreHPx': v => `−${v}% core max HP`, '-elite': v => `+${v}% Elite chance`,
+  '-flyers': v => `+${v}% Skimmers`, '-noShield': () => 'No core shield',
+};
+function anomPartTxt(id, v) {
+  const P = ANOM_PART[id]; if (!P) return '';
+  if (ANOM_TXT[id]) return ANOM_TXT[id](v);
+  const s = STAT_TXT[P.k] ? STAT_TXT[P.k](v) : `+${v} ${P.k}`;
+  return P.side > 0 ? s : s.replace(/^\+/, '−');
+}
 
 // ---------- Supernova: cosmic laws (one chosen per Supernova, permanent, stacking) ----------
 const LAWS = [

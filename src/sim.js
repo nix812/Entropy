@@ -12,7 +12,7 @@ function defaultProfile() {
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
     seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, tut: {}, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
-    codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '', coll: {}, collC: {}, collNew: [] },
+    codex: { combos: {}, bosses: {}, anomalies: {}, gen: { n: 0, r: [0, 0, 0], parts: {} }, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '', coll: {}, collC: {}, collNew: [] },
     mastery: { v: 2, xp: {} }, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
   };
@@ -747,7 +747,7 @@ function newRun(opts) {
     stormT: 50, lanesOpened: 0, laneWaves: (T ? T.CH : CHAOS_LEVELS[chaos]).lanes.slice(), laneWarn: null, rows: ROWS,
     rift: null, eid: 1, tid: 1, dmgLog: { combos: 0 }, unbreakUsed: -99, boonsTaken: [],
     core: null, dpsClock: 0, coreAngle: 0,
-    checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
+    checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], ganoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
     stats: { dmgByEl: { K: 0, T: 0, C: 0, A: 0, V: 0 }, combos: {}, elites: 0, leaks: 0, bossKills: 0, peakDps: 0 },
   };
   // v5.3: the run records every input (act) from the start; with these opts it replays exactly (Daily Hunt resume, ladder checks)
@@ -820,11 +820,16 @@ function computeAf(ids) {
     af.score += G.mods && G.mods.ks.singular ? 0.1 : 0.05;
     for (const k in A.af || {}) { if (k === 'coreHPx') af.coreHPx *= A.af[k]; else af[k] = (af[k] || 0) + A.af[k]; }
   }
+  for (const A of (G && G.ganoms) || []) { // 6.4 generated Anomalies (frV 4)
+    af.score += G.mods && G.mods.ks.singular ? 0.1 : 0.05;
+    for (const [id, v] of A.up.concat(A.dn)) { const P = ANOM_PART[id]; if (!P || P.t !== 'af') continue; if (P.k === 'coreHPx') af.coreHPx *= 1 - v / 100; else af[P.k] = (af[P.k] || 0) + (P.sp ? 1 : v / 100); }
+  }
   return af;
 }
 function anomMods() {
   const m = {};
   for (const id of G.anoms) { const A = ANOMALIES.find(a => a.id === id); if (A && A.m) for (const k in A.m) m[k] = (m[k] || 0) + A.m[k]; }
+  for (const A of G.ganoms || []) for (const [id, v] of A.up.concat(A.dn)) { const P = ANOM_PART[id]; if (P && P.t === 'm') m[P.k] = (m[P.k] || 0) + P.side * v; }
   for (const id of G.laws || []) { const L = LAWS.find(l => l.id === id); if (L && L.m) for (const k in L.m) m[k] = (m[k] || 0) + L.m[k]; }
   for (const k in G.runMods) m[k] = (m[k] || 0) + G.runMods[k];
   for (const src of hookFx()) for (const k in src.m || {}) m[k] = (m[k] || 0) + src.m[k] * (src.n || 1);
@@ -2200,7 +2205,8 @@ function updateWaves(dt) {
 }
 
 // ---------- entropy & anomalies ----------
-const entropyNeed = () => 100 * (1 + 0.3 * (G.anoms.length + G.stabilized));
+const anomCount = () => G.anoms.length + (G.ganoms ? G.ganoms.length : 0); // classic + generated (6.4)
+const entropyNeed = () => 100 * (1 + 0.3 * (anomCount() + G.stabilized));
 const gamblerScore = () => G && G.mods && G.mods.ks.gambler ? 0.25 + FX('gScore') / 100 : 0;
 function addEntropy(v) {
   if (G && G.mods && G.mods.ks.gambler) v *= 1.25;
@@ -2208,17 +2214,23 @@ function addEntropy(v) {
   // the gauge shows percent of the current threshold; each draw raises the threshold
   G.entropy = Math.min(100, G.entropy + 100 * v / entropyNeed() * (G.af.fill ? 2 : 1) * (G.mods.ks.singular ? 2 : 1) * Math.sqrt(G.CH.ev));
   if (G.entropy >= 100) {
-    const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id));
-    const offers = [];
-    while (offers.length < 3 && pool.length) offers.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
-    G.anomOffers = offers;
+    if (G.frV >= 4) G.anomOffers = anomOffersGen(); // 6.4: generated cards plus classics
+    else {
+      const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id));
+      const offers = [];
+      while (offers.length < 3 && pool.length) offers.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
+      G.anomOffers = offers;
+    }
     Hooks.toast('ENTROPY FULL', 'Tap the gauge to draw an Anomaly', '#b86cff');
     Hooks.sfx('converge');
     Hooks.onEntropy && Hooks.onEntropy();
   }
 }
 function takeAnomaly(id) {
-  if (!G.anomOffers || !G.anomOffers.includes(id)) return false;
+  if (!G.anomOffers) return false;
+  const go = G.anomOffers.find(o => o && typeof o === 'object' && o.id === id);
+  if (go) return takeGenAnomaly(go); // 6.4 generated card (frV 4)
+  if (!G.anomOffers.includes(id)) return false;
   const A = ANOMALIES.find(a => a.id === id);
   G.anoms.push(id); G.anomOffers = null; G.entropy = 0; rlog('anom', { id });
   PROF.codex.anomalies[id] = (PROF.codex.anomalies[id] || 0) + 1;
@@ -2237,6 +2249,136 @@ function stabilize() {
   Hooks.sfx('unbreak');
   return true;
 }
+// ---------- 6.4 generated Anomalies (G.frV >= 4) ----------
+// A card is a boon part plus a drawback part (data.js ANOM_UP / ANOM_DN), sized from a power budget: the drawback costs
+// ANOM_GEN.dr of what the boon gives. The budget grows with rarity, the draw number and the wave. Offers lean toward the
+// elements and crits the player fields. Every key has a cap on what all the run's Anomalies add up to. Only G.r is drawn.
+// A card is stored whole: { id, name, r (rarity index), up: [[part, value]], dn: [[part, value]], n (draw number) }.
+// what the run's Anomalies add to each key so far, in card units (m keys signed; coreHPx as the % of core max HP taken)
+function anomTotals() {
+  const T = {}, add = (k, v) => { T[k] = (T[k] || 0) + v; }; let hpx = 1;
+  for (const id of G.anoms) {
+    const A = ANOMALIES.find(a => a.id === id); if (!A) continue;
+    for (const k in A.m || {}) add(k, A.m[k]);
+    for (const k in A.af || {}) { if (k === 'coreHPx') hpx *= A.af[k]; else add(k, A.af[k] * 100); }
+  }
+  for (const A of G.ganoms || []) for (const [id, v] of A.up.concat(A.dn)) {
+    const P = ANOM_PART[id]; if (!P) continue;
+    if (P.k === 'coreHPx') hpx *= 1 - v / 100; else add(P.k, P.sp ? 100 : P.t === 'm' ? P.side * v : v);
+  }
+  T.coreHPx = (1 - hpx) * 100;
+  return T;
+}
+// how much more of a part the caps allow (a special: 1 if the run does not have it yet)
+function anomRoom(P, T) {
+  const cur = T[P.k] || 0;
+  if (P.sp) return cur > 0 ? 0 : 1;
+  if (P.side > 0) return P.cap - cur;
+  if (P.t === 'm') return P.cap + cur; // a drawback on a stat key: the total may not drop below −cap
+  if (P.k === 'coreHPx') return 100 * (1 - (1 - P.cap / 100) / (1 - cur / 100));
+  return P.cap - cur;
+}
+// the value that gives this much power, on the part's step, inside its range and the room left (0: no room)
+function anomSize(P, power, room) {
+  if (P.sp) return room >= 1 ? 1 : 0;
+  const hi = Math.min(P.hi, Math.floor(room / P.st + 1e-9) * P.st);
+  if (hi < P.lo) return 0;
+  return +Math.max(P.lo, Math.min(hi, Math.round(power / P.p / P.st) * P.st)).toFixed(2);
+}
+const anomPow = (P, v) => P.sp ? P.p : v * P.p;
+// what the player fields: element shares and crit share of attack-tower credits (an empty board counts every element the same)
+function anomBuild() {
+  const sh = { K: 0, T: 0, C: 0, A: 0, V: 0 }; let tot = 0, crit = 0;
+  for (const t of G.towers) {
+    if (towerPool(t.type) !== 'atk' || !t.s || sh[t.s.el] == null) continue;
+    const w = t.invested || 1; sh[t.s.el] += w; tot += w; if (t.s.critC > 0) crit += w;
+  }
+  for (const e in sh) sh[e] = tot ? sh[e] / tot : 0.2;
+  return { sh, crit: tot ? crit / tot : 0.2 };
+}
+function anomWeight(P, B) {
+  let w = P.w;
+  if (P.side > 0) {
+    if (P.el) w *= 0.1 + 3 * B.sh[P.el];
+    if (P.need === 'crit') w *= 0.15 + 2 * B.crit;
+    else if (P.need) w *= 0.15 + 2.5 * B.sh[P.need];
+  } else if (P.el) w *= 0.5 + B.sh[P.el];
+  return w;
+}
+// one generated card, or null when the caps leave no fair trade. used: boon and drawback keys and names already in this offer
+function anomGenCard(r, n, slot, B, T, used) {
+  const ri = wpickI(r, ANOM_RARITY, x => x.w * (x.id === 'common' ? 1 : 1 + 0.1 * Math.min(n, 6)));
+  const bud = ANOM_RARITY[ri].b * (1 + ANOM_GEN.grow * Math.min(n, ANOM_GEN.growN) + Math.min(G.wave, ANOM_GEN.waveMax) / ANOM_GEN.waveDiv);
+  const up = [], dn = [], keys = new Set(), grps = new Set();
+  const free = P => !keys.has(P.k) && !(P.grp && grps.has(P.grp)) && anomSize(P, P.sp ? P.p : P.lo * P.p, anomRoom(P, T)) > 0;
+  const put = (arr, P, v) => { arr.push([P.id, v]); keys.add(P.k); if (P.grp) grps.add(P.grp); return anomPow(P, v); };
+  const pickUp = (power, sp) => {
+    let pool = ANOM_UPS.filter(P => !!P.sp === sp && free(P) && !used.up.has(P.k));
+    if (!pool.length) pool = ANOM_UPS.filter(P => !!P.sp === sp && free(P));
+    if (!pool.length) return 0;
+    const P = wpick(r, pool, x => anomWeight(x, B)), v = anomSize(P, power, anomRoom(P, T));
+    return v ? put(up, P, v) : 0;
+  };
+  let gain = 0;
+  if (ri === 2) { // Exotic: a special and a stat boon, or two stat boons
+    if (r() < 0.45) gain += pickUp(0, true);
+    gain += pickUp(bud * (gain ? 0.6 : 0.7), false);
+    if (up.length < 2) gain += pickUp(bud * 0.5, false);
+  } else gain += pickUp(bud, false);
+  if (!up.length) return null;
+  const need0 = gain * ANOM_GEN.dr; let need = need0;
+  for (let i = 0; i < 2 && need > (i ? 0.2 * need0 : 0); i++) {
+    const fits = P => free(P) && (P.sp ? P.p : P.lo * P.p) <= need * 1.3 && (!P.sp || P.p >= need * 0.6); // no drawback far bigger than the boon
+    let pool = ANOM_DNS.filter(P => fits(P) && !used.dn.has(P.k));
+    if (!pool.length) pool = ANOM_DNS.filter(fits);
+    if (!pool.length) break;
+    const P = wpick(r, pool, x => anomWeight(x, B)), v = anomSize(P, need, anomRoom(P, T));
+    if (!v) break;
+    need -= put(dn, P, v);
+  }
+  if (!dn.length || need > 0.35 * need0) return null; // the caps left no drawback big enough: not a fair trade
+  const W = ANOM_PART[up[0][0]].words, N = ANOM_PART[dn[0][0]].nouns;
+  let name = '';
+  for (let i = 0; i < 6; i++) { name = pick(r, W) + ' ' + (ri === 2 && r() < 0.5 ? pick(r, ANOM_EXOTIC_NOUNS) : pick(r, N)); if (!used.names.has(name)) break; }
+  return { id: 'g' + n + 'abc'[slot], name, r: ri, up, dn, n };
+}
+// a full draw at frV 4: 3 slots, each a classic (ANOM_GEN.classic of the time, never repeated) or a generated card. Cards in one
+// offer never share a boon key or a drawback key
+function anomOffersGen() {
+  const n = anomCount() + G.stabilized, B = anomBuild(), T = anomTotals();
+  const used = { up: new Set(), dn: new Set(), names: new Set((G.ganoms || []).map(a => a.name)) };
+  const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id)), offers = [];
+  const classic = () => offers.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
+  for (let s = 0; s < 3; s++) {
+    if (pool.length && G.r() < ANOM_GEN.classic) { classic(); continue; }
+    let c = null;
+    for (let i = 0; i < 4 && !c; i++) c = anomGenCard(G.r, n, s, B, T, used);
+    if (!c) { if (pool.length) classic(); continue; }
+    for (const [id] of c.up) used.up.add(ANOM_PART[id].k);
+    for (const [id] of c.dn) used.dn.add(ANOM_PART[id].k);
+    used.names.add(c.name); offers.push(c);
+  }
+  return offers;
+}
+function takeGenAnomaly(o) {
+  const A = JSON.parse(JSON.stringify(o));
+  G.ganoms.push(A); G.anomOffers = null; G.entropy = 0;
+  rlog('anom', { id: A.id, g: { name: A.name, r: A.r, up: A.up, dn: A.dn } });
+  const C = PROF.codex.gen || (PROF.codex.gen = { n: 0, r: [0, 0, 0], parts: {} }); // codex: counts per rarity and per part, not per name
+  C.n = (C.n || 0) + 1; C.r[A.r] = (C.r[A.r] || 0) + 1; for (const [id] of A.up.concat(A.dn)) C.parts[id] = (C.parts[id] || 0) + 1;
+  recomputeAll();
+  Hooks.log(`Anomaly: ${A.name}`, ANOM_RARITY[A.r].col);
+  Hooks.sfx('maelstrom');
+  return true;
+}
+// what a card shows (classic id or generated spec): name, rarity, and the up and down lines with numbers
+function anomInfo(o) {
+  if (typeof o === 'string') { const A = ANOMALIES.find(a => a.id === o); return A ? { id: o, name: A.name, rar: 'classic', label: 'Classic', col: '#d6a6ff', up: [A.up], dn: [A.down], classic: 1 } : null; }
+  if (!o || !o.up) return null;
+  const R = ANOM_RARITY[o.r] || ANOM_RARITY[0];
+  return { id: o.id, name: o.name, rar: R.id, label: R.name, col: R.col, up: o.up.map(([id, v]) => anomPartTxt(id, v)), dn: o.dn.map(([id, v]) => anomPartTxt(id, v)) };
+}
+const anomTaken = () => G ? G.anoms.concat(G.ganoms || []).map(anomInfo).filter(Boolean) : [];
 
 // ---------- veterans ----------
 function grantVxp(t, v) {
@@ -3168,7 +3310,7 @@ function towerDmg(t, sw) {
   if (t.s.leg.entropic) d *= 0.4 + G.r() * 2.6;
   if (G.flux) d *= t.s.el === G.flux.el ? 2 : 0.85;
   if (G.af.lastStand && G.core.hp < G.core.max * 0.5) d *= 1.6;
-  const rt = G.mods.orb && G.mods.orb.rift[t.s.el]; if (rt && G.anoms.length) d *= 1 + rt * G.anoms.length / 100;
+  const rt = G.mods.orb && G.mods.orb.rift[t.s.el]; if (rt && anomCount()) d *= 1 + rt * anomCount() / 100;
   return d;
 }
 function atkDmg(t, sw, crit) { return towerDmg(t, sw) * (crit ? t.s.critM : 1 - (G.af.noncrit || 0)) * (t.capMult || 1); }
@@ -4112,7 +4254,7 @@ function gameOver() {
   bankPurse();
   if (ghostRun()) { Hooks.onGameOver(); return; }
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
-    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
+    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, ...(G.ganoms && G.ganoms.length ? { gan: G.ganoms.map(a => a.name) } : {}), reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
   huntEnd();
   masteryEnd();
@@ -4360,7 +4502,7 @@ function snapshotRun(waveNum) {
     ascV: G.ascV || 1, mastery: G.mastery || {}, // v5.8
     fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
-    daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
+    daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), ganoms: G.ganoms || [], anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
   Hooks.onSave();
 }
@@ -4391,7 +4533,7 @@ function resumeRun(S) {
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
     charges: Object.assign({}, S.charges), tokens: S.tokens, legendQueue: S.legendQueue, rerollDisc: S.rerollDisc, nextMs: S.nextMs,
     lanesOpened: S.lanesOpened, cpDue: S.cpDue || 0, unbreakUsed: S.unbreakUsed, boonsTaken: S.boonsTaken || [], next: 12,
-    entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
+    entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), ganoms: JSON.parse(JSON.stringify(S.ganoms || [])), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
   if (S.stats) G.stats = S.stats;
   G.pushes = S.pushes || 0; G.bounties = (S.bounties || []).slice(); G.huntChoice = S.huntChoice || null;
   // 5.8 (snapshots from 5.7 carry none of this: they continue on the new rules with no sector and an empty purse)
