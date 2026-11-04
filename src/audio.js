@@ -1827,7 +1827,7 @@ const SFX = (() => {
           const back = bossRet; bossRet = null; newPiece(back); // null: the next song (or the next kept track with Only my tracks) forceNext = null; nextT = t + 0.36 + (win ? 1.9 : 0);
         }
       },
-      get boss() { return bossNow; },
+      get boss() { return bossNow; }, get bossPhase() { return bossPhase; },
       BOSS_THEMES, BOSS_IDS,
       setBaseBpm(v) { cfg.calmBpm = clamp(+v || 72, 50, 110); if (P && !cfg.custom) P.bpm = pieceBpm(); },
       get config() { return cfg; },

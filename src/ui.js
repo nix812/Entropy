@@ -3512,7 +3512,7 @@ const UI = (() => {
       const sp = d.querySelector('.mdname span'); if (performance.now() > deckNoteT) { sp.textContent = `${p.genreName} · ${p.section}${M.paused ? ' · paused' : ''}`; sp.classList.remove('liked'); }
       const lk = $('#bTrkLike'), on = M.isSaved(); if (lk && lk.dataset.on !== String(on)) { lk.dataset.on = on; lk.innerHTML = svgIcon(on ? 'heart' : 'heartO'); lk.classList.toggle('on', on); lk.setAttribute('aria-pressed', on); lk.setAttribute('aria-label', on ? 'Remove this song from My Tracks' : 'Keep this song in My Tracks'); } };
     const deckShow = on => { const d = $('#mdeck'); d.hidden = !on; $('#bMusic').classList.toggle('on', on); clearTimeout(deckT); if (on) { deckFill(); deckT = setTimeout(() => deckShow(false), 5000); } };
-    UI.deckFill = deckFill;
+    UI.deckFill = deckFill; UI._trackCode = trackCode; UI._readTrackCode = readTrackCode; // 6.3: for test/mus63.py
     $('#bMusic').onclick = () => { SFX.init(); SFX.play('ui'); deckShow($('#mdeck').hidden); };
     $('#mdName').onclick = () => { deckShow(false); openStudio(); };
     // 6.2 (Nic: "let people like songs to their playlist there while they're on the battle field"): Keep, as in the Studio
@@ -3670,7 +3670,7 @@ const UI = (() => {
     const M = SFX.music; let b = null;
     if (screen === 'game' && G && !G.over) {
       if (musBoss.id) b = musBoss.e && !musBoss.e.dead && musBoss.e.boss === musBoss.id ? musBoss.e : G.enemies.find(e => e.boss === musBoss.id && !e.dead);
-      if (!b) b = G.bossAlive && !G.bossAlive.dead ? G.bossAlive : null;
+      if (!b) b = G.bossAlive && !G.bossAlive.dead ? G.bossAlive : G.enemies.find(e => e.boss && !e.dead) || null; // the sim clears bossAlive when the first of two bosses dies
     }
     const id = b ? b.boss : null;
     if (id !== musBoss.id) { const win = !!(musBoss.e && musBoss.e.hp <= 0 && G && !G.over); musBoss = { id, e: b }; M.setBoss(id, b ? b.phase || 0 : 0, win); }
