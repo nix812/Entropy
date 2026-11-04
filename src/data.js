@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.2.0';
+const VERSION = '6.3.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -346,16 +346,16 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.2.0', title: 'Last Gradient 6.2 · Fallout', items: [
-  ['Nuke', 'Overdrive is now the Nuke. Same one-shot board clear, now with a white-out flash, a fireball, a shockwave and a mushroom cloud.'],
-  ['Support towers grow', 'Relay Pylons and Snare Beacons level up for free to match the attack towers around them. At LV 3 they offer a free Specialization.'],
-  ['Treasure arrows', 'Yellow arrows at the screen edge point at crates you can\'t see. Tap one to look there. Crates also claim from a tap up to a tile and a half away.'],
-  ['Cleaner view', 'The Home button is gone. Tap the green core arrow at the screen edge to come back home.'],
-  ['Sound you can place', 'Towers sound louder near the middle of the screen and quieter far away, with a little left and right.'],
-  ['Power Nodes', 'Power Nodes never sit in a wormhole\'s no-build zone. A node caught by a new wormhole moves.'],
-  ['Settings in tabs', 'General, Sound, Graphics and Interface, each setting with a line on what it does.'],
-  ['Music', 'The composer is open by default. A ? in the Studio explains every control. Keep the song playing with the ♥ on the battlefield music deck.'],
-  ['Calmer tutorial', 'Training lessons are spaced out so you get to play between them, and new tips in a run arrive at least 30 seconds apart. New: a pan and zoom tip.'],
+const WHATS_NEW = { ver: '6.3.0', title: 'Last Gradient 6.3 · Boss Fight', items: [
+  ['Boss themes', 'Every boss has its own theme song. It starts when the boss arrives. It moves up 1 semitone at a new boss phase. A kill plays a victory sting. Then your song comes back.'],
+  ['Theme list', 'Studio › Listen lists all 13 themes. Beat a boss to play its theme there. Tap ♥ to keep a theme in My Tracks.'],
+  ['Boss music switch', 'Studio › Listen › Play in boss fights turns the themes off. Your song then keeps playing.'],
+  ['More music variety', 'Every genre now has 4 styles. Each new song picks its own drums, bass, lead, tempo and key. Melodies are short hooks that repeat and grow.'],
+  ['Old tracks', 'Tracks you kept before 6.3, and their codes, sound exactly as before.'],
+  ['Zones look different', 'Each of the 10 zones has its own ground, roads, decals and weather. Rain and lightning in Tempest Front, spores in The Hive, a rubber duck in The Odd Belt.'],
+  ['Entering a zone', 'A banner shows the zone name when a run starts and after each jump door. The new board spreads out from the core with a short sound.'],
+  ['Zone previews', 'Jump doors and New Run zone buttons show a strip of each zone\'s board.'],
+  ['Zone effects', 'Settings › Graphics › Zone effects turns off the weather and lightning. The colours stay.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
@@ -399,34 +399,34 @@ const DOOR_TIERS = [
 // Sectors: a run's contract, then a new one through each jump door. lean: enemy weights in genWave (headline picks lean the same way),
 // storm: the weather that rolls in most, ev: event weights, boss/mod: the sector's Most Wanted, m/af: the perk and the drawback
 const SECTORS = [
-  { id: 'drift', name: 'Quiet Drift', col: '#6ae2ff', pitch: 'Thin traffic and kind weather. A good place to learn the trade.',
+  { id: 'drift', name: 'Quiet Drift', col: '#6ae2ff', pitch: 'Few enemies and mild storms. A good zone to learn in.',
     lean: { drone: 1.6, tank: 0.6, flyer: 0.7 }, storm: 'cryo', ev: { gold: 2, meteor: 2, overcharge: 1.5 }, boss: 'behemoth', mod: 'colossal',
     up: '+10% Credits', down: '−10% score', m: { credits: 10 }, af: { score: -0.1 } },
-  { id: 'hive', name: 'The Hive', col: '#ff9ad5', pitch: 'Brood nests on every lane. Swarmers by the hundred.',
+  { id: 'hive', name: 'The Hive', col: '#ff9ad5', pitch: 'Brood nests on every lane. Swarmers come by the hundred.',
     lean: { swarmer: 3, splitter: 3, drone: 0.6 }, storm: 'solar', ev: { swarm: 3, breach: 1.5 }, boss: 'queen', mod: 'twins',
     up: '+1 Chain, +15% Thermal Damage', down: '+10% enemy speed', m: { chain: 1, dmgT: 15 }, af: { haste: 0.1 } },
-  { id: 'iron', name: 'Iron Reach', col: '#c8ccd8', pitch: 'Juggernauts and Aegis walls grind down the road.',
+  { id: 'iron', name: 'Iron Reach', col: '#c8ccd8', pitch: 'Juggernauts and Aegis walls push slowly down the road.',
     lean: { tank: 2.5, shielder: 2.5, reflector: 1.5, swarmer: 0.6 }, storm: 'static', ev: { elite: 1.5, regen: 1.5 }, boss: 'titan', mod: 'armored',
     up: '+15% armour piercing', down: '+6% enemy HP', m: { armorPen: 15 }, af: { hpx: 0.06 } },
   { id: 'skies', name: 'Open Skies', col: '#7fb4ff', pitch: 'No roads up here. Skimmers and Carriers fly straight in.',
     lean: { flyer: 2.2, carrier: 2.5, tank: 0.6, sapper: 0.6 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
     up: '+20% Arc Damage, +8% Range', down: '+10% tower cost', m: { dmgA: 20, range: 8 }, af: { costX: 0.1 } },
-  { id: 'ghost', name: 'Ghost Lanes', col: '#b86cff', pitch: 'Phantoms flicker in and out. Bring eyes.',
+  { id: 'ghost', name: 'Ghost Lanes', col: '#b86cff', pitch: 'Phantoms cloak in and out. Bring a Relay Pylon to reveal them.',
     lean: { phantom: 3, medic: 1.5, leech: 2 }, storm: 'void', ev: { blackout: 2, phase: 2 }, boss: 'wraith', mod: 'spectral',
     up: '+25% Void Damage', down: '−10% Range', m: { dmgV: 25, range: -10 } },
-  { id: 'salvage', name: 'Salvage Belt', col: '#e0a458', pitch: 'Rich wrecks, pirate traffic, and Leeches after your bank.',
+  { id: 'salvage', name: 'Salvage Belt', col: '#e0a458', pitch: 'Rich wrecks and pirate traffic. Leeches steal your banked credits.',
     lean: { leech: 3, sapper: 2, drone: 1.3 }, storm: 'static', ev: { gold: 3, emp: 1.5 }, boss: 'auditor', mod: 'loaded',
     up: '+25% Credits', down: '+15% upgrade cost', m: { credits: 25 }, af: { upgX: 0.15 } },
-  { id: 'tempest', name: 'Tempest Front', col: '#ffe14d', pitch: 'Storms roll in back to back. Ride them or drown.',
+  { id: 'tempest', name: 'Tempest Front', col: '#ffe14d', pitch: 'Storms come one after another. Skimmers and Carriers come with them.',
     lean: { flyer: 1.5, carrier: 1.5 }, storm: null, ev: { surge: 1.5, overcharge: 2 }, boss: 'fsm', mod: 'hasted',
     up: 'Storms twice as often, 40% stronger', down: '+10% enemy speed', m: { stormFreq: 100, stormPow: 40 }, af: { haste: 0.1 } },
-  { id: 'demo', name: 'Demolition Row', col: '#ff7b39', pitch: 'Sappers and Splitters. Your towers will go dark.',
+  { id: 'demo', name: 'Demolition Row', col: '#ff7b39', pitch: 'Sappers knock your towers out. Splitters burst into Swarmers.',
     lean: { sapper: 4, splitter: 1.5, reflector: 1.5 }, storm: 'cryo', ev: { emp: 2, elite: 1.5 }, boss: 'overmind', mod: 'hasted',
     up: '+10% Attack Speed', down: 'More Elites', m: { rate: 10 }, af: { elite: 0.08 } },
-  { id: 'choir', name: 'Green Choir', col: '#8ee35a', pitch: 'Menders and Regrowth. Whatever you leave standing comes back.',
+  { id: 'choir', name: 'Green Choir', col: '#8ee35a', pitch: 'Menders heal and enemies regrow. Anything you leave alive heals back.',
     lean: { medic: 4, shielder: 1.5 }, storm: 'solar', ev: { regen: 3 }, boss: 'snail', mod: 'colossal',
     up: '+15% Thermal Damage, Burn +30%', down: 'Enemies regenerate 0.5% HP per second', m: { dmgT: 15, burnDmg: 30 }, af: { regen: 0.005 } },
-  { id: 'oddball', name: 'The Odd Belt', col: '#ff4d6a', pitch: 'The strange ones hold court here. Expect the cat.',
+  { id: 'oddball', name: 'The Odd Belt', col: '#ff4d6a', pitch: 'The strange bosses live here. Expect the cat.',
     lean: {}, storm: 'void', ev: { meteor: 2, phase: 1.5 }, boss: 'cat', mod: 'loaded',
     up: 'Oddball bosses drop 3× credits', down: 'Every boss wave brings an oddball', af: { oddAll: 1 } },
 ];
