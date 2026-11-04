@@ -990,6 +990,19 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .strow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
 .stcode, .stren, #cpName { flex: 1 1 140px; min-width: 0; background: #05060c; border: 0; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); font-family: var(--f-term); font-size: 17px; padding: 6px 8px; min-height: 36px; }
 .stcode:focus, .stren:focus, #cpName:focus { outline: 2px solid var(--gc, var(--amber)); outline-offset: -2px; }
+/* 6.2 the ? sheet: covers the Studio card, same three tabs, Controls then Advanced */
+.card.studio > .ch .sthq { margin-left: auto; font-family: var(--f-pix); font-size: 13px; color: var(--amber); }
+.sthelp { position: absolute; inset: 2px; z-index: 6; display: flex; flex-direction: column; background: var(--panel); }
+.shh { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px 8px; box-shadow: 0 1px 0 var(--line); }
+.shh > b { font-family: var(--f-pix); font-weight: 700; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.shh .shx { margin-left: auto; font-size: 18px; }
+.shbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; padding: 0 16px 14px; }
+.shcols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0 24px; }
+.shdl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 12px; }
+.shdl dt { font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gc, var(--amber)); padding-top: 3px; max-width: 110px; }
+.shdl dd { margin: 0; font-size: 16px; line-height: 1.15; color: var(--ink); }
+.shadv .shdl dd { color: #cfcbe0; }
+@media (max-width: 760px) { .shcols { grid-template-columns: minmax(0, 1fr); } .shdl dt { max-width: 92px; } .shh { gap: 6px; padding: 8px 10px 6px; } .shh > b { display: none; } }
 /* Listen */
 .stlisten { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; }
 .stvibe { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -1049,6 +1062,12 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .mdname b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mdname span { font-size: 14px; color: var(--mc, var(--dim)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.watching #mdeck { display: none; }
+/* 6.2 like from the battlefield: the same ♥ as the Studio's Keep; filled when the song is in My Tracks, a short pop and a line to confirm */
+.mdb.mdlike { color: #c9c6dc; } .mdb.mdlike.on { color: #ff5fa8; box-shadow: inset 0 0 0 2px #ff5fa8; }
+.mdb.mdlike.pop .svgi { animation: mdpop 0.36s steps(3); }
+@keyframes mdpop { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+.mdname span.liked { color: #ff5fa8; }
+@media (prefers-reduced-motion: reduce) { .mdb.mdlike.pop .svgi { animation: none; } }
 body.panel-l #mdeck { left: auto; right: 6px; top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } /* a left panel covers the corner: the deck opens on the right, under Map */
 body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } /* Map moves to the top-left then; the deck sits under it */
 /* v5.5.10 typing panel (outside the scaled game layer, pinned to what the keyboard leaves visible) */
@@ -1165,7 +1184,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <div id="etip" hidden></div>
       <div id="ticker" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
-      <div id="mdeck" hidden><button class="mdb" id="bTrkBack" aria-label="Tap to replay this song, double-tap for the last song" data-svg="prev"></button><button class="mdname" id="mdName" aria-label="Open the Music Studio"><b></b><span></span></button><button class="mdb" id="bTrkNext" aria-label="Next song" data-svg="next"></button></div>
+      <div id="mdeck" hidden><button class="mdb" id="bTrkBack" aria-label="Tap to replay this song, double-tap for the last song" data-svg="prev"></button><button class="mdname" id="mdName" aria-label="Open the Music Studio"><b></b><span></span></button><button class="mdb mdlike" id="bTrkLike" aria-label="Keep this song in My Tracks" aria-pressed="false" data-svg="heartO"></button><button class="mdb" id="bTrkNext" aria-label="Next song" data-svg="next"></button></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">

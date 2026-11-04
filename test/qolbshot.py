@@ -78,6 +78,100 @@ def settings(pg, tag):
     pg.screenshot(path=str(out / f'{tag}_set_inrun.png'))
     pg.click('#modal [data-act=close2]'); pg.wait_for_timeout(200)
     ok(f'{tag}: closing returns to the pause menu', pg.evaluate("() => UI.modalOpen") == 'pause')
+
+def studio_open(pg):
+    pg.click('#bSettings'); pg.wait_for_timeout(250); pg.click('#modal .settab[data-v=sound]'); pg.click('#modal [data-act=studioS]'); pg.wait_for_timeout(500)
+def music(pg, tag):
+    # Compose visible by default: a brand-new browser, an old profile (migrated once), and one that already migrated keeps its choice
+    pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.evaluate('() => localStorage.clear()'); pg.reload(); pg.wait_for_timeout(500)
+    ok(f'{tag}: fresh profile has the composer on', pg.evaluate('() => SFX.music.config.composer === true && PROF.settings.studio.composer === true'))
+    pg.evaluate("() => Save.save = () => {}"); pg.evaluate("() => localStorage.setItem('entropy.save.v1', JSON.stringify({ runs: 9, bestWave: 30, seenVer: VERSION, tut: { seen: 1, done: 1 }, settings: { sfx: 0.8, music: 0.45, studio: { custom: true, genres: ['lofi'], favs: [] } } }))")
+    pg.reload(); pg.wait_for_timeout(500)
+    ok(f'{tag}: old profile migrated to composer on', pg.evaluate('() => SFX.music.config.composer === true && SFX.music.config.cmpV === 1 && JSON.parse(localStorage.getItem("entropy.save.v1")).settings.studio.cmpV === 1 || (Save.save(), SFX.music.config.composer === true)'))
+    pg.evaluate("() => Save.save = () => {}"); pg.evaluate("() => localStorage.setItem('entropy.save.v1', JSON.stringify({ runs: 9, bestWave: 30, seenVer: VERSION, tut: { seen: 1, done: 1 }, settings: { sfx: 0.8, music: 0.45, studio: { custom: true, genres: ['lofi'], favs: [], composer: false, cmpV: 1 } } }))")
+    pg.reload(); pg.wait_for_timeout(500)
+    ok(f'{tag}: the migration runs once only', pg.evaluate('() => SFX.music.config.composer === false'))
+    pg.evaluate('() => { Save.save = () => {}; localStorage.clear(); }'); pg.reload(); pg.wait_for_timeout(500)
+    fresh(pg); studio_open(pg)
+    tabs = pg.evaluate("() => [...document.querySelectorAll('#modal .sttabs .chip')].map(b => b.dataset.v)")
+    ok(f'{tag}: Studio shows Listen, Shape, Compose {tabs}', tabs == ['listen', 'shape', 'compose'])
+    pg.click('#modal [data-act=stTab][data-v=shape]'); pg.wait_for_timeout(250)
+    pg.click('#modal [data-act=stHelp]'); pg.wait_for_timeout(250)
+    ok(f'{tag}: ? opens on the tab you were on', pg.evaluate("() => !!document.querySelector('#modal .sthelp') && document.querySelector('#modal .sthelp .chip.on').dataset.v === 'shape'"))
+    for k in ['listen', 'shape', 'compose']:
+        pg.click(f'#modal .sthelp [data-act=stHelpTab][data-v={k}]'); pg.wait_for_timeout(200)
+        n = pg.evaluate("() => [document.querySelectorAll('#modal .sthelp section:first-child dt').length, document.querySelectorAll('#modal .sthelp .shadv dt').length, [...document.querySelectorAll('#modal .sthelp .ssec')].map(h => h.textContent)]")
+        ok(f'{tag}: help {k} explains its controls and has Advanced {n}', n[0] >= 6 and n[1] >= 4 and 'Advanced' in n[2])
+        side = pg.evaluate("() => { const b = document.querySelector('#modal .sthelp .shbody'); return b.scrollWidth - b.clientWidth; }")
+        ok(f'{tag}: help {k} fits sideways', side <= 1)
+        pg.screenshot(path=str(out / f'{tag}_help_{k}.png'))
+    # it survives a Studio re-render (a genre change re-renders Shape) and closes back to the same tab
+    pg.evaluate("() => UI._dbg && 0"); pg.click('#modal [data-act=stHelpX]'); pg.wait_for_timeout(200)
+    ok(f'{tag}: closing the sheet returns to the Studio tab', pg.evaluate("() => !document.querySelector('#modal .sthelp') && document.querySelector('#modal .sttabs .chip.on').dataset.v === 'shape'"))
+    pg.click('#modal [data-act=stTab][data-v=compose]'); pg.wait_for_timeout(300); pg.click('#modal [data-act=stHelp]'); pg.wait_for_timeout(200)
+    ok(f'{tag}: ? from Compose opens Compose help and keeps the radio held', pg.evaluate("() => document.querySelector('#modal .sthelp .chip.on').dataset.v === 'compose' && SFX.music.held === true"))
+    pg.click('#modal [data-act=stHelpX]'); pg.click('#modal [data-act=stTab][data-v=listen]'); pg.wait_for_timeout(200)
+    pg.screenshot(path=str(out / f'{tag}_studio_listen.png'))
+def deck(pg, tag):
+    fresh(pg)
+    pg.evaluate("() => document.querySelector('#bLaunch').click()"); pg.wait_for_timeout(250); pg.evaluate("() => document.querySelector('[data-act=launch]').click()"); pg.wait_for_timeout(1200)
+    pg.evaluate('() => { UI.closeModal && UI.closeModal(); if (G) G.paused = false; }'); pg.wait_for_timeout(200)
+    pg.click('#bMusic'); pg.wait_for_timeout(400)
+    ok(f'{tag}: deck open with a heart', pg.evaluate("() => !document.querySelector('#mdeck').hidden && !!document.querySelector('#bTrkLike')"))
+    n0 = pg.evaluate('() => SFX.music.config.favs.length')
+    ok(f'{tag}: heart empty for a new song', pg.evaluate("() => !document.querySelector('#bTrkLike').classList.contains('on')"))
+    pg.screenshot(path=str(out / f'{tag}_deck_heart_off.png'))
+    pg.click('#bTrkLike'); pg.wait_for_timeout(250)
+    st = pg.evaluate("() => { const M = SFX.music, p = M.piece, f = M.config.favs[0]; return { n: M.config.favs.length, same: !!f && f.seed === M.spec.seed, on: document.querySelector('#bTrkLike').classList.contains('on'), line: document.querySelector('#mdeck .mdname span').textContent, saved: JSON.parse(localStorage.getItem('entropy.save.v1')).settings.studio.favs.length, snd: !!(f && f.snd) }; }")
+    ok(f'{tag}: heart keeps the song into My Tracks with its sound, fills and confirms {st}', st['n'] == n0 + 1 and st['same'] and st['on'] and 'Kept' in st['line'] and st['saved'] == n0 + 1 and st['snd'])
+    pg.screenshot(path=str(out / f'{tag}_deck_heart_on.png'))
+    pg.wait_for_timeout(2000)
+    ok(f'{tag}: the confirmation gives way to the song line', 'Kept' not in pg.evaluate("() => document.querySelector('#mdeck .mdname span').textContent"))
+    pg.click('#mdName'); pg.wait_for_timeout(500)
+    ok(f'{tag}: the kept song is in the Studio list', pg.evaluate("() => UI.modalOpen === 'studio' && document.querySelectorAll('#modal .stfav').length === SFX.music.config.favs.length && document.querySelector('#modal #stKeepB').classList.contains('on')"))
+    pg.click('#modal [data-act=stClose]'); pg.wait_for_timeout(300); pg.evaluate('() => { if (G) G.paused = false; }')
+    pg.click('#bMusic'); pg.wait_for_timeout(300)
+    ok(f'{tag}: reopened deck still shows it filled', pg.evaluate("() => document.querySelector('#bTrkLike').classList.contains('on')"))
+    pg.click('#bTrkLike'); pg.wait_for_timeout(250)
+    ok(f'{tag}: a second tap takes it out', pg.evaluate("() => SFX.music.config.favs.length") == n0 and not pg.evaluate("() => document.querySelector('#bTrkLike').classList.contains('on')") and 'Removed' in pg.evaluate("() => document.querySelector('#mdeck .mdname span').textContent"))
+    pg.screenshot(path=str(out / f'{tag}_deck_heart_removed.png'))
+CARD = "() => { const c = document.querySelector('#coach'); if (!c || c.hidden || c.classList.contains('idle')) return null; const r = c.querySelector('.cring'), rr = r.hidden ? null : r.getBoundingClientRect(); return { step: UI.coach.step, held: UI.coachHold, ring: rr ? [rr.left, rr.top, rr.width, rr.height] : null, ok: !c.querySelector('.cok').hidden }; }"
+def camera(pg, tag):
+    pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
+    pg.evaluate('() => { window.tutOfferTest = 1; PROF = Save.merge({}); PROF.seenVer = VERSION; Save.save(); UI.renderHangar(); }')
+    pg.click('#bLaunch'); pg.wait_for_timeout(250); pg.click('[data-act=tutGo]'); pg.wait_for_timeout(900)
+    seen = None
+    for _ in range(400):
+        c = pg.evaluate(CARD)
+        if not c: pg.evaluate('() => { if (G && !G.over) G.speed = 4; }'); pg.wait_for_timeout(120); continue
+        pg.evaluate('() => { if (G) G.speed = 1; }')
+        if c['step'] == 'camera': seen = c; break
+        if c['ok']: pg.click('#coach .cok'); pg.wait_for_timeout(200); continue
+        if c['ring']: r = c['ring']; pg.touchscreen.tap(r[0] + r[2] / 2, r[1] + r[3] / 2); pg.wait_for_timeout(350); continue
+        pg.wait_for_timeout(120)
+    ok(f'{tag}: Training shows the camera tip in Wave 1', bool(seen) and pg.evaluate('() => G.wave') == 1)
+    if seen:
+        t = pg.evaluate('() => G.time'); ok(f'{tag}: camera tip comes after some play ({t:.1f} s)', t >= 15)
+        txt = pg.evaluate("() => document.querySelector('#coach .cb').textContent")
+        ok(f'{tag}: tip says drag, pinch and the core arrow, and not Home ({txt})', 'Drag' in txt and 'pinch' in txt and 'core arrow' in txt and 'Home' not in txt)
+        pg.screenshot(path=str(out / f'{tag}_camera_training.png'))
+        cv = pg.evaluate("() => { const r = document.querySelector('#cv').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
+        pg.mouse.move(cv[0], cv[1]); pg.mouse.down()
+        for k in range(20): pg.mouse.move(cv[0] - k * 6, cv[1] - k * 2)
+        pg.mouse.up(); pg.wait_for_timeout(300)
+        ok(f'{tag}: dragging the map completes the camera step', pg.evaluate('() => UI.coach.step') != 'camera')
+    # a first real run: WELCOME, then LOOK AROUND, at least 30 s of play apart
+    fresh(pg, 'PROF.seenHelp = false; delete PROF.zoomHint; PROF.seenSys = { v58: 1, frontier: 1, storm: 1, crate: 1, vet: 1, abil: 1, upg: 1, power: 1, spare: 1, wormhole: 1, anomaly: 1, boss: 1, market: 1, support: 1 };')
+    pg.evaluate("() => document.querySelector('#bLaunch').click()"); pg.wait_for_timeout(250); pg.evaluate("() => document.querySelector('[data-act=launch]').click()"); pg.wait_for_timeout(600)
+    pg.evaluate("() => { window._tk = []; const el = document.getElementById('ticker'); new MutationObserver(() => { const s = el.textContent; if (G && s && !window._tk.some(x => x.s === s)) window._tk.push({ s, t: G.time }); }).observe(el, { childList: true, subtree: true, characterData: true }); G.speed = 3; }")
+    shot = False
+    for _ in range(200):
+        tk = pg.evaluate('() => window._tk')
+        if not shot and any('LOOK AROUND' in x['s'] for x in tk): pg.evaluate('() => { G.speed = 1; }'); pg.wait_for_timeout(300); pg.screenshot(path=str(out / f'{tag}_camera_firstrun.png')); shot = True; break
+        pg.wait_for_timeout(150)
+    tk = pg.evaluate('() => window._tk'); w = [x['t'] for x in tk if 'WELCOME' in x['s']]; l = [x['t'] for x in tk if 'LOOK AROUND' in x['s']]
+    ok(f'{tag}: first run shows WELCOME then LOOK AROUND, 30 s apart {[(x["s"][:20], round(x["t"], 1)) for x in tk]}', w and l and l[0] - w[0] >= 29.5)
+    ok(f'{tag}: the camera tip shows once', pg.evaluate('() => PROF.zoomHint === 1'))
 with sync_playwright() as p:
     b = p.chromium.launch()
     for (W, H) in sizes:
@@ -85,6 +179,9 @@ with sync_playwright() as p:
         pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=2, has_touch=True)
         pg.on('pageerror', lambda e: errs.append(str(e)))
         if what in ('all', 'settings'): settings(pg, tag)
+        if what in ('all', 'music'): music(pg, tag)
+        if what in ('all', 'deck'): deck(pg, tag)
+        if what in ('all', 'camera'): camera(pg, tag)
         pg.close()
     b.close()
 print('passed', passed[0])

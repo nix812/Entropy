@@ -53,6 +53,13 @@ function hydrateIcons(root) {
   for (const cv of (root || document).querySelectorAll('canvas[data-gico]')) Render.geneIcon(cv.dataset.gico, cv, cv.dataset.el); // v5.8 gene marks
 }
 
+// 6.2 (Nic: "Make the music full composer visible by default"): the Compose tab no longer hides behind five taps on the visualizer.
+// Fresh profiles get it on; existing ones are switched on once (cmpV), so the flag stays a plain setting from then on.
+function studioMig(st) {
+  st = st && typeof st === 'object' ? st : {};
+  if (!st.cmpV) { st.composer = true; st.cmpV = 1; }
+  return st;
+}
 // ---------------- Saves ----------------
 const Save = (() => {
   const KEY = 'entropy.save.v1';
@@ -62,6 +69,7 @@ const Save = (() => {
     if (!p || typeof p !== 'object') return d;
     const out = Object.assign(d, p);
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
+    out.settings.studio = studioMig(out.settings.studio);
     out.webV = p.webV || 1;
     out.alloc = ['start'];
     out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
@@ -2793,6 +2801,89 @@ const UI = (() => {
     if (M.held || M.paused || !(M.piece && M.piece.comp)) cpPlay(true); else M.compose(c.draft); // any change plays your song
     if (rerender === 'grid') { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); } else if (rerender) openStudio();
   }
+  // ---- 6.2 the ? sheet (Nic: "a ? button that has all the details regarding the music overlay and some advanced notes"). It covers the
+  // Studio card, opens on the tab you were on and has the same three tabs; each explains every control there, then Advanced: how the
+  // controls interact, recipes for moods, and how seeds, likes and playlists work. Every line is checked against audio.js and this file.
+  let stHelp = null; // null, or the help tab showing
+  const ST_HELP = {
+    listen: { rows: [
+      ['Now playing', 'The bar at the top stays put on every tab: song name, genre and style, key, tempo, the section it is in (intro, groove, drop) and how far through it is.'],
+      ['⏮ Back', 'The previous song. The Studio remembers the last 40 this session.'],
+      ['⏸ Pause', 'Silences the music. Game sounds keep playing.'],
+      ['⏭ Skip', 'A new song now, from the genres you have on.'],
+      ['Repeat', 'This song plays again when it ends instead of moving on. Lasts until you close the game.'],
+      ['♥ Keep', 'Adds the song to My Tracks with your current sound. Tap again to take it out.'],
+      ['Share', 'Copies a track code for the song playing.'],
+      ['Vibe', 'Sets the genre list in one tap. Calm: Ambient, Lo-fi, Trip Hop. Club: House, Techno, Trance, Drum & Bass. Retro: Synthwave, Chiptune. Everything: all ten.'],
+      ['Genres', 'Tap one to add it to the rotation or take it out (one always stays on). A genre you add plays at once. ▶ plays one song of that genre now without changing the list.'],
+      ['My Tracks', 'Every song you keep. ▶ plays it, the pencil opens a composed song in Compose, share copies its code, ✕ deletes it (tap twice). Tap a name to rename it.'],
+      ['Only my tracks', 'The radio plays your kept songs in turn instead of new ones.'],
+      ['Paste a code', 'Adds a friend’s TRACK code to My Tracks and plays it.'],
+    ], adv: [
+      ['Seeds', 'Every song grows from a seed. The same seed, genre and style always give the same chords, melody and drums, on any device. A kept song or a code is that seed plus a name, so it plays back exactly.'],
+      ['Likes keep the sound', 'Keeping a song also stores your sound: Energy, Follow, the mixer, mutes, effects and that genre’s tempo. Playing it brings that sound back, so your Shape sliders move to match.'],
+      ['Likes on the battlefield', 'The ♥ on the Music deck (tap the Music tile at the top of the left rail) keeps the song playing into the same My Tracks list.'],
+      ['Build a playlist', 'Keep songs as they come up, rename and delete to taste, then turn on Only my tracks. My Tracks holds 80; past that the oldest drops off.'],
+      ['Default mix', 'Until you change something, the Studio plays the default mix: the Calm genres, steered by the battle, at the tempo in Settings › Sound. Your first change switches to your own settings. Shape › Reset sound goes back.'],
+      ['Boss fights', 'During a boss, new songs avoid major keys. The default mix also switches to Trip Hop.'],
+    ] },
+    shape: { rows: [
+      ['Energy', 'How full the music is: Still, Chill, Groove, Peak. Low energy thins the music to its core; high energy brings in more parts and picks the harder styles of each genre.'],
+      ['Follow battle', 'How much the fight moves Energy. At 100% a calm menu pulls it down and a boss wave pushes it up. At 0% the music stays where you set it.'],
+      ['Tempo', 'BPM for the genre playing now; each genre keeps its own. Greyed out for composed songs: they carry their own tempo.'],
+      ['Song length', 'Short changes song about every minute. Standard is a radio edit (intro, build, drop, outro), about 3 minutes. Long is an extended mix, about 5. The song playing takes the new shape at once.'],
+      ['Reset sound', 'Back to the default mix. Keeps My Tracks, your Compose song and the song length.'],
+      ['Mixer', 'Pads, Keys, Arps, Bass, Drums and Lead, up to 125%. Drag a fader; double-tap it for 100%. Tap a name to mute that part. The thin bar inside a fader is its live level.'],
+      ['Effects', 'Reverb, Echo, Tone, Tape & Vinyl and Pump. The middle is the genre’s own amount; left takes it down to off, right adds up to double. Tone is darker to the left, brighter to the right. Pump makes the music duck on each kick.'],
+    ], adv: [
+      ['Energy plus Follow', 'The music runs at Energy, plus Follow times how hard the battle is. The menu reads as calm, so with Follow high the hangar sounds thinner than the slider says, and a boss wave fuller.'],
+      ['Composed songs', 'A composed song always plays every part you wrote. Energy and Follow shape the radio’s songs, not yours.'],
+      ['Mute to compare', 'A muted part comes back at its old level, so muting is quicker than dragging a fader down and back.'],
+      ['Keep after shaping', 'A kept song saves this whole panel. Set the sound first, then press ♥.'],
+      ['Settings tempo', 'Settings › Sound › Music tempo moves only the default mix. After your first change here, each genre uses its own Tempo slider.'],
+    ], recipes: [
+      ['Focus', 'Calm vibe, Energy at Chill, Follow 0%, Reverb and Tape & Vinyl right of middle, Pump off.'],
+      ['Tension', 'Club vibe, Follow 100%, Pump up, Echo down. Boss waves hit hardest.'],
+      ['Night drive', 'Synthwave only, Energy at Groove, Echo and Reverb right of middle.'],
+      ['Console', 'Chiptune only, Reverb and Tape & Vinyl off for a dry 8-bit sound.'],
+    ] },
+    compose: { rows: [
+      ['Start', 'Pick a style to start a song: you get its beat, bassline and chords, and no melody yet. Or remix the last radio song.'],
+      ['Name', 'Tap the name to rename your song.'],
+      ['Style', 'Genre and flavour. Changing it resets drums, bass, lead and tempo to that style’s own.'],
+      ['Mood', 'The scale: Bright, Dreamy, Bluesy, Soulful, Moody, Dark, Exotic. If the chords don’t fit the new mood, they change to ones that do.'],
+      ['Key', 'The home note. Everything moves with it.'],
+      ['Tempo', 'In steps of 2 BPM, a little past either end of the style’s range.'],
+      ['Chords', 'Progressions that fit the mood, written as numerals (I V vi IV). ×2 means two bars on each chord.'],
+      ['Bass', 'Fifteen bass lines. Style means the style’s own.'],
+      ['Lead', 'The instrument that plays the melody. None silences it.'],
+      ['Drums', 'One bar of 16 steps, looping, one row per drum. Every lit square plays; tap to switch it. The white column is where the song is. Reset brings back the style’s beat; Clear empties the grid.'],
+      ['Melody', 'Eight rows; higher rows are higher notes. Follow chords: rows are steps above each chord’s root, so every note fits. Fixed notes: rows are notes of the key (named on the left) and stay put while the chords move. Faint squares are a rolled melody: tap the grid to make it yours. Roll writes a new one; Clear removes it.'],
+      ['Play / Stop', 'Your song loops while you work. Walking into Compose stops the radio; any change starts your song; leaving brings the radio back.'],
+      ['Save', 'Adds the song to My Tracks with your current sound.'],
+      ['New song', 'Starts again from the style list. Tap twice: unsaved changes go.'],
+    ], adv: [
+      ['Live edits', 'Changes are heard at once while your song plays. Your draft is saved as you go: close the Studio and it is still here.'],
+      ['Safe or bold', 'Follow chords can’t clash: notes on strong beats snap to the chord. Fixed notes is how a hook works: the same notes over moving chords, so some land as tension. Give it a slow loop with few chords.'],
+      ['Groove', 'A kick on 1, 5, 9 and 13 is four on the floor. A kick on 1 with the snare on 9 is a half-time feel. Hats on every other step drive it; Shaker or Ride add motion without weight.'],
+      ['Saved songs', 'A saved song keeps everything: style, mood, key, tempo, chords, parts, drums, melody and your sound. Its code carries all of it, so a friend hears exactly your song.'],
+      ['Editing a kept song', 'The pencil in My Tracks opens a saved song as your draft. Save adds a new copy; the old one stays until you delete it.'],
+    ], recipes: [
+      ['Uplifting', 'Bright, chords I V vi IV, Piano or Bell lead.'],
+      ['Melancholy', 'Moody, Lo-fi style, Upright bass, a sparse melody in Follow chords.'],
+      ['Menace', 'Dark, Techno or Drum & Bass, Acid 303 or Reese bass.'],
+      ['Floaty', 'Dreamy, a two-chord loop, Glass or Theremin lead, few drums.'],
+    ] },
+  };
+  function stHelpHTML() {
+    const k = ST_HELP[stHelp] ? stHelp : 'listen', H = ST_HELP[k];
+    const dl = L => `<dl class="shdl">${L.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>`;
+    return `<div class="sthelp" role="dialog" aria-label="How the Music Studio works"><div class="shh"><b>How it works</b>
+      <div class="chips sttabs">${[['listen', 'Listen'], ['shape', 'Shape'], ['compose', 'Compose']].map(([v, l]) => `<button class="chip ${k === v ? 'on' : ''}" data-act="stHelpTab" data-v="${v}">${l}</button>`).join('')}</div>
+      <button class="stb shx" data-act="stHelpX" aria-label="Back to the Studio">✕</button></div>
+      <div class="shbody" data-tab="${k}"><div class="shcols"><section><h3 class="ssec">Controls</h3>${dl(H.rows)}</section>
+      <section class="shadv"><h3 class="ssec">Advanced</h3>${dl(H.adv)}${H.recipes ? `<h3 class="ssec">Moods to try</h3>${dl(H.recipes)}` : ''}</section></div></div></div>`;
+  }
   // ---- the card ----
   function openStudio(from) {
     SFX.init(); if (from) studioBack = from;
@@ -2801,9 +2892,11 @@ const UI = (() => {
     if (stTab === 'compose' && !c.composer) stTab = 'listen';
     const tabs = [['listen', 'Listen'], ['shape', 'Shape']].concat(c.composer ? [['compose', 'Compose']] : []);
     const prev = $('#modal .card.studio .cbody'), keep = prev ? prev.scrollTop : 0, wasTab = prev ? prev.dataset.tab : '';
-    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2><div class="chips sttabs">${tabs.map(([k, l]) => `<button class="chip ${stTab === k ? 'on' : ''}" data-act="stTab" data-v="${k}">${l}</button>`).join('')}</div><button class="x" data-act="stClose" aria-label="Close">✕</button>
+    const hPrev = $('#modal .sthelp .shbody'), hKeep = hPrev && hPrev.dataset.tab === stHelp ? hPrev.scrollTop : 0;
+    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2><div class="chips sttabs">${tabs.map(([k, l]) => `<button class="chip ${stTab === k ? 'on' : ''}" data-act="stTab" data-v="${k}">${l}</button>`).join('')}</div><button class="stb sthq" data-act="stHelp" aria-label="How the Music Studio works">?</button><button class="x" data-act="stClose" aria-label="Close">✕</button>
       ${stNowHTML()}</div>
       ${stTab === 'shape' ? stShapeHTML() : stTab === 'compose' ? stComposeHTML() : stListenHTML()}</div>`, 'studio');
+    if (stHelp) { const cd = $('#modal .card.studio'); if (cd) { cd.insertAdjacentHTML('beforeend', stHelpHTML()); const hb = cd.querySelector('.shbody'); if (hb) hb.scrollTop = hKeep; } }
     const body = $('#modal .card.studio .cbody'); if (body) { body.dataset.tab = stTab; if (wasTab === stTab) body.scrollTop = keep; }
     if (stTab === 'compose' && !stInCompose) { stInCompose = true; enterCompose(); } else if (stTab !== 'compose' && stInCompose) { stInCompose = false; leaveCompose(); }
     const card = $('#modal .card.studio'); if (card) card.classList.toggle('composing', stTab === 'compose');
@@ -2883,6 +2976,9 @@ const UI = (() => {
     if (act !== 'stDel') stDelArm = -1; if (act !== 'cpOver') stOverArm = false;
     switch (act) {
       case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; SFX.play('ui'); openStudio(); return true;
+      case 'stHelp': stHelp = stTab; SFX.play('ui'); openStudio(); return true; // 6.2 the ? sheet, on the tab you are on
+      case 'stHelpTab': stHelp = b.dataset.v; SFX.play('ui'); openStudio(); return true;
+      case 'stHelpX': stHelp = null; SFX.play('ui'); openStudio(); return true;
       case 'stVibe': {
         studioTouch(); const v = ST_VIBES.find(x => x[0] === b.dataset.v); c.genres = (v[2] || M.GENRE_IDS).slice(); c.favOnly = false;
         M.apply(); studioSave(); if (M.piece && !c.genres.includes(M.piece.genre)) stPlayNow(); openStudio(); return true;
@@ -2965,7 +3061,7 @@ const UI = (() => {
       case 'cpMelAbs': { const d = c.draft; if (d) { d.melAbs = !d.melAbs; if (d.melAbs && !(d.mel && d.mel.length === 16)) d.mel = cpRollFixed(); cpApply(true); } return true; }
       case 'cpDice': { const d = c.draft; if (d && d.melAbs) { d.mel = cpRollFixed(); if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); return true; } if (d) { d.mel = null; d.melSeed = (Math.random() * 4294967296) >>> 0; if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); } return true; }
       case 'cpMelClr': { const d = c.draft; if (d) { d.mel = []; cpApply(true); } return true; }
-      case 'stClose': { cancelAnimationFrame(studioRaf); if (stInCompose) { stInCompose = false; leaveCompose(); } M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
+      case 'stClose': { stHelp = null; cancelAnimationFrame(studioRaf); if (stInCompose) { stInCompose = false; leaveCompose(); } M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
         if (M.paused) toast('MUSIC PAUSED', 'Press play in the Music Studio to bring it back', '#ff5fa8');
         if (back === 'settings') { if (G && !G.over && screen === 'game') modalFrom = 'pause'; openSettings(); }
         else if (back === 'pause' && G && !G.over && screen === 'game') openPause();
@@ -3369,13 +3465,24 @@ const UI = (() => {
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (marketShut()) { toast('EXCHANGE', 'The Black Market and Cash In open at Wave 10. Score comes from kills', '#8a8fa8', true, 'tip'); return; } if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     // v5.5.14 music: the rail tile opens a deck (back · song · next). Back: one tap replays the song, a double tap goes to the
     // last one (the single tap waits TRK_DBL to see whether a second follows). The deck tucks away after a few idle seconds.
-    let trkBackT = 0, trkBackTimer = 0, deckT = 0; const TRK_DBL = 350;
+    let trkBackT = 0, trkBackTimer = 0, deckT = 0, deckNoteT = 0; const TRK_DBL = 350;
     const deckFill = () => { const M = SFX.music, p = M.piece, d = $('#mdeck'); if (!d || !p) return; const col = (M.GENRES[p.genre] || {}).col || '#59f0b4';
-      d.style.setProperty('--mc', col); d.querySelector('.mdname b').textContent = p.name; d.querySelector('.mdname span').textContent = `${p.genreName} · ${p.section}${M.paused ? ' · paused' : ''}`; };
+      d.style.setProperty('--mc', col); d.querySelector('.mdname b').textContent = p.name;
+      const sp = d.querySelector('.mdname span'); if (performance.now() > deckNoteT) { sp.textContent = `${p.genreName} · ${p.section}${M.paused ? ' · paused' : ''}`; sp.classList.remove('liked'); }
+      const lk = $('#bTrkLike'), on = M.isSaved(); if (lk && lk.dataset.on !== String(on)) { lk.dataset.on = on; lk.innerHTML = svgIcon(on ? 'heart' : 'heartO'); lk.classList.toggle('on', on); lk.setAttribute('aria-pressed', on); lk.setAttribute('aria-label', on ? 'Remove this song from My Tracks' : 'Keep this song in My Tracks'); } };
     const deckShow = on => { const d = $('#mdeck'); d.hidden = !on; $('#bMusic').classList.toggle('on', on); clearTimeout(deckT); if (on) { deckFill(); deckT = setTimeout(() => deckShow(false), 5000); } };
     UI.deckFill = deckFill;
     $('#bMusic').onclick = () => { SFX.init(); SFX.play('ui'); deckShow($('#mdeck').hidden); };
     $('#mdName').onclick = () => { deckShow(false); openStudio(); };
+    // 6.2 (Nic: "let people like songs to their playlist there while they're on the battle field"): Keep, as in the Studio
+    $('#bTrkLike').onclick = () => {
+      SFX.init(); const M = SFX.music; if (!M.piece) return; let line = '';
+      if (M.isSaved()) { M.unsave(); line = 'Removed from My Tracks'; } else if (M.save()) line = '♥ Kept in My Tracks';
+      studioSave(); SFX.play('ui'); deckShow(true);
+      const d = $('#mdeck'), sp = d && d.querySelector('.mdname span'), lk = $('#bTrkLike');
+      deckFill(); if (sp && line) { sp.textContent = line; sp.classList.add('liked'); deckNoteT = performance.now() + 1800; }
+      if (lk) { lk.classList.remove('pop'); void lk.offsetWidth; lk.classList.add('pop'); }
+    };
     $('#bTrkNext').onclick = () => { SFX.init(); const M = SFX.music; M.setPaused(false); M.jump(null); deckShow(true); setTimeout(deckFill, 60); };
     $('#bTrkBack').onclick = () => {
       SFX.init(); const M = SFX.music, now = performance.now(); deckShow(true);
@@ -3724,7 +3831,7 @@ function talentsToast(kind) {
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
-  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
+  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)
   // and reload onto it from the main menu, never mid-run
