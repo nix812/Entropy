@@ -202,6 +202,10 @@ if mode in ('bosses', 'all'):
             final = any(m[2] in ('Final', 'Pounce', 'Surface') for m in secs_in if m[0] > 30)
             vic = any(e[1] == 'fx' and e[2] == 'victory' for e in r['ev']); sting = any(e[1] == 'fx' and e[2] == 'stinger' for e in r['ev'])
             back = r['marks'][-1][3] is None
+            notes = [e[3] for e in r['ev'] if e[1] == 'lead' and e[2] == t['lead'] and e[7] == 'boss/' + k and 4 < e[0] < 30]
+            hk = [int(x.split(':')[1]) for x in t['hook'].split() if not x.endswith(':m')][:4]; want = [hk[i + 1] - hk[i] for i in range(3)]
+            got = [notes[i + 1] - notes[i] for i in range(len(notes) - 1)]; reps = sum(1 for i in range(len(got) - 2) if got[i:i + 3] == want)
+            ok(f'{k}: the hook is heard, and it repeats ({reps} times in 26 s)', reps >= 2)
             rows.append((k, L, pk, quiet))
             print(f"   {k:9s} {t['title']:17s} {t['bpm']:3d} BPM {t['mode']:10s} lead {t['lead']:9s} LUFS {L:6.1f}  peak {pk:5.1f}  quietest 1 s {quiet:6.1f} dB  in {t_in:4.1f}s out {t_out:4.1f}s", flush=True)
             ok(f'{k}: theme plays from the stinger to the kill, phase II reaches Final, victory sting, radio back, no errors',

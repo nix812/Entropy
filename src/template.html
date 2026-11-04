@@ -1088,6 +1088,9 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 .cpsty b { font-family: var(--f-pix); font-size: 9px; font-weight: 400; text-transform: uppercase; color: var(--c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .cpsty small { font-size: 15px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .cpsty:active { filter: brightness(1.3); }
+/* 6.3 Boss themes in Studio > Listen */
+.stboss { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin: 6px 0 8px; }
+.cpsty.lockd { opacity: 0.5; } .cpsty.lockd small { color: var(--dim); }
 /* in Compose the bar is a play/stop for your song */
 .card.studio.composing .stb[data-act=stBack], .card.studio.composing .stb[data-act=stSkip], .card.studio.composing .stb[data-act=stRepeat], .card.studio.composing .stb[data-act=stKeep], .card.studio.composing .stb[data-act=stShareNow] { display: none; }
 .cpleft, .cpright { min-width: 0; }

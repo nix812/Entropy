@@ -2640,7 +2640,7 @@ const UI = (() => {
   const sameSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
   // ---- track share codes: TRACK1 (deflate-raw) or TRACK0 (plain), base64 JSON of the track ----
   async function trackCode(f) {
-    const o = { s: f.seed >>> 0, g: f.genre, f: f.flav, n: f.name }; if (f.snd) o.d = f.snd; if (f.comp) o.c = f.comp;
+    const o = { s: f.seed >>> 0, g: f.genre, f: f.flav, n: f.name }; if (f.snd) o.d = f.snd; if (f.comp) o.c = f.comp; if (f.v > 1) o.v = f.v; if (f.boss) o.b = f.boss; // 6.3: generator version, boss theme
     const raw = new TextEncoder().encode(JSON.stringify(o));
     try { if (typeof CompressionStream !== 'undefined') return 'TRACK1:' + b64(await pipe(raw, CompressionStream)); } catch (e) {}
     return 'TRACK0:' + b64(raw);
@@ -2651,7 +2651,8 @@ const UI = (() => {
       let u = unb64(m[2].replace(/\s+/g, '')); if (m[1] === '1') u = await pipe(u, DecompressionStream);
       const o = JSON.parse(new TextDecoder().decode(u)), M = SFX.music;
       if (!o || !M.GENRES[o.g] || !M.GENRES[o.g].flavours[o.f]) return null;
-      return { seed: o.s >>> 0, genre: o.g, flav: o.f, name: String(o.n || 'Shared Track').slice(0, 32), snd: o.d && typeof o.d === 'object' ? o.d : undefined, comp: o.c && typeof o.c === 'object' ? o.c : undefined };
+      return { seed: o.s >>> 0, genre: o.g, flav: o.f, name: String(o.n || 'Shared Track').slice(0, 32), snd: o.d && typeof o.d === 'object' ? o.d : undefined, comp: o.c && typeof o.c === 'object' ? o.c : undefined,
+        v: o.v | 0 || undefined, boss: o.b && M.BOSS_THEMES[o.b] ? o.b : undefined };
     } catch (e) { return null; }
   }
   // ---- the now-playing bar ----
@@ -2675,7 +2676,7 @@ const UI = (() => {
     const M = SFX.music, c = studioCfg(), G5 = M.GENRES, sel = stGenres(), p = M.piece || {}, tg = p.genre && G5[p.genre] ? p.genre : 'lofi';
     const vibeOn = v => v[2] ? sameSet(sel, v[2]) && (v[0] !== 'calm' || true) : M.GENRE_IDS.every(g => sel.includes(g));
     const favs = c.favs.map((f, i) => {
-      const G0 = G5[f.genre] || G5.lofi, sub = `${G0.short || G0.name} · ${M.flavName(f.genre, f.flav)}${f.comp ? ' · composed' : ''}`;
+      const G0 = G5[f.genre] || G5.lofi, sub = f.boss && M.BOSS_THEMES[f.boss] ? `Boss theme · ${M.BOSS_THEMES[f.boss].name}` : `${G0.short || G0.name} · ${M.flavName(f.genre, f.flav)}${f.comp ? ' · composed' : ''}`;
       const nm = stEdit === i ? `<input class="stren" id="stRenIn" data-i="${i}" maxlength="24" value="${esc(f.name)}" aria-label="Track name">` : `<button class="stnm" data-act="stRen" data-v="${i}" aria-label="Rename"><b>${esc(f.name)}</b></button>`;
       return `<div class="stfav" style="--c:${G0.col}"><div class="stft">${nm}<span class="dim">${esc(sub)}</span></div>
         <button class="stb" data-act="stPlay" data-v="${i}" aria-label="Play" data-svg="play"></button>
@@ -2690,6 +2691,7 @@ const UI = (() => {
         <div class="lbl stl">Genres <em class="dim">tap to add or remove · ▶ plays one now</em></div>
         <div class="stgen">${M.GENRE_IDS.map(g => `<div class="gw ${sel.includes(g) ? 'on' : ''}" style="--c:${G5[g].col}"><button class="gch" data-act="stGenre" data-v="${g}">${esc(G5[g].short || G5[g].name)}</button><button class="gpl" data-act="stPlayG" data-v="${g}" aria-label="Play ${esc(G5[g].name)} now" data-svg="play"></button></div>`).join('')}</div>
         <p class="note stblurb" id="stBlurb"><span style="color:${G5[tg].col}">${esc(G5[tg].name)}</span> ${esc(G5[tg].blurb.toLowerCase())}.</p>
+        ${stBossHTML()}
       </div>
       <div class="stcol">
         <div class="lbl stl">My Tracks <em class="dim">${c.favs.length ? c.favs.length + ' kept' : ''}</em></div>
@@ -2698,17 +2700,27 @@ const UI = (() => {
         ${(c.favs.forEach(warmCode), '')}${c.favs.length ? `<div class="stfavs">${favs}</div>` : '<p class="note">Tap the heart while a piece plays to keep it here. Kept tracks remember your sound settings, and you can share them as codes.</p>'}
       </div></div>`;
   }
+  // ---- 6.3 Boss themes: one fixed song per boss. In fights they replace the radio (switch: config.bossThemes); here you can
+  // play the ones you have beaten (PROF.codex.bosses counts kills).
+  function stBossHTML() {
+    const M = SFX.music, c = studioCfg(), on = c.bossThemes !== false, met = M.BOSS_IDS.filter(id => PROF.codex.bosses[id]);
+    return `<div class="lbl stl">Boss themes <em class="dim">${met.length} of ${M.BOSS_IDS.length} unlocked</em></div>
+      <div class="strow"><button class="chip ${on ? 'on' : ''}" data-act="stBossT" aria-pressed="${on}">Play in boss fights: ${on ? 'On' : 'Off'}</button></div>
+      <div class="stboss">${M.BOSS_IDS.map(id => { const T = M.BOSS_THEMES[id];
+        return PROF.codex.bosses[id] ? `<button class="cpsty" style="--c:#ff4d6a" data-act="stBossP" data-v="${id}" aria-label="Play the ${esc(T.name)} theme"><b>${esc(T.name)}</b><small>${esc(T.title)}</small></button>`
+          : `<button class="cpsty lockd" style="--c:#6a6584" disabled aria-label="Locked boss theme"><b>Locked</b><small>Beat this boss</small></button>`; }).join('')}</div>`;
+  }
   // ---- Shape ----
   function stShapeHTML() {
     const M = SFX.music, c = studioCfg(), vis = c.custom ? c : Object.assign({}, M.DEF, { favs: c.favs }), p = M.piece || {}, G5 = M.GENRES, g = p.genre && G5[p.genre] ? p.genre : 'lofi';
     const slider = (id, lab, v, min, max, step, out, mid, dis) => `<label class="st2"><span>${lab}</span><output id="${id}V">${out}</output><span class="rng${mid ? ' mid' : ''}"><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}" ${dis ? 'disabled' : ''}></span></label>`;
-    const bpm = p.comp ? p.bpm : (vis.bpm[g] || G5[g].bpm[1]);
+    const bpm = p.comp || p.boss ? p.bpm : (vis.bpm[g] || G5[g].bpm[1]);
     return `<div class="stshape">
       <div class="stcol">
         <div class="lbl stl">Feel</div>
         ${slider('stEnergy', 'Energy', vis.energy, 0, 1, 0.01, energyWord(vis.energy))}
         ${slider('stFollow', 'Follow battle', vis.follow, 0, 1, 0.01, Math.round(vis.follow * 100) + '%')}
-        ${slider('stTempo', `Tempo · <span style="color:${G5[g].col}">${esc(p.comp ? 'composed' : G5[g].short || G5[g].name)}</span>`, bpm, G5[g].bpm[0], G5[g].bpm[2], 1, bpm + ' BPM', 0, p.comp)}
+        ${slider('stTempo', `Tempo · <span style="color:${G5[g].col}">${esc(p.comp ? 'composed' : p.boss ? 'boss theme' : G5[g].short || G5[g].name)}</span>`, bpm, p.boss ? Math.min(bpm, G5[g].bpm[0]) : G5[g].bpm[0], p.boss ? Math.max(bpm, G5[g].bpm[2]) : G5[g].bpm[2], 1, bpm + ' BPM', 0, p.comp || p.boss)}
         <div class="st2"><span>Song length</span><output>${{ short: 'about 1 min', standard: 'about 3 min', long: 'about 5 min' }[c.length || 'standard']}</output></div>
         <div class="strow stlen">${[['short', 'Short'], ['standard', 'Standard'], ['long', 'Long']].map(([k, l]) => `<button class="chip ${(c.length || 'standard') === k ? 'on' : ''}" data-act="stLen" data-v="${k}">${l}</button>`).join('')}</div>
         <p class="note sthint">Energy: how full the music is. Follow: how much the battle pushes it. Length: Short changes song often; Standard plays a full radio edit (intro, build, drop, outro); Long an extended mix.${p.comp ? ' A composed track sets its tempo in Compose.' : ''}</p>
@@ -2810,7 +2822,7 @@ const UI = (() => {
   // In Compose the play/stop is the hold: held = your song stopped and the radio off.
   function enterCompose() {
     const M = SFX.music, p = M.piece; stOverArm = false; M.setPaused(false);
-    stRadio = p && !p.comp ? M.spec : stRadio; M.editing = true; M.setHold(true);
+    stRadio = p && !p.comp && !p.boss ? M.spec : stRadio; M.editing = true; M.setHold(true);
   }
   function cpPlay(on) { const M = SFX.music, d = studioCfg().draft; if (on && d) { M.setPaused(false); M.setHold(false); M.jump(cpSpec(d)); } else M.setHold(true); }
   function leaveCompose() {
@@ -2840,25 +2852,31 @@ const UI = (() => {
       ['My Tracks', 'Every song you keep. ▶ plays it, the pencil opens a composed song in Compose, share copies its code, ✕ deletes it (tap twice). Tap a name to rename it.'],
       ['Only my tracks', 'The radio plays your kept songs in turn instead of new ones.'],
       ['Paste a code', 'Adds a friend’s TRACK code to My Tracks and plays it.'],
+      ['Boss themes', 'Each of the 13 bosses has its own theme. Beat a boss to unlock its theme here. Tap a theme to play it.'],
+      ['Play in boss fights', 'On: a boss theme plays while that boss is on the field. A short sting plays when you kill it. Then your music comes back. Off: the radio keeps playing.'],
     ], adv: [
       ['Seeds', 'Every song grows from a seed. The same seed, genre and style always give the same chords, melody and drums, on any device. A kept song or a code is that seed plus a name, so it plays back exactly.'],
+      ['Variety', 'Each genre has 4 styles. Each new song also picks its own drums, instruments, tempo, key and arrangement. Its melody grows from a short hook that repeats. Songs kept before version 6.3 play exactly as before.'],
       ['Likes keep the sound', 'Keeping a song also stores your sound: Energy, Follow, the mixer, mutes, effects and that genre’s tempo. Playing it brings that sound back, so your Shape sliders move to match.'],
       ['Likes on the battlefield', 'The ♥ on the Music deck (tap the Music tile at the top of the left rail) keeps the song playing into the same My Tracks list.'],
       ['Build a playlist', 'Keep songs as they come up, rename and delete to taste, then turn on Only my tracks. My Tracks holds 80; past that the oldest drops off.'],
       ['Default mix', 'Until you change something, the Studio plays the default mix: the Calm genres, steered by the battle, at the tempo in Settings › Sound. Your first change switches to your own settings. Shape › Reset sound goes back.'],
-      ['Boss fights', 'During a boss, new songs avoid major keys. The default mix also switches to Trip Hop.'],
+      ['Boss fights', 'With Play in boss fights on, the theme of the first boss on the field plays. A new boss phase moves the theme to its Final section, 1 semitone higher. After the kill, your song continues from the section it was in. If it was near its end, a new song starts.'],
+      ['Boss fights, switch off', 'During a boss, new songs avoid major keys. The default mix also switches to Trip Hop.'],
+      ['Keep a boss theme', 'The ♥ works on a boss theme too. The theme then plays in My Tracks like any song. In Compose, boss themes do not stop your song.'],
     ] },
     shape: { rows: [
       ['Energy', 'How full the music is: Still, Chill, Groove, Peak. Low energy thins the music to its core; high energy brings in more parts and picks the harder styles of each genre.'],
       ['Follow battle', 'How much the fight moves Energy. At 100% a calm menu pulls it down and a boss wave pushes it up. At 0% the music stays where you set it.'],
-      ['Tempo', 'BPM for the genre playing now; each genre keeps its own. Greyed out for composed songs: they carry their own tempo.'],
+      ['Tempo', 'BPM for the genre playing now. Each genre keeps its own. The slider is greyed out for composed songs and boss themes. They carry their own tempo.'],
       ['Song length', 'Short changes song about every minute. Standard is a radio edit (intro, build, drop, outro), about 3 minutes. Long is an extended mix, about 5. The song playing takes the new shape at once.'],
-      ['Reset sound', 'Back to the default mix. Keeps My Tracks, your Compose song and the song length.'],
+      ['Reset sound', 'Back to the default mix. Keeps My Tracks, your Compose song, the song length and the boss theme switch.'],
       ['Mixer', 'Pads, Keys, Arps, Bass, Drums and Lead, up to 125%. Drag a fader; double-tap it for 100%. Tap a name to mute that part. The thin bar inside a fader is its live level.'],
       ['Effects', 'Reverb, Echo, Tone, Tape & Vinyl and Pump. The middle is the genre’s own amount; left takes it down to off, right adds up to double. Tone is darker to the left, brighter to the right. Pump makes the music duck on each kick.'],
     ], adv: [
       ['Energy plus Follow', 'The music runs at Energy, plus Follow times how hard the battle is. The menu reads as calm, so with Follow high the hangar sounds thinner than the slider says, and a boss wave fuller.'],
       ['Composed songs', 'A composed song always plays every part you wrote. Energy and Follow shape the radio’s songs, not yours.'],
+      ['Boss themes', 'A boss theme never plays below Groove. Energy and Follow push it higher. Each boss phase adds more.'],
       ['Mute to compare', 'A muted part comes back at its old level, so muting is quicker than dragging a fader down and back.'],
       ['Keep after shaping', 'A kept song saves this whole panel. Set the sound first, then press ♥.'],
       ['Settings tempo', 'Settings › Sound › Music tempo moves only the default mix. After your first change here, each genre uses its own Tempo slider.'],
@@ -2876,7 +2894,7 @@ const UI = (() => {
       ['Key', 'The home note. Everything moves with it.'],
       ['Tempo', 'In steps of 2 BPM, a little past either end of the style’s range.'],
       ['Chords', 'Progressions that fit the mood, written as numerals (I V vi IV). ×2 means two bars on each chord.'],
-      ['Bass', 'Fifteen bass lines. Style means the style’s own.'],
+      ['Bass', 'Twenty bass lines. Style means the style’s own.'],
       ['Lead', 'The instrument that plays the melody. None silences it.'],
       ['Drums', 'One bar of 16 steps, looping, one row per drum. Every lit square plays; tap to switch it. The white column is where the song is. Reset brings back the style’s beat; Clear empties the grid.'],
       ['Melody', 'Eight rows; higher rows are higher notes. Follow chords: rows are steps above each chord’s root, so every note fits. Fixed notes: rows are notes of the key (named on the left) and stay put while the chords move. Faint squares are a rolled melody: tap the grid to make it yours. Roll writes a new one; Clear removes it.'],
@@ -3016,6 +3034,8 @@ const UI = (() => {
         openStudio(); return true;
       }
       case 'stPlayG': { const g = b.dataset.v; stPlayNow({ genre: g }); toast('NOW PLAYING', M.GENRES[g].name, M.GENRES[g].col); return true; }
+      case 'stBossP': { const id = b.dataset.v, T = M.BOSS_THEMES[id]; if (!T || !PROF.codex.bosses[id]) return true; stPlayNow({ boss: id }); toast('NOW PLAYING', `${T.title} · ${T.name}`, '#ff4d6a'); return true; }
+      case 'stBossT': { c.bossThemes = c.bossThemes === false; studioSave(); openStudio(); return true; }
       case 'stLen': M.setLength(b.dataset.v); studioSave(); SFX.play('ui'); openStudio(); return true;
       case 'stMute': studioTouch(); c.mute[b.dataset.v] = !c.mute[b.dataset.v]; b.classList.toggle('m', !!c.mute[b.dataset.v]); M.apply(); studioSave(); return true;
       case 'stSkip': stPlayNow(); SFX.play('ui'); return true;
@@ -3038,7 +3058,7 @@ const UI = (() => {
       case 'stCodeGo': { const v = ($('#stCode') || {}).value || ''; readTrackCode(v).then(f => { if (!f) { toast('TRACK CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } const t = M.addTrack(f); if (t) { stPaste = false; studioSave(); stPlayNow(t); toast('TRACK ADDED', t.name + ' · playing now', '#ff5fa8'); openStudio(); } }); return true; }
       case 'stEditT': { const f = c.favs[+b.dataset.v]; if (f && f.comp) { c.draft = Object.assign(JSON.parse(JSON.stringify(f.comp)), { name: f.name }); stTab = 'compose'; studioSave(); M.editing = true; M.compose(c.draft); openStudio(); } return true; }
       case 'stFavOnly': studioTouch(); c.favOnly = !c.favOnly; studioSave(); if (c.favOnly) stPlayNow(); openStudio(); return true;
-      case 'stReset': { const keepK = { favs: c.favs, calmBpm: c.calmBpm, draft: c.draft, composer: c.composer, length: c.length }; M.setConfig(keepK); PROF.settings.studio = M.config; studioSave(); stPlayNow(); openStudio(); return true; }
+      case 'stReset': { const keepK = { favs: c.favs, calmBpm: c.calmBpm, draft: c.draft, composer: c.composer, length: c.length, bossThemes: c.bossThemes }; M.setConfig(keepK); PROF.settings.studio = M.config; studioSave(); stPlayNow(); openStudio(); return true; }
       case 'stViz': { // the hidden door: five taps on the visualizer
         if (c.composer) return true;
         const now = performance.now(); stTaps = stTaps.filter(t => now - t < 2500); stTaps.push(now);
@@ -3643,6 +3663,19 @@ const UI = (() => {
       out.push({ l: (r.left - o.left) / UIS, t: (r.top - o.top) / UIS, r: (r.right - o.left) / UIS, b: (r.bottom - o.top) / UIS }); }
     return out;
   }
+  // 6.3 boss themes: tell the music which boss is on the field (the first one: its theme keeps playing while any boss with that id
+  // lives, so Gloop's splits and Most Wanted twins don't restart it) and its phase. A kill (hp at 0, run not over) gets the victory sting.
+  let musBoss = { id: null, e: null };
+  function bossMusic() {
+    const M = SFX.music; let b = null;
+    if (screen === 'game' && G && !G.over) {
+      if (musBoss.id) b = musBoss.e && !musBoss.e.dead && musBoss.e.boss === musBoss.id ? musBoss.e : G.enemies.find(e => e.boss === musBoss.id && !e.dead);
+      if (!b) b = G.bossAlive && !G.bossAlive.dead ? G.bossAlive : null;
+    }
+    const id = b ? b.boss : null;
+    if (id !== musBoss.id) { const win = !!(musBoss.e && musBoss.e.hp <= 0 && G && !G.over); musBoss = { id, e: b }; M.setBoss(id, b ? b.phase || 0 : 0, win); }
+    else if (b) { musBoss.e = b; M.setBoss(id, b.phase || 0); }
+  }
   function tick(dt) {
     if (screen === 'game') { eqT -= dt; if (eqT <= 0) { eqT = 0.08; const tile = $('#bMusic'); if (tile) { const M = SFX.music, p = M.piece, bars = tile.querySelectorAll('.meq i');
       if (p) tile.style.setProperty('--mc', (M.GENRES[p.genre] || {}).col || '#59f0b4'); const quiet = !p || M.paused || M.held || SFX.state !== 'running'; tile.classList.toggle('quiet', quiet);
@@ -3655,6 +3688,7 @@ const UI = (() => {
     if (evoWait && screen === 'game' && G && !G.over && !G.tut && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) { evoWait = false; if (!PROF.seenEvo) { teachMark(); openEvo(true); } }
     onboardingTick(); Coach.tick();
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
+    bossMusic();
     // v5.2: fast-forward is safe to leave on. A boss arriving (or reaching Red Alert) drops the game to 1×; the old speed comes back when it falls.
     // Speeding up again by hand during the fight is respected
     if (bossOn && !G.over) { const b = G.bossAlive, key = b.id + (G.redAlert ? 'r' : '');
