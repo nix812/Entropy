@@ -36,16 +36,16 @@ fixed rolls?" Built. Every Entropy draw now builds most of its cards fresh. The 
 |---|---|---|---|
 | COMMON | Piercing Lemons | Ignores 40% of Armor | Attacks have a 2% chance to jam |
 | COMMON | Angry Tithe | +200% core Damage | −30% Credits |
-| RARE | Volatile Malaise | Enemies explode on death for 25% of max HP | −25% Damage |
+| RARE | Volatile Malaise | Enemies explode on death for 15% of max HP | −20% Damage |
 | COMMON | Orbital Haze | +65% ability power | −15% Range |
-| COMMON | Iron Bulk | +65% Kinetic Damage | +20% enemy HP |
+| COMMON | Iron Bulk | +40% Kinetic Damage | +20% enemy HP |
 | RARE | Retrofit Rush | −35% upgrade cost | +15% enemy speed |
 | CLASSIC | Echo Chamber | Towers have a 15% chance to attack twice | +25% upgrade cost |
-| COMMON | Iron Fault | +70% Kinetic Damage | −30% core max HP |
+| COMMON | Iron Fault | +45% Kinetic Damage | −30% core max HP |
 | EXOTIC | Retrofit Bloom | −35% upgrade cost · +30% Damage | Enemies regenerate 1.5% HP per second |
 | EXOTIC | Splintered Covenant | Bullets and missiles split into 2 shards · +25% chance to Burn | Core loses 5% HP each wave · +15% upgrade cost |
 
-(The last two come from the screenshot runs. `SAMPLE=<seed> node test/cards64.js` prints 10 more.)
+(The last two come from the screenshot runs. Another Exotic, seed 23: Spectral Engine, Hits apply a random status · +35 core shield / +150% Skimmers. `SAMPLE=<seed> node test/cards64.js` prints 10 more.)
 
 ## Code map
 
