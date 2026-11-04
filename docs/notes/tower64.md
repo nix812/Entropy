@@ -30,3 +30,62 @@ tree, and each node unlocks one new tower.
 
 Each tower: base stats, LV 1–5 damage, two Specializations, 6–8 Ascension perks, a Mastery 5 legendary, a sprite in the art
 kit (`UNITS.TOP`), a muzzle/idle detail, a fire sound through `ev()`/`allow()`, a role line, a codex line, smartbot support.
+
+## What changes for the player
+- **Talents:** every tree has a new top tier under its Capstones: one wide gold-framed tile with the tower it unlocks. It opens
+  at 16 points in that tree, costs 1 point and takes no Capstone slot. Learning it shows "NEW TOWER UNLOCKED". The tower joins
+  every run from the next one on. Your Build lists your new towers; the tree tab shows ▲.
+- **Build menu:** unlocked tier towers sit in the grid with a gold corner. Locked ones sit greyed in one "Capstone tier" strip
+  under the grid. Tap one: its role, what it does, and "Unlock: <tree> capstone tier (16 points in <tree>)".
+- **First run with a new tower:** a one-time card ("New tower: Buzzsaw"), queued like every other teaching card.
+- **Tower panel:** one live line per new tower (charge, wall strength, stops left, next Jackpot, link size).
+- **Daily Hunts** keep the base 12 towers. The Hunt build can't learn the tier ("Daily Hunts use the base towers").
+- Dictionary › Towers lists the seven with "Unlock: <tree> capstone tier". Archive › Mastery lists them once learned.
+
+## Code map
+- **data.js:** `TOWERS.saw/flashover/surge/rime/tangle/aegis/joker` (field `capT` = tree id, `unlock: 999`), `CAP_TOWERS`,
+  `TOWER_ORDER` = base 12 + `CAP_TOWERS`. `PERKS.<new>` (ids already read elsewhere: amps, chain, super, taser, overcur,
+  crown, brittle). Seven Mastery 5 legendaries (`mSaw` … `mJoker`). `AFFIX_BAN` for the new kinds (saw, det, surge, wall,
+  tether, aegis, joker). `TTOP = 16`; `TALENTS[i].top` (ids `kTop tTop aTop cTop vTop eTop xTop`, `unlockT`, row 5 in `TAL`).
+  `talentLines` describes a tier node. **`FR_VER = 4`** (shared one-line edit with cards64).
+- **sim.js:**
+  - Talents: `rowNeed(5) = TTOP`; `treePts` skips the tier node; `talentBlock` → `'daily'` for the Hunt build;
+    `treeLoadBuild` replays rows 0–5; `capTowersOwned()` (profile → newRun only).
+  - Gating: `towerUnlocked` checks `G.capT` for tier towers (before the Daily "everything open" rule); `nextLockedTower`
+    skips them (the Stolen Blueprint never unlocks one).
+  - **newRun (hotspot, 2 lines):** `G.capT` from `opts.capT`, only at `G.frV >= 4`, forced `[]` for Daily, Hunt build,
+    Training and lessons. Run log `start.capT`.
+  - **snapshotRun/resumeRun (hotspot, 1 field each):** `capT`.
+  - `capStats` (called from `towerStats` for `D.capT`): per-kind numbers. `PD_KIND` in `potentialDps` (multi-target kinds,
+    so boss sizing sees them).
+  - Attacks (`towerAttack` cases): `sawThrow/sawStep/sawCut` (projectile `k: 'saw'` running back along its target's lane),
+    `flashPulse`, Surge Spire falls through into the Arc Coil `chain` case (charge in `updateTowers`, `SURGE.burst`),
+    `wallSpot/wallRaise/wallHold/wallBreak` (`t.wall`, `e.jammed`), `tangleLink/tangleEcho/updateTangles` (`G.tangles`,
+    `e.lnk`), `aegisShot/aegisCatch` (`t.guardN`), `jokerShot/jokerForm`.
+  - Hooks into shared code, all inert unless a tier tower exists: `hit()` copies to linked enemies (`e.lnk`), `leak()` asks
+    `aegisCatch` (only when `G.capT.length`), `updateEnemies` calls `wallHold` (only when `G.capT.length`), `updateZones`
+    calls `updateTangles`, `startWave` clears `guardN`, `explode()` skips the shield strip for Wildcard bursts (`p.jk`),
+    `masteryGains` counts Rimewall and Aegis like support towers.
+- **units.js:** `TOP.saw/flashover/surge/rime/tangle/aegis/joker`; `ROT` + saw, aegis; `SPIN` for the rest.
+- **render.js:** `drawCapField` (walls in front of the ground enemies they hold, link threads), the `saw` projectile, live
+  tells in `drawTower0` (saw glint, surge charge pips and burst sparks, aegis stops-left pips, Jackpot ring, Flashover glow),
+  muzzles for saw/aegis, fx `heat`, `wallup`, `wallbreak`, `tether`, `aegis` ("STOPPED"), `jackpot`.
+- **audio.js:** `WEAP.saw/flashover/surge/rime/tangle/aegis/joker`, `EVT.aegisblock`, `HIT_FAM` entries, `TRIM` levels
+  (sfxrender). All through `ev()` + `allow()`, placed by the tower (positional).
+- **ui.js:** `TOWER_ROLE`, `TSHORT`, `capTreeOf`; build menu strip (`capPeek`, action `cappeek`); `capInfoHTML` in the
+  tower panel; `introCard('capT_<id>')` in `onboardingTick`; Dictionary and Archive rows; newRun passes
+  `capT: capTowersOwned()`; Tree: `tierHTML`, tier toast, info panel, Your Build list, ▲ on tabs.
+- **template.html:** `.toprow`, `.ttile.tier`, `.capstrip`, `.cst`, `.bt.capt`, `.lockline`.
+- **PROF:** nothing new (tier nodes live in `PROF.tal`; seen cards in `PROF.seenSys.capT_<id>`). **G:** `capT`, `tangles`;
+  per tower `wall`, `charge`, `surgeIdle`, `surgeT`, `guardN`, `jn`, `jackT`; per enemy `lnk`.
+
+## Tests
+- `node test/tower64.js`: tier rules (16 points, 1 point, no slot, removal guard, saved builds, Hunt build blocked), an old
+  profile loads unchanged, unlock gating (opts only, not mid-run, Daily/Training/frV 3/Classic → none, snapshot keeps it),
+  stats sane for 7 towers × 2 specs × LV 1–5 and all perks, one behaviour check per tower, the frV 4 fixture
+  (`test/fixtures/rec_640_tower64.json`, writer `test/tower64_mkfix.js`) and a fresh record/replay/resume with all seven.
+- `python3 test/tower64shot.py 667 375` and `… 1180 820`: Talents tier (learned, locked, learned through the button), run
+  carries `capT`, intro card, build menu grid + strip + locked info, every tower firing. Screens in `test/out/tower64/`.
+- `test/smartbot.js`: takes the tier node when it opens and keeps filling toward it (`NOTOP=1` off), passes `capT`
+  (`CAPT=a,b` forces), puts a learned tier tower in the rotation after every third plan entry (2 Aegis max, Aegis beside
+  the core), perk priorities. New column `capT`.

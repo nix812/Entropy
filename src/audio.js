@@ -241,6 +241,7 @@ const SFX = (() => {
     shot2: 4.4, rail1: -1.8, rail2: -2, pulse1: -2.1, pulse2: 1.1, missile1: 0.3, missile2: -0.2, coil: 1.7, coil1: 1.1, coil2: -3.7, ignite: 5,
     mortar1: -2, mortar2: -1.1, grav1: -9.1, grav2: -8.5, hitK: 9.5, hitR: 2.3, hitC: 7.7, hitF: 3.4, hitV: 10.1, hitA: 10.9,
     boomT: -2, boomT2: -1.8, pop: 0.5, empboom: -2.7, empboom1: -2.6, lure: 2.8, lure2: 0.7, net1: -3.3, lock: 14.7, lock2: 14.7, forge: 1.2, forge1: 2.4, pylon: 11.7,
+    saw: 5.5, flashover: -6.5, rime: 1, aegis: 8.5, aegisblock: -3.5, joker: 10, // 6.4 (sfxrender: saw -26, Flashover -24, Aegis -30, Wildcard -28, a stop -22 dB)
     comboSHATTER: -2.5, comboOVERLOAD: -5, 'comboTHERMAL SHOCK': -3, comboSUPERCONDUCT: 3, comboCOLLAPSE: -7 };
   const dB = v => Math.pow(10, v / 20);
   // start a sound: bus, base volume, pitch jitter (semitones), placement and sends

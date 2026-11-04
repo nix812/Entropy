@@ -815,7 +815,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
-    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}) }]; // Frontier runs say so in the log
+    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}), ...(G.capT.length ? { capT: G.capT.slice() } : {}) }]; // Frontier runs say so in the log; 6.4: the tier towers too
   return G;
 }
 
@@ -3637,7 +3637,7 @@ function wallSpot(t, range) {
 }
 const wallOnRoad = w => G.map.lanes.some(L => !L.openWave && L.pts.some(p => dist2(p.x, p.y, w.x, w.y) < 0.04));
 function wallRaise(t, range) {
-  if (t.wall) { if ((G.tick + t.id) % 30 === 0 && !wallOnRoad(t.wall)) { t.wall = null; t.cd = 0; } return false; } // the road moved away (Frontier)
+  if (t.wall) { if ((G.tick + t.id) % 30 === 0 && (!wallOnRoad(t.wall) || dist2(t.wall.x, t.wall.y, t.cx, t.cy) > (range + 0.5) ** 2)) { t.wall = null; t.cd = 0; } return false; } // the road or the tower moved (Frontier)
   const p = wallSpot(t, range); if (!p) return false;
   t.wall = { x: p.x, y: p.y, hp: t.s.hold, max: t.s.hold, tick: 0 };
   Hooks.fx('wallup', { x: p.x, y: p.y }); Hooks.sfx('rime', t);
