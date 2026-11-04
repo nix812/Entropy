@@ -1781,7 +1781,7 @@ const UI = (() => {
     }
     if (panel.kind === 'enemy') { const e = panel.e, b = el.querySelector('[data-live="ehpbar"]'); if (b) b.style.width = pct(clamp(e.hp / e.maxHp, 0, 1));
       const h = el.querySelector('[data-live="ehp"]'); if (h) h.textContent = `${fmt(Math.max(0, e.hp))} / ${fmt(e.maxHp)} HP`;
-      const pg = el.querySelector('[data-live="eprog"]'); if (pg && e.L && e.L.len) pg.textContent = Math.round(e.d / e.L.len * 100) + '%';
+      const pg = el.querySelector('[data-live="eprog"]'); if (pg && e.L && e.L.len) pg.textContent = Math.round(eProg(e) * 100) + '%';
       const sig = [e.st.burn ? 1 : 0, e.st.chill, e.st.frozen > 0 ? 1 : 0, e.st.shock > 0 ? 1 : 0, e.st.mark, e.scanned > 0 ? 1 : 0, e.shield > 0 ? 1 : 0, e.phase || 0].join(':');
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; } panel.sig = sig; return; }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; renderPanel(); } return; }
@@ -1934,7 +1934,7 @@ const UI = (() => {
     if (e.shield > 0) sts.push(`<span style="color:#7fd4ff">Shield ${fmt(e.shield)}</span>`);
     const elites = (e.elite || []).map(id => ELITE_AFFIXES.find(a => a.id === id)).filter(Boolean);
     const genes = (e.genes || []).filter(g => GENES[g]);
-    const prog = e.L && e.L.len ? Math.round(e.d / e.L.len * 100) : 0;
+    const prog = e.L && e.L.len ? Math.round(eProg(e) * 100) : 0;
     return `<div class="ph"><canvas class="ico eico" width="32" height="32" ${e.boss ? `data-bico="${e.boss}"` : `data-eico="${e.pirate ? 'pirate' : e.type}"`}></canvas><div class="pt"><b>${esc(I.name)}</b><small>${tags.join(' ') || 'Ground'}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
       <div class="ehp"><i data-live="ehpbar" style="width:${pct(clamp(e.hp / e.maxHp, 0, 1))}"></i><span data-live="ehp">${fmt(Math.max(0, e.hp))} / ${fmt(e.maxHp)} HP</span></div>
       <div class="sg mini"><span>Speed<b>${num1(e.spd)}</b></span><span>Road<b data-live="eprog">${prog}%</b></span><span>Bounty<b>${fmt(Math.round(e.cr * G.mods.credits))}</b></span></div>

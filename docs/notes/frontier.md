@@ -1,5 +1,7 @@
 # Frontier: the prototype (builder "frontier", on top of 6.0.0)
 
+> **6.1:** Frontier is now the only run type (Endless, Daily Hunts, Basic Training and every lesson). What changed to get there: `docs/notes/frontier-baseline.md`. The "Daily never Frontier" and "Training untouched" lines below describe the prototype.
+
 Design: `docs/Frontier-Design.md` (Project doc "Frontier-Design"). Nic, after 6.0: "It doesn't feel epic enough or decision-making enough. It's spam towers in differing ways." This build is the design's Phase 1 plus moving towers and the basic camera help, as a separate mode. Classic, Daily Hunts, Training, old recordings and old snapshots are untouched (every rule is gated on `G.fr`).
 
 ## What the player sees
