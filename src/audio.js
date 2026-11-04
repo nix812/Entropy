@@ -504,24 +504,29 @@ const SFX = (() => {
   }
   // Void Lens: one shared beam hum. Its level follows how many beams are firing; its pitch climbs as they ramp up.
   // v5.8: eh / pr = share of firing Lenses that are Event Horizon (a sub octave under the hum) or Prism Split (a wider chorus)
+  let beamOn = 0, beamOff = 0;
   function beams(n, ramp, eh, pr) {
     if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
     if (!beamV) {
       const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator(), o4 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
       const g3 = ctx.createGain(), g4 = ctx.createGain();
       o1.type = 'sawtooth'; o2.setPeriodicWave(pulseWave(0.25)); o3.type = 'sine'; o4.type = 'sawtooth'; o1.frequency.value = 110; o2.frequency.value = 110.6; o3.frequency.value = 55; o4.frequency.value = 109;
-      f.type = 'lowpass'; f.Q.value = 4; f.frequency.value = 600;
+      f.type = 'lowpass'; f.Q.value = 3; f.frequency.value = 600;
       lfo.frequency.value = 7; lg.gain.value = 120; lfo.connect(lg); lg.connect(f.frequency);
       g.gain.value = 0; g3.gain.value = 0; g4.gain.value = 0; o1.connect(f); o2.connect(f); o4.connect(g4); g4.connect(f); f.connect(g); o3.connect(g3); g3.connect(g); g.connect(busW);
       o1.start(); o2.start(); o3.start(); o4.start(); lfo.start(); beamV = { o1, o2, o3, o4, g3, g4, f, g };
     }
     const t = T(), k = Math.min(1, ramp || 0), on = n > 0;
-    beamV.g.gain.setTargetAtTime(on ? Math.min(0.09, 0.035 + 0.02 * Math.log2(1 + n)) : 0, t, on ? 0.05 : 0.12);
+    // 6.0.1: quieter (it is a constant drone, so the glue compressor pulled everything else down under it), and it settles to 65%
+    // after 2.5 s of steady firing; a fresh burst after a second of silence swells back to full
+    if (on) { if (!beamOn || t - beamOff > 1) beamOn = t; beamOff = t; } else if (beamOn && t - beamOff > 1) beamOn = 0;
+    const settle = on && beamOn && t - beamOn > 2.5 ? 0.65 : 1;
+    beamV.g.gain.setTargetAtTime(on ? Math.min(0.055, 0.022 + 0.012 * Math.log2(1 + n)) * settle : 0, t, on ? (settle < 1 ? 0.8 : 0.05) : 0.12);
     const f0 = 98 * semi(k * 12), w = 0.005 + 0.012 * (pr || 0);
     beamV.o1.frequency.setTargetAtTime(f0, t, 0.1); beamV.o2.frequency.setTargetAtTime(f0 * (1 + w), t, 0.1); beamV.o4.frequency.setTargetAtTime(f0 * (1 - w), t, 0.1);
     beamV.o3.frequency.setTargetAtTime(f0 / 2, t, 0.1);
     beamV.g3.gain.setTargetAtTime(1.4 * (eh || 0), t, 0.15); beamV.g4.gain.setTargetAtTime(0.8 * (pr || 0), t, 0.15);
-    beamV.f.frequency.setTargetAtTime(500 + 2200 * k, t, 0.1);
+    beamV.f.frequency.setTargetAtTime(450 + 1500 * k, t, 0.1); // 6.0.1: a little less bright at full ramp
   }
   // v5.8 Flame Projector: one continuous roar for every projector that is firing (n), like the Lens hum. A noise band around
   // 600 Hz with an 11 Hz flutter and a lo-fi crackle; Inferno (inf share) adds a low rumble, Plasma Torch (pl share) a crushed 110 Hz buzz
