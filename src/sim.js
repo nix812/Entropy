@@ -214,7 +214,10 @@ function abilExtend(k, cur, dur) {
 }
 const abilLeft = k => ABIL_TIMER[k] && G[ABIL_TIMER[k]] > 0 ? G[ABIL_TIMER[k]] : 0;
 // Sensor Sweep's pick: the enemy most likely to cost you the run
-function threatScore(e) { const prog = e.L && e.L.len ? e.d / e.L.len : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
+// how far along its road an enemy is (0 at the wormhole, 1 at the core). A Frontier re-route gives each walking enemy its own short
+// lane from where it stands; L.pre (FR_VER 2) is the road it already has behind it, so it keeps its place in line ('First' targeting)
+const eProg = e => e.L.pre ? (e.L.pre + e.d) / (e.L.pre + e.L.len) : e.d / e.L.len;
+function threatScore(e) { const prog = e.L && e.L.len ? eProg(e) : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 function computeMods(alloc, runMods) {
   // v5.0: alloc is ignored (kept in the signature for old callers); talents, Capstones and Remnants come from PROF
@@ -714,10 +717,11 @@ function newRun(opts) {
   const ascV = opts.ascV || (opts.v ? 1 : ASC_V); // v5.8: a recording from before Ascension perks (it carries v, no ascV) keeps the old rules
   opts = Object.assign({}, opts, { seed, ascV });
   const r = mulberry32(seed);
-  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson) : null; // 5.8 Training and lessons: own map, rules and wave script
-  setRows(T ? T.rows : opts.rows || CHAOS_LEVELS[chaos].rows);
+  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson, opts.frontier) : null; // 5.8 Training and lessons: own map, rules and wave script (Frontier: TUT.fr)
+  setRows(T ? T.rows : opts.rows || (opts.frontier ? frRows(chaos) : CHAOS_LEVELS[chaos].rows));
+  if (opts.frontier && !opts.cols) setCols(frCols(ROWS)); // Frontier: the bigger board (the UI passes both; tests may not)
   G = {
-    seed, r, chaos, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, (T && T.start) || opts.startWave || 1), cols: COLS,
+    seed, r, chaos, fr: opts.frontier ? 1 : 0, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, (T && T.start) || opts.startWave || 1), cols: COLS,
     time: 0, speed: 1, paused: false, over: false,
     map: T ? tutMap(r) : genMap(r), towers: [], towerAt: {}, enemies: [], projs: [], zones: [], storms: [],
     wave: 0, queue: [], spawnClock: 0, next: 18, spawningDone: true,
@@ -734,8 +738,9 @@ function newRun(opts) {
   // v5.3: the run records every input (act) from the start; with these opts it replays exactly (Daily Hunt resume, ladder checks)
   // 5.8: a recording carries the rules it was made under (old recordings have none: hk 0, the 5.7 rules); a fresh run gets the current ones
   G.hk = opts.v ? (opts.hk | 0) : HOOK_VER;
+  G.frV = !G.fr ? 0 : opts.v ? (opts.frV | 0) || 1 : FR_VER; // Frontier rules version (1: the lab prototype; 2: the baseline game)
   G.sector = G.hk && SECTOR_BY[opts.sector] ? opts.sector : null; G.tier = 0; G.purse = 0; G.purseOut = null; G.twists = {}; G.twistW = 0;
-  G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }))); G.inputs = []; G.tick = 0;
+  G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }, G.fr ? { frontier: 1, frV: G.frV } : {}))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
   if (T) { G.tut = T.v; G.lesson = T.id || null; G.tutS = T; G.huntBuild = JSON.parse(JSON.stringify(T.build || { tal: {}, caps: [], remnants: [], lvl: 0 })); } // the same for everyone: no talents, laws or Supernova
   G.ascV = ascV; G.mastery = opts.daily || opts.huntBuild ? {} : Object.assign({}, opts.mastery || {}); // Daily Hunts: no Mastery, same for everyone
@@ -750,6 +755,7 @@ function newRun(opts) {
     sinceHit: 99, wLvl: 1, sLvl: 1, uLvl: 0, hLvl: 0, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
+  if (G.fr) { G.frReady = 0; G.frFly = null; G.frN = 0; G.frLinks = []; } // Frontier: lift-off from Wave 1, nothing in the air
   setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
   G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
@@ -785,7 +791,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
-    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
+    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}) }]; // Frontier runs say so in the log
   return G;
 }
 
@@ -920,8 +926,17 @@ function affixText(a) {
 function canBuildAt(x, y) {
   if (x < 0 || y < 0 || x >= COLS || y >= ROWS || (G.region && !inRegion(x, y, G.region))) return false;
   const i = tIdx(x, y);
-  return G.map.tiles[i] === 0 && !G.towerAt[i];
+  return G.map.tiles[i] === 0 && !G.towerAt[i] && !frNearWorm(x, y);
 }
+// Frontier: the ground around every wormhole (open or opening) is a no-build zone
+function frNearWorm(x, y) {
+  if (!G.fr) return false;
+  const r2 = FRONTIER.wormBuild * FRONTIER.wormBuild;
+  for (const L of G.map.lanes) { const p = L.tiles[0], dx = x - p.x, dy = y - p.y; if (dx * dx + dy * dy < r2) return true; }
+  return false;
+}
+// a free tile, ignoring the no-build zone (swallowed towers are put back wherever there's room)
+function tileFreeAt(x, y) { return x >= 0 && y >= 0 && x < COLS && y < ROWS && (!G.region || inRegion(x, y, G.region)) && G.map.tiles[tIdx(x, y)] === 0 && !G.towerAt[tIdx(x, y)]; }
 // ---------- Snare Beacons: lure fliers off their straight line into a net ----------
 function lure(e) {
   if (!e.fly || e.boss || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
@@ -1125,6 +1140,7 @@ function towerStats(t) {
   const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
   if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
   if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.05 + FX('aRank') / 100) * t.rank : 0.75; // v4.4: 6%/−20% measured 16 waves above no Doctrine (bots); trimmed
+  if (G.fr && t === frDockT()) { s.dmg *= frDockX(); s.range += FRONTIER.dockRange; s.docked = 1; } // Frontier: mounted on the core
   return s;
 }
 // ---------- v5.8 Techniques: a tower's alternate fire mode (TOWER_FIRE in data.js) ----------
@@ -1216,6 +1232,7 @@ function recomputeAuras() {
   G.gardens = [];
   if (G.mods.ks.garden) { const W = G.towers.filter(t => t.type === 'grav'); for (let i = 0; i < W.length; i++) for (let j = i + 1; j < W.length; j++) if (dist2(W[i].cx, W[i].cy, W[j].cx, W[j].cy) <= GARDEN.span * GARDEN.span) G.gardens.push([W[i], W[j]]); }
   updateLinks();
+  if (G.fr) frLinkUpdate();
 }
 // ---------- Node Links: combat towers on Power Nodes within LINK_MAX tiles share a beam ----------
 const LINK_MAX = 9, LINK_DMG = 0.1, LINK_BEAM = 0.5;
@@ -1490,6 +1507,7 @@ function prepareWave(w) {
   }
   if (G.wanted && !G.wanted.done && !G.wanted.spawned && w > G.wanted.w) planWanted(Math.ceil((w + 10) / 10) * 10); // its boss never showed: post it again
   assaultTick(w);
+  if (G.tut && G.tutS.vetAt === tutIdx(w) && w > G.wave && !G.lesson && !G.towers.some(t => t.rank > 0)) { const t = topTower(); if (t) grantVxp(t, Math.max(0, vetThreshold(1) - t.vxp)); } // Frontier Training: fewer kills, so the busiest tower is a Veteran by Wave 5 (the Ready step)
   if (G.tut && G.tutS.grant && G.tutS.grant[tutIdx(w)] && w > G.wave) { const cr = G.tutS.grant[tutIdx(w)]; G.credits += cr; Hooks.toast('SUPPLY DROP', `+${cr} credits for Training`, '#ffb03a'); Hooks.fx('coin', { x: G.core.x, y: G.core.y - 0.6, v: cr }); }
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
@@ -1622,7 +1640,7 @@ function geneShares() {
 }
 function geneRecord(e, leaked) {
   if (e.gkey === undefined) return;
-  const prog = leaked ? 1.5 : clamp(e.d / (e.L.len || 1), 0, 1);
+  const prog = leaked ? 1.5 : clamp(e.L.pre ? eProg(e) : e.d / (e.L.len || 1), 0, 1);
   const X = G.geneExp || (G.geneExp = {});
   const exp = X[e.type] === undefined ? prog : X[e.type];
   X[e.type] = exp * 0.97 + prog * 0.03;
@@ -1636,6 +1654,8 @@ function genWave(w, ev) {
   let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)) * (G.CH.count || 1));
   let hpm = hpMult(w) * (1 + (af.hpx || 0)) * (G.CH.hp || 1);
   if (ev.swarm) { count *= 1.6; hpm *= 0.6; } // v5.1.3: was ×2 at 55% (Nic: an endless stream)
+  if (G.fr) count = Math.max(3, Math.round(count * FRONTIER.count)); // Frontier: fewer, heavier units (their HP below, bosses in spawnBoss)
+  const hpE = G.fr ? hpm * FRONTIER.hp : hpm;
   const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && ENEMIES[k].w > 0);
   // v5.1 headline threats: each wave leans on one enemy (two from Wave 25), so you can see what it is and answer it.
   // A type that has just arrived always headlines its first wave
@@ -1668,14 +1688,14 @@ function genWave(w, ev) {
   };
   let n = 0;
   while (n < count) {
-    const type = wpick(r, types, k => ENEMIES[k].w * (heads.includes(k) ? HEAD_W : 1) * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1) * (lean ? lw(k) : 1));
+    const type = wpick(r, types, k => ENEMIES[k].w * (heads.includes(k) ? HEAD_W : 1) * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1) * (lean ? lw(k) : 1) * (G.fr ? FRONTIER.w[k] || 1 : 1));
     const lane = laneFor();
     const grp = ENEMIES[type].group || 1;
     for (let g = 0; g < grp; g++) {
       const el = r() < eliteP && type !== 'swarmer' ? affN : 0;
       const gm = breedOne(plan, type, r);
-      q.push({ t, type, lane, hpm, elite: el, genes: gm ? gm.genes : null, gel: gm ? gm.el : null });
-      t += grp > 1 ? 0.18 : interval;
+      q.push({ t, type, lane, hpm: hpE, elite: el, genes: gm ? gm.genes : null, gel: gm ? gm.el : null });
+      t += grp > 1 ? 0.18 : G.fr ? interval / FRONTIER.count : interval; // Frontier: the same spawn time for fewer units
     }
     n += grp > 1 ? 2 : 1;
     if (isBoss && n >= Math.floor(count / 2) && !q.some(e => e.boss)) {
@@ -1702,7 +1722,7 @@ function genWave(w, ev) {
 }
 // 5.8 Training: the run's rules (called once from newRun) and its scripted waves (from genWave)
 // a lesson's run is TUT with the lesson's own fields on top (LESSONS[i].run): its waves, credits, towers, presets
-function tutSpec(id) { const L = id && LESSON_BY[id]; return L && L.run ? Object.assign({}, TUT, { boss: null, charge: null, grant: null, abil: null, build: null, pre: null }, L.run, { id }) : TUT; }
+function tutSpec(id, fr) { const L = id && LESSON_BY[id], B = fr ? Object.assign({}, TUT, TUT.fr) : TUT; return L && L.run ? Object.assign({}, B, { boss: null, charge: null, grant: null, abil: null, build: null, pre: null }, L.run, { id }) : B; } // fr: Frontier Training (TUT.fr: its board and wave script)
 const tutIdx = w => w - (G.startWave || 1) + 1; // the script's wave number (1 = the first scripted wave)
 // the free tiles beside the road that cover the most of it, none touching another (deterministic, no G.r): lesson presets and the coach
 function tutSpots(n, avoid) {
@@ -1729,6 +1749,15 @@ function tutPreset(P) {
     const sp = tutSpots(a.length);
     a.forEach(([type, lvl, spec], i) => { const s = sp[i]; if (!s) return; G.credits += towerCost(type); const t = buildTower(type, s.x, s.y); if (!t) return;
       for (let k = 1; k < (lvl || 1); k++) { G.credits += upgradeCost(t); upgradeTower(t, t.lvl === 3 ? spec || 1 : undefined); } t.affixes = t.affixes.filter(x => x.tier < 4); t.s = towerStats(t); });
+  }
+  else if (op === 'road') { // 6.1: [[type, lvl, frac, spec]...], each beside the main road at that share of its length (the nearest free tile)
+    const L = G.map.lanes[0].tiles;
+    for (const [type, lvl, f, spec] of a) {
+      let s = null; const k0 = Math.round(f * (L.length - 1));
+      for (let dk = 0; dk < L.length && !s; dk++) for (const k of [k0 + dk, k0 - dk]) { const p = L[k]; if (!p || s) continue; for (const [dx, dy] of [[0, -1], [0, 1], [1, 0], [-1, 0]]) if (!s && canBuildAt(p.x + dx, p.y + dy) && !G.towers.some(t => Math.abs(t.x - p.x - dx) <= 1 && Math.abs(t.y - p.y - dy) <= 1)) s = { x: p.x + dx, y: p.y + dy }; }
+      if (!s) continue; G.credits += towerCost(type); const t = buildTower(type, s.x, s.y); if (!t) continue;
+      for (let j = 1; j < (lvl || 1); j++) { G.credits += upgradeCost(t); upgradeTower(t, t.lvl === 3 ? spec || 1 : undefined); } t.affixes = t.affixes.filter(x => x.tier < 4); t.s = towerStats(t);
+    }
   }
   else if (op === 'abil') for (const k of a) { G.abilOn[k] = 1; G.charges[k] = Math.max(G.charges[k] || 0, b || 1); G.abilCd[k] = abilCdMax(k); }
   else if (op === 'cache') { const s = tutSpots(1)[0]; if (s) G.caches.push({ x: s.x, y: s.y, t: 999, id: G.eid++, kind: a || 'normal' }); }
@@ -1760,7 +1789,7 @@ function tutWave(w) {
 // a leak in Training: the boss circles back to the start of the road, and the core never drops below 1 (it says so, once)
 function tutLeak(e) {
   if (!e.boss || e.gen) return false;
-  const c = G.core; c.hp = Math.max(1, c.hp - c.max * 0.25); c.sinceHit = 0; e.d = 0; e.seg = 0; lanePos(e.L, 0, e);
+  const c = G.core; c.hp = Math.max(1, c.hp - c.max * 0.25); c.sinceHit = 0; if (G.fr && !G.map.lanes.includes(e.L)) e.L = G.map.lanes[0]; e.d = 0; e.seg = 0; lanePos(e.L, 0, e); // (Frontier: off a re-routed lane, back to the main road)
   Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
   Hooks.toast('BOSS BREACH', `${e.bossName} hit the core and circled back. In a real run, a boss at the core ends it`, '#ff4d6a', true);
   return true;
@@ -2110,7 +2139,7 @@ function updateWaves(dt) {
   }
   if (!G.queue.length) {
     G.spawningDone = true;
-    G.next = G.af.timeDebt ? 6 : 13; // v4.7: 13 s between waves (was 10)
+    G.next = G.af.timeDebt ? 6 : G.fr ? FRONTIER.gap : 13; // v4.7: 13 s between waves (was 10)
     const bonus = Math.round((25 + G.wave * 6) * G.mods.credits * (G.ev.gold ? 2 : 1)); // v5.0: was 20 + 4 × wave
     G.credits += bonus;
     if (FX('interest')) { const it = Math.min(300, Math.floor(G.credits * FX('interest') / 100)); if (it > 0) { G.credits += it; Hooks.log(`Interest +${it} credits`, '#ffb03a'); } }
@@ -2229,6 +2258,7 @@ function spawnEnemy(type, q) {
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: D.cloak ? 1 : 0, cloakT: 2 + ((G.eid * 2654435761) >>> 0) % 1000 / 500, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0,
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
+  if (G.fr) { e.spd *= FRONTIER.spd; if (!q.fromPt && !q.L) { e.cr /= FRONTIER.count; e.score = Math.round(e.score / FRONTIER.count); } } // Frontier: slower; a wave pays what a Classic one does
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
     if (q.assault) { e.assault = 1; e.hpBase = hp0; }
@@ -2361,6 +2391,7 @@ function spawnBoss(q) {
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2, phase: 0, phaseT: 0 };
   if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
+  if (G.fr) { e.spd *= FRONTIER.spd; if (!gen && !q.hpAbs) e.hp = e.maxHp = hp * FRONTIER.bossHp; } // Frontier: slower, so tougher
   if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.85 : 0.6; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
   // Most Wanted: the poster's boss gets its mutation (twins: the second copy follows 3 s later)
   if (!gen && G.wanted && !G.wanted.done && G.wanted.boss === B.id && G.wanted.w === w) {
@@ -2622,8 +2653,8 @@ function wormSurface(e) {
 function wormRelease(e) { // put swallowed towers back where they stood (or the nearest free tile)
   let back = 0;
   for (const t of e.gut || []) {
-    let spot = canBuildAt(t.x, t.y) ? [t.x, t.y] : null;
-    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (canBuildAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
+    let spot = tileFreeAt(t.x, t.y) ? [t.x, t.y] : null;
+    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (tileFreeAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
     if (!spot) continue;
     t.x = spot[0]; t.y = spot[1]; t.cx = t.x + 0.5; t.cy = t.y + 0.5; t.disabled = 1;
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t; back++;
@@ -3070,8 +3101,8 @@ function findTargets(t, range, n, exclude) {
   }
   if (!cand.length) return out;
   const mode = t.mode;
-  const key = mode === 'first' ? e => -(e.d / e.L.len) - (e.L.len - e.d < 6 ? 1 : 0)
-    : mode === 'last' ? e => e.d / e.L.len
+  const key = mode === 'first' ? e => -eProg(e) - (e.L.len - e.d < 6 ? 1 : 0)
+    : mode === 'last' ? e => eProg(e)
     : mode === 'strong' ? e => -e.hp
     : e => dist2(e.x, e.y, t.cx, t.cy);
   cand.sort((a, b) => key(a) - key(b));
@@ -3630,7 +3661,7 @@ function coreStats() {
   const A = c.A, p = k => (A[k] || 0) / 100, nd = isNode(G.map.core.x, G.map.core.y);
   const el = M.ks.conflag ? 'T' : c.el;
   const st = CORE_EL_STATUS[el];
-  return {
+  const o = {
     el, kind: 'core', dmg: CORE_GUN.dmg * Math.pow(CORE_GUN.growth, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1) * wx, rate: CORE_GUN.rate * wr * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
     range: (CORE_GUN.range + M.coreRange + CORE_GUN.rangeLv * (c.wLvl - 1)) * (1 + p('range')), critC: M.critC + (A.critC || 0), critM: 1.5 + M.critM + p('critM'),
     burn: clamp((st.burn || 0) + p('burn'), 0, 1), chill: M.ks.conflag ? 0 : clamp((st.chill || 0) + p('chill'), 0, 1), shock: clamp((st.shock || 0) + p('shock'), 0, 1), mark: clamp((st.mark || 0) + p('mark'), 0, 1),
@@ -3638,6 +3669,8 @@ function coreStats() {
     pierce: A.pierce || 0, chain: A.chain || 0, splash: CORE_GUN.splash + (c.wLvl >= 8 ? 0.6 : 0) + (A.splash || 0), multi: (A.multi || 0) + (c.wLvl >= 4 ? 1 : 0),
     node: nd,
   };
+  if (G.fr && G.frLinks && G.frLinks.length) o.dmg *= 1 + FRONTIER.linkCore * G.frLinks.length; // Frontier: +5% per linked tower
+  return o;
 }
 const coreWeaponCost = () => Math.round(120 * Math.pow(1.75, G.core.wLvl - 1));
 const coreHullCost = () => Math.round(HULL.base * Math.pow(HULL.growth, G.core.hLvl || 0) * (1 + 0.02 * Math.max(0, (G.wave || 1) - 10)));
@@ -3652,6 +3685,7 @@ function coreUpgrade(kind) {
   else if (kind === 'hull') { const k = coreHullCost(); if ((c.hLvl || 0) >= HULL.max || G.credits < k) return false; G.credits -= k; const was = c.max; c.hLvl = (c.hLvl || 0) + 1; recomputeAll(); c.hp = Math.min(c.max, c.hp + (c.max - was)); rlog('hull', { lv: c.hLvl, cost: k }); }
   else if (kind === 'uplink') { const k = coreUplinkCost(); if ((c.uLvl || 0) >= UPLINK.max || G.credits < k) return false; G.credits -= k; c.uLvl = (c.uLvl || 0) + 1; rlog('uplink', { lv: c.uLvl, cost: k });
     for (const a of ABIL_ORDER) if (G.abilCd[a] > abilCdMax(a)) G.abilCd[a] = abilCdMax(a);
+    if (G.fr) recomputeAuras(); // Frontier: Uplink adds links
     const m = UPLINK.mods.find(x => x.lv === c.uLvl); if (m) Hooks.toast('UPLINK · ' + m.name.toUpperCase(), m.desc, '#ffe14d', true); }
   else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; c.hp = Math.min(c.max, c.hp + c.max * 0.35); }
   if (rolled) { c.affixes.push(rolled); coreAffSum(c); recomputeAll(); if (kind === 'shield') c.shield = c.smax; }
@@ -3662,9 +3696,10 @@ function coreUpgrade(kind) {
 function updateCore(dt) {
   const c = G.core;
   c.sinceHit += dt;
-  if (c.sinceHit > 4 && c.shield < c.smax) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
+  if (c.sinceHit > 4 && c.shield < c.smax && !(G.fr && G.frFly)) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
   const s = coreStats();
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
+  if (G.fr && (G.frFly || frDockT())) { c.cd = 0; return; } // Frontier: no gun in the air; docked, the tower is the gun
   c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1) * (G.redAlert ? RED_ALERT.coreRate : 1);
   if (c.cd > 0) return;
   // last line of defence: shells go to whatever is closest to reaching the core along its route, anywhere in range
@@ -3691,7 +3726,7 @@ function updateCore(dt) {
 
 // ---------- core relocation (wormhole checkpoints only, with the field empty) ----------
 const relocCost = () => (G.relocUsed || 0) > 0 ? RELOCATE_COST : 0;
-const canRelocate = () => !!(G && !G.over && G.checkpoint && !G.enemies.length);
+const canRelocate = () => !!(G && !G.over && !G.fr && G.checkpoint && !G.enemies.length); // Frontier flies instead (frLiftOff)
 function relocCandidates() {
   const R = G.region, c = G.map.core, out = [], starts = G.map.lanes.map(L => L.tiles[0]);
   for (let y = R.y0 + 1; y < R.y1 - 1; y++) for (let x = R.x0 + 1; x < R.x1 - 1; x++) {
@@ -3729,8 +3764,8 @@ function pathfind(s0, goal, step) {
   return route;
 }
 // Re-plot every lane to a new core spot, reusing existing road where it can and going around towers.
-function planRelocation(nx, ny) {
-  if (!canRelocate() || !relocCandidates().includes(tIdx(nx, ny))) return null;
+function planRelocation(nx, ny, fr) { // fr: a Frontier landing (frPlan checks the spot and the cooldown)
+  if (fr ? !frCands().includes(tIdx(nx, ny)) : !canRelocate() || !relocCandidates().includes(tIdx(nx, ny))) return null;
   const map = G.map, N = COLS * ROWS, goal = tIdx(nx, ny);
   const road = new Uint8Array(N), fresh = new Uint8Array(N), own = new Uint8Array(N);
   for (const L of map.lanes) for (const p of L.tiles) road[tIdx(p.x, p.y)] = 1;
@@ -3759,13 +3794,13 @@ function planRelocation(nx, ny) {
   const oldT = [].concat(...map.lanes.map(L => L.tiles)), newT = [].concat(...routes);
   let lose = 0, gain = 0;
   for (const t of G.towers) { if (!t.s || !t.s.range || t.s.kind === 'eco') continue; const a = reach(t, oldT), b = reach(t, newT); if (a && !b) lose++; else if (!a && b) gain++; }
-  return { x: nx, y: ny, routes, before, after, cost: relocCost(), lose, gain };
+  return { x: nx, y: ny, routes, before, after, cost: fr ? 0 : relocCost(), lose, gain };
 }
-function applyRelocation(plan) {
-  if (!plan || !canRelocate()) return false;
-  const cost = relocCost();
+function applyRelocation(plan, fr) {
+  if (!plan || (!fr && !canRelocate())) return false;
+  const cost = fr ? 0 : relocCost();
   if (G.credits < cost) return false;
-  G.credits -= cost; G.relocUsed = (G.relocUsed || 0) + 1; rlog('reloc', { cost });
+  if (!fr) { G.credits -= cost; G.relocUsed = (G.relocUsed || 0) + 1; rlog('reloc', { cost }); }
   const map = G.map, old = map.lanes;
   for (let i = 0; i < map.tiles.length; i++) { const t = map.tiles[i]; if (t === 1 || t === 4 || t === 5) map.tiles[i] = 0; }
   map.core = { x: plan.x, y: plan.y };
@@ -3789,10 +3824,167 @@ function applyRelocation(plan) {
   }
   for (const q of G.queue) q.lane = remap(q.lane);
   G.mapRev = (G.mapRev || 0) + 1;
+  if (fr) return true;
   Hooks.log(`Core relocated${cost ? ` · −${cost} credits` : ' · free'}`, '#59f0b4');
   Hooks.fx('upgrade', { x: G.core.x, y: G.core.y, col: '#59f0b4' });
   Hooks.sfx('lane');
   return true;
+}
+
+// ---------- Frontier: lift-off, docking, links and tower moves (G.fr runs only; tunables in FRONTIER, data.js) ----------
+// The core flies to any open tile in the sector or onto one of your attack towers. Every road re-routes to the landing spot the
+// moment you commit (planRelocation / applyRelocation do the roads), and enemies already walking turn toward it (frReroute).
+// In the air the core's gun is offline and its shield is down. Docking is derived, never stored: while landed, the attack tower
+// on the core's tile is the core's weapon (towerStats scales it). Lifting off simply sets it back to being a tower.
+function frDockT() {
+  if (!G || !G.fr || G.frFly || !G.map) return null;
+  const t = G.towerAt[tIdx(G.map.core.x, G.map.core.y)];
+  return t && canOvercharge(t) ? t : null;
+}
+const frUp = () => (G.core && G.core.uLvl) || 0;
+const frCd = () => Math.max(1, FRONTIER.cd - Math.floor(frUp() / FRONTIER.cdUplink));
+const frLinkN = () => FRONTIER.links + Math.floor(frUp() / FRONTIER.linkUplink);
+const frCanFly = () => !!(G && G.fr && !G.over && !G.frFly && G.wave >= (G.frReady || 0));
+const frDockX = () => FRONTIER.dockDmg * (1 + FRONTIER.dockBat * ((G.core && G.core.wLvl || 1) - 1));
+// landing spots: open ground or an attack tower, inside the sector (1-tile margin), clear of every wormhole
+function frCands() {
+  const R = G.region, c = G.map.core, out = [], starts = G.map.lanes.map(L => L.tiles[0]);
+  for (let y = R.y0 + 1; y < R.y1 - 1; y++) for (let x = R.x0 + 1; x < R.x1 - 1; x++) {
+    if (x === c.x && y === c.y) continue;
+    const i = tIdx(x, y), tw = G.towerAt[i];
+    if (G.map.tiles[i] !== 0 || (tw && (!canOvercharge(tw) || tw.mvT > 0))) continue;
+    if (starts.some(p => Math.abs(p.x - x) + Math.abs(p.y - y) < FRONTIER.wormGap)) continue;
+    out.push(i);
+  }
+  return out;
+}
+// the attack towers a core at (cx, cy) links to: the nearest within reach, ties by build order
+function frLinksAt(cx, cy, dock) {
+  const R2 = FRONTIER.linkR * FRONTIER.linkR, L = [];
+  for (const t of G.towers) { if (t === dock || !canOvercharge(t)) continue; const d = dist2(t.cx, t.cy, cx, cy); if (d <= R2 + 0.01) L.push([d, t.id, t]); }
+  L.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  return L.slice(0, frLinkN()).map(a => a[2]);
+}
+// called at the end of recomputeAuras: linked towers get their bonus, the docked tower (or the plain core gun, coreStats) its share
+function frLinkUpdate() {
+  G.frLinks = [];
+  if (G.frFly || !G.core) return;
+  const d = frDockT();
+  G.frLinks = frLinksAt(G.core.x, G.core.y, d);
+  for (const t of G.frLinks) { t.buff.dmg += FRONTIER.linkDmg; t.buff.rate += FRONTIER.linkRate; }
+  if (d) d.buff.dmg += FRONTIER.linkCore * G.frLinks.length;
+}
+function frRestat() { for (const t of G.towers) t.s = towerStats(t); recomputeAuras(); }
+// the landing preview (and the check the act makes): roads before → after, the tower it docks on, the links, the flight time
+function frPlan(x, y) {
+  if (!frCanFly()) return null;
+  const P = planRelocation(x, y, true); if (!P || Math.min(...P.after) < FRONTIER.minRoad) return null;
+  const tw = G.towerAt[tIdx(x, y)] || null, halted = G.checkpoint && !G.enemies.length;
+  P.dock = tw; P.links = frLinksAt(x + 0.5, y + 0.5, tw);
+  P.dist = Math.hypot(x + 0.5 - G.core.x, y + 0.5 - G.core.y);
+  P.secs = halted ? 0 : Math.max(FRONTIER.flyMin, P.dist / FRONTIER.flySpd);
+  return P;
+}
+function frLiftOff(x, y) {
+  const P = frPlan(x, y); if (!P) return false;
+  const from = { x: G.core.x, y: G.core.y }, old = G.map.lanes;
+  applyRelocation(P, true);
+  G.core.x = from.x; G.core.y = from.y;
+  frReroute(old);
+  G.frN = (G.frN || 0) + 1;
+  G.core.shield = 0; G.core.sinceHit = 0;
+  G.frFly = { x0: from.x, y0: from.y, x1: x + 0.5, y1: y + 0.5, t: 0, dur: P.secs };
+  rlog('frFly', { x, y, dock: P.dock ? P.dock.type : null, lvl: P.dock ? P.dock.lvl : 0, links: P.links.length, road: [P.before.reduce((a, b) => a + b, 0), P.after.reduce((a, b) => a + b, 0)], secs: +P.secs.toFixed(1) });
+  frRestat();
+  Hooks.sfx('lane'); Hooks.fx('upgrade', { x: from.x, y: from.y, col: '#59f0b4' });
+  if (P.secs <= 0) frLand();
+  return true;
+}
+function frLand() {
+  const F = G.frFly; if (!F) return;
+  G.core.x = F.x1; G.core.y = F.y1; G.frFly = null; G.core.sinceHit = 0;
+  G.frReady = G.wave + frCd();
+  frRestat();
+  const d = frDockT();
+  Hooks.fx('upgrade', { x: G.core.x, y: G.core.y, col: d ? EL[d.s.el].col : '#59f0b4' }); Hooks.sfx('upgrade', {});
+  Hooks.log(`${d ? `Docked on ${towerLabel(d)}` : 'Core landed'} · ${G.frLinks.length} link${G.frLinks.length === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, '#59f0b4');
+  if (Hooks.frLanded) Hooks.frLanded(d);
+}
+// enemies already on the field turn toward the landing spot: one search outward from it gives every tile its next step,
+// new road preferred (so they join the nearest new road and follow it); fliers take a straight line
+function frReroute(old) {
+  const map = G.map, N = COLS * ROWS, goal = tIdx(map.core.x, map.core.y), R = G.region, gx = map.core.x + 0.5, gy = map.core.y + 0.5;
+  const road = new Uint8Array(N); for (const L of map.lanes) for (const p of L.tiles) road[tIdx(p.x, p.y)] = 1;
+  const dist = new Float32Array(N).fill(1e9), nxt = new Int32Array(N).fill(-1), done = new Uint8Array(N), hd = [], hi = [];
+  const push = (d, i) => { hd.push(d); hi.push(i); let k = hd.length - 1; while (k) { const p = (k - 1) >> 1; if (hd[p] <= hd[k]) break; [hd[p], hd[k]] = [hd[k], hd[p]]; [hi[p], hi[k]] = [hi[k], hi[p]]; k = p; } };
+  const pop = () => { const i = hi[0]; const ld = hd.pop(), li = hi.pop(); if (hd.length) { hd[0] = ld; hi[0] = li; let k = 0; for (;;) { const a = 2 * k + 1, b2 = a + 1; let m = k; if (a < hd.length && hd[a] < hd[m]) m = a; if (b2 < hd.length && hd[b2] < hd[m]) m = b2; if (m === k) break; [hd[m], hd[k]] = [hd[k], hd[m]]; [hi[m], hi[k]] = [hi[k], hi[m]]; k = m; } } return i; };
+  dist[goal] = 0; push(0, goal);
+  while (hd.length) {
+    const v = pop(); if (done[v]) continue; done[v] = 1;
+    const vx = v % COLS, vy = (v / COLS) | 0, step = road[v] ? 0.1 : 1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const ux = vx + dx, uy = vy + dy; if (!inRegion(ux, uy, R)) continue;
+      const u = tIdx(ux, uy); if (map.tiles[u] === 2 || G.towerAt[u]) continue;
+      if (dist[v] + step < dist[u]) { dist[u] = dist[v] + step; nxt[u] = v; push(dist[u], u); }
+    }
+  }
+  // FR_VER 2: the new lane remembers the road already behind the enemy (L.pre), measured against the new road of the lane it walked
+  const keep = G.frV >= 2, mainOf = e => { const k = old.indexOf(e.L), M = map.lanes[k >= 0 ? k : 0]; return M; };
+  for (const e of G.enemies) {
+    if (e.dead || e.pirate || !e.L) continue;
+    if (e.fly && !e.boss) { const M = keep ? mainOf(e) : null; e.L = prepLane([{ x: e.x, y: e.y }, { x: gx, y: gy }]); e.d = 0; e.seg = 0; e.lureT = null;
+      if (M) { const p0 = M.tiles[0], tot = Math.hypot(p0.x + 0.5 - gx, p0.y + 0.5 - gy); if (tot > e.L.len) e.L.pre = tot - e.L.len; } continue; }
+    const s = tIdx(clamp(Math.floor(e.x), 0, COLS - 1), clamp(Math.floor(e.y), 0, ROWS - 1));
+    if (s !== goal && nxt[s] < 0) continue; // walled in: it keeps its old road
+    const tiles = [{ x: s % COLS, y: (s / COLS) | 0 }], pts = [{ x: e.x, y: e.y }];
+    for (let c = s, g = 0; c !== goal && g < N; g++) { c = nxt[c]; tiles.push({ x: c % COLS, y: (c / COLS) | 0 }); pts.push({ x: c % COLS + 0.5, y: ((c / COLS) | 0) + 0.5 }); }
+    if (pts.length < 2) pts.push({ x: gx, y: gy });
+    const L = prepLane(pts); L.tiles = tiles; L.fly = prepLane([pts[0], { x: gx, y: gy }]);
+    if (keep) { const M = mainOf(e); if (M && M.len > L.len) L.pre = M.len - L.len; }
+    e.L = L; e.d = 0; e.seg = 0;
+  }
+}
+// moving a tower: it is set down on the new tile at once (so nothing else can take it) and stays offline while it relocates
+const frMoveFee = t => Math.round(t.invested * FRONTIER.moveFee);
+function frMoveOk(t, x, y) { return !!(G && G.fr && !G.over && t && G.towers.includes(t) && t !== frDockT() && !(t.mvT > 0) && canBuildAt(x, y)); }
+function frMoveTower(t, x, y) {
+  if (!frMoveOk(t, x, y)) return false;
+  if (isNode(t.x, t.y) && !isNode(x, y) && gridFree() < 1) { if (Hooks.gridFull) Hooks.gridFull(); return false; }
+  const fee = frMoveFee(t); if (G.credits < fee) return false;
+  G.credits -= fee; G.stats.frMoves = (G.stats.frMoves || 0) + 1;
+  delete G.towerAt[tIdx(t.x, t.y)];
+  t.mvFrom = { x: t.cx, y: t.cy };
+  t.x = x; t.y = y; t.cx = x + 0.5; t.cy = y + 0.5;
+  G.towerAt[tIdx(x, y)] = t;
+  t.mvT = FRONTIER.moveT; t.disabled = Math.max(t.disabled || 0, t.mvT); t.disCause = 'MOVING';
+  t.ramp = 0; t.beamTargets = null; t.fenceTo = null;
+  t.s = towerStats(t); recomputeAuras();
+  if (t.s.kind === 'snare') lureAll();
+  rlog('frMove', { type: t.type, x, y, fee });
+  Hooks.sfx('build', t); Hooks.fx('sell', { x: t.mvFrom.x, y: t.mvFrom.y });
+  return true;
+}
+// run-end Frontier telemetry for the log: flights, moves, seconds in the air, share of landed time per weapon
+function frSummary() {
+  const d = G.stats.frDock || {}, tot = Object.values(d).reduce((a, b) => a + b, 0) || 1, share = {};
+  for (const k in d) share[k] = Math.round(100 * d[k] / tot);
+  return { flights: G.frN || 0, moves: G.stats.frMoves || 0, air: Math.round(G.stats.frAir || 0), dockPct: share };
+}
+function frUpdate(dt) {
+  const F = G.frFly;
+  if (!F) { const d = frDockT(), st = G.stats.frDock || (G.stats.frDock = {}), k = d ? d.type : 'cannon'; st[k] = (st[k] || 0) + dt; } // telemetry only: seconds landed per weapon
+  else G.stats.frAir = (G.stats.frAir || 0) + dt;
+  if (F) {
+    F.t += dt;
+    const k = Math.min(1, F.t / F.dur), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) * (-2 * k + 2) / 2;
+    G.core.x = F.x0 + (F.x1 - F.x0) * e; G.core.y = F.y0 + (F.y1 - F.y0) * e;
+    if (F.t >= F.dur) frLand();
+  }
+  for (const t of G.towers) if (t.mvT > 0) {
+    t.mvT -= dt;
+    if (t.mvT <= 0) { t.mvT = 0; t.mvFrom = null; if (t.disCause === 'MOVING') { t.disabled = 0; t.disCause = null; } }
+    else if (t.disabled < t.mvT) { t.disabled = t.mvT; t.disCause = 'MOVING'; }
+  }
 }
 
 // ---------- abilities ----------
@@ -3855,6 +4047,7 @@ function simStep(dt) {
   if (G.over) return;
   updateTowers(dt);
   updateCore(dt);
+  if (G.fr) frUpdate(dt);
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
@@ -3869,7 +4062,7 @@ function gameOver() {
   bankPurse();
   if (ghostRun()) { Hooks.onGameOver(); return; }
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
-    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain() }); }
+    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
   huntEnd();
   masteryEnd();
@@ -4015,7 +4208,7 @@ function huntEnd() {
 const SIM_STEP = 1 / 30;
 const twAt = (x, y) => G.towerAt[tIdx(x, y)] || null;
 function setTowerMode(t, m) { if (!t || !['first', 'last', 'strong', 'weak', 'close'].includes(m)) return false; t.mode = m; return true; }
-function setCoreEl(el) { if (!ELS.includes(el)) return false; G.core.el = el; return true; }
+function setCoreEl(el) { if (!ELS.includes(el) || G.fr) return false; G.core.el = el; return true; } // Frontier: docking is how the core changes element
 function cancelBeacon() {
   if (G.placing !== 'beacon') return false;
   G.placing = null; G.credits += G.placingRefund || 0; G.placingRefund = 0;
@@ -4049,6 +4242,8 @@ const ACTS = {
   cache: (x, y) => { const c = cacheAt(x, y); return !!c && claimCache(c); },
   od: () => releaseOverdrive(),
   reloc: (x, y) => { const P = planRelocation(x, y); return !!P && !P.fail && applyRelocation(P); },
+  frFly: (x, y) => frLiftOff(x, y), // Frontier: lift off and land at (x, y) (a tower tile docks it)
+  frMove: (fx, fy, x, y) => { const t = twAt(fx, fy); return !!t && frMoveTower(t, x, y); }, // Frontier: move a tower
   extract: () => huntExtract(),
   push: door => huntPush(door == null ? undefined : door), // 5.8: the jump door's index; none (5.7 recordings) pushes on as before
   abandon: () => { abandonRun(); return true; },
@@ -4113,6 +4308,7 @@ function snapshotRun(waveNum) {
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     ascV: G.ascV || 1, mastery: G.mastery || {}, // v5.8
+    fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -4121,7 +4317,7 @@ function snapshotRun(waveNum) {
 function snapshotNow() { if (G && !G.over) snapshotRun(G.spawningDone ? G.wave + 1 : G.wave); }
 function resumeRun(S) {
   const r = mulberry32((S.seed ^ (S.wave * 7919)) >>> 0);
-  newRun({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null, ascV: S.ascV || 1, mastery: S.mastery || {} }); // v5.8: a save from before perks keeps the old Ascend
+  newRun(Object.assign({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null, ascV: S.ascV || 1, mastery: S.mastery || {} }, S.fr ? { frontier: 1 } : {})); // v5.8: a save from before perks keeps the old Ascend
   PROF.runs--; // newRun counted it; a resume is the same run
   G.r = r;
   G.map.tiles = S.tiles.slice();
@@ -4162,6 +4358,11 @@ function resumeRun(S) {
   G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
+  if (G.fr) { // Frontier: the cooldown, and a flight in progress carries on (the saved tiles already route every road to its landing spot)
+    G.frReady = S.frReady || 0; G.frN = S.frN || 0; G.frFly = S.frFly ? Object.assign({}, S.frFly) : null;
+    if (G.frFly) { G.core.shield = 0; frUpdate(0); }
+    frRestat();
+  }
   prepareWave(S.wave);
   Hooks.log(`Run resumed · Wave ${S.wave}`, '#59f0b4');
   return G;

@@ -126,13 +126,16 @@ for (let run = OFF; run < OFF + runs; run++) {
   S.Hooks.log = (t) => { if (/CONVERGENCE/.test(t)) met.conv++; if (/MAELSTROM FORMS/.test(t)) met.mael++; if (/rolls in/.test(t)) met.storms++; };
   let q = []; const setImmediateQ = f => q.push(f);
   S.Hooks.sfx = () => {};
-  const G = S.newRun({ seed: 1000 + run * 17, chaos, startWave: sw, cols: +(process.env.COLS || 39), sector: pickSector(S.sectorOffers(1000 + run * 17)) });
+  const FR = !!process.env.FR; // Frontier prototype (its own board size); the bot docks on its best tower and moves idle ones
+  const G = S.newRun(Object.assign({ seed: 1000 + run * 17, chaos, startWave: sw, sector: pickSector(S.sectorOffers(1000 + run * 17)) }, FR ? { frontier: 1 } : { cols: +(process.env.COLS || 39) }));
+  met.fr = { flights: 0, docks: 0, moves: 0, dockT: {}, airT: 0 };
   met.recentMin = 1; met.mins = []; met.doors = []; met.startSec = G.sector;
   let t = 0, act = 0, pi = 0, lastWave = G.wave;
   while (!G.over && t < 3 * 3600 && !(process.env.MAXW && G.wave >= +process.env.MAXW)) { // MAXW=n stops a run at Wave n (counts as n), so runaway runs don't stall a batch
     if (S.G.huntChoice) { const C = S.G.huntChoice; if (wantExtract(G, met)) { met.extracted = G.wave; S.huntExtract(); break; } if (C.doors && !process.env.SECTOR) { const i = pickDoor(G, C.doors, met); met.doors.push(C.doors[i].sector.slice(0, 4) + C.doors[i].tier); S.huntPush(i); } else S.huntPush(); }
     if (false) S.huntPush(); // v5.3: the bot never extracts, it plays on (a stalled choice would freeze the sim)
     S.simStep(1 / 30); t += 1 / 30; if (S.G.checkpoint) S.resumeCheckpoint();
+    if (FR) { const d = S.frDockT(); if (d) met.fr.dockT[d.type] = (met.fr.dockT[d.type] || 0) + 1 / 30; else if (G.frFly) met.fr.airT += 1 / 30; else met.fr.dockT.plain = (met.fr.dockT.plain || 0) + 1 / 30; }
     if (process.env.BOSSLOG) {
       if (!G.dbgBoss) G.dbgBoss = {};
       for (const e of G.enemies) if (e.boss && !e.gen && !e._t0) { e._t0 = t; e._w = G.wave; e._pot = S.potentialDps(); e._pw0 = G.power; (G._bl || (G._bl = [])).push(e); }
@@ -174,6 +177,19 @@ for (let run = OFF; run < OFF + runs; run++) {
       if (G.charges.stasis > 0 && ((G.bossAlive && G.bossAlive.d / G.bossAlive.L.len > 0.6) || G.core.hp / G.core.max < 0.4)) S.useAbility('stasis');
       if (G.charges.overclock > 0 && (G.bossAlive || alive > 30)) S.useAbility('overclock');
       if (G.charges.scan > 0 && !(G.scanT > 0) && (G.enemies.some(e => e.cloaked) || G.bossAlive || alive > 20)) S.useAbility('scan');
+    }
+    // Frontier: between waves, dock on the strongest attack tower (judged without its dock bonus) if the roads don't shrink much;
+    // move towers that have sat idle for 2 waves to the best open spot (at most 2 a wave). NOFLY=1 / NOMOVE=1 turn either off
+    if (FR && G.spawningDone && !process.env.NOFLY && S.frCanFly() && G.wave >= 3) {
+      const cur = S.frDockT(), val = tw => tw.dps / (tw === cur ? S.frDockX() : 1), c = new Set(S.frCands());
+      const cands = G.towers.filter(tw => tw !== cur && c.has(S.tIdx(tw.x, tw.y)) && !['support', 'eco', 'snare'].includes(tw.s.kind)).sort((a, b) => val(b) - val(a)).slice(0, 4);
+      for (const tw of cands) { if (cur && val(tw) < val(cur) * 1.25) break; const P = S.frPlan(tw.x, tw.y); if (!P) continue; const sb = P.before.reduce((a, b) => a + b, 0), sa = P.after.reduce((a, b) => a + b, 0);
+        if (sa < sb * 0.85) continue; if (S.frLiftOff(tw.x, tw.y)) { met.fr.flights++; met.fr.docks++; } break; }
+    }
+    if (FR && G.spawningDone && !process.env.NOMOVE && G._mvW !== G.wave) {
+      G._mvW = G.wave; let n = 0;
+      for (const tw of G.towers.slice()) { if (n >= 2) break; if (['support', 'eco', 'snare'].includes(tw.s.kind) || tw === S.frDockT() || G.wave - (tw.lastFireW || 0) < 2 || G.wave - (tw.builtW || 0) < 2) continue;
+        const sp = bestSpot(G, tw.type); if (sp && S.frMoveTower(tw, sp.x, sp.y)) { n++; met.fr.moves++; tw.lastFireW = G.wave; } }
     }
     // v5.1 Command Uplink: a level every ~8 waves when there's spare cash (NOUPLINK=1 skips)
     // v5.1.3 Core Hull with idle money late (NOHULL=1 skips)
@@ -274,6 +290,8 @@ for (let run = OFF; run < OFF + runs; run++) {
     sec: (met.startSec || '-').slice(0, 5) + (met.doors.length ? '>' + met.doors.join('>') : ''), ext: met.extracted || 0, tw: Object.keys(G.twists || {}).map(k => k.slice(0, 3)).join('+') || '-',
     xp57: Math.round((G.xpRaw || G.xpEarned) * (met.extracted ? 1.5 : 1)), paid: Math.round(G.xpEarned),
     share: Object.entries(byType).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0).map(([k, v]) => k.slice(0, 4) + ':' + Math.round(v / dmgAll * 100)).join(' ') });
+  if (FR) { const D = met.fr.dockT, T = Object.values(D).reduce((a, b) => a + b, 0) + met.fr.airT || 1;
+    console.log(`FRONTIER wave ${G.wave} min ${(t / 60).toFixed(1)} flights ${met.fr.flights} moves ${met.fr.moves} air ${Math.round(met.fr.airT / T * 100)}% core: ${Object.entries(D).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + Math.round(v / T * 100) + '%').join(', ')} killer ${G.stats.lastLeak || '-'}`); }
 }
 console.log(`runs=${runs} points=${points} chaos=${chaos} start=${sw} best=${bw} ks=${ks || '-'}`);
 console.table(agg);

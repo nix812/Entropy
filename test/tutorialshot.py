@@ -149,7 +149,7 @@ def misc(pg, tag):
     check(pg.evaluate("() => !!document.querySelector('#modal [data-act=tutStart]')"), f'{tag}: Training button on the New Run screen')
     # a real run's intro card has Learn more, which opens the lesson page; Play lesson saves the run first
     pg.evaluate('() => document.querySelector("[data-act=launch]").click()'); pg.wait_for_timeout(900)
-    pg.evaluate("() => { PROF.seenSys = { v58: 1 }; G.wave = 3; G.credits = 5000; const t = G.map.lanes[0].tiles[3]; for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) if (window.act('build', 'pulse', t.x + dx, t.y + dy)) break; UI.closePanel(); G.credits = 5000; }")
+    pg.evaluate("() => { PROF.seenSys = { v58: 1, frontier: 1 }; G.wave = 3; G.credits = 5000; const T = G.map.lanes[0].tiles, t = T[Math.floor(T.length / 2)]; for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) if (window.act('build', 'pulse', t.x + dx, t.y + dy)) break; UI.closePanel(); G.credits = 5000; }")
     pg.wait_for_timeout(700)
     check(pg.evaluate("() => UI.modalOpen === 'brief' && !!document.querySelector('#modal [data-act=lpage][data-v=upgrades]')"), f'{tag}: first affordable upgrade shows the Upgrades card with Learn more')
     pg.screenshot(path=str(out / f'{tag}_intro_upg.png'))
