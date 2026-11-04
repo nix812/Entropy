@@ -890,25 +890,29 @@ const RES = 2;
     shakeAt(16, 1.1);
   }
   // one frame of the detonation in the world buffer (about 3.3 s): fireball, stem, rolling cap, then ash and embers
-  function drawNuke(dt) {
+  // vy, vh: the camera view's top and height (world units). The cloud is sized to the view once (about 40% of its height, never
+  // smaller than the base size) and its cap never rises above the top edge, so a core high on screen still shows the whole cloud
+  function drawNuke(dt, vy, vh) {
     const N = nuke; N.t += dt; const t = N.t, T = 3.3;
+    if (!N.Z) N.Z = Math.max(1, Math.min(2.4, vh / (TILE * 13)));
+    const TL = TILE * N.Z;
     if (t > T) { nuke = null; return; }
     const S = nukeSpr, cl = (v, a, z) => v < a ? a : v > z ? z : v, eo = v => 1 - (1 - v) * (1 - v);
     const pf = (st, x, y, r, a) => { if (a <= 0.02 || r < 1) return; b.globalAlpha = a > 1 ? 1 : a; const q = Math.round(r * RES) / RES; b.drawImage(S[cl(st | 0, 0, 5)], Math.round((x - q) * RES) / RES, Math.round((y - q) * RES) / RES, q * 2, q * 2); };
     const X = N.x, Y = N.y, fade = 1 - cl((t - 2.5) / 0.8, 0, 1);
     // fireball: swells fast, then cools white → yellow → orange → dark red and sinks into the stem's foot
-    const fr = TILE * (0.45 + 1.35 * eo(cl(t / 0.45, 0, 1)) + 0.25 * cl(t / 2, 0, 1)), fst = cl(t / 0.42, 0, 3.6), fa = 1 - cl((t - 1.5) / 1, 0, 1);
+    const fr = TL * (0.45 + 1.35 * eo(cl(t / 0.45, 0, 1)) + 0.25 * cl(t / 2, 0, 1)), fst = cl(t / 0.42, 0, 3.6), fa = 1 - cl((t - 1.5) / 1, 0, 1);
     for (let i = 0; i < 6; i++) { const a = N.seed + i * 1.047 + t * 0.7; pf(fst + 0.6, X + Math.cos(a) * fr * 0.55, Y + Math.sin(a) * fr * 0.3, fr * 0.55, fa); }
     pf(fst, X, Y - fr * 0.1, fr * 0.8, fa);
     // stem: a column of puffs rising from the blast, hotter at the top while it climbs
-    const rise = eo(cl((t - 0.2) / 1.5, 0, 1)), top = Y - TILE * (0.6 + 3.6 * rise), cst = cl(1 + t / 0.75, 1, 5);
-    if (t > 0.2) for (let yy = Y - TILE * 0.3, k = 0; yy > top + TILE * 0.3; yy -= TILE * 0.32, k++) {
-      const u = (Y - yy) / Math.max(1, Y - top), w = TILE * (0.34 + 0.12 * Math.sin(k * 1.7 + t * 3)) * (0.8 + 0.4 * u);
-      pf(cst + 0.6 - u * 0.8, X + Math.sin(k * 0.9 + t * 2.2) * TILE * 0.08, yy, w, fade * (0.92 - 0.15 * u));
+    const rise = eo(cl((t - 0.2) / 1.5, 0, 1)), top = Math.max(Y - TL * (0.6 + 3.6 * rise), Math.min(Y - TL * 0.6, vy + TL * 1.5)), cst = cl(1 + t / 0.75, 1, 5);
+    if (t > 0.2) for (let yy = Y - TL * 0.3, k = 0; yy > top + TL * 0.3; yy -= TL * 0.32, k++) {
+      const u = (Y - yy) / Math.max(1, Y - top), w = TL * (0.34 + 0.12 * Math.sin(k * 1.7 + t * 3)) * (0.8 + 0.4 * u);
+      pf(cst + 0.6 - u * 0.8, X + Math.sin(k * 0.9 + t * 2.2) * TL * 0.08, yy, w, fade * (0.92 - 0.15 * u));
     }
     // cap: a rolling ring of puffs around a domed core; the back half first (darker), the underside glows while it is hot
     if (t > 0.3) {
-      const g = eo(cl((t - 0.3) / 1.6, 0, 1)), rx = TILE * (0.55 + 1.25 * g), ry = rx * 0.42, pr = TILE * (0.4 + 0.42 * g), ph = N.seed + t * 1.5, n = 10;
+      const g = eo(cl((t - 0.3) / 1.6, 0, 1)), rx = TL * (0.55 + 1.25 * g), ry = rx * 0.42, pr = TL * (0.4 + 0.42 * g), ph = N.seed + t * 1.5, n = 10;
       const ring = []; for (let i = 0; i < n; i++) { const a = ph + i * 6.283 / n; ring.push({ a, x: X + Math.cos(a) * rx, y: top + Math.sin(a) * ry }); }
       for (const q of ring) if (Math.sin(q.a) < 0) pf(cst + 0.9, q.x, q.y, pr, fade);
       pf(cst + 0.3, X, top - ry * 0.8, pr * 1.55, fade); pf(cst, X - rx * 0.35, top - ry * 1.3, pr * 1.05, fade); pf(cst, X + rx * 0.3, top - ry * 1.5, pr * 0.95, fade);
@@ -917,9 +921,9 @@ const RES = 2;
     b.globalAlpha = 1;
     // ash drifts down off the cap; embers lift off the stem
     if (!LITE && t > 0.5 && t < 2.9) { N.ash += dt * 26; while (N.ash >= 1) { N.ash--;
-      const rx = TILE * 1.6, ax = X + (Math.random() - 0.5) * rx * 2;
-      if (Math.random() < 0.6) parts.push({ x: ax, y: top + (Math.random() - 0.3) * TILE * 0.6, vx: 6 + Math.random() * 10, vy: 6 + Math.random() * 10, life: 1.6, max: 1.6, col: Math.random() < 0.5 ? '#8a8486' : '#5e585c', s: 2 });
-      else parts.push({ x: X + (Math.random() - 0.5) * TILE * 0.6, y: Y - Math.random() * (Y - top), vx: (Math.random() - 0.5) * 14, vy: -18 - Math.random() * 16, life: 0.9, max: 0.9, col: Math.random() < 0.5 ? '#ffb03a' : '#ff7b29', s: 1.5 }); } }
+      const rx = TL * 1.6, ax = X + (Math.random() - 0.5) * rx * 2;
+      if (Math.random() < 0.6) parts.push({ x: ax, y: top + (Math.random() - 0.3) * TL * 0.6, vx: 6 + Math.random() * 10, vy: 6 + Math.random() * 10, life: 1.6, max: 1.6, col: Math.random() < 0.5 ? '#8a8486' : '#5e585c', s: 2 });
+      else parts.push({ x: X + (Math.random() - 0.5) * TL * 0.6, y: Y - Math.random() * (Y - top), vx: (Math.random() - 0.5) * 14, vy: -18 - Math.random() * 16, life: 0.9, max: 0.9, col: Math.random() < 0.5 ? '#ffb03a' : '#ff7b29', s: 1.5 }); } }
   }
   function ditherDisc(cx, cy, r, col, dither, phase) {
     const R0 = Math.max(1, Math.round(r)), key = R0 + col + dither + ':' + (phase % dither);
@@ -1260,7 +1264,7 @@ const RES = 2;
     }
     parts = parts.filter(p => p.life > 0);
     if (parts.length > 800) parts.splice(0, parts.length - 800);
-    if (nuke) drawNuke(dt);
+    if (nuke) drawNuke(dt, v.vy, v.vh);
     if (G.aimAbility && aimPos) D(b, aimPos.x * TILE, aimPos.y * TILE, 2, '#ffffff');
 
     // ---------- light sources (buffer coords) ----------

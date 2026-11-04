@@ -1,5 +1,6 @@
 """Times Render.draw on a busy mid-game scene. usage: python3 drawbench.py [page.html] -> ms per frame at z=1, zoomed in, zoomed out.
-GENES=1: every enemy carries 1-3 evolved genes and a third are Strain Assault units (swarm overlay cost)."""
+GENES=1: every enemy carries 1-3 evolved genes and a third are Strain Assault units (swarm overlay cost).
+NUKE=1 (6.2): each timed section starts a Nuke detonation at the core (the first second, its busiest part)."""
 import os, pathlib, sys, mkpage
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent
@@ -22,7 +23,8 @@ with sync_playwright() as p:
         const e = spawnEnemy(ty, q); }
       G.paused = true; window.__stopLoop = true; }''')
     res = pg.evaluate('''async () => {
-      const t = (n) => { const t0 = performance.now(); for (let i = 0; i < n; i++) { for (const e of G.enemies) { e.x += 0.01; } for (const tw of G.towers) tw.angle = (tw.angle || 0) + 0.2; Render.draw(1 / 60); } return (performance.now() - t0) / n; };
+      const NUKE = ''' + ('true' if os.environ.get('NUKE') else 'false') + ''', nk = () => { if (NUKE) Render.fx('overdrive', { x: G.core.x, y: G.core.y, r: 60 }); };
+      const t = (n) => { nk(); const t0 = performance.now(); for (let i = 0; i < n; i++) { for (const e of G.enemies) { e.x += 0.01; } for (const tw of G.towers) tw.angle = (tw.angle || 0) + 0.2; Render.draw(1 / 60); } return (performance.now() - t0) / n; };
       t(30); // warm caches
       const out = {}; Render.resetCam(); out.home = t(60);
       const L = Render.layout; Render.zoomAt(L.W / 2, L.H / 2, 3); out.zoomIn = t(60);
