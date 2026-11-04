@@ -22,10 +22,10 @@ tree, and each node unlocks one new tower.
 |---|---|---|---|
 | K Ballistics | **Buzzsaw** (`saw`) | Road clearer | Throws a blade onto the road ahead of its target. The blade runs back up the road (against the flow) for 5 tiles and cuts every ground enemy it meets once. Ignores Plating. Can't hit air. Best beside long, bending roads. |
 | T Combustion | **Flashover** (`flashover`) | Burn payoff | Pulses fire in a ring. Enemies already Burning explode for their remaining Burn ×2.5 plus a hit, splashing 40% around. Enemies not Burning catch fire. Alone it alternates ignite/explode; beside Flame and Missile it detonates their Burn. |
-| A Voltaic | **Surge Spire** (`surge`) | Alpha strike | Chain lightning that stores 1 charge a second while it has nothing to shoot (10 max). With charge it fires ×4 as fast until the cells are empty. Hits hardest at the start of every wave and when a boss walks in. |
+| A Voltaic | **Surge Spire** (`surge`) | Alpha strike | Chain lightning that stores 1 charge a second while it has nothing to shoot, and 1 per kill (10 max). With charge it fires ×4 as fast until the cells are empty. Hits hardest at the start of every wave and when a boss walks in. |
 | C Cryogenics | **Rimewall** (`rime`) | Blocker | Raises an ice wall on the nearest road tile. Ground enemies stop at it, take cold damage and Chill (and Freeze) until they wear it down (8 enemy-seconds at LV 1, elites ×2). Bosses smash it. Regrows after 8 s. Makes a pile for splash towers. |
-| V Singularity | **Entangler** (`tangle`) | Damage sharing | Links 3 enemies for 4 s. 35% of any hit one of them takes is copied to the others (bosses take half of a copy). Turns single-target fire into crowd damage and crowd damage into boss damage. |
-| E Bastion | **Aegis Station** (`aegis`) | Leak insurance | While the core is in its range, it stops 2 leaks a wave (3 at LV 3, 4 at LV 5): the enemy dies at the gate and pays as a kill. Bosses are never stopped. A light gun shoots what comes close. |
+| V Singularity | **Entangler** (`tangle`) | Damage sharing | Links 3 enemies for 4 s. 30% of any hit one of them takes is copied to the others (bosses take half of a copy). Turns single-target fire into crowd damage and crowd damage into boss damage. |
+| E Bastion | **Gatekeeper** (`aegis`) | Leak insurance | While the core is in its range, it stops 2 leaks a wave (3 at LV 3, 4 at LV 5): the enemy dies at the gate and pays as a kill. Bosses are never stopped. A light gun shoots what comes close. |
 | X Command | **Wildcard** (`joker`) | Combo engine | Every shot rolls an element (K T C A V) and a delivery (bolt, lance, burst, arc), with a 50% chance of that element's status. Every 10th shot is a Jackpot: all three heavy forms at ×2 with every status. No element of its own. |
 
 Each tower: base stats, LV 1–5 damage, two Specializations, 6–8 Ascension perks, a Mastery 5 legendary, a sprite in the art
@@ -65,7 +65,7 @@ kit (`UNITS.TOP`), a muzzle/idle detail, a fire sound through `ev()`/`allow()`, 
   - Hooks into shared code, all inert unless a tier tower exists: `hit()` copies to linked enemies (`e.lnk`), `leak()` asks
     `aegisCatch` (only when `G.capT.length`), `updateEnemies` calls `wallHold` (only when `G.capT.length`), `updateZones`
     calls `updateTangles`, `startWave` clears `guardN`, `explode()` skips the shield strip for Wildcard bursts (`p.jk`),
-    `masteryGains` counts Rimewall and Aegis like support towers.
+    `masteryGains` counts Rimewall and Gatekeeper like support towers.
 - **units.js:** `TOP.saw/flashover/surge/rime/tangle/aegis/joker`; `ROT` + saw, aegis; `SPIN` for the rest.
 - **render.js:** `drawCapField` (walls in front of the ground enemies they hold, link threads), the `saw` projectile, live
   tells in `drawTower0` (saw glint, surge charge pips and burst sparks, aegis stops-left pips, Jackpot ring, Flashover glow),
@@ -87,5 +87,7 @@ kit (`UNITS.TOP`), a muzzle/idle detail, a fire sound through `ev()`/`allow()`, 
 - `python3 test/tower64shot.py 667 375` and `… 1180 820`: Talents tier (learned, locked, learned through the button), run
   carries `capT`, intro card, build menu grid + strip + locked info, every tower firing. Screens in `test/out/tower64/`.
 - `test/smartbot.js`: takes the tier node when it opens and keeps filling toward it (`NOTOP=1` off), passes `capT`
-  (`CAPT=a,b` forces), puts a learned tier tower in the rotation after every third plan entry (2 Aegis max, Aegis beside
+  (`CAPT=a,b` forces), puts a learned tier tower in the rotation after every third plan entry (2 Gatekeepers max, beside
   the core), perk priorities. New column `capT`.
+- **Name note:** the Bastion tower was first called "Aegis Station". The Aegis is already an enemy (the shielder), so the
+  tower is the **Gatekeeper** for players. Internal id stays `aegis` (kind `aegis`, `TOP.aegis`, sound `aegis`).

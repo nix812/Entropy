@@ -2019,7 +2019,7 @@ const UI = (() => {
     Render.sel = { x: t.x, y: t.y }; Render.selT = t; Render.prev = null; G.selCore = false;
     openPanel({ kind: 'tower', t, x: t.x, y: t.y });
   }
-  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', lens: 'Lens', emp: 'EMP', saw: 'Buzzsaw', flashover: 'Flashover', surge: 'Surge', rime: 'Rimewall', tangle: 'Tangler', aegis: 'Aegis', joker: 'Wildcard', grav: 'Gravity' };
+  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', lens: 'Lens', emp: 'EMP', saw: 'Buzzsaw', flashover: 'Flashover', surge: 'Surge', rime: 'Rimewall', tangle: 'Tangler', aegis: 'Gatekeeper', joker: 'Wildcard', grav: 'Gravity' };
   function openBuild(x, y) {
     Render.sel = { x, y }; Render.selT = null; G.selCore = false;
     pick = null; capPeek = null; Render.prev = null;

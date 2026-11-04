@@ -110,7 +110,7 @@ const TOWERS = {
             { name: 'Tidal Lock', desc: '×2 pull distance', m: { pullX: 2 } }] },
   // 6.4 capstone tier towers (tower64): capT = the tree whose capstone tier node unlocks the tower for a run (newRun opts.capT → G.capT).
   // unlock 999 keeps them out of the wave unlocks, the Stolen Blueprint and the base build menu. Rules: docs/notes/tower64.md
-  saw: { ground: 1, name: 'Buzzsaw', el: 'K', cost: 140, dmg: 30, rate: 0.5, range: 3, kind: 'saw', capT: 'K', unlock: 999, sawLen: 5, sawSpd: 6, sawR: 0.5,
+  saw: { ground: 1, name: 'Buzzsaw', el: 'K', cost: 140, dmg: 38, rate: 0.55, range: 3, kind: 'saw', capT: 'K', unlock: 999, sawLen: 6, sawSpd: 6, sawR: 0.55, // first bot pass: 1-8% of damage at 30 dmg, 0.5/s, 5 tiles
     blurb: 'Throws a blade onto the road. It runs back up the road and cuts every ground enemy once. Ignores Plating.',
     specs: [{ name: 'Grinder', desc: 'Blades run 40% slower and 40% wider. ×1.4 Damage', m: { sawSpdX: 0.6, sawRX: 1.4, dmgX: 1.4 } },
             { name: 'Twin Saw', desc: 'Throws 2 blades at 2 targets. ×1.1 Damage', m: { multi: 1, dmgX: 1.1 } }] },
@@ -118,19 +118,19 @@ const TOWERS = {
     blurb: 'Pulses fire. Burning enemies in range explode for their remaining Burn. The rest catch fire.',
     specs: [{ name: 'Chain Reaction', desc: 'Explosions set enemies within 1.5 tiles on fire', m: { detSpread: 1.5 } },
             { name: 'Furnace', desc: '×1.8 explosion damage. +0.5 Range', m: { detXm: 1.8, rangeAdd: 0.5 } }] },
-  surge: { name: 'Surge Spire', el: 'A', cost: 130, dmg: 16, rate: 1.1, range: 3, kind: 'surge', chain: 2, st: { shock: 0.4 }, capT: 'A', unlock: 999, cells: 10,
-    blurb: 'Chain lightning. Stores charge while idle, then fires 4× as fast until it runs dry.',
+  surge: { name: 'Surge Spire', el: 'A', cost: 130, dmg: 20, rate: 1.1, range: 3, kind: 'surge', chain: 3, st: { shock: 0.4 }, capT: 'A', unlock: 999, cells: 10, // first bot pass: under 1% of damage at 16 dmg, chain 2, idle-only charge
+    blurb: 'Chain lightning. Stores charge while idle and from its kills, then fires 4× as fast until the charge is gone.',
     specs: [{ name: 'Deep Cell', desc: 'Stores 20 charges. ×1.2 Damage', m: { cells: 10, dmgX: 1.2 } },
             { name: 'Forked Surge', desc: '+2 Chain. ×1.25 Damage', m: { chain: 2, dmgX: 1.25 } }] },
   rime: { ground: 1, name: 'Rimewall', el: 'C', cost: 140, dmg: 6, rate: 0.125, range: 2.4, kind: 'wall', st: { chill: 1 }, capT: 'C', unlock: 999, hold: 8,
     blurb: 'Raises an ice wall on the road. Ground enemies stop at it and Chill until it breaks.',
     specs: [{ name: 'Pack Ice', desc: '×2 wall strength. Regrows 25% faster', m: { holdX: 2, rateX: 1.25 } },
             { name: 'Rime Spikes', desc: '×3 Damage to held enemies. They take +25% Kinetic Damage', m: { dmgX: 3, spikes: 0.25 } }] },
-  tangle: { name: 'Entangler', el: 'V', cost: 140, dmg: 10, rate: 0.5, range: 3.2, kind: 'tether', st: { mark: 1 }, capT: 'V', unlock: 999, links: 3, share: 0.35, linkT: 4,
-    blurb: 'Links 3 enemies. 35% of the damage one takes is copied to the others.',
-    specs: [{ name: 'Wide Web', desc: 'Links 5 enemies. Copies 30%', m: { links: 2, share: -0.05 } },
-            { name: 'Shared Fate', desc: 'Copies 55%. Linked enemies are 20% slower', m: { share: 0.2, tslow: 0.2 } }] },
-  aegis: { name: 'Aegis Station', el: 'N', cost: 150, dmg: 12, rate: 1.2, range: 3, kind: 'aegis', capT: 'E', unlock: 999, guards: 2, pspd: 14,
+  tangle: { name: 'Entangler', el: 'V', cost: 140, dmg: 10, rate: 0.5, range: 3.2, kind: 'tether', st: { mark: 1 }, capT: 'V', unlock: 999, links: 3, share: 0.3, linkT: 4, // first bot pass: 81% of one 96-point run at 35%
+    blurb: 'Links 3 enemies. 30% of the damage one takes is copied to the others.',
+    specs: [{ name: 'Wide Web', desc: 'Links 5 enemies. Copies 25%', m: { links: 2, share: -0.05 } },
+            { name: 'Shared Fate', desc: 'Copies 45%. Linked enemies are 20% slower', m: { share: 0.15, tslow: 0.2 } }] },
+  aegis: { name: 'Gatekeeper', el: 'N', cost: 150, dmg: 12, rate: 1.2, range: 3, kind: 'aegis', capT: 'E', unlock: 999, guards: 2, pspd: 14,
     blurb: 'Guards the core. Stops 2 leaks per wave while the core is in range. Shoots what comes close.',
     specs: [{ name: 'Bulkhead', desc: '+2 leaks stopped per wave', m: { guards: 2 } },
             { name: 'Interceptor', desc: '×2.5 Damage. +1 Range', m: { dmgX: 2.5, rangeAdd: 1 } }] },
@@ -312,13 +312,13 @@ const PERKS = {
   ],
   tangle: [
     { id: 'linkP', name: 'Extra Strand', v: [1, 2], d: v => `+${v} link${v > 1 ? 's' : ''}` },
-    { id: 'shareP', name: 'Resonant Link', v: [5, 9, 12], d: v => `Copies +${v}%` },
+    { id: 'shareP', name: 'Resonant Link', v: [4, 7, 10], d: v => `Copies +${v}%` },
     { id: 'longT', name: 'Long Link', v: [2, 3], d: v => `Links last +${v} s` },
     { id: 'nullW', name: 'Null Weight', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
     { id: 'reachT', name: 'Far Reach', v: [0.5, 0.8], d: v => `+${v} Range` },
     { id: 'bond', name: 'Dark Bond', v: [1], d: () => 'Linked enemies gain 1 Mark per second' },
     { id: 'web', name: 'Spider Web', spec: 1, v: [1], d: () => '+1 link' },
-    { id: 'fate', name: 'Doom Bond', spec: 2, v: [10], d: () => 'Copies +10%' },
+    { id: 'fate', name: 'Doom Bond', spec: 2, v: [8], d: () => 'Copies +8%' },
   ],
   aegis: [
     { id: 'guard', name: 'Extra Guard', v: [1, 2], d: v => `+${v} leak${v > 1 ? 's' : ''} stopped per wave` },

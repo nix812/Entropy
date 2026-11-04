@@ -418,7 +418,7 @@ const SFX = (() => {
       tone(c, { w: 'sine', f0: 587, f1: 440, d: 0.22, v: 0.08, vib: [7, 0.03] });
       done(c);
     },
-    // Aegis Station: a light twin tap
+    // Gatekeeper: a light twin tap
     aegis(t) {
       if (!allow('aegis', 0.08, 3)) return;
       const c = ev('aegis', busW, 0.32, { room: 0.12, jit: 0.8, trim: ascT(t) }, t);
@@ -528,7 +528,7 @@ const SFX = (() => {
       if (sp === 2) { tone(c, { w: 'sine', f0: 1320, d: 0.16, v: 0.12 }); tone(c, { w: 'sine', f0: 1320, d: 0.12, v: 0.05, at: 0.16 }); }
       else { tone(c, { w: 'triangle', f0: 520, f1: 880, d: 0.14, v: 0.12, a: 0.03 }); }
       done(c); },
-    // 6.4 Aegis Station: a leak stopped at the gate, a shield clang and a thump
+    // 6.4 Gatekeeper: a leak stopped at the gate, a shield clang and a thump
     aegisblock(t) { if (!allow('aegisblock', 0.15, 2)) return; const c = ev('aegisblock', busE, 0.55, { room: 0.35, jit: 0.3 }, t);
       fmv(c, { f0: 880, f1: 830, r: 1.41, i: 2.2, i1: 0.3, d: 0.35, v: 0.16 }); sub(c, 130, 55, 0.12, 0.45); click(c, 0.35, 0, 3500); done(c); },
     // v5.8: a Void Lens locks onto a new target

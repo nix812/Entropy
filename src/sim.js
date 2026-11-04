@@ -1181,7 +1181,7 @@ function capStats(t, s, D, sp, pv, lv) {
     case 'det': s.detX = D.detX * (sp.detXm || 1) * (1 + (pv('volat') + pv('cruc')) / 100); s.detR = D.detR + pv('blastR'); s.detSpread = sp.detSpread ? sp.detSpread + pv('storm') : 0; s.smoulder = pv('smoulder'); s.burn = 1; break;
     case 'surge': s.cells = D.cells + (sp.cells || 0) + pv('cellsP') + pv('reserve'); s.chargeRate = 1 + pv('quickC') / 100; break;
     case 'wall': s.hold = D.hold * (1 + 0.5 * (lv - 1) + 0.25 * asc) * (sp.holdX || 1) * (1 + (pv('thick') + pv('pack')) / 100) * (s.node ? NODE_TOWER.aura : 1); s.spikes = (sp.spikes || 0) + pv('barbs'); s.shardW = pv('shardW'); break;
-    case 'tether': s.links = D.links + (sp.links || 0) + pv('linkP') + pv('web') + s.multi; s.share = Math.min(0.9, D.share + (sp.share || 0) + (pv('shareP') + pv('fate')) / 100); s.linkT = D.linkT + pv('longT'); s.tslow = sp.tslow || 0; s.bond = pv('bond'); break;
+    case 'tether': s.links = Math.min(TANGLE.links, D.links + (sp.links || 0) + pv('linkP') + pv('web') + s.multi); s.share = Math.min(TANGLE.share, D.share + (sp.share || 0) + (pv('shareP') + pv('fate')) / 100); s.linkT = D.linkT + pv('longT'); s.tslow = sp.tslow || 0; s.bond = pv('bond'); break;
     case 'aegis': s.guards = D.guards + Math.floor((lv - 1) / 2) + (sp.guards || 0) + pv('guard') + pv('last') + Math.floor(asc / 2); s.salv = pv('salv'); s.patch = pv('patch'); s.flak = pv('flak'); break;
     case 'joker': s.jack = Math.max(3, (sp.jackEvery || D.jack) - pv('hot')); s.sure = sp.sure || 0; s.luck = pv('luck') / 100; s.dbl = pv('dbl') / 100; s.allin = pv('allin');
       s.b0 = { burn: s.burn, chill: s.chill, shock: s.shock, mark: s.mark }; break;
@@ -2013,7 +2013,7 @@ function startWave() {
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
-  if (G.capT && G.capT.length) for (const t of G.towers) if (t.guardN) t.guardN = 0; // 6.4 Aegis Station: stops reset each wave
+  if (G.capT && G.capT.length) for (const t of G.towers) if (t.guardN) t.guardN = 0; // 6.4 Gatekeeper: stops reset each wave
   abilOnlineCheck(w);
   if (G.tut && G.tutS.charge && G.tutS.charge[tutIdx(w)]) { const k = G.tutS.charge[tutIdx(w)]; G.charges[k] = Math.max(1, G.charges[k] || 0); }
   if (G.mods.ks.chaos) chaosRoll(); // v5.8 Chaos Engine
@@ -2829,7 +2829,7 @@ function bulwarkWave(c) {
 }
 function leak(e) {
   if (G.tut && tutLeak(e)) return;
-  if (!e.boss && G.capT && G.capT.length && aegisCatch(e)) return; // 6.4 Aegis Station (only runs with a capstone tier tower)
+  if (!e.boss && G.capT && G.capT.length && aegisCatch(e)) return; // 6.4 Gatekeeper (only runs with a capstone tier tower)
   e.dead = true;
   geneRecord(e, true); assaultHit(e, true);
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
@@ -3073,7 +3073,7 @@ function kill(e, src, o) {
   G.credits += cr;
   G.kills++; if (!ghostRun()) PROF.kills++;
   addScore(e.score);
-  if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); }
+  if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); if (src.s && src.s.kind === 'surge') src.charge = Math.min(src.s.cells, (src.charge || 0) + 1); } // 6.4: a Surge Spire's kill refills a cell
   if (e.elite.length) { G.stats.elites++; if (G.entWaveCombo < 6) { G.entWaveCombo += 0.25; addEntropy(0.25); } }
   if (G.af.boom && depth0(o) < 2) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * G.af.boom * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth0(o) + 1 });
@@ -3653,7 +3653,7 @@ function wallHold(dt) {
       const rr = WALL.r + (e.size || 0.3);
       if (dist2(e.x, e.y, w.x, w.y) > rr * rr) continue;
       if (e.boss) { w.hp = 0; hit(e, towerDmg(t, stormAt(t.cx, t.cy)) * 2, t.s.el, t, {}); break; } // a boss smashes it (and is Chilled)
-      e.jammed = true;
+      e.jammed = true; G.stats.held = (G.stats.held || 0) + dt; // enemy-seconds held, for the run log and the bots
       w.hp -= dt * (e.elite.length ? 2 : 1);
       if (t.s.spikes) { e.shatterT = Math.max(e.shatterT || 0, 0.6); e.shatterV = Math.max(e.shatterV || 0, t.s.spikes); }
       if (tick) { if (dmg < 0) { crit = rollCrit(t); dmg = atkDmg(t, stormAt(t.cx, t.cy), crit) * WALL.tick; } hit(e, dmg, t.s.el, t, { crit }); }
@@ -3668,6 +3668,7 @@ function wallBreak(t) {
 }
 // Entangler: links up to s.links enemies for s.linkT s (a group, G.tangles). An enemy is in one group at most. A hit on a member
 // (not damage over time, not a copy) copies s.share of the damage it dealt to every other member (bosses take half a copy)
+const TANGLE = { links: 6, share: 0.6 }; // caps: a hit is copied at most 5 times, at most 60% each
 function tangleLink(t, range, sw) {
   const s = t.s, tg = findTargets(t, range, Math.max(1, s.links));
   if (!tg.length) return false;
@@ -3698,7 +3699,7 @@ function updateTangles(dt) {
   }
   G.tangles = G.tangles.filter(g => g.t > 0);
 }
-// Aegis Station: a light gun (no element), and up to s.guards leaks a wave stopped at the gate while the core is in its range.
+// Gatekeeper: a light gun (no element), and up to s.guards leaks a wave stopped at the gate while the core is in its range.
 // The enemy dies there and pays as a kill. Bosses are never stopped. t.guardN counts this wave's stops (startWave clears it)
 function aegisShot(t, range) {
   const s = t.s, tg = findTargets(t, range, 1);

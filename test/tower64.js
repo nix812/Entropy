@@ -122,10 +122,10 @@ const roadSpots = (S, G) => { const out = [], seen = new Set(); for (const L of 
   { // Entangler: a hit on one linked enemy is copied to the others
     const { G, t, L, D } = setup('tangle'); const es = [mob(G, L, D), mob(G, L, D + 0.5), mob(G, L, D + 1)]; t.cd = 0; steps(G, 2);
     const g = (G.tangles || [])[0]; const hp = es.map(e => e.hp); S.hit(es[0], 1000, 'K', null, {});
-    const c1 = hp[1] - es[1].hp, c2 = hp[2] - es[2].hp; ok(g && g.m.length === 3 && c1 >= 350 && c1 < 450 && Math.abs(c1 - c2) < 1, `Entangler: links 3; a 1000 hit on one copies 35% to each other, before their Marks (${Math.round(c1)}, ${Math.round(c2)})`);
+    const c1 = hp[1] - es[1].hp, c2 = hp[2] - es[2].hp; ok(g && g.m.length === 3 && c1 >= 300 && c1 < 400 && Math.abs(c1 - c2) < 1, `Entangler: links 3; a 1000 hit on one copies 30% to each other, before their Marks (${Math.round(c1)}, ${Math.round(c2)})`);
     steps(G, 30 * 5); ok(!es[0].lnk || es[0].lnk !== g, 'Entangler: the link ends after 4 s');
   }
-  { // Aegis Station: stops 2 leaks a wave while the core is in range; never a boss; resets next wave
+  { // Gatekeeper: stops 2 leaks a wave while the core is in range; never a boss; resets next wave
     const { G, t } = setup('aegis'); G.core.x = t.cx + 1; G.core.y = t.cy;
     const hp0 = G.core.hp + G.core.shield, kills0 = G.kills, L = G.map.lanes[0];
     for (let i = 0; i < 3; i++) S.leak(mob(G, L, L.len - 0.1, { hp: 50 }));

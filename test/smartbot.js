@@ -299,7 +299,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     eff: (() => { const inv = {}; for (const tw of G.towers) inv[tw.type] = (inv[tw.type] || 0) + tw.invested; const avg = dmgAll / Object.values(inv).reduce((a, b) => a + b, 0); return Object.keys(byType).filter(k => byType[k] > 0).map(k => k.slice(0, 4) + (byType[k] / inv[k] / avg).toFixed(1)).join(' '); })(),
     top: Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ':' + Math.round(v / dmgAll * 100)).join(' '),
     el: Object.entries(G.stats.dmgByEl).map(([k, v]) => k + Math.round(v / tot * 100)).join(' '),
-    capT: (met.capT || []).join('+') || '-', sec: (met.startSec || '-').slice(0, 5) + (met.doors.length ? '>' + met.doors.join('>') : ''), ext: met.extracted || 0, tw: Object.keys(G.twists || {}).map(k => k.slice(0, 3)).join('+') || '-',
+    capT: (met.capT || []).join('+') || '-', capx: met.capT && met.capT.length ? `stop${G.stats.aegis || 0} held${Math.round(G.stats.held || 0)}` : '-', sec: (met.startSec || '-').slice(0, 5) + (met.doors.length ? '>' + met.doors.join('>') : ''), ext: met.extracted || 0, tw: Object.keys(G.twists || {}).map(k => k.slice(0, 3)).join('+') || '-',
     xp57: Math.round((G.xpRaw || G.xpEarned) * (met.extracted ? 1.5 : 1)), paid: Math.round(G.xpEarned),
     share: Object.entries(byType).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0).map(([k, v]) => k.slice(0, 4) + ':' + Math.round(v / dmgAll * 100)).join(' ') });
   if (FR) { const D = met.fr.dockT, T = Object.values(D).reduce((a, b) => a + b, 0) + met.fr.airT || 1;
