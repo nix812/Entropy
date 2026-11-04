@@ -350,16 +350,16 @@ body.panel-l #tutlist { visibility: hidden; }
 /* 6.3 zone swatches: a patch of each zone's board behind the New Run zone buttons and beside each jump door */
 .secb { position: relative; overflow: hidden; } .secb .zsw { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; opacity: 0.85; }
 .secb b { position: relative; background: rgba(7, 8, 15, 0.78); padding: 2px 5px; } .secb::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px var(--line2); pointer-events: none; } .secb.on::after { box-shadow: inset 0 0 0 2px var(--c); }
-.hopt.door { position: relative; padding-left: 50px; } .hopt.door .zsw { position: absolute; left: 6px; top: 6px; width: 36px; height: calc(100% - 12px); object-fit: cover; image-rendering: pixelated; box-shadow: 0 0 0 1px var(--c); }
+.dchoice .hopt.door { position: relative; padding-left: 52px; } .hopt.door .zsw { position: absolute; left: 6px; top: 6px; width: 36px; height: calc(100% - 12px); object-fit: cover; image-rendering: pixelated; box-shadow: 0 0 0 1px var(--c); }
 /* 6.3 zone arrival banner: the zone's name in its colour and its pitch, 2.5 s, taps pass through */
 #zoneBan { --zc: #6ae2ff; position: absolute; left: 50%; top: 31%; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; text-align: center; max-width: min(540px, 66%);
   background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 2px var(--zc), inset 0 0 22px rgba(0, 0, 0, 0.6); padding: 7px 18px 8px; animation: zbin 0.4s ease-out; }
 #zoneBan[hidden] { display: none; } #zoneBan.out { animation: zbout 0.35s ease-in forwards; }
 #zoneBan em { display: block; font-style: normal; font-family: var(--f-pix); font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--zc); }
-#zoneBan h3 { margin: 2px 0 1px; font-family: var(--f-pix); font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px var(--zc); white-space: nowrap; }
+#zoneBan h3 { margin: 2px 0 1px; font-family: var(--f-pix); font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px var(--zc); }
 #zoneBan span { display: block; font-size: 15px; line-height: 1.15; color: var(--ink); }
-body.panel-l #zoneBan { left: 64%; } body.panel-r #zoneBan { left: 36%; }
-@media (max-height: 420px) { #zoneBan { top: 33%; padding: 5px 14px 6px; } #zoneBan h3 { font-size: 16px; } #zoneBan span { font-size: 14px; } }
+body.panel-l #zoneBan { left: 73%; max-width: calc(50% - 12px); } body.panel-r #zoneBan { left: 27%; max-width: calc(50% - 12px); } /* beside an open side panel (min(270px, 46%) wide) */ #zoneBan.low { top: 64%; } body.panel-l #zoneBan.low, body.panel-r #zoneBan.low { top: 31%; }
+@media (max-height: 420px) { #zoneBan { top: 33%; padding: 5px 14px 6px; } #zoneBan.low { top: 63%; } #zoneBan h3 { font-size: 16px; } #zoneBan span { font-size: 14px; } }
 @keyframes zbin { from { opacity: 0; transform: translate(-50%, -50%) scaleX(1.4); filter: brightness(2.5); } }
 @keyframes zbout { to { opacity: 0; transform: translate(-50%, -80%); } }
 @media (prefers-reduced-motion: reduce) { #zoneBan, #zoneBan.out { animation: none; } }

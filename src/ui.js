@@ -1440,6 +1440,7 @@ const UI = (() => {
   function zoneBanner(id) {
     const S = SECTOR_BY[id], box = $('#zoneBan'); if (!S || !box) return;
     box.style.setProperty('--zc', S.col); box.querySelector('h3').textContent = S.name; box.querySelector('span').textContent = S.pitch;
+    const cp = G && G.core ? Render.tileToScreen(G.core.x, G.core.y) : null; box.classList.toggle('low', !!cp && cp.y < Render.layout.H * 0.5 && !panel); // keep clear of the core (beside an open panel it already sits in the other half)
     box.classList.remove('out'); box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
     clearTimeout(zoneT); zoneT = setTimeout(() => { box.classList.add('out'); zoneT = setTimeout(() => { box.hidden = true; box.classList.remove('out'); }, 350); }, 2500);
     SFX.play('zone', id);

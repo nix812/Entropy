@@ -633,11 +633,11 @@ const RES = 2;
   zlook('skies', [18, 34, 64], [120, 170, 255], { gv: [1, 1, 1], mkf: [0, 0, 0, 0, 0], road: '#262e5e', rsp: ['#2c3466', '#1e2450', '#283060'], edge: ['#6a84e0', '#e6f0ff', '#0a1024'], chev: '#8aa4f0', glow: [140, 180, 255], dot: '#cfe0ff',
     cond: ['#0e1a30', '#2a4a7a'], emit: ['#ffffff', '#9ad8ff', '#7fb4ff'], bg: '#0a1426', neb: [[40, 70, 120], [70, 90, 140]], stars: 0.25, amb: 'clouds', salt: 0x44,
     rock: ['#0e1a30', '#5a76a8', '#8aa4cc', '#6a86b8', '#e6f0ff'] });
-  zlook('ghost', [13, 12, 22], [140, 120, 200], { gv: [1, 1, 1], mkf: [9, 0, 0, 23, 0], road: '#221c38', rsp: ['#28203f', '#18142a', '#221c38'], edge: ['#7a5ab8', '#d8c4ff', '#0a0814'], chev: '#8a6ac8', glow: [190, 140, 255], dot: '#d8c4ff',
+  zlook('ghost', [15, 11, 25], [150, 110, 210], { gv: [1, 1, 1], mkf: [9, 0, 0, 23, 0], road: '#221c38', rsp: ['#28203f', '#18142a', '#221c38'], edge: ['#7a5ab8', '#d8c4ff', '#0a0814'], chev: '#8a6ac8', glow: [190, 140, 255], dot: '#d8c4ff',
     cond: ['#0a0910', '#2a2640'], emit: ['#d6d2ff', '#b86cff', '#d6d2ff'], bg: '#06050a', neb: [[48, 30, 72], [30, 30, 50]], stars: 0.5, amb: 'mist', salt: 0x55 });
   zlook('salvage', [28, 21, 16], [150, 110, 70], { gv: [1, 1, 1], mkf: [4, 7, 0, 0, 0], cond: ['#0c0806', '#3e3024'], emit: ['#e0a458', '#ffd84a', '#6ae2ff'], bg: '#0a0705', neb: [[64, 40, 20], [40, 30, 30]], stars: 0.5, amb: 'glints', salt: 0x66,
     crate: ['#0e0a08', '#5a3a22', '#7a4e2a', '#6a4426', '#e0a458', '#1a1008', '#2a1c12'] });
-  zlook('tempest', [17, 18, 31], [120, 120, 180], { gv: [1, 1, 1], mkf: [0, 9, 0, 0, 0], road: '#241e40', rsp: ['#2a2448', '#1a1630', '#241e40'], edge: ['#5a50a8', '#9ad0ff', '#06050e'], chev: '#6a62b8', glow: [120, 150, 255], dot: '#9ad0ff',
+  zlook('tempest', [20, 23, 23], [140, 165, 165], { gv: [1, 1, 1], mkf: [0, 9, 0, 0, 0], road: '#241e40', rsp: ['#2a2448', '#1a1630', '#241e40'], edge: ['#5a50a8', '#9ad0ff', '#06050e'], chev: '#6a62b8', glow: [120, 150, 255], dot: '#9ad0ff',
     cond: ['#06090c', '#22303e'], emit: ['#ffe14d', '#9ad0ff', '#ffe14d'], bg: '#05070a', neb: [[30, 40, 56], [50, 50, 30]], stars: 0.15, amb: 'rain', salt: 0x77 });
   zlook('demo', [33, 31, 29], [120, 110, 100], { gv: [1, 1, 1], mkf: [0, 6, 0, 0, 0], road: '#232026', rsp: ['#2a262c', '#18161a', '#211e24'], edge: ['#a0581c', '#ff9a3c', '#0c0a08'], chev: '#9a5a34', glow: [255, 130, 50], dot: '#ff9a3c',
     rsv: ['#141210', '#c89a1e'], cond: ['#0e0d0c', '#46423c'], emit: ['#ff7b39', '#ffb03a', '#ff7b39'], bg: '#090807', neb: [[60, 36, 20], [40, 38, 36]], stars: 0.4, amb: 'dust', salt: 0x88 });
@@ -1366,6 +1366,7 @@ const RES = 2;
     ensureBuffers();
     const key = G.seed + ':' + G.map.lanes.length + ':' + COLS + ':' + (G.mapRev || 0);
     if (key !== mapKey) { mapKey = key; mapDirty = true; }
+    if (zoneId() !== mapZone) mapDirty = true; // 6.3: a jump door changed the zone
     if (mapDirty) drawMap();
     const v = view();
     const vxI = Math.floor(v.vx), vyI = Math.floor(v.vy), vwI = Math.ceil(v.vw) + 2, vhI = Math.ceil(v.vh) + 2;
@@ -1378,7 +1379,7 @@ const RES = 2;
       if (wipe) { // 6.3: the new zone's board spreads out from the core behind a ring in the zone's colour (a plain fade with Zone effects off)
         const f = clamp((performance.now() - wipe.at) / 1000, 0, 1), e = 1 - (1 - f) * (1 - f) * (1 - f), Z = ZLOOK[mapZone] || ZL0;
         blitL(oldLayer);
-        if (f > 0 && R_.zfx) { const cx = G.core.x * TILE, cy = G.core.y * TILE, rr = e * Math.hypot(Math.max(cx, BW - cx), Math.max(cy, BH - cy)) + 1;
+        if (f > 0 && R_.zfx) { const cx = G.core.x * TILE, cy = G.core.y * TILE, rr = e * Math.hypot(Math.max(cx - v.vx, v.vx + v.vw - cx), Math.max(cy - v.vy, v.vy + v.vh - cy)) + 1; // sweeps across what the camera sees
           b.save(); b.beginPath(); b.arc(cx, cy, rr, 0, 6.283); b.clip(); blitL(mapLayer); b.restore();
           if (f < 1) { strokeRing(cx, cy, rr, Z.line, 0.8 * (1 - f * f), 3); strokeRing(cx, cy, Math.max(1, rr - 7), Z.line, 0.3 * (1 - f), 2); } }
         else if (f > 0) { b.globalAlpha = e; blitL(mapLayer); b.globalAlpha = 1; }
