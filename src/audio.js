@@ -628,8 +628,8 @@ const SFX = (() => {
     const wpick = (a, w) => { let t = 0; for (const x of w) t += x; let r = R() * t; for (let i = 0; i < a.length; i++) { r -= w[i]; if (r <= 0) return a[i]; } return a[0]; };
     const NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
     const MODES = { ionian: [0, 2, 4, 5, 7, 9, 11], dorian: [0, 2, 3, 5, 7, 9, 10], phrygian: [0, 1, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11],
-      mixolydian: [0, 2, 4, 5, 7, 9, 10], aeolian: [0, 2, 3, 5, 7, 8, 10], harmonic: [0, 2, 3, 5, 7, 8, 11] };
-    const MODE_NAME = { ionian: 'major', dorian: 'dorian', phrygian: 'phrygian', lydian: 'lydian', mixolydian: 'mixolydian', aeolian: 'minor', harmonic: 'harmonic minor' };
+      mixolydian: [0, 2, 4, 5, 7, 9, 10], aeolian: [0, 2, 3, 5, 7, 8, 10], harmonic: [0, 2, 3, 5, 7, 8, 11], phrydom: [0, 1, 4, 5, 7, 8, 10] }; // 6.3: phrygian dominant (boss themes only)
+    const MODE_NAME = { ionian: 'major', dorian: 'dorian', phrygian: 'phrygian', lydian: 'lydian', mixolydian: 'mixolydian', aeolian: 'minor', harmonic: 'harmonic minor', phrydom: 'phrygian dominant' };
     // v5.5.8 musician's pass: a triad's quality on a degree of a mode; a loop fits a mode when it lands on no diminished or
     // augmented triad it did not ask for (the audit found 30 such combinations, e.g. Lydian I-iv°, Dorian i-vi°, minor i-ii°)
     function triadQ(mode, d) { const sc = MODES[mode] || MODES.aeolian, dd = ((d % 7) + 7) % 7, t = (sc[(dd + 2) % 7] - sc[dd] + 12) % 12, f = (sc[(dd + 4) % 7] - sc[dd] + 12) % 12; return t === 3 && f === 6 ? 'dim' : t === 4 && f === 8 ? 'aug' : t === 3 ? 'm' : 'M'; }
@@ -647,6 +647,7 @@ const SFX = (() => {
         flavours: {
           drift: { name: 'Drift', hard: 0, modes: ['lydian', 'ionian', 'mixolydian'], loops: [C([0, 1], [], 4), C([0, 3, 0, 4], [], 2), C([0], [], 8), C([0, 5, 3, 0], [], 2)] },
           glass: { name: 'Glass', hard: 0.3, ftrim: 0.85, modes: ['ionian', 'lydian', 'dorian'], arp: { kind: 'glass', rate: 4, oct: 2, lv: 0.2 }, loops: [C([0, 3], [], 2), C([5, 3, 0, 4], [], 2), C([0, 4, 5, 3], [], 2)] },
+          void: { name: 'Deep Space', hard: 0.45, ftrim: 0.9, modes: ['phrygian', 'aeolian'], pad: { kind: 'dark', lv: 0 }, bass: { kind: 'sub', line: 'long', lv: 0 }, lead: { kind: 'theremin', grammar: 'long', scale: 'mode', lv: 0.3, oct: 72 }, loops: [C([0, 1], [], 4), C([0], [], 8), C([0, 6, 5, 6], [], 2)] }, // 6.3
           nocturne: { name: 'Nocturne', hard: 0.15, ftrim: 0.72, modes: ['aeolian', 'dorian'], keys: { kind: 'piano', rhythm: 'broken', lv: 0 }, loops: [C([0, 5, 2, 6], [], 2), C([0, 3, 0, 4], [], 2), C([0, 6, 5, 6], [], 2)] },
         },
         ext: 4, voicing: 'open', drums: { K: '3000000000000000', P: '2002002002002000' }, kit: 'soft',
@@ -656,6 +657,8 @@ const SFX = (() => {
         blurb: 'Dusty swung drums, jazz chords on a warm Rhodes, tape wobble and crackle',
         flavours: {
           jazzhop: { name: 'Jazzhop', hard: 0.5, modes: ['ionian', 'dorian'], loops: [C([1, 4, 0, 0], ['m', '7']), C([1, 4, 0, 3]), C([0, 5]), C([3, 2, 5, 5]), C([1, 4, 0, 5])] },
+          boombap: { name: 'Boom Bap', hard: 0.75, modes: ['aeolian', 'dorian'], bpmX: 1.08, swing: 0.6, keys: { kind: 'piano', rhythm: 'comp', lv: 0 }, drums: { K: '90000000090000009000000009009000', S: '0000900000009000', H: '7070707070707070' }, loops: [C([0, 5], [], 2), C([0, 3, 5, 4], ['m7', 'm7', 'M7', 'm7']), C([0, 0, 5, 5], ['m', 'm7', 'M7', '6'])] }, // 6.3
+          bedroom: { name: 'Bedroom', hard: 0.1, modes: ['ionian', 'lydian'], bpmX: 0.9, kit: 'soft', lead: { kind: 'glass', grammar: 'sparse', scale: 'pentmajor', lv: 0.45, oct: 79 }, loops: [C([0, 1], [], 2), C([0, 4, 5, 3]), C([3, 4, 0, 5])] }, // 6.3
           rainy: { name: 'Rainy Day', hard: 0.25, modes: ['aeolian'], keys: { kind: 'piano', rhythm: 'lofi', lv: 0 }, loops: [C([3, 0, 3, 0], [], 1), C([0, 5, 4, 4], ['m', 'M', '7', '7']), C([0, 3], [], 2), C([5, 4, 0, 0])] },
         },
         ext: 5, voicing: 'jazz', kit: 'dusty',
@@ -666,6 +669,8 @@ const SFX = (() => {
         blurb: 'Slow heavy breaks, dark minor strings, dub bass and a theremin-like lead',
         flavours: {
           triphop: { name: 'Trip Hop', hard: 0.6, modes: ['aeolian', 'harmonic', 'phrygian'], halftime: 1, loops: [C([0, 5], [], 2), C([0, 1], [], 2), C([0, 0, 0, 0], ['m', 'mM7', 'm7', 'm6']), C([0, 5, 4], ['m', 'M', '7'], 2), C([0, 3, 6, 2])] },
+          cinematic: { name: 'Cinematic', hard: 0.5, modes: ['harmonic', 'aeolian'], bpmX: 0.92, keys: { kind: 'piano', rhythm: 'broken', lv: 0 }, lead: { kind: 'glass', grammar: 'long', scale: 'mode', lv: 0.5, oct: 79 }, loops: [C([0, 5, 3, 4], ['m', 'M', 'm', '7']), C([0, 3, 4, 0], ['m', 'm', '7', 'm']), C([0, 3], [], 2)] }, // 6.3
+          noir: { name: 'Noir', hard: 0.4, modes: ['dorian', 'aeolian'], swing: 0.6, kit: 'dusty', bass: { kind: 'upright', line: 'walk' }, keys: { kind: 'rhodes', rhythm: 'comp', lv: 0 }, pad: null, lead: { kind: 'melodica', grammar: 'call', scale: 'mode', lv: 0.5, oct: 72 }, drums: { K: '9000000000900000', S: '0000900000009000', H: '6006600660066006', D: '4040404040404040' }, loops: [C([0, 3], ['m7', '7'], 2), C([1, 4, 0, 0], ['m7', '7', 'm7', 'm7']), C([0, 6], ['m7', '7'], 2)] }, // 6.3
           chillout: { name: 'Chillout', hard: 0.3, modes: ['dorian', 'aeolian'], loops: [C([0, 3, 6, 2]), C([0, 6, 5, 6]), C([0, 3], [], 2)], keys: { kind: 'rhodes', rhythm: 'comp', lv: 0 } },
         },
         ext: 4, voicing: 'pad', kit: 'break',
@@ -677,6 +682,7 @@ const SFX = (() => {
         flavours: {
           outrun: { name: 'Outrun', hard: 0.6, modes: ['aeolian'], drums: { K: '9000900090009000' }, loops: [C([0, 5, 2, 6]), C([0, 6, 5, 3], ['m', '6', 'M', 'm']), C([0, 5, 6, 5], ['m', 'M7', 'M', 'M7']), C([5, 6, 4, 5], ['M', 'M', 'm', 'M'])] },
           dreamwave: { name: 'Dreamwave', hard: 0.3, modes: ['ionian', 'aeolian'], bpmX: 0.92, drums: { K: '9000000090600000' }, loops: [C([0, 5, 2, 4]), C([0, 5, 3, 4]), C([5, 3, 0, 4])] },
+          chase: { name: 'Chase', hard: 0.8, modes: ['aeolian', 'dorian'], bpmX: 1.12, bass: { kind: 'sawoct', line: 'gallop' }, lead: { kind: 'pulse', grammar: 'riff' }, drums: { K: '9000900090009000', S: '0000900000009000', H: '4444444444444444' }, loops: [C([0, 6, 5, 6]), C([0, 5, 6, 0]), C([0, 3, 6, 4], ['m', 'M', 'M', 'M'])] }, // 6.3
           darksynth: { name: 'Darksynth', hard: 0.95, modes: ['phrygian', 'harmonic'], bpmX: 1.15, drive: 1, drums: { K: '9000900090009006' }, loops: [C([0, 1, 3, 4], ['m', 'M', 'm', 'M']), C([0, 1], [], 2), C([0, 5, 1, 4], ['m', 'M', 'M', 'M'])] },
         },
         ext: 3, voicing: 'pad', kit: 'linn',
@@ -690,6 +696,7 @@ const SFX = (() => {
             loops: [C([0, 3], [], 1), C([0, 4, 3]), C([0, 2, 4], ['m7', 'M7', 'm7']), C([5, 4], ['M7', 'm7'], 1), C([0], [], 2)] },
           disco: { name: 'Disco House', hard: 0.7, modes: ['dorian', 'mixolydian'], bpmX: 1.01, swing: 0.52, keys: { kind: 'organ', rhythm: 'disco', lv: 0.2 }, bass: { kind: 'sawoct', line: 'disco' }, filterLoop: 1,
             drums: { H: '4646464646464646', O: '0070007000700070' }, loops: [C([1, 4], ['m7', '7']), C([0, 6, 3], ['M', 'M', 'M']), C([0, 3], ['m7', '7'])] },
+          tech: { name: 'Tech House', hard: 0.8, modes: ['aeolian', 'dorian'], bpmX: 1.01, swing: 0.54, keys: { kind: 'stab', rhythm: 'techno', lv: 0.2 }, pad: null, bass: { kind: 'saw', line: 'rolling' }, lead: { kind: 'bleep', grammar: 'bleep', lv: 0.6 }, voicing: 'plane', drums: { H: '0060006000600060', R: '0000003000000300', P: '3323332333233323' }, loops: [C([0], [], 4), C([0, 6], [], 2), C([0, 0, 3, 3])] }, // 6.3
           piano: { name: 'Piano House', hard: 0.6, modes: ['ionian', 'mixolydian'], keys: { kind: 'piano', rhythm: 'offbeat', lv: 0 }, bass: { kind: 'organ', line: 'organ' }, voicing: 'triad', ext: 3,
             loops: [C([0, 4, 5, 3]), C([5, 3, 0, 4]), C([0, 6, 3], ['M', 'M', 'M']), C([1, 4, 0, 5], ['m7', '7', 'M7', 'm7'])] },
         },
@@ -702,6 +709,7 @@ const SFX = (() => {
         flavours: {
           detroit: { name: 'Detroit', hard: 0.5, filterLoop: 1, modes: ['aeolian', 'dorian'], bpmX: 0.97, swing: 0.56, keys: { kind: 'stab', rhythm: 'techno', lv: 0 }, pad: { kind: 'strings', lv: 0.3 }, loops: [C([0], [], 2), C([0, 6]), C([0, 0, 3, 3]), C([0, 2], [], 2)] },
           minimal: { name: 'Dub Techno', hard: 0.35, modes: ['aeolian', 'dorian'], keys: { kind: 'stab', rhythm: 'dubtechno', lv: 0 }, drums: { C: '0000000000000000', H: '0000000000000000', P: '0040040040040000' }, mixO: { echo: 0.65, fb: 0.6, div: 0.75, rev: 0.6, revS: 5 }, loops: [C([0], [], 4), C([0, 6], [], 2)] },
+          industrial: { name: 'Industrial', hard: 1, modes: ['phrygian', 'aeolian'], bpmX: 1.06, kit: 'hard', keys: { kind: 'stab', rhythm: 'techno', lv: 0 }, drums: { R: '0000000000000000', X: '0000000600000006', C: '0000700000007000', H: '3333333333333333', D: '0000000000000000' }, loops: [C([0], [], 4), C([0, 1], [], 2)] }, // 6.3
           acid: { name: 'Acid', hard: 0.9, modes: ['aeolian', 'phrygian'], bpmX: 1.04, bass: { kind: 'acid', line: 'acid' }, keys: null, loops: [C([0], [], 4), C([0, 1], [], 2), C([0, 6], [], 2)] },
         },
         ext: 4, voicing: 'plane', kit: '909',
@@ -712,6 +720,8 @@ const SFX = (() => {
         blurb: 'Rolling offbeat bass, gated supersaw chords, a long breakdown and a snare-roll build',
         flavours: {
           uplifting: { name: 'Uplifting', hard: 0.8, ftrim: 0.85, modes: ['aeolian'], loops: [C([0, 5, 2, 6]), C([5, 6, 0, 0]), C([0, 3, 5, 4], ['m', 'm', 'M', 'm']), C([0, 6, 5, 4], ['m', 'M', 'M', 'M'])] },
+          psy: { name: 'Psy', hard: 0.95, modes: ['phrygian', 'harmonic'], bpmX: 1.04, bass: { kind: 'acid', line: 'rolling' }, pad: { kind: 'dark', lv: 0.2 }, keys: null, lead: { kind: 'saw', grammar: 'riff', lv: 0.45 }, arp: { kind: 'pluck', rate: 16, oct: 1, lv: 0.3 }, drums: { O: '0080008000800080', H: '3333333333333333', C: '0000600000006000' }, loops: [C([0], [], 4), C([0, 1], [], 2), C([0, 1, 0, 6])] }, // 6.3
+          techtrance: { name: 'Tech Trance', hard: 0.65, modes: ['aeolian'], bpmX: 0.98, keys: { kind: 'stab', rhythm: 'techno', lv: 0 }, arp: { kind: 'juno', rate: 8, oct: 2, lv: 0.4 }, drums: { R: '0060000600600060', H: '0303030303030303' }, loops: [C([0, 5], [], 2), C([0, 6, 5, 6]), C([0], [], 4)] }, // 6.3
           progressive: { name: 'Progressive', hard: 0.45, ftrim: 1.25, filterLoop: 1, modes: ['aeolian', 'dorian'], bpmX: 0.94, bass: { kind: 'saw', line: 'offbeat' }, keys: { kind: 'pluck', rhythm: 'trancepluck', lv: 0.2 }, loops: [C([0, 5], [], 2), C([0, 5, 2, 6], [], 2), C([0, 3], [], 2)] },
         },
         ext: 3, voicing: 'pad', kit: '909',
@@ -722,6 +732,8 @@ const SFX = (() => {
         blurb: 'Two-step breaks at 174 with ghost snares, soulful minor-9 chords, deep sub or a growling Reese',
         flavours: {
           liquid: { name: 'Liquid', hard: 0.5, modes: ['aeolian', 'dorian'], loops: [C([0, 2, 4, 0], ['m9', 'M7', 'm7', 'm9']), C([0, 5, 6, 0]), C([3, 4, 2, 5], ['M7', '7', 'm7', 'm7']), C([0, 3], [], 2)] },
+          jungle: { name: 'Jungle', hard: 0.7, modes: ['dorian', 'aeolian'], swing: 0.53, bass: { kind: 'sub', line: 'long' }, keys: { kind: 'stab', rhythm: 'dubtechno', lv: 0.2 }, pad: { kind: 'strings', lv: 0.2 }, drums: { K: '90000000009000009000000000000000', S: '00009003003090030000900300309020', H: '0060006000600060', D: '0000000000000000', P: '3232323232323232' }, loops: [C([0, 6], [], 2), C([0], [], 4), C([0, 3], ['m7', 'm7'], 2)] }, // 6.3
+          neuro: { name: 'Neuro', hard: 1, modes: ['phrygian', 'aeolian'], bass: { kind: 'wobble', line: 'reese' }, keys: null, pad: { kind: 'dark', lv: 0.2 }, lead: { kind: 'bleep', grammar: 'bleep', lv: 0.5, oct: 76 }, drums: { K: '9000000000900000', S: '0000900000009003', H: '0060006000600060', D: '0000000000000000', P: '0000000000000000' }, loops: [C([0], [], 4), C([0, 1], [], 2)] }, // 6.3
           roller: { name: 'Reese Roller', hard: 0.85, modes: ['aeolian', 'phrygian'], bass: { kind: 'reese', line: 'reese' }, keys: null, pad: { kind: 'dark', lv: 0 },
             drums: { K: '90900000009900009090000000900000', S: '00009003030090030300900303000090' }, loops: [C([0], [], 4), C([0, 5], [], 2), C([0, 1], [], 2)] },
         },
@@ -734,6 +746,7 @@ const SFX = (() => {
         flavours: {
           nes: { name: 'NES', hard: 0.75, modes: ['ionian', 'mixolydian', 'aeolian'], loops: [C([0, 5, 3, 4]), C([0, 4, 5, 3]), C([0, 3, 4, 0]), C([5, 6, 0, 0], ['M', 'M', 'M', 'M']), C([0, 5, 6, 0])] },
           gameboy: { name: 'Game Boy', hard: 0.5, ftrim: 1.45, modes: ['dorian', 'aeolian', 'ionian'], bpmX: 0.85, lead: { duty: 0.125 }, bass: { kind: 'wave', line: 'chip' }, loops: [C([0, 6, 5, 6]), C([0, 3, 0, 4]), C([0, 5, 3, 4])] },
+          speedrun: { name: 'Speedrun', hard: 0.95, modes: ['aeolian', 'harmonic'], bpmX: 1.12, lead: { duty: 0.125, grammar: 'riff' }, drums: { K: '9000900090009000', S: '0000900000009009', H: '6060606060606060' }, loops: [C([0, 3, 4, 0], ['m', 'm', 'M', 'm']), C([0, 5, 3, 4], ['m', 'M', 'm', 'M']), C([0, 0, 5, 4], ['m', 'm', 'M', 'M'])] }, // 6.3
           saveroom: { name: 'Save Room', hard: 0.15, ftrim: 0.85, modes: ['ionian', 'lydian'], bpmX: 0.62, drums: { K: '9000000000000000', S: '0000000090000000', H: '0000600000006000' }, bass: { kind: 'tri', line: 'long' }, loops: [C([0, 3], [], 2), C([0, 5, 3, 4], [], 2)] },
         },
         ext: 3, voicing: 'triad', kit: 'chip',
@@ -745,6 +758,7 @@ const SFX = (() => {
         flavours: {
           onedrop: { name: 'One Drop', hard: 0.35, modes: ['aeolian', 'dorian'], drums: { K: '0000000090000000', H: '6050605060506050' }, loops: [C([0, 6], [], 2), C([0, 3], [], 2), C([0, 5, 6, 0])] },
           rockers: { name: 'Rockers', hard: 0.6, modes: ['aeolian', 'mixolydian'], drums: { K: '9000000090000000', H: '5353535353535353' }, loops: [C([0, 3], [], 1), C([0, 6], [], 2), C([0, 3, 4, 0], ['M', 'M', 'M', 'M'])] },
+          digital: { name: 'Digital', hard: 0.7, modes: ['aeolian', 'dorian'], bpmX: 1.1, kit: '909', bass: { kind: 'tri', line: 'dub' }, keys: { kind: 'organ', rhythm: 'skank', lv: 0 }, lead: { kind: 'chip', grammar: 'call', duty: 0.25, lv: 0.45 }, drums: { K: '9000000090000000', S: '0000900000009000', R: '0000000000000000', H: '0303030303030303' }, loops: [C([0, 6], [], 2), C([0, 3, 4, 0], ['m', 'm', 'M', 'm']), C([0], [], 4)] }, // 6.3
           steppers: { name: 'Steppers', hard: 0.85, modes: ['aeolian', 'phrygian'], drums: { K: '9000900090009000' }, loops: [C([0, 6], [], 2), C([0, 1], [], 2), C([0], [], 4)] },
         },
         ext: 3, voicing: 'triad', kit: 'dub',
@@ -761,20 +775,194 @@ const SFX = (() => {
       for (const k of ['bass', 'keys', 'lead', 'pad', 'arp']) if (k in F) o[k] = F[k] === null ? null : Object.assign({}, G0[k] || {}, F[k]);
       return o;
     }
+    // ---------------- 6.3 variety: per-song choices inside a genre (v2 pieces only) ----------------
+    // Before 6.3 a flavour fixed the drums, the instruments, the tempo and the arrangement; only chords, key and melody were rolled,
+    // so songs of one style sounded alike. A v2 piece (spec.v = 2) rolls these too, from the lists below. Old saved tracks have no v
+    // and take the old path, so they play exactly as they did. Drum rows: the flavour's own row is one of the choices; a row a
+    // flavour writes itself (its identity, like One Drop's kick on three) is kept unless the flavour lists its own choices in VX_F.
+    // lines/leads/pads/keys change a role only when the flavour does not set that role itself.
+    const VX = {
+      ambient: { K: ['3000000030000000', '0000000000000000'], P: ['2000200020002000', '0020002000200020', '0000000000000000'], leads: ['bell', 'glass', 'flute'], grammars: ['drone', 'long', 'sparse'],
+        pads: ['warm', 'strings', 'juno'], arps: ['updown', 'up', 'down', 'skip'], tempo: 0.06, fills: ['none'] },
+      lofi: { K: ['90000000009000009000000009000600', '90000060000000009000006000090000', '90000000090000009000000000900000'], S: ['0000900000009000', '0000900300009000', '0000900000009030'],
+        H: ['7050705070507050', '7000700070007000', '7552755275527552'], ghost: 0.5, lines: ['lofi', 'lofi', 'walk', 'dubby'], leads: ['flute', 'bell', 'piano', 'melodica', 'glass'],
+        grammars: ['sparse', 'call', 'riff'], keys: [['rhodes', 'lofi'], ['rhodes', 'comp'], ['piano', 'lofi']], tempo: 0.06, fills: ['drop', 'drop', 'snare', 'none'] },
+      downtempo: { K: ['9000000090000000', '9000000600900000', '9000060005000000'], S: ['0000900000009000', '0000900200009020'], H: ['6000600060006000', '6444644464446444', '0060006000600060'],
+        ghost: 0.4, lines: ['dubby', 'dubby', 'long', 'dub'], leads: ['theremin', 'bell', 'flute', 'glass', 'melodica'], grammars: ['long', 'sparse', 'call'], pads: ['strings', 'dark', 'warm'],
+        tempo: 0.06, fills: ['drop', 'toms', 'none'] },
+      synthwave: { H: ['7070707070707070', '4444444444444444', '0707070707070707'], S: ['0000900000009004', '0000900000009090'], O: ['0000000000000000', '0000000700000007'],
+        lines: ['octave', 'octave', 'gallop', 'pulse8'], leads: ['saw', 'pulse', 'brass', 'supersaw'], grammars: ['anthem', 'riff', 'call'], pads: ['juno', 'warm', 'strings'],
+        arps: ['updown', 'up', 'down', 'pinky', 'skip'], arpRates: [16, 8], tempo: 0.06, fills: ['toms', 'snare', 'toms'] },
+      house: { H: ['0060006000600060', '3363336333633363', '3060306830603068'], C: ['0000800000008080', '0000800000008002'], P: ['0000200000002000', '2020202020202020', '0302030203020302'],
+        R: ['0000000300000300', '0030000000300000'], O: ['0070007000700070', '0000000000000050'], leads: ['piano', 'bell', 'bleep'], grammars: ['riff', 'call', 'bleep'], tempo: 0.025,
+        fills: ['kickdrop', 'kickdrop', 'clap', 'none'] },
+      techno: { R: ['0006000600060006', '0600060006000600', '0060060000600600'], H: ['0303030303030303', '3333333333333333'], O: ['0080008000800088', '0000008000000080'],
+        C: ['0000000000000000', '0000600000006000'], D: ['0000000000000000', '2020202020202020'], lines: ['rumble', 'rumble', 'offbeat', 'gallop'], leads: ['bleep', 'bell', 'glass'],
+        grammars: ['bleep', 'riff', 'sparse'], tempo: 0.035, fills: ['none', 'kickdrop', 'none'] },
+      trance: { H: ['0303030303030303', '3333333333333333'], C: ['0000700000007007', '0000000000000000'], P: ['0000000000000000', '2222222222222222'], lines: ['rolling', 'rolling', 'offbeat'],
+        leads: ['supersaw', 'saw', 'brass'], grammars: ['trance', 'anthem', 'riff'], arps: ['updown', 'up', 'down', 'pinky', 'skip'], arpRates: [16, 8], tempo: 0.025 },
+      dnb: { K: ['9000000000900000', '9000000000709000', '9000000090700000'], S: ['0000900000009000', '0000900300009030', '0000900303009003'], H: ['6060606060606060', '0000000000000000'],
+        D: ['5555555555555555', '0000000000000000'], lines: ['twostep', 'twostep', 'long'], leads: ['bell', 'glass', 'flute', 'piano'], grammars: ['sparse', 'call', 'riff'], tempo: 0.015 },
+      chiptune: { K: ['9000900090009000', '9000000090000000', '9000000900900000'], S: ['0000900000009009', '0000900009009000'], H: ['6060606060606060', '0060006000600060'],
+        lines: ['chip', 'chip', 'long', 'octave'], duties: [0.25, 0.125, 0.5], grammars: ['chip', 'riff', 'anthem'], tempo: 0.07, fills: ['chip', 'chip', 'toms'] },
+      dub: { H: ['5050505050505050', '0050005000500050', '5353535353535353'], R: ['0000300090000300', '0000000090000030'], O: ['0000000000000000', '0000005000000050'], P: ['0030003000300030'],
+        lines: ['dub', 'dub', 'dubby'], leads: ['melodica', 'flute', 'bell'], grammars: ['call', 'sparse', 'riff'], tempo: 0.05, fills: ['flam', 'flam', 'toms'] },
+    };
+    // per flavour: more chord loops and modes (checked by loopOK like the rest), and choices for roles the flavour sets itself
+    const VX_F = {
+      'ambient/drift': { loops2: [C([0, 4], [], 4), C([0, 5, 1, 0], [], 2)] },
+      'ambient/glass': { loops2: [C([0, 5], [], 4), C([3, 4, 0, 0], [], 2)] },
+      'ambient/nocturne': { loops2: [C([0, 3], [], 4), C([0, 5, 3, 4], [], 2)], modes2: ['phrygian'] },
+      'lofi/jazzhop': { loops2: [C([0, 3, 1, 4]), C([5, 1, 4, 0])], modes2: ['mixolydian'] },
+      'lofi/rainy': { loops2: [C([0, 6, 5, 4], ['m7', '7', 'M7', '7']), C([0, 3], ['m9', 'm7'], 2)] },
+      'downtempo/triphop': { loops2: [C([0, 6, 5, 6]), C([0, 3, 5, 4], ['m', 'm', 'M', '7'])] },
+      'downtempo/chillout': { loops2: [C([0, 5, 3, 4]), C([0, 1], [], 2)] },
+      'synthwave/outrun': { loops2: [C([0, 3, 6, 5], ['m', 'm', 'M', 'M']), C([5, 6, 0, 0], ['M', 'M', 'm', 'm'])] },
+      'synthwave/dreamwave': { loops2: [C([3, 4, 5, 0]), C([0, 2, 5, 4])], modes2: ['lydian'] },
+      'synthwave/darksynth': { loops2: [C([0, 3], ['m', 'm'], 2)] },
+      'house/deep': { loops2: [C([0, 6, 5, 6]), C([0, 6], [], 2)], lines: ['deep', 'deep', 'offbeat'] },
+      'house/disco': { loops2: [C([0, 3, 4, 3])], lines: ['disco', 'octave'] },
+      'house/piano': { loops2: [C([0, 5, 3, 4]), C([3, 0, 4, 5])], lines: ['organ', 'organ', 'deep'] },
+      'techno/detroit': { loops2: [C([0, 5], [], 2), C([0, 3], [], 2)] },
+      'techno/minimal': { loops2: [C([0, 3], [], 4)] },
+      'techno/acid': { loops2: [C([0, 5, 6, 0])] },
+      'trance/uplifting': { loops2: [C([5, 3, 0, 4], ['M', 'm', 'm', 'm']), C([0, 6, 3, 5], ['m', 'M', 'm', 'M'])] },
+      'trance/progressive': { loops2: [C([0, 6], [], 2), C([5, 6, 0, 0], [], 1)] },
+      'dnb/liquid': { loops2: [C([0, 5, 3, 4]), C([3, 4, 0, 0])] },
+      'dnb/roller': { loops2: [C([0, 6], [], 2)] },
+      'chiptune/nes': { loops2: [C([0, 3, 5, 4]), C([5, 3, 0, 4])] },
+      'chiptune/gameboy': { loops2: [C([0, 5, 6, 0])] },
+      'dub/onedrop': { loops2: [C([0, 3, 4, 3], [], 1)] },
+      'dub/rockers': { loops2: [C([0, 6], [], 1)] },
+      'dub/steppers': { loops2: [C([0, 5], [], 2)] },
+    };
+    // shapes for the v2 hook: one bar of rhythm per figure (x = a note); the hook's answer bar reuses or swaps it
+    const HOOK_R = {
+      sparse: ['x.....x.x.......', 'x.......x...x...', '..x...x.....x...', 'x...x.....x.....'],
+      long: ['x...........x...', 'x.......x.......', 'x...............', 'x.....x.........'],
+      anthem: ['x.....x.....x...', 'x...x...x.x.x...', 'x.x...x...x.....', 'x.....x...x.x...'],
+      trance: ['x.xx.x.xx.x.x.x.', 'x..x..x.x..x..x.', 'xx.x.x.xx.x.x.x.', 'x.x.xx.x.x.xx.x.'],
+      chip: ['x.x.x...x.x.x...', 'x..xx.x.x..x....', 'xxx.x.x.x...x...', 'x.xxx.x.x.x.x...'],
+      call: ['x...x.x.........', 'x.x...x.........', '..x.x...x.......', 'x..x..x.........'],
+      riff: ['x..x..x...x..x..', 'x..x..x.x.......', '..x..x..x..x....', 'x...x..x..x.....'],
+      bleep: ['x......x........', 'x..x............', '...x......x.....', 'x.........x.....'],
+      drone: ['x...............', 'x.......x.......'],
+    };
+    // ---------------- 6.3 boss themes (Nic: "good boss music for all the bosses: unique, catchy and hard") ----------------
+    // Fixed songs on the same engine: handwritten hooks, chords, drums and bass, one per boss. Hooks are semitones above the key's
+    // tonic ("st:semi:len[:m]", 32 steps = 2 bars; :m plays that note on the theme's second lead), so a hook keeps its exact notes
+    // over every chord. Phrases are 8 bars: Alarm (the entry build) > Hook > Drive > Hook > Break > Final, then back to Hook while
+    // the boss lives. Each 2-bar slot of a phrase plays motif L[i]: 0 hook, 1 answer, 2 drive (the hook moved), 3 break (slowed).
+    // A boss phase change jumps to Final at the next phrase and lifts the key a semitone.
+    const HK = str => str.trim().split(/\s+/).map(t => { const a = t.split(':'); return { st: +a[0], d: +a[1], len: +a[2], k: a[3] || '' }; });
+    const BP = str => str.trim().split(/\s+/).map(t => { const a = t.split(':'); return { st: +a[0], iv: +a[1], len: +a[2], acc: a[3] === 'a', slide: a[3] === 's' }; });
+    const gallop = () => { let o = ''; for (let s = 0; s < 16; s += 4) o += `${s}:0:0.9 ${s + 2}:0:0.5 ${s + 3}:0:0.5 `; return o; };
+    const roll16 = ivs => { let o = ''; for (let s = 0; s < 16; s++) if (ivs[s % ivs.length] !== null) o += `${s}:${ivs[s % ivs.length]}:0.9 `; return o; };
+    const BOSS_THEMES = {
+      behemoth: { name: 'Behemoth', title: 'Siege Engine', base: ['synthwave', 'darksynth'], bpm: 108, mode: 'phrygian', root: 40, kit: 'hard', trim: 1.59,
+        loop: C([0, 0, 1, 6], ['m', 'm', 'M', 'M']), drums: { K: '9000900090009060', S: '0000900000009000', C: '0000600000006000', H: '5353535353535353', O: '0000000000000070' }, fill: 'toms',
+        bass: { kind: 'sawoct', pat: gallop() }, keys: { kind: 'power', pat: [0, 3, 6, 10, 12], lv: 0 }, pad: { kind: 'dark', lv: 0.3 }, lead: { kind: 'brass', oct: 64 },
+        hook: '0:0:2 3:0:1 4:1:4 12:3:3 16:1:3 20:0:8 30:-2:2', ans: '0:0:2 3:0:1 4:1:4 12:7:4 16:8:6 24:7:2 28:5:4', m2: 5,
+        mix: { rev: 0.45, revS: 2.6, echo: 0.2, div: 0.75, fb: 0.3, side: 0.35, tone: 14000, tape: 0.1, crackle: 0, pump: 0.3 } },
+      queen: { name: 'Hive Queen', title: 'Royal Swarm', base: ['trance', 'uplifting'], bpm: 138, mode: 'harmonic', root: 47, kit: '909', trim: 0.86,
+        loop: C([0, 3, 4, 0], [null, null, '7', null]), drums: { K: '9000900090009000', O: '0080008000800080', H: '3434343434343434', C: '0000700000007000' }, fill: 'roll',
+        bass: { kind: 'saw', pat: roll16([null, 0, 0, 0]) }, arp: { kind: 'pluck', rate: 16, oct: 2, lv: 0.25 }, pad: { kind: 'strings', lv: 0 }, keys: null, lead: { kind: 'saw', oct: 71 },
+        hook: '0:12:1 1:11:1 2:12:1 3:11:1 4:7:4 8:8:2 10:7:2 12:3:4 16:12:1 17:11:1 18:12:1 19:11:1 20:14:4 24:15:2 26:14:2 28:11:4',
+        ans: '0:15:2 2:14:2 4:12:2 6:11:2 8:12:6 16:7:4 20:8:4 24:11:4 28:12:4', m2: -5,
+        mix: { rev: 0.55, revS: 3, echo: 0.3, div: 0.75, fb: 0.35, side: 0.55, tone: 15000, tape: 0, crackle: 0, pump: 0.55 } },
+      wraith: { name: 'Phase Wraith', title: 'Blink', base: ['dnb', 'roller'], bpm: 160, mode: 'phrydom', root: 42, kit: 'break', trim: 0.52,
+        loop: C([0, 0, 1, 0]), drums: { K: '9000000000900000', S: '0000000090000000', H: '6060606060606060', P: '0303030303030303', Z: '0000000000000034' }, fill: 'none',
+        bass: { kind: 'reese', len32: 1, pat: '0:0:14 16:1:8 26:0:6' }, keys: { kind: 'stab', pat: [3, 11], how: 'dubtechno', lv: 0.2 }, pad: { kind: 'dark', lv: 0.2 }, lead: { kind: 'theremin', oct: 66 },
+        hook: '0:0:6 6:7:2 8:8:6 14:7:2 16:4:8 24:1:4 28:0:4', ans: '0:0:6 6:7:2 8:8:6 14:10:2 16:12:10 28:13:4', m2: 12,
+        mix: { rev: 0.6, revS: 4, echo: 0.4, div: 0.75, fb: 0.45, side: 0.2, tone: 12000, tape: 0.2, crackle: 0, pump: 0.2 } },
+      overmind: { name: 'Overmind', title: 'Mind Lock', base: ['techno', 'acid'], bpm: 132, mode: 'dorian', root: 45, kit: '909', trim: 1.18,
+        loop: C([0, 0, 6, 3]), drums: { K: '9000900090009000', R: '0060000600600060', O: '0080008000800080', C: '0000300000003000', H: '0303030303030303', D: '2222222222222222' }, fill: 'none',
+        bass: { kind: 'acid', pat: '0:0:1:a 2:12:1 3:0:1 5:10:1:s 6:0:1 8:7:1:a 10:0:1 11:12:1 13:3:1:s 14:0:1' }, keys: { kind: 'organ', pat: [0, 6], lv: 0.35 }, pad: { kind: 'dark', lv: 0.3 }, lead: { kind: 'bleep', oct: 72 },
+        hook: '0:0:3 3:3:3 6:7:3 9:10:3 12:7:3 15:3:3 18:0:3 21:3:3 24:7:3 27:10:3 30:14:2', ans: '0:12:3 3:10:3 6:7:3 9:5:3 12:7:3 15:3:3 18:2:3 21:0:3 24:-2:3 27:0:5', m2: 5,
+        mix: { rev: 0.45, revS: 3, echo: 0.45, div: 0.75, fb: 0.5, side: 0.4, tone: 16000, tape: 0.05, crackle: 0, pump: 0.35 } },
+      titan: { name: 'Titan', title: 'Colossus March', base: ['synthwave', 'outrun'], bpm: 120, mode: 'harmonic', root: 38, kit: '909', trim: 0.59,
+        loop: C([0, 5, 3, 4], [null, null, null, '7']), drums: { K: '9000000090000000', S: '0030903303009330', X: '4000000000000060', H: '5050505050505050' }, fill: 'toms',
+        bass: { kind: 'sawoct', pat: '0:0:1.6 2:0:1.6 4:12:1.6 6:0:1.6 8:0:1.6 10:0:1.6 12:12:1.6 14:7:1.6' }, keys: { kind: 'stab', pat: [0, 6, 8], lv: 0 }, pad: { kind: 'strings', lv: 0 }, lead: { kind: 'supersaw', oct: 62 },
+        hook: '0:0:3 3:7:1 4:8:4 8:7:3 11:5:1 12:7:4 16:0:3 19:7:1 20:8:3 23:11:1 24:12:8', ans: '0:12:3 3:11:1 4:8:4 8:7:3 11:5:1 12:3:4 16:2:3 19:-1:1 20:0:12', m2: 5,
+        mix: { rev: 0.55, revS: 3.2, echo: 0.2, div: 0.75, fb: 0.3, side: 0.3, tone: 13000, tape: 0.05, crackle: 0, pump: 0.3 } },
+      cat: { name: 'Leia', title: 'Couch Shredder', base: ['lofi', 'jazzhop'], bpm: 116, mode: 'aeolian', root: 40, kit: 'break', swing: 0.62, human: 6, trim: 1.67,
+        loop: C([0, 0, 3, 4], ['m', 'm', 'm', '7']), drums: { K: '9000000900900000', S: '0000900000009000', R: '0030003000300030', H: '6060606060606060', P: '0000300000003000' }, fill: 'snare',
+        bass: { kind: 'upright', pat: '0:0:1.5 2:12:1.5 4:0:1.5 6:12:1.5 8:3:1.5 10:15:1.5 12:4:1.5 14:16:1.5' }, keys: { kind: 'stab', pat: [6, 14], lv: 0.3 }, pad: { kind: 'dark', lv: 0.4 },
+        lead: { kind: 'pizz', k2: 'meow', oct: 64 },
+        hook: '0:0:1 2:3:1 3:4:1 4:7:2 8:6:1 9:7:1 10:12:6:m 16:0:1 18:3:1 19:4:1 20:7:2 24:10:2 26:9:1 27:7:1 28:-5:4:m',
+        ans: '0:12:2:m 4:11:1 5:10:1 6:9:1 7:8:1 8:7:4 16:0:1 18:3:1 19:4:1 20:7:1 22:12:1 24:0:6:m', m2: 5, m3: '0:-12:8:m 16:-5:8:m',
+        form: { 4: { n: 'Nap', half: 1, under: 1, drums: 0.5, build: 0, L: [3, -1, 3, -1] }, 5: { n: 'Pounce' } },
+        mix: { rev: 0.35, revS: 1.8, echo: 0.25, div: 0.75, fb: 0.3, side: 0.2, tone: 11000, tape: 0.25, crackle: 0.15, pump: 0.2 } },
+      gloop: { name: 'Gloop', title: 'Leftovers', base: ['dnb', 'neuro'], bpm: 146, mode: 'dorian', root: 43, kit: '909', trim: 1.7,
+        loop: C([0, 3, 0, 6]), drums: { K: '9000000000900000', S: '0000000090000000', H: '3030303030303030', O: '0000000000000500', C: '0000000090000000' }, fill: 'none',
+        bass: { kind: 'wobble', pat: '0:0:6 6:0:2:a 8:3:4 12:-2:4' }, keys: { kind: 'stab', pat: [6, 14], lv: 0.4 }, pad: null, lead: { kind: 'drop', oct: 67 },
+        hook: '0:0:2 2:0:2 4:7:2 6:5:2 8:3:4 12:0:2 14:-2:2 16:12:2 18:12:2 20:19:2 22:17:2 24:15:6', ans: '0:0:2 2:0:2 4:7:2 6:5:2 8:3:4 12:5:2 14:7:2 16:10:4 20:12:12', m2: 12,
+        mix: { rev: 0.4, revS: 2.2, echo: 0.3, div: 0.5, fb: 0.3, side: 0.45, tone: 14000, tape: 0.05, crackle: 0, pump: 0.4 } },
+      whale: { name: 'Space Whale', title: 'Deep Song', base: ['downtempo', 'triphop'], bpm: 78, mode: 'aeolian', root: 36, kit: 'break', in: 6, trim: 0.83,
+        loop: C([0, 6, 5, 6]), drums: { K: '9000000000900000', S: '0000900000009000', H: '3535353535353535', O: '0000000000000060' }, fill: 'toms',
+        bass: { kind: 'sawoct', pat: roll16([0, 0, 12, 0]) }, arp: { kind: 'glass', rate: 4, oct: 2, lv: 0.45 }, pad: { kind: 'strings', lv: 0 }, keys: null, lead: { kind: 'whale', oct: 60 },
+        hook: '0:0:4 4:7:4 8:12:6 14:10:2 16:7:8 24:3:4 28:5:4', ans: '0:0:4 4:7:4 8:12:6 14:15:2 16:14:8 24:12:8', m2: '0:12:6 6:15:2 8:14:4 12:12:4 16:10:8 24:7:8',
+        form: { 4: { half: 1 } },
+        mix: { rev: 0.35, revS: 5.2, echo: 0.25, div: 1, fb: 0.35, side: 0.25, tone: 12000, tape: 0.05, crackle: 0, pump: 0.25 } },
+      duck: { name: 'Quackzilla', title: 'Rubber Reckoning', base: ['trance', 'uplifting'], bpm: 178, mode: 'mixolydian', root: 43, kit: 'hard', trim: 1.65,
+        loop: C([0, 6, 3, 0]), drums: { K: '9000900090009000', O: '0080008000800080', H: '3333333333333333', C: '0000800000008000' }, fill: 'roll',
+        bass: { kind: 'saw', pat: '2:0:1.4 6:0:1.4 10:0:1.4 14:0:1.4' }, keys: { kind: 'stab', pat: [2, 6, 10, 14], lv: 0.25 }, pad: { kind: 'juno', lv: 0.4 }, lead: { kind: 'quack', oct: 67 },
+        hook: '0:0:2 2:0:2 4:4:2 6:7:4 10:9:2 12:7:4 16:12:2 18:10:2 20:7:2 22:4:2 24:5:2 26:4:2 28:0:4', ans: '0:0:2 2:0:2 4:4:2 6:7:4 10:9:2 12:10:4 16:12:12', m2: 5,
+        form: { 2: { n: 'Hop', hop: 1 } },
+        mix: { rev: 0.35, revS: 2, echo: 0.2, div: 0.75, fb: 0.25, side: 0.5, tone: 15000, tape: 0, crackle: 0, pump: 0.5 } },
+      fsm: { name: 'Flying Spaghetti Monster', title: 'Al Dente', base: ['dub', 'rockers'], bpm: 152, mode: 'harmonic', root: 45, kit: 'break', swing: 0.66, trim: 1.63,
+        loop: C([0, 3, 4, 0], [null, null, '7', null]), drums: { K: '9000900090009000', S: '0000700000007000', P: '6060606060606060' }, fill: 'toms',
+        bass: { kind: 'upright', pat: '0:0:2 4:7:2 8:0:2 12:7:2' }, keys: { kind: 'organ', pat: [2, 6, 10, 14], lv: 0 }, arp: { kind: 'pluck', rate: 16, oct: 1, lv: 0.35 }, pad: null, lead: { kind: 'melodica', oct: 69 },
+        hook: '0:0:2 2:3:2 4:7:2 6:8:2 8:7:2 10:3:2 12:2:2 14:3:2 16:0:2 18:3:2 20:7:2 22:8:2 24:11:2 26:12:6', ans: '0:12:2 2:11:2 4:8:2 6:7:2 8:5:2 10:3:2 12:2:2 14:-1:2 16:0:8', m2: 5,
+        mix: { rev: 0.4, revS: 2, echo: 0.15, div: 0.75, fb: 0.2, side: 0.15, tone: 11000, tape: 0.2, crackle: 0.1, pump: 0.15 } },
+      worm: { name: 'Wormhole Worm', title: 'Burrow', base: ['dnb', 'roller'], bpm: 174, mode: 'phrygian', root: 41, kit: 'break', trim: 2.06,
+        loop: C([0, 1], [], 2), drums: { K: '90000000009000000090000000000000', S: '0000900300009003', H: '0060006000600060', Z: '0000000000000300' }, fill: 'none',
+        bass: { kind: 'reese', len32: 1, pat: '0:0:6 6:1:2 8:0:4 12:-2:4 16:0:10 26:3:6' }, keys: null, pad: { kind: 'dark', lv: 0.3 }, lead: { kind: 'growl', oct: 65 },
+        hook: '0:0:2 2:1:1 3:0:1 4:-2:2 6:0:2 8:3:2 10:1:6 16:0:2 18:1:1 19:0:1 20:-2:2 22:0:2 24:6:2 26:7:6', ans: '0:0:2 2:1:1 3:0:1 4:-2:2 6:0:2 8:3:2 10:5:2 12:7:2 14:8:2 16:7:8 24:1:4 28:0:4', m2: 12,
+        form: { 4: { n: 'Underground', under: 1, drums: 0.5 }, 5: { n: 'Surface' } },
+        mix: { rev: 0.5, revS: 2.6, echo: 0.35, div: 1, fb: 0.35, side: 0.35, tone: 15000, tape: 0.05, crackle: 0, pump: 0.3 } },
+      auditor: { name: 'The Auditor', title: 'Form 1040-Z', base: ['house', 'deep'], bpm: 126, mode: 'aeolian', root: 36, kit: '909', ding: 1, trim: 1.95,
+        loop: C([0, 6, 5, 4], [null, null, null, '7']), drums: { K: '9000000090000000', C: '0000900000009000', Z: '5353535353535353' }, fill: 'none',
+        bass: { kind: 'sub', pat: '0:0:7 8:0:7' }, keys: { kind: 'organ', pat: [0], lv: 0.3, dur: 14 }, arp: { kind: 'pluck', rate: 16, oct: 1, lv: 0.2 }, pad: { kind: 'strings', lv: 0.3 }, lead: { kind: 'harpsi', oct: 72 },
+        hook: '0:0:2 4:0:2 8:0:2 12:-1:4 16:3:2 18:2:2 20:0:8', ans: '0:0:2 4:0:2 8:0:2 12:-1:4 16:8:2 18:7:2 20:5:4 24:3:4 28:2:4', m2: 7,
+        mix: { rev: 0.5, revS: 3.2, echo: 0.15, div: 0.75, fb: 0.2, side: 0.2, tone: 12000, tape: 0.1, crackle: 0, pump: 0.2 } },
+      snail: { name: 'The Immortal Snail', title: 'Inevitable', base: ['downtempo', 'triphop'], bpm: 64, mode: 'phrygian', root: 38, kit: 'hard', in: 6, trim: 1.17,
+        loop: C([0, 1], [], 2), drums: { K: '9000000000900000', S: '0000000090000000', H: '3030303030303030', D: '5000500050005000' }, fill: 'toms',
+        bass: { kind: 'sub', pat: '0:0:8 8:0:6 14:1:2' }, keys: { kind: 'power', pat: [0, 8], lv: 0 }, pad: { kind: 'dark', lv: 0.2 }, lead: { kind: 'dist', oct: 62 },
+        hook: '0:0:4 4:0:2 6:3:2 8:6:8 16:5:4 20:3:4 24:1:6 30:0:2', ans: '0:0:4 4:0:2 6:3:2 8:6:4 12:7:4 16:8:4 20:6:4 24:1:8', m2: 12,
+        form: { 5: { dr: { K: '9050905090509050' } } },
+        mix: { rev: 0.7, revS: 5.2, echo: 0.2, div: 1, fb: 0.3, side: 0.3, tone: 9000, tape: 0.15, crackle: 0, pump: 0.3 } },
+    };
+    const BOSS_IDS = Object.keys(BOSS_THEMES);
+    function bossForm(th) {
+      const A = (n, d, o) => Object.assign({ n, d, drums: 1, bass: 1, keys: 1, lead: 1, pad: 1, arp: 1 }, o || {});
+      const f = [A('Alarm', -0.1, { L: [-1, -1, -1, -1], build: 1, keys: 0 }), A('Hook', 0, { L: [0, 0, 0, 1], drop: 1 }), A('Drive', 0.05, { L: [2, 2, 0, 1] }), A('Hook', 0.08, { L: [0, 0, 0, 1] }),
+        A('Break', -0.3, { L: [3, -1, 3, -1], drums: 0.5, brk: 1, build: 1 }), A('Final', 0.15, { L: [0, 0, 0, 1], up: 12, drop: 1 })];
+      for (const k in th.form || {}) f[k] = Object.assign({}, f[k], th.form[k]);
+      return f;
+    }
+    function bossMotifs(th) {
+      const hook = HK(th.hook), ans = HK(th.ans);
+      const m2 = typeof th.m2 === 'string' ? HK(th.m2) : hook.map(x => Object.assign({}, x, { d: x.d + (th.m2 || 0) }));
+      const m3 = th.m3 ? HK(th.m3) : hook.filter(x => x.st < 16).map(x => Object.assign({}, x, { st: x.st * 2, len: x.len * 2 })); // the hook's first bar at half speed
+      return [hook, ans, m2, m3];
+    }
     const ADJ = ['Velvet', 'Quiet', 'Neon', 'Distant', 'Slow', 'Golden', 'Hollow', 'Paper', 'Silver', 'Midnight', 'Soft', 'Static', 'Lucid', 'Amber', 'Cobalt', 'Drifting', 'Tidal', 'Glass', 'Faded', 'Electric', 'Patient', 'Low', 'Warm', 'Lost', 'Small', 'Gentle', 'Broken', 'Endless', 'Orbital', 'Sleepy', 'Chrome', 'Rain', 'Analog', 'Second', 'Northern', 'Hidden'];
     const NOUN = ['Orbit', 'Harbor', 'Signal', 'Comet', 'Lantern', 'Tide', 'Nebula', 'Circuit', 'Garden', 'Satellite', 'Echo', 'Horizon', 'Engine', 'Reef', 'Window', 'Arcade', 'Moth', 'Wavelength', 'Meadow', 'Relay', 'Aurora', 'Kettle', 'Highway', 'Lighthouse', 'Sunday', 'Pixel', 'Station', 'Current', 'Afterglow', 'Cassette', 'Skyline', 'Ferry', 'Tower', 'Corridor', 'Bloom', 'Transit'];
     // the Studio settings (Default mode ignores everything except the calm genres' tempo scale)
     const DEF_BPM = {}; for (const g of GENRE_IDS) DEF_BPM[g] = GENRES[g].bpm[1];
     const DEF = { custom: false, length: 'standard', genres: ['ambient', 'lofi', 'downtempo'], energy: 0.4, follow: 1, bpm: DEF_BPM, mix: { pads: 1, keys: 1, arp: 1, bass: 1, drums: 1, lead: 1 },
-      mute: {}, fx: { reverb: 0.5, echo: 0.5, tone: 0.5, tape: 0.5, pump: 0.5 }, favs: [], favOnly: false, calmBpm: 72 };
+      mute: {}, fx: { reverb: 0.5, echo: 0.5, tone: 0.5, tape: 0.5, pump: 0.5 }, favs: [], favOnly: false, calmBpm: 72, bossThemes: true };
     const CHN = ['pads', 'keys', 'arp', 'bass', 'drums', 'lead'];
     let cfg = JSON.parse(JSON.stringify(DEF));
+    const VCUR = 2; // 6.3: the generator version new pieces get (saved tracks without a v are version 1 and keep the old path)
+    let bossNow = null, bossPhase = 0, bossRet = null; // 6.3: the boss on the field (UI.tick), its phase, and what to go back to after the fight
     let P = null, lastG = '', lastF = '', bar = 0, s16 = 0, forceNext = null, favIdx = 0, tempoNow = 0, EV = null;
     const pieceLog = [];
     let hist = [], rep = false, paused = false, editing = false, held = false; // held: the composer silenced the radio // v5.5: Back, Repeat, Pause, composer editing (session only)
     const live = () => cfg.custom ? cfg : Object.assign({}, DEF, { calmBpm: cfg.calmBpm, favs: cfg.favs });
     // effective energy: the Energy knob, pushed by the battle as far as Follow allows
-    const effE = () => { const c = live(); return Math.max(0, Math.min(1, c.energy + c.follow * (battle - 0.4) * 0.85)); };
+    const effE = () => { const c = live(), e = Math.max(0, Math.min(1, c.energy + c.follow * (battle - 0.4) * 0.85)); return P && P.boss ? Math.min(1, 0.55 + 0.45 * e + (P.phSeen || 0) * 0.08) : e; }; // 6.3: a boss theme never drops below 'driving'; Follow still pushes it, and each boss phase adds more
     // FX knobs are relative to the genre: 50% is the genre's own sound, 0% dry, 100% double (or the genre value + 0.5)
     const fxK = (x, def, span) => Math.max(0, x <= 0.5 ? def * x * 2 : def + (x - 0.5) * 2 * span);
 
@@ -790,11 +978,16 @@ const SFX = (() => {
     }
     function newPiece(force) {
       if (!force && cfg.custom && cfg.favOnly && cfg.favs.length) { force = cfg.favs[favIdx % cfg.favs.length]; favIdx++; }
+      if (force && force.boss && BOSS_THEMES[force.boss]) return bossPiece(force);
       let g = force && GENRES[force.genre] ? force.genre : chooseGenre();
       let f = force && GENRES[g].flavours[force.flav] ? force.flav : chooseFlavour(g);
       const seed = force && force.seed !== undefined ? force.seed : (Math.random() * 4294967296) >>> 0;
       R = mulberry32(seed);
-      const S = recipe(g, f), G0 = GENRES[g];
+      // 6.3: a seeded spec (a kept track, a code, Back, Repeat) keeps the generator it was made with; a new piece gets the current
+      // one. Composed songs always use version 1: the composer writes their parts itself.
+      const ver = force && force.comp ? 1 : force && force.seed !== undefined ? (force.v | 0) || 1 : VCUR;
+      let S = recipe(g, f); const G0 = GENRES[g]; let vv = null;
+      if (ver >= 2) { S = Object.assign({}, S); vv = varyRecipe(S, g, f); }
       let mode = pick(S.modes);
       if (!force && mood === 'boss' && (mode === 'ionian' || mode === 'lydian' || mode === 'mixolydian')) mode = 'aeolian';
       let loop = pick(S.loops);
@@ -802,13 +995,15 @@ const SFX = (() => {
         const i0 = S.loops.indexOf(loop), alt = S.loops.map((_, k) => S.loops[(i0 + 1 + k) % S.loops.length]).find(L0 => loopOK(L0, mode));
         if (alt) loop = alt; else { const m2 = S.modes.find(m => loopOK(loop, m)); if (m2) mode = m2; }
       }
-      const root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
+      let root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
+      if (vv) root = Math.round((S.keyR[0] + S.keyR[1]) / 2) - 5 + vv.keyOff; // v2: any of the 12 keys, centred on the genre's register
       if (force && force.name) name = String(force.name).slice(0, 32); // renamed or composed tracks keep their own name
       lastG = g; lastF = f;
       P = { g, f, S, G0, seed, name, mode, scale: MODES[mode], loop, root, bar: 0,
         swing: S.swing, motifs: null, bassPat: null, keysPat: null, gatePat: pick(['xx.xx.x.xx.xx.x.', 'x.xxx.xxx.xxx.x.', 'xxx.xx.xxx.xx.x.', 'x.x.xx.xx.x.xx.x']),
         acc: [], lastChordV: null, form: makeForm(S.form), stabShape: pick([[0, 3, 7, 10], [0, 3, 7, 10, 14], [0, 3, 10, 14], [0, 7, 10, 15]]), drop: {} };
       P.motifs = [makeMotif(S.lead), makeMotif(S.lead)];
+      if (vv) { P.v = 2; P.v2 = 1; P.bpmJ = vv.tempo; P.arpShape = vv.arpShape; P.arpRate = vv.arpRate; P.fv = vv.fv; P.liftBy = vv.liftBy; P.form = makeForm(S.form, null, vv.fv); P.motifs = makeHook(S.lead); }
       P.bassPat = makeBass(S.bass); P.keysPat = makeKeys(S.keys); P.dense = {};
       if (force && force.comp) applyComp(P, force.comp);
       if (force && force.snd) loadSnd(force.snd, g);
@@ -819,22 +1014,62 @@ const SFX = (() => {
       hist.push(specOf()); if (hist.length > 40) hist.shift();
       bar = force && force.start ? force.start : 0; s16 = 0;
     }
-    const specOf = () => { const o = { seed: P.seed, genre: P.g, flav: P.f, name: P.name }; if (P.comp) o.comp = P.comp; return o; };
+    const specOf = () => { const o = { seed: P.seed, genre: P.g, flav: P.f, name: P.name }; if (P.comp) o.comp = P.comp; if (P.v > 1) o.v = P.v; if (P.boss) o.boss = P.boss; return o; };
+    // 6.3 v2: roll the per-song choices into the piece's own copy of the recipe (S). Draw order is fixed, so a seed always gives the same song.
+    function varyRecipe(S, g, f) {
+      const XF = VX_F[g + '/' + f] || {}, X = Object.assign({}, VX[g] || {}, XF), F = GENRES[g].flavours[f] || {}, FD = F.drums || {};
+      S.drums = Object.assign({}, S.drums);
+      for (const k of ['K', 'S', 'C', 'H', 'O', 'R', 'D', 'P']) if (X[k] && (!(k in FD) || XF[k])) S.drums[k] = pick([S.drums[k] || ''].concat(X[k]));
+      if (X.ghost && S.drums.S && chance(X.ghost)) { // ghost snares: one or two soft hits on the off sixteenths
+        const m = S.drums.S.split(''), spots = [3, 6, 7, 10, 11, 14, 15].filter(i => m[i] === '0'), n = 1 + Math.floor(R() * 2);
+        for (let i = 0; i < n && spots.length; i++) m[spots.splice(Math.floor(R() * spots.length), 1)[0]] = '3'; S.drums.S = m.join('');
+      }
+      if (X.fills) S.fill = pick(X.fills);
+      const lines = XF.lines || (!('bass' in F) && X.lines); if (lines && S.bass) S.bass = Object.assign({}, S.bass, { line: pick(lines) });
+      if (X.leads && S.lead && !(F.lead && F.lead.kind)) S.lead = Object.assign({}, S.lead, { kind: pick(X.leads) });
+      if (X.duties && S.lead) S.lead = Object.assign({}, S.lead, { duty: pick(X.duties) });
+      if (X.grammars && S.lead && !(F.lead && F.lead.grammar)) S.lead = Object.assign({}, S.lead, { grammar: pick(X.grammars) });
+      if (X.pads && S.pad && !('pad' in F)) S.pad = Object.assign({}, S.pad, { kind: pick(X.pads) });
+      if (X.keys && S.keys && !('keys' in F)) { const k = pick(X.keys); S.keys = Object.assign({}, S.keys, { kind: k[0], rhythm: k[1] }); }
+      if (XF.loops2) S.loops = S.loops.concat(XF.loops2);
+      if (XF.modes2) S.modes = S.modes.concat(XF.modes2);
+      return { tempo: 1 + (R() * 2 - 1) * (X.tempo || 0.04), arpShape: X.arps ? pick(X.arps) : 'updown', arpRate: X.arpRates ? pick(X.arpRates) : 0, fv: Math.floor(R() * 3), liftBy: pick([1, 2]), keyOff: Math.floor(R() * 12) };
+    }
+    // 6.3: a boss theme as a piece. It goes through the same scheduler as the radio; P.boss switches on the theme's own lead,
+    // looping and phase handling.
+    function bossPiece(force) {
+      const id = force.boss, th = BOSS_THEMES[id], [g, f] = th.base; R = mulberry32(BOSS_IDS.indexOf(id) * 7919 + 17);
+      const S = Object.assign({}, recipe(g, f), { kit: th.kit, swing: th.swing || 0.5, human: th.human || 0, form: 'boss', fill: th.fill || 'toms', ext: 3, voicing: 'triad',
+        drums: Object.assign({}, th.drums), bass: Object.assign({ lv: 0, line: 'pat' }, th.bass), keys: th.keys ? Object.assign({ rhythm: 'pat' }, th.keys) : null, pad: th.pad || null,
+        arp: th.arp || null, lead: Object.assign({ lv: 0, scale: 'mode' }, th.lead), mix: Object.assign({}, th.mix), halftime: 0, filterLoop: 0 });
+      lastG = g; lastF = f;
+      P = { g, f, S, G0: GENRES[g], seed: 0, name: th.title, mode: th.mode, scale: MODES[th.mode], loop: th.loop, root: th.root, bar: 0, boss: id, phSeen: 0,
+        swing: S.swing, motifs: bossMotifs(th), bassPat: makeBass(S.bass), keysPat: makeKeys(S.keys), gatePat: 'x.x.x.x.x.x.x.x.', acc: [], lastChordV: null, form: bossForm(th),
+        stabShape: [0, 3, 7, 10], drop: {}, dense: {}, fixedMel: 1 };
+      P.bpm = pieceBpm(); P.spb = 60 / P.bpm; tempoNow = 0;
+      applyGenreMix(true);
+      pieceLog.push({ name: th.title, genre: 'boss', flav: id, mode: th.mode, root: th.root, bpm: th.bpm, t: +(nextT || 0).toFixed(1), e: +effE().toFixed(2) });
+      if (pieceLog.length > 60) pieceLog.shift();
+      hist.push(specOf()); if (hist.length > 40) hist.shift();
+      bar = force.start !== undefined ? force.start : (th.in || 4); s16 = 0; // enter on the Alarm's build
+    }
     // what plays after this piece: a queued pick, the same piece again (Repeat, or the composer looping its draft), or a new one
     const nextSpec = () => forceNext || (editing && P.comp ? Object.assign(specOf(), { start: 8 }) : rep ? specOf() : null);
     function pieceBpm() {
       if (P.comp && P.comp.bpm) return Math.max(50, Math.min(200, +P.comp.bpm));
+      if (P.boss) return BOSS_THEMES[P.boss].bpm;
       const c = live(), G0 = GENRES[P.g], base = cfg.custom ? (c.bpm[P.g] || G0.bpm[1]) : G0.bpm[1] * (c.calmBpm || 72) / 72;
-      return Math.max(G0.bpm[0] * 0.85, Math.min(G0.bpm[2] * 1.1, base * (P.S.bpmX || 1)));
+      return Math.max(G0.bpm[0] * 0.85, Math.min(G0.bpm[2] * 1.1, base * (P.S.bpmX || 1) * (P.bpmJ || 1))); // bpmJ: a v2 piece's own tempo inside the genre
     }
     // forms: per 8-bar phrase, a density offset and which roles play. 'roll' marks a build bar (the phrase's last bar)
     // ---- arrangements (5.5.9): a piece is a list of 8-bar phrases. 'short' is the original four (about a minute in the fast
     // genres); 'standard' is a radio edit shaped like the genre (intro, grooves, breakdowns and drops, an outro that thins out so
     // one piece winds down into the next); 'long' repeats the body for an extended mix. No dice are drawn here, so a seeded or
     // kept piece keeps its chords, melody and drums at any length.
-    function makeForm(kind, len) {
+    function makeForm(kind, len, fv) {
       const A = (n, d, o) => Object.assign({ n, d, drums: 1, bass: 1, keys: 1, lead: 1, pad: 1, arp: 1 }, o || {});
       len = len || cfg.length || 'standard';
+      if (fv) return formVariant(makeForm(kind, len), fv); // 6.3 v2 arrangements
       if (len === 'short') {
         if (kind === 'flow') return [A('Intro', -0.15, { lead: 0 }), A('Drift', 0), A('Swell', 0.1), A('Return', -0.05)];
         if (kind === 'song') return [A('Intro', -0.1, { lead: 0.5 }), A('Groove', 0), A('Bridge', -0.15, { motif: 1, drums: 0.6 }), A('Return', 0.08)];
@@ -858,6 +1093,15 @@ const SFX = (() => {
       else f = [A('Intro', -0.25, { lead: 0, keys: 0.5 }), A('Intro', -0.15, { lead: 0 }), A('Groove', 0), A('Groove', 0.05), A('Breakdown · build', -0.35, { drums: 0.3, bass: 0, brk: 1, build: 1 }), A('Drop', 0.15, { drop: 1 }),
         A('Groove', 0.05), A('Groove', 0.05), A('Breakdown · build', -0.3, { drums: 0.3, bass: 0, brk: 1, build: 1 }), A('Drop', 0.2, { drop: 1 }), A('Groove', 0), A('Outro', -0.25, { lead: 0, keys: 0.5 })]; // dance
       if (len === 'long') f = f.slice(0, -1).concat(f.slice(2, -1), f.slice(-1)); // the body twice: an extended mix
+      return f;
+    }
+    // 6.3 v2 arrangement variants (no dice: the variant number comes from the piece's seed). 1: the second groove, drop or hook plays
+    // half-time. 2: the last drop or hook lifts the key by one or two semitones, and it stays lifted to the end.
+    function formVariant(f, fv) {
+      f = f.map(x => Object.assign({}, x));
+      const peak = x => /Drop|Hook|Swell|Groove|Riddim/.test(x.n) && !x.brk;
+      if (fv === 1) { const pk = f.map((x, k) => peak(x) ? k : -1).filter(k => k >= 0); if (pk.length >= 2) Object.assign(f[pk[1]], { n: f[pk[1]].n + ' · half-time', half: 1 }); }
+      if (fv === 2) { let i = -1; f.forEach((x, k) => { if (peak(x) && k < f.length - 1) i = k; }); if (i > 1) f[i] = Object.assign(f[i], { n: f[i].n + ' · key up', lift: 1 }); }
       return f;
     }
     const phAt = b => P.form[Math.min(P.form.length - 1, Math.floor(b / 8))];
@@ -925,6 +1169,28 @@ const SFX = (() => {
       if (!notes.length) notes.push({ st: 0, d: 0, len: 4 });
       return notes;
     }
+    // 6.3 v2: a hook instead of a random walk. Bar 1 is a call: a rhythm figure from the grammar with a contour (arch, rise, fall,
+    // zigzag or pedal). Bar 2 answers it: the same or a sister rhythm, the contour moved, ending on the root or the fifth. The second
+    // motif is the contrast (inverted contour, its own rhythm) for bridges and phrase ends. Both are 2 bars, like makeMotif's.
+    function makeHook(Ld) {
+      if (!Ld) return [null, null];
+      const rs = HOOK_R[Ld.grammar] || HOOK_R.sparse, Gm = GRAMMAR[Ld.grammar] || GRAMMAR.sparse, maxL = Math.max(...Gm.len);
+      const on = r => r.split('').map((c, i) => c === 'x' ? i : -1).filter(i => i >= 0);
+      const shape = pick(['arch', 'rise', 'fall', 'zig', 'pedal']), s0 = pick([0, 2, 4]), leap = pick([2, 3, 4]);
+      const step = (k, d) => shape === 'arch' ? d + (k < 2 ? 1 : -1) : shape === 'rise' ? d + (k % 3 === 2 ? 2 : 1) : shape === 'fall' ? d - 1 : shape === 'zig' ? d + (k % 2 ? -1 : 2) : (k % 2 ? s0 : s0 + leap);
+      const clampD = d => Math.max(-3, Math.min(9, d));
+      const bar1 = (r, d0, off, sh) => { const o = on(r), out = []; let d = d0; o.forEach((st, k) => { const nx = k + 1 < o.length ? o[k + 1] : 16; out.push({ st: st + off, d: clampD(d), len: Math.max(1, Math.min(maxL, nx - st)) }); d = sh(k, d); }); return out; };
+      const r1 = pick(rs), r2 = chance(0.6) ? r1 : pick(rs), shift = pick([1, 2, -1, -2]);
+      const call = bar1(r1, s0, 0, step), resp = bar1(r2, s0 + shift, 16, step);
+      if (resp.length) { const last = resp[resp.length - 1]; last.d = pick([0, 4, 7]); last.len = Math.max(last.len, Math.min(maxL, 16 - (last.st - 16))); }
+      const hi = Math.max(...call.map(x => x.d), s0), rc = pick(rs), alt = bar1(rc, hi, 0, (k, d) => d - (shape === 'fall' ? -1 : 1)).concat(bar1(pick(rs), hi - 2, 16, (k, d) => d - 1));
+      if (alt.length) alt[alt.length - 1].d = 0;
+      return [call.concat(resp), alt.length ? alt : call.concat(resp)];
+    }
+    function varyHook(m) { // develop the answer bar only, so the call stays recognisable
+      const c = m.map(x => ({ ...x })), resp = c.filter(x => x.st >= 16 && x !== c[c.length - 1]); if (!resp.length) return c;
+      const x = resp[Math.floor(R() * resp.length)]; x.d += pick([-1, 1, 2]); return c;
+    }
     // bass lines: a 16- or 32-step pattern of { st, iv (semitones from chord root), len (16ths), acc, slide }
     function makeBass(B) {
       if (!B) return [];
@@ -945,6 +1211,11 @@ const SFX = (() => {
         case 'reese': out.push(n(0, 0, 14, { slide: 0 }), n(16, pick([0, 3, -2]), 10), n(26, pick([0, 5, 7]), 6, { slide: 1 })); break;
         case 'chip': for (let s = 0; s < 16; s += 2) out.push(n(s, [0, 12, 7, 12][(s / 2) % 4], 1.7)); break;
         case 'dub': { out.push(n(pick([2, 3]), 0, 3)); for (const s of [6, 8, 11, 12, 14]) if (chance(0.55)) out.push(n(s, pick([0, 7, 10, 12, 5, 3]), pick([1.5, 2, 3]))); break; }
+        // 6.3 (v2 pieces and boss themes only)
+        case 'walk': out.push(n(0, 0, 3.6), n(4, pick([7, 5]), 3.6), n(8, pick([12, 7]), 3.6), n(12, pick([-1, 1, -2]), 3.6, { approach: 1 })); break;
+        case 'gallop': for (let s = 0; s < 16; s += 4) out.push(n(s, 0, 0.9), n(s + 2, 0, 0.6), n(s + 3, pick([0, 12]), 0.6)); break;
+        case 'pulse8': for (let s = 0; s < 16; s += 2) out.push(n(s, 0, 1.5)); break;
+        case 'pat': return typeof B.pat === 'string' ? BP(B.pat) : (B.pat || []).slice();
         default: out.push(n(0, 0, 8));
       }
       return out;
@@ -966,12 +1237,13 @@ const SFX = (() => {
         case 'liquid': return [0, 10];
         case 'skank': return [4, 12];
         case 'arp': return [0, 4, 8, 12];
+        case 'pat': return (K.pat || [0]).slice(); // 6.3 boss themes
         default: return [0];
       }
     }
 
     // ---------------- instruments ----------------
-    const evlog = (role, inst, t, n, v) => { if (EV) EV.push([+t.toFixed(4), role, inst, n === null ? null : Math.round(n), +(v || 0).toFixed(2), bar, s16, P ? P.g + '/' + P.f : '', P && P.cur ? P.cur.deg : null]); };
+    const evlog = (role, inst, t, n, v) => { if (EV) EV.push([+t.toFixed(4), role, inst, n === null ? null : Math.round(n), +(v || 0).toFixed(2), bar, s16, P ? (P.boss ? 'boss/' + P.boss : P.g + '/' + P.f) : '', P && P.cur ? P.cur.deg : null]); };
     function vca(t, a, d, peak, dest) { const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); if (d > 0) g.gain.setTargetAtTime(peak * 0.0001, t + a, d / 4); g.connect(dest); return g; }
     function osc(type, f, t, end, dest, det) { const o = ctx.createOscillator(); if (typeof type === 'number') o.setPeriodicWave(pulseWave(type)); else o.type = type; o.frequency.value = f; o.detune.value = (det || 0) + (R() * 6 - 3); o.connect(dest); o.start(t); o.stop(end); return o; }
     function gainN(v, dest) { const g = ctx.createGain(); g.gain.value = v; if (dest) g.connect(dest); return g; }
@@ -992,13 +1264,14 @@ const SFX = (() => {
       '909': { K: { f0: 220, f1: 50, pd: 0.045, dec: 0.38, click: 0.35 }, S: { tone: 180, n: 2000, dec: 0.16, v: 0.6 }, H: { hp: 9000, dec: 0.04, metal: 1 }, O: { hp: 8500, dec: 0.28, metal: 1 }, D: { dec: 0.7 } },
       dub: { K: { f0: 110, f1: 46, pd: 0.05, dec: 0.45, click: 0.05 }, S: { tone: 230, n: 2500, dec: 0.12, v: 0.4 }, H: { hp: 7500, dec: 0.05 }, O: { hp: 7000, dec: 0.2 }, spring: 1 },
       chip: { chip: 1 },
+      hard: { K: { f0: 240, f1: 46, pd: 0.05, dec: 0.4, click: 0.45, drive: 1 }, S: { tone: 190, n: 1800, dec: 0.17, v: 0.75 }, H: { hp: 8500, dec: 0.04, metal: 1 }, O: { hp: 8000, dec: 0.25, metal: 1 } }, // 6.3: distorted kick (Industrial, boss themes)
     };
     const METAL = [205.3, 304.4, 369.6, 522.7, 540, 800];
     function kick(t, v, K) {
       const o = ctx.createOscillator(), g = ctx.createGain(), dest = L.drums;
       o.frequency.setValueAtTime(K.f0, t); o.frequency.exponentialRampToValueAtTime(K.f1, t + K.pd);
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v * 1.05, t + 0.002); g.gain.setTargetAtTime(0.0001, t + 0.01, K.dec / 3.5);
-      o.connect(g); g.connect(dest); o.start(t); o.stop(t + K.dec * 2 + 0.1);
+      o.connect(g); if (K.drive) { const sh = ctx.createWaveShaper(); sh.curve = driveCurve(); g.connect(gainN(1.8, sh)); sh.connect(gainN(0.55, dest)); } else g.connect(dest); o.start(t); o.stop(t + K.dec * 2 + 0.1);
       if (K.click) nhit(t, 'lowpass', 4000, 0.7, 0.006, v * K.click, dest);
       duck(t);
     }
@@ -1034,7 +1307,11 @@ const SFX = (() => {
       if (K.chip) return chipDrum(t, vk === 'K' ? 'K' : vk === 'S' || vk === 'C' ? 'S' : vk === 'O' ? 'O' : 'H', v);
       if (vk === 'K') kick(t, v, K.K); else if (vk === 'S') snare(t, v, K.S); else if (vk === 'C') clap(t, v); else if (vk === 'H') hat(t, v, K.H, 0);
       else if (vk === 'O') hat(t, v, K.O, 1); else if (vk === 'R') rim(t, v); else if (vk === 'D') ride(t, v); else if (vk === 'P') shaker(t, v);
+      else if (vk === 'X') anvil(t, v); else if (vk === 'Z') tick(t, v); else if (vk === 'T') tom(t, v, 98); // 6.3 voices (Industrial, boss themes)
     }
+    // 6.3: an anvil clang (three inharmonic partials) and a typewriter tick
+    function anvil(t, v) { const g = vca(t, 0.001, 0.35, v * 0.16, L.drums); for (const f of [523, 1318, 1977]) osc(f > 1000 ? 'square' : 'triangle', f, t, t + 0.5, f > 1000 ? gainN(0.25, g) : g, 0); nhit(t, 'highpass', 3000, 0.7, 0.03, v * 0.3, L.drums); sendFx(g, 0.35, 0.1); }
+    function tick(t, v) { nhit(t, 'bandpass', 4200, 4, 0.012, v * 0.55, L.drums, 0, 0.0008); }
     // ---- sidechain: every kick dips the melodic channels (the pump), depth from the genre and the Pump knob ----
     function duck(t) {
       const d = fxK(live().fx.pump, P.S.mix.side, 0.45); if (!scG || d < 0.02) return;
@@ -1052,6 +1329,10 @@ const SFX = (() => {
         const sh = ctx.createWaveShaper(); sh.curve = driveCurve(); fl.connect(sh); sh.connect(g); g.connect(dest); sendFx(g, 0.1, 0.18);
         const x = osc('sawtooth', f, t, t + dur * 2.2 + 0.1, fl); if (o.slide && o.next) x.frequency.setTargetAtTime(mtof(o.next), t + dur * 0.6, 0.02);
         return;
+      }
+      if (kind === 'wobble') { // 6.3: a saw pair through a resonant lowpass swept by an LFO at 2 (or, accented, 4) per beat
+        const fl = lp(700, 7, vca(t, 0.01, dur, v * 0.5, dest)), lfo = ctx.createOscillator(), lg = gainN(650, fl.frequency); lfo.type = 'triangle'; lfo.frequency.value = (o.acc ? 4 : 2) / P.spb; lfo.connect(lg); lfo.start(t); lfo.stop(t + dur + 0.4);
+        osc('sawtooth', f, t, t + dur + 0.4, fl, -9); osc('sawtooth', f, t, t + dur + 0.4, fl, 9); osc('sine', f / 2, t, t + dur + 0.4, gainN(0.8, vca(t, 0.01, dur, v * 0.6, dest))); return;
       }
       if (kind === 'reese') { const fl = lp(380 + 300 * effE(), 1.2, vca(t, 0.02, dur, v * 0.55, dest)); const lfo = ctx.createOscillator(), lg = gainN(160, fl.frequency); lfo.frequency.value = 0.3; lfo.connect(lg); lfo.start(t); lfo.stop(t + dur + 0.4); osc('sawtooth', f, t, t + dur + 0.4, fl, -14); osc('sawtooth', f, t, t + dur + 0.4, fl, 14); osc('sine', f / 2, t, t + dur + 0.4, gainN(0.9, vca(t, 0.02, dur, v * 0.7, dest))); return; }
       if (kind === 'sawoct' || kind === 'saw') { const fl = lp(1, 5, vca(t, 0.004, dur * 1.2, v * 0.6, dest)); fl.frequency.setValueAtTime(900 + 700 * effE(), t); fl.frequency.setTargetAtTime(240, t, 0.08); osc('sawtooth', f, t, t + dur + 0.3, fl); if (kind === 'sawoct') osc('sawtooth', f * 2, t, t + dur + 0.3, gainN(0.4, fl)); osc('sine', f / (kind === 'sawoct' ? 1 : 2), t, t + dur + 0.3, gainN(0.6, vca(t, 0.004, dur, v * 0.6, dest))); return; }
@@ -1120,6 +1401,7 @@ const SFX = (() => {
       if (kind === 'bell' || kind === 'glass') { const g = vca(t, 0.003, kind === 'glass' ? 1.6 : 2.8, v, L.spark), car = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(); car.frequency.value = f; m.frequency.value = f * (kind === 'glass' ? 7 : 3.5); mg.gain.setValueAtTime(f * 1.2, t); mg.gain.setTargetAtTime(f * 0.05, t, 0.4); m.connect(mg); mg.connect(car.frequency); car.connect(g); car.start(t); m.start(t); car.stop(t + 3.4); m.stop(t + 3.4); sendFx(g, 0.6, 0.35); return; }
       if (kind === 'piano') return piano(n, t, v, 1.4);
       if (kind === 'bleep') { const g = vca(t, 0.002, 0.22, v * 0.8, dest); osc('sine', f, t, t + 0.3, g); osc(0.125, f * 2, t, t + 0.12, gainN(0.25, g)); sendFx(g, 0.3, 0.6); return; }
+      if (BOSS_LEADS[kind]) return BOSS_LEADS[kind](n, f, t, dur, v, dest);
       const fl = lp(kind === 'saw' ? 2600 + 2500 * effE() : kind === 'melodica' ? 1500 : kind === 'flute' ? 2800 : kind === 'chip' ? 8000 : kind === 'theremin' ? 3000 : 5500, kind === 'melodica' ? 1 : 0.7, null, kind === 'melodica' ? 'bandpass' : 'lowpass');
       const g = ctx.createGain(), a = kind === 'chip' ? 0.003 : kind === 'flute' || kind === 'theremin' ? 0.06 : 0.025;
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + a); g.gain.setTargetAtTime(v * (kind === 'chip' ? 0.7 : 0.75), t + a, dur * 0.4); g.gain.setTargetAtTime(0.0001, t + dur, kind === 'chip' ? 0.02 : 0.1);
@@ -1134,6 +1416,64 @@ const SFX = (() => {
       if (kind === 'theremin') { const o = osc('sine', f, t, end, fl); if (P._lastLead) { o.frequency.setValueAtTime(mtof(P._lastLead), t); o.frequency.setTargetAtTime(f, t, 0.06); } vib(o, 0.018, 5.5, 0.15); P._lastLead = n; return; }
       if (kind === 'chip') { vib(osc(duty || 0.25, f, t, end, fl), dur > 0.25 ? 0.012 : 0, 6, 0.18); return; }
       vib(osc(0.25, f, t, end, fl), 0.006, 5, 0.25);
+    }
+    // ---- 6.3 leads for boss themes (and the Brass lead of v2 pieces): each is one to three oscillators ----
+    const env = (t, a, dur, v, rel, dest) => { const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + a); g.gain.setTargetAtTime(v * 0.8, t + a, 0.15); g.gain.setTargetAtTime(0.0001, t + Math.max(a, dur), rel); g.connect(dest); return g; };
+    const vibr = (o, f, t, end, depth, rate, delay) => { const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = rate; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * depth, t + delay); lfo.connect(lg); lg.connect(o.frequency); lfo.start(t); lfo.stop(end); };
+    const glideFrom = (o, f, t, k) => { if (P._lastLead) { o.frequency.setValueAtTime(mtof(P._lastLead), t); o.frequency.setTargetAtTime(f, t, k); } };
+    const BOSS_LEADS = {
+      brass(n, f, t, dur, v, dest) { // three detuned saws, a filter that opens on the attack
+        const E = effE(), g = env(t, 0.03, dur, v, 0.08, dest), fl = lp(400, 1.1, g), end = t + dur + 0.6;
+        fl.frequency.setValueAtTime(400, t); fl.frequency.linearRampToValueAtTime(2200 + 2200 * E, t + 0.06); fl.frequency.setTargetAtTime(1100 + 900 * E, t + 0.08, 0.2);
+        for (const d of [-9, 0, 9]) vibr(osc('sawtooth', f, t, end, fl, d), f, t, end, 0.005, 5.2, 0.35); sendFx(g, 0.15, 0.08);
+      },
+      dist(n, f, t, dur, v, dest) { // saw and square through drive, darkened
+        const g = env(t, 0.01, dur, v * 0.7, 0.07, dest), sh = ctx.createWaveShaper(); sh.curve = driveCurve(); const fl = lp(2600, 0.9, g); sh.connect(fl);
+        const pre = gainN(2.4, sh), end = t + dur + 0.4; vibr(osc('sawtooth', f, t, end, pre, -6), f, t, end, 0.006, 5.5, 0.25); osc(0.5, f / 2, t, end, gainN(0.5, pre), 6); sendFx(g, 0.12, 0.08);
+      },
+      growl(n, f, t, dur, v, dest) { // detuned saws through a talking bandpass (the worm)
+        const g = env(t, 0.01, dur, v * 1.1, 0.06, dest), fl = lp(500, 4, g, 'bandpass'), end = t + dur + 0.3;
+        fl.frequency.setValueAtTime(400, t); fl.frequency.exponentialRampToValueAtTime(1800, t + Math.min(0.12, dur * 0.5)); fl.frequency.exponentialRampToValueAtTime(700, t + dur);
+        osc('sawtooth', f, t, end, fl, -12); osc('sawtooth', f, t, end, fl, 12); osc('square', f / 2, t, end, gainN(0.4, fl)); sendFx(g, 0.1, 0.12);
+      },
+      quack(n, f, t, dur, v, dest) { // a pulse that drops at the end, through a closing formant
+        const g = env(t, 0.004, Math.min(dur, 0.22), v * 1.2, 0.04, dest), fl = lp(1500, 3, g, 'bandpass'), end = t + dur + 0.2, o = osc(0.25, f * 1.05, t, end, fl);
+        o.frequency.setTargetAtTime(f, t, 0.012); o.frequency.setTargetAtTime(f * 0.82, t + Math.min(dur, 0.22) * 0.7, 0.03);
+        fl.frequency.setValueAtTime(1600, t); fl.frequency.exponentialRampToValueAtTime(650, t + 0.14); sendFx(g, 0.2, 0.15);
+      },
+      meow(n, f, t, dur, v, dest) { // mee-ow: pitch up then down, formant opens then closes
+        const g = env(t, 0.04, dur, v * 1.1, 0.12, dest), fl = lp(800, 3.5, g, 'bandpass'), end = t + dur + 0.5, o = osc('sawtooth', f * 0.94, t, end, fl);
+        o.frequency.linearRampToValueAtTime(f * 1.03, t + dur * 0.35); o.frequency.linearRampToValueAtTime(f * 0.84, t + dur + 0.1);
+        fl.frequency.setValueAtTime(700, t); fl.frequency.linearRampToValueAtTime(1900, t + dur * 0.35); fl.frequency.linearRampToValueAtTime(800, t + dur + 0.1);
+        osc('sine', f, t, end, gainN(0.35, g)); sendFx(g, 0.2, 0.1);
+      },
+      pizz(n, f, t, dur, v, dest) { // plucked strings: triangle and saw, fast decay
+        const g = vca(t, 0.002, 0.28, v * 1.2, dest), fl = lp(3200, 0.8, g); fl.frequency.setTargetAtTime(900, t, 0.06);
+        osc('triangle', f, t, t + 0.6, fl); osc('sawtooth', f, t, t + 0.6, gainN(0.35, fl), 4); sendFx(g, 0.3, 0.1);
+      },
+      harpsi(n, f, t, dur, v, dest) { // harpsichord: two pulses an octave apart, bright and short
+        const g = vca(t, 0.001, 0.5, v * 0.85, dest), hp = lp(320, 0.7, g, 'highpass'), fl = lp(7000, 0.6, hp);
+        osc(0.25, f, t, t + 0.9, fl); osc(0.125, f * 2, t, t + 0.9, gainN(0.45, fl)); sendFx(g, 0.3, 0.05);
+      },
+      whale(n, f, t, dur, v, dest) { // a long glide between notes, slow vibrato, a big hall
+        const g = env(t, 0.14, dur, v * 1.1, 0.25, dest), fl = lp(1900, 0.8, g), end = t + dur + 1.2, o = osc('sine', f, t, end, fl), o2 = osc('triangle', f / 2, t, end, gainN(0.45, fl));
+        glideFrom(o, f, t, 0.12); glideFrom(o2, f / 2, t, 0.12); vibr(o, f, t, end, 0.012, 4, 0.4); P._lastLead = n; sendFx(g, 0.25, 0.1);
+      },
+      drop(n, f, t, dur, v, dest) { // a water drop: the pitch falls onto the note (the gloop)
+        const g = vca(t, 0.002, Math.min(0.35, dur), v * 1.25, dest), o = osc('sine', f * 1.6, t, t + 0.6, g); o.frequency.exponentialRampToValueAtTime(f, t + 0.05);
+        osc('triangle', f * 2, t, t + 0.2, gainN(0.15, g)); sendFx(g, 0.3, 0.3);
+      },
+    };
+    // 6.3: stinger into a boss theme (impact, a falling sub, the tonic on the theme's lead) and the victory sting after a kill
+    function bossHit(t, th) {
+      evlog('fx', 'stinger', t, null, 1); crash(t, 1.2); kick(t, 1, KITS.hard.K);
+      const g = vca(t, 0.005, 1.1, 0.5, L.drums), o = osc('sine', 90, t, t + 1.4, g); o.frequency.exponentialRampToValueAtTime(28, t + 1.1);
+      const base = th.root + 12 * Math.round((th.lead.oct - th.root) / 12); lead(base - 12, t, 0.7, 0.8, th.lead.kind); lead(base, t, 0.7, 0.6, th.lead.kind);
+    }
+    function victory(t, th) {
+      evlog('fx', 'victory', t, null, 1); const base = th.root + 12 * Math.round((th.lead.oct - th.root) / 12), k = th.lead.k2 || th.lead.kind;
+      [0, 4, 7].forEach((x, i) => lead(base + x, t + i * 0.11, 0.18, 0.8, k));
+      lead(base + 12, t + 0.33, 1.3, 0.9, k); pad([base, base + 4, base + 7], t + 0.33, 1.2, 0.9, 'juno'); crash(t + 0.33, 1); kick(t + 0.33, 0.9, KITS['909'].K);
     }
     // ---- one-shots: riser, siren ----
     function riser(t, dur, v) { evlog('fx', 'riser', t, null, v); const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true; const fl = lp(300, 3, null, 'bandpass'), g = ctx.createGain(); fl.frequency.setValueAtTime(300, t); fl.frequency.exponentialRampToValueAtTime(9000, t + dur); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v * 0.35, t + dur); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.05); s.connect(fl); fl.connect(g); g.connect(L.drums); sendFx(g, 0.5, 0); s.start(t); s.stop(t + dur + 0.1); }
@@ -1206,7 +1546,7 @@ const SFX = (() => {
       const wantGate = (KITS[P.S.kit] || {}).S && KITS[P.S.kit].S.gated; if (!!wantGate !== gateOn) { gateOn = !!wantGate; try { if (gateOn) gateConv.connect(gateCv); else gateConv.disconnect(gateCv); } catch (e) {} }
       crushMix.gain.setTargetAtTime(Math.max(0, tape - 0.75) * 0.6, t, 0.2); cleanMix.gain.setTargetAtTime(1 - Math.max(0, tape - 0.75) * 0.35, t, 0.2);
       vinylG.gain.setTargetAtTime(crk * 0.28, t, 0.2); hissG.gain.setTargetAtTime(crk * 0.012, t, 0.2);
-      trimG.gain.setTargetAtTime((GENRES[P.g].trim || 1) * (GENRES[P.g].flavours[P.f].ftrim || 1), t, 0.3);
+      trimG.gain.setTargetAtTime(P.boss ? BOSS_THEMES[P.boss].trim || 1 : (GENRES[P.g].trim || 1) * (GENRES[P.g].flavours[P.f].ftrim || 1), t, 0.3);
     }
     // a voice's density from effective energy and the phrase: fires when the step's level >= 10 - density*10
     function density(vk) {
@@ -1220,6 +1560,10 @@ const SFX = (() => {
     function scheduleStep(t) {
       if (API._fault) { API._fault = 0; throw new Error('test fault'); }
       if (P.skip && s16 === 0) { newPiece(nextSpec()); forceNext = null; return scheduleStep(t); }
+      if (s16 === 0 && bar % 8 === 0 && (P.boss || P.v2)) { // 6.3: phrase starts. A boss phase jumps to Final a semitone up; a v2 'key up' phrase lifts the key
+        if (P.boss && bossNow === P.boss && bossPhase > P.phSeen && bar > 0) { P.phSeen = bossPhase; P.root += 1; bar = (P.form.length - 1) * 8; }
+        if (phAt(bar).lift && !P.lifted) { P.lifted = 1; P.root += P.liftBy || 1; }
+      }
       const S = P.S, sp16 = P.spb / 4, phIdx = Math.min(P.form.length - 1, Math.floor(bar / 8)), ph = P.form[phIdx], barInPh = bar % 8, lastBarOfPh = barInPh === 7;
       const ch = chordAt(bar), swingOff = (s16 % 2 === 1) ? (S.swing - 0.5) * 2 * sp16 : 0, hum = () => S.human ? (R() - 0.5) * S.human / 1000 : 0;
       const tt = t + swingOff;
@@ -1235,9 +1579,13 @@ const SFX = (() => {
       const bassRoot = (() => { let r = C0.root; while (r > 47) r -= 12; while (r < 33) r += 12; return r; })();
       // ---- drums (Grids-style maps) ----
       const fillBar = lastBarOfPh && !ph.build;
-      if (ph.drums !== 0 || ph.build) for (const vk in S.drums) {
-        const m = S.drums[vk]; if (!m) continue;
-        const ch0 = m.length === 32 ? m[(bar % 2) * 16 + s16] : m[s16], lv0 = ch0 === undefined ? 0 : +ch0; if (!lv0) continue;
+      // 6.3 phrase options (v2 and boss themes): dr swaps drum rows, half plays the maps at half speed, hop stops the band for the
+      // last beat of every second bar
+      const drMap = ph.dr ? Object.assign({}, S.drums, ph.dr) : S.drums, hop = ph.hop && bar % 2 === 1 && s16 >= 12;
+      const st16 = ph.half ? (s16 % 2 ? -1 : s16 / 2 + (bar % 2) * 8) : s16, bar2 = ph.half ? Math.floor(bar / 2) : bar;
+      if ((ph.drums !== 0 || ph.build) && st16 >= 0 && !hop) for (const vk in drMap) {
+        const m = drMap[vk]; if (!m) continue;
+        const ch0 = m.length === 32 ? m[(bar2 % 2) * 16 + st16] : m[st16], lv0 = ch0 === undefined ? 0 : +ch0; if (!lv0) continue;
         if (ph.drums === 0 && vk !== 'H' && vk !== 'P') continue;
         if (P.dropouts && P.dropouts[vk]) continue;
         const dn = density(vk); if (lv0 < 10 - dn * 10) continue;
@@ -1254,6 +1602,7 @@ const SFX = (() => {
         if (S.fill === 'toms' && s16 >= 12 && ph.drums !== 0) drumTom(tt, s16);
         if (S.fill === 'chip' && s16 >= 12 && s16 % 1 === 0) drumHit('S', tt, 0.5 + (s16 - 12) * 0.12);
         if (S.fill === 'flam' && s16 >= 13) drumHit('S', tt, 0.4 + (s16 - 13) * 0.15);
+        if ((S.fill === 'snare' || S.fill === 'clap') && s16 >= 12 && ph.drums !== 0) drumHit(S.fill === 'snare' ? 'S' : 'C', tt, 0.35 + (s16 - 12) * 0.15); // 6.3 v2 fills
       }
       if (ph.build && barInPh >= 4) { // snare roll: quarters -> 8ths -> 16ths over the last four bars, then silence on the last beat
         const b = barInPh - 4, every = b < 1 ? 4 : b < 2 ? 2 : 1;
@@ -1265,16 +1614,17 @@ const SFX = (() => {
       // ---- long filter sweeps on everything but the drums (filter house, Detroit, progressive) ----
       if (sweepLP && s16 === 0 && barInPh === 0) {
         const T0 = ctx.currentTime > t ? ctx.currentTime : t, len8 = sp16 * 16 * 8, f = sweepLP.frequency; f.cancelScheduledValues(T0);
-        if (!S.filterLoop) f.setValueAtTime(20000, T0);
+        if (ph.under) { f.setValueAtTime(20000, T0); f.exponentialRampToValueAtTime(600, T0 + sp16 * 8); } // 6.3: the burrow / the nap: everything but the drums goes muffled
+        else if (!S.filterLoop) f.setValueAtTime(20000, T0);
         else if (phIdx === 0) { f.setValueAtTime(260, T0); f.exponentialRampToValueAtTime(2800, T0 + len8); }
         else if (phIdx === 1) { f.setValueAtTime(2800, T0); f.exponentialRampToValueAtTime(18000, T0 + len8); }
         else if (ph.brk) { f.setValueAtTime(18000, T0); f.exponentialRampToValueAtTime(500, T0 + len8 * 0.5); f.exponentialRampToValueAtTime(6000, T0 + len8); }
         else f.setValueAtTime(18000, T0);
       }
       // ---- bass ----
-      const bassOn = S.bass && (ph.bass === undefined || ph.bass) && lvl(S.bass.lv || 0) > 0 && !(P.dropouts && P.dropouts.bass) && !(S.form === 'dnb' && lastBarOfPh && s16 >= 8);
+      const bassOn = S.bass && (ph.bass === undefined || ph.bass) && lvl(S.bass.lv || 0) > 0 && !(P.dropouts && P.dropouts.bass) && !(S.form === 'dnb' && lastBarOfPh && s16 >= 8) && !hop;
       if (bassOn) {
-        const pat = P.bassPat, st = (S.bass.line === 'reese' ? (bar % 2) * 16 : 0) + s16;
+        const pat = P.bassPat, st = (S.bass.line === 'reese' || S.bass.len32 ? (bar % 2) * 16 : 0) + s16;
         for (let i = 0; i < pat.length; i++) { const b = pat[i]; if (b.st !== st) continue;
           let n = bassRoot + b.iv;
           if (b.approach) { const nx = chordAt(bar + 1); n = (() => { let r2 = chordRoot(nx.deg); while (r2 > 47) r2 -= 12; while (r2 < 33) r2 += 12; return r2; })() + b.iv; }
@@ -1283,39 +1633,46 @@ const SFX = (() => {
       }
       // ---- keys ----
       const K = S.keys;
-      if (K && K.rhythm !== 'gate' && (ph.keys === undefined || ph.keys) && lvl(K.lv || 0) > 0 && !(P.dropouts && P.dropouts.keys)) {
+      if (K && K.rhythm !== 'gate' && (ph.keys === undefined || ph.keys) && lvl(K.lv || 0) > 0 && !(P.dropouts && P.dropouts.keys) && !hop) {
         const kl = lvl(K.lv || 0) * (ph.keys === 0.5 ? 0.6 : 1);
         if (K.rhythm === 'arp') { if (s16 % 1 === 0) { const ns = C0.v.slice(0, 3); for (let h = 0; h < 2; h++) chipNote(ns[(s16 * 2 + h) % ns.length] + 12, tt + h * sp16 / 2, sp16 * 0.45, 0.5 * kl, 0.125, L.keys, 'keys'); } }
         else if (P.keysPat.includes(s16)) {
           const kind = K.kind;
           if (kind === 'rhodes') { const ant = K.rhythm === 'lofi' && s16 === 0; for (const n of C0.v) rhodes(n, tt + R() * 0.018 + (ant ? -0.012 : 0), kl * (s16 === 0 ? 0.85 : 0.55) * (0.85 + R() * 0.3), P.g === 'lofi' ? 1.6 : 2.2); }
           else if (kind === 'piano') { if (K.rhythm === 'broken') { const order = [C0.root, ...C0.v]; piano(order[(s16 / 4) % order.length] + 12, tt, 0.8, 2.6); } else for (const n of C0.v) piano(n, tt + R() * 0.01, kl * 0.7, K.rhythm === 'offbeat' ? 0.5 : 1.4); }
-          else if (kind === 'stab') stab(C0.v, tt, 0.55 * kl, K.rhythm);
-          else if (kind === 'organ') organ(C0.v, tt, 0.6 * kl, sp16 * 1.5);
+          else if (kind === 'stab') stab(C0.v, tt, 0.55 * kl, K.how || K.rhythm);
+          else if (kind === 'organ') organ(C0.v, tt, 0.6 * kl, sp16 * (K.dur || 1.5));
+          else if (kind === 'power') { const i = P.keysPat.indexOf(s16), nx = i + 1 < P.keysPat.length ? P.keysPat[i + 1] : P.keysPat[0] + 16; power(C0.root, tt, 0.6 * kl, (nx - s16) * sp16); }
           else if (kind === 'skank') skank(C0.v, tt, 0.6 * kl);
           else if (kind === 'pluck') pluck(C0.v[(s16 / 2) % C0.v.length] + 12, tt, 0.5 * kl, L.keys, 'keys');
         }
       }
       // ---- arp ----
       const A0 = S.arp;
-      if (A0 && (ph.arp === undefined || ph.arp) && lvl(A0.lv) > 0) {
-        const every = 16 / A0.rate;
-        if (s16 % every === 0) { const ns = []; for (let o = 0; o < (A0.oct || 1); o++) for (const n of C0.v) ns.push(n + 12 * o); const k = (s16 / every + bar * 3) % (ns.length * 2 - 2), idx = k < ns.length ? k : ns.length * 2 - 2 - k;
+      if (A0 && (ph.arp === undefined || ph.arp) && lvl(A0.lv) > 0 && !hop) {
+        const every = 16 / (P.arpRate || A0.rate);
+        if (s16 % every === 0) { const ns = []; for (let o = 0; o < (A0.oct || 1); o++) for (const n of C0.v) ns.push(n + 12 * o); const k = (s16 / every + bar * 3) % (ns.length * 2 - 2); let idx = k < ns.length ? k : ns.length * 2 - 2 - k;
+          if (P.v2 && P.arpShape !== 'updown') { const j = s16 / every + bar * 4, Ln = ns.length; idx = P.arpShape === 'up' ? j % Ln : P.arpShape === 'down' ? Ln - 1 - j % Ln : P.arpShape === 'pinky' ? (j % 2 ? 1 + (j >> 1) % (Ln - 1) : 0) : (j * 2) % Ln + (Ln % 2 ? 0 : (Math.floor(j * 2 / Ln) % 2)); idx = Math.min(Ln - 1, idx); } // 6.3 v2 arp shapes
           if (A0.kind === 'glass') lead(ns[idx] + 12, tt, 1.2, 0.5 * lvl(A0.lv), 'glass'); else pluck(ns[idx] + (A0.kind === 'juno' ? 0 : 12), tt, 0.55 * lvl(A0.lv)); }
       }
       // ---- lead (motif-based phrases) ----
       const Ld = S.lead, ll = Ld ? lvl(Ld.lv) * (ph.lead === 0.5 ? (barInPh >= 4 ? 1 : 0) : ph.lead) : 0;
-      if (Ld && ll > 0 && !(P.dropouts && P.dropouts.lead)) {
-        const mot = (ph.motif || (barInPh >= 6 && phIdx % 2 === 1)) ? P.motifs[1] : P.motifs[0], st = (barInPh % 2) * 16 + s16;
+      if (P.boss) bossLead(tt, ph, barInPh, ll); // 6.3: the theme's own hook, exact notes
+      else if (Ld && ll > 0 && !(P.dropouts && P.dropouts.lead)) {
+        let mot = (ph.motif || (barInPh >= 6 && phIdx % 2 === 1)) ? P.motifs[1] : P.motifs[0], up = 0; const st = (barInPh % 2) * 16 + s16;
+        if (P.v2 && mot === P.motifs[0]) { // 6.3 v2: verses play only the call (space for the answer later), drops and hooks go up an octave in their second half
+          if (ph.d <= 0 && !ph.drop && /Verse|Intro|Riddim|Drift|Groove/.test(ph.n) && barInPh % 2 === 1 && barInPh !== 7) mot = [];
+          if ((ph.drop || /Hook|Drop/.test(ph.n)) && barInPh >= 4 && barInPh < 6 && Ld.oct <= 74) up = 12;
+        }
         const tail = barInPh % 4 === 3 && barInPh !== 7 ? 1 : 0;
         for (const nn of mot) if (nn.st === st) {
-          if (tail && s16 >= 8 && !P.fixedMel && chance(0.5)) continue;
+          if (tail && s16 >= 8 && !P.fixedMel && !P.v2 && chance(0.5)) continue;
           const abs = P.fixedMel && P.comp && P.comp.melAbs; // 5.5.8 'Fixed notes': degrees of the key, not of each chord
           const scaleTones = abs ? P.scale : Ld.scale === 'pent' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : Ld.scale === 'pentmajor' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : P.scale;
           const strong = s16 % 4 === 0, off = abs ? 0 : scaleTones.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
           let n = degTo(P.root + 12 * Math.round((Ld.oct - P.root) / 12), off + nn.d, scaleTones);
           if (!P.fixedMel) { if (strong) n = nearestChordTone(n, C0); if (barInPh === 7 && s16 >= 8) n = nearestPc(n, C0.root % 12); if (Ld.grammar === 'drone' && !strong) continue; }
-          lead(n, tt + hum(), Math.max(sp16, nn.len * sp16), (Ld.kind === 'chip' ? 0.6 : 0.85) * ll, Ld.kind, Ld.duty);
+          lead(n + up, tt + hum(), Math.max(sp16, nn.len * sp16), (Ld.kind === 'chip' ? 0.6 : 0.85) * ll, Ld.kind, Ld.duty);
         }
       }
       // ---- ambient: incommensurable bell loops (Music for Airports) ----
@@ -1329,9 +1686,27 @@ const SFX = (() => {
       s16++;
       if (s16 >= 16) {
         s16 = 0; bar++;
-        if (bar % 8 === 0 && bar < 32 && !P.fixedMel && chance(0.6)) P.motifs[0] = varyMotif(P.motifs[0]); // (32: the first four phrases vary exactly as before)
-        if (bar >= pieceBars()) { newPiece(nextSpec()); forceNext = null; }
+        if (bar % 8 === 0 && bar < 32 && !P.fixedMel && chance(0.6)) P.motifs[0] = P.v2 ? varyHook(P.motifs[0]) : varyMotif(P.motifs[0]); // (32: the first four phrases vary exactly as before)
+        if (bar >= pieceBars()) { if (P.boss && bossNow === P.boss) bar = 8; else { newPiece(nextSpec()); forceNext = null; } } // a boss theme loops from Hook while its boss lives
       }
+    }
+    // 6.3: a boss theme's lead. Slot = 2 bars; L picks the motif; 'up' doubles an octave higher in Final; the Auditor rings a desk bell
+    function bossLead(tt, ph, barInPh, ll) {
+      const th = BOSS_THEMES[P.boss], Ld = P.S.lead, base = P.root + 12 * Math.round((Ld.oct - th.root) / 12), st = (barInPh % 2) * 16 + s16, sp16 = P.spb / 4;
+      if (th.ding && barInPh === 7 && s16 === 12 && ph.drums !== 0) lead(base + 24, tt, 1.2, 0.6, 'bell');
+      if (ll <= 0 || !ph.L) return; const mi = ph.L[Math.floor(barInPh / 2)], mot = mi >= 0 ? P.motifs[mi] : null; if (!mot) return;
+      for (const nn of mot) if (nn.st === st) {
+        const kind = nn.k === 'm' && Ld.k2 ? Ld.k2 : Ld.kind, v = 0.85 * Math.max(0.6, ll);
+        lead(base + nn.d, tt, Math.max(sp16, nn.len * sp16), v, kind);
+        if (ph.up && barInPh >= 4 && Ld.oct <= 70) lead(base + nn.d + 12, tt, Math.max(sp16, nn.len * sp16), v * 0.55, kind);
+      }
+    }
+    // 6.3: a power chord (root, fifth, octave) on driven saws, held until the next hit
+    function power(r, t, v, dur) {
+      while (r > 52) r -= 12; while (r < 40) r += 12; evlog('keys', 'power', t, r, v);
+      const g = vca(t, 0.005, dur, v * 0.5, L.keys), fl = lp(2400, 0.7, g), sh = ctx.createWaveShaper(); sh.curve = driveCurve(); sh.connect(fl); const pre = gainN(1.6, sh), end = t + dur + 0.3;
+      for (const x of [0, 7, 12]) { osc('sawtooth', mtof(r + x), t, end, pre, -6); osc('sawtooth', mtof(r + x), t, end, pre, 6); }
+      g.gain.setTargetAtTime(0.0001, t + dur * 0.9, 0.04); sendFx(g, 0.2, 0.05);
     }
     const AMB_LOOPS = [{ per: 19.7, d: 0 }, { per: 23.5, d: 2 }, { per: 25.9, d: 4 }, { per: 29.9, d: 7 }, { per: 31.3, d: 9 }];
     function drumTom(t, s) { tom(t, 0.8, [196, 165, 131, 98][s - 12] || 110); }
@@ -1355,9 +1730,10 @@ const SFX = (() => {
     const MOODS = [['ionian', 'Bright'], ['lydian', 'Dreamy'], ['mixolydian', 'Bluesy'], ['dorian', 'Soulful'], ['aeolian', 'Moody'], ['phrygian', 'Dark'], ['harmonic', 'Exotic']];
     const BASSES = [['sub', 'long', 'Sub'], ['upright', 'lofi', 'Upright'], ['dub', 'dubby', 'Dub'], ['sawoct', 'octave', 'Octaves'], ['sub', 'deep', 'Deep'], ['sawoct', 'disco', 'Disco'],
       ['organ', 'organ', 'Organ'], ['sub', 'rumble', 'Rumble'], ['acid', 'acid', 'Acid 303'], ['saw', 'rolling', 'Rolling'], ['saw', 'offbeat', 'Offbeat'], ['sub', 'twostep', 'Two-step'],
-      ['reese', 'reese', 'Reese'], ['tri', 'chip', 'Chip'], ['dub', 'dub', 'Dub roots']];
+      ['reese', 'reese', 'Reese'], ['tri', 'chip', 'Chip'], ['dub', 'dub', 'Dub roots'],
+      ['upright', 'walk', 'Walking'], ['sawoct', 'gallop', 'Gallop'], ['wobble', 'reese', 'Wobble'], ['acid', 'rolling', 'Psy'], ['tri', 'dub', 'Chip dub']]; // 6.3: the new styles' basses
     const LEADS = [['none', 'None'], ['bell', 'Bell', 'sparse'], ['flute', 'Flute', 'sparse'], ['piano', 'Piano', 'riff'], ['theremin', 'Theremin', 'long'], ['saw', 'Saw', 'anthem'],
-      ['supersaw', 'Supersaw', 'trance'], ['bleep', 'Bleep', 'bleep'], ['chip', 'Chip', 'chip'], ['melodica', 'Melodica', 'call'], ['glass', 'Glass', 'sparse']];
+      ['supersaw', 'Supersaw', 'trance'], ['bleep', 'Bleep', 'bleep'], ['chip', 'Chip', 'chip'], ['melodica', 'Melodica', 'call'], ['glass', 'Glass', 'sparse'], ['pulse', 'Pulse', 'riff'], ['brass', 'Brass', 'anthem']]; // 6.3: Pulse, Brass
     const DRUM_ROWS = [['K', 'Kick', 9], ['S', 'Snare', 9], ['C', 'Clap', 8], ['H', 'Hat', 6], ['O', 'Open hat', 7], ['R', 'Rim', 6], ['P', 'Shaker', 4], ['D', 'Ride', 5]];
     function drumsFor(g, f) { const d = recipe(g, f).drums, o = {}; for (const [k] of DRUM_ROWS) o[k] = (d[k] || '').slice(0, 16).padEnd(16, '0'); return o; }
     // each loop with the modes its flavours were written for (a loop that forces chord types, like Rainy Day's i-VI-V7, belongs to those moods)
@@ -1397,9 +1773,10 @@ const SFX = (() => {
       R = r0;
     }
     function compFromPiece() {
-      if (!P) return null;
+      if (!P || P.boss) return null;
+      const d16 = () => { const o = {}; for (const [k] of DRUM_ROWS) o[k] = (P.S.drums[k] || '').slice(0, 16).padEnd(16, '0'); return o; }; // a v2 piece's own drums
       return { v: 1, genre: P.g, flav: P.f, seed: (Math.random() * 4294967296) >>> 0, name: P.name, mode: P.mode, key: P.root % 12,
-        loop: { degs: P.loop.degs.slice(), q: (P.loop.q || []).slice(), bars: P.loop.bars || 1 }, drums: P.comp && P.comp.drums ? Object.assign({}, P.comp.drums) : drumsFor(P.g, P.f),
+        loop: { degs: P.loop.degs.slice(), q: (P.loop.q || []).slice(), bars: P.loop.bars || 1 }, drums: P.comp && P.comp.drums ? Object.assign({}, P.comp.drums) : P.v2 ? d16() : drumsFor(P.g, P.f),
         bass: P.S.bass ? [P.S.bass.kind, P.S.bass.line] : null, lead: P.S.lead ? P.S.lead.kind : 'none', mel: P.comp && P.comp.mel ? P.comp.mel.slice() : null,
         melSeed: (Math.random() * 4294967296) >>> 0, bpm: Math.round(P.bpm) };
     }
@@ -1414,6 +1791,7 @@ const SFX = (() => {
     }
     let sndGen = 0;
     const sameComp = (a, b) => !a === !b && (!a || JSON.stringify(a) === JSON.stringify(b));
+    const isP = f => f.seed === P.seed && sameComp(f.comp, P.comp) && (f.boss || null) === (P.boss || null); // 6.3: a kept boss theme is its own track
     function start() {
       if (running || !ctx) return; running = true;
       if (!mIn) busFor();
@@ -1421,6 +1799,8 @@ const SFX = (() => {
       nextT = ctx.currentTime + 0.1;
       if (!offline) timer = setInterval(() => schedule(), 100);
     }
+    // 6.3: drop what is already scheduled (fade the music out in sec), then open again after the 0.33 s lookahead
+    function fadeTo(t, sec) { if (!pauseG) return; const g = pauseG.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + sec); if (!paused && !held) g.setValueAtTime(1, t + 0.34); }
     function meterOf(an) { if (!an) return 0; const a = new Float32Array(an.fftSize); an.getFloatTimeDomainData(a); let s = 0; for (const v of a) s += v * v; return Math.sqrt(s / a.length); }
     const flavName = (g, f) => GENRES[g] && GENRES[g].flavours[f] ? GENRES[g].flavours[f].name : '';
     const API = {
@@ -1428,6 +1808,27 @@ const SFX = (() => {
       setIntensity(v) { targetB = clamp(v, 0, 1); },
       setScene(s) { scene = s; },
       setMood(m) { mood = m; },
+      // 6.3 boss themes. UI.tick reports the boss on the field (or null) and its phase. Edge-triggered: a Skip during the fight stays
+      // skipped. The theme starts with a stinger; after a kill (win) a victory sting plays, then the interrupted song comes back at the
+      // phrase it was in (a new song if it was nearly over). Off (config.bossThemes false), or while the composer holds the music,
+      // nothing changes: the old boss behaviour (minor keys; Trip Hop in the default mix) stays.
+      setBoss(id, phase, win) {
+        id = id && BOSS_THEMES[id] ? id : null; bossPhase = phase | 0;
+        if (id === bossNow) return; const was = bossNow; bossNow = id;
+        if (!ctx || !P || !running) return;
+        if (id) {
+          if (cfg.bossThemes === false || editing || held) return;
+          bossRet = P.boss || bar + 16 >= pieceBars() ? null : Object.assign(specOf(), { start: Math.floor(bar / 8) * 8 });
+          const t = ctx.currentTime, th = BOSS_THEMES[id]; fadeTo(t, 0.12);
+          newPiece({ boss: id }); forceNext = null; nextT = t + 0.36; bossHit(t + 0.36, th);
+        } else if (was && P.boss === was) {
+          const t = ctx.currentTime, th = BOSS_THEMES[was]; fadeTo(t, 0.06);
+          if (win) victory(t + 0.36, th);
+          const back = bossRet; bossRet = null; newPiece(back); // null: the next song (or the next kept track with Only my tracks) forceNext = null; nextT = t + 0.36 + (win ? 1.9 : 0);
+        }
+      },
+      get boss() { return bossNow; },
+      BOSS_THEMES, BOSS_IDS,
       setBaseBpm(v) { cfg.calmBpm = clamp(+v || 72, 50, 110); if (P && !cfg.custom) P.bpm = pieceBpm(); },
       get config() { return cfg; },
       setConfig(c) {
@@ -1465,17 +1866,18 @@ const SFX = (() => {
       get queued() { return forceNext; },
       get editing() { return editing; }, set editing(v) { editing = !!v; },
       get sndGen() { return sndGen; },
-      setLength(v) { cfg.length = ['short', 'standard', 'long'].includes(v) ? v : 'standard'; if (P) { const keepComp = P.comp; P.form = keepComp ? P.form : makeForm(P.S.form); } }, // the playing piece takes the new shape; past its end it moves on at the next bar
+      setLength(v) { cfg.length = ['short', 'standard', 'long'].includes(v) ? v : 'standard'; if (P) { const keepComp = P.comp || P.boss; P.form = keepComp ? P.form : makeForm(P.S.form, null, P.fv); } }, // the playing piece takes the new shape; past its end it moves on at the next bar
       setName(n) { if (P && n) { P.name = String(n).slice(0, 32); if (hist.length) hist[hist.length - 1].name = P.name; } },
       save(extra) {
-        if (!P) return null; if (cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp))) return null;
+        if (!P) return null; if (cfg.favs.some(isP)) return null;
         const f = { seed: P.seed, genre: P.g, flav: P.f, name: (extra && extra.name) || P.name, at: Date.now(), snd: snapshot() }; if (P.comp) f.comp = JSON.parse(JSON.stringify(P.comp));
+        if (P.v > 1) f.v = P.v; if (P.boss) f.boss = P.boss;
         cfg.favs.unshift(f); if (cfg.favs.length > 80) cfg.favs.pop(); return f;
       },
       saveComp(cp) { const f = { seed: cp.seed >>> 0, genre: cp.genre, flav: cp.flav, name: cp.name || 'My Track', at: Date.now(), snd: snapshot(), comp: JSON.parse(JSON.stringify(cp)) }; cfg.favs.unshift(f); if (cfg.favs.length > 80) cfg.favs.pop(); return f; },
-      unsave() { if (!P) return false; const n = cfg.favs.length; cfg.favs = cfg.favs.filter(f => !(f.seed === P.seed && sameComp(f.comp, P.comp))); return cfg.favs.length < n; },
-      isSaved() { return !!(P && cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp))); },
-      addTrack(f) { if (!f || !GENRES[f.genre] || !GENRES[f.genre].flavours[f.flav]) return null; const t = { seed: f.seed >>> 0, genre: f.genre, flav: f.flav, name: String(f.name || 'Shared Track').slice(0, 32), at: Date.now() }; if (f.snd) t.snd = f.snd; if (f.comp) t.comp = f.comp; cfg.favs.unshift(t); if (cfg.favs.length > 80) cfg.favs.pop(); return t; },
+      unsave() { if (!P) return false; const n = cfg.favs.length; cfg.favs = cfg.favs.filter(f => !isP(f)); return cfg.favs.length < n; },
+      isSaved() { return !!(P && cfg.favs.some(isP)); },
+      addTrack(f) { if (!f || !GENRES[f.genre] || !GENRES[f.genre].flavours[f.flav]) return null; const t = { seed: f.seed >>> 0, genre: f.genre, flav: f.flav, name: String(f.name || 'Shared Track').slice(0, 32), at: Date.now() }; if (f.snd) t.snd = f.snd; if (f.comp) t.comp = f.comp; if (f.v > 1) t.v = f.v | 0; if (f.boss && BOSS_THEMES[f.boss]) t.boss = f.boss; cfg.favs.unshift(t); if (cfg.favs.length > 80) cfg.favs.pop(); return t; },
       compose(cp) { // play a comp: edits to the piece already playing apply at once; a new genre or flavour starts it at the next bar
         if (!cp || !GENRES[cp.genre] || !GENRES[cp.genre].flavours[cp.flav]) return null;
         if (P && P.comp && P.g === cp.genre && P.f === cp.flav && !P.skip) { applyComp(P, cp); P.seed = cp.seed >>> 0; P.name = cp.name || P.name; P.bpm = pieceBpm(); applyGenreMix(false); return 'live'; }
@@ -1492,7 +1894,8 @@ const SFX = (() => {
       set debug(v) { EV = v ? [] : null; }, get events() { return EV; },
       renderAhead(seconds, curve) { start(); const step = 0.1; for (let t = 0; t < seconds; t += step) { if (curve) targetB = curve(t / seconds); battle += (targetB - battle) * 0.3; const h = t + step; while (nextT < h) { const tt = nextT; scheduleStep(tt); nextT += liveSpb() / 4; } } },
       get log() { return pieceLog; },
-      get piece() { if (!P) return null; const ph = phAt(bar); return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: pieceBars(), step: s16, loop: P.loop.degs.slice(), loopQ: (P.loop.q || []).slice(), seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(f => f.seed === P.seed && sameComp(f.comp, P.comp)), energy: +effE().toFixed(2), section: ph.n || 'Groove', length: cfg.length || 'standard' }; },
+      get piece() { if (!P) return null; const ph = phAt(bar); return { name: P.name, genre: P.g, genreName: GENRES[P.g].name, flav: P.f, flavName: flavName(P.g, P.f), mode: P.mode, key: NOTE[P.root % 12] + ' ' + MODE_NAME[P.mode], root: P.root, bpm: Math.round(P.bpm), now: Math.round(tempoNow || P.bpm), bar, bars: pieceBars(), step: s16, loop: P.loop.degs.slice(), loopQ: (P.loop.q || []).slice(), seed: P.seed, comp: !!P.comp, saved: cfg.favs.some(isP), energy: +effE().toFixed(2), section: ph.n || 'Groove', length: cfg.length || 'standard', v: P.v || 1,
+        boss: P.boss || null, ...(P.boss ? { genreName: 'Boss theme', flavName: BOSS_THEMES[P.boss].name } : {}) }; },
     };
     return API;
   })();
