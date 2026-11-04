@@ -1,6 +1,6 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 6.0.0 · November 3, 2026**
+**Version at handoff: 6.0.1 · November 4, 2026**
 
 > **The game is now called Last Gradient (5.6.0).** Repo, URLs, save keys, code prefixes (`HUNT1:`, `TRACK1:`), file names (`dist/entropy.html`) and the in-game Entropy gauge keep the old word on purpose. Player-facing name: Last Gradient.
 
@@ -16,7 +16,7 @@
 - **Rules gates:** old recordings must replay exactly. New sim rules check `G.hk`, `G.ascV` or recOpts flags, never `VERSION`. `test/hookcompat.js` (5.7.4 fixture) and `test/ascend.js` (v574 recording) prove it.
 - **Studio splash (5.7.0):** "Nigel Industries presents" on cold start (`UI.splash`, ui.js before `boot`; Nic's cat Nigel, pixel art in `docs/brand/`). It skips itself when `navigator.webdriver` is set so the other Playwright tests are not blocked; `test/splashshot.py` forces it with `UI.splash(true)`.
 - **Renamed (5.6.0):** Nic chose **Last Gradient** after a name search (section 4.17). The hangar title is a canvas effect, `TitleFX` at the end of render.js.
-- **Live:** 6.0.0 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
+- **Live:** 6.0.1 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
 - **Nov 1 build cycle:** a Fable design review (doc "Entropy Design Review" in the Project) found the game had no reason to start the next run. 5.2 First Hour (Threat Board, boss slow-down, first runs pay, fresh profiles see less) and 5.3 **The Hunt** (bounty win line with Extract/Push, Nemesis, Daily Hunt with a fixed build, input recording, exact replay and resume). Details in 4.15 and the version table.
 - **The sim is replayable (5.3).** Every player action goes through `act(name, ...args)` (sim.js `ACTS`): stamped with `G.tick`, appended to `G.inputs`. `newRun(G.recOpts)` + the inputs reproduce a run bit for bit (`test/replay.js`). **Any new player action must be an `ACTS` entry called through `window.act` from ui.js**, never a direct sim call or a direct write to `G`, or replays and Daily resume break (pitfall 39).
 - **Latest session (Nov 1, 5.4.2 → 5.5.14):** hangar sky backdrop, then a long Music Studio cycle: rebuilt Listen/Shape tabs, share codes (`TRACK1:`), the hidden Composer (five taps on the visualizer) that plays exactly what's written, Mono Audio, sound health and wake-up fixes, a musician's harmony pass, song length/arrangement, one-tap share, a typing panel that clears the iPhone keyboard, and battlefield music controls (Music tile + deck, 5.5.14). All in section 4.16 and the version table. Nic is happy with where music is.
@@ -846,6 +846,7 @@ The expanding sector made every level a little easier, because the compact early
 49. **Don't poll animation frames in tests on a loaded machine.** `splashshot.py` sampled the splash image for blinks and missed them when the box was busy (it failed even on 5.7.4). The code now counts (`UI.splashBlinks`) and the test reads the count.
 50. **Fetch a local branch into a named ref before merging** (`git fetch -q /root/wt/x x:x`). A bare `git fetch -q` from a worktree clone silently didn't update, and the merge took an old head. Untracked files that the incoming branch adds (e.g. a scratch copy of a doc) abort the merge: move them out first.
 51. **Parallel builders + one integrator.** For multi-feature releases: each builder works in its own clone on its own branch, writes `docs/notes/<name>.md`, and never edits VERSION, WHATS_NEW, HANDOFF.md or build.py. The integrator merges, resolves, runs the full suite, then bumps the version.
+52. **Patch releases and What's New.** The sheet shows when `PROF.seenVer` is neither `VERSION` nor `WHATS_NEW.ver` (6.0.1). A patch can bump `VERSION` without a new `WHATS_NEW` and players who saw the last sheet won't get it again; a release with a new sheet sets `WHATS_NEW.ver` to its version.
 
 ---
 
@@ -917,6 +918,7 @@ The expanding sector made every level a little easier, because the compact early
 | Version | What changed |
 |---|---|
 | 6.0.0 | The big one (4.18): tutorial (Basic Training, Field Manual, Tutorial button, checklist), Ready button and walkthrough, zones and jump doors, Bounty Purse, escalations, Techniques and Capstones (talent refund), Ascension perks and Tower Mastery, readable swarm, tower character pass, Lens/Collapse balance, W320 boss crash fix, resume fixes |
+| 6.0.1 | Void Lens hum about 4 dB quieter, settles to 65% after 2.5 s of steady firing, a little less bright (it is a constant drone through the glue compressor, so it pulled every other sound down; Nic: "a little loud and can sometimes take over") |
 | 1.6 | Flat web view, profile radar, region chips, oddball bosses |
 | 1.6.1 | Constellations |
 | 1.6.2 | Here and Center buttons |
