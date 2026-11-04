@@ -70,9 +70,16 @@ git add -A && git commit -m "vX.Y.Z: summary" && git push origin HEAD:main
 ```
 Pages updates in about a minute, but GitHub serves pages with a 10-minute cache. Since v1.15.2 the app checks for a newer `VERSION` at launch and when it returns from the background, and reloads itself from the main menu. The version also shows in the bottom-left of the main menu.
 
-### Test environment (the lab)
-- **nix812.github.io/Entropy/lab/** is the test copy for big experiments (first: the Frontier mode, Project doc "Frontier-Design"). Work happens on the **`frontier`** branch; `source` and the live game stay untouched until it's ready.
-- Make it with `python3 build.py && python3 tools/make_lab.py` (writes `dist/lab/`), then copy `dist/lab/*` into `lab/` on `main` and push. It has its own save keys (`lastgradient.lab.*`), the home-screen name "LG TEST", amber TEST icons (`tools/lab_icons.py`), a TEST ENVIRONMENT ribbon (a thin hazard stripe during play), and a "start as new player" button (or `?fresh`). Nic asked for the icon to make it unmistakable.
+### Environments and releases (agreed with Nic, Nov 4 2026)
+Two environments, always deployed together so they can't drift. Nic: "When we make changes to prod, the test environment should also be updated."
+- **Live** = branch `source`, served at the root of `main`: **nix812.github.io/Entropy/**.
+- **Lab** = `source` plus whatever feature is under test, served at `main:/lab/`: **nix812.github.io/Entropy/lab/**. Its own save keys (`lastgradient.lab.*`), home-screen name "LG TEST", amber TEST icons (`tools/lab_icons.py`), a "start as new player" button (or `?fresh`). The ribbon names the version and what's extra: "TEST ENVIRONMENT · v6.0.2 · SAME AS LIVE" or "… v6.0.2 + FRONTIER" (a thin hazard stripe during play).
+- **The lab is never behind live.** Every live release also redeploys the lab in the same commit: `python3 tools/deploy.py --site <entropy-site clone> --live [--lab-from <feature clone>]`. With a feature under test, merge `source` into the feature branch first; the script refuses a lab that's missing the live code. Lab-only deploys: `--lab-from <clone>` without `--live`.
+- **Big changes (features, gameplay, balance, anything that changes how a run plays): lab first.** Build, run the gate, deploy to the lab, send Nic screenshots and what to try, adjust on his feedback and run logs. When he says ship it, release that exact code to live with a version bump and a What's New, and the lab drops back to "same as live" (or keeps the next feature).
+- **Small fixes (a sound level, text, a label, a crash): straight to live** after the gate, with the lab redeployed alongside. Nic may ask for these to go through the lab too.
+- **Late-game testing:** the lab save starts fresh. Nic can copy his save code from the live game's Settings and paste it into the lab to test with his real level and talents.
+- **Bigger projects get their own branch** (like `frontier`) and their own builder clone, so half-done work can sit in the lab while small fixes keep shipping.
+- The live game and the lab both auto-update from the main menu (each checks its own path).
 
 ### Publish the artifact
 Publish `dist/entropy.html` to the existing URL above.
