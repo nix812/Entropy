@@ -43,6 +43,19 @@ with sync_playwright() as p:
         pg.evaluate('() => { Render.overview(); Render.zoomAt(200, 150, 0.2); UI.zoomChanged(); }'); pg.wait_for_timeout(400)
         pg.screenshot(path=str(out / f'f02b_board_zoomed_out_start_{tag}.png'))  # the 64x36 board, the starting sector lit
         pg.evaluate('() => { Render.resetCam(); UI.zoomChanged(); }'); pg.wait_for_timeout(200)
+        # 2c. the no-build ring: hidden until a refused tap near a wormhole, then fades away
+        wt = pg.evaluate('''() => { const q = G.map.lanes[0].tiles[0]; for (let r = 2; r < FRONTIER.wormBuild; r++) for (const [dx, dy] of [[r, 0], [-r, 0], [0, r], [0, -r], [r, r], [-r, -r], [r, -r], [-r, r]]) { const x = q.x + dx, y = q.y + dy; if (x >= 0 && y >= 0 && x < COLS && y < ROWS && G.region && inRegion(x, y, G.region) && G.map.tiles[tIdx(x, y)] === 0 && !G.towerAt[tIdx(x, y)]) return [x, y, q.x, q.y]; } return null; }''')
+        if wt:
+            pg.evaluate(f'() => {{ Render.lookAt({wt[2]} + 0.5, {wt[3]} + 0.5); UI.zoomChanged(); }}'); pg.wait_for_timeout(300)
+            pg.screenshot(path=str(out / f'f02c_ring_hidden_{tag}.png'))
+            tap_tile(pg, wt[0], wt[1])
+            check('TOO CLOSE' in pg.inner_text('body').upper() and not pg.evaluate('() => document.querySelector("#panel") && !document.querySelector("#panel").hidden && /build/i.test(document.querySelector("#panel").innerText)'), 'tapping inside the no-build zone refuses with Too close', tag)
+            pg.screenshot(path=str(out / f'f02c_ring_flash_{tag}.png'))
+            pg.wait_for_timeout(2900)
+            pg.screenshot(path=str(out / f'f02c_ring_gone_{tag}.png'))
+            pg.evaluate('() => document.querySelectorAll(".toast").forEach(t => t.remove())')
+            pg.evaluate('() => { Render.resetCam(); UI.zoomChanged(); }'); pg.wait_for_timeout(200)
+        else: check(False, 'found an open tile near a wormhole', tag)
         check(pg.evaluate('() => !document.querySelector("#bLift").hidden && /lift/i.test(document.querySelector("#bLift").innerText)'), 'Lift Off button on the field', tag)
         # 3. a fortress away from the core: a Rail Lance with three Pulse Blasters around it
         rail = pg.evaluate('''() => { G.credits = 50000; const c = G.map.core, sp = [];

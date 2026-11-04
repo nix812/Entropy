@@ -22,6 +22,7 @@ const RES = 2;
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
+  let wormFlashAt = 0; // Frontier: when the no-build ring around the wormholes was last flashed
   let frSel = null, frArrows = []; // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
@@ -983,7 +984,8 @@ const RES = 2;
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
-    if (G.fr) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', L.openWave ? 0.1 : 0.16), 3, 0); strokeRing(X, Y, r, '#ff4d6a', L.openWave ? 0.4 : 0.7, 2, [4, 4]); } // Frontier: the no-build zone
+    const wfA = G.fr && wormFlashAt ? Math.max(0, Math.min(1, (2.5 - (performance.now() - wormFlashAt) / 1000) / 0.8)) : 0; // shown for 2.5 s after a refused build, fading over the last 0.8 s
+    if (wfA > 0) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', (L.openWave ? 0.1 : 0.16) * wfA), 3, 0); strokeRing(X, Y, r, '#ff4d6a', (L.openWave ? 0.4 : 0.7) * wfA, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
     for (const t of G.snares || []) {
       if (!t.s) continue;
@@ -1773,6 +1775,7 @@ const RES = 2;
       if (g === 'regen') { gx.globalAlpha = 0.3; gx.drawImage(tintOf(sp, '#59f0b4'), x - sw / 2, y - sh / 2, sw, sh); gx.globalAlpha = 1; }
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
+    flashWorm() { wormFlashAt = performance.now(); },
     set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
     lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
