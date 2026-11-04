@@ -81,8 +81,9 @@ Nic played on a flight and asked for seven things. All seven are built. Two of t
   (all modes, treasure arrows with merge/cap/chest, keep-out sliding); `keepOut` (getter/setter). fx `'grow'`. Gold star
   also for `t.grow`.
 - **ui.js**: `overdrive` icon (trefoil), every Nuke string, `ALERT_RE`/`TIP_RE` (`NUKE ONLINE`, `NUKE`). `#bZoom` gone:
-  its `onclick` wiring removed, `updateZoomBtn` is a no-op hook (kept, many callers), F key. `KEEP_OUT`, `keepOutRects()`,
-  `koT` in `tick` (4 Hz). Edge-arrow tap no longer Frontier-only. `cacheNear()` + `CACHE_REACH` (before `tapTile`);
+  its `onclick` wiring removed, `updateZoomBtn` is a no-op hook (kept, many callers), F key. `KEEP_OUT`, `keepOutRects()` (also
+  `UI._dbg.keepOutRects`), `koWatch()` (a MutationObserver on `#log`/`#toasts` children and `hidden` in `#stage`), wall-clock
+  `koT` in `tick` (4 Hz, and 0.23 s after a change). Edge-arrow tap no longer Frontier-only. `cacheNear()` + `CACHE_REACH` (before `tapTile`);
   `tapTile` and the hover cursor use it. Locator returns `py`; Lens hum proximity (`beamK`, 4 Hz). `growHTML(t)` (before
   `towerPanelHTML`, **hotspot** `towerPanelHTML`: one line in each tab, the Specialize block's price);
   `vetsReady`/`openVets` and a `gpick` action for the free Specialization. Help: Nuke, Zoom, Lift Off; the Veterans
