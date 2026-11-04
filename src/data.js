@@ -1147,7 +1147,7 @@ const ANOM_DN = [
   { id: '-coreHPx', k: 'coreHPx', t: 'af', p: 1, lo: 10, hi: 35, cap: 50, st: 5, w: 0.8, grp: 'hull', nouns: ['Fracture', 'Fault', 'Crack'] },
   { id: '-elite', k: 'elite', t: 'af', p: 1.2, lo: 5, hi: 25, cap: 40, st: 5, nouns: ['Crown', 'Royals', 'Pageant'] },
   { id: '-flyers', k: 'flyers', t: 'af', p: 0.3, lo: 50, hi: 200, cap: 300, st: 50, nouns: ['Flock', 'Migration', 'Swarm'] },
-  { id: '-noShield', k: 'noShield', t: 'af', sp: 1, p: 30, w: 0.5, grp: 'shield', nouns: ['Exposure', 'Bare Wire'] },
+  { id: '-noShield', k: 'noShield', t: 'af', sp: 1, p: 30, w: 0.5, grp: 'shield', nouns: ['Exposure', 'Glass Jaw'] },
 ];
 const ANOM_EXOTIC_NOUNS = ['Paradox', 'Singularity', 'Eclipse', 'Covenant', 'Engine', 'Requiem'];
 const ANOM_PART = {};
