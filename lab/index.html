@@ -572,6 +572,18 @@ body.panel-r .zoombtn { right: auto; left: 6px; }
 .rdybtn b { min-width: 26px; height: 26px; padding: 0 5px; display: grid; place-items: center; background: #ffd84a; color: #1a1004; font-weight: 400; font-size: 13px; }
 .rdybtn.pulse { animation: rdyp 0.5s steps(3) 3; } @keyframes rdyp { 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 14px rgba(255, 216, 74, 0.8); transform: scale(1.06); } }
 body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves Map, the ticker and the music deck: Ready waits until it closes */
+/* Frontier: Lift Off sits under Map (Ready moves down one slot); it waits while a side panel is open, like Ready */
+.liftbtn { position: absolute; right: 6px; top: 48px; z-index: 4; height: 40px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
+  background: rgba(6, 34, 26, 0.92); box-shadow: inset 0 0 0 2px var(--core); color: var(--core); font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
+.liftbtn.cool { color: #6f9c8c; box-shadow: inset 0 0 0 1px #3d6a5a; background: rgba(12, 22, 20, 0.88); }
+.liftbtn.fly { color: #e6fff6; animation: pulse 0.8s infinite; }
+.liftbtn.go:not(.cool):not(.fly) { animation: liftp 1.6s steps(4) infinite; } @keyframes liftp { 50% { box-shadow: inset 0 0 0 2px #e6fff6, 0 0 10px rgba(89, 240, 180, 0.6); } }
+body.fr .rdybtn { top: 94px; }
+body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
+.note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
+.sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
+.pfoot .btn.frlift, .row2 .btn.frlift { color: var(--core); box-shadow: inset 0 0 0 2px var(--core), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
+.row2 .btn.frlift:disabled { color: #6f9c8c; box-shadow: inset 0 0 0 1px #3d6a5a; }
 #modal.side { background: rgba(4, 5, 10, 0.25); justify-content: flex-end; } /* the Ready walkthrough: the card docks right, the tower stays visible */
 body.tut #log { display: none; }
 body.rdy #tutlist { bottom: 6px; }
@@ -1118,6 +1130,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
       <canvas id="cv"></canvas>
       <button class="zoombtn" id="bZoom" hidden></button>
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
+      <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>
@@ -1486,6 +1499,24 @@ const LEGENDARIES = [
 const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 'prism', 'echo'];
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
+// Frontier (prototype mode, newRun({ frontier: 1 }) → G.fr): a bigger, slower map, a core that lifts off, docks on a tower and
+// links to the towers around it, and towers that can move. Every tunable lives here (docs/notes/frontier.md)
+const FRONTIER = {
+  rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
+  spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
+  gap: 13,                                         // seconds between waves (as Classic: slower walks already stretch the run)
+  w: { tank: 2.5, splitter: 1.6, carrier: 2, reflector: 1.5, shielder: 1.3, medic: 1.3, swarmer: 0.4, drone: 0.6 }, // heavier rosters
+  flySpd: 3, flyMin: 1, cd: 3,                     // flight 3 tiles/s (at least 1 s); lift-off cooldown in waves after landing
+  cdUplink: 4,                                     // every 4 Uplink levels: −1 wave of cooldown (never below 1)
+  dockDmg: 2, dockRange: 1, dockBat: 0.2,          // a docked tower: ×2 damage, +1 range, +20% damage per Battery level above 1
+  links: 3, linkR: 4, linkUplink: 3,               // links: 3 towers within 4 tiles (+1 per 3 Uplink levels)
+  linkDmg: 0.1, linkRate: 0.1, linkCore: 0.05,     // linked towers +10% damage and rate; the core +5% damage per link
+  moveT: 4, moveFee: 0.1,                          // moving a tower: 4 s offline, 10% of what it cost
+  wormBuild: 6,                                    // no towers within 6 tiles of a wormhole (open or opening), so the swarm is seen before it's shot
+  wormGap: 10, minRoad: 10,                        // landing spots stay 10 tiles (Manhattan) from every wormhole; no road shorter than 10
+};
+const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
+const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
 const WHATS_NEW = { ver: '6.0.0', title: 'Last Gradient 6.0 · The big one', items: [
   ['Tutorial', 'New to the game? The Tutorial button on the main menu walks you through everything, step by step with a checklist: build, upgrade, the core, veterans, Strike, bounties. The ? button is now the Field Manual: a short lesson for every system.'],
@@ -2968,9 +2999,10 @@ function newRun(opts) {
   opts = Object.assign({}, opts, { seed, ascV });
   const r = mulberry32(seed);
   const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson) : null; // 5.8 Training and lessons: own map, rules and wave script
-  setRows(T ? T.rows : opts.rows || CHAOS_LEVELS[chaos].rows);
+  setRows(T ? T.rows : opts.rows || (opts.frontier ? frRows(chaos) : CHAOS_LEVELS[chaos].rows));
+  if (opts.frontier && !opts.cols) setCols(frCols(ROWS)); // Frontier: the bigger board (the UI passes both; tests may not)
   G = {
-    seed, r, chaos, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, (T && T.start) || opts.startWave || 1), cols: COLS,
+    seed, r, chaos, fr: opts.frontier && !T && !opts.daily ? 1 : 0, CH: T ? T.CH : CHAOS_LEVELS[chaos], startWave: Math.max(1, (T && T.start) || opts.startWave || 1), cols: COLS,
     time: 0, speed: 1, paused: false, over: false,
     map: T ? tutMap(r) : genMap(r), towers: [], towerAt: {}, enemies: [], projs: [], zones: [], storms: [],
     wave: 0, queue: [], spawnClock: 0, next: 18, spawningDone: true,
@@ -3003,6 +3035,7 @@ function newRun(opts) {
     sinceHit: 99, wLvl: 1, sLvl: 1, uLvl: 0, hLvl: 0, el: 'K', cd: 0, angle: 0, kills: 0, affixes: [], rerolls: 0 };
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
+  if (G.fr) { G.frReady = 0; G.frFly = null; G.frN = 0; G.frLinks = []; } // Frontier: lift-off from Wave 1, nothing in the air
   setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
   G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
@@ -3038,7 +3071,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
-    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
+    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}) }]; // Frontier runs say so in the log
   return G;
 }
 
@@ -3173,8 +3206,17 @@ function affixText(a) {
 function canBuildAt(x, y) {
   if (x < 0 || y < 0 || x >= COLS || y >= ROWS || (G.region && !inRegion(x, y, G.region))) return false;
   const i = tIdx(x, y);
-  return G.map.tiles[i] === 0 && !G.towerAt[i];
+  return G.map.tiles[i] === 0 && !G.towerAt[i] && !frNearWorm(x, y);
 }
+// Frontier: the ground around every wormhole (open or opening) is a no-build zone
+function frNearWorm(x, y) {
+  if (!G.fr) return false;
+  const r2 = FRONTIER.wormBuild * FRONTIER.wormBuild;
+  for (const L of G.map.lanes) { const p = L.tiles[0], dx = x - p.x, dy = y - p.y; if (dx * dx + dy * dy < r2) return true; }
+  return false;
+}
+// a free tile, ignoring the no-build zone (swallowed towers are put back wherever there's room)
+function tileFreeAt(x, y) { return x >= 0 && y >= 0 && x < COLS && y < ROWS && (!G.region || inRegion(x, y, G.region)) && G.map.tiles[tIdx(x, y)] === 0 && !G.towerAt[tIdx(x, y)]; }
 // ---------- Snare Beacons: lure fliers off their straight line into a net ----------
 function lure(e) {
   if (!e.fly || e.boss || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
@@ -3378,6 +3420,7 @@ function towerStats(t) {
   const oc = canOvercharge(t) ? (t.oc || 0) + ocFree(t) : 0;
   if (oc) { s.dmg *= 1 + (OVERCHARGE.dmg + FX('msOc') / 100) * oc; s.rate *= 1 + OVERCHARGE.rate * oc; }
   if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.05 + FX('aRank') / 100) * t.rank : 0.75; // v4.4: 6%/−20% measured 16 waves above no Doctrine (bots); trimmed
+  if (G.fr && t === frDockT()) { s.dmg *= frDockX(); s.range += FRONTIER.dockRange; s.docked = 1; } // Frontier: mounted on the core
   return s;
 }
 // ---------- v5.8 Techniques: a tower's alternate fire mode (TOWER_FIRE in data.js) ----------
@@ -3469,6 +3512,7 @@ function recomputeAuras() {
   G.gardens = [];
   if (G.mods.ks.garden) { const W = G.towers.filter(t => t.type === 'grav'); for (let i = 0; i < W.length; i++) for (let j = i + 1; j < W.length; j++) if (dist2(W[i].cx, W[i].cy, W[j].cx, W[j].cy) <= GARDEN.span * GARDEN.span) G.gardens.push([W[i], W[j]]); }
   updateLinks();
+  if (G.fr) frLinkUpdate();
 }
 // ---------- Node Links: combat towers on Power Nodes within LINK_MAX tiles share a beam ----------
 const LINK_MAX = 9, LINK_DMG = 0.1, LINK_BEAM = 0.5;
@@ -3889,6 +3933,8 @@ function genWave(w, ev) {
   let count = Math.round(Math.min(65, 6 + w * 1.15) * (isBoss ? 0.6 : 1) * (1 + (af.countX || 0)) * (G.CH.count || 1));
   let hpm = hpMult(w) * (1 + (af.hpx || 0)) * (G.CH.hp || 1);
   if (ev.swarm) { count *= 1.6; hpm *= 0.6; } // v5.1.3: was ×2 at 55% (Nic: an endless stream)
+  if (G.fr) count = Math.max(3, Math.round(count * FRONTIER.count)); // Frontier: fewer, heavier units (their HP below, bosses in spawnBoss)
+  const hpE = G.fr ? hpm * FRONTIER.hp : hpm;
   const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && ENEMIES[k].w > 0);
   // v5.1 headline threats: each wave leans on one enemy (two from Wave 25), so you can see what it is and answer it.
   // A type that has just arrived always headlines its first wave
@@ -3921,14 +3967,14 @@ function genWave(w, ev) {
   };
   let n = 0;
   while (n < count) {
-    const type = wpick(r, types, k => ENEMIES[k].w * (heads.includes(k) ? HEAD_W : 1) * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1) * (lean ? lw(k) : 1));
+    const type = wpick(r, types, k => ENEMIES[k].w * (heads.includes(k) ? HEAD_W : 1) * (k === 'flyer' && af.flyers ? 1 + af.flyers : 1) * (lean ? lw(k) : 1) * (G.fr ? FRONTIER.w[k] || 1 : 1));
     const lane = laneFor();
     const grp = ENEMIES[type].group || 1;
     for (let g = 0; g < grp; g++) {
       const el = r() < eliteP && type !== 'swarmer' ? affN : 0;
       const gm = breedOne(plan, type, r);
-      q.push({ t, type, lane, hpm, elite: el, genes: gm ? gm.genes : null, gel: gm ? gm.el : null });
-      t += grp > 1 ? 0.18 : interval;
+      q.push({ t, type, lane, hpm: hpE, elite: el, genes: gm ? gm.genes : null, gel: gm ? gm.el : null });
+      t += grp > 1 ? 0.18 : G.fr ? interval / FRONTIER.count : interval; // Frontier: the same spawn time for fewer units
     }
     n += grp > 1 ? 2 : 1;
     if (isBoss && n >= Math.floor(count / 2) && !q.some(e => e.boss)) {
@@ -4363,7 +4409,7 @@ function updateWaves(dt) {
   }
   if (!G.queue.length) {
     G.spawningDone = true;
-    G.next = G.af.timeDebt ? 6 : 13; // v4.7: 13 s between waves (was 10)
+    G.next = G.af.timeDebt ? 6 : G.fr ? FRONTIER.gap : 13; // v4.7: 13 s between waves (was 10)
     const bonus = Math.round((25 + G.wave * 6) * G.mods.credits * (G.ev.gold ? 2 : 1)); // v5.0: was 20 + 4 × wave
     G.credits += bonus;
     if (FX('interest')) { const it = Math.min(300, Math.floor(G.credits * FX('interest') / 100)); if (it > 0) { G.credits += it; Hooks.log(`Interest +${it} credits`, '#ffb03a'); } }
@@ -4482,6 +4528,7 @@ function spawnEnemy(type, q) {
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: D.cloak ? 1 : 0, cloakT: 2 + ((G.eid * 2654435761) >>> 0) % 1000 / 500, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0,
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
+  if (G.fr) { e.spd *= FRONTIER.spd; if (!q.fromPt && !q.L) { e.cr /= FRONTIER.count; e.score = Math.round(e.score / FRONTIER.count); } } // Frontier: slower; a wave pays what a Classic one does
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
     if (q.assault) { e.assault = 1; e.hpBase = hp0; }
@@ -4614,6 +4661,7 @@ function spawnBoss(q) {
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: 0, cloakT: 0, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0, timer: 3, timer2: 0, hitFlash: 0, slow: 0, wob: 0, plates: 2, phase: 0, phaseT: 0 };
   if (B.odd && G.af && G.af.oddAll) e.cr *= 3;
+  if (G.fr) { e.spd *= FRONTIER.spd; if (!gen && !q.hpAbs) e.hp = e.maxHp = hp * FRONTIER.bossHp; } // Frontier: slower, so tougher
   if (gen) { e.cr *= 0.4; e.score = Math.round(e.score * 0.3); e.leak = Math.round(e.leak * 0.5); e.size = gen === 1 ? 0.85 : 0.6; e.spd *= 1 + gen * 0.3; e.timer = 1.5; }
   // Most Wanted: the poster's boss gets its mutation (twins: the second copy follows 3 s later)
   if (!gen && G.wanted && !G.wanted.done && G.wanted.boss === B.id && G.wanted.w === w) {
@@ -4875,8 +4923,8 @@ function wormSurface(e) {
 function wormRelease(e) { // put swallowed towers back where they stood (or the nearest free tile)
   let back = 0;
   for (const t of e.gut || []) {
-    let spot = canBuildAt(t.x, t.y) ? [t.x, t.y] : null;
-    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (canBuildAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
+    let spot = tileFreeAt(t.x, t.y) ? [t.x, t.y] : null;
+    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (tileFreeAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
     if (!spot) continue;
     t.x = spot[0]; t.y = spot[1]; t.cx = t.x + 0.5; t.cy = t.y + 0.5; t.disabled = 1;
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t; back++;
@@ -5883,7 +5931,7 @@ function coreStats() {
   const A = c.A, p = k => (A[k] || 0) / 100, nd = isNode(G.map.core.x, G.map.core.y);
   const el = M.ks.conflag ? 'T' : c.el;
   const st = CORE_EL_STATUS[el];
-  return {
+  const o = {
     el, kind: 'core', dmg: CORE_GUN.dmg * Math.pow(CORE_GUN.growth, c.wLvl - 1) * M.coreDmg * M.dmg * M.el[el] * (1 + p('dmg')) * (nd ? NODE_CORE.dmg : 1) * wx, rate: CORE_GUN.rate * wr * M.coreRate * M.rate * (1 + p('rate')) * (nd ? NODE_CORE.rate : 1),
     range: (CORE_GUN.range + M.coreRange + CORE_GUN.rangeLv * (c.wLvl - 1)) * (1 + p('range')), critC: M.critC + (A.critC || 0), critM: 1.5 + M.critM + p('critM'),
     burn: clamp((st.burn || 0) + p('burn'), 0, 1), chill: M.ks.conflag ? 0 : clamp((st.chill || 0) + p('chill'), 0, 1), shock: clamp((st.shock || 0) + p('shock'), 0, 1), mark: clamp((st.mark || 0) + p('mark'), 0, 1),
@@ -5891,6 +5939,8 @@ function coreStats() {
     pierce: A.pierce || 0, chain: A.chain || 0, splash: CORE_GUN.splash + (c.wLvl >= 8 ? 0.6 : 0) + (A.splash || 0), multi: (A.multi || 0) + (c.wLvl >= 4 ? 1 : 0),
     node: nd,
   };
+  if (G.fr && G.frLinks && G.frLinks.length) o.dmg *= 1 + FRONTIER.linkCore * G.frLinks.length; // Frontier: +5% per linked tower
+  return o;
 }
 const coreWeaponCost = () => Math.round(120 * Math.pow(1.75, G.core.wLvl - 1));
 const coreHullCost = () => Math.round(HULL.base * Math.pow(HULL.growth, G.core.hLvl || 0) * (1 + 0.02 * Math.max(0, (G.wave || 1) - 10)));
@@ -5905,6 +5955,7 @@ function coreUpgrade(kind) {
   else if (kind === 'hull') { const k = coreHullCost(); if ((c.hLvl || 0) >= HULL.max || G.credits < k) return false; G.credits -= k; const was = c.max; c.hLvl = (c.hLvl || 0) + 1; recomputeAll(); c.hp = Math.min(c.max, c.hp + (c.max - was)); rlog('hull', { lv: c.hLvl, cost: k }); }
   else if (kind === 'uplink') { const k = coreUplinkCost(); if ((c.uLvl || 0) >= UPLINK.max || G.credits < k) return false; G.credits -= k; c.uLvl = (c.uLvl || 0) + 1; rlog('uplink', { lv: c.uLvl, cost: k });
     for (const a of ABIL_ORDER) if (G.abilCd[a] > abilCdMax(a)) G.abilCd[a] = abilCdMax(a);
+    if (G.fr) recomputeAuras(); // Frontier: Uplink adds links
     const m = UPLINK.mods.find(x => x.lv === c.uLvl); if (m) Hooks.toast('UPLINK · ' + m.name.toUpperCase(), m.desc, '#ffe14d', true); }
   else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; c.hp = Math.min(c.max, c.hp + c.max * 0.35); }
   if (rolled) { c.affixes.push(rolled); coreAffSum(c); recomputeAll(); if (kind === 'shield') c.shield = c.smax; }
@@ -5915,9 +5966,10 @@ function coreUpgrade(kind) {
 function updateCore(dt) {
   const c = G.core;
   c.sinceHit += dt;
-  if (c.sinceHit > 4 && c.shield < c.smax) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
+  if (c.sinceHit > 4 && c.shield < c.smax && !(G.fr && G.frFly)) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
   const s = coreStats();
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
+  if (G.fr && (G.frFly || frDockT())) { c.cd = 0; return; } // Frontier: no gun in the air; docked, the tower is the gun
   c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1) * (G.redAlert ? RED_ALERT.coreRate : 1);
   if (c.cd > 0) return;
   // last line of defence: shells go to whatever is closest to reaching the core along its route, anywhere in range
@@ -5944,7 +5996,7 @@ function updateCore(dt) {
 
 // ---------- core relocation (wormhole checkpoints only, with the field empty) ----------
 const relocCost = () => (G.relocUsed || 0) > 0 ? RELOCATE_COST : 0;
-const canRelocate = () => !!(G && !G.over && G.checkpoint && !G.enemies.length);
+const canRelocate = () => !!(G && !G.over && !G.fr && G.checkpoint && !G.enemies.length); // Frontier flies instead (frLiftOff)
 function relocCandidates() {
   const R = G.region, c = G.map.core, out = [], starts = G.map.lanes.map(L => L.tiles[0]);
   for (let y = R.y0 + 1; y < R.y1 - 1; y++) for (let x = R.x0 + 1; x < R.x1 - 1; x++) {
@@ -5982,8 +6034,8 @@ function pathfind(s0, goal, step) {
   return route;
 }
 // Re-plot every lane to a new core spot, reusing existing road where it can and going around towers.
-function planRelocation(nx, ny) {
-  if (!canRelocate() || !relocCandidates().includes(tIdx(nx, ny))) return null;
+function planRelocation(nx, ny, fr) { // fr: a Frontier landing (frPlan checks the spot and the cooldown)
+  if (fr ? !frCands().includes(tIdx(nx, ny)) : !canRelocate() || !relocCandidates().includes(tIdx(nx, ny))) return null;
   const map = G.map, N = COLS * ROWS, goal = tIdx(nx, ny);
   const road = new Uint8Array(N), fresh = new Uint8Array(N), own = new Uint8Array(N);
   for (const L of map.lanes) for (const p of L.tiles) road[tIdx(p.x, p.y)] = 1;
@@ -6012,13 +6064,13 @@ function planRelocation(nx, ny) {
   const oldT = [].concat(...map.lanes.map(L => L.tiles)), newT = [].concat(...routes);
   let lose = 0, gain = 0;
   for (const t of G.towers) { if (!t.s || !t.s.range || t.s.kind === 'eco') continue; const a = reach(t, oldT), b = reach(t, newT); if (a && !b) lose++; else if (!a && b) gain++; }
-  return { x: nx, y: ny, routes, before, after, cost: relocCost(), lose, gain };
+  return { x: nx, y: ny, routes, before, after, cost: fr ? 0 : relocCost(), lose, gain };
 }
-function applyRelocation(plan) {
-  if (!plan || !canRelocate()) return false;
-  const cost = relocCost();
+function applyRelocation(plan, fr) {
+  if (!plan || (!fr && !canRelocate())) return false;
+  const cost = fr ? 0 : relocCost();
   if (G.credits < cost) return false;
-  G.credits -= cost; G.relocUsed = (G.relocUsed || 0) + 1; rlog('reloc', { cost });
+  if (!fr) { G.credits -= cost; G.relocUsed = (G.relocUsed || 0) + 1; rlog('reloc', { cost }); }
   const map = G.map, old = map.lanes;
   for (let i = 0; i < map.tiles.length; i++) { const t = map.tiles[i]; if (t === 1 || t === 4 || t === 5) map.tiles[i] = 0; }
   map.core = { x: plan.x, y: plan.y };
@@ -6042,10 +6094,163 @@ function applyRelocation(plan) {
   }
   for (const q of G.queue) q.lane = remap(q.lane);
   G.mapRev = (G.mapRev || 0) + 1;
+  if (fr) return true;
   Hooks.log(`Core relocated${cost ? ` · −${cost} credits` : ' · free'}`, '#59f0b4');
   Hooks.fx('upgrade', { x: G.core.x, y: G.core.y, col: '#59f0b4' });
   Hooks.sfx('lane');
   return true;
+}
+
+// ---------- Frontier: lift-off, docking, links and tower moves (G.fr runs only; tunables in FRONTIER, data.js) ----------
+// The core flies to any open tile in the sector or onto one of your attack towers. Every road re-routes to the landing spot the
+// moment you commit (planRelocation / applyRelocation do the roads), and enemies already walking turn toward it (frReroute).
+// In the air the core's gun is offline and its shield is down. Docking is derived, never stored: while landed, the attack tower
+// on the core's tile is the core's weapon (towerStats scales it). Lifting off simply sets it back to being a tower.
+function frDockT() {
+  if (!G || !G.fr || G.frFly || !G.map) return null;
+  const t = G.towerAt[tIdx(G.map.core.x, G.map.core.y)];
+  return t && canOvercharge(t) ? t : null;
+}
+const frUp = () => (G.core && G.core.uLvl) || 0;
+const frCd = () => Math.max(1, FRONTIER.cd - Math.floor(frUp() / FRONTIER.cdUplink));
+const frLinkN = () => FRONTIER.links + Math.floor(frUp() / FRONTIER.linkUplink);
+const frCanFly = () => !!(G && G.fr && !G.over && !G.frFly && G.wave >= (G.frReady || 0));
+const frDockX = () => FRONTIER.dockDmg * (1 + FRONTIER.dockBat * ((G.core && G.core.wLvl || 1) - 1));
+// landing spots: open ground or an attack tower, inside the sector (1-tile margin), clear of every wormhole
+function frCands() {
+  const R = G.region, c = G.map.core, out = [], starts = G.map.lanes.map(L => L.tiles[0]);
+  for (let y = R.y0 + 1; y < R.y1 - 1; y++) for (let x = R.x0 + 1; x < R.x1 - 1; x++) {
+    if (x === c.x && y === c.y) continue;
+    const i = tIdx(x, y), tw = G.towerAt[i];
+    if (G.map.tiles[i] !== 0 || (tw && (!canOvercharge(tw) || tw.mvT > 0))) continue;
+    if (starts.some(p => Math.abs(p.x - x) + Math.abs(p.y - y) < FRONTIER.wormGap)) continue;
+    out.push(i);
+  }
+  return out;
+}
+// the attack towers a core at (cx, cy) links to: the nearest within reach, ties by build order
+function frLinksAt(cx, cy, dock) {
+  const R2 = FRONTIER.linkR * FRONTIER.linkR, L = [];
+  for (const t of G.towers) { if (t === dock || !canOvercharge(t)) continue; const d = dist2(t.cx, t.cy, cx, cy); if (d <= R2 + 0.01) L.push([d, t.id, t]); }
+  L.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  return L.slice(0, frLinkN()).map(a => a[2]);
+}
+// called at the end of recomputeAuras: linked towers get their bonus, the docked tower (or the plain core gun, coreStats) its share
+function frLinkUpdate() {
+  G.frLinks = [];
+  if (G.frFly || !G.core) return;
+  const d = frDockT();
+  G.frLinks = frLinksAt(G.core.x, G.core.y, d);
+  for (const t of G.frLinks) { t.buff.dmg += FRONTIER.linkDmg; t.buff.rate += FRONTIER.linkRate; }
+  if (d) d.buff.dmg += FRONTIER.linkCore * G.frLinks.length;
+}
+function frRestat() { for (const t of G.towers) t.s = towerStats(t); recomputeAuras(); }
+// the landing preview (and the check the act makes): roads before → after, the tower it docks on, the links, the flight time
+function frPlan(x, y) {
+  if (!frCanFly()) return null;
+  const P = planRelocation(x, y, true); if (!P || Math.min(...P.after) < FRONTIER.minRoad) return null;
+  const tw = G.towerAt[tIdx(x, y)] || null, halted = G.checkpoint && !G.enemies.length;
+  P.dock = tw; P.links = frLinksAt(x + 0.5, y + 0.5, tw);
+  P.dist = Math.hypot(x + 0.5 - G.core.x, y + 0.5 - G.core.y);
+  P.secs = halted ? 0 : Math.max(FRONTIER.flyMin, P.dist / FRONTIER.flySpd);
+  return P;
+}
+function frLiftOff(x, y) {
+  const P = frPlan(x, y); if (!P) return false;
+  const from = { x: G.core.x, y: G.core.y }, old = G.map.lanes;
+  applyRelocation(P, true);
+  G.core.x = from.x; G.core.y = from.y;
+  frReroute(old);
+  G.frN = (G.frN || 0) + 1;
+  G.core.shield = 0; G.core.sinceHit = 0;
+  G.frFly = { x0: from.x, y0: from.y, x1: x + 0.5, y1: y + 0.5, t: 0, dur: P.secs };
+  rlog('frFly', { x, y, dock: P.dock ? P.dock.type : null, lvl: P.dock ? P.dock.lvl : 0, links: P.links.length, road: [P.before.reduce((a, b) => a + b, 0), P.after.reduce((a, b) => a + b, 0)], secs: +P.secs.toFixed(1) });
+  frRestat();
+  Hooks.sfx('lane'); Hooks.fx('upgrade', { x: from.x, y: from.y, col: '#59f0b4' });
+  if (P.secs <= 0) frLand();
+  return true;
+}
+function frLand() {
+  const F = G.frFly; if (!F) return;
+  G.core.x = F.x1; G.core.y = F.y1; G.frFly = null; G.core.sinceHit = 0;
+  G.frReady = G.wave + frCd();
+  frRestat();
+  const d = frDockT();
+  Hooks.fx('upgrade', { x: G.core.x, y: G.core.y, col: d ? EL[d.s.el].col : '#59f0b4' }); Hooks.sfx('upgrade', {});
+  Hooks.log(`${d ? `Docked on ${towerLabel(d)}` : 'Core landed'} · ${G.frLinks.length} link${G.frLinks.length === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, '#59f0b4');
+  if (Hooks.frLanded) Hooks.frLanded(d);
+}
+// enemies already on the field turn toward the landing spot: one search outward from it gives every tile its next step,
+// new road preferred (so they join the nearest new road and follow it); fliers take a straight line
+function frReroute(old) {
+  const map = G.map, N = COLS * ROWS, goal = tIdx(map.core.x, map.core.y), R = G.region, gx = map.core.x + 0.5, gy = map.core.y + 0.5;
+  const road = new Uint8Array(N); for (const L of map.lanes) for (const p of L.tiles) road[tIdx(p.x, p.y)] = 1;
+  const dist = new Float32Array(N).fill(1e9), nxt = new Int32Array(N).fill(-1), done = new Uint8Array(N), hd = [], hi = [];
+  const push = (d, i) => { hd.push(d); hi.push(i); let k = hd.length - 1; while (k) { const p = (k - 1) >> 1; if (hd[p] <= hd[k]) break; [hd[p], hd[k]] = [hd[k], hd[p]]; [hi[p], hi[k]] = [hi[k], hi[p]]; k = p; } };
+  const pop = () => { const i = hi[0]; const ld = hd.pop(), li = hi.pop(); if (hd.length) { hd[0] = ld; hi[0] = li; let k = 0; for (;;) { const a = 2 * k + 1, b2 = a + 1; let m = k; if (a < hd.length && hd[a] < hd[m]) m = a; if (b2 < hd.length && hd[b2] < hd[m]) m = b2; if (m === k) break; [hd[m], hd[k]] = [hd[k], hd[m]]; [hi[m], hi[k]] = [hi[k], hi[m]]; k = m; } } return i; };
+  dist[goal] = 0; push(0, goal);
+  while (hd.length) {
+    const v = pop(); if (done[v]) continue; done[v] = 1;
+    const vx = v % COLS, vy = (v / COLS) | 0, step = road[v] ? 0.1 : 1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const ux = vx + dx, uy = vy + dy; if (!inRegion(ux, uy, R)) continue;
+      const u = tIdx(ux, uy); if (map.tiles[u] === 2 || G.towerAt[u]) continue;
+      if (dist[v] + step < dist[u]) { dist[u] = dist[v] + step; nxt[u] = v; push(dist[u], u); }
+    }
+  }
+  for (const e of G.enemies) {
+    if (e.dead || e.pirate || !e.L) continue;
+    if (e.fly && !e.boss) { e.L = prepLane([{ x: e.x, y: e.y }, { x: gx, y: gy }]); e.d = 0; e.seg = 0; e.lureT = null; continue; }
+    const s = tIdx(clamp(Math.floor(e.x), 0, COLS - 1), clamp(Math.floor(e.y), 0, ROWS - 1));
+    if (s !== goal && nxt[s] < 0) continue; // walled in: it keeps its old road
+    const tiles = [{ x: s % COLS, y: (s / COLS) | 0 }], pts = [{ x: e.x, y: e.y }];
+    for (let c = s, g = 0; c !== goal && g < N; g++) { c = nxt[c]; tiles.push({ x: c % COLS, y: (c / COLS) | 0 }); pts.push({ x: c % COLS + 0.5, y: ((c / COLS) | 0) + 0.5 }); }
+    if (pts.length < 2) pts.push({ x: gx, y: gy });
+    const L = prepLane(pts); L.tiles = tiles; L.fly = prepLane([pts[0], { x: gx, y: gy }]);
+    e.L = L; e.d = 0; e.seg = 0;
+  }
+}
+// moving a tower: it is set down on the new tile at once (so nothing else can take it) and stays offline while it relocates
+const frMoveFee = t => Math.round(t.invested * FRONTIER.moveFee);
+function frMoveOk(t, x, y) { return !!(G && G.fr && !G.over && t && G.towers.includes(t) && t !== frDockT() && !(t.mvT > 0) && canBuildAt(x, y)); }
+function frMoveTower(t, x, y) {
+  if (!frMoveOk(t, x, y)) return false;
+  if (isNode(t.x, t.y) && !isNode(x, y) && gridFree() < 1) { if (Hooks.gridFull) Hooks.gridFull(); return false; }
+  const fee = frMoveFee(t); if (G.credits < fee) return false;
+  G.credits -= fee; G.stats.frMoves = (G.stats.frMoves || 0) + 1;
+  delete G.towerAt[tIdx(t.x, t.y)];
+  t.mvFrom = { x: t.cx, y: t.cy };
+  t.x = x; t.y = y; t.cx = x + 0.5; t.cy = y + 0.5;
+  G.towerAt[tIdx(x, y)] = t;
+  t.mvT = FRONTIER.moveT; t.disabled = Math.max(t.disabled || 0, t.mvT); t.disCause = 'MOVING';
+  t.ramp = 0; t.beamTargets = null; t.fenceTo = null;
+  t.s = towerStats(t); recomputeAuras();
+  if (t.s.kind === 'snare') lureAll();
+  rlog('frMove', { type: t.type, x, y, fee });
+  Hooks.sfx('build', t); Hooks.fx('sell', { x: t.mvFrom.x, y: t.mvFrom.y });
+  return true;
+}
+// run-end Frontier telemetry for the log: flights, moves, seconds in the air, share of landed time per weapon
+function frSummary() {
+  const d = G.stats.frDock || {}, tot = Object.values(d).reduce((a, b) => a + b, 0) || 1, share = {};
+  for (const k in d) share[k] = Math.round(100 * d[k] / tot);
+  return { flights: G.frN || 0, moves: G.stats.frMoves || 0, air: Math.round(G.stats.frAir || 0), dockPct: share };
+}
+function frUpdate(dt) {
+  const F = G.frFly;
+  if (!F) { const d = frDockT(), st = G.stats.frDock || (G.stats.frDock = {}), k = d ? d.type : 'cannon'; st[k] = (st[k] || 0) + dt; } // telemetry only: seconds landed per weapon
+  else G.stats.frAir = (G.stats.frAir || 0) + dt;
+  if (F) {
+    F.t += dt;
+    const k = Math.min(1, F.t / F.dur), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) * (-2 * k + 2) / 2;
+    G.core.x = F.x0 + (F.x1 - F.x0) * e; G.core.y = F.y0 + (F.y1 - F.y0) * e;
+    if (F.t >= F.dur) frLand();
+  }
+  for (const t of G.towers) if (t.mvT > 0) {
+    t.mvT -= dt;
+    if (t.mvT <= 0) { t.mvT = 0; t.mvFrom = null; if (t.disCause === 'MOVING') { t.disabled = 0; t.disCause = null; } }
+    else if (t.disabled < t.mvT) { t.disabled = t.mvT; t.disCause = 'MOVING'; }
+  }
 }
 
 // ---------- abilities ----------
@@ -6108,6 +6313,7 @@ function simStep(dt) {
   if (G.over) return;
   updateTowers(dt);
   updateCore(dt);
+  if (G.fr) frUpdate(dt);
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
@@ -6122,7 +6328,7 @@ function gameOver() {
   bankPurse();
   if (ghostRun()) { Hooks.onGameOver(); return; }
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
-    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain() }); }
+    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
   huntEnd();
   masteryEnd();
@@ -6268,7 +6474,7 @@ function huntEnd() {
 const SIM_STEP = 1 / 30;
 const twAt = (x, y) => G.towerAt[tIdx(x, y)] || null;
 function setTowerMode(t, m) { if (!t || !['first', 'last', 'strong', 'weak', 'close'].includes(m)) return false; t.mode = m; return true; }
-function setCoreEl(el) { if (!ELS.includes(el)) return false; G.core.el = el; return true; }
+function setCoreEl(el) { if (!ELS.includes(el) || G.fr) return false; G.core.el = el; return true; } // Frontier: docking is how the core changes element
 function cancelBeacon() {
   if (G.placing !== 'beacon') return false;
   G.placing = null; G.credits += G.placingRefund || 0; G.placingRefund = 0;
@@ -6302,6 +6508,8 @@ const ACTS = {
   cache: (x, y) => { const c = cacheAt(x, y); return !!c && claimCache(c); },
   od: () => releaseOverdrive(),
   reloc: (x, y) => { const P = planRelocation(x, y); return !!P && !P.fail && applyRelocation(P); },
+  frFly: (x, y) => frLiftOff(x, y), // Frontier: lift off and land at (x, y) (a tower tile docks it)
+  frMove: (fx, fy, x, y) => { const t = twAt(fx, fy); return !!t && frMoveTower(t, x, y); }, // Frontier: move a tower
   extract: () => huntExtract(),
   push: door => huntPush(door == null ? undefined : door), // 5.8: the jump door's index; none (5.7 recordings) pushes on as before
   abandon: () => { abandonRun(); return true; },
@@ -6366,6 +6574,7 @@ function snapshotRun(waveNum) {
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     ascV: G.ascV || 1, mastery: G.mastery || {}, // v5.8
+    fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -6374,7 +6583,7 @@ function snapshotRun(waveNum) {
 function snapshotNow() { if (G && !G.over) snapshotRun(G.spawningDone ? G.wave + 1 : G.wave); }
 function resumeRun(S) {
   const r = mulberry32((S.seed ^ (S.wave * 7919)) >>> 0);
-  newRun({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null, ascV: S.ascV || 1, mastery: S.mastery || {} }); // v5.8: a save from before perks keeps the old Ascend
+  newRun(Object.assign({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null, ascV: S.ascV || 1, mastery: S.mastery || {} }, S.fr ? { frontier: 1 } : {})); // v5.8: a save from before perks keeps the old Ascend
   PROF.runs--; // newRun counted it; a resume is the same run
   G.r = r;
   G.map.tiles = S.tiles.slice();
@@ -6415,6 +6624,11 @@ function resumeRun(S) {
   G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
+  if (G.fr) { // Frontier: the cooldown, and a flight in progress carries on (the saved tiles already route every road to its landing spot)
+    G.frReady = S.frReady || 0; G.frN = S.frN || 0; G.frFly = S.frFly ? Object.assign({}, S.frFly) : null;
+    if (G.frFly) { G.core.shield = 0; frUpdate(0); }
+    frRestat();
+  }
   prepareWave(S.wave);
   Hooks.log(`Run resumed · Wave ${S.wave}`, '#59f0b4');
   return G;
@@ -8559,6 +8773,8 @@ const RES = 2;
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
+  let wormFlashAt = 0; // Frontier: when the no-build ring around the wormholes was last flashed
+  let frSel = null, frArrows = []; // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
   // v5.8 tower character (render-only): a render clock, small screen kicks for heavy hits, hop stars and pull streaks.
@@ -9130,16 +9346,24 @@ const RES = 2;
   function sizeBuf(w, h) {
     if (buf.width < w || buf.height < h || buf.width > w + 512 || buf.height > h + 512) { buf.width = Math.ceil(w / 128) * 128; buf.height = Math.ceil(h / 128) * 128; }
   }
+  // Frontier: a tower that is moving glides from its old tile to the new one (lifted off the ground) while it is offline
   function drawTower(t) {
+    if (!(t.mvT > 0 && t.mvFrom)) return drawTower0(t);
+    const k = clamp(1 - t.mvT / FRONTIER.moveT, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) * (-2 * k + 2) / 2, lift = Math.sin(k * Math.PI) * 7;
+    const dx = (t.mvFrom.x - t.cx) * (1 - e) * TILE, dy = (t.mvFrom.y - t.cy) * (1 - e) * TILE;
+    b.fillStyle = 'rgba(2,3,10,0.35)'; b.beginPath(); b.ellipse(t.cx * TILE + dx + 1.5, t.cy * TILE + dy + 3, 10, 8, 0, 0, 6.283); b.fill();
+    b.save(); b.translate(dx, dy - lift); drawTower0(t); b.restore();
+  }
+  function drawTower0(t, onCore) {
     const X = t.x * TILE, Y = t.y * TILE, D0 = TOWERS[t.type], el = t.s ? t.s.el : D0.el, c = EL[el].col, cx = X + 12, cy = Y + 12;
-    blit(UNITS.base(el), cx, cy, TW_K);
+    if (!onCore) blit(UNITS.base(el), cx, cy, TW_K);
     const firing = t.flash > 0 || (t.aimT !== undefined && G.time - t.aimT < 0.25) || (t.beamTargets && t.beamTargets.length);
     const anim = { rk: t.flash > 0.03 ? 1 : 0, ld: t.type === 'missile' ? t.cd < 0.45 : 0,
       ph: t.type === 'forge' ? (frame >> 4) % 2 : (t.spec === 1 && t.type === 'pulse' && firing) || t.type === 'flame' && firing ? (frame >> 1) % 3 : 0 };
     const sp = UNITS.SPIN[t.type], ang = UNITS.ROT[t.type] ? (t.angle === undefined ? -1.57 : t.angle) : sp ? frame / 60 * sp * (t.disabled > 0 ? 0 : 1) + t.id : 0;
     if (t._wk !== el + (t.spec || 0)) { t._wk = el + (t.spec || 0); UNITS.warmTower(t.type, el, t.spec || 0); }
     const top = UNITS.top(t.type, el, t.spec || 0, ang, anim);
-    b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 12, 11, 0, 0, 6.283); b.fill();
+    if (!onCore) { b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 12, 11, 0, 0, 6.283); b.fill(); }
     // v5.8 tower character: a shot is seen when the sim stamps t.aimT; the turret kicks back along its heading and eases home
     if (t.aimT !== t._pa) { if (t._pa !== undefined && t.aimT !== undefined) towerFired(t, cx, cy, c); t._pa = t.aimT; }
     const age = t._ft === undefined ? 9 : rt - t._ft, rot = UNITS.ROT[t.type], ca = Math.cos(t.angle || 0), sa = Math.sin(t.angle || 0);
@@ -9252,6 +9476,19 @@ const RES = 2;
   }
   let coreKick = 0;
   function drawCore() {
+    // Frontier: in flight the core rises off the ground (its shadow stays below, thrusters flare); docked, the tower's turret
+    // sits on the drum in place of the core gun, ringed in its element's colour
+    const F = G.fr && G.frFly, dock = G.fr && !F ? frDockT() : null;
+    if (F) {
+      const k = clamp(F.t / F.dur, 0, 1), h = 6 + Math.sin(k * Math.PI) * 10;
+      b.fillStyle = 'rgba(2,3,10,0.35)'; b.beginPath(); b.ellipse(G.core.x * TILE + 3, G.core.y * TILE + 6, 20, 15, 0, 0, 6.283); b.fill();
+      b.save(); b.translate(0, -h);
+      for (let i = 0; i < 3; i++) { const a = i * 2.094 + frame / 9; parts.push({ x: G.core.x * TILE + Math.cos(a) * 14, y: G.core.y * TILE + Math.sin(a) * 10 + 8, vx: (Math.random() - 0.5) * 20, vy: 50 + Math.random() * 40, life: 0.25, max: 0.25, col: i ? '#59f0b4' : '#e6fff6', s: 2 }); }
+      drawCore0(null); b.restore(); return;
+    }
+    drawCore0(dock);
+  }
+  function drawCore0(dock) {
     const c = G.core, X = c.x * TILE, Y = c.y * TILE, pulse = (Math.sin(frame / 10) + 1) / 2;
     b.fillStyle = 'rgba(2,3,10,0.45)'; b.beginPath(); b.ellipse(X + 2, Y + 4, 25, 22, 0, 0, 6.283); b.fill();
     const hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
@@ -9259,7 +9496,8 @@ const RES = 2;
     blit(UNITS.core(frame / 70, hurt || kick > 0.35), X, Y, 1 - 0.07 * kick * Math.sin(kick * 9));
     D(b, X, Y, 1 + Math.round(pulse * 2), hexA('#ffffff', 0.35 + 0.4 * pulse));
     const el = c.s ? c.s.el : c.el, a = c.angle || 0;
-    blit(UNITS.coreGun(el, a), X, Y);
+    if (dock) { const dc = EL[dock.s.el].col; b.strokeStyle = hexA(dc, 0.55 + 0.3 * pulse); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 19, 0, 6.283); b.stroke(); drawTower0(dock, true); }
+    else blit(UNITS.coreGun(el, a), X, Y);
     { const wt = typeof warTier === 'function' ? warTier() : 0; // War Economy: a turret per stack of banked credits
       for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 30, ty = Y + Math.sin(a2) * 30; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
     if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.25 + 0.5 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 28, 0, 6.283); b.stroke(); }
@@ -9497,6 +9735,8 @@ const RES = 2;
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
+    const wfA = G.fr && wormFlashAt ? Math.max(0, Math.min(1, (2.5 - (performance.now() - wormFlashAt) / 1000) / 0.8)) : 0; // shown for 2.5 s after a refused build, fading over the last 0.8 s
+    if (wfA > 0) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', (L.openWave ? 0.1 : 0.16) * wfA), 3, 0); strokeRing(X, Y, r, '#ff4d6a', (L.openWave ? 0.4 : 0.7) * wfA, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
     for (const t of G.snares || []) {
       if (!t.s) continue;
@@ -9568,7 +9808,18 @@ const RES = 2;
         b.lineTo(bx, by); b.stroke();
       }
     }
-    for (const t of G.towers) drawTower(t);
+    const dockT = G.fr ? frDockT() : null;
+    for (const t of G.towers) if (t !== dockT) drawTower(t);
+    // Frontier links: a glowing line from the landed core to each linked tower, with a pulse running out along it
+    if (G.fr && G.frLinks && G.frLinks.length && !G.frFly) {
+      const ax = G.core.x * TILE, ay = G.core.y * TILE;
+      for (const t of G.frLinks) {
+        const bx = t.cx * TILE, by = t.cy * TILE, col = EL[t.s.el].col, off = t.disabled > 0, f = ((rt * 0.8 + t.id * 0.29) % 1);
+        b.strokeStyle = hexA('#0d3a2c', off ? 0.3 : 0.6); b.lineWidth = 4; b.beginPath(); b.moveTo(ax, ay); b.lineTo(bx, by); b.stroke();
+        b.strokeStyle = hexA(PAL.core, off ? 0.3 : 0.75 + 0.2 * Math.sin(frame / 7 + t.id)); b.lineWidth = 1.5; b.beginPath(); b.moveTo(ax, ay); b.lineTo(bx, by); b.stroke();
+        if (!off) { const px = ax + (bx - ax) * f, py = ay + (by - ay) * f; D(b, px, py, 2, hexA(col, 0.9)); R(b, px - 0.5, py - 0.5, 1, 1, '#ffffff'); }
+      }
+    }
     // v5.8 Relay Pylon: every 1.2 s a pulse runs out to each tower it boosts (amber Amplifier, cyan Uplink). The boosted set is
     // re-read once per cycle with the same range test as recomputeAuras; a newly linked tower gets a soft chirp
     for (const t of G.towers) if (t.s && t.s.kind === 'support' && t.disabled <= 0) {
@@ -9800,6 +10051,60 @@ const RES = 2;
         c.setLineDash([]); c.lineCap = 'butt'; c.lineJoin = 'miter';
         const gx = (P.x + 0.5) * TILE, gy = (P.y + 0.5) * TILE;
         ringS(gx, gy, TILE * (0.62 + 0.08 * Math.sin(frame / 5)), PAL.core, 1, 2.5, 0.25);
+      }
+    }
+    // Frontier picker: landing spots (open ground faint, dockable towers framed in their colour), then the preview: new roads,
+    // the ghost core, the docked weapon's reach and the towers it would link. Moving a tower: open tiles and the new reach
+    if (frSel && G.fr) {
+      const tw = TILE * ws, pa = 0.09 + 0.05 * Math.sin(frame / 9), P = frSel.plan;
+      c.fillStyle = hexA(frSel.kind === 'move' ? PAL.amber : PAL.core, pa);
+      for (const i of frSel.cands) { if (G.towerAt[i]) continue; const x = bx2s((i % COLS) * TILE), y = by2s(((i / COLS) | 0) * TILE); c.fillRect(Math.round(x + tw * 0.22), Math.round(y + tw * 0.22), Math.round(tw * 0.56), Math.round(tw * 0.56)); }
+      if (frSel.kind === 'land') {
+        c.lineWidth = 2;
+        for (const i of frSel.cands) { const t = G.towerAt[i]; if (!t) continue; const x = bx2s(t.x * TILE), y = by2s(t.y * TILE), m = Math.max(1, tw * 0.06) + (frame % 40 < 20 ? 0 : 1);
+          c.strokeStyle = hexA(EL[t.s.el].col, 0.9); c.strokeRect(Math.round(x + m) + 0.5, Math.round(y + m) + 0.5, Math.round(tw - 2 * m), Math.round(tw - 2 * m)); }
+        if (P) {
+          c.lineCap = 'round'; c.lineJoin = 'round';
+          for (const route of P.routes) {
+            c.beginPath();
+            route.forEach((i, k) => { const x = bx2s(((i % COLS) + 0.5) * TILE), y = by2s((((i / COLS) | 0) + 0.5) * TILE); if (k) c.lineTo(x, y); else c.moveTo(x, y); });
+            c.strokeStyle = 'rgba(7,8,15,0.7)'; c.lineWidth = Math.max(3, tw * 0.3); c.setLineDash([]); c.stroke();
+            c.strokeStyle = hexA(PAL.amber, 0.95); c.lineWidth = Math.max(2, tw * 0.14); c.setLineDash([tw * 0.35, tw * 0.25]); c.lineDashOffset = -frame / 2; c.stroke();
+          }
+          c.setLineDash([]); c.lineCap = 'butt'; c.lineJoin = 'miter';
+          const gx = (P.x + 0.5) * TILE, gy = (P.y + 0.5) * TILE;
+          for (const t of P.links) { c.strokeStyle = hexA(PAL.core, 0.8); c.lineWidth = 2; c.setLineDash([4, 4]); c.lineDashOffset = -frame / 3; c.beginPath(); c.moveTo(bx2s(gx), by2s(gy)); c.lineTo(bx2s(t.cx * TILE), by2s(t.cy * TILE)); c.stroke(); c.setLineDash([]); ringS(t.cx * TILE, t.cy * TILE, TILE * 0.55, PAL.core, 0.9, 1.5, 0); }
+          if (P.dock) ringS(gx, gy, (P.dock.s.range + FRONTIER.dockRange) * TILE, EL[P.dock.s.el].col, 0.85, 1.5, 0.06);
+          ringS(gx, gy, FRONTIER.linkR * TILE, PAL.core, 0.35, 1, 0);
+          ringS(gx, gy, TILE * (0.62 + 0.08 * Math.sin(frame / 5)), PAL.core, 1, 2.5, 0.25);
+        }
+      } else if (frSel.t && frSel.dest) {
+        const t = frSel.t, gx = (frSel.dest.x + 0.5) * TILE, gy = (frSel.dest.y + 0.5) * TILE;
+        c.strokeStyle = hexA(PAL.amber, 0.85); c.lineWidth = 2; c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.beginPath(); c.moveTo(bx2s(t.cx * TILE), by2s(t.cy * TILE)); c.lineTo(bx2s(gx), by2s(gy)); c.stroke(); c.setLineDash([]);
+        if (t.s.range) ringS(gx, gy, t.s.range * TILE, EL[t.s.el].col, 0.85, 1.5, 0.07);
+      }
+    }
+    // Frontier edge arrows: bosses, and enemies close to the core, that are off screen (tap one to look)
+    frArrows.length = 0;
+    if (G.fr && !G.over) {
+      const pad = 16, th = [];
+      for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0))) continue; const near = e.L && e.L.len - e.d < 10; if (!e.boss && !near) continue; th.push(e); }
+      th.sort((p, q) => (q.boss ? 1 : 0) - (p.boss ? 1 : 0) || (p.L.len - p.d) - (q.L.len - q.d));
+      const homeOff = (() => { const x = bx2s(G.core.x * TILE) - ox, y = by2s(G.core.y * TILE) - oy; return x < 0 || y < 0 || x > DW || y > DH; })();
+      const list = th.slice(0, 6).map(e => ({ x: e.x, y: e.y, col: e.boss ? PAL.bad : PAL.amber, big: !!e.boss }));
+      if (homeOff) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
+      const cx0 = ox + DW / 2, cy0 = oy + DH / 2;
+      for (const A of list) {
+        const sx2 = bx2s(A.x * TILE), sy2 = by2s(A.y * TILE);
+        if (sx2 >= ox && sy2 >= oy && sx2 <= ox + DW && sy2 <= oy + DH) continue;
+        const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy)));
+        const px = cx0 + dx * k, py = cy0 + dy * k, an = Math.atan2(dy, dx), r = A.big ? 11 : 8, pl = 0.75 + 0.25 * Math.sin(frame / 6);
+        if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) continue;
+        c.save(); c.translate(px, py); c.rotate(an);
+        c.fillStyle = 'rgba(7,8,15,0.75)'; c.beginPath(); c.moveTo(r + 3, 0); c.lineTo(-r + 1, -r); c.lineTo(-r * 0.4, 0); c.lineTo(-r + 1, r); c.closePath(); c.fill();
+        c.fillStyle = hexA(A.col, pl); c.beginPath(); c.moveTo(r, 0); c.lineTo(-r + 3, -r + 2.5); c.lineTo(-r * 0.4 + 1, 0); c.lineTo(-r + 3, r - 2.5); c.closePath(); c.fill();
+        c.restore();
+        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home });
       }
     }
     // the old sector border fades out as the camera pulls back
@@ -10221,6 +10526,10 @@ const RES = 2;
       if (g === 'regen') { gx.globalAlpha = 0.3; gx.drawImage(tintOf(sp, '#59f0b4'), x - sw / 2, y - sh / 2, sw, sh); gx.globalAlpha = 1; }
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
+    flashWorm() { wormFlashAt = performance.now(); },
+    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, // Frontier picker and edge arrows
+    arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
+    lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
       if (cv.width < sp.width * 2) { const cs = getComputedStyle(cv); cv.style.width = cs.width; cv.style.height = cs.height; cv.width = cv.height = sp.width * 2; }
       const k = Math.max(1, Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height)));
@@ -10670,7 +10979,7 @@ const UI = (() => {
     $('#bLaunch2').hidden = !snap;
     $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
     const dk = dailyKey(), dd = PROF.daily && PROF.daily.date === dk ? PROF.daily : null;
-    $('#hPlaySub').textContent = snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : '';
+    $('#hPlaySub').textContent = snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `${snap.fr ? 'Frontier · ' : ''}Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : '';
     // v5.3 The Hunt: what is waiting for you, what you've won, and today's Daily Hunt, before you press Play
     const H = PROF.hunt || {}, N = PROF.nemesis, hh = $('#hHunt'), rows = [];
     if (N) rows.push(`<div class="hhr nem"><span class="lbl">Nemesis</span><b>${esc(N.name)}</b><small>${N.kind === 'boss' ? 'takes your next bounty' : 'leads your next Strain Assault'} · ended you on Wave ${N.lastW}</small></div>`);
@@ -10682,6 +10991,7 @@ const UI = (() => {
   // ---------- Setup ----------
   function openSetup() {
     const ls = PROF.lastSetup || { startWave: 1, chaos: 1 };
+    if (setup.mode === 'std' && ls.fr) setup.mode = 'fr'; // Frontier: the last run's mode comes back
     setup.chaos = ls.chaos ?? 1; if (!chaosUnlocked(setup.chaos)) setup.chaos = 1;
     const maxStart = Math.max(1, Math.floor((PROF.bestWave - 5) / 5) * 5);
     setup.startWave = Math.min(ls.startWave || 1, maxStart);
@@ -10690,8 +11000,9 @@ const UI = (() => {
     renderSetup();
   }
   function rerollMap() {
-    setRows(CHAOS_LEVELS[setup.chaos ?? 1].rows);
-    setCols(fitCols());
+    const fr = setup.mode === 'fr'; // Frontier: the bigger board (FRONTIER in data.js), the same for every screen
+    setRows(fr ? frRows(setup.chaos ?? 1) : CHAOS_LEVELS[setup.chaos ?? 1].rows);
+    setCols(fr ? frCols(ROWS) : fitCols());
     setup.seed = Math.floor(Math.random() * 1e9);
     setup.map = genMap(mulberry32(setup.seed));
   }
@@ -10709,6 +11020,7 @@ const UI = (() => {
         <div class="ch"><h2>New Run</h2>${modeChips()}<button class="x" data-act="close">✕</button></div>
         <div class="setup-grid">
           <div class="col">
+            ${setup.mode === 'fr' ? `<p class="note frpitch"><b>Frontier</b> · prototype. A bigger, slower map. Your core lifts off and lands anywhere: on a tower it docks and fires that tower's weapon, and it links the towers around it.</p>` : ''}
             <div class="lbl">Starting Wave</div>
             <div class="chips wrap">${starts.map(w => `<button class="chip ${w === sw ? 'on' : ''}" data-act="sw" data-v="${w}">${w}</button>`).join('')}</div>
             <p class="note">${starts.length === 1 ? 'Reach Wave 10 to unlock later starts.' : sw === 1 ? 'Later starts skip early waves and grant bonus credits.' : `${fmt(credits)} starting credits. Tougher enemies, bigger rewards.`}</p>
@@ -10753,7 +11065,7 @@ const UI = (() => {
   // the sector's poster boss, when it can show up by the first bounty (Wave 20)
   function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B) <= 20 ? `${M.name} ${B.name}` : ''; }
   function modeChips() {
-    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button></div>`;
+    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'fr' ? 'on' : ''}" data-act="mode" data-v="fr" style="--c:#59f0b4">Frontier</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button></div>`;
   }
   function renderDaily() {
     const spec = dailySpec(dailyKey());
@@ -10799,10 +11111,12 @@ const UI = (() => {
     else if (tut) { setRows(TUT.rows); setCols(fitCols()); newRun({ tut: TUT.v, cols: COLS, lesson: typeof tut === 'string' ? tut : undefined }); } // 5.8 Training and lessons
     else if (setup.mode === 'daily') { const sp = setup.daily; newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, cols: COLS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); }
     else {
-      PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
-      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks() });
+      const fr = setup.mode === 'fr';
+      PROF.lastSetup = Object.assign({ startWave: setup.startWave, chaos: setup.chaos }, fr ? { fr: 1 } : {});
+      newRun(Object.assign({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks() }, fr ? { frontier: 1, rows: ROWS } : {}));
     }
     Render.resetCam(); updateZoomBtn();
+    document.body.classList.toggle('fr', !!G.fr); { const lb = $('#bLift'); if (lb) { lb.hidden = !G.fr; lb.dataset.l = ''; } } // Frontier
     if (!PROF.zoomHint && !G.tut) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave; G.fresh = freshProfile() || !!G.tut;
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
@@ -10844,6 +11158,7 @@ const UI = (() => {
   function onboardingTick() {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
+    if (G.fr && G.time > 1 && introCard('frontier', 'Frontier', 'Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. The towers around the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slower here, but tougher. No building close to a wormhole.')) return;
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
@@ -11550,6 +11865,8 @@ const UI = (() => {
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     { const rdy = vetsReady().length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} ready</span>`);
+      { const lb = $('#bLift'); if (lb) { const on = !!(G.fr && !G.over && !G.watch), lbl = on ? (G.frFly ? 'Flying' : frCanFly() ? 'Lift Off' : `Lift · W${G.frReady}`) : ''; // Frontier
+        if (lb.hidden === on) lb.hidden = !on; if (on && lb.dataset.l !== lbl) { lb.dataset.l = lbl; lb.firstChild.textContent = lbl; lb.classList.toggle('fly', !!G.frFly); lb.classList.toggle('cool', !G.frFly && !frCanFly()); lb.classList.add('go'); } } }
       const rb = $('#bReady'); if (rb) { const was = +rb.dataset.n || 0; if (rdy !== was) { rb.dataset.n = rdy; $('#rdyN').textContent = rdy; rb.hidden = !rdy; if (rdy > was) { rb.classList.remove('pulse'); void rb.offsetWidth; rb.classList.add('pulse'); } } } } // 5.8 Ready button
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap${performance.now() < stormPulse ? ' pulse' : ''}" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
@@ -11825,6 +12142,7 @@ const UI = (() => {
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
+    frEnd();
     document.body.classList.remove('panel-l', 'panel-r');
   }
   function openPanel(p) {
@@ -11851,6 +12169,8 @@ const UI = (() => {
     else if (panel.kind === 'core') el.innerHTML = corePanelHTML();
     else if (panel.kind === 'cash') el.innerHTML = cashPanelHTML();
     else if (panel.kind === 'reloc') el.innerHTML = relocPanelHTML();
+    else if (panel.kind === 'frland') el.innerHTML = frLandPanelHTML();
+    else if (panel.kind === 'frmove') el.innerHTML = frMovePanelHTML();
     else if (panel.kind === 'enemy') el.innerHTML = enemyPanelHTML(panel.e);
     el.classList.remove('framed');
     const nb = frameBox(el, 'ph', 'pfoot', 'pbody');
@@ -12010,7 +12330,7 @@ const UI = (() => {
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${t.lvl === 3 ? `<button class="btn wide lvup" disabled>Choose a Specialization<small>${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'}</small></button>` : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}${G.fr ? (t === frDockT() ? '<button class="btn frmove" disabled>Move<small>Docked</small></button>' : `<button class="btn frmove" data-act="frmove" ${t.mvT > 0 ? 'disabled' : costBtn(frMoveFee(t))}>Move · ${fmt(frMoveFee(t))}${t.mvT > 0 ? '<small>Moving</small>' : ''}</button>`) : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
@@ -12070,8 +12390,8 @@ const UI = (() => {
       <div class="row2"><button class="btn" data-act="reactor" ${costBtn(reactorCost())}>Reactor +1 · ${fmt(reactorCost())}</button>${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
     if ((panel.tab || 'act') === 'act') return `${head}
       <div class="sg mini"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>${tipify('Power')}<b>${gridUsed()}/${gridCap()}</b></span></div>
-      <div class="lbl">Weapon Element</div>
-      <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
+      ${G.fr ? frCoreHTML() : `<div class="lbl">Weapon Element</div>
+      <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>`}
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       ${foot}`;
     return `${head}
@@ -12085,8 +12405,68 @@ const UI = (() => {
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
       ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="sts">${tipify(`Power grid ${gridUsed()}/${gridCap()}${G.reactorN ? ` · ${G.reactorN} reactor expansion${G.reactorN > 1 ? 's' : ''}` : ''}. Each expansion adds +1 power for the rest of the run and costs more than the last`)}</div>
-      ${canRelocate() ? '' : relocHTML()}
+      ${canRelocate() || G.fr ? '' : relocHTML()}
       ${foot}`;
+  }
+  // ---------- Frontier: the core panel's flight block, the landing picker and preview, and moving a tower ----------
+  // The picker state lives here (frSel), not in G; Render draws it. The game pauses while you choose and resumes after.
+  let frSel = null;
+  function frLiftLabel() { return G.frFly ? 'In flight' : frCanFly() ? 'Lift Off' : `Lift Off · Wave ${G.frReady}`; }
+  function frCoreHTML() {
+    const d = frDockT(), n = (G.frLinks || []).length;
+    const gun = G.frFly ? `<div class="sts">${tipify('In the air: the gun is offline and the shield is down until it lands')}</div>`
+      : d ? `<div class="sts frdock" style="--c:${EL[d.s.el].col}">Docked: <b>${esc(TOWERS[d.type].name)}</b> LV ${towerLevel(d)} · ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range</div>`
+      : `<div class="sts">${tipify('Plain cannon. Land on an attack tower to dock it: the core fires its weapon')}</div>`;
+    return `<div class="lbl">Flight</div>${gun}
+      <div class="sts ${n ? 'good' : 'dim'}">${G.frFly ? 'Links break while flying' : `Links ${n}/${frLinkN()} · linked towers +${pct(FRONTIER.linkDmg)} Damage and Rate · core +${pct(FRONTIER.linkCore * n)}`}</div>
+      <div class="row2"><button class="btn frlift" data-act="frlift" ${frCanFly() ? '' : 'disabled'}>${G.frFly ? 'In flight' : 'Lift Off'}<small>${frCanFly() ? 'Land anywhere · on a tower to dock' : G.frFly ? 'Landing' : `Ready on Wave ${G.frReady}`}</small></button>${d ? '<button class="btn" data-act="frtower">Docked tower<small>Upgrade, Fire, Aim</small></button>' : ''}</div>`;
+  }
+  function frPause(on) { if (!G) return; if (on) { if (frSel && frSel.paused === undefined) { frSel.paused = G.paused; G.paused = true; } } else if (frSel && frSel.paused === false && !modalOpen) G.paused = false; }
+  function startLift() {
+    if (!G || !G.fr || G.over) return;
+    if (!frCanFly()) { SFX.play('deny'); toast('LIFT OFF', G.frFly ? 'Already in the air' : `Recharging: ready on Wave ${G.frReady}`, '#59f0b4', true, 'tip'); return; }
+    frEnd(); closePanel();
+    frSel = { kind: 'land', cands: new Set(frCands()), plan: null }; Render.frSel = frSel; frPause(true);
+    openPanel({ kind: 'frland', x: G.map.core.x, y: G.map.core.y });
+    updateHud(true);
+  }
+  function startMove(t) {
+    if (!G || !G.fr || !t) return;
+    if (t === frDockT()) { SFX.play('deny'); toast('MOVE', 'The core sits on this tower. Lift off first', '#ffb03a', true, 'tip'); return; }
+    if (t.mvT > 0) { SFX.play('deny'); return; }
+    const R = G.region, c = new Set(); for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) c.add(tIdx(x, y));
+    frEnd(); closePanel();
+    frSel = { kind: 'move', cands: c, t, dest: null }; Render.frSel = frSel; frPause(true);
+    Render.sel = { x: t.x, y: t.y };
+    openPanel({ kind: 'frmove', x: t.x, y: t.y });
+  }
+  function frEnd() { if (!frSel) return; frPause(false); frSel = null; Render.frSel = null; }
+  function frLandPanelHTML() {
+    const P = frSel && frSel.plan;
+    const head = `<div class="ph"><div class="pt"><b>Lift Off</b><small>Paused while you choose</small></div><button class="x" data-act="frcancel" aria-label="Cancel">✕</button></div>`;
+    if (!P) return head + `<p class="note">Tap a highlighted tile to land there. A framed tower docks: the core fires its weapon at ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range.</p>
+      <p class="note">Every road swings to the landing spot, and enemies already walking turn toward it. In the air the gun is offline and the shield is down. Flight: about 1 s per ${FRONTIER.flySpd} tiles.</p>
+      <div class="pfoot"><button class="btn" data-act="frcancel">Cancel</button></div>`;
+    const tot = a => a.reduce((x, y) => x + y, 0), dd = tot(P.after) - tot(P.before);
+    const rows = P.before.map((b, i) => { const a = P.after[i], d = a - b, L = G.map.lanes[i]; return `<span>${i === 0 ? 'Main road' : L.openWave ? 'Forming' : 'Lane ' + (i + 1)}<b class="${d > 0 ? 'good' : d < 0 ? 'bad' : ''}">${b} → ${a}</b></span>`; }).join('');
+    const D = P.dock, ds = D && D.s;
+    const gun = D ? `<div class="sts frdock" style="--c:${EL[ds.el].col}">Docks <b>${esc(TOWERS[D.type].name)}</b> LV ${towerLevel(D)}: Damage ${fmt(ds.dmg)} → ${fmt(ds.dmg * frDockX() * (1 + FRONTIER.linkCore * P.links.length))} · Range ${num1(ds.range)} → ${num1(ds.range + FRONTIER.dockRange)}</div>`
+      : `<div class="sts">${tipify(`Plain cannon · ${EL[G.core.el].name}`)}</div>`;
+    const links = P.links.length ? `Links ${P.links.length}: ${P.links.map(t => esc(TSHORT[t.type] || TOWERS[t.type].name)).join(', ')}` : `No towers within ${FRONTIER.linkR} tiles to link`;
+    return head + `<div class="lbl">Road length (tiles)</div><div class="sg">${rows}</div>
+      <div class="sts ${dd > 0 ? 'good' : dd < 0 ? 'bad' : ''}">${dd === 0 ? 'Same total road length' : `${dd > 0 ? '+' : '−'}${Math.abs(dd)} tiles of road in total`}${dd > 0 ? ': enemies walk further' : dd < 0 ? ': enemies arrive sooner' : ''}</div>
+      ${gun}
+      <div class="sts ${P.links.length ? 'good' : 'dim'}">${links}</div>
+      ${isNode(P.x, P.y) ? `<div class="sts node">${tipify('Power Node: the core will be overcharged, +50% Damage, +20% Rate')}</div>` : ''}
+      <div class="sts">${P.secs > 0 ? `Flight ${num1(P.secs)} s · ` : ''}next lift-off ${frCd()} waves after landing</div>
+      <div class="pfoot"><button class="btn primary wide" data-act="frgo">${D ? 'Land and dock' : 'Land here'}</button><button class="btn" data-act="frcancel">Cancel</button></div>`;
+  }
+  function frMovePanelHTML() {
+    const t = frSel && frSel.t; if (!t) return '';
+    const fee = frMoveFee(t), d = frSel.dest;
+    return `<div class="ph"><div class="pt"><b>Move ${esc(TOWERS[t.type].name)}</b><small>Paused while you choose</small></div><button class="x" data-act="frcancel" aria-label="Cancel">✕</button></div>
+      <p class="note">${d ? 'Tap another tile to compare, or confirm.' : 'Tap an open tile inside the sector.'} It flies over and is offline for ${FRONTIER.moveT} s. Fee ${fmt(fee)} (${pct(FRONTIER.moveFee)} of what it cost).</p>
+      <div class="pfoot"><button class="btn primary wide" data-act="frmovego" ${d ? costBtn(fee) : 'disabled'}>Move here · ${fmt(fee)}</button><button class="btn" data-act="frcancel">Cancel</button></div>`;
   }
   const relocPrice = () => relocCost() ? `${fmt(RELOCATE_COST)}` : 'Free';
   function relocHTML() {
@@ -12134,7 +12514,7 @@ const UI = (() => {
     }
     if (panel.kind === 'tower') {
       const t = panel.t;
-      const sig = t.pending + ':' + t.rank + ':' + t.reson + ':' + t.affixes.length + ':' + t.lvl + ':' + (t.ascPend || 0) + ':' + (t.perks ? t.perks.length : 0);
+      const sig = t.pending + ':' + t.rank + ':' + t.reson + ':' + t.affixes.length + ':' + t.lvl + ':' + (t.ascPend || 0) + ':' + (t.perks ? t.perks.length : 0) + (G.fr ? ':' + (t.mvT > 0 ? 1 : 0) + (t === frDockT() ? 'd' : '') : '');
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const d = el.querySelector('[data-live="dps"]'); if (d) d.textContent = fmt(t.dps);
@@ -12148,7 +12528,7 @@ const UI = (() => {
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; } panel.sig = sig; return; }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; renderPanel(); } return; }
     if (panel.kind === 'core') {
-      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0);
+      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0) + (G.fr ? ':' + frLiftLabel() + (frDockT() ? 'd' : '') + (G.frLinks || []).length : '');
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const a = el.querySelector('[data-live="chp"]'); if (a) a.textContent = `${Math.ceil(c.hp)}/${Math.round(c.max)}`;
@@ -12190,6 +12570,7 @@ const UI = (() => {
       else if (act === 'reroll') { if (!window.act('reroll', t.x, t.y, 0)) SFX.play('deny'); renderPanel(); }
       else if (act === 'rerollTok') { if (!window.act('reroll', t.x, t.y, 1)) SFX.play('deny'); renderPanel(); }
       else if (act === 'sell') { window.act('sell', t.x, t.y); closePanel(); }
+      else if (act === 'frmove') startMove(t);
       else if (act === 'oc') { if (!window.act('oc', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
       else if (act === 'vet') { if (!window.act('vet', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       return;
@@ -12224,7 +12605,25 @@ const UI = (() => {
         else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
       }
       else if (act === 'reloc') startReloc();
+      else if (act === 'frlift') startLift();
+      else if (act === 'frtower') { const d = frDockT(); if (d) openTower(d); }
       else if (act === 'reactor') { if (!window.act('reactor')) SFX.play('deny'); else toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud(); }
+      return;
+    }
+    if (panel.kind === 'frland' || panel.kind === 'frmove') {
+      if (act === 'frcancel') { closePanel(); return; }
+      if (act === 'frgo' && frSel && frSel.plan) {
+        const P = frSel.plan, wasPaused = frSel.paused;
+        if (!window.act('frFly', P.x, P.y)) { SFX.play('deny'); toast('NO ROUTE', 'That spot is no longer open. Pick another', '#ff4d6a', true, 'tip'); frSel.cands = new Set(frCands()); frSel.plan = null; renderPanel(); return; }
+        closePanel(); if (!wasPaused && !modalOpen) G.paused = false;
+        toast('LIFT OFF', P.secs > 0 ? `Landing in ${num1(P.secs)} s${P.dock ? ` on ${TOWERS[P.dock.type].name}` : ''}. The roads already lead there` : 'Landed', '#59f0b4', true, 'tip');
+        updateHud(true); Save.save();
+      }
+      if (act === 'frmovego' && frSel && frSel.t && frSel.dest) {
+        const t = frSel.t, d = frSel.dest;
+        if (!window.act('frMove', t.x, t.y, d.x, d.y)) { SFX.play('deny'); return; }
+        closePanel(); openTower(t); updateHud();
+      }
       return;
     }
     if (panel.kind === 'reloc') {
@@ -12359,6 +12758,7 @@ const UI = (() => {
       updateZoomBtn(); SFX.play('ui'); return;
     }
     lastTap = { t: now, x: sx, y: sy };
+    if (G.fr) { const A = Render.arrowAt(sx, sy); if (A) { lastTap = null; if (A.home) Render.resetCam(); else Render.lookAt(A.x, A.y); updateZoomBtn(); SFX.play('ui'); return; } } // Frontier edge arrows
     tapTile(Render.screenToTile(sx, sy));
   }
   let lastTap = null;
@@ -12376,6 +12776,13 @@ const UI = (() => {
       if (window.act('beacon', tx, ty)) { SFX.play('ui'); toast('POWER NODE PLANTED', 'Towers built here draw no power and hit harder', '#6ae2ff'); updateHud(); }
       else { SFX.play('deny'); toast('NODE BEACON', 'Needs an empty ground tile inside the sector. Tap the core to cancel', '#ff4d6a', true); }
       return;
+    }
+    if (frSel) { // Frontier picker: a landing spot (preview) or a tower's new tile
+      const i = tIdx(tx, ty);
+      if (!frSel.cands.has(i)) { SFX.play('deny'); if (frSel.kind === 'move' && frNearWorm(tx, ty)) { Render.flashWorm(); toast('TOO CLOSE', `No towers within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); } return; }
+      if (frSel.kind === 'land') { const P = frPlan(tx, ty); if (!P) { const Q = planRelocation(tx, ty, true); SFX.play('deny'); toast('NO ROUTE', Q ? `Too close: a road from a wormhole would be under ${FRONTIER.minRoad} tiles` : 'A road cannot reach that tile', '#ff4d6a', true, 'tip'); return; } frSel.plan = P; }
+      else frSel.dest = { x: tx, y: ty };
+      SFX.play('ui'); Render.sel = { x: tx, y: ty }; renderPanel(); return;
     }
     if (G.reloc) {
       if (!G.reloc.cands.has(tIdx(tx, ty))) { SFX.play('deny'); return; }
@@ -12399,6 +12806,7 @@ const UI = (() => {
     if (isCore) return openCore();
     if (t) return openTower(t);
     if (canBuildAt(tx, ty)) return openBuild(tx, ty);
+    if (G.fr && frNearWorm(tx, ty) && G.map.tiles[tIdx(tx, ty)] === 0 && !G.towerAt[tIdx(tx, ty)]) { SFX.play('deny'); Render.flashWorm(); toast('TOO CLOSE', `No building within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); }
     closePanel();
   }
   function canvasWheel(e) {
@@ -12415,7 +12823,7 @@ const UI = (() => {
     if (G.aimAbility) { G.aimAbility = null; Render.aim = null; updateHud(); SFX.play('ui'); return; }
     if (panel) { closePanel(); SFX.play('ui'); }
   }
-  function updateZoomBtn() { const b = $('#bZoom'); if (b) { const close = Render.homeZoom > 1.05; b.hidden = Render.home && !close; b.innerHTML = svgIcon('fit', 16) + (Render.home ? 'Map' : 'Fit · ' + (Render.zoom / Render.homeZoom).toFixed(1) + '×'); } }
+  function updateZoomBtn() { const b = $('#bZoom'); if (b) { const close = Render.homeZoom > 1.05; b.hidden = Render.home && !close; b.innerHTML = svgIcon('fit', 16) + (Render.home ? 'Map' : G && G.fr ? 'Home' : 'Fit · ' + (Render.zoom / Render.homeZoom).toFixed(1) + '×'); } } // Frontier: Home recentres on the core
   function fitCols() {
     // measure the playfield the game screen will have: app minus safe areas, the two thumb rails and the status bar
     let pr = document.getElementById('fitProbe');
@@ -13516,7 +13924,7 @@ const UI = (() => {
           break;
         }
         launch(); break; }
-      case 'mode': setup.mode = b.dataset.v; if (setup.mode === 'std') rerollMap(); renderSetup(); break;
+      case 'mode': setup.mode = b.dataset.v; if (setup.mode !== 'daily') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
       case 'help': if (modalOpen === 'pause') modalFrom = 'pause'; openHelp(); break;
       case 'htab': openHelp(b.dataset.v); break;
@@ -13653,6 +14061,7 @@ const UI = (() => {
     $('#bLaunch2').onclick = () => { SFX.init(); SFX.play('ui'); openSetup(); };
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
     $('#bReady').onclick = () => { SFX.play('ui'); if (!G || G.over) return; vetFlow.ix = 0; openVets(); };
+    $('#bLift').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.fr) return; startLift(); }; // Frontier
     $('#bTutH').onclick = () => { SFX.init(); SFX.play('ui'); openTutPick(); }; // 5.8: always on the main menu
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
@@ -13712,6 +14121,9 @@ const UI = (() => {
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
     Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) openAssault(true); }, 700); };
+    Hooks.frLanded = d => { if (!G || G.replaying) return; const n = (G.frLinks || []).length; // Frontier
+      toast(d ? 'DOCKED' : 'LANDED', `${d ? `The core fires the ${TOWERS[d.type].name}: ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range` : 'Plain cannon'} · ${n} link${n === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, d ? EL[d.s.el].col : '#59f0b4');
+      if (panel && (panel.kind === 'core' || panel.kind === 'tower')) renderPanel(); updateHud(true); };
     Hooks.gridFull = () => { const T = topTower(); toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Build on a Power Node (free), sell an idle tower, or expand the reactor${T ? `. Or Overcharge your best: ${TOWERS[T.type].name}` : ''}`, '#ffb03a'); };
     Hooks.log = log;
     Hooks.toast = toast;
