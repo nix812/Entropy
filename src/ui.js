@@ -716,7 +716,7 @@ const UI = (() => {
         { id: 'open', hold: 1, at: () => flowAt('pulse', 'a'), t: 'Need more?', b: 'Tap the marked tile.', done: () => panel && panel.kind === 'build' },
         { id: 'reactor', hold: 1, at: sel('#panel [data-act=reactor]'), t: 'Expand the reactor', b: () => `With the grid full, the build menu sells +1 power: ${fmt(reactorCost())} credits. Tap it.`, done: () => (G.reactorN || 0) >= 1, back: () => !(panel && panel.kind === 'build') && 'open', leave: () => closePanel() },
         { id: 'core', hold: 1, at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Core upgrades', b: 'Tap the core.', done: () => panel && panel.kind === 'core' },
-        info('corep', sel('#panel'), 'The core panel', 'Weapon: the core’s own gun. Shield: soaks leaks. Hull: more health. Uplink: faster ability cooldowns.', { skip: () => !(panel && panel.kind === 'core'), okFn: () => closePanel() }),
+        info('corep', sel('#panel'), 'The core panel', () => G.fr ? 'Battery: the core’s own gun, and a docked tower’s. Shield: soaks leaks. Hull: more health. Uplink: faster cooldowns, more links. Lift Off: fly it.' : 'Weapon: the core’s own gun. Shield: soaks leaks. Hull: more health. Uplink: faster ability cooldowns.', { skip: () => !(panel && panel.kind === 'core'), okFn: () => closePanel() }),
         call('c1', 1),
         end(),
       ],
