@@ -25,9 +25,12 @@ function profile(seed) {
       const open = tr.rows.flat().filter(t => !S.talentBlock(t.id));
       const caps = process.env.NOCAP ? [] : tr.caps.filter(c => !S.talentBlock(c.id));
       if (caps.length) { const c = want && caps.find(c => c.id === want) || (want ? null : caps[Math.floor(rnd() * caps.length)]); if (c) { S.talentAdd(c.id); continue; } }
+      // 6.4 capstone tier: take the tree's new tower as soon as it opens (NOTOP=1 never does), and keep filling toward it
+      const top = !process.env.NOTOP && tr.top;
+      if (top && !S.talentBlock(top.id)) { S.talentAdd(top.id); continue; }
       if (!open.length) break;
       // stop a tree once its capstone is taken and only leftovers remain, 60% of the time (humans spread out)
-      if (S.capsHeld().some(c => S.TAL[c].tree === tid) && rnd() < 0.6) break;
+      if (S.capsHeld().some(c => S.TAL[c].tree === tid) && !(top && !S.PROF.tal[top.id]) && rnd() < 0.6) break;
       S.talentAdd(open[Math.floor(rnd() * open.length)].id);
     }
   }
@@ -69,6 +72,7 @@ function bestSpot(G, type, near) {
     if (!S.canBuildAt(x, y)) continue;
     let sc;
     if (D.kind === 'eco') sc = 100 - Math.abs(x - 5) - Math.abs(y - 1);
+    else if (D.kind === 'aegis') { const d = Math.hypot(x + 0.5 - G.core.x, y + 0.5 - G.core.y); sc = d <= D.range ? 100 - d + coverage(G, x, y, D.range) * 0.1 : -1; } // 6.4: beside the core
     else if (D.kind === 'support' || D.kind === 'snare') { sc = 0; for (const t of G.towers) if ((t.cx - x - 0.5) ** 2 + (t.cy - y - 0.5) ** 2 <= 4) sc += t.lvl; }
     else sc = coverage(G, x, y, Math.min(D.range, 3.5));
     if (D.kind !== 'eco' && D.kind !== 'support' && D.kind !== 'snare') {
@@ -101,6 +105,10 @@ function wantExtract(G, met) {
 }
 // v5.8 Ascension perks: a rough value per perk (damage that scales late scores high), plus noise so runs differ. NOPERK=1 takes card 0
 const PERK_PRI = { burst: 3, apRounds: 3, bounce: 2, hollow: 2, rapid: 2.5, sights: 1.5, spin: 3, barrel: 3,
+  // 6.4 capstone tier towers
+  teeth: 2.5, run: 2, boomer: 3, serr: 1.5, wideS: 2, spin2: 2.5, grind: 2, third: 3, fuse: 2.5, volat: 3, blastR: 2, haze: 1.5, smoulder: 2.5, bellows: 2.5, storm: 2, cruc: 3,
+  cellsP: 2, quickC: 2, reserve: 2.5, thick: 3, regrow: 2.5, bite: 2, shardW: 2, reachW: 1.5, pack: 3, barbs: 2, linkP: 3, shareP: 3, longT: 2, nullW: 1.5, reachT: 1.5, bond: 2,
+  web: 3, fate: 3, guard: 3, pd: 2, watch: 2, salv: 1.5, patch: 2, qsight: 2, last: 3, flak: 2, luck: 2, edge: 2.5, hot: 2.5, dbl: 2.5, odds: 1.5, deal: 2.5, marked: 3, allin: 2.5,
   pierce: 2.5, overpress: 2.5, spotter: 1.5, deflect: 2, capBank: 3, coup: 2, bigGame: 2.5, barrelR: 1.5, slug: 2.5, liveWire: 1.5,
   iceBurst: 2, brittle: 3, deep: 2, flash: 2.5, ring: 2, comp: 2, perma: 2, fault: 2.5,
   tube: 3, seek: 1.5, warhead: 2, shrap: 2, thermite: 2, autoload: 2.5, pods: 3, gel: 2,
@@ -127,7 +135,9 @@ for (let run = OFF; run < OFF + runs; run++) {
   let q = []; const setImmediateQ = f => q.push(f);
   S.Hooks.sfx = () => {};
   const FR = !!process.env.FR; // Frontier prototype (its own board size); the bot docks on its best tower and moves idle ones
-  const G = S.newRun(Object.assign({ seed: 1000 + run * 17, chaos, startWave: sw, sector: pickSector(S.sectorOffers(1000 + run * 17)) }, FR ? { frontier: 1 } : { cols: +(process.env.COLS || 39) }));
+  const CAPT = process.env.CAPT ? process.env.CAPT.split(',') : S.capTowersOwned ? S.capTowersOwned() : []; // 6.4: the capstone tier towers learned (CAPT=a,b forces them; Frontier runs only)
+  const G = S.newRun(Object.assign({ seed: 1000 + run * 17, chaos, startWave: sw, sector: pickSector(S.sectorOffers(1000 + run * 17)), capT: CAPT }, FR ? { frontier: 1 } : { cols: +(process.env.COLS || 39) }));
+  met.capT = G.capT ? G.capT.slice() : [];
   met.fr = { flights: 0, docks: 0, moves: 0, dockT: {}, airT: 0 };
   met.recentMin = 1; met.mins = []; met.doors = []; met.startSec = G.sector;
   let t = 0, act = 0, pi = 0, lastWave = G.wave;
@@ -202,9 +212,11 @@ for (let run = OFF; run < OFF + runs; run++) {
     // spend
     let guard = 0;
     while (guard++ < 20) {
-      const want = PLAN.filter(k => S.TOWERS[k].unlock <= Math.max(1, S.PROF.bestWave));
+      // 6.4: a learned capstone tier tower joins the rotation after every third plan entry (two Aegis Stations at most)
+      const want = PLAN.filter(k => S.TOWERS[k].unlock <= Math.max(1, S.PROF.bestWave)).flatMap((k, i) => i % 3 === 2 && met.capT.length ? [k, met.capT[(i / 3 | 0) % met.capT.length]] : [k]);
       let type = want[pi % want.length];
       if (type === 'forge' && G.wave > 35) { pi++; continue; }
+      if (type === 'aegis' && G.towers.filter(tw => tw.type === 'aegis').length >= 2) { pi++; continue; }
       // v3.0: answer the swarm's dominant traits (set NOADAPT=1 for a bot that ignores them)
       if (!process.env.NOADAPT && G.prep && G.prep.genes) {
         const CT = { wings: ['pulse', 'rail', 'missile'], plating: ['rail', 'lens'], bulk: ['lens', 'rail'], shell: ['coil', 'emp'], brood: ['missile', 'flame', 'coil'], regen: ['flame', 'missile'], haste: ['cryo', 'grav', 'snare'], cloak: ['pylon'] };
@@ -287,7 +299,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     eff: (() => { const inv = {}; for (const tw of G.towers) inv[tw.type] = (inv[tw.type] || 0) + tw.invested; const avg = dmgAll / Object.values(inv).reduce((a, b) => a + b, 0); return Object.keys(byType).filter(k => byType[k] > 0).map(k => k.slice(0, 4) + (byType[k] / inv[k] / avg).toFixed(1)).join(' '); })(),
     top: Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ':' + Math.round(v / dmgAll * 100)).join(' '),
     el: Object.entries(G.stats.dmgByEl).map(([k, v]) => k + Math.round(v / tot * 100)).join(' '),
-    sec: (met.startSec || '-').slice(0, 5) + (met.doors.length ? '>' + met.doors.join('>') : ''), ext: met.extracted || 0, tw: Object.keys(G.twists || {}).map(k => k.slice(0, 3)).join('+') || '-',
+    capT: (met.capT || []).join('+') || '-', sec: (met.startSec || '-').slice(0, 5) + (met.doors.length ? '>' + met.doors.join('>') : ''), ext: met.extracted || 0, tw: Object.keys(G.twists || {}).map(k => k.slice(0, 3)).join('+') || '-',
     xp57: Math.round((G.xpRaw || G.xpEarned) * (met.extracted ? 1.5 : 1)), paid: Math.round(G.xpEarned),
     share: Object.entries(byType).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0).map(([k, v]) => k.slice(0, 4) + ':' + Math.round(v / dmgAll * 100)).join(' ') });
   if (FR) { const D = met.fr.dockT, T = Object.values(D).reduce((a, b) => a + b, 0) + met.fr.airT || 1;
