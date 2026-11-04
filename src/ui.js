@@ -809,7 +809,7 @@ const UI = (() => {
       ],
       wormholes: [
         intro('in', 'Wormholes', 'Every so often a new road opens and the map grows.'),
-        info('hole', () => { const L = G.map.lanes[1]; return L ? worldR(L.pts[0].x, L.pts[0].y, 1) : null; }, 'A wormhole', 'A new road opens here at Wave 2. The map just grew to make room.'),
+        info('hole', () => { const L = G.map.lanes[1]; return L ? worldR(L.pts[0].x, L.pts[0].y, 1) : null; }, 'A wormhole', () => `A new road opens here at Wave 2. The map just grew to make room.${G.fr ? ` Nothing can be built within ${FRONTIER.wormBuild} tiles of it.` : ''}`),
         call('c1', 1),
         info('cp', sel('#cpBanner'), 'Checkpoint', 'The wave before a wormhole lands is a checkpoint: selling refunds 100%, talents respec free.', { when: () => !!G.checkpoint }),
         build('cover', 'pulse', 'n', 'Cover the new road', 'Tap the marked tile.', { when: () => !!G.checkpoint, at: () => flowAt('pulse', 'n', G.map.lanes[1]), done: () => G.towers.length >= 3 }),
@@ -919,9 +919,10 @@ const UI = (() => {
       const pn = !full && panel ? appR($('#panel')) : null, m = 6;
       // with a side panel open, the card lives in the free part of the stage and narrows to fit it (667 wide: the spec buttons stay clear)
       const fr = pn ? (pn.x > st.x + st.w / 2 ? { x: st.x, w: pn.x - st.x } : { x: pn.x + pn.w, w: st.x + st.w - pn.x - pn.w }) : null;
-      card.style.width = fr ? Math.max(180, Math.min(290, fr.w - 2 * m)) + 'px' : '';
+      const mf = 11; // beside a panel: clear of the ring (5 px) the coach draws around it when the panel is the target
+      card.style.width = fr ? Math.max(180, Math.min(290, fr.w - 2 * mf)) + 'px' : '';
       const cw = card.offsetWidth, ch = card.offsetHeight;
-      const xs = [st.x + m, st.x + (st.w - cw) / 2, st.x + st.w - cw - m]; if (fr) xs.push(fr.x + m, fr.x + fr.w - cw - m);
+      const xs = [st.x + m, st.x + (st.w - cw) / 2, st.x + st.w - cw - m]; if (fr) xs.push(fr.x + mf, fr.x + fr.w - cw - mf);
       const ys = [st.y + m, st.y + (st.h - ch) / 2, st.y + st.h - ch - m];
       const avoid = []; if (r) avoid.push(grow(r, 26));
       if (pn) avoid.push(pn);
