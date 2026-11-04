@@ -630,6 +630,14 @@ body.rdy #tutlist { bottom: 6px; }
 .bt.locked { opacity: 0.6; }
 .bt.locked b { color: var(--dim); font-size: 12px; } .bt.locked .bn em { color: var(--dim); }
 .bt i { position: absolute; left: 0; right: 0; top: 0; height: 2px; }
+/* 6.4: unlocked capstone tier towers get a gold corner; locked ones sit greyed in one strip under the grid */
+.bt.capt::before { content: ''; position: absolute; left: 0; top: 0; border-top: 6px solid var(--warn); border-right: 6px solid transparent; pointer-events: none; z-index: 1; }
+.capstrip { display: flex; align-items: center; gap: 3px; margin-top: 3px; }
+.capstrip .lbl { flex: 0 0 auto; font-size: 13px; color: var(--dim); margin-right: 2px; white-space: nowrap; }
+.capstrip .cst { flex: 1 1 0; min-width: 0; height: 26px; padding: 0; border: 0; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); display: flex; align-items: center; justify-content: center; }
+.capstrip .cst canvas { width: 22px; height: 22px; image-rendering: pixelated; filter: grayscale(1) brightness(0.6); }
+.capstrip .cst.on { box-shadow: inset 0 0 0 2px var(--amber); } .capstrip .cst.on canvas { filter: grayscale(0.4) brightness(0.9); }
+.binfo p.bst.lockline { color: var(--warn); }
 .binfo { display: flex; flex-direction: column; gap: 2px; min-height: 0; }
 .binfo b { font-family: var(--f-pix); font-size: 11px; text-transform: uppercase; }
 .binfo p { margin: 0; font-size: 16px; line-height: 1.05; }
@@ -775,6 +783,11 @@ body.rdy #tutlist { bottom: 6px; }
 .boons.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .boon.anomaly { box-shadow: inset 0 0 0 2px var(--void); }
 .boon.anomaly b { color: #d6a6ff; }
+.boon.anomaly[style] { box-shadow: inset 0 0 0 2px var(--ac); }
+.boon.anomaly[style] b { color: var(--ac); }
+.boon.ar-exotic { box-shadow: inset 0 0 0 2px var(--ac), inset 0 0 0 5px rgba(255, 176, 58, 0.18); }
+.arar { font-style: normal; font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--ac, var(--dim)); margin-bottom: -4px; }
+.anlist .arar { margin-left: 6px; color: var(--dim); }
 .boon span { font-size: 16px; }
 .boon .cost { font-style: normal; margin: 4px 0 -4px; padding-top: 6px; border-top: 1px solid var(--line); color: #a8607a; }
 .boon.stab { box-shadow: inset 0 0 0 2px var(--line2); }
@@ -797,6 +810,8 @@ h2.void { color: #d6a6ff; }
 .codex span { font-size: 15px; padding: 1px 6px; box-shadow: inset 0 0 0 1px var(--line); color: var(--dim); }
 .codex span.on { color: var(--ink); box-shadow: inset 0 0 0 1px var(--amber); }
 @media (max-width: 700px) { .boons.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 6.4: short phones (667x375) fit a 2-boon Exotic card in the 2x2 Anomaly grid */
+@media (max-width: 700px) and (max-height: 420px) { .boons.four .boon { padding: 8px 10px; gap: 3px; min-height: 0; } .boons.four .boon span { font-size: 14px; } .boons.four .boon .cost { margin: 2px 0 -2px; padding-top: 4px; } }
 .bigstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 6px 0 10px; }
 .bigstats.two { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .bigstats span { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; color: var(--dim); display: flex; flex-direction: column; background: var(--panel2); padding: 6px 8px; }
@@ -945,6 +960,20 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .caprow .trl b { color: var(--warn); font-size: 14px; }
 .caprow .trt { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 .tfoot { font-size: 15px; margin-top: 6px; }
+/* 6.4 capstone tier: the top of each tree, one wide tile that unlocks a new tower */
+.toprow { margin-top: 10px; }
+.toprow .trl { background: repeating-linear-gradient(135deg, #1a1830 0 6px, #221f3d 6px 12px); box-shadow: inset 0 0 0 1px var(--warn); }
+.toprow .trl b { color: var(--warn); font-size: 14px; }
+.ttile.tier { min-height: 58px; background: linear-gradient(180deg, #221d3a, #151933); box-shadow: inset 0 0 0 1px var(--warn), 0 0 0 1px #090b16, inset 0 0 18px rgba(255, 216, 74, 0.08); }
+.ttile.tier .tbody { grid-template-columns: 34px minmax(0, 1fr); grid-template-rows: auto auto auto; }
+.ttile.tier .tbody canvas.ico { grid-row: 1 / 4; width: 30px; height: 30px; image-rendering: pixelated; align-self: center; }
+.ttile.tier .tbody > em { font-style: normal; font-family: var(--f-pix); font-size: 7px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--warn); }
+.ttile.tier .tbody b { font-size: 12px; color: var(--c); }
+.ttile.tier .tbody b i { font-style: normal; font-size: 8px; color: var(--core); margin-left: 4px; }
+.ttile.tier .td { grid-column: 2; -webkit-line-clamp: 2; color: #c9c5dc; }
+.ttile.tier.have { box-shadow: inset 0 0 0 2px var(--c), 0 0 0 1px #090b16; background: linear-gradient(180deg, #2a2444, #1b1f3e); }
+.ttile.tier.sel { box-shadow: inset 0 0 0 2px var(--amber), 0 0 0 1px #090b16; }
+.ttile.tier .tadd { background: rgba(255, 216, 74, 0.14); color: var(--warn); }
 #tinfo { overflow-y: auto; padding: 10px 12px; margin: 8px 0; background: rgba(12, 14, 28, 0.94); box-shadow: inset 0 0 0 1px var(--line2); }
 .tinfo-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding-top: 10px; }
 .tinfo-empty b { font-family: var(--f-term); font-size: 44px; font-weight: 400; color: var(--core); line-height: 1; }
@@ -1170,7 +1199,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.3.0 + BOSS FIGHT';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.4.0 + WILD CARDS';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -1265,7 +1294,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.3.0';
+const VERSION = '6.4.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1373,8 +1402,40 @@ const TOWERS = {
     blurb: 'Pulls enemies back along the path.',
     specs: [{ name: 'Singularity', desc: '×3 Damage. Pulses apply Mark', m: { dmgX: 3, addMark: 1 } },
             { name: 'Tidal Lock', desc: '×2 pull distance', m: { pullX: 2 } }] },
+  // 6.4 capstone tier towers (tower64): capT = the tree whose capstone tier node unlocks the tower for a run (newRun opts.capT → G.capT).
+  // unlock 999 keeps them out of the wave unlocks, the Stolen Blueprint and the base build menu. Rules: docs/notes/tower64.md
+  saw: { ground: 1, name: 'Buzzsaw', el: 'K', cost: 140, dmg: 38, rate: 0.55, range: 3, kind: 'saw', capT: 'K', unlock: 999, sawLen: 6, sawSpd: 6, sawR: 0.55, // first bot pass: 1-8% of damage at 30 dmg, 0.5/s, 5 tiles
+    blurb: 'Throws a blade onto the road. It runs back up the road and cuts every ground enemy once. Ignores Plating.',
+    specs: [{ name: 'Grinder', desc: 'Blades run 40% slower and 40% wider. ×1.4 Damage', m: { sawSpdX: 0.6, sawRX: 1.4, dmgX: 1.4 } },
+            { name: 'Twin Saw', desc: 'Throws 2 blades at 2 targets. ×1.1 Damage', m: { multi: 1, dmgX: 1.1 } }] },
+  flashover: { name: 'Flashover', el: 'T', cost: 130, dmg: 22, rate: 0.4, range: 2.6, kind: 'det', capT: 'T', unlock: 999, detX: 2.5, detR: 1,
+    blurb: 'Pulses fire. Burning enemies in range explode for their remaining Burn. The rest catch fire.',
+    specs: [{ name: 'Chain Reaction', desc: 'Explosions set enemies within 1.5 tiles on fire', m: { detSpread: 1.5 } },
+            { name: 'Furnace', desc: '×1.8 explosion damage. +0.5 Range', m: { detXm: 1.8, rangeAdd: 0.5 } }] },
+  surge: { name: 'Surge Spire', el: 'A', cost: 130, dmg: 24, rate: 1.2, range: 3, kind: 'surge', chain: 3, st: { shock: 0.4 }, capT: 'A', unlock: 999, cells: 10, // first bot pass: under 1% of damage at 16 dmg, chain 2, idle-only charge
+    blurb: 'Chain lightning. Stores charge while idle and from its kills, then fires 4× as fast until the charge is gone.',
+    specs: [{ name: 'Deep Cell', desc: 'Stores 20 charges. ×1.2 Damage', m: { cells: 10, dmgX: 1.2 } },
+            { name: 'Forked Surge', desc: '+2 Chain. ×1.25 Damage', m: { chain: 2, dmgX: 1.25 } }] },
+  rime: { ground: 1, name: 'Rimewall', el: 'C', cost: 140, dmg: 6, rate: 0.15, range: 2.4, kind: 'wall', st: { chill: 1 }, capT: 'C', unlock: 999, hold: 10, // bot pass: wall 8, regrow 8 s held only 0-270 enemy-seconds a run
+    blurb: 'Raises an ice wall on the road. Ground enemies stop at it and Chill until it breaks.',
+    specs: [{ name: 'Pack Ice', desc: '×2 wall strength. Regrows 25% faster', m: { holdX: 2, rateX: 1.25 } },
+            { name: 'Rime Spikes', desc: '×3 Damage to held enemies. They take +25% Kinetic Damage', m: { dmgX: 3, spikes: 0.25 } }] },
+  tangle: { name: 'Entangler', el: 'V', cost: 140, dmg: 10, rate: 0.5, range: 3.2, kind: 'tether', st: { mark: 1 }, capT: 'V', unlock: 999, links: 3, share: 0.3, linkT: 4, // share is split among the other links. Bot passes with a full copy to each: 81% of one 96-point run at 35%, up to 45% (25× damage per credit) at 22%
+    blurb: 'Links 3 enemies. 30% of each hit one of them takes is shared out to the others.',
+    specs: [{ name: 'Wide Web', desc: 'Links 5 enemies. Shares 35%', m: { links: 2, share: 0.05 } },
+            { name: 'Shared Fate', desc: 'Shares 45%. Linked enemies are 20% slower', m: { share: 0.15, tslow: 0.2 } }] },
+  aegis: { name: 'Gatekeeper', el: 'N', cost: 150, dmg: 12, rate: 1.2, range: 3, kind: 'aegis', capT: 'E', unlock: 999, guards: 2, pspd: 14,
+    blurb: 'Guards the core. Stops 2 leaks per wave while the core is in range. Shoots what comes close.',
+    specs: [{ name: 'Bulkhead', desc: '+2 leaks stopped per wave', m: { guards: 2 } },
+            { name: 'Interceptor', desc: '×2.5 Damage. +1 Range', m: { dmgX: 2.5, rangeAdd: 1 } }] },
+  joker: { name: 'Wildcard', el: 'N', cost: 120, dmg: 20, rate: 0.9, range: 3.2, kind: 'joker', capT: 'X', unlock: 999, pspd: 12, jack: 10,
+    blurb: 'Every shot rolls a random element and attack. Every 10th shot is a Jackpot.',
+    specs: [{ name: 'Loaded Dice', desc: 'Its rolled status always lands. ×1.2 Damage', m: { sure: 1, dmgX: 1.2 } },
+            { name: 'High Roller', desc: 'A Jackpot every 5th shot', m: { jackEvery: 5 } }] },
 };
-const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav'];
+// 6.4: the capstone tier towers, in tree order (TALENTS[i].top unlocks CAP_TOWERS[i])
+const CAP_TOWERS = ['saw', 'flashover', 'surge', 'rime', 'tangle', 'aegis', 'joker'];
+const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav'].concat(CAP_TOWERS);
 const LV_DMG = [0, 1, 1.65, 2.6, 4.1, 6.4];
 const LV_COST = [0, 1, 0.8, 1.2, 2.0, 3.0];
 const MAX_LV = 5;
@@ -1501,6 +1562,78 @@ const PERKS = {
     { id: 'tar', name: 'Tar', v: [0.1, 0.15], d: v => `+${Math.round(v * 100)}% net slow` },
     { id: 'exposed', name: 'Exposed', v: [15, 25], d: v => `Netted take +${v}% Damage` },
   ],
+  // 6.4 capstone tier towers. Ids that existing code already reads (amps, chain, super, taser, overcur, crown, brittle) work as they do elsewhere
+  saw: [
+    { id: 'teeth', name: 'Sharper Teeth', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'run', name: 'Long Run', v: [1.5, 2.5], d: v => `Blades run +${v} tiles` },
+    { id: 'boomer', name: 'Boomerang', v: [1], d: () => 'Blades run back once' },
+    { id: 'serr', name: 'Serrated', v: [8, 14], d: v => `+${v}% Crit Chance` },
+    { id: 'wideS', name: 'Wide Blade', v: [30, 50], d: v => `Blades ${v}% wider` },
+    { id: 'spin2', name: 'Overspin', v: [15, 27, 37], d: v => `+${v}% throw rate` },
+    { id: 'grind', name: 'Grind', spec: 1, v: [1], d: () => 'Blades stop 1 s at the end of their run' },
+    { id: 'third', name: 'Third Blade', spec: 2, v: [1], d: () => '+1 blade' },
+  ],
+  flashover: [
+    { id: 'fuse', name: 'Short Fuse', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'volat', name: 'Volatile', v: [40, 70], d: v => `+${v}% explosion damage` },
+    { id: 'blastR', name: 'Blast Radius', v: [0.4, 0.7], d: v => `+${v} explosion radius` },
+    { id: 'haze', name: 'Heat Haze', v: [0.4, 0.7], d: v => `+${v} Range` },
+    { id: 'smoulder', name: 'Smoulder', v: [1], d: () => 'Burn stays after an explosion, at half strength' },
+    { id: 'bellows', name: 'Bellows', v: [15, 27, 37], d: v => `+${v}% pulse rate` },
+    { id: 'storm', name: 'Firestorm', spec: 1, v: [0.5], d: () => '+0.5 spread radius' },
+    { id: 'cruc', name: 'Crucible', spec: 2, v: [30], d: () => '+30% explosion damage' },
+  ],
+  surge: [
+    { id: 'amps', name: 'Amperage', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'cellsP', name: 'Spare Cells', v: [4, 7], d: v => `Stores +${v} charges` },
+    { id: 'quickC', name: 'Fast Charge', v: [40, 65], d: v => `Charges ${v}% faster` },
+    { id: 'chain', name: 'Extra Arc', v: [1, 2], d: v => `+${v} Chain` },
+    { id: 'super', name: 'Superconductor', v: [1], d: () => 'No damage lost per jump' },
+    { id: 'taser', name: 'Taser', v: [8, 14], d: v => `+${v}% Stun chance` },
+    { id: 'overcur', name: 'Overcurrent', v: [20, 32], d: v => `+${v}% Damage to Shocked` },
+    { id: 'reserve', name: 'Reserve Cell', spec: 1, v: [10], d: () => '+10 charges' },
+    { id: 'crown', name: 'Fork Storm', spec: 2, v: [2], d: () => '+2 Chain' },
+  ],
+  rime: [
+    { id: 'thick', name: 'Thick Ice', v: [25, 45, 60], d: v => `+${v}% wall strength` },
+    { id: 'regrow', name: 'Quick Freeze', v: [15, 27, 37], d: v => `Regrows ${v}% faster` },
+    { id: 'bite', name: 'Frostbite', v: [30, 55], d: v => `+${v}% Damage` },
+    { id: 'shardW', name: 'Ice Shards', v: [1], d: () => 'A broken wall hits enemies within 1.5 tiles for ×4 Damage' },
+    { id: 'reachW', name: 'Long Reach', v: [0.5, 0.8], d: v => `+${v} Range` },
+    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Its Frozen take +${v}% Damage` },
+    { id: 'pack', name: 'Glacier Pack', spec: 1, v: [50], d: () => '+50% wall strength' },
+    { id: 'barbs', name: 'Ice Barbs', spec: 2, v: [0.15], d: () => 'Held enemies take +15% more Kinetic Damage' },
+  ],
+  tangle: [
+    { id: 'linkP', name: 'Extra Strand', v: [1, 2], d: v => `+${v} link${v > 1 ? 's' : ''}` },
+    { id: 'shareP', name: 'Resonant Link', v: [3, 6, 8], d: v => `Shares +${v}%` },
+    { id: 'longT', name: 'Long Link', v: [2, 3], d: v => `Links last +${v} s` },
+    { id: 'nullW', name: 'Null Weight', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'reachT', name: 'Far Reach', v: [0.5, 0.8], d: v => `+${v} Range` },
+    { id: 'bond', name: 'Dark Bond', v: [1], d: () => 'Linked enemies gain 1 Mark per second' },
+    { id: 'web', name: 'Spider Web', spec: 1, v: [1], d: () => '+1 link' },
+    { id: 'fate', name: 'Doom Bond', spec: 2, v: [6], d: () => 'Shares +6%' },
+  ],
+  aegis: [
+    { id: 'guard', name: 'Extra Guard', v: [1, 2], d: v => `+${v} leak${v > 1 ? 's' : ''} stopped per wave` },
+    { id: 'pd', name: 'Point Defense', v: [15, 27, 37], d: v => `+${v}% Damage` },
+    { id: 'watch', name: 'Wide Watch', v: [0.6, 1], d: v => `+${v} Range` },
+    { id: 'salv', name: 'Salvage Rights', v: [1], d: () => 'Stopped leaks pay double credits' },
+    { id: 'patch', name: 'Patch Job', v: [2, 3], d: v => `Each stop repairs ${v}% core HP` },
+    { id: 'qsight', name: 'Quick Sights', v: [15, 27], d: v => `+${v}% Attack Speed` },
+    { id: 'last', name: 'Last Wall', spec: 1, v: [1], d: () => '+1 leak stopped per wave' },
+    { id: 'flak', name: 'Flak Rounds', spec: 2, v: [1], d: () => 'Shots burst for 50% in 0.8 tiles' },
+  ],
+  joker: [
+    { id: 'luck', name: 'Lucky Streak', v: [10, 18, 25], d: v => `+${v}% status chance` },
+    { id: 'edge', name: 'House Edge', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'hot', name: 'Hot Table', v: [2, 3], d: v => `Jackpot ${v} shots sooner` },
+    { id: 'dbl', name: 'Double Down', v: [10, 18], d: v => `${v}% chance to fire twice` },
+    { id: 'odds', name: 'Long Odds', v: [0.5, 0.8], d: v => `+${v} Range` },
+    { id: 'deal', name: 'Fast Deal', v: [15, 27, 37], d: v => `+${v}% Attack Speed` },
+    { id: 'marked', name: 'Marked Cards', spec: 1, v: [25], d: () => '+25% Damage' },
+    { id: 'allin', name: 'All In', spec: 2, v: [1], d: () => 'Jackpots deal ×3 instead of ×2' },
+  ],
   forge: [
     { id: 'overtime', name: 'Overtime', v: [20, 35, 45], d: v => `+${v}% income` },
     { id: 'fee', name: "Finder's Fee", v: [4, 7], d: v => `+${v}% kill credits` },
@@ -1581,6 +1714,14 @@ const LEGENDARIES = [
   { id: 'mPylon', pool: 'pylon', tower: 'pylon', name: 'Overmind', pkv: { ampP: 10, mast: 1 }, t: () => '+10% Damage boost. +1 Range' },
   { id: 'mSnare', pool: 'pylon', tower: 'snare', name: 'Kraken Net', pkv: { bigNet: 8, exposed: 20 }, t: () => '+8 catches per wave. Netted fliers take +20% more damage' },
   { id: 'mForge', pool: 'forge', tower: 'forge', name: 'Golden Goose', pkv: { overtime: 50, compound: 0.5 }, t: () => '+50% income. Earns 0.5% interest on banked credits each wave' },
+  // 6.4 capstone tier towers (Mastery 5)
+  { id: 'mSaw', pool: 'atk', tower: 'saw', name: 'Sawmill', pkv: { boomer: 1, run: 2 }, t: () => 'Blades run back once. Blades run +2 tiles' },
+  { id: 'mFlash', pool: 'atk', tower: 'flashover', name: 'Napalm Heart', pkv: { smoulder: 1, blastR: 0.5 }, t: () => 'Burn stays after an explosion, at half strength. +0.5 explosion radius' },
+  { id: 'mSurge', pool: 'atk', tower: 'surge', name: 'Thunderhead', pkv: { cellsP: 8, chain: 1 }, t: () => 'Stores +8 charges. +1 Chain' },
+  { id: 'mRime', pool: 'atk', tower: 'rime', name: 'Glacier Heart', pkv: { thick: 60, shardW: 1 }, t: () => '+60% wall strength. A broken wall hits enemies within 1.5 tiles for ×4 Damage' },
+  { id: 'mTangle', pool: 'atk', tower: 'tangle', name: "Cat's Cradle", pkv: { linkP: 2, shareP: 8 }, t: () => '+2 links. Shares +8%' },
+  { id: 'mAegis', pool: 'atk', tower: 'aegis', name: 'Last Line', pkv: { guard: 2, salv: 1 }, t: () => '+2 leaks stopped per wave. Stopped leaks pay double credits' },
+  { id: 'mJoker', pool: 'atk', tower: 'joker', name: 'Royal Flush', pkv: { hot: 4, dbl: 15 }, t: () => 'Jackpot 4 shots sooner. 15% chance to fire twice' },
   { id: 'bulwark', pool: 'core', name: 'Bulwark Matrix', t: () => 'Shield fully recharges at the start of each wave' },
   { id: 'retribution', pool: 'core', name: 'Retribution', t: () => 'When an enemy reaches the core, it blasts everything within 2.5 tiles for 4× core damage' },
 ];
@@ -1593,7 +1734,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 3;
+const FR_VER = 4;
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -1611,16 +1752,15 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.3.0', title: 'Last Gradient 6.3 · Boss Fight', items: [
-  ['Boss themes', 'Every boss has its own theme song. It starts when the boss arrives. It moves up 1 semitone at a new boss phase. A kill plays a victory sting. Then your song comes back.'],
-  ['Theme list', 'Studio › Listen lists all 13 themes. Beat a boss to play its theme there. Tap ♥ to keep a theme in My Tracks.'],
-  ['Boss music switch', 'Studio › Listen › Play in boss fights turns the themes off. Your song then keeps playing.'],
-  ['More music variety', 'Every genre now has 4 styles. Each new song picks its own drums, bass, lead, tempo and key. Melodies are short hooks that repeat and grow.'],
-  ['Old tracks', 'Tracks you kept before 6.3, and their codes, sound exactly as before.'],
-  ['Zones look different', 'Each of the 10 zones has its own ground, roads, decals and weather. Rain and lightning in Tempest Front, spores in The Hive, a rubber duck in The Odd Belt.'],
-  ['Entering a zone', 'A banner shows the zone name when a run starts and after each jump door. The new board spreads out from the core with a short sound.'],
-  ['Zone previews', 'Jump doors and New Run zone buttons show a strip of each zone\'s board.'],
-  ['Zone effects', 'Settings › Graphics › Zone effects turns off the weather and lightning. The colours stay.'],
+const WHATS_NEW = { ver: '6.4.0', title: 'Last Gradient 6.4 · Wild Cards', items: [
+  ['New cards every draw', 'Entropy cards are now built fresh each draw. Each card pairs 1 boon with 1 cost, so the same card rarely comes twice.'],
+  ['Rarity', 'Cards come as Common, Rare or Exotic. Exotic cards carry 2 boons. Your later draws in a run swing harder.'],
+  ['Cards fit your build', 'Boons lean toward the towers you field. Crit, Chill, Burn, Shock and Mark boons need the matching towers.'],
+  ['Classic cards', 'The 21 old cards still appear, about 1 slot in 4, with a purple frame.'],
+  ['Capstone tier', 'Each talent tree has a new gold tile under its Capstones. It opens at 16 points in that tree, costs 1 point and takes no Capstone slot.'],
+  ['7 new towers', 'Each Capstone tier tile unlocks a new tower for your runs. Locked towers show greyed in the build menu.'],
+  ['The towers', 'Buzzsaw (Ballistics), Flashover (Combustion), Surge Spire (Voltaic), Rimewall (Cryogenics), Entangler (Singularity), Gatekeeper (Bastion), Wildcard (Command).'],
+  ['Daily Hunts', 'Daily Hunts keep the original 12 towers, so the ladder stays fair.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
@@ -2253,6 +2393,10 @@ const TALENTS = [
       CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['Every wave, each attack tower takes a random element for that wave (its shots, statuses, talents and Resonance follow it)', '+25% Damage'] }),
       CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 25 }, lines: ['Using an ability takes 30% off every other ability\'s cooldown', '+25% ability power'] })] },
 ];
+// 6.4 capstone tier (tower64): one node per tree above the Capstones. It needs TTOP points in that tree, costs 1 point, takes no
+// Capstone slot and unlocks that tree's new tower (CAP_TOWERS) for your runs. Row 5 in TAL; stored in PROF.tal like any talent
+const TTOP = 16;
+TALENTS.forEach((tr, i) => { tr.top = T_(tr.id.toLowerCase() + 'Top', TOWERS[CAP_TOWERS[i]].name, 1, {}, { unlockT: CAP_TOWERS[i] }); });
 // v5.8: Capstones that were replaced by play styles; a Supernova Remnant of the old one becomes the new one (migrateWeb)
 const CAP_RENAMED = { glass: 'nest', deadeye: 'rico', overgrid: 'stormrider', thunder: 'blackout', abszero: 'artillery', winter: 'hoarfrost', singularity: 'garden', dimret: 'forgeworks', unbreakable: 'bulwark' };
 // v5.8 Techniques: alternate fire modes. A talent unlocks one (need), then the tower panel switches each tower of that type between
@@ -2276,6 +2420,7 @@ const TAL = {};
 for (const tr of TALENTS) {
   tr.rows.forEach((row, r) => row.forEach(t => { t.tree = tr.id; t.row = r; TAL[t.id] = t; }));
   for (const c of tr.caps) { c.tree = tr.id; c.row = 4; c.max = 1; TAL[c.id] = c; }
+  if (tr.top) { tr.top.tree = tr.id; tr.top.row = 5; TAL[tr.top.id] = tr.top; } // 6.4 capstone tier
 }
 const TREE_BY_ID = Object.fromEntries(TALENTS.map(t => [t.id, t]));
 // points that fill a tree (every talent at max rank): the Talents screen's bars
@@ -2287,6 +2432,7 @@ const CAP_NEXT = lvl => lvl < 25 ? 25 : lvl < 60 ? 60 : 0;
 HUNT.pts = 30; const HUNT_CAPS = 1;
 // a talent's description at a given rank
 function talentLines(t, rank) {
+  if (t.unlockT) { const D = TOWERS[t.unlockT]; return [`New tower: the ${D.name} (${EL[D.el].name})`, D.blurb, 'You can build it in every run from now on. Daily Hunts use the base towers']; }
   if (t.cap) return t.lines || (t.doc !== undefined ? DOCTRINES[t.doc].lines : []);
   if (t.tech) { const F = fireModes(t.tech).find(f => f.need === t.id); return F ? [`Technique for the ${TOWERS[t.tech].name}: ${F.name}`, F.desc, 'Switch it per tower from the tower panel'] : []; }
   const r = Math.max(1, rank || 1);
@@ -2317,6 +2463,8 @@ const AFFIX_BAN = {
   beam: ['pierce', 'chain', 'splash', 'ricochet', 'echo'],
   mortar: ['pierce', 'chain', 'ricochet'],
   grav: ['pierce', 'chain', 'splash', 'multi', 'ricochet', 'echo'],
+  saw: ['pierce', 'chain', 'splash', 'ricochet'], det: ['pierce', 'chain', 'splash', 'multi', 'ricochet'], surge: ['pierce', 'splash'], // 6.4
+  wall: ['pierce', 'chain', 'splash', 'multi', 'ricochet', 'echo'], tether: ['pierce', 'chain', 'splash', 'ricochet', 'echo'], aegis: ['pierce', 'chain', 'ricochet'], joker: ['pierce', 'chain', 'multi'],
 };
 
 // ---------- Anomalies: double-edged run mutators drawn from the Entropy meter ----------
@@ -2343,6 +2491,98 @@ const ANOMALIES = [
   { id: 'mutagen', name: 'Mutagen', up: 'Each wave, a random tower gains an affix', down: 'Every 3rd wave, it gains a Curse instead', af: { mutagen: 1 } },
   { id: 'inversion', name: 'Gravity Inversion', up: '−15% ground enemy speed', down: '3× as many Skimmers', af: { groundSlow: 0.15, flyers: 2 } },
 ];
+// 6.4 generated Anomalies (FR_VER 4, G.frV >= 4): a card is a boon part plus a drawback part, sized from a power budget so it is a
+// fair trade. Values are in display units (percent); af parts store v / 100 in G.af. p: power per unit (1 power ≈ +1% Damage).
+// lo/hi: the range on one card. cap: the most the run's Anomalies (classic and generated) can add to that key in total
+// (for a drawback: the most they can take away). st: rounding step. w: base weight. el / need: the build it suits (offers lean
+// toward what the player fields). grp: parts of one group never meet on a card. sp: a fixed special (Exotic only, once a run).
+// words: first name word (boons). nouns: second name word (drawbacks).
+const ANOM_RARITY = [
+  { id: 'common', name: 'Common', col: '#cfcade', b: 30, w: 70 },
+  { id: 'rare', name: 'Rare', col: '#6ae2ff', b: 40, w: 24 },
+  { id: 'exotic', name: 'Exotic', col: '#ffb03a', b: 50, w: 6 },
+];
+// classic: share of offer slots that hold a classic card. dr: drawback power per boon power. Budget ×(1 + grow per draw, up to growN
+// draws, + wave / waveDiv, wave counted up to waveMax)
+const ANOM_GEN = { classic: 0.25, dr: 0.8, grow: 0.06, growN: 5, waveDiv: 800, waveMax: 120 };
+const ANOM_UP = [
+  { id: 'dmg', k: 'dmg', p: 1, lo: 10, hi: 60, cap: 90, st: 5, w: 1.2, words: ['Brutal', 'Savage', 'Heavy', 'Feral'] },
+  { id: 'dmgK', k: 'dmgK', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'K', words: ['Iron', 'Steel', 'Tungsten', 'Ballistic'] },
+  { id: 'dmgT', k: 'dmgT', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'T', words: ['Solar', 'Cinder', 'Ember', 'Furnace'] },
+  { id: 'dmgC', k: 'dmgC', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'C', words: ['Glacial', 'Rime', 'Polar', 'Winter'] },
+  { id: 'dmgA', k: 'dmgA', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'A', words: ['Storm', 'Volt', 'Ion', 'Thunder'] },
+  { id: 'dmgV', k: 'dmgV', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'V', words: ['Hollow', 'Abyssal', 'Umbral', 'Null'] },
+  { id: 'rate', k: 'rate', p: 1.2, lo: 10, hi: 45, cap: 60, st: 5, w: 1.1, words: ['Rapid', 'Quickfire', 'Frantic', 'Twitchy'] },
+  { id: 'range', k: 'range', p: 1.8, lo: 5, hi: 30, cap: 45, st: 5, w: 0.9, words: ['Farsight', 'Longshot', 'Wide', 'Distant'] },
+  { id: 'critC', k: 'critC', p: 0.9, lo: 10, hi: 40, cap: 60, st: 5, need: 'crit', words: ['Lucky', 'Keen', 'Sharp'] },
+  { id: 'critM', k: 'critM', p: 0.35, lo: 30, hi: 120, cap: 200, st: 10, need: 'crit', words: ['Cruel', 'Lethal', 'Vicious'] },
+  { id: 'credits', k: 'credits', p: 1, lo: 10, hi: 40, cap: 60, st: 5, words: ['Gilded', 'Golden', 'Rich'] },
+  { id: 'costRed', k: 'costRed', p: 1.6, lo: 5, hi: 25, cap: 30, st: 5, w: 0.7, grp: 'cost', words: ['Thrifty', 'Bargain', 'Discount'] },
+  { id: 'upgRed', k: 'upgRed', p: 1, lo: 10, hi: 35, cap: 40, st: 5, w: 0.7, grp: 'upg', words: ['Tinker', 'Retrofit', 'Workshop'] },
+  { id: 'coreDmg', k: 'coreDmg', p: 0.15, lo: 60, hi: 300, cap: 400, st: 20, w: 0.6, words: ['Wrathful', 'Angry', 'Furious'] },
+  { id: 'burnChance', k: 'burnChance', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, w: 0.6, words: ['Kindled', 'Smoking', 'Torch'] },
+  { id: 'chillChance', k: 'chillChance', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, w: 0.6, words: ['Frosted', 'Shivering', 'Numb'] },
+  { id: 'shockChance', k: 'shockChance', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, w: 0.6, words: ['Charged', 'Crackling', 'Sparking'] },
+  { id: 'markChance', k: 'markChance', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, need: 'V', words: ['Marked', 'Branded', 'Cursed'] },
+  { id: 'chillPot', k: 'chillPot', p: 0.3, lo: 30, hi: 120, cap: 200, st: 10, need: 'C', words: ['Deepfreeze', 'Frostbite', 'Icebound'] },
+  { id: 'burnDmg', k: 'burnDmg', p: 0.4, lo: 25, hi: 100, cap: 150, st: 5, need: 'T', words: ['Napalm', 'Scorching', 'Blazing'] },
+  { id: 'shockEff', k: 'shockEff', p: 0.4, lo: 25, hi: 100, cap: 150, st: 5, need: 'A', words: ['Overcharged', 'Live', 'Arcing'] },
+  { id: 'armorPen', k: 'armorPen', p: 0.8, lo: 10, hi: 40, cap: 60, st: 5, w: 0.7, words: ['Piercing', 'Drilling', 'Breaching'] },
+  { id: 'eliteDmg', k: 'eliteDmg', p: 0.5, lo: 20, hi: 100, cap: 150, st: 5, w: 0.8, words: ['Hunting', 'Kingslayer', 'Trophy'] },
+  { id: 'shield', k: 'shield', p: 1, lo: 10, hi: 50, cap: 80, st: 5, w: 0.5, grp: 'shield', words: ['Warded', 'Shielded', 'Aegis'] },
+  { id: 'coreHP', k: 'coreHP', p: 0.5, lo: 20, hi: 100, cap: 150, st: 10, w: 0.5, grp: 'hull', words: ['Armored', 'Stout', 'Bastion'] },
+  { id: 'abilPower', k: 'abilPower', p: 0.5, lo: 20, hi: 80, cap: 120, st: 5, w: 0.4, words: ['Orbital', 'Uplinked', 'Command'] },
+  { id: 'stormPow', k: 'stormPow', p: 0.4, lo: 25, hi: 100, cap: 150, st: 5, w: 0.4, words: ['Tempest', 'Squall', 'Monsoon'] },
+  { id: 'echo', k: 'echo', t: 'af', p: 1.2, lo: 5, hi: 20, cap: 25, st: 5, w: 0.8, words: ['Echoing', 'Twin', 'Doubled'] },
+  { id: 'groundSlow', k: 'groundSlow', t: 'af', p: 2, lo: 5, hi: 20, cap: 30, st: 5, w: 0.7, words: ['Molasses', 'Sticky', 'Tarpit'] },
+  { id: 'boom', k: 'boom', t: 'af', p: 1.6, lo: 5, hi: 15, cap: 20, st: 5, w: 0.7, words: ['Volatile', 'Unstable', 'Popping'] },
+  { id: 'fractal', k: 'fractal', t: 'af', sp: 1, p: 30, words: ['Fractal', 'Splintered'] },
+  { id: 'prism', k: 'prism', t: 'af', sp: 1, p: 25, words: ['Prismatic', 'Spectral'] },
+  { id: 'fill', k: 'fill', t: 'af', sp: 1, p: 20, words: ['Restless', 'Feedback'] },
+];
+const ANOM_DN = [
+  { id: '-dmg', k: 'dmg', p: 1, lo: 5, hi: 30, cap: 30, st: 5, nouns: ['Fatigue', 'Rust', 'Malaise'] },
+  { id: '-rate', k: 'rate', p: 1.2, lo: 5, hi: 25, cap: 30, st: 5, nouns: ['Lull', 'Drag', 'Sloth'] },
+  { id: '-range', k: 'range', p: 1.8, lo: 5, hi: 20, cap: 30, st: 5, nouns: ['Myopia', 'Fog', 'Haze'] },
+  { id: '-dmgK', k: 'dmgK', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'K', w: 0.4, nouns: ['Corrosion', 'Dents'] },
+  { id: '-dmgT', k: 'dmgT', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'T', w: 0.4, nouns: ['Damp', 'Drizzle'] },
+  { id: '-dmgC', k: 'dmgC', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'C', w: 0.4, nouns: ['Thaw', 'Meltdown'] },
+  { id: '-dmgA', k: 'dmgA', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'A', w: 0.4, nouns: ['Short', 'Blackout'] },
+  { id: '-dmgV', k: 'dmgV', p: 0.5, lo: 10, hi: 60, cap: 60, st: 5, el: 'V', w: 0.4, nouns: ['Daylight', 'Glare'] },
+  { id: '-credits', k: 'credits', p: 0.8, lo: 10, hi: 35, cap: 40, st: 5, nouns: ['Tax', 'Debt', 'Tithe'] },
+  { id: '-costX', k: 'costX', t: 'af', p: 1.4, lo: 5, hi: 25, cap: 40, st: 5, grp: 'cost', nouns: ['Toll', 'Markup', 'Tariff'] },
+  { id: '-upgX', k: 'upgX', t: 'af', p: 1, lo: 10, hi: 35, cap: 50, st: 5, grp: 'upg', nouns: ['Red Tape', 'Overhead'] },
+  { id: '-regen', k: 'regen', t: 'af', p: 30, lo: 0.5, hi: 1.5, cap: 2.5, st: 0.5, nouns: ['Hydra', 'Regrowth', 'Bloom'] },
+  { id: '-haste', k: 'haste', t: 'af', p: 2, lo: 5, hi: 20, cap: 30, st: 5, nouns: ['Stampede', 'Rush', 'Panic'] },
+  { id: '-hpx', k: 'hpx', t: 'af', p: 1.2, lo: 10, hi: 35, cap: 60, st: 5, nouns: ['Giants', 'Swell', 'Bulk'] },
+  { id: '-jam', k: 'jam', t: 'af', p: 15, lo: 1, hi: 3, cap: 5, st: 1, nouns: ['Gremlins', 'Glitch', 'Lemons'] },
+  { id: '-coreDrain', k: 'coreDrain', t: 'af', p: 7, lo: 2, hi: 5, cap: 8, st: 1, w: 0.7, nouns: ['Leech', 'Hunger', 'Parasite'] },
+  { id: '-coreHPx', k: 'coreHPx', t: 'af', p: 1, lo: 10, hi: 35, cap: 50, st: 5, w: 0.8, grp: 'hull', nouns: ['Fracture', 'Fault', 'Crack'] },
+  { id: '-elite', k: 'elite', t: 'af', p: 1.2, lo: 5, hi: 25, cap: 40, st: 5, nouns: ['Crown', 'Royals', 'Pageant'] },
+  { id: '-flyers', k: 'flyers', t: 'af', p: 0.3, lo: 50, hi: 200, cap: 300, st: 50, nouns: ['Flock', 'Migration', 'Swarm'] },
+  { id: '-noShield', k: 'noShield', t: 'af', sp: 1, p: 30, w: 0.5, grp: 'shield', nouns: ['Exposure', 'Glass Jaw'] },
+];
+const ANOM_EXOTIC_NOUNS = ['Paradox', 'Singularity', 'Eclipse', 'Covenant', 'Engine', 'Requiem'];
+const ANOM_PART = {};
+for (const P of ANOM_UP) ANOM_PART[P.id] = Object.assign({ t: 'm', w: 1, side: 1 }, P);
+for (const P of ANOM_DN) ANOM_PART[P.id] = Object.assign({ t: 'm', w: 1, side: -1 }, P);
+const ANOM_UPS = ANOM_UP.map(P => ANOM_PART[P.id]), ANOM_DNS = ANOM_DN.map(P => ANOM_PART[P.id]);
+// one card line per part (v in display units)
+const ANOM_TXT = {
+  costRed: v => `−${v}% tower cost`, upgRed: v => `−${v}% upgrade cost`, coreHP: v => `+${v} core max HP`,
+  echo: v => `Towers have a ${v}% chance to attack twice`, groundSlow: v => `−${v}% ground enemy speed`, boom: v => `Enemies explode on death for ${v}% of max HP`,
+  fractal: () => 'Bullets and missiles split into 2 shards', prism: () => 'Hits apply a random status', fill: () => 'Entropy fills 2× faster',
+  '-costX': v => `+${v}% tower cost`, '-upgX': v => `+${v}% upgrade cost`, '-regen': v => `Enemies regenerate ${v}% HP per second`,
+  '-haste': v => `+${v}% enemy speed`, '-hpx': v => `+${v}% enemy HP`, '-jam': v => `Attacks have a ${v}% chance to jam`,
+  '-coreDrain': v => `Core loses ${v}% HP each wave`, '-coreHPx': v => `−${v}% core max HP`, '-elite': v => `+${v}% Elite chance`,
+  '-flyers': v => `+${v}% Skimmers`, '-noShield': () => 'No core shield',
+};
+function anomPartTxt(id, v) {
+  const P = ANOM_PART[id]; if (!P) return '';
+  if (ANOM_TXT[id]) return ANOM_TXT[id](v);
+  const s = STAT_TXT[P.k] ? STAT_TXT[P.k](v) : `+${v} ${P.k}`;
+  return P.side > 0 ? s : s.replace(/^\+/, '−');
+}
 
 // ---------- Supernova: cosmic laws (one chosen per Supernova, permanent, stacking) ----------
 const LAWS = [
@@ -2409,7 +2649,7 @@ function defaultProfile() {
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
     seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, tut: {}, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
-    codex: { combos: {}, bosses: {}, anomalies: {}, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '', coll: {}, collC: {}, collNew: [] },
+    codex: { combos: {}, bosses: {}, anomalies: {}, gen: { n: 0, r: [0, 0, 0], parts: {} }, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '', coll: {}, collC: {}, collNew: [] },
     mastery: { v: 2, xp: {} }, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
   };
@@ -2432,8 +2672,8 @@ const capsHeld = () => (TS().caps || []).filter(id => TAL[id]);
 const pointsSpent = () => { let t = 0; for (const k in TS().tal || {}) if (TAL[k]) t += TS().tal[k]; return t + capsHeld().length; };
 const pointsFree = () => talLevel() - pointsSpent();
 // points spent in a tree, optionally only in rows above `row`
-function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; }
-const rowNeed = r => r >= 4 ? TCAP : r * TROW;
+function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && !T.unlockT && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; } // 6.4: the capstone tier node isn't a tree point
+const rowNeed = r => r >= 5 ? TTOP : r >= 4 ? TCAP : r * TROW; // 6.4: row 5 is the capstone tier
 // Capstone slots for the build being edited: the profile's by level, the Daily Hunt build's fixed HUNT_CAPS
 const slotsNow = () => TS() === PROF ? capSlots(talLevel()) : HUNT_CAPS;
 // why a talent can't take another rank right now ('' = it can)
@@ -2451,6 +2691,7 @@ function talentBlock(id) {
     return '';
   }
   if (talRank(id) >= T.max) return 'max';
+  if (T.unlockT && TS() !== PROF) return 'daily'; // 6.4: the Daily Hunt build keeps the base towers
   if (treePts(T.tree, T.row) < rowNeed(T.row)) return 'row';
   return '';
 }
@@ -2531,7 +2772,7 @@ function treeLoadBuild(slot) {
   if (!refundFree()) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   // replay it rank by rank, row by row, so every gate is honoured
   TS().tal = {}; TS().caps = [];
-  for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) TS().tal[k] = Math.min(T.max, b.tal[k]); }
+  for (let r = 0; r < 6; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) TS().tal[k] = Math.min(T.max, b.tal[k]); }
   for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < slotsNow() && !capsHeld().some(h => TAL[h].tree === TAL[c].tree)) TS().caps.push(c);
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
@@ -2555,7 +2796,10 @@ const chaosUnlocked = i => i <= 1 || (PROF.bestWave || 0) >= CHAOS_GATE[i] || ((
 function huntBuildProf() { const b = PROF.huntBuild || (PROF.huntBuild = { tal: {}, caps: [], remnants: [] }); b.lvl = HUNT.pts; b.remnants = []; b.tal = b.tal || {}; b.caps = b.caps || []; return b; }
 // a profile still learning the game (best wave under 10): locked controls stay out of sight until they come online
 const freshProfile = () => (PROF.bestWave || 0) < 10;
-const towerUnlocked = id => huntRun() || TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
+// 6.4: a capstone tier tower is unlocked only by the run's own list (G.capT, from newRun opts), never by the profile mid-run
+const towerUnlocked = id => TOWERS[id].capT ? !!(G && G.capT && G.capT.includes(id)) : huntRun() || TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
+// 6.4: the capstone tier towers this profile has learned (passed to newRun as opts.capT; the sim reads only G.capT)
+const capTowersOwned = () => TALENTS.filter(tr => tr.top && (PROF.tal || {})[tr.top.id]).map(tr => tr.top.unlockT);
 // the Capstones currently in force (held + remnants), as ks flags or fx bundles
 const activeCaps = () => [...new Set(capsHeld().concat((TS().remnants || []).filter(r => TAL[r])))];
 
@@ -2904,12 +3148,14 @@ function growRegion(stage, quiet) {
 const NODE_TOWER = { dmg: 1.25, range: 1.15, aura: 1.25 }, NODE_CORE = { dmg: 1.5, rate: 1.2 };
 const isNode = (x, y) => !!(G.nodeSet && G.nodeSet.has(tIdx(x, y)));
 // v3.1: what the defence could pour into one boss, from tower stats (measured DPS reads low early: small waves never let towers fire flat out)
+const PD_KIND = { saw: 3, det: 3, tether: 3, wall: 16, joker: 1.5 };
 function potentialDps() {
   let tot = 0;
   for (const t of G.towers) {
     const s = t.s; if (!s || !s.dmg || s.kind === 'eco' || s.kind === 'support' || s.kind === 'snare') continue;
     let d = s.dmg * s.rate * (1 + t.buff.dmg) * (1 + t.buff.rate) * (1 + Math.min(1, (s.critC + t.buff.crit) / 100) * (s.critM - 1)) * (1 + (s.boss || 0));
     if (s.kind === 'beam') d *= 1 + (s.rampMax - 1) * 0.7;
+    if (PD_KIND[s.kind]) d *= PD_KIND[s.kind]; // 6.4: towers whose hits land on several enemies (or every half second, the Rimewall)
     tot += d;
   }
   return tot;
@@ -3144,7 +3390,7 @@ function newRun(opts) {
     stormT: 50, lanesOpened: 0, laneWaves: (T ? T.CH : CHAOS_LEVELS[chaos]).lanes.slice(), laneWarn: null, rows: ROWS,
     rift: null, eid: 1, tid: 1, dmgLog: { combos: 0 }, unbreakUsed: -99, boonsTaken: [],
     core: null, dpsClock: 0, coreAngle: 0,
-    checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
+    checkpoint: 0, cpDue: 0, cpT: 0, entropy: 0, entWaveCombo: 0, anoms: [], ganoms: [], anomOffers: null, af: {}, scoreMult: 1, stabilized: 0, flux: null, prep: null,
     stats: { dmgByEl: { K: 0, T: 0, C: 0, A: 0, V: 0 }, combos: {}, elites: 0, leaks: 0, bossKills: 0, peakDps: 0 },
   };
   // v5.3: the run records every input (act) from the start; with these opts it replays exactly (Daily Hunt resume, ladder checks)
@@ -3155,6 +3401,8 @@ function newRun(opts) {
   G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }, G.fr ? { frontier: 1, frV: G.frV } : {}))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
   if (T) { G.tut = T.v; G.lesson = T.id || null; G.tutS = T; G.huntBuild = JSON.parse(JSON.stringify(T.build || { tal: {}, caps: [], remnants: [], lvl: 0 })); } // the same for everyone: no talents, laws or Supernova
+  // 6.4 (FR_VER 4): the capstone tier towers this run may build. Daily Hunts, Training and older rules get none (fixed, so they replay)
+  G.capT = G.frV >= 4 && !opts.daily && !opts.huntBuild && !T && Array.isArray(opts.capT) ? opts.capT.filter(k => TOWERS[k] && TOWERS[k].capT) : [];
   G.ascV = ascV; G.mastery = opts.daily || opts.huntBuild ? {} : Object.assign({}, opts.mastery || {}); // Daily Hunts: no Mastery, same for everyone
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
@@ -3204,7 +3452,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
-    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}) }]; // Frontier runs say so in the log
+    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}), ...(G.capT.length ? { capT: G.capT.slice() } : {}) }]; // Frontier runs say so in the log; 6.4: the tier towers too
   return G;
 }
 
@@ -3217,11 +3465,16 @@ function computeAf(ids) {
     af.score += G.mods && G.mods.ks.singular ? 0.1 : 0.05;
     for (const k in A.af || {}) { if (k === 'coreHPx') af.coreHPx *= A.af[k]; else af[k] = (af[k] || 0) + A.af[k]; }
   }
+  for (const A of (G && G.ganoms) || []) { // 6.4 generated Anomalies (frV 4)
+    af.score += G.mods && G.mods.ks.singular ? 0.1 : 0.05;
+    for (const [id, v] of A.up.concat(A.dn)) { const P = ANOM_PART[id]; if (!P || P.t !== 'af') continue; if (P.k === 'coreHPx') af.coreHPx *= 1 - v / 100; else af[P.k] = (af[P.k] || 0) + (P.sp ? 1 : v / 100); }
+  }
   return af;
 }
 function anomMods() {
   const m = {};
   for (const id of G.anoms) { const A = ANOMALIES.find(a => a.id === id); if (A && A.m) for (const k in A.m) m[k] = (m[k] || 0) + A.m[k]; }
+  for (const A of G.ganoms || []) for (const [id, v] of A.up.concat(A.dn)) { const P = ANOM_PART[id]; if (P && P.t === 'm') m[P.k] = (m[P.k] || 0) + P.side * v; }
   for (const id of G.laws || []) { const L = LAWS.find(l => l.id === id); if (L && L.m) for (const k in L.m) m[k] = (m[k] || 0) + L.m[k]; }
   for (const k in G.runMods) m[k] = (m[k] || 0) + G.runMods[k];
   for (const src of hookFx()) for (const k in src.m || {}) m[k] = (m[k] || 0) + src.m[k] * (src.n || 1);
@@ -3542,6 +3795,7 @@ function towerStats(t) {
     if (D.kind === 'support') { s.buffDmg = Math.min(0.9, s.buffDmg * NODE_TOWER.aura); s.buffRate = Math.min(0.6, s.buffRate * NODE_TOWER.aura); }
     if (D.kind === 'snare') s.catches = Math.round(s.catches * NODE_TOWER.aura);
   }
+  if (D.capT) capStats(t, s, D, sp, pv, lv); // 6.4 capstone tier towers
   if (D.kind === 'eco') {
     s.income = D.income * (1 + 0.5 * (lv - 1)) * (sp.incomeX || 1) * (1 + (A.yield || 0) / 100) * (leg.midas ? 2 : 1) * (s.node ? NODE_TOWER.aura : 1) * (1 + pv('overtime') / 100) * mst;
     s.fbounty = (A.fbounty || 0) / 100 + pv('fee') / 100; s.bountyAura = sp.bounty || 0; s.interest = (leg.midas ? 0.01 : 0) + pv('compound') / 100; s.hazard = pv('hazard');
@@ -3555,6 +3809,25 @@ function towerStats(t) {
   if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.05 + FX('aRank') / 100) * t.rank : 0.75; // v4.4: 6%/−20% measured 16 waves above no Doctrine (bots); trimmed
   if (G.fr && t === frDockT()) { s.dmg *= frDockX(); s.range += FRONTIER.dockRange; s.docked = 1; } // Frontier: mounted on the core
   return s;
+}
+// ---------- 6.4 capstone tier towers (tower64): their own numbers. Perk ids shared with older towers (amps, chain, crown, taser,
+// super, overcur, brittle) are already read above or in the attack code. Rules: docs/notes/tower64.md
+function capStats(t, s, D, sp, pv, lv) {
+  const asc = t.asc || 0, lf = 1 + 0.05 * (lv - 1) + 0.03 * asc;
+  s.dmg *= 1 + (pv('teeth') + pv('fuse') + pv('nullW') + pv('pd') + pv('edge') + pv('bite') + pv('marked')) / 100;
+  s.rate *= 1 + (pv('spin2') + pv('bellows') + pv('regrow') + pv('qsight') + pv('deal')) / 100;
+  s.range += (pv('haze') + pv('reachW') + pv('reachT') + pv('watch') + pv('odds')) * lf * G.mods.range;
+  s.critC += pv('serr');
+  switch (D.kind) {
+    case 'saw': s.sawLen = D.sawLen + pv('run'); s.sawSpd = D.sawSpd * (sp.sawSpdX || 1); s.sawR = D.sawR * (sp.sawRX || 1) * (1 + pv('wideS') / 100); s.boomer = pv('boomer'); s.grind = pv('grind'); s.multi += pv('third'); s.shred = true; break;
+    case 'det': s.detX = D.detX * (sp.detXm || 1) * (1 + (pv('volat') + pv('cruc')) / 100); s.detR = D.detR + pv('blastR'); s.detSpread = sp.detSpread ? sp.detSpread + pv('storm') : 0; s.smoulder = pv('smoulder'); s.burn = 1; break;
+    case 'surge': s.cells = D.cells + (sp.cells || 0) + pv('cellsP') + pv('reserve'); s.chargeRate = 1 + pv('quickC') / 100; break;
+    case 'wall': s.hold = D.hold * (1 + 0.5 * (lv - 1) + 0.25 * asc) * (sp.holdX || 1) * (1 + (pv('thick') + pv('pack')) / 100) * (s.node ? NODE_TOWER.aura : 1); s.spikes = (sp.spikes || 0) + pv('barbs'); s.shardW = pv('shardW'); break;
+    case 'tether': s.links = Math.min(TANGLE.links, D.links + (sp.links || 0) + pv('linkP') + pv('web') + s.multi); s.share = Math.min(TANGLE.share, D.share + (sp.share || 0) + (pv('shareP') + pv('fate')) / 100); s.linkT = D.linkT + pv('longT'); s.tslow = sp.tslow || 0; s.bond = pv('bond'); break;
+    case 'aegis': s.guards = D.guards + Math.floor((lv - 1) / 2) + (sp.guards || 0) + pv('guard') + pv('last') + Math.floor(asc / 2); s.salv = pv('salv'); s.patch = pv('patch'); s.flak = pv('flak'); break;
+    case 'joker': s.jack = Math.max(3, (sp.jackEvery || D.jack) - pv('hot')); s.sure = sp.sure || 0; s.luck = pv('luck') / 100; s.dbl = pv('dbl') / 100; s.allin = pv('allin');
+      s.b0 = { burn: s.burn, chill: s.chill, shock: s.shock, mark: s.mark }; break;
+  }
 }
 // ---------- v5.8 Techniques: a tower's alternate fire mode (TOWER_FIRE in data.js) ----------
 // t.fire is the chosen mode id ('' or undefined = Standard). It only counts while its talent is learned in the run's talent source
@@ -4382,6 +4655,7 @@ function startWave() {
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
+  if (G.capT && G.capT.length) for (const t of G.towers) if (t.guardN) t.guardN = 0; // 6.4 Gatekeeper: stops reset each wave
   abilOnlineCheck(w);
   if (G.tut && G.tutS.charge && G.tutS.charge[tutIdx(w)]) { const k = G.tutS.charge[tutIdx(w)]; G.charges[k] = Math.max(1, G.charges[k] || 0); }
   if (G.mods.ks.chaos) chaosRoll(); // v5.8 Chaos Engine
@@ -4489,7 +4763,7 @@ function cashIn(amount) {
 // ---------- v4.4 The Black Market: three items a stock, restocked after every boss wave, prices climbing with the wave ----------
 const marketStockN = w => Math.floor(Math.max(1, w) / MARKET.refresh);
 const marketPrice = I => MARKET.price(I.base, G.wave);
-const nextLockedTower = () => TOWER_ORDER.filter(k => !towerUnlocked(k)).sort((a, b) => TOWERS[a].unlock - TOWERS[b].unlock)[0] || null;
+const nextLockedTower = () => TOWER_ORDER.filter(k => !TOWERS[k].capT && !towerUnlocked(k)).sort((a, b) => TOWERS[a].unlock - TOWERS[b].unlock)[0] || null;
 function marketOk(I) {
   if (I.id === 'blueprint') return !!nextLockedTower();
   if (I.id === 'beacon') return (G.market ? G.market.beacons || 0 : 0) < I.max;
@@ -4597,7 +4871,8 @@ function updateWaves(dt) {
 }
 
 // ---------- entropy & anomalies ----------
-const entropyNeed = () => 100 * (1 + 0.3 * (G.anoms.length + G.stabilized));
+const anomCount = () => G.anoms.length + (G.ganoms ? G.ganoms.length : 0); // classic + generated (6.4)
+const entropyNeed = () => 100 * (1 + 0.3 * (anomCount() + G.stabilized));
 const gamblerScore = () => G && G.mods && G.mods.ks.gambler ? 0.25 + FX('gScore') / 100 : 0;
 function addEntropy(v) {
   if (G && G.mods && G.mods.ks.gambler) v *= 1.25;
@@ -4605,17 +4880,23 @@ function addEntropy(v) {
   // the gauge shows percent of the current threshold; each draw raises the threshold
   G.entropy = Math.min(100, G.entropy + 100 * v / entropyNeed() * (G.af.fill ? 2 : 1) * (G.mods.ks.singular ? 2 : 1) * Math.sqrt(G.CH.ev));
   if (G.entropy >= 100) {
-    const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id));
-    const offers = [];
-    while (offers.length < 3 && pool.length) offers.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
-    G.anomOffers = offers;
+    if (G.frV >= 4) G.anomOffers = anomOffersGen(); // 6.4: generated cards plus classics
+    else {
+      const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id));
+      const offers = [];
+      while (offers.length < 3 && pool.length) offers.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
+      G.anomOffers = offers;
+    }
     Hooks.toast('ENTROPY FULL', 'Tap the gauge to draw an Anomaly', '#b86cff');
     Hooks.sfx('converge');
     Hooks.onEntropy && Hooks.onEntropy();
   }
 }
 function takeAnomaly(id) {
-  if (!G.anomOffers || !G.anomOffers.includes(id)) return false;
+  if (!G.anomOffers) return false;
+  const go = G.anomOffers.find(o => o && typeof o === 'object' && o.id === id);
+  if (go) return takeGenAnomaly(go); // 6.4 generated card (frV 4)
+  if (!G.anomOffers.includes(id)) return false;
   const A = ANOMALIES.find(a => a.id === id);
   G.anoms.push(id); G.anomOffers = null; G.entropy = 0; rlog('anom', { id });
   PROF.codex.anomalies[id] = (PROF.codex.anomalies[id] || 0) + 1;
@@ -4634,6 +4915,136 @@ function stabilize() {
   Hooks.sfx('unbreak');
   return true;
 }
+// ---------- 6.4 generated Anomalies (G.frV >= 4) ----------
+// A card is a boon part plus a drawback part (data.js ANOM_UP / ANOM_DN), sized from a power budget: the drawback costs
+// ANOM_GEN.dr of what the boon gives. The budget grows with rarity, the draw number and the wave. Offers lean toward the
+// elements and crits the player fields. Every key has a cap on what all the run's Anomalies add up to. Only G.r is drawn.
+// A card is stored whole: { id, name, r (rarity index), up: [[part, value]], dn: [[part, value]], n (draw number) }.
+// what the run's Anomalies add to each key so far, in card units (m keys signed; coreHPx as the % of core max HP taken)
+function anomTotals() {
+  const T = {}, add = (k, v) => { T[k] = (T[k] || 0) + v; }; let hpx = 1;
+  for (const id of G.anoms) {
+    const A = ANOMALIES.find(a => a.id === id); if (!A) continue;
+    for (const k in A.m || {}) add(k, A.m[k]);
+    for (const k in A.af || {}) { if (k === 'coreHPx') hpx *= A.af[k]; else add(k, A.af[k] * 100); }
+  }
+  for (const A of G.ganoms || []) for (const [id, v] of A.up.concat(A.dn)) {
+    const P = ANOM_PART[id]; if (!P) continue;
+    if (P.k === 'coreHPx') hpx *= 1 - v / 100; else add(P.k, P.sp ? 100 : P.t === 'm' ? P.side * v : v);
+  }
+  T.coreHPx = (1 - hpx) * 100;
+  return T;
+}
+// how much more of a part the caps allow (a special: 1 if the run does not have it yet)
+function anomRoom(P, T) {
+  const cur = T[P.k] || 0;
+  if (P.sp) return cur > 0 ? 0 : 1;
+  if (P.side > 0) return P.cap - cur;
+  if (P.t === 'm') return P.cap + cur; // a drawback on a stat key: the total may not drop below −cap
+  if (P.k === 'coreHPx') return 100 * (1 - (1 - P.cap / 100) / (1 - cur / 100));
+  return P.cap - cur;
+}
+// the value that gives this much power, on the part's step, inside its range and the room left (0: no room)
+function anomSize(P, power, room) {
+  if (P.sp) return room >= 1 ? 1 : 0;
+  const hi = Math.min(P.hi, Math.floor(room / P.st + 1e-9) * P.st);
+  if (hi < P.lo) return 0;
+  return +Math.max(P.lo, Math.min(hi, Math.round(power / P.p / P.st) * P.st)).toFixed(2);
+}
+const anomPow = (P, v) => P.sp ? P.p : v * P.p;
+// what the player fields: element shares and crit share of attack-tower credits (an empty board counts every element the same)
+function anomBuild() {
+  const sh = { K: 0, T: 0, C: 0, A: 0, V: 0 }; let tot = 0, crit = 0;
+  for (const t of G.towers) {
+    if (towerPool(t.type) !== 'atk' || !t.s || sh[t.s.el] == null) continue;
+    const w = t.invested || 1; sh[t.s.el] += w; tot += w; if (t.s.critC > 0) crit += w;
+  }
+  for (const e in sh) sh[e] = tot ? sh[e] / tot : 0.2;
+  return { sh, crit: tot ? crit / tot : 0.2 };
+}
+function anomWeight(P, B) {
+  let w = P.w;
+  if (P.side > 0) {
+    if (P.el) w *= 0.1 + 3 * B.sh[P.el];
+    if (P.need === 'crit') w *= 0.15 + 2 * B.crit;
+    else if (P.need) w *= 0.15 + 2.5 * B.sh[P.need];
+  } else if (P.el) w *= 0.5 + B.sh[P.el];
+  return w;
+}
+// one generated card, or null when the caps leave no fair trade. used: boon and drawback keys and names already in this offer
+function anomGenCard(r, n, slot, B, T, used) {
+  const ri = wpickI(r, ANOM_RARITY, x => x.w * (x.id === 'common' ? 1 : 1 + 0.1 * Math.min(n, 6)));
+  const bud = ANOM_RARITY[ri].b * (1 + ANOM_GEN.grow * Math.min(n, ANOM_GEN.growN) + Math.min(G.wave, ANOM_GEN.waveMax) / ANOM_GEN.waveDiv);
+  const up = [], dn = [], keys = new Set(), grps = new Set();
+  const free = P => !keys.has(P.k) && !(P.grp && grps.has(P.grp)) && anomSize(P, P.sp ? P.p : P.lo * P.p, anomRoom(P, T)) > 0;
+  const put = (arr, P, v) => { arr.push([P.id, v]); keys.add(P.k); if (P.grp) grps.add(P.grp); return anomPow(P, v); };
+  const pickUp = (power, sp) => {
+    let pool = ANOM_UPS.filter(P => !!P.sp === sp && free(P) && !used.up.has(P.k));
+    if (!pool.length) pool = ANOM_UPS.filter(P => !!P.sp === sp && free(P));
+    if (!pool.length) return 0;
+    const P = wpick(r, pool, x => anomWeight(x, B)), v = anomSize(P, power, anomRoom(P, T));
+    return v ? put(up, P, v) : 0;
+  };
+  let gain = 0;
+  if (ri === 2) { // Exotic: a special and a stat boon, or two stat boons
+    if (r() < 0.45) gain += pickUp(0, true);
+    gain += pickUp(bud * (gain ? 0.6 : 0.7), false);
+    if (up.length < 2) gain += pickUp(bud * 0.5, false);
+  } else gain += pickUp(bud, false);
+  if (!up.length) return null;
+  const need0 = gain * ANOM_GEN.dr; let need = need0;
+  for (let i = 0; i < 2 && need > (i ? 0.2 * need0 : 0); i++) {
+    const fits = P => free(P) && (P.sp ? P.p : P.lo * P.p) <= need * 1.3 && (!P.sp || P.p >= need * 0.6); // no drawback far bigger than the boon
+    let pool = ANOM_DNS.filter(P => fits(P) && !used.dn.has(P.k));
+    if (!pool.length) pool = ANOM_DNS.filter(fits);
+    if (!pool.length) break;
+    const P = wpick(r, pool, x => anomWeight(x, B)), v = anomSize(P, need, anomRoom(P, T));
+    if (!v) break;
+    need -= put(dn, P, v);
+  }
+  if (!dn.length || need > 0.35 * need0) return null; // the caps left no drawback big enough: not a fair trade
+  const W = ANOM_PART[up[0][0]].words, N = ANOM_PART[dn[0][0]].nouns;
+  let name = '';
+  for (let i = 0; i < 6; i++) { name = pick(r, W) + ' ' + (ri === 2 && r() < 0.5 ? pick(r, ANOM_EXOTIC_NOUNS) : pick(r, N)); if (!used.names.has(name)) break; }
+  return { id: 'g' + n + 'abc'[slot], name, r: ri, up, dn, n };
+}
+// a full draw at frV 4: 3 slots, each a classic (ANOM_GEN.classic of the time, never repeated) or a generated card. Cards in one
+// offer never share a boon key or a drawback key
+function anomOffersGen() {
+  const n = anomCount() + G.stabilized, B = anomBuild(), T = anomTotals();
+  const used = { up: new Set(), dn: new Set(), names: new Set((G.ganoms || []).map(a => a.name)) };
+  const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id)), offers = [];
+  const classic = () => offers.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
+  for (let s = 0; s < 3; s++) {
+    if (pool.length && G.r() < ANOM_GEN.classic) { classic(); continue; }
+    let c = null;
+    for (let i = 0; i < 4 && !c; i++) c = anomGenCard(G.r, n, s, B, T, used);
+    if (!c) { if (pool.length) classic(); continue; }
+    for (const [id] of c.up) used.up.add(ANOM_PART[id].k);
+    for (const [id] of c.dn) used.dn.add(ANOM_PART[id].k);
+    used.names.add(c.name); offers.push(c);
+  }
+  return offers;
+}
+function takeGenAnomaly(o) {
+  const A = JSON.parse(JSON.stringify(o));
+  G.ganoms.push(A); G.anomOffers = null; G.entropy = 0;
+  rlog('anom', { id: A.id, g: { name: A.name, r: A.r, up: A.up, dn: A.dn } });
+  const C = PROF.codex.gen || (PROF.codex.gen = { n: 0, r: [0, 0, 0], parts: {} }); // codex: counts per rarity and per part, not per name
+  C.n = (C.n || 0) + 1; C.r[A.r] = (C.r[A.r] || 0) + 1; for (const [id] of A.up.concat(A.dn)) C.parts[id] = (C.parts[id] || 0) + 1;
+  recomputeAll();
+  Hooks.log(`Anomaly: ${A.name}`, ANOM_RARITY[A.r].col);
+  Hooks.sfx('maelstrom');
+  return true;
+}
+// what a card shows (classic id or generated spec): name, rarity, and the up and down lines with numbers
+function anomInfo(o) {
+  if (typeof o === 'string') { const A = ANOMALIES.find(a => a.id === o); return A ? { id: o, name: A.name, rar: 'classic', label: 'Classic', col: '#d6a6ff', up: [A.up], dn: [A.down], classic: 1 } : null; }
+  if (!o || !o.up) return null;
+  const R = ANOM_RARITY[o.r] || ANOM_RARITY[0];
+  return { id: o.id, name: o.name, rar: R.id, label: R.name, col: R.col, up: o.up.map(([id, v]) => anomPartTxt(id, v)), dn: o.dn.map(([id, v]) => anomPartTxt(id, v)) };
+}
+const anomTaken = () => G ? G.anoms.concat(G.ganoms || []).map(anomInfo).filter(Boolean) : [];
 
 // ---------- veterans ----------
 function grantVxp(t, v) {
@@ -4903,6 +5314,7 @@ function updateEnemies(dt) {
       for (const e of arr) { if (e.st.frozen > 0) { wall = e.d; continue; } if (wall !== null && wall - e.d < 0.55) { e.jammed = true; wall = e.d; } else wall = null; }
     }
   }
+  if (G.capT && G.capT.length) wallHold(dt); // 6.4 Rimewall (only runs with a capstone tier tower)
   // gravity fields
   for (const e of G.enemies) e.fieldSlow = 0;
   for (const t of G.towers) {
@@ -5196,6 +5608,7 @@ function bulwarkWave(c) {
 }
 function leak(e) {
   if (G.tut && tutLeak(e)) return;
+  if (!e.boss && G.capT && G.capT.length && aegisCatch(e)) return; // 6.4 Gatekeeper (only runs with a capstone tier tower)
   e.dead = true;
   geneRecord(e, true); assaultHit(e, true);
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
@@ -5292,6 +5705,7 @@ function hit(e, dmg, el, src, o) {
   if (e.boss && !e.gen && e.boss !== 'gloop' && e.phase < BOSS_PHASES.length && e.hp < e.maxHp * BOSS_PHASES[e.phase]) bossPhase(e);
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
   if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; src.lastFireW = G.wave; }
+  if (e.lnk && !o.echo && !o.dot && dealt > 0) tangleEcho(e, dealt, el); // 6.4 Entangler (only exists in runs with the tower)
   if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt || glance ? 'hitarmor' : 'hit', e, src);
     if ((blunt || glance) && (e.pingT || 0) < G.time) { e.pingT = G.time + 0.25; Hooks.fx(glance ? 'glance' : 'ping', { x: e.x, y: e.y, sx: src && src.cx, sy: src && src.cy }); } }
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
@@ -5438,7 +5852,7 @@ function kill(e, src, o) {
   G.credits += cr;
   G.kills++; if (!ghostRun()) PROF.kills++;
   addScore(e.score);
-  if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); }
+  if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); if (src.s && src.s.kind === 'surge') src.charge = Math.min(src.s.cells, (src.charge || 0) + 1); } // 6.4: a Surge Spire's kill refills a cell
   if (e.elite.length) { G.stats.elites++; if (G.entWaveCombo < 6) { G.entWaveCombo += 0.25; addEntropy(0.25); } }
   if (G.af.boom && depth0(o) < 2) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * G.af.boom * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth0(o) + 1 });
@@ -5565,7 +5979,7 @@ function towerDmg(t, sw) {
   if (t.s.leg.entropic) d *= 0.4 + G.r() * 2.6;
   if (G.flux) d *= t.s.el === G.flux.el ? 2 : 0.85;
   if (G.af.lastStand && G.core.hp < G.core.max * 0.5) d *= 1.6;
-  const rt = G.mods.orb && G.mods.orb.rift[t.s.el]; if (rt && G.anoms.length) d *= 1 + rt * G.anoms.length / 100;
+  const rt = G.mods.orb && G.mods.orb.rift[t.s.el]; if (rt && anomCount()) d *= 1 + rt * anomCount() / 100;
   return d;
 }
 function atkDmg(t, sw, crit) { return towerDmg(t, sw) * (crit ? t.s.critM : 1 - (G.af.noncrit || 0)) * (t.capMult || 1); }
@@ -5636,6 +6050,7 @@ function updateTowers(dt) {
     if (t.hot && M.ks.wildfire) rate *= 0.75;
     if (M.ks.stormrider && s.el0 === 'A' && sw.inStorm) rate *= 1.6; // v5.8 Storm Rider
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
+    if (s.kind === 'surge') { if (t.surgeIdle) t.charge = Math.min(s.cells, (t.charge || 0) + dt * s.chargeRate); if ((t.charge || 0) >= 1) rate *= SURGE.burst; } // 6.4 Surge Spire
     t.effRange = range;
     t.cd -= dt * rate;
     if (s.kind === 'beam') { beamUpdate(t, dt, range, sw); if (t.beamTargets) t.lastFireW = G.wave; continue; }
@@ -5737,7 +6152,12 @@ function towerAttack(t, range, sw) {
       Hooks.sfx('missile', t);
       return true;
     }
-    case 'chain': {
+    case 'surge': { // 6.4 Surge Spire: idle time fills its cells (updateTowers); a charged bolt spends one. Then it fires as an Arc Coil
+      if (!findTargets(t, range, 1).length) { t.surgeIdle = 1; return false; }
+      t.surgeIdle = 0;
+      if ((t.charge || 0) >= 1) { t.charge -= 1; t.surgeT = G.time; }
+    } // falls through
+    case 'chain': { // eslint-disable-line no-fallthrough
       if (s.fence) return fenceAttack(t, sw);
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
@@ -5761,7 +6181,7 @@ function towerAttack(t, range, sw) {
         ricochet(t, e0, dmg, s.el);
         Hooks.fx('chain', { pts, col: EL[s.el].col, t });
       }
-      Hooks.sfx('coil', t);
+      Hooks.sfx(s.kind === 'surge' ? 'surge' : 'coil', t);
       return true;
     }
     case 'cone': {
@@ -5819,6 +6239,12 @@ function towerAttack(t, range, sw) {
       Hooks.sfx('grav', t);
       return true;
     }
+    case 'saw': return sawThrow(t, range, sw); // 6.4 capstone tier towers
+    case 'det': return flashPulse(t, range, sw);
+    case 'wall': return wallRaise(t, range);
+    case 'tether': return tangleLink(t, range, sw);
+    case 'aegis': return aegisShot(t, range);
+    case 'joker': return jokerShot(t, range, sw);
     case 'eco': { // v5.8 Forge Works: a Forge fires Kinetic slugs worth part of its income
       if (!s.fdmg) return false;
       const tg = findTargets(t, range, 1);
@@ -5907,6 +6333,221 @@ function updateMines(dt) {
     }
   }
   G.mines = G.mines.filter(m => m.t > 0);
+}
+// ---------- 6.4 capstone tier towers (tower64) ----------
+const SURGE = { burst: 4 };
+// Buzzsaw: a blade lands on its target's road just ahead of it and runs back up the road (toward the wormhole), cutting every
+// ground enemy it touches once. Boomerang runs it back down once; Grind holds it at the end of its run for 1 s
+const SAW = { fly: 0.22, lead: 0.6 };
+const SAW_TMP = { x: 0, y: 0, seg: 0 };
+function sawThrow(t, range, sw) {
+  const s = t.s, tg = findTargets(t, range, 1 + s.multi);
+  if (!tg.length) return false;
+  for (const e of tg) {
+    if (!e.L || !e.L.pts) continue;
+    const crit = rollCrit(t), d0 = Math.min(e.L.len, e.d + SAW.lead);
+    t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
+    G.projs.push({ k: 'saw', L: e.L, d: d0, from: d0, end: Math.max(0, d0 - s.sawLen), dir: -1, x: t.cx, y: t.cy, seg: 0, fly: SAW.fly, spd: s.sawSpd, r: s.sawR,
+      dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t, hitSet: new Set(), back: s.boomer ? 1 : 0, dwell: s.grind ? 1 : 0, dwellT: 0, life: 6 });
+  }
+  Hooks.sfx('saw', t);
+  return true;
+}
+function sawStep(p, dt) {
+  p.life -= dt; if (p.life <= 0) { p.dead = true; return; }
+  if (p.fly > 0) { const q = lanePos(p.L, p.d, SAW_TMP), k = Math.min(1, dt / p.fly); p.x += (q.x - p.x) * k; p.y += (q.y - p.y) * k; p.fly -= dt; return; }
+  if (p.dwellT > 0) { p.dwellT -= dt; sawCut(p); if (p.dwellT <= 0) p.dead = true; return; }
+  p.d += p.dir * p.spd * dt;
+  const done = p.dir < 0 ? p.d <= p.end : p.d >= p.end;
+  if (done) p.d = p.end;
+  lanePos(p.L, p.d, p);
+  sawCut(p);
+  if (!done) return;
+  if (p.back) { p.back = 0; p.dir = -p.dir; p.end = p.from; p.hitSet = new Set(); }
+  else if (p.dwell) { p.dwell = 0; p.dwellT = 1; p.hitSet = new Set(); }
+  else p.dead = true;
+}
+function sawCut(p) {
+  for (const e of G.enemies) {
+    if (e.fly || p.hitSet.has(e) || !enemyTargetable(e)) continue;
+    const rr = p.r + (e.size || 0.3);
+    if (dist2(e.x, e.y, p.x, p.y) > rr * rr) continue;
+    p.hitSet.add(e); hit(e, p.dmg, p.el, p.src, { crit: p.crit });
+  }
+}
+// Flashover: a ring pulse. Burning enemies explode for the hit plus their remaining Burn × detX (40% splashes around, Chain
+// Reaction lights the neighbours); the rest take a lighter hit that sets them on fire (its Burn chance is 100%)
+function flashPulse(t, range, sw) {
+  const s = t.s, r2 = range * range, tg = G.enemies.filter(e => enemyTargetable(e) && dist2(e.x, e.y, t.cx, t.cy) <= r2);
+  if (!tg.length) return false;
+  const crit = rollCrit(t), dmg = atkDmg(t, sw, crit), R = Math.max(s.detR, s.detSpread);
+  let booms = 0;
+  for (const e of tg) {
+    if (e.dead) continue;
+    const B = e.st.burn;
+    if (B && B.t > 0) {
+      const big = dmg + B.dps * B.t * s.detX, x = e.x, y = e.y;
+      e.st.burn = s.smoulder ? { dps: B.dps * 0.5, t: B.t, src: B.src } : null;
+      hit(e, big, s.el, t, { crit, noStatus: 1 });
+      for (const o of G.enemies) {
+        if (o === e || o.dead) continue;
+        const d2 = dist2(o.x, o.y, x, y); if (d2 > R * R) continue;
+        if (d2 <= s.detR * s.detR) hit(o, big * 0.4, s.el, t, { noStatus: 1 });
+        if (s.detSpread && !o.dead && !o.st.burn && d2 <= s.detSpread * s.detSpread) o.st.burn = { dps: B.dps, t: 3 * G.mods.burnDur, src: t };
+      }
+      if (booms++ < 6) Hooks.fx('boom', { x, y, r: s.detR, col: EL.T.col });
+    } else hit(e, dmg * 0.6, s.el, t, { crit });
+  }
+  Hooks.fx('heat', { x: t.cx, y: t.cy, r: range, n: booms });
+  Hooks.sfx('flashover', t, booms);
+  return true;
+}
+// Rimewall: an ice wall on the road tile nearest the tower. Ground enemies touching it stop (e.jammed), wear it down (1 a second
+// each, elites 2) and take a cold tick every WALL.tick s (its Chill chance is 100%, so they Freeze). A boss smashes it. Broken
+// walls regrow after 1/rate s (t.cd). Walls live on the tower (t.wall) and are not saved: a resumed wave raises them again
+const WALL = { r: 0.45, tick: 0.5 };
+function wallSpot(t, range) {
+  let best = null, bs = 1e9; const r2 = range * range;
+  for (const L of G.map.lanes) {
+    if (L.openWave) continue;
+    for (let i = 1; i < L.pts.length - 1; i++) { const p = L.pts[i], d2 = dist2(p.x, p.y, t.cx, t.cy); if (d2 > r2) continue; const sc = d2 - 0.01 * L.cum[i] / L.len; if (sc < bs) { bs = sc; best = p; } }
+  }
+  return best;
+}
+const wallOnRoad = w => G.map.lanes.some(L => !L.openWave && L.pts.some(p => dist2(p.x, p.y, w.x, w.y) < 0.04));
+function wallRaise(t, range) {
+  if (t.wall) { if ((G.tick + t.id) % 30 === 0 && (!wallOnRoad(t.wall) || dist2(t.wall.x, t.wall.y, t.cx, t.cy) > (range + 0.5) ** 2)) { t.wall = null; t.cd = 0; } return false; } // the road or the tower moved (Frontier)
+  const p = wallSpot(t, range); if (!p) return false;
+  t.wall = { x: p.x, y: p.y, hp: t.s.hold, max: t.s.hold, tick: 0 };
+  Hooks.fx('wallup', { x: p.x, y: p.y }); Hooks.sfx('rime', t);
+  return true;
+}
+function wallHold(dt) {
+  for (const t of G.towers) {
+    const w = t.wall; if (!w) continue;
+    w.tick -= dt; const tick = w.tick <= 0; if (tick) w.tick = WALL.tick;
+    let dmg = -1, crit = false;
+    for (const e of G.enemies) {
+      if (e.dead || e.fly || e.burrowT > 0) continue;
+      const rr = WALL.r + (e.size || 0.3);
+      if (dist2(e.x, e.y, w.x, w.y) > rr * rr) continue;
+      if (e.boss) { w.hp = 0; hit(e, towerDmg(t, stormAt(t.cx, t.cy)) * 2, t.s.el, t, {}); break; } // a boss smashes it (and is Chilled)
+      e.jammed = true; G.stats.held = (G.stats.held || 0) + dt; // enemy-seconds held, for the run log and the bots
+      w.hp -= dt * (e.elite.length ? 2 : 1);
+      if (t.s.spikes) { e.shatterT = Math.max(e.shatterT || 0, 0.6); e.shatterV = Math.max(e.shatterV || 0, t.s.spikes); }
+      if (tick) { if (dmg < 0) { crit = rollCrit(t); dmg = atkDmg(t, stormAt(t.cx, t.cy), crit) * WALL.tick; } hit(e, dmg, t.s.el, t, { crit }); }
+    }
+    if (w.hp <= 0) wallBreak(t);
+  }
+}
+function wallBreak(t) {
+  const w = t.wall; t.wall = null; t.cd = 1;
+  Hooks.fx('wallbreak', { x: w.x, y: w.y }); Hooks.sfx('crack', w);
+  if (t.s.shardW) { const d = towerDmg(t, stormAt(t.cx, t.cy)) * 4; for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, w.x, w.y) <= 2.25) hit(e, d, t.s.el, t, { noStatus: 1 }); }
+}
+// Entangler: links up to s.links enemies for s.linkT s (a group, G.tangles). An enemy is in one group at most. A hit on a member
+// (not damage over time, not a copy) shares s.share of the damage it dealt out among the other members (bosses take half a share)
+const TANGLE = { links: 6, share: 0.5 }; // caps: a hit is copied at most 5 times, at most 50% each
+function tangleLink(t, range, sw) {
+  const s = t.s, tg = findTargets(t, range, Math.max(1, s.links));
+  if (!tg.length) return false;
+  const crit = rollCrit(t), dmg = atkDmg(t, sw, crit);
+  if (tg.length >= 2) {
+    const g = { m: tg.slice(), t: s.linkT, src: t, share: s.share, slow: s.tslow, bond: s.bond, bt: 1 };
+    for (const e of tg) e.lnk = g;
+    (G.tangles || (G.tangles = [])).push(g);
+  }
+  t.angle = Math.atan2(tg[0].y - t.cy, tg[0].x - t.cx);
+  for (const e of tg) hit(e, dmg, s.el, t, { crit });
+  Hooks.fx('tether', { x: t.cx, y: t.cy, es: tg.map(e => ({ x: e.x, y: e.y })) });
+  Hooks.sfx('tangle', t);
+  return true;
+}
+function tangleEcho(e, v, el) {
+  const g = e.lnk; if (!g || g.t <= 0) return;
+  let n = 0; for (const m of g.m) if (m !== e && !m.dead && m.lnk === g) n++;
+  if (!n) return;
+  const a = v * g.share / n; // the share is split among the other links, so a hit is worth at most 1 + share in total
+  for (const m of g.m) if (m !== e && !m.dead && m.lnk === g) hit(m, a * (m.boss ? 0.5 : 1), el, g.src, { echo: 1, dot: 1, noStatus: 1 });
+}
+function updateTangles(dt) {
+  for (const g of G.tangles) {
+    g.t -= dt; g.m = g.m.filter(e => !e.dead && e.lnk === g);
+    if (g.m.length < 2) g.t = 0;
+    if (g.t <= 0) { for (const e of g.m) if (e.lnk === g) e.lnk = null; continue; }
+    if (g.slow) for (const e of g.m) if (!e.elite.includes('jugg')) slowTag(e, g.slow, 0.25);
+    if (g.bond && (g.bt -= dt) <= 0) { g.bt = 1; for (const e of g.m) { e.st.mark = Math.min(G.mods.markMax, e.st.mark + 1); e.st.markT = 4; } }
+  }
+  G.tangles = G.tangles.filter(g => g.t > 0);
+}
+// Gatekeeper: a light gun (no element), and up to s.guards leaks a wave stopped at the gate while the core is in its range.
+// The enemy dies there and pays as a kill. Bosses are never stopped. t.guardN counts this wave's stops (startWave clears it)
+function aegisShot(t, range) {
+  const s = t.s, tg = findTargets(t, range, 1);
+  if (!tg.length) return false;
+  const e = tg[0], crit = rollCrit(t);
+  t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
+  const d = s.dmg * (1 + t.buff.dmg) * (crit ? s.critM : 1) * (t.capMult || 1);
+  G.projs.push({ k: 'bullet', x: t.cx, y: t.cy, e, spd: s.pspd, dmg: d, crit, el: 'N', src: t, bounces: 0, hitSet: new Set(), splash: s.flak ? 0.8 : s.splash, life: 2 });
+  Hooks.sfx('aegis', t);
+  return true;
+}
+function aegisCatch(e) {
+  const c = G.core; let A = null, bd = 1e9;
+  for (const t of G.towers) {
+    if (t.s.kind !== 'aegis' || t.disabled > 0 || t.mvT > 0 || (t.guardN || 0) >= t.s.guards) continue;
+    const d = dist2(t.cx, t.cy, c.x, c.y), r = t.s.range + 0.5;
+    if (d <= r * r && d < bd) { bd = d; A = t; }
+  }
+  if (!A) return false;
+  A.guardN = (A.guardN || 0) + 1; G.stats.aegis = (G.stats.aegis || 0) + 1;
+  Hooks.fx('aegis', { x1: A.cx, y1: A.cy, x2: e.x, y2: e.y, left: A.s.guards - A.guardN }); Hooks.sfx('aegisblock', A);
+  const c0 = G.credits;
+  kill(e, A, {});
+  if (A.s.salv) G.credits += Math.max(0, G.credits - c0);
+  if (A.s.patch) c.hp = Math.min(c.max, c.hp + c.max * A.s.patch / 100);
+  return true;
+}
+// Wildcard: every shot rolls an element and a delivery (a bolt, a lance, a burst, an arc), with a 50% chance (Loaded Dice: 100%) of
+// that element's status (Kinetic: a crit). Every s.jack-th shot is a Jackpot: lance, burst and arc at ×2 (All In ×3) with every
+// status. The tower keeps the last roll in t.s (el and status chances) until its next shot, so its rounds in flight land with it
+const JOKER_FORMS = ['bolt', 'lance', 'burst', 'arc'];
+function jokerShot(t, range, sw) {
+  const s = t.s, tg = findTargets(t, range, 1);
+  if (!tg.length) return false;
+  const e = tg[0], M = G.mods;
+  t.jn = (t.jn || 0) + 1;
+  const jack = t.jn % s.jack === 0, el = M.ks.conflag ? 'T' : pick(G.r, ELS), forms = jack ? ['lance', 'burst', 'arc'] : [pick(G.r, JOKER_FORMS)];
+  const B = s.b0, P = jack || s.sure ? 1 : Math.min(1, 0.5 + s.luck);
+  s.el = el; s.burn = el === 'T' || jack ? Math.max(B.burn, P) : B.burn; s.chill = el === 'C' || jack ? Math.max(B.chill, P) : B.chill;
+  s.shock = el === 'A' || jack ? Math.max(B.shock, P) : B.shock; s.mark = el === 'V' || jack ? Math.max(B.mark, P) : B.mark;
+  const crit = (el === 'K' && (jack || G.r() < P)) || rollCrit(t);
+  const dmg = s.dmg * M.el[el] * (1 + t.buff.dmg) * (sw[el] || 1) * (crit ? s.critM : 1) * (t.capMult || 1) * (jack ? (s.allin ? 3 : 2) : 1);
+  t.angle = Math.atan2(e.y - t.cy, e.x - t.cx); t.jForm = forms[0]; if (jack) t.jackT = G.time;
+  for (const f of forms) jokerForm(t, f, e, range, dmg, el, crit);
+  if (s.dbl && !jack && G.r() < s.dbl) jokerForm(t, pick(G.r, JOKER_FORMS), e, range, dmg, el, false);
+  if (jack) Hooks.fx('jackpot', { x: t.cx, y: t.cy });
+  Hooks.sfx('joker', t, jack ? 1 : 0);
+  return true;
+}
+function jokerForm(t, f, e, range, dmg, el, crit) {
+  const s = t.s;
+  if (f === 'bolt') G.projs.push({ k: 'bullet', x: t.cx, y: t.cy, e, spd: s.pspd, dmg, crit, el, src: t, bounces: 1, hitSet: new Set(), splash: s.splash, life: 2 });
+  else if (f === 'burst') G.projs.push({ k: 'mortar', jk: 1, x: t.cx, y: t.cy, sx: t.cx, sy: t.cy, tx: e.x, ty: e.y, t: 0, fl: Math.hypot(e.x - t.cx, e.y - t.cy) / 8 + 0.25, dmg, crit, el, src: t, splash: 1 + s.splash });
+  else if (f === 'lance') { // a piercing line through up to 3 enemies (it ignores Plating, like a Rail Lance)
+    const ang = Math.atan2(e.y - t.cy, e.x - t.cx), dx = Math.cos(ang), dy = Math.sin(ang), len = range + 1, hits = [];
+    for (const o of G.enemies) { if (!enemyTargetable(o)) continue; const px = o.x - t.cx, py = o.y - t.cy, al = px * dx + py * dy; if (al < 0 || al > len) continue; if (Math.abs(px * dy - py * dx) < 0.35 + (o.boss ? 0.4 : 0)) hits.push([al, o]); }
+    hits.sort((a, b) => a[0] - b[0]);
+    const sh = s.shred; s.shred = true;
+    for (const [, o] of hits.slice(0, 3)) hit(o, dmg, el, t, { crit });
+    s.shred = sh;
+    Hooks.fx('rail', { x1: t.cx, y1: t.cy, x2: t.cx + dx * len, y2: t.cy + dy * len, col: EL[el].col, crit, t });
+  } else { // arc: chain lightning to 3 more enemies
+    const pts = [{ x: t.cx, y: t.cy }, { x: e.x, y: e.y }], hs = new Set([e]); let cur = e, d = dmg;
+    hit(e, d, el, t, { crit });
+    for (let j = 0; j < 3; j++) { let best = null, bd = 2.89; for (const o of G.enemies) if (enemyTargetable(o) && !hs.has(o)) { const q = dist2(o.x, o.y, cur.x, cur.y); if (q < bd) { bd = q; best = o; } } if (!best) break; d *= 0.85; hs.add(best); pts.push({ x: best.x, y: best.y }); hit(best, d, el, t); cur = best; }
+    Hooks.fx('chain', { pts, col: EL[el].col, t });
+  }
 }
 // v5.8 fields: Blackout's static (Shock + slow) and Hoarfrost's ice (Chill + Kinetic vulnerability), on the road for a few seconds
 function addField(k, x, y, r, t) { const F = G.fields || (G.fields = []); if (F.length >= 40) F.shift(); F.push({ k, x, y, r, t, max: t }); }
@@ -6013,7 +6654,7 @@ function updateProjs(dt) {
     } else if (p.k === 'bomblet') {
       p.t -= dt;
       if (p.t <= 0) { explode(p); p.dead = true; }
-    }
+    } else if (p.k === 'saw') sawStep(p, dt); // 6.4 Buzzsaw
   }
   G.projs = G.projs.filter(p => !p.dead);
   if (G.projs.length > 500) G.projs.splice(0, G.projs.length - 500);
@@ -6035,7 +6676,7 @@ function explode(p) {
   Hooks.fx('boom', { x: p.x, y: p.y, r, col: EL[p.el].col, k: p.k, t: src });
   Hooks.sfx(p.k === 'mortar' ? 'empboom' : p.k === 'bomblet' ? 'pop' : 'boomT', p); // cosmetic: each payload has its own impact
   for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, p.x, p.y) <= (r + e.size) * (r + e.size)) {
-    if (p.k === 'mortar' && !p.frost && e.shield > 0) e.shield *= s.pkv.eater ? 0 : 0.5; // EMP strips shields (v5.8 Shield Eater: all of it)
+    if (p.k === 'mortar' && !p.frost && !p.jk && e.shield > 0) e.shield *= s.pkv.eater ? 0 : 0.5; // EMP strips shields (v5.8 Shield Eater: all of it)
     hit(e, p.dmg, p.el, src, { crit: p.crit });
   }
   if (p.k === 'missile' && s.cluster) for (let i = 0; i < s.cluster; i++) {
@@ -6072,6 +6713,7 @@ function updateZones(dt) {
   G.zones = G.zones.filter(z => z.t > 0);
   if (G.mines && G.mines.length) updateMines(dt);
   if (G.fields && G.fields.length) updateFields(dt);
+  if (G.tangles && G.tangles.length) updateTangles(dt); // 6.4 Entangler
   // meteor event
   if (G.ev.meteor) {
     G.evT.meteor -= dt;
@@ -6509,7 +7151,7 @@ function gameOver() {
   bankPurse();
   if (ghostRun()) { Hooks.onGameOver(); return; }
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
-    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
+    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, ...(G.ganoms && G.ganoms.length ? { gan: G.ganoms.map(a => a.name) } : {}), reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
   huntEnd();
   masteryEnd();
@@ -6533,7 +7175,7 @@ function masteryGains() {
   const waves = Math.max(0, G.wave - G.startWave + 1); if (waves < 3) return [];
   const by = Object.assign({}, G.stats.dmgSold || {}), n = {};
   for (const t of G.towers) { by[t.type] = (by[t.type] || 0) + t.dmgDone; n[t.type] = (n[t.type] || 0) + 1; }
-  const combat = k => !['support', 'snare', 'eco'].includes(TOWERS[k].kind);
+  const combat = k => !['support', 'snare', 'eco', 'wall', 'aegis'].includes(TOWERS[k].kind); // 6.4: Rimewall and Aegis earn like support towers (their work isn't damage)
   let tot = 0, top = null; for (const k in by) if (combat(k)) { tot += by[k]; if (!top || by[k] > by[top]) top = k; }
   const out = [];
   for (const k of TOWER_ORDER) {
@@ -6754,17 +7396,17 @@ function snapshotRun(waveNum) {
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
-    ascV: G.ascV || 1, mastery: G.mastery || {}, // v5.8
+    ascV: G.ascV || 1, mastery: G.mastery || {}, capT: G.capT && G.capT.length ? G.capT.slice() : undefined, // v5.8; 6.4 capT
     fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
-    daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
+    daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), ganoms: G.ganoms || [], anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
   Hooks.onSave();
 }
 function snapshotNow() { if (G && !G.over) snapshotRun(G.spawningDone ? G.wave + 1 : G.wave); }
 function resumeRun(S) {
   const r = mulberry32((S.seed ^ (S.wave * 7919)) >>> 0);
-  newRun(Object.assign({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null, ascV: S.ascV || 1, mastery: S.mastery || {} }, S.fr ? { frontier: 1 } : {})); // v5.8: a save from before perks keeps the old Ascend
+  newRun(Object.assign({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null, ascV: S.ascV || 1, mastery: S.mastery || {}, capT: S.capT || [] }, S.fr ? { frontier: 1 } : {})); // v5.8: a save from before perks keeps the old Ascend
   PROF.runs--; // newRun counted it; a resume is the same run
   G.r = r;
   G.map.tiles = S.tiles.slice();
@@ -6788,7 +7430,7 @@ function resumeRun(S) {
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
     charges: Object.assign({}, S.charges), tokens: S.tokens, legendQueue: S.legendQueue, rerollDisc: S.rerollDisc, nextMs: S.nextMs,
     lanesOpened: S.lanesOpened, cpDue: S.cpDue || 0, unbreakUsed: S.unbreakUsed, boonsTaken: S.boonsTaken || [], next: 12,
-    entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
+    entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), ganoms: JSON.parse(JSON.stringify(S.ganoms || [])), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
   if (S.stats) G.stats = S.stats;
   G.pushes = S.pushes || 0; G.bounties = (S.bounties || []).slice(); G.huntChoice = S.huntChoice || null;
   // 5.8 (snapshots from 5.7 carry none of this: they continue on the new rules with no sector and an empty purse)
@@ -7060,6 +7702,7 @@ const SFX = (() => {
     shot2: 4.4, rail1: -1.8, rail2: -2, pulse1: -2.1, pulse2: 1.1, missile1: 0.3, missile2: -0.2, coil: 1.7, coil1: 1.1, coil2: -3.7, ignite: 5,
     mortar1: -2, mortar2: -1.1, grav1: -9.1, grav2: -8.5, hitK: 9.5, hitR: 2.3, hitC: 7.7, hitF: 3.4, hitV: 10.1, hitA: 10.9,
     boomT: -2, boomT2: -1.8, pop: 0.5, empboom: -2.7, empboom1: -2.6, lure: 2.8, lure2: 0.7, net1: -3.3, lock: 14.7, lock2: 14.7, forge: 1.2, forge1: 2.4, pylon: 11.7,
+    saw: 5.5, flashover: -6.5, rime: 1, aegis: 8.5, aegisblock: -3.5, joker: 10, // 6.4 (sfxrender: saw -26, Flashover -24, Aegis -30, Wildcard -28, a stop -22 dB)
     comboSHATTER: -2.5, comboOVERLOAD: -5, 'comboTHERMAL SHOCK': -3, comboSUPERCONDUCT: 3, comboCOLLAPSE: -7 };
   const dB = v => Math.pow(10, v / 20);
   // start a sound: bus, base volume, pitch jitter (semitones), placement and sends
@@ -7190,6 +7833,70 @@ const SFX = (() => {
       else { sub(c, 90, 28, 0.5, 0.5); fmv(c, { f0: 220, f1: 55, r: 0.5, i: 3, d: 0.45, v: 0.16, mw: 'triangle' }); }
       done(c);
     },
+    // ---------- 6.4 capstone tier towers (tower64): each in its own lane, gated like the rest ----------
+    // Buzzsaw: a metal whirr that rises as the blade leaves, a ring off the disc, a launch click
+    saw(t) {
+      if (!allow('saw', 0.1, 3)) return;
+      const sp = t && t.spec || 0, c = ev('saw', busW, 0.45, { room: 0.18, jit: 0.8, pitch: sp === 1 ? semi(-4) : 1, trim: ascT(t) }, t);
+      click(c, 0.4, 0, 4000);
+      nz(c, { f0: 1400, f1: 4200, q: 3, d: 0.22, v: 0.3, a: 0.02 });
+      fmv(c, { f0: 1760, f1: 1500, r: 2.76, i: 1.2, d: 0.18, v: 0.1, at: 0.02 });
+      if (sp === 2) nz(c, { f0: 1600, f1: 4600, q: 3, d: 0.2, v: 0.22, a: 0.02, at: 0.06 });
+      done(c);
+    },
+    // Flashover: a low whoomp; every explosion it sets off adds crackle (up to three)
+    flashover(t, n) {
+      if (!allow('flashover', 0.2, 2)) return;
+      const c = ev('flashover', busW, 0.55, { room: 0.25, jit: 0.6, trim: ascT(t) }, t);
+      sub(c, 110, 40, 0.22, 0.5);
+      nz(c, { ft: 'lowpass', f0: 1800, f1: 300, d: 0.28, v: 0.4, lofi: 1, a: 0.01 });
+      for (let k = 0; k < Math.min(3, n || 0); k++) nz(c, { ft: 'highpass', f0: 3000, d: 0.05, v: 0.22, at: 0.05 + k * 0.05 + rnd(0, 0.02), lofi: 1 });
+      done(c);
+    },
+    // Surge Spire: a bright snapping arc; a charged bolt is higher and tighter, so a burst rattles
+    surge(t) {
+      if (!allow('surge', 0.06, 4)) return;
+      const hot = t && t.surgeT !== undefined && G && G.time - t.surgeT < 0.05, c = ev('surge', busW, 0.4, { room: 0.12, jit: 1.5, pitch: hot ? semi(5) : 1, trim: ascT(t) }, t);
+      nz(c, { ft: 'highpass', f0: 6000, d: 0.04, v: 0.4, q: 0.5 });
+      fmv(c, { f0: rnd(900, 1300), f1: 220, r: 4.03, i: 5, d: hot ? 0.06 : 0.1, v: 0.2, cw: 'square' });
+      if (!hot) tone(c, { w: 0.125, f0: 330, f1: 165, d: 0.06, v: 0.07, crush: 1 });
+      done(c);
+    },
+    // Rimewall: the wall going up, a glassy rising bell over a frosty hiss
+    rime(t) {
+      if (!allow('rime', 0.3, 2)) return;
+      const c = ev('rime', busW, 0.45, { room: 0.35, jit: 0.5, trim: ascT(t) }, t);
+      fmv(c, { f0: 1175, f1: 2349, r: 3.01, i: 1.4, d: 0.3, v: 0.14 });
+      nz(c, { ft: 'highpass', f0: 5000, f1: 8000, d: 0.25, v: 0.18, a: 0.04 });
+      click(c, 0.3, 0.02, 3000);
+      done(c);
+    },
+    // Entangler: a low void thrum with a slow wobble as the threads snap on
+    tangle(t) {
+      if (!allow('tangle', 0.25, 2)) return;
+      const c = ev('tangle', busW, 0.45, { hall: 0.2, jit: 0.5, trim: ascT(t) }, t);
+      fmv(c, { f0: 147, f1: 196, r: 0.5, i: 3, d: 0.35, v: 0.16, mw: 'triangle' });
+      tone(c, { w: 'sine', f0: 587, f1: 440, d: 0.22, v: 0.08, vib: [7, 0.03] });
+      done(c);
+    },
+    // Gatekeeper: a light twin tap
+    aegis(t) {
+      if (!allow('aegis', 0.08, 3)) return;
+      const c = ev('aegis', busW, 0.32, { room: 0.12, jit: 0.8, trim: ascT(t) }, t);
+      click(c, 0.3, 0, 5000); click(c, 0.25, 0.035, 5000);
+      tone(c, { w: 0.25, f0: 1480, f1: 740, d: 0.04, v: 0.14, lp: 5000 });
+      done(c);
+    },
+    // Wildcard: a slot-machine ding (two random notes); a Jackpot plays a bell run
+    joker(t, jack) {
+      if (!allow('joker', 0.1, 3)) return;
+      const c = ev('joker', busW, 0.38, { room: 0.2, jit: 0, trim: (jack ? 3 : 0) + ascT(t) }, t);
+      click(c, 0.25, 0, 4000);
+      const n0 = 76 + Math.floor(rnd(0, 7));
+      if (jack) arp(c, [n0, n0 + 4, n0 + 7, n0 + 12], 0.05, { v: 0.1, d: 0.12, bell: 1 });
+      else { tone(c, { w: 0.25, f0: note(n0), d: 0.05, v: 0.1, lp: 5000 }); tone(c, { w: 0.25, f0: note(n0 + 5), d: 0.06, v: 0.09, lp: 5000, at: 0.05 }); }
+      done(c);
+    },
     // Core Battery: a plasma shell. Bright square chirp up, small sub, so it reads as "ours"
     coreshot(t) {
       if (!allow('coreshot', 0.12, 2)) return;
@@ -7202,7 +7909,8 @@ const SFX = (() => {
   // impacts: tiny, gated hard. Crits get a bright tink; blunted hits on armour a dull clank; shields a glassy ping.
   // v5.8: every tower family has its own impact and its own voice budget, so rapid Lens, Flame and Cryo hits can't starve the rest.
   // Missile, Mortar and Gravity Well hits are covered by their own blast or pull sound.
-  const HIT_FAM = { pulse: 'K', rail: 'R', cryo: 'C', flame: 'F', lens: 'V', coil: 'A', missile: null, emp: null, grav: null };
+  const HIT_FAM = { pulse: 'K', rail: 'R', cryo: 'C', flame: 'F', lens: 'V', coil: 'A', missile: null, emp: null, grav: null,
+    saw: 'R', flashover: null, surge: 'A', rime: 'C', tangle: 'V', aegis: 'K', joker: 'N' }; // 6.4: Flashover's blasts carry their own sound
   const HITS = {
     N: [0.035, 5, 0.22, c => nz(c, { f0: rnd(1500, 2600), q: 2.2, d: 0.03, v: 0.4 })],
     K: [0.04, 4, 0.22, c => { click(c, 0.25, 0, 5000); tone(c, { w: 0.25, f0: 1900, f1: 950, d: 0.025, v: 0.16, lp: 6000 }); }],
@@ -7281,6 +7989,9 @@ const SFX = (() => {
       if (sp === 2) { tone(c, { w: 'sine', f0: 1320, d: 0.16, v: 0.12 }); tone(c, { w: 'sine', f0: 1320, d: 0.12, v: 0.05, at: 0.16 }); }
       else { tone(c, { w: 'triangle', f0: 520, f1: 880, d: 0.14, v: 0.12, a: 0.03 }); }
       done(c); },
+    // 6.4 Gatekeeper: a leak stopped at the gate, a shield clang and a thump
+    aegisblock(t) { if (!allow('aegisblock', 0.15, 2)) return; const c = ev('aegisblock', busE, 0.55, { room: 0.35, jit: 0.3 }, t);
+      fmv(c, { f0: 880, f1: 830, r: 1.41, i: 2.2, i1: 0.3, d: 0.35, v: 0.16 }); sub(c, 130, 55, 0.12, 0.45); click(c, 0.35, 0, 3500); done(c); },
     // v5.8: a Void Lens locks onto a new target
     lock(t) { if (!allow('lock', 0.08, 2)) return; const c = ev('lock', busW, 0.3, { jit: 0.3, tn: t && t.spec === 2 ? 'lock2' : 'lock' }, t); tone(c, { w: 0.25, f0: 1320, d: 0.025, v: 0.1, lp: 5000 }); tone(c, { w: 0.25, f0: 1760, d: 0.035, v: 0.1, lp: 5000, at: 0.03 }); done(c); },
     // v5.8: Credit Forge payout: one bell per forge, staggered so several forges arpeggiate
@@ -9042,9 +9753,70 @@ const UNITS = (() => {
       parts.push(P(S.dome(0, 0, v === 1 ? 10 : 8.5, 9), 3, ['#020106', '#06030e', '#0c0618', '#160c2a', '#2a1a4a', '#6a4aa0']));
       return parts;
     },
+    // ---------- 6.4 capstone tier towers (tower64) ----------
+    saw(c, v, a) { // Buzzsaw: a launcher arm with a serrated disc blade racked on it (Grinder: one big blade, Twin Saw: two)
+      const rk = a.rk * 4, blade = (cx, cy, R, h, n) => (x, y) => { const dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy); if (r > R) return -1; const q = ((Math.atan2(dy, dx) / 6.2832 * n) % 1 + 1) % 1; return r > R - 3 * q ? -1 : r < R * 0.32 ? h + 2 : r > R - 4.5 ? h * 0.7 : h; };
+      const parts = [P(S.rbox(-15, -10, 4, 10, 4, 6, 2), 2, HULL, { d: (x, y) => (Math.abs(y) < 0.7 ? -1 : 0) + (x < -12 ? -1 : 0) }),
+        P(S.box(-4, -3, 14 - rk, 3, 4, 1.5), 6, GUN, { d: stripes(4, 1) })];
+      const B = v === 2 ? [[7 - rk, -7, 7.5], [7 - rk, 7, 7.5]] : [[8 - rk, 0, v === 1 ? 13 : 11]];
+      for (const [bx, by, R] of B) { parts.push(P(blade(bx, by, R, 3, v === 1 ? 14 : 11), 9, ramp('#c9cfe4', 0.85), { d: (x, y) => (Math.hypot(x - bx, y - by) < R * 0.55 && Math.hypot(x - bx, y - by) > R * 0.45 ? -1.5 : 0) }));
+        parts.push(P(S.dome(bx, by, R * 0.3, 3), 13, ramp(c, 0.9), { e: glow(mix(c, '#ffffff', 0.5), (x, y) => Math.hypot(x - bx + 1, y - by + 1) < 1.2) })); }
+      return parts;
+    },
+    flashover(c, v, a) { // Flashover: a squat furnace with four vents and a glowing heart (Chain Reaction: igniter coils, Furnace: a chimney ring)
+      const parts = [P(S.puck(0, 0, 15, 5, 3), 0, ramp('#4a2a1c', 0.5), { d: (x, y) => (Math.floor((Math.atan2(y, x) + 3.1416) * 2.55) % 2 ? -1 : 0) })];
+      for (let k = 0; k < 4; k++) { const an = k * 1.5708, vx = Math.cos(an) * 12, vy = Math.sin(an) * 12;
+        parts.push(P(S.dome(vx, vy, 4, 6), 4, ramp('#7a3a1c', 0.6), { e: glow(['#ffe14d', '#ff9a3c', c][(k + (a.ph || 0)) % 3], (x, y) => Math.hypot(x - vx, y - vy) < 1.8) })); }
+      if (v === 1) for (let k = 0; k < 4; k++) { const an = k * 1.5708 + 0.785; parts.push(P(S.ring(Math.cos(an) * 11, Math.sin(an) * 11, 1.4, 3.4, 0), 7, ramp(EL.A.col, 0.8))); }
+      if (v === 2) parts.push(P(S.ring(0, 0, 8, 11, 0), 7, ramp('#5a3020', 0.5), { d: stripes(3, 1) }));
+      parts.push(P(S.dome(0, 0, 8, 9), 6, ramp('#3a1a10', 0.4), { e: (x, y) => { const r = Math.hypot(x + 1, y + 1); return r < 3 ? '#fff2c0' : r < 5.5 ? '#ffb03a' : r < 6.5 ? c : null; } }));
+      return parts;
+    },
+    surge(c, v, a) { // Surge Spire: a stack of capacitor cells under a crackling sphere (Deep Cell: a double stack, Forked Surge: three prongs)
+      const parts = [P(S.puck(0, 0, 15, 3, 2), 0, ramp('#3a3020', 0.5), { e: glow(c, (x, y) => Math.abs(Math.hypot(x, y) - 12.5) < 0.8 && (Math.floor(Math.atan2(y, x) * 2.5) % 2 === 0)) })];
+      const cols = v === 1 ? [-5, 5] : [0];
+      for (const ox of cols) for (let k = 0; k < 3; k++) parts.push(P(S.puck(ox, 0, (v === 1 ? 5.5 : 8) - k * 1.2, 4, 1), 3 + k * 4, ramp(k % 2 ? '#c89a3a' : '#6a6a52', 0.7), { d: (x, y) => Math.abs(Math.hypot(x - ox, y) - ((v === 1 ? 5.5 : 8) - k * 1.2) + 1) < 0.6 ? -1 : 0 }));
+      if (v === 2) for (let k = 0; k < 3; k++) { const an = k / 3 * 6.283 - 1.57; parts.push(P(S.dome(Math.cos(an) * 7, Math.sin(an) * 7, 2.4, 3), 16, ramp(c, 0.8))); }
+      parts.push(P(S.dome(0, 0, v === 1 ? 5 : 4.5, 5), 17, ramp(c, 0.95), { e: (x, y) => Math.hypot(x + 1.2, y + 1.2) < 1.8 ? '#ffffff' : null }));
+      return parts;
+    },
+    rime(c, v, a) { // Rimewall: an ice-block generator, a frost projector in front (Pack Ice: stacked blocks, Rime Spikes: a ring of spikes)
+      const ICE = ramp(mix(c, '#e8fbff', 0.35), 0.9), parts = [P(S.puck(0, 0, 14, 3, 2), 0, STEEL, { d: (x, y) => (Math.hypot(x, y) > 12 ? 1 : 0) })];
+      if (v === 2) for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283 + 0.39; parts.push(P(S.gem(Math.cos(an) * 14, Math.sin(an) * 14, 3, 3, 10), 2, ICE)); }
+      const blocks = v === 1 ? [[-6, -6, 7], [6, -6, 7], [0, 6, 8]] : [[0, 0, 10]];
+      for (const [bx, by, r] of blocks) parts.push(P(S.rbox(bx - r, by - r * 0.8, bx + r, by + r * 0.8, 2, v === 1 ? 9 : 12, 2.5), 3, ICE, { d: (x, y) => (Math.abs(x - bx + y - by) < 0.8 ? 1.5 : 0), e: (x, y, t) => t >= 5 ? '#ffffff' : null }));
+      parts.push(P(S.hexgem(0, 0, 4, 8), v === 1 ? 13 : 15, ramp(c, 0.95), { e: (x, y, t) => t >= 4 ? '#ffffff' : null }));
+      return parts;
+    },
+    tangle(c, v, a) { // Entangler: a dark loom ring with anchor hooks and threads to its core (Wide Web: five hooks, Shared Fate: a second ring)
+      const n = v === 1 ? 5 : 3, parts = [P(S.ring(0, 0, 11, 16, 0), 2, ramp('#2e2448', 0.5), { d: (x, y) => (Math.floor((Math.atan2(y, x) + 3.1416) * 3) % 2 ? -1 : 0) })];
+      for (let k = 0; k < n; k++) { const an = k / n * 6.283, hx = Math.cos(an) * 14, hy = Math.sin(an) * 14;
+        parts.push(P(S.dome(hx, hy, 3.6, 6), 4, ramp('#5a4a7a', 0.6), { e: glow(c, (x, y) => Math.hypot(x - hx, y - hy) < 1.4) }));
+        parts.push(P((x, y) => { const L = Math.hypot(hx, hy), u = (x * hx + y * hy) / (L * L); if (u < 0.2 || u > 0.85) return -1; return Math.abs(x * hy - y * hx) / L < 0.9 ? 1 : -1; }, 6, ramp(c, 0.9), { e: (x, y) => mix(c, '#ffffff', 0.25) })); }
+      if (v === 2) parts.push(P(S.ring(0, 0, 6, 8.5, 0), 7, ramp(c, 0.8)));
+      parts.push(P(S.dome(0, 0, 5.5, 8), 8, ['#020106', '#06030e', '#0c0618', '#160c2a', '#2a1a4a', '#6a4aa0'], { e: (x, y) => Math.hypot(x + 1.5, y + 1.5) < 1.2 ? mix(c, '#ffffff', 0.6) : null }));
+      return parts;
+    },
+    aegis(c, v, a) { // Aegis Station: a shield emitter dome, a projector arc in front and a light twin gun (Bulkhead: armour plates, Interceptor: a long barrel)
+      const rk = a.rk * 3, parts = [P(S.rbox(-14, -12, 6, 12, 5, 6, 2), 2, HULL, { d: stripes(4, 1, 1) })];
+      if (v === 1) for (const y of [-14, 14]) parts.push(P(S.rbox(-12, y - 3, 4, y + 3, 1.5, 7, 1.5), 3, ramp(mix(c, '#5d6798', 0.6), 0.7)));
+      parts.push(P((x, y) => { const r = Math.hypot(x + 2, y), an = Math.atan2(y, x + 2); return r < 15 || r > 18 || Math.abs(an) > 1.1 ? -1 : 3; }, 6, ramp(c, 0.9), { e: (x, y) => Math.abs(Math.hypot(x + 2, y) - 16.5) < 0.6 ? mix(c, '#ffffff', 0.4) : null }));
+      const L = v === 2 ? 21 : 16;
+      for (const y of [-3, 3]) parts.push(P(S.tube(0, L - rk, y, 1.8, 0), 9, GUN, { d: stripes(5, 1) }));
+      parts.push(P(S.dome(-4, 0, 7, 9), 8, ramp(c, 0.85), { e: (x, y) => Math.hypot(x + 6.5, y + 2.5) < 1.6 ? '#ffffff' : null }));
+      return parts;
+    },
+    joker(c, v, a) { // Wildcard: a die on a turntable, five element gems on the rim (Loaded Dice: gold pips, High Roller: a crown of points)
+      const pip = v === 1 ? '#ffd84a' : '#ffffff', parts = [P(S.puck(0, 0, 15, 3, 2), 0, ramp('#3a2a44', 0.5))];
+      ELS.forEach((el, k) => { const an = k / 5 * 6.283 - 1.57, gx = Math.cos(an) * 12.5, gy = Math.sin(an) * 12.5; parts.push(P(S.gem(gx, gy, 2.6, 2.6, 6), 3, ramp(EL[el].col, 0.85))); });
+      if (v === 2) for (let k = 0; k < 5; k++) { const an = k / 5 * 6.283 - 1.57 + 0.63; parts.push(P(S.gem(Math.cos(an) * 12, Math.sin(an) * 12, 2, 4, 9), 3, ramp('#ffd84a', 0.8))); }
+      const P5 = [[-4, -4], [4, -4], [0, 0], [-4, 4], [4, 4]];
+      parts.push(P(S.rbox(-8, -8, 8, 8, 2.5, 9, 2), 4, ramp(mix(c, '#e8e4ff', 0.75), 0.9), { e: (x, y) => P5.some(([px, py]) => Math.hypot(x - px, y - py) < 1.5) ? pip : null, d: (x, y) => P5.some(([px, py]) => Math.hypot(x - px, y - py) < 2.2) ? -2 : 0 }));
+      return parts;
+    },
   };
   // non-rotating tops spin as an idle animation (lighting stays fixed, so only the asymmetric details move)
-  const SPIN = { cryo: 0.25, lens: 0.4, coil: 0, pylon: 0.9, forge: 0, snare: 1.4, grav: 0.7 };
+  const SPIN = { cryo: 0.25, lens: 0.4, coil: 0, pylon: 0.9, forge: 0, snare: 1.4, grav: 0.7, flashover: 0.15, surge: 0, rime: 0, tangle: 0.5, joker: 0.6 };
   function top(type, el, spec, ang, anim) {
     const ai = idxOf(ang), rk = anim.rk ? 1 : 0, ph = anim.ph || 0, ld = anim.ld ? 1 : 0;
     const key = `tt:${type}:${el}:${spec}:${ai}:${rk}:${ph}:${ld}`;
@@ -9058,7 +9830,7 @@ const UNITS = (() => {
       g.drawImage(base(el), 4, 4); g.drawImage(top(type, el, 0, ROT[type] ? -0.6 : 0, { ld: 1 }), 0, 0); cv.u = 0.5; return cv;
     });
   }
-  const ROT = { pulse: 1, rail: 1, missile: 1, flame: 1, emp: 1 };
+  const ROT = { pulse: 1, rail: 1, missile: 1, flame: 1, emp: 1, saw: 1, aegis: 1 };
 
   // ---------- enemies ----------
   // ground units face their heading; frames animate legs, wings and tendrils
@@ -9397,7 +10169,7 @@ const RES = 2;
   const FLAME_RAMP = { 1: ['#ffffff', '#fff3b0', '#ffe14d', '#ff9a3c', '#ff6a2a', '#5e5658'], 2: ['#fff0c0', '#ffd24a', '#ff8a2a', '#ff4a1a', '#c0281a', '#5a4444'],
     3: ['#ffffff', '#e6fbff', '#9fe8ff', '#6ae2ff', '#5a8aff', '#50586a'] };
   const PRISM = ['#b86cff', '#e08cff', '#8a7cff'];
-  const MUZ = { pulse: 12.5, rail: 13.5, flame: 12.5, emp: 8.5, missile: 5 }, RECOIL = { pulse: 1.5, rail: 2.5, emp: 2, flame: 0.6, missile: 1 };
+  const MUZ = { pulse: 12.5, rail: 13.5, flame: 12.5, emp: 8.5, missile: 5, saw: 9, aegis: 9.5 }, RECOIL = { pulse: 1.5, rail: 2.5, emp: 2, flame: 0.6, missile: 1, saw: 2, aegis: 1 };
   // Snare net: a hex mesh, drawn once per size and colour
   const meshCache = {};
   function hexMesh(rr, col, cell) {
@@ -10306,6 +11078,28 @@ const RES = 2;
   function sizeBuf(w, h) {
     if (buf.width < w || buf.height < h || buf.width > w + 512 || buf.height > h + 512) { buf.width = Math.ceil(w / 128) * 128; buf.height = Math.ceil(h / 128) * 128; }
   }
+  // 6.4 (tower64): Rimewall walls (an ice block that cracks as it wears down) and Entangler links (a thread between linked enemies)
+  function drawCapField() {
+    for (const t of G.towers) {
+      const w = t.wall; if (!w) continue;
+      const X = Math.round(w.x * TILE), Y = Math.round(w.y * TILE), k = Math.max(0, w.hp / (w.max || 1)), held = w.hp < w.max && frame % 6 < 3;
+      R(b, X - 9, Y + 6, 18, 3, 'rgba(0,0,0,0.35)');
+      R(b, X - 9, Y - 8, 18, 15, '#4aa8c8'); R(b, X - 8, Y - 9, 16, 15, '#9fe8ff'); R(b, X - 8, Y - 9, 16, 3, '#e8fbff'); R(b, X - 6, Y - 4, 3, 7, '#d8f8ff');
+      if (k < 0.66) { R(b, X - 2, Y - 8, 1, 6, '#2a6a88'); R(b, X - 1, Y - 3, 3, 1, '#2a6a88'); }
+      if (k < 0.33) { R(b, X + 3, Y - 6, 1, 8, '#2a6a88'); R(b, X - 5, Y + 1, 4, 1, '#2a6a88'); }
+      R(b, X - 8, Y + 8, 16, 1, '#13203a'); R(b, X - 8, Y + 8, Math.round(16 * k), 1, held ? '#ffffff' : '#6ae2ff');
+    }
+    if (G.tangles && G.tangles.length) {
+      b.lineWidth = 1; b.setLineDash([2, 2]); b.lineDashOffset = -frame / 3;
+      for (const g of G.tangles) {
+        const al = Math.min(1, g.t / 0.6) * (0.55 + 0.25 * Math.sin(frame / 5)), m = g.m;
+        if (m.length < 2) continue;
+        b.strokeStyle = hexA('#d8b0ff', al); b.beginPath(); b.moveTo(m[0].x * TILE, m[0].y * TILE); for (let i = 1; i < m.length; i++) b.lineTo(m[i].x * TILE, m[i].y * TILE); if (m.length > 2) b.closePath(); b.stroke();
+      }
+      b.setLineDash([]);
+      for (const g of G.tangles) for (const e of g.m) if (!e.dead) R(b, e.x * TILE - 1, e.y * TILE - 1, 2, 2, frame % 12 < 6 ? '#b86cff' : '#ffffff');
+    }
+  }
   // Frontier: a tower that is moving glides from its old tile to the new one (lifted off the ground) while it is offline
   function drawTower(t) {
     if (!(t.mvT > 0 && t.mvFrom)) return drawTower0(t);
@@ -10347,6 +11141,16 @@ const RES = 2;
       case 'snare': if (t.s && (t.caught || 0) >= t.s.catches) { R(b, cx - 1, cy - 1, 2, 2, frame % 20 < 10 ? '#ff4d6a' : '#5a1020'); } break;
       case 'forge': if (frame % 9 === 0) parts.push({ x: cx + 5, y: cy - 6, vx: (Math.random() - 0.5) * 3, vy: -9, life: 0.9, max: 0.9, col: '#5a5470', s: 2 }); break;
       case 'lens': { const k = Math.min(1, (t.ramp || 0) / 3.5); if (k > 0.05) D(b, cx, cy, 1 + Math.round(k * 2), hexA('#ffffff', 0.4 + 0.5 * k)); break; }
+      // 6.4 capstone tier towers (tower64): live tells drawn over the sprite
+      case 'saw': { if (!t.s || age < 0.3) break; const a = frame / 3 + t.id, bx = cx + ca * 4 + Math.cos(a) * 4.5, by = cy + sa * 4 + Math.sin(a) * 4.5; P(b, bx, by, '#ffffff'); break; } // a glint runs round the racked blade
+      case 'surge': if (t.s) { // a pip per two stored charges round the spire; a burst crackles
+        const n = Math.round((t.charge || 0) / Math.max(1, t.s.cells) * 6);
+        for (let k = 0; k < n; k++) { const a = k / 6 * 6.283 - 1.57; R(b, cx + Math.cos(a) * 8 - 0.5, cy + Math.sin(a) * 8 - 0.5, 1, 1, k === n - 1 && frame % 10 < 5 ? '#ffffff' : c); }
+        if (t.surgeT !== undefined && G.time - t.surgeT < 0.3 && frame % 2 === 0) for (let k = 0; k < 3; k++) { const a = Math.random() * 6.283, r = 3 + Math.random() * 6; R(b, cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1, 1, k ? '#ffffff' : c); }
+        break; }
+      case 'aegis': if (t.s) { const n = Math.max(0, t.s.guards - (t.guardN || 0)); for (let k = 0; k < Math.min(6, n); k++) R(b, X + 2 + k * 3, Y + 20, 2, 2, frame % 40 < 20 || k < n - 1 ? '#59f0b4' : '#b8ffe0'); break; } // stops left this wave
+      case 'joker': if (t.jackT !== undefined && G.time - t.jackT < 0.5) { const k = (G.time - t.jackT) / 0.5; b.strokeStyle = hexA('#ffd84a', 1 - k); b.lineWidth = 1; b.beginPath(); b.arc(cx, cy, 6 + k * 10, 0, 6.283); b.stroke(); } break;
+      case 'flashover': if (t.flash > 0 || (t.aimT !== undefined && G.time - t.aimT < 0.2)) D(b, cx, cy, 3, 'rgba(255,240,190,0.85)'); break;
     }
     if (t.asc) { b.strokeStyle = hexA(lvTier(towerLevel(t)).col, 0.55 + 0.3 * Math.sin(frame / 8)); b.lineWidth = 1; b.strokeRect(X + 0.5, Y + 0.5, 23, 23); }
     if (G.mastery && G.mastery[t.type] >= 3) { const g = '#ffd84a'; R(b, X + 1, Y + 21, 4, 1, g); R(b, X + 1, Y + 18, 1, 3, g); R(b, X + 19, Y + 21, 4, 1, g); R(b, X + 22, Y + 18, 1, 3, g); } // v5.8 Mastery 3: gold trim on the base corners
@@ -10405,6 +11209,8 @@ const RES = 2;
         break; }
       case 'emp': D(b, mx, my, 2 + big, hexA(c, f)); D(b, mx, my, 1, '#ffffff'); break;
       case 'missile': D(b, mx, my, 1 + big, hexA('#fff2c0', f)); break;
+      case 'saw': D(b, mx, my, 2 + big, hexA('#e9ecf7', f)); break; // 6.4: the blade leaves the rack with a flash
+      case 'aegis': for (const o of [-3, 3]) { const px = mx - sa * o, py = my + ca * o; D(b, px, py, 1 + big, hexA(c, f)); P(b, px, py, '#ffffff'); } break;
     }
   }
   // wormhole: swirling portal at a lane's origin. Forming portals are small and unstable; open ones are full size.
@@ -10901,6 +11707,7 @@ const RES = 2;
     if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
     geneRanks();
     for (const e of G.enemies) if (!e.fly) drawEnemy(e);
+    if (G.capT && G.capT.length) drawCapField(); // 6.4 Rimewall walls (in front of the ground enemies they hold) and Entangler links
     for (const e of G.enemies) if (e.fly) drawEnemy(e);
     // pirate drop ships
     for (const P2 of G.pirates || []) {
@@ -10935,6 +11742,11 @@ const RES = 2;
         b.fillStyle = 'rgba(0,0,0,0.4)'; b.fillRect(X - 3, Y - 1, 6, 3);
         blit(UNITS.shell(p.el && EL[p.el] ? p.el : 'A'), X, Y - h);
         if (!LITE && frame % 2 === 0) parts.push({ x: X + (Math.random() - 0.5) * 3, y: Y - h + (Math.random() - 0.5) * 3, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10, life: 0.22, max: 0.22, col: Math.random() < 0.5 ? '#ffffff' : col, s: 1 });
+      } else if (p.k === 'saw') { // 6.4 Buzzsaw: a spinning disc with a white rim glint (Grinder blades are wider)
+        const r = Math.max(3, p.r * TILE * 0.75), a = frame / 2 + (p.x * 3 | 0);
+        b.fillStyle = 'rgba(0,0,0,0.35)'; b.fillRect(X - r + 1, Y + r - 1, r * 2, 2);
+        D(b, X, Y, r, '#9aa3c4'); D(b, X, Y, r - 1.5, '#c9cfe4'); D(b, X, Y, 1.5, col);
+        for (let k = 0; k < 6; k++) { const q = a + k * 1.047; P(b, X + Math.cos(q) * r, Y + Math.sin(q) * r, k ? '#e9ecf7' : '#ffffff'); }
       } else if (p.k === 'bomblet') { // v5.8 Cluster Pods: little bomblets drop onto their spots
         const hh = Math.max(0, p.t) * 26; b.fillStyle = 'rgba(0,0,0,0.4)'; b.fillRect(X - 1.5, Y, 3, 1.5);
         R(b, X - 1, Y - hh - 2, 2, 3, '#5e5040'); P(b, X - 1, Y - hh - 2, frame % 4 < 2 ? '#ffffff' : col); }
@@ -11454,6 +12266,12 @@ const RES = 2;
         if (!LITE) for (let arm = 0; arm < 3; arm++) { const a0 = arm / 3 * 6.283 + Math.random(), pts = []; for (let j = 0; j <= 8; j++) { const u = j / 8, rr = R0 * (1 - u * 0.85), an = a0 + u * 2.4; pts.push({ x: x + Math.cos(an) * rr, y: y + Math.sin(an) * rr }); } lines.push({ pts, life: 0.4, max: 0.4, col, core: 0, w: 1.5, nl: 1 }); }
         if (d.es) for (let i = 0; i < d.es.length && i < 24; i++) { const e = d.es[i]; drags.push({ e, x0: e.x * TILE, y0: e.y * TILE, life: 0.15, col }); }
         break; }
+      case 'heat': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.r * TILE, life: 0.35, max: 0.35, col: '#ff9a3c', w: d.n ? 2 : 1 }); if (d.n && !LITE) burst(T2P(d.x), T2P(d.y), 6, '#ffd28a', 30 * K, 0.3); break; // 6.4 Flashover
+      case 'wallup': burst(T2P(d.x), T2P(d.y), 10, '#d8f8ff', 22 * K, 0.35, -20 * K); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 4, life: 0.3, max: 0.3, col: '#9fe8ff', w: 2 }); break; // 6.4 Rimewall
+      case 'wallbreak': for (let i = 0; i < 10; i++) { const a = Math.random() * 6.283, v = 30 + Math.random() * 40; parts.push({ x: T2P(d.x), y: T2P(d.y), vx: Math.cos(a) * v * K, vy: Math.sin(a) * v * K - 20 * K, life: 0.5, max: 0.5, col: i % 3 ? '#9fe8ff' : '#ffffff', s: 2, g: 90 * K }); } break;
+      case 'tether': for (const e of d.es) lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(e.x), y: T2P(e.y) }], life: 0.25, max: 0.25, col: '#b86cff', w: 1.5 }); break; // 6.4 Entangler
+      case 'aegis': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.4, max: 0.4, col: '#59f0b4', w: 2, core: 1 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 2, r1: 16, life: 0.4, max: 0.4, col: '#b8ffe0', w: 2 }); text(d.x2, d.y2 - 0.6, 'STOPPED', '#59f0b4', 12, 0.8, -1, 'Silkscreen, monospace'); break; // 6.4 Gatekeeper
+      case 'jackpot': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 30, life: 0.5, max: 0.5, col: '#ffd84a', w: 2 }); if (texts.filter(T => T.combo).length < 3) { text(d.x, d.y - 1, 'JACKPOT', '#ffd84a', 13, 0.9, -1, 'Silkscreen, monospace'); texts[texts.length - 1].combo = 1; } break; // 6.4 Wildcard
       case 'flamering': for (let i = 0; i < 8; i++) { const an = Math.random() * 6.2832, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x), y: T2P(d.y), vx: Math.cos(an) * v, vy: Math.sin(an) * v, life: 0.28, max: 0.28, col: Math.random() < 0.5 ? d.col : '#ffe14d', s: 3 }); } break; // v5.8 Backdraft
       case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;
       case 'arcs': for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x) + Math.cos(a) * rr * 0.5 + (Math.random() - 0.5) * 10, y: T2P(d.y) + Math.sin(a) * rr * 0.5 }, { x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr }], life: 0.18, max: 0.18, col: '#9ff2ff', core: 1, w: 2 }); } break;
@@ -12040,7 +12858,7 @@ const Save = (() => {
 
 // ---------------- UI ----------------
 const UI = (() => {
-  let screen = 'hangar', panel = null, pick = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null, modalFrom = null;
+  let screen = 'hangar', panel = null, pick = null, capPeek = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null, modalFrom = null;
   let hudClock = 0, cloudOk = null, setup = { startWave: 1, chaos: 1, seed: 0, map: null, mode: 'std' };
   let confirmAbandon = false, confirmReset = false, confirmWebReset = false;
   const stage = () => $('#stage');
@@ -12207,7 +13025,7 @@ const UI = (() => {
     else if (setup.mode === 'daily') { const sp = setup.daily; setRows(frRows(sp.chaos)); setCols(frCols(ROWS)); newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, frontier: 1, cols: COLS, rows: ROWS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); } // 6.1: Frontier rules (the flag rides in recOpts, so resume, codes and ladder checks rebuild it)
     else {
       PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
-      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, rows: ROWS, frontier: 1, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks() }); // 6.1: every run is a Frontier run
+      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, rows: ROWS, frontier: 1, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks(), capT: capTowersOwned() }); // 6.1: every run is a Frontier run
     }
     Render.resetCam(); updateZoomBtn();
     frModeUI();
@@ -12287,6 +13105,8 @@ const UI = (() => {
     if (G.spawningDone && G.prep && G.prep.boss && introCard('boss', 'Boss next wave', 'Save Strike and Stasis for it. If it reaches the core, the run ends.', 'bosses')) return;
     if (!marketShut() && G.wave >= 10 && introCard('market', 'Exchange open', 'Tap Score at the top right: the Black Market sells items, Cash In turns credits into score.', 'market')) return;
     if (towerUnlocked('pylon') && G.wave >= 2 && introCard('support', 'Support towers', 'The Relay Pylon boosts the towers around it. The Credit Forge (Wave 12) pays every wave.', 'support')) return;
+    { const nt = (G.capT || []).find(k => !(PROF.seenSys || {})['capT_' + k]); // 6.4: the first run with a new capstone tier tower
+      if (nt && G.time > 3 && introCard('capT_' + nt, `New tower: ${TOWERS[nt].name}`, `${TOWERS[nt].blurb} ${TOWER_ROLE[nt].split(' · ')[0]}. It is in the build menu with a gold corner.`)) return; }
     if (typeof TOWER_FIRE !== 'undefined' && G.towers.some(t => fireModes(t.type).some(f => fireLearned(t.type, f.id))) && introCard('tech', 'Techniques', 'You learned a second fire mode. Open a tower of that type: the Fire row switches it.', 'techniques')) return;
     // credits piling up: say so once in a while, with what to do about it
     if (G.spawningDone && G.wave >= 6 && G.wave - nudgeW >= 8 && G.towers.length) {
@@ -13048,7 +13868,7 @@ const UI = (() => {
     $('#entFill').style.height = pct(Math.min(1, G.entropy / 100));
     $('#entTxt').textContent = G.anomOffers ? 'DRAW' : Math.floor(G.entropy) + '%';
     eb.classList.toggle('ready', !!G.anomOffers);
-    $('#entCount').textContent = G.anoms.length ? '×' + G.anoms.length : '';
+    $('#entCount').textContent = anomCount() ? '×' + anomCount() : '';
     $('#webBadge').textContent = free > 0 ? free : '';
     $('#webBadge').hidden = free <= 0;
     // chips: events + storms
@@ -13368,7 +14188,7 @@ const UI = (() => {
 
   // ---------- Panels ----------
   function closePanel() {
-    panel = null; pick = null;
+    panel = null; pick = null; capPeek = null;
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
@@ -13424,21 +14244,40 @@ const UI = (() => {
     coil: 'Shields and crowds · ×3 vs shields, stops Shell recharging, chains', forge: 'Economy · credits every wave',
     flame: 'Ground crowds · Burn stops Regrowth · can\'t hit air', lens: 'Plating, Bulk and bosses · beam ignores Plating, weak vs swarms',
     emp: 'Control · stuns and strips shields, hits air', grav: 'Control · drags ground enemies back · can\'t hit air',
+    // 6.4 capstone tier towers
+    saw: 'Road clearer · cuts every ground enemy on a stretch of road · ignores Plating · can\'t hit air',
+    flashover: 'Burn payoff · Burning enemies explode · pair with Flame and Missile',
+    surge: 'Wave opener · stores charge while idle, unloads chain lightning',
+    rime: 'Blocker · an ice wall holds ground enemies · bosses smash it',
+    tangle: 'Damage sharing · links enemies, a hit on one spreads to the rest',
+    aegis: 'Leak insurance · stops leaks at the core each wave · bosses excepted',
+    joker: 'Combo engine · random element, attack and status every shot',
   };
+  // 6.4: the tree whose capstone tier unlocks a tower, for the build menu and the codex
+  const capTreeOf = k => TALENTS.find(tr => tr.top && tr.top.unlockT === k);
   function buildPanelHTML() {
-    const order = G.tut ? G.tutS.towers.slice() : TOWER_ORDER.filter(towerUnlocked).concat(TOWER_ORDER.filter(k => !towerUnlocked(k)));
+    const order = G.tut ? G.tutS.towers.slice() : TOWER_ORDER.filter(towerUnlocked).concat(TOWER_ORDER.filter(k => !towerUnlocked(k) && !TOWERS[k].capT)); // 6.4: locked tier towers sit in their own strip
     const tiles = order.map(k => {
       const D = TOWERS[k];
       if (!towerUnlocked(k)) return `<div class="bt locked" aria-label="${esc(D.name)} locked"><canvas class="tcard" data-card="${k}" data-lock="1"></canvas><span class="bn"><em>???</em><b>Wave ${D.unlock}</b></span></div>`;
       const cost = towerCost(k);
       const mr = masteryRank(k);
-      return `<button class="bt ${pick === k ? 'on' : ''}" data-act="pick" data-type="${k}" aria-label="${esc(D.name)}" style="--c:${EL[D.el].col}">${mr ? `<span class="mrank r${mr}">${mr}</span>` : ''}<canvas class="tcard" data-card="${k}"></canvas><span class="bn"><em>${esc(TSHORT[k] || D.name)}</em><b ${costBtn(cost)}>${fmt(cost)}</b></span></button>`;
+      return `<button class="bt ${pick === k ? 'on' : ''}${D.capT ? ' capt' : ''}" data-act="pick" data-type="${k}" aria-label="${esc(D.name)}" style="--c:${EL[D.el].col}">${mr ? `<span class="mrank r${mr}">${mr}</span>` : ''}<canvas class="tcard" data-card="${k}"></canvas><span class="bn"><em>${esc(TSHORT[k] || D.name)}</em><b ${costBtn(cost)}>${fmt(cost)}</b></span></button>`;
     }).join('');
+    // 6.4: the capstone tier towers this run can't build yet, greyed in one strip so players know they exist (tap one: how to get it)
+    const capLock = G.tut || G.daily ? [] : CAP_TOWERS.filter(k => !towerUnlocked(k));
+    const strip = capLock.length ? `<div class="capstrip"><span class="lbl">Capstone tier</span>${capLock.map(k => `<button class="cst${capPeek === k ? ' on' : ''}" data-act="cappeek" data-type="${k}" aria-label="${esc(TOWERS[k].name)} locked"><canvas class="ico" width="24" height="24" data-ico="${k}"></canvas></button>`).join('')}</div>` : '';
     let info, foot;
-    if (pick) {
+    if (capPeek && !towerUnlocked(capPeek) && !pick) {
+      const D = TOWERS[capPeek], tr = capTreeOf(capPeek);
+      info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p class="role">${tipify(TOWER_ROLE[capPeek] || '')}</p><p>${esc(D.blurb)}</p><p class="bst lockline">Unlock: ${esc(tr ? tr.name : '')} capstone tier (${TTOP} points in ${esc(tr ? tr.name : '')})${PROF.tal && tr && PROF.tal[tr.top.id] ? '. Learned: it joins your next run' : ''}</p></div>`;
+      foot = '';
+    } else if (pick) {
       const D = TOWERS[pick], cost = towerCost(pick);
       const stat = D.kind === 'snare' ? `Catches ${D.catches} fliers per wave · Lure range ${D.range}` : D.kind === 'support' ? `+${D.buffDmg}% Damage, +${D.buffRate}% Attack Speed · Range ${D.range}`
         : D.kind === 'eco' ? `+${D.income} credits per wave`
+        : D.kind === 'wall' ? `Wall strength ${D.hold} · regrows every ${Math.round(1 / D.rate)}s · Range ${num1(D.range * G.mods.range)}`
+        : D.kind === 'aegis' ? `Stops ${D.guards} leaks per wave · Damage ${num1(D.dmg * G.mods.dmg)} · Range ${num1(D.range * G.mods.range)}`
         : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
       info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p class="role">${tipify(TOWER_ROLE[pick] || '')}</p><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
       const full = gridFree() < 1 && !isNode(panel.x, panel.y);
@@ -13449,7 +14288,7 @@ const UI = (() => {
       foot = gridFree() < 1 && !isNode(panel.x, panel.y) ? `<button class="btn primary wide" data-act="reactor" ${costBtn(reactorCost())}>Expand reactor · ${fmt(reactorCost())}<small>Grid full (${gridUsed()}/${gridCap()}): +1 power</small></button>` : '';
     }
     const nodeNote = isNode(panel.x, panel.y) ? `<div class="sts node">${tipify('Power Node: towers here draw no power and get +25% Damage, +15% Range (support and economy +25%)')}</div>` : '';
-    return `<div class="ph"><b>Build</b><small class="grid ${gridFree() < 1 ? 'full' : ''}">Power ${gridUsed()}/${gridCap()}</small>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
+    return `<div class="ph"><b>Build</b><small class="grid ${gridFree() < 1 ? 'full' : ''}">Power ${gridUsed()}/${gridCap()}</small>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${strip}${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
   }
 
   // ---------- tappable glossary terms ----------
@@ -13530,6 +14369,18 @@ const UI = (() => {
     const tail = t.grow > 0 ? ' · Specialize free' : !n ? ' · none in range' : t.lvl >= MAX_LV ? '' : want > t.lvl ? '' : ` · now LV ${want}`;
     return `<div class="sts grow">Grows with nearby attack towers${t.freeLv ? ` <b>+${t.freeLv} LV free</b>` : ''}<small>${n} in range${tail}</small></div>`;
   }
+  // 6.4 (tower64): one live line per capstone tier tower, in plain words
+  function capInfoHTML(t) {
+    const s = t.s; let txt = '';
+    if (s.kind === 'saw') txt = `Blade runs ${num1(s.sawLen)} tiles up the road${s.boomer ? ' and back' : ''} · ignores Plating · ground only`;
+    else if (s.kind === 'det') txt = `Explosions: hit + remaining Burn ×${num1(s.detX)} · radius ${num1(s.detR)}${s.detSpread ? ` · spreads fire ${num1(s.detSpread)} tiles` : ''}`;
+    else if (s.kind === 'surge') txt = `Charge ${Math.floor(t.charge || 0)}/${s.cells} · fills 1 per ${num1(1 / s.chargeRate)}s while idle · fires 4× as fast while charged`;
+    else if (s.kind === 'wall') txt = t.wall ? `Wall ${Math.max(0, Math.ceil(t.wall.hp))}/${Math.round(s.hold)} · elites wear it 2× as fast` : `Wall down · regrows in ${Math.max(0, Math.ceil(t.cd / Math.max(0.01, s.rate)))}s`;
+    else if (s.kind === 'tether') txt = `Links ${s.links} enemies for ${num1(s.linkT)}s · shares ${pct(s.share)} of each hit among them${s.tslow ? ` · linked ${pct(s.tslow)} slower` : ''}`;
+    else if (s.kind === 'aegis') { const c = G.core, r = s.range + 0.5, ok = dist2(t.cx, t.cy, c.x, c.y) <= r * r; txt = `Stops left this wave ${Math.max(0, s.guards - (t.guardN || 0))}/${s.guards} · ${ok ? 'core in range' : 'core out of range: no stops'}`; }
+    else if (s.kind === 'joker') txt = `Jackpot every ${s.jack}th shot · next in ${s.jack - ((t.jn || 0) % s.jack)}${s.sure ? ' · statuses always land' : ''}`;
+    return txt ? `<div class="sts capinfo">${tipify(txt)}</div>` : '';
+  }
   function towerPanelHTML(t) {
     const D = TOWERS[t.type], s = t.s;
     const spec = t.spec ? D.specs[t.spec - 1].name : '';
@@ -13545,7 +14396,8 @@ const UI = (() => {
       if (s.multi) sts.push(`+${s.multi} target`);
       stats = `<div class="sg"><span>Damage<b>${fmt(s.dmg * (1 + t.buff.dmg))}</b></span><span>Rate<b>${num1(s.rate * (1 + t.buff.rate))}/s</b></span><span>Range<b>${num1(t.effRange || s.range)}</b></span><span>Crit<b>${Math.round(s.critC + t.buff.crit)}%</b></span><span>DPS<b data-live="dps">${fmt(t.dps)}</b></span><span>Kills<b data-live="kills">${t.kills}</b></span></div>${sts.length ? `<div class="sts">${tipify(sts.join(' · '))}</div>` : ''}${t.isolated && G.mods.loneWolf ? `<div class="sts amber">${tipify('Lone Wolf: active')}</div>` : ''}${t.reson ? `<div class="sts reson">${tipify(`Resonance: +${Math.round(t.reson * RESON_DMG * 100)}% Damage (${t.resonWith.map(o => EL[o.s.el].name).join(', ')})`)}</div>` : ''}`;
     }
-    const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' ? '' :
+    if (TOWERS[t.type].capT) stats += capInfoHTML(t); // 6.4 capstone tier towers: what this one is doing right now
+    const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' || s.kind === 'det' || s.kind === 'wall' ? '' :
       `<div class="firerow"><span class="lbl">Aim</span>${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${{ first: 'First', last: 'Last', strong: 'Strong', close: 'Near' }[m]}</button>`).join('')}</div>`; // v5.8: label inline (one row) to make room for Fire
     const fire = fireHTML(t);
     let up = '';
@@ -13791,9 +14643,10 @@ const UI = (() => {
     if (!panel || !G || G.over) return; // a stale tap on a panel that just closed
     if (act === 'tab') { panel.tab = b.dataset.v; panel.resetScroll = true; renderPanel(); return; }
     if (panel.kind === 'build') {
+      if (act === 'cappeek') { capPeek = b.dataset.type; pick = null; Render.prev = null; renderPanel(); const pb = $('#panel > .pbody'); if (pb) pb.scrollTop = pb.scrollHeight; return; } // 6.4: a locked tier tower: say how to get it (scrolled into view on a phone)
       if (act === 'pick') {
         if (pick === b.dataset.type && G.credits >= towerCost(pick)) return panelAction('build', b);
-        pick = b.dataset.type;
+        pick = b.dataset.type; capPeek = null;
         const D = TOWERS[pick];
         Render.prev = D.range ? { x: panel.x, y: panel.y, range: D.range * G.mods.range * (pick === 'pulse' || pick === 'rail' ? 1 + G.mods.rangeKR : 1), col: EL[D.el].col } : null;
         renderPanel();
@@ -13896,10 +14749,10 @@ const UI = (() => {
     Render.sel = { x: t.x, y: t.y }; Render.selT = t; Render.prev = null; G.selCore = false;
     openPanel({ kind: 'tower', t, x: t.x, y: t.y });
   }
-  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', lens: 'Lens', emp: 'EMP', grav: 'Gravity' };
+  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', lens: 'Lens', emp: 'EMP', saw: 'Buzzsaw', flashover: 'Flashover', surge: 'Surge', rime: 'Rimewall', tangle: 'Tangler', aegis: 'Gatekeeper', joker: 'Wildcard', grav: 'Gravity' };
   function openBuild(x, y) {
     Render.sel = { x, y }; Render.selT = null; G.selCore = false;
-    pick = null; Render.prev = null;
+    pick = null; capPeek = null; Render.prev = null;
     openPanel({ kind: 'build', x, y });
   }
   // ---------- v5.1 Know Your Enemy: tap (or hover) any enemy to see what it is, what it does and what beats it ----------
@@ -14125,7 +14978,7 @@ const UI = (() => {
     modal(`<div class="card narrow"><div class="ch"><h2>Paused</h2></div>
       <p class="note">Wave ${G.wave} · Score ${fmt(G.score)} · Multiplier ×${(G.scoreMult * huntMult()).toFixed(2)}</p>
       <p class="note">${G.bounties.length ? `${G.bounties.length} bount${G.bounties.length === 1 ? 'y' : 'ies'} claimed · ` : ''}${G.wanted ? `Next bounty: ${esc(G.wanted.name)}, Wave ${G.wanted.w}` : ''}${G.nemesis && !G.nemesis.beaten ? ` · Nemesis: ${esc(G.nemesis.name)}` : ''}</p>
-      ${G.anoms.length ? `<div class="lbl">Anomalies</div><div class="anlist">${G.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>` : ''}
+      ${anomCount() ? `<div class="lbl">Anomalies</div><div class="anlist">${anomTaken().map(A => `<div><b style="color:${A.col}">${esc(A.name)}<i class="arar">${A.label}</i></b>${A.up.map(l => `<span class="good">${tipify(l)}</span>`).join('')}${A.dn.map(l => `<span class="bad">${tipify(l)}</span>`).join('')}</div>`).join('')}</div>` : ''}
       <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
       <button class="btn" data-act="tutPick">Tutorial</button>
       <button class="btn" data-act="studio">Music Studio</button>
@@ -14137,14 +14990,14 @@ const UI = (() => {
     if (!G || !G.anomOffers) return;
     G.paused = true;
     modal(`<div class="card anom"><div class="ch"><h2 class="void">Anomaly</h2><span class="note">Choose one. Each Anomaly also grants +5% score.</span></div>
-      <div class="boons four">${G.anomOffers.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<button class="boon anomaly" data-act="anom" data-v="${id}"><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><i class="lbl cost">Cost</i><span class="bad">${tipify(A.down)}</span></button>`; }).join('')}
+      <div class="boons four">${G.anomOffers.map(o => { const A = anomInfo(o); if (!A) return ''; return `<button class="boon anomaly ar-${A.rar}" data-act="anom" data-v="${A.id}" style="--ac:${A.col}"><i class="arar">${A.label}</i><b>${esc(A.name)}</b>${A.up.map(l => `<span class="good">${tipify(l)}</span>`).join('')}<i class="lbl cost">Cost</i>${A.dn.map(l => `<span class="bad">${tipify(l)}</span>`).join('')}</button>`; }).join('')}
       <button class="boon stab" data-act="stab"><b>Stabilize</b><span class="good">+10% score</span><span class="good">+1 Recalibration token</span><span class="dim">No other changes</span></button></div></div>`, 'anomaly');
   }
   function runRecord() {
     const byDmg = G.towers.slice().sort((a, b) => b.dmgDone - a.dmgDone), mvp = byDmg[0];
     const tw = t => ({ type: t.type, label: towerLabel(t), dmg: t.dmgDone, kills: t.kills, rank: t.rank || 0 });
     return { ts: Date.now(), wave: G.wave, score: Math.round(G.score), xp: Math.round(G.xpEarned), chaos: G.chaos, daily: G.daily || null, startWave: G.startWave,
-      nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.slice(), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
+      nova: G.novaN || 0, laws: (G.laws || []).slice(), anoms: G.anoms.concat((G.ganoms || []).map(a => a.name)), els: Object.assign({}, G.stats.dmgByEl), combos: Object.assign({}, G.stats.combos),
       ext: G.extracted || 0, bounties: G.bounties.length, bounty: G.stats.bounty || null, elites: G.stats.elites, bosses: G.stats.bossKills, leaks: G.stats.leaks, cashed: G.stats.cashed || 0, lastLeak: G.stats.lastLeak || '', crates: G.stats.crates || 0, assaults: G.stats.assaults ? JSON.parse(JSON.stringify(G.stats.assaults)) : null, pirates: G.stats.pirates || 0, odKills: G.stats.odKills || 0, relocs: G.relocUsed || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), pre: G.preAdapted || null,
       mvp: mvp ? tw(mvp) : null, top: byDmg.slice(1, 4).map(tw), towers: G.towers.length,
       keystones: activeCaps().map(id => TAL[id].name), evo: (G.stats.evo || []).slice(), endStrain: runEndStrain() };
@@ -15163,11 +16016,12 @@ const UI = (() => {
         ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
       { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
-      { id: 'anom', name: 'Anomalies', rows: ANOMALIES.map(A => [A.name, `${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff']) },
+      { id: 'anom', name: 'Anomalies', rows: [['How cards are made', `Most cards are built at each draw: 1 boon and 1 cost, sized to a fair trade. <span style="color:${ANOM_RARITY[1].col}">Rare</span> and <span style="color:${ANOM_RARITY[2].col}">Exotic</span> cards swing harder. Exotic cards carry 2 boons. Later draws swing harder. Offers favor the elements you field. Each slot has a 1 in 4 chance to hold a Classic card. A Classic card never repeats in a run.`, '#d6a6ff']]
+        .concat(ANOMALIES.map(A => [A.name, `Classic. ${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff'])) },
       { id: 'talent', name: 'Talents', rows: TALENTS.flatMap(tr => tr.rows.flat().map(T => [T.name, `${talentLines(T, T.max).join('. ')}. <em>${esc(tr.name)} · ${T.max > 1 ? 'at ' + T.max + ' ranks' : 'one rank'}</em>`, tr.col])) },
       { id: 'cap', name: 'Capstones', rows: TALENTS.flatMap(tr => tr.caps.map(T => [T.name, `${talentLines(T).join('. ')}. <em>${esc(tr.name)} Capstone</em>`, tr.col])) },
       { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
-      { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · Unlocks at Wave ${D.unlock}</em>`, EL[D.el].col]; }) },
+      { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · ${D.capT ? `Unlock: ${TREE_BY_ID[D.capT].name} capstone tier` : `Unlocks at Wave ${D.unlock}`}</em>`, EL[D.el].col]; }) },
     ];
   }
   function dictHTML() {
@@ -15251,8 +16105,8 @@ const UI = (() => {
     setTimeout(() => { renderHangar(); toast('GALAXY REBORN', `Supernova ${PROF.nova}. Score ×${(1 + PROF.nova * NOVA_SCORE + PROF.laws.length * LAW_SCORE).toFixed(2)}, XP +${Math.round(PROF.nova * NOVA_XP * 100)}%.`, '#ff9adf', 1); }, 900);
   }
   function openArchive() {
-    const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k), xp = masteryXp(k), r = masteryRankOf(xp);
-      return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? `${masteryPips(r)}<u>${r < 5 ? `${xp}/${MASTERY.xp[r + 1]}` : esc(LEGENDARIES.find(L => L.tower === k).name)}</u>` : 'Wave ' + D.unlock}</em></div>`; }).join('');
+    const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = D.capT ? capTowersOwned().includes(k) || masteryXp(k) > 0 : towerUnlocked(k), xp = masteryXp(k), r = masteryRankOf(xp); // 6.4: tier towers count once learned
+      return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? `${masteryPips(r)}<u>${r < 5 ? `${xp}/${MASTERY.xp[r + 1]}` : esc(LEGENDARIES.find(L => L.tower === k).name)}</u>` : D.capT ? esc(TREE_BY_ID[D.capT].name) + ' tier' : 'Wave ' + D.unlock}</em></div>`; }).join('');
     const ks = activeCaps().map(id => TAL[id].name);
     const hrs = Math.floor(PROF.playTime / 3600), mins = Math.floor(PROF.playTime / 60) % 60;
     modal(`<div class="card"><div class="ch"><h2>Archive</h2><button class="x" data-act="close2">✕</button></div>
@@ -15293,7 +16147,7 @@ const UI = (() => {
       <div class="codex"><em>Combos</em>${cb}</div>
       <div class="codex"><em>Bosses</em>${bs}</div>
       <p class="note">Swarm Collection ${collPctTxt()}: see below</p>
-      <p class="note">Anomalies ${an}/${ANOMALIES.length} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
+      <p class="note">Anomalies ${an}/${ANOMALIES.length}${C.gen && C.gen.n ? ` · Generated ${C.gen.n} (Rare ${C.gen.r[1] || 0}, Exotic ${C.gen.r[2] || 0}) · Parts found ${Object.keys(C.gen.parts || {}).length}/${Object.keys(ANOM_PART).length}` : ''} · Legendaries ${lg}/${LEGENDARIES.length} · Maelstroms ${C.maelstroms || 0}${C.bestRank ? ` · Top veteran: ${esc(C.bestName)} (${roman(C.bestRank)})` : ''}</p>`;
   }
   function modalAction(act, b) {
     if (act.startsWith('st') || act.startsWith('cp')) { try { if (studioAction(act, b)) return; } catch (e) { SFX.report(e, 'studio ' + act); toast('STUDIO ERROR', String(e && e.message || e).slice(0, 90) + ' · tell Claude', '#ff4d6a', true); return; } }
@@ -15362,7 +16216,7 @@ const UI = (() => {
       case 'huntPasteGo': { const v = ($('#huntIn') || {}).value || ''; readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); }); break; }
       case 'watchEnd': endWatch(); break;
       case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } window.act('boon', +b.dataset.v); closeModal(); if (!o.twist) toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
-      case 'anom': { window.act('anom', b.dataset.v); closeModal(); G.paused = false; const A = ANOMALIES.find(a => a.id === b.dataset.v); toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
+      case 'anom': { const A = anomInfo((G.anomOffers || []).find(o => o === b.dataset.v || (o && o.id === b.dataset.v))); if (!A) { closeModal(); break; } window.act('anom', b.dataset.v); closeModal(); G.paused = false; toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
       case 'stab': { window.act('stab'); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
       case 'hangar': closeModal(); G = null; show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'again': closeModal(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); break; // 6.0: after Training, a saved run comes first
@@ -15695,8 +16549,9 @@ const Tree = (() => {
   function add(id) {
     const why = talentBlock(id);
     if (why) { SFX.play('deny'); UI.toast('NOT YET', blockMsg(id, why), '#ff4d6a'); return; }
-    talentAdd(id); SFX.play(TAL[id].cap ? 'levelup' : 'upgrade');
+    talentAdd(id); SFX.play(TAL[id].cap || TAL[id].unlockT ? 'levelup' : 'upgrade');
     if (TAL[id].cap) UI.toast('CAPSTONE', `${TAL[id].name} · ${TREE_BY_ID[TAL[id].tree].name}`, TREE_BY_ID[TAL[id].tree].col);
+    if (TAL[id].unlockT && TS() === PROF) UI.toast('NEW TOWER UNLOCKED', `${TAL[id].name} · ${G && !G.over && !(G.capT || []).includes(TAL[id].unlockT) ? 'Build it from your next run' : 'Build it in your next run'}`, TREE_BY_ID[TAL[id].tree].col); // 6.4 capstone tier
     Save.save(); refresh();
   }
   function remove(id) {
@@ -15711,7 +16566,8 @@ const Tree = (() => {
     if (why === 'have') return 'Already yours';
     if (why === 'locked') return 'Your Daily Hunt build is locked for this run';
     if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${slotsNow()} Capstone${slotsNow() > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
-    if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
+    if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${T.row >= 5 ? treePts(tr.id, 5) : treePts(tr.id)})`;
+    if (why === 'daily') return 'Daily Hunts use the base towers. Learn it on your own build';
     if (why === 'tree') return `One Capstone per tree. Remove ${capName(capsHeld().find(c => TAL[c].tree === T.tree))} first`;
     if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
     return 'Not available';
@@ -15726,6 +16582,14 @@ const Tree = (() => {
     const desc = F ? `${TOWERS[T.tech].name} technique: ${F.short}` : talentLines(T, Math.max(1, r)).join(' · ');
     return `<div class="${cls}" style="--c:${tr.col}"><button class="tbody" data-tact="sel" data-v="${T.id}"><b>${esc(T.name)}${rem ? ' <em>Remnant</em>' : ''}</b>${T.cap ? '' : `<small>${r}/${T.max}</small>`}${rankPips(T, r)}<span class="td">${esc(desc)}</span></button>${canAdd ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Add a rank">+</button>` : ''}</div>`;
   }
+  // 6.4 capstone tier: the top of the tree, one wide tile with the tower it unlocks
+  function tierHTML(tr) {
+    const T = tr.top; if (!T) return '';
+    const D = TOWERS[T.unlockT], r = talRank(T.id), why = talentBlock(T.id), ok = treePts(tr.id, 5) >= TTOP;
+    const cls = ['ttile', 'tier', r ? 'have' : '', why === 'row' || why === 'daily' ? 'locked' : '', sel === T.id ? 'sel' : ''].join(' ');
+    return `<div class="trow toprow ${ok ? '' : 'locked'}"><div class="trl"><b>▲</b><small>${TTOP} pts</small></div><div class="trt"><div class="${cls}" style="--c:${tr.col}">
+      <button class="tbody" data-tact="sel" data-v="${T.id}"><canvas class="ico" width="24" height="24" data-ico="${T.unlockT}"></canvas><em>Capstone tier · new tower</em><b>${esc(D.name)}${r ? ' <i>Unlocked</i>' : ''}</b><span class="td">${esc(D.blurb)}</span></button>${!why ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Unlock">+</button>` : ''}</div></div></div>`;
+  }
   function treeHTML(tr) {
     const pts = treePts(tr.id), rowsHTML = tr.rows.map((row, r) => {
       const need = rowNeed(r), ok = pts >= need || treePts(tr.id, r) >= need;
@@ -15734,7 +16598,8 @@ const Tree = (() => {
     const capOk = pts >= TCAP;
     return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${rowsHTML}
       <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
-      <p class="note tfoot">Capstones change how you play. Pick one per tree; ${TS() !== PROF ? `this build holds ${slotsNow()}` : `you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}`}.</p>`;
+      ${tierHTML(tr)}
+      <p class="note tfoot">The capstone tier (${TTOP} points, no slot) unlocks a new tower. Capstones change how you play. Pick one per tree; ${TS() !== PROF ? `this build holds ${slotsNow()}` : `you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}`}.</p>`;
   }
   function sumHTML() {
     const M = computeMods(null, null), lines = [];
@@ -15744,19 +16609,20 @@ const Tree = (() => {
     const caps = activeCaps();
     return `<div class="thead"><b>Your build</b><span>Everything your talents give you, in one place</span><em>${pointsSpent()} spent · ${pointsFree()} free</em></div>
       <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(TS().remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : '<p class="note">None yet. Spend 20 points in one tree to reach its Capstones.</p>'}
+      ${(() => { const nt = TALENTS.filter(tr => tr.top && talRank(tr.top.id)); return nt.length ? `<div class="lbl">New towers</div><p class="note">${nt.map(tr => `<b style="color:${tr.col}">${esc(tr.top.name)}</b>`).join(' · ')}</p>` : ''; })()}
       <div class="lbl">Bonuses</div><p class="note">Every point spent: +${TAL_PT_DMG}% Damage to all towers (now +${+(pointsSpent() * TAL_PT_DMG).toFixed(1)}%).</p>${lines.length ? `<ul class="tsum">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="note">No talents yet.</p>'}
       <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / treeMax(tr.id) * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
   }
   function infoHTML() {
     if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after ${TROW} points in that tree. Capstones open at ${TCAP}. Techniques unlock a tower's alternate fire mode. Every point also adds +${TAL_PT_DMG}% Damage to all towers.</p></div>`;
-    const T = TAL[sel], tr = TREE_BY_ID[T.tree], r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id);
+    const T0 = TAL[sel], T = T0.unlockT ? Object.assign({}, T0, { cap: 1 }) : T0, tr = TREE_BY_ID[T.tree], r = T0.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id); // 6.4: a tier node reads like a Capstone
     const now = r ? talentLines(T, r) : null, next = !T.cap && r < T.max ? talentLines(T, r + 1) : null;
     const rem = (TS().remnants || []).includes(T.id);
-    return `<div class="tinfo-t" style="--c:${tr.col}"><em>${esc(tr.name)}${T.cap ? ' · Capstone' : ` · Row ${T.row + 1}`}</em><b>${esc(T.name)}</b>${T.cap ? `<small>${r ? (rem ? 'Remnant: always on' : 'Yours') : 'Not taken'}</small>` : `<small>Rank ${r} of ${T.max}</small>`}</div>
+    return `<div class="tinfo-t" style="--c:${tr.col}"><em>${esc(tr.name)}${T.unlockT ? ' · Capstone tier' : T.cap ? ' · Capstone' : ` · Row ${T.row + 1}`}</em><b>${esc(T.name)}</b>${T.cap ? `<small>${r ? (rem ? 'Remnant: always on' : 'Yours') : 'Not taken'}</small>` : `<small>Rank ${r} of ${T.max}</small>`}</div>
       ${T.cap ? `<ul class="tl">${talentLines(T).map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : `${now ? `<div class="lbl">Now</div><ul class="tl">${now.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}${next ? `<div class="lbl">${r ? 'Next rank' : 'Rank 1'}</div><ul class="tl dim">${next.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}`}
       ${why && why !== 'max' && why !== 'have' ? `<p class="note bad">${esc(blockMsg(T.id, why))}</p>` : ''}
       <div class="tbtns">${!rem && (r > 0) ? `<button class="btn" data-tact="rem" data-v="${T.id}" ${rw && rw !== 'tokens' ? 'disabled' : ''}>Remove${refundFree() ? '' : `<small>${refundCost(T.id)} token${refundCost(T.id) > 1 ? 's' : ''}</small>`}</button>` : ''}
-      ${!why ? `<button class="btn primary" data-tact="add" data-v="${T.id}">${T.cap ? 'Take Capstone' : r ? 'Add rank' : 'Learn'}<small>1 point</small></button>` : ''}</div>`;
+      ${!why ? `<button class="btn primary" data-tact="add" data-v="${T.id}">${T.unlockT ? 'Unlock tower' : T.cap ? 'Take Capstone' : r ? 'Add rank' : 'Learn'}<small>1 point</small></button>` : ''}</div>`;
   }
   function buildsHTML() {
     return `<div class="tbuilds"><div class="lbl">Builds <em>save a layout, load it later${refundFree() ? '' : ' (2 tokens mid-run)'}</em></div>${PROF.builds.map((b, i) => `<div class="tb"><b>${b && b.tal ? esc(b.name) : `Slot ${i + 1}`}</b><small>${b && b.tal ? `${b.lvl} pts · ${(b.caps || []).map(capName).map(esc).join(', ') || 'no Capstone'}` : 'empty'}</small><button class="btn small" data-tact="bsave" data-v="${i}">Save</button><button class="btn small" data-tact="bload" data-v="${i}" ${b && b.tal ? '' : 'disabled'}>Load</button></div>`).join('')}</div>`;
@@ -15769,9 +16635,10 @@ const Tree = (() => {
     el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
     const tk = el('tTok'); tk.hidden = !(G && !G.over); if (G) tk.innerHTML = `<b>${G.tokens}</b> tokens`;
     const rs = el('tReset'); rs.hidden = !refundFree(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
-    el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
+    el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}${tr.top && talRank(tr.top.id) ? ' · ▲' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
     el('tgrid').innerHTML = (drawer === 'builds' ? buildsHTML() : '') + (cur === 'sum' ? sumHTML() : treeHTML(TREE_BY_ID[cur] || TALENTS[0]));
     el('tinfo').innerHTML = infoHTML();
+    for (const cv of el('tgrid').querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv); // 6.4: the tier tile's tower
     document.body.classList.toggle('tsel', !!sel);
   }
   function open(m) {
