@@ -35,7 +35,7 @@ const capsHeld = () => (TS().caps || []).filter(id => TAL[id]);
 const pointsSpent = () => { let t = 0; for (const k in TS().tal || {}) if (TAL[k]) t += TS().tal[k]; return t + capsHeld().length; };
 const pointsFree = () => talLevel() - pointsSpent();
 // points spent in a tree, optionally only in rows above `row`
-function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; }
+function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && !T.unlockT && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; } // 6.4: the capstone tier node isn't a tree point
 const rowNeed = r => r >= 5 ? TTOP : r >= 4 ? TCAP : r * TROW; // 6.4: row 5 is the capstone tier
 // Capstone slots for the build being edited: the profile's by level, the Daily Hunt build's fixed HUNT_CAPS
 const slotsNow = () => TS() === PROF ? capSlots(talLevel()) : HUNT_CAPS;

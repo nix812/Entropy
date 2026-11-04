@@ -371,6 +371,70 @@ const SFX = (() => {
       else { sub(c, 90, 28, 0.5, 0.5); fmv(c, { f0: 220, f1: 55, r: 0.5, i: 3, d: 0.45, v: 0.16, mw: 'triangle' }); }
       done(c);
     },
+    // ---------- 6.4 capstone tier towers (tower64): each in its own lane, gated like the rest ----------
+    // Buzzsaw: a metal whirr that rises as the blade leaves, a ring off the disc, a launch click
+    saw(t) {
+      if (!allow('saw', 0.1, 3)) return;
+      const sp = t && t.spec || 0, c = ev('saw', busW, 0.45, { room: 0.18, jit: 0.8, pitch: sp === 1 ? semi(-4) : 1, trim: ascT(t) }, t);
+      click(c, 0.4, 0, 4000);
+      nz(c, { f0: 1400, f1: 4200, q: 3, d: 0.22, v: 0.3, a: 0.02 });
+      fmv(c, { f0: 1760, f1: 1500, r: 2.76, i: 1.2, d: 0.18, v: 0.1, at: 0.02 });
+      if (sp === 2) nz(c, { f0: 1600, f1: 4600, q: 3, d: 0.2, v: 0.22, a: 0.02, at: 0.06 });
+      done(c);
+    },
+    // Flashover: a low whoomp; every explosion it sets off adds crackle (up to three)
+    flashover(t, n) {
+      if (!allow('flashover', 0.2, 2)) return;
+      const c = ev('flashover', busW, 0.55, { room: 0.25, jit: 0.6, trim: ascT(t) }, t);
+      sub(c, 110, 40, 0.22, 0.5);
+      nz(c, { ft: 'lowpass', f0: 1800, f1: 300, d: 0.28, v: 0.4, lofi: 1, a: 0.01 });
+      for (let k = 0; k < Math.min(3, n || 0); k++) nz(c, { ft: 'highpass', f0: 3000, d: 0.05, v: 0.22, at: 0.05 + k * 0.05 + rnd(0, 0.02), lofi: 1 });
+      done(c);
+    },
+    // Surge Spire: a bright snapping arc; a charged bolt is higher and tighter, so a burst rattles
+    surge(t) {
+      if (!allow('surge', 0.06, 4)) return;
+      const hot = t && t.surgeT !== undefined && G && G.time - t.surgeT < 0.05, c = ev('surge', busW, 0.4, { room: 0.12, jit: 1.5, pitch: hot ? semi(5) : 1, trim: ascT(t) }, t);
+      nz(c, { ft: 'highpass', f0: 6000, d: 0.04, v: 0.4, q: 0.5 });
+      fmv(c, { f0: rnd(900, 1300), f1: 220, r: 4.03, i: 5, d: hot ? 0.06 : 0.1, v: 0.2, cw: 'square' });
+      if (!hot) tone(c, { w: 0.125, f0: 330, f1: 165, d: 0.06, v: 0.07, crush: 1 });
+      done(c);
+    },
+    // Rimewall: the wall going up, a glassy rising bell over a frosty hiss
+    rime(t) {
+      if (!allow('rime', 0.3, 2)) return;
+      const c = ev('rime', busW, 0.45, { room: 0.35, jit: 0.5, trim: ascT(t) }, t);
+      fmv(c, { f0: 1175, f1: 2349, r: 3.01, i: 1.4, d: 0.3, v: 0.14 });
+      nz(c, { ft: 'highpass', f0: 5000, f1: 8000, d: 0.25, v: 0.18, a: 0.04 });
+      click(c, 0.3, 0.02, 3000);
+      done(c);
+    },
+    // Entangler: a low void thrum with a slow wobble as the threads snap on
+    tangle(t) {
+      if (!allow('tangle', 0.25, 2)) return;
+      const c = ev('tangle', busW, 0.45, { hall: 0.2, jit: 0.5, trim: ascT(t) }, t);
+      fmv(c, { f0: 147, f1: 196, r: 0.5, i: 3, d: 0.35, v: 0.16, mw: 'triangle' });
+      tone(c, { w: 'sine', f0: 587, f1: 440, d: 0.22, v: 0.08, vib: [7, 0.03] });
+      done(c);
+    },
+    // Aegis Station: a light twin tap
+    aegis(t) {
+      if (!allow('aegis', 0.08, 3)) return;
+      const c = ev('aegis', busW, 0.32, { room: 0.12, jit: 0.8, trim: ascT(t) }, t);
+      click(c, 0.3, 0, 5000); click(c, 0.25, 0.035, 5000);
+      tone(c, { w: 0.25, f0: 1480, f1: 740, d: 0.04, v: 0.14, lp: 5000 });
+      done(c);
+    },
+    // Wildcard: a slot-machine ding (two random notes); a Jackpot plays a bell run
+    joker(t, jack) {
+      if (!allow('joker', 0.1, 3)) return;
+      const c = ev('joker', busW, 0.38, { room: 0.2, jit: 0, trim: (jack ? 3 : 0) + ascT(t) }, t);
+      click(c, 0.25, 0, 4000);
+      const n0 = 76 + Math.floor(rnd(0, 7));
+      if (jack) arp(c, [n0, n0 + 4, n0 + 7, n0 + 12], 0.05, { v: 0.1, d: 0.12, bell: 1 });
+      else { tone(c, { w: 0.25, f0: note(n0), d: 0.05, v: 0.1, lp: 5000 }); tone(c, { w: 0.25, f0: note(n0 + 5), d: 0.06, v: 0.09, lp: 5000, at: 0.05 }); }
+      done(c);
+    },
     // Core Battery: a plasma shell. Bright square chirp up, small sub, so it reads as "ours"
     coreshot(t) {
       if (!allow('coreshot', 0.12, 2)) return;
@@ -383,7 +447,8 @@ const SFX = (() => {
   // impacts: tiny, gated hard. Crits get a bright tink; blunted hits on armour a dull clank; shields a glassy ping.
   // v5.8: every tower family has its own impact and its own voice budget, so rapid Lens, Flame and Cryo hits can't starve the rest.
   // Missile, Mortar and Gravity Well hits are covered by their own blast or pull sound.
-  const HIT_FAM = { pulse: 'K', rail: 'R', cryo: 'C', flame: 'F', lens: 'V', coil: 'A', missile: null, emp: null, grav: null };
+  const HIT_FAM = { pulse: 'K', rail: 'R', cryo: 'C', flame: 'F', lens: 'V', coil: 'A', missile: null, emp: null, grav: null,
+    saw: 'R', flashover: null, surge: 'A', rime: 'C', tangle: 'V', aegis: 'K', joker: 'N' }; // 6.4: Flashover's blasts carry their own sound
   const HITS = {
     N: [0.035, 5, 0.22, c => nz(c, { f0: rnd(1500, 2600), q: 2.2, d: 0.03, v: 0.4 })],
     K: [0.04, 4, 0.22, c => { click(c, 0.25, 0, 5000); tone(c, { w: 0.25, f0: 1900, f1: 950, d: 0.025, v: 0.16, lp: 6000 }); }],
@@ -462,6 +527,9 @@ const SFX = (() => {
       if (sp === 2) { tone(c, { w: 'sine', f0: 1320, d: 0.16, v: 0.12 }); tone(c, { w: 'sine', f0: 1320, d: 0.12, v: 0.05, at: 0.16 }); }
       else { tone(c, { w: 'triangle', f0: 520, f1: 880, d: 0.14, v: 0.12, a: 0.03 }); }
       done(c); },
+    // 6.4 Aegis Station: a leak stopped at the gate, a shield clang and a thump
+    aegisblock(t) { if (!allow('aegisblock', 0.15, 2)) return; const c = ev('aegisblock', busE, 0.55, { room: 0.35, jit: 0.3 }, t);
+      fmv(c, { f0: 880, f1: 830, r: 1.41, i: 2.2, i1: 0.3, d: 0.35, v: 0.16 }); sub(c, 130, 55, 0.12, 0.45); click(c, 0.35, 0, 3500); done(c); },
     // v5.8: a Void Lens locks onto a new target
     lock(t) { if (!allow('lock', 0.08, 2)) return; const c = ev('lock', busW, 0.3, { jit: 0.3, tn: t && t.spec === 2 ? 'lock2' : 'lock' }, t); tone(c, { w: 0.25, f0: 1320, d: 0.025, v: 0.1, lp: 5000 }); tone(c, { w: 0.25, f0: 1760, d: 0.035, v: 0.1, lp: 5000, at: 0.03 }); done(c); },
     // v5.8: Credit Forge payout: one bell per forge, staggered so several forges arpeggiate

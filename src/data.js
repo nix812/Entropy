@@ -1139,8 +1139,8 @@ const CAP_NEXT = lvl => lvl < 25 ? 25 : lvl < 60 ? 60 : 0;
 HUNT.pts = 30; const HUNT_CAPS = 1;
 // a talent's description at a given rank
 function talentLines(t, rank) {
-  if (t.cap) return t.lines || (t.doc !== undefined ? DOCTRINES[t.doc].lines : []);
   if (t.unlockT) { const D = TOWERS[t.unlockT]; return [`New tower: the ${D.name} (${EL[D.el].name})`, D.blurb, 'You can build it in every run from now on. Daily Hunts use the base towers']; }
+  if (t.cap) return t.lines || (t.doc !== undefined ? DOCTRINES[t.doc].lines : []);
   if (t.tech) { const F = fireModes(t.tech).find(f => f.need === t.id); return F ? [`Technique for the ${TOWERS[t.tech].name}: ${F.name}`, F.desc, 'Switch it per tower from the tower panel'] : []; }
   const r = Math.max(1, rank || 1);
   return Object.keys(t.fx).map(k => { const v = t.fx[k]; const txt = STAT_TXT[k]; if (!txt) return k; return typeof v === 'number' && v !== 1 ? txt(+(v * r).toFixed(2)) : txt(v); });
