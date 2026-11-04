@@ -221,7 +221,7 @@ const SFX = (() => {
   // player actions -22 · notices -20 to -24 · big events -12. Measured with test/sfxrender.py.
   const TRIM = { ui: 20, deny: 12, rail: -2.3, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -9, hit: 13, hitcrit: -2, hitshield: 2,
     build: -3, upgrade: 4, reroll: 15, sell: 12, cash: 4, wave: -2, call: 11, milestone: 6, freeze: 2, net: 15, boom: -2, blink: 3, storm: 7, levelup: 2, unbreak: 4,
-    converge: 4, crack: 1, stasis: 5, strikecharge: 3, overclock: 12, quack: 5,
+    converge: 4, crack: 1, stasis: 5, strikecharge: 3, overclock: 12, quack: 5, nuke: -1.5, // 6.2 the Nuke: the loudest big event, by a dB
     // v5.8 tower character (measured with sfxrender.py; spec variants sit level with their base sound, grav trimmed 3 dB into its tier)
     shot2: 4.4, rail1: -1.8, rail2: -2, pulse1: -2.1, pulse2: 1.1, missile1: 0.3, missile2: -0.2, coil: 1.7, coil1: 1.1, coil2: -3.7, ignite: 5,
     mortar1: -2, mortar2: -1.1, grav1: -9.1, grav2: -8.5, hitK: 9.5, hitR: 2.3, hitC: 7.7, hitF: 3.4, hitV: 10.1, hitA: 10.9,
@@ -478,6 +478,14 @@ const SFX = (() => {
     strikecharge() { const c = ev('strikecharge', busE, 0.55, { hall: 0.3, pan: 0 }); tone(c, { w: 0.25, f0: 220, f1: 1760, slide: 0.55, d: 0.6, v: 0.09, lp: 3000, lp1: 8000 }); nz(c, { ft: 'highpass', f0: 2000, f1: 8000, d: 0.55, v: 0.15, a: 0.3 }); done(c); },
     strike(p) { duck(-6, 0.005, 0.2, 0.6, true); const c = ev('strike', busE, 0.9, { hall: 0.45 }, p); click(c, 0.8, 0, 2500); sub(c, 120, 30, 0.45, 0.8); nz(c, { ft: 'lowpass', f0: 5000, f1: 120, d: 0.6, v: 0.6, lofi: 1 }); fmv(c, { f0: 1200, f1: 40, r: 10, i: 8, i1: 0.2, d: 0.15, v: 0.25 }); done(c); },
     nova() { duck(-8, 0.02, 0.6, 1.2, true); const c = ev('nova', busE, 0.9, { hall: 0.6, pan: 0 }); sub(c, 80, 25, 1.2, 0.7); fmv(c, { f0: 300, f1: 60, r: 3, i: 4, d: 1, v: 0.2 }); nz(c, { ft: 'lowpass', f0: 3000, f1: 100, d: 1, v: 0.45 }); arp(c, [81, 76, 69, 64], 0.08, { w: 'sawtooth', v: 0.06, d: 0.4, lp: 3000, at: 0.05 }); done(c); },
+    // 6.2 the Nuke: a crack and a bright blast, two long falling subs, a rumble that rolls on for three seconds and a second,
+    // lower roar as the shockwave lands. Deeper and longer than any other sound; music and weapons duck under it
+    nuke() { duck(-13, 0.01, 1.6, 2.4, true); const c = ev('nuke', busE, 0.95, { hall: 0.8, pan: 0, jit: 0 });
+      click(c, 0.9, 0, 1500); nz(c, { ft: 'lowpass', f0: 7000, f1: 260, d: 0.55, v: 0.6, lofi: 1 });
+      sub(c, 72, 17, 2.8, 0.95); sub(c, 46, 20, 3.3, 0.55, 0.12);
+      nz(c, { ft: 'lowpass', f0: 1100, f1: 55, q: 0.7, d: 3.3, v: 0.5, a: 0.06 });
+      fmv(c, { f0: 88, f1: 26, r: 1.41, i: 5, i1: 0.4, d: 2.5, v: 0.16, at: 0.04, mw: 'sawtooth' });
+      nz(c, { ft: 'lowpass', f0: 420, f1: 70, q: 0.8, d: 2.3, v: 0.4, a: 0.25, at: 0.55, lofi: 1 }); done(c); },
     stasis() { duck(-5, 0.05, 0.5, 1, true); const c = ev('stasis', busE, 0.7, { hall: 0.55, pan: 0 }); fmv(c, { f0: 880, f1: 2640, r: 2, i: 0.5, d: 0.6, v: 0.14 }); fmv(c, { f0: 4186, f1: 220, r: 3.5, i: 1.2, d: 0.5, v: 0.08 }); nz(c, { ft: 'highpass', f0: 7000, d: 0.5, v: 0.15, a: 0.05 }); done(c); },
     // v5.1 Sensor Sweep: a sonar ping and a rising sweep
     scan() { const c = ev('scan', busE, 0.6, { hall: 0.55, pan: 0 }); tone(c, { w: 'sine', f0: 1568, f1: 1568, d: 0.5, v: 0.12, a: 0.003 }); tone(c, { w: 'sine', f0: 1568, f1: 1560, d: 0.35, v: 0.05, at: 0.32 }); nz(c, { f0: 600, f1: 4000, q: 3, d: 0.6, v: 0.12, a: 0.25, curve: 'lin' }); done(c); },

@@ -1307,10 +1307,10 @@ function updateLinkBeams(dt) {
   }
 }
 
-// ---------- Core Overdrive: once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
+// ---------- Core Overdrive (the Nuke since 6.2; internal ids stay od*): once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
 const OD_WAVE = 35, OD_BOSS = 0.2;
 const odReady = () => !!(G && !G.over && !G.odUsed && G.wave >= OD_WAVE);
-function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('OVERDRIVE ONLINE', 'Tap Overdrive on the left: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
+function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('NUKE ONLINE', 'Tap Nuke on the left: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
 function releaseOverdrive() {
   if (G.over) return 'over';
   if (G.odUsed) return 'used';
@@ -1323,13 +1323,13 @@ function releaseOverdrive() {
   for (let pass = 0; pass < 6; pass++) {
     const tg = G.enemies.filter(e => !e.dead && !e.boss);
     if (!tg.length) break;
-    for (const e of tg) { if (e.dead) continue; Hooks.fx('spark', { x: e.x, y: e.y, col: PAL_CORE }); kill(e, null, { abil: 1 }); n++; }
+    for (const e of tg) { if (e.dead) continue; Hooks.fx('spark', { x: e.x, y: e.y, col: '#ffcf6a' }); kill(e, null, { abil: 1 }); n++; } // 6.2: vaporised by the Nuke (cosmetic colour)
   }
   // bosses ride it out: they lose a chunk of their remaining HP but never die to it
   for (const e of G.enemies) if (!e.dead && e.boss) { e.hp = Math.max(1, e.hp * (1 - OD_BOSS)); e.st.stun = Math.max(e.st.stun || 0, 0.6); }
   G.stats.odKills = n;
-  Hooks.fx('overdrive', { x: c.x, y: c.y, r: Math.hypot(COLS, ROWS) }); Hooks.sfx('nova'); Hooks.fx('shake', { v: 10 });
-  Hooks.log(`Overdrive · ${n} enemies erased`, '#59f0b4');
+  Hooks.fx('overdrive', { x: c.x, y: c.y, r: Math.hypot(COLS, ROWS) }); Hooks.sfx('nuke'); Hooks.fx('shake', { v: 10 }); // 6.2: shown and heard as the Nuke
+  Hooks.log(`Nuke · ${n} enemies erased`, '#59f0b4');
   return 'ok';
 }
 const PAL_CORE = '#59f0b4';

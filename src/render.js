@@ -23,6 +23,7 @@ const RES = 2;
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let wormFlashAt = 0; // Frontier: when the no-build ring around the wormholes was last flashed
+  let nuke = null, nukeSpr = null; // 6.2 the Nuke's detonation (one at a time) and its pre-rendered puffs
   let frSel = null, frArrows = []; // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
@@ -859,6 +860,67 @@ const RES = 2;
   function fillRing(x, y, r, col, a) { if (r <= 0) return; b.fillStyle = hexA(col, a); b.beginPath(); b.arc(x, y, r, 0, 6.283); b.fill(); }
   // dithered discs (storms, ranges) cached per radius/colour/phase
   const discCache = new Map();
+  // 6.2 the Nuke: chunky pixel puffs, pre-rendered once per colour stage (white-hot, yellow, orange, dark red, hot smoke, ash).
+  // Lit from the top-left like the rest of the art, with a dithered rim; scaled with smoothing off so they stay blocky.
+  const NUKE_RAMP = [['#ffffff', '#fffbe8', '#fff0b8'], ['#fff6b0', '#ffd84a', '#f0a428'], ['#ffc04a', '#ff8a2a', '#c8501a'], ['#e0602a', '#a8361a', '#6a2014'],
+    ['#9a7a66', '#6e564a', '#43342f'], ['#77706c', '#55504f', '#36323a']];
+  function nukeSprites() {
+    if (nukeSpr) return nukeSpr;
+    nukeSpr = NUKE_RAMP.map(([hi, mid, lo]) => {
+      const R0 = 11, N = R0 * 2, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
+      for (let y = 0; y < N; y += 2) for (let x = 0; x < N; x += 2) {
+        const dx = x + 1 - R0, dy = y + 1 - R0, d = Math.hypot(dx, dy) / R0;
+        if (d > 1 || (d > 0.8 && ((x + y) >> 1) % 2)) continue;
+        const l = (-dx - dy) / (R0 * 1.41) * 0.65 + (1 - d) * 0.6;
+        g.fillStyle = l > 0.5 ? hi : l > 0.1 ? mid : lo; g.fillRect(x, y, 2, 2);
+      }
+      return c;
+    });
+    return nukeSpr;
+  }
+  function startNuke(x, y, rr) {
+    nukeSprites(); nuke = { x, y, t: 0, seed: Math.random() * 6.283, ash: 0 };
+    flashes.push({ col: '#ffffff', life: 0.5, max: 0.5, a: 0.95 }); flashes.push({ col: '#ffc76a', life: 1.6, max: 1.6, a: 0.28 });
+    const far = Math.max(rr, Math.hypot(BW, BH) / TILE) * TILE;
+    rings.push({ x, y, r0: 8, r1: far, life: 1.5, max: 1.5, col: '#fff0c0', w: 4, a: 0.9 }); // the shockwave races across the board
+    rings.push({ x, y, r0: 6, r1: far * 0.55, life: 1.9, max: 1.9, col: '#d08a4a', w: 7, fill: 1, a: 0.55, nl: 1 }); // a dust front behind it
+    rings.push({ x, y, r0: 4, r1: TILE * 5, life: 0.5, max: 0.5, col: '#ffffff', w: 3, fill: 1 });
+    for (let i = 0; i < (LITE ? 30 : 70); i++) { const a = Math.random() * 6.283, sp = 30 + Math.random() * 110;
+      parts.push({ x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6 - 40 - Math.random() * 50, g: 45, life: 1.2 + Math.random() * 1.4, max: 2.6, col: ['#ffffff', '#ffe14d', '#ffb03a', '#ff7b29'][i % 4], s: 2 }); }
+    shakeAt(16, 1.1);
+  }
+  // one frame of the detonation in the world buffer (about 3.3 s): fireball, stem, rolling cap, then ash and embers
+  function drawNuke(dt) {
+    const N = nuke; N.t += dt; const t = N.t, T = 3.3;
+    if (t > T) { nuke = null; return; }
+    const S = nukeSpr, cl = (v, a, z) => v < a ? a : v > z ? z : v, eo = v => 1 - (1 - v) * (1 - v);
+    const pf = (st, x, y, r, a) => { if (a <= 0.02 || r < 1) return; b.globalAlpha = a > 1 ? 1 : a; const q = Math.round(r * RES) / RES; b.drawImage(S[cl(st | 0, 0, 5)], Math.round((x - q) * RES) / RES, Math.round((y - q) * RES) / RES, q * 2, q * 2); };
+    const X = N.x, Y = N.y, fade = 1 - cl((t - 2.5) / 0.8, 0, 1);
+    // fireball: swells fast, then cools white → yellow → orange → dark red and sinks into the stem's foot
+    const fr = TILE * (0.45 + 1.35 * eo(cl(t / 0.45, 0, 1)) + 0.25 * cl(t / 2, 0, 1)), fst = cl(t / 0.42, 0, 3.6), fa = 1 - cl((t - 1.5) / 1, 0, 1);
+    for (let i = 0; i < 6; i++) { const a = N.seed + i * 1.047 + t * 0.7; pf(fst + 0.6, X + Math.cos(a) * fr * 0.55, Y + Math.sin(a) * fr * 0.3, fr * 0.55, fa); }
+    pf(fst, X, Y - fr * 0.1, fr * 0.8, fa);
+    // stem: a column of puffs rising from the blast, hotter at the top while it climbs
+    const rise = eo(cl((t - 0.2) / 1.5, 0, 1)), top = Y - TILE * (0.6 + 3.6 * rise), cst = cl(1 + t / 0.75, 1, 5);
+    if (t > 0.2) for (let yy = Y - TILE * 0.3, k = 0; yy > top + TILE * 0.3; yy -= TILE * 0.32, k++) {
+      const u = (Y - yy) / Math.max(1, Y - top), w = TILE * (0.34 + 0.12 * Math.sin(k * 1.7 + t * 3)) * (0.8 + 0.4 * u);
+      pf(cst + 0.6 - u * 0.8, X + Math.sin(k * 0.9 + t * 2.2) * TILE * 0.08, yy, w, fade * (0.92 - 0.15 * u));
+    }
+    // cap: a rolling ring of puffs around a domed core; the back half first (darker), the underside glows while it is hot
+    if (t > 0.3) {
+      const g = eo(cl((t - 0.3) / 1.6, 0, 1)), rx = TILE * (0.55 + 1.25 * g), ry = rx * 0.42, pr = TILE * (0.4 + 0.42 * g), ph = N.seed + t * 1.5, n = 10;
+      const ring = []; for (let i = 0; i < n; i++) { const a = ph + i * 6.283 / n; ring.push({ a, x: X + Math.cos(a) * rx, y: top + Math.sin(a) * ry }); }
+      for (const q of ring) if (Math.sin(q.a) < 0) pf(cst + 0.9, q.x, q.y, pr, fade);
+      pf(cst + 0.3, X, top - ry * 0.8, pr * 1.55, fade); pf(cst, X - rx * 0.35, top - ry * 1.3, pr * 1.05, fade); pf(cst, X + rx * 0.3, top - ry * 1.5, pr * 0.95, fade);
+      for (const q of ring) if (Math.sin(q.a) >= 0) pf(cst - 0.5 * (1 - cl((t - 1) / 1.2, 0, 1)), q.x, q.y, pr, fade);
+    }
+    b.globalAlpha = 1;
+    // ash drifts down off the cap; embers lift off the stem
+    if (!LITE && t > 0.5 && t < 2.9) { N.ash += dt * 26; while (N.ash >= 1) { N.ash--;
+      const rx = TILE * 1.6, ax = X + (Math.random() - 0.5) * rx * 2;
+      if (Math.random() < 0.6) parts.push({ x: ax, y: top + (Math.random() - 0.3) * TILE * 0.6, vx: 6 + Math.random() * 10, vy: 6 + Math.random() * 10, life: 1.6, max: 1.6, col: Math.random() < 0.5 ? '#8a8486' : '#5e585c', s: 2 });
+      else parts.push({ x: X + (Math.random() - 0.5) * TILE * 0.6, y: Y - Math.random() * (Y - top), vx: (Math.random() - 0.5) * 14, vy: -18 - Math.random() * 16, life: 0.9, max: 0.9, col: Math.random() < 0.5 ? '#ffb03a' : '#ff7b29', s: 1.5 }); } }
+  }
   function ditherDisc(cx, cy, r, col, dither, phase) {
     const R0 = Math.max(1, Math.round(r)), key = R0 + col + dither + ':' + (phase % dither);
     let c = discCache.get(key);
@@ -1198,6 +1260,7 @@ const RES = 2;
     }
     parts = parts.filter(p => p.life > 0);
     if (parts.length > 800) parts.splice(0, parts.length - 800);
+    if (nuke) drawNuke(dt);
     if (G.aimAbility && aimPos) D(b, aimPos.x * TILE, aimPos.y * TILE, 2, '#ffffff');
 
     // ---------- light sources (buffer coords) ----------
@@ -1221,6 +1284,7 @@ const RES = 2;
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
     for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
+    if (nuke) { const t = nuke.t; light(nuke.x, nuke.y, TILE * (3 + 3 * Math.min(1, t / 0.4)), t < 0.6 ? '#fff0c0' : '#ff8a2a', Math.max(0, 0.9 - t * 0.3)); light(nuke.x, nuke.y - TILE * 3.5 * Math.min(1, t / 1.5), TILE * 3, '#ff7b29', Math.max(0, 0.45 - t * 0.14)); }
     if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
@@ -1473,7 +1537,7 @@ const RES = 2;
       }
       // 5.8: a gold star over every tower with a pick waiting (veteran mutation or Ascend perk), so they stand out in a busy wave
       { const u = clamp(Math.round(tpx / 12), 2, 3); c.fillStyle = '#ffd84a';
-        for (const t of G.towers) if (t.pending > 0 || t.ascPend > 0) { const x = Math.round(bx2s(t.x * TILE)) + u, y = Math.round(by2s(t.y * TILE)) - 3 * u - (frame % 40 < 20 ? 0 : u);
+        for (const t of G.towers) if (t.pending > 0 || t.ascPend > 0 || t.grow > 0) { const x = Math.round(bx2s(t.x * TILE)) + u, y = Math.round(by2s(t.y * TILE)) - 3 * u - (frame % 40 < 20 ? 0 : u);
           c.fillStyle = '#090b16'; c.fillRect(x - 1, y + u - 1, 5 * u + 2, 3 * u + 2); c.fillRect(x + 2 * u - 1, y - 1, u + 2, 5 * u + 2);
           c.fillStyle = '#ffd84a'; c.fillRect(x, y + 2 * u, 5 * u, u); c.fillRect(x + 2 * u, y, u, 5 * u); c.fillRect(x + u, y + u, 3 * u, 3 * u); } }
       if (best && big) {
@@ -1661,7 +1725,11 @@ const RES = 2;
       case 'scan': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: BW * 1.2, life: 1.1, max: 1.1, col: '#7dffb0', w: 3 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: BW * 0.7, life: 0.8, max: 0.8, col: '#c9fff0', w: 1 }); flashes.push({ col: '#7dffb0', life: 0.25, max: 0.25, a: 0.12 }); break;
       case 'overclock': flashes.push({ col: '#ffe14d', life: 0.3, max: 0.3, a: 0.3 }); for (const t of G.towers) burst(t.cx * TILE, t.cy * TILE, 6, '#ffe14d', 30 * K, 0.4); break;
       case 'rift': burst(T2P(d.x), T2P(d.y), 40, '#b86cff', 50 * K, 0.8); break;
-      case 'overdrive': flashes.push({ col: '#e6fff6', life: 0.25, max: 0.25, a: 0.6 }); flashes.push({ col: PAL.core, life: 0.9, max: 0.9, a: 0.35 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: T2P(d.r), life: 0.55, max: 0.55, col: PAL.core, w: 5, fill: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: T2P(d.r) * 1.15, life: 0.8, max: 0.8, col: '#e6fff6', w: 2 }); burst(T2P(d.x), T2P(d.y), 60, PAL.core, 90 * K, 0.7); break;
+      case 'overdrive': startNuke(T2P(d.x), T2P(d.y), d.r); break; // 6.2: the Nuke (the fx id stays 'overdrive')
+      // 6.2: a support tower grew a level with its towers: a soft double ring, rising motes and the new level
+      case 'grow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 20, life: 0.5, max: 0.5, col: PAL.core, w: 2 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 12, life: 0.7, max: 0.7, col: '#e6fff6', w: 1 });
+        for (let i = 0; i < 10; i++) parts.push({ x: T2P(d.x) + (Math.random() - 0.5) * 16, y: T2P(d.y) + 4, vx: (Math.random() - 0.5) * 6, vy: -22 - Math.random() * 18, life: 0.8, max: 0.8, col: i % 3 ? PAL.core : '#e6fff6', s: 2 });
+        text(d.x, d.y - 0.7, 'LV ' + d.lv, PAL.core, 14, 1.2, -0.6, 'Silkscreen, monospace'); break;
       case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
       case 'cacheClaim': { const cc = CACHE_PAL[d.kind || 'normal'][3]; rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.kind === 'gold' ? 60 : 34, life: 0.5, max: 0.5, col: cc, w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), d.kind === 'gold' ? 50 : 22, cc, 50 * K, 0.6); break; }
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
@@ -1704,7 +1772,7 @@ const RES = 2;
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     fit();
   }
-  function reset() { parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
+  function reset() { nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
 
   // build-menu card art: the tower on a lit plinth against its element's colour
   function towerCard(type, canvas, locked) {

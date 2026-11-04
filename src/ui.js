@@ -19,7 +19,7 @@ const ICONS = {
   archive: ['#########', '#########', '.........', '.#######.', '.#.....#.', '.#.###.#.', '.#.....#.', '.#######.', '.........'],
   help: ['..#####..', '.##...##.', '......##.', '.....##..', '....##...', '....##...', '.........', '....##...', '....##...'],
   gear: ['...#.#...', '.#######.', '.##...##.', '##.....##', '.#..#..#.', '##.....##', '.##...##.', '.#######.', '...#.#...'],
-  overdrive: ['..#####..', '.#.....#.', '#..###..#', '#.#...#.#', '#.#.#.#.#', '#.#...#.#', '#..###..#', '.#.....#.', '..#####..'],
+  overdrive: ['##.....##', '###...###', '####.####', '.##...##.', '....#....', '.........', '...###...', '..#####..', '..#####..'], // 6.2: the Nuke's radiation trefoil
   music: ['...######', '...######', '...#....#', '...#....#', '...#....#', '.###..###', '####.####', '####.####', '.##...##.'],
   fit: ['###...###', '#.......#', '#.......#', '.........', '.........', '.........', '#.......#', '#.......#', '###...###'],  // v5.5 Music Studio transport
   play: ['.#.......', '.##......', '.###.....', '.####....', '.#####...', '.####....', '.###.....', '.##......', '.#.......'],
@@ -1008,24 +1008,24 @@ const UI = (() => {
     toast('MOST WANTED', `${Wd.name} · Wave ${Wd.w} · wanted for ${Wd.crime}. ${M ? M.desc + '. ' : ''}Reward: ${fmt(Wd.bounty)} credits and a Legendary schematic${M && M.loaded ? ' (double, plus a Captain\'s Chest)' : ''}`, '#ffd84a', true);
   }
   // ---------- HUD ----------
-  // Overdrive from the rail: first tap arms it for 3 s, second tap releases
+  // the Nuke (internally Overdrive) from the rail: first tap arms it for 3 s, second tap releases
   let odArm = false, odArmT = null;
   function overdriveTap() {
     if (!G || G.over) return;
     SFX.play('ui');
-    if (G.odUsed) { toast('OVERDRIVE', `Already used on Wave ${G.odUsed}. One per run`, '#8a8fa8'); return; }
-    if (!odReady()) { toast('OVERDRIVE', `Charges at Wave ${OD_WAVE}: one board clear per run (bosses survive)`, '#8a8fa8'); return; }
-    if (!odArm) { odArm = true; clearTimeout(odArmT); odArmT = setTimeout(() => { odArm = false; updateHud(); }, 3000); updateHud(); toast('OVERDRIVE ARMED', 'Tap again to erase every non-boss enemy. One use per run', '#59f0b4', true); return; }
+    if (G.odUsed) { toast('NUKE', `Already used on Wave ${G.odUsed}. One per run`, '#8a8fa8'); return; }
+    if (!odReady()) { toast('NUKE', `Arms at Wave ${OD_WAVE}: one board clear per run (bosses survive)`, '#8a8fa8'); return; }
+    if (!odArm) { odArm = true; clearTimeout(odArmT); odArmT = setTimeout(() => { odArm = false; updateHud(); }, 3000); updateHud(); toast('NUKE ARMED', 'Tap again to erase every non-boss enemy. One use per run', '#59f0b4', true); return; }
     odArm = false; clearTimeout(odArmT);
     const r = window.act('od');
-    if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); }
+    if (r === 'empty') { SFX.play('deny'); toast('NUKE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); }
     else if (r !== 'ok') SFX.play('deny');
-    else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); }
+    else { closePanel(); toast('NUKE', `${G.stats.odKills} enemies erased`, '#59f0b4'); }
     updateHud();
   }
   const marketShut = () => !!(G && G.fresh && G.wave < 10);
   function buildAbilityBar() {
-    $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Overdrive">${svgIcon('overdrive')}<span>Overdrive</span></button>` +
+    $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Nuke">${svgIcon('overdrive')}<span>Nuke</span></button>` +
       ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt"></em><i class="cdf"></i></button>`).join('');
   }
   function updateHud(force) {
@@ -1052,7 +1052,7 @@ const UI = (() => {
     if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); $('#cpBanner').querySelector('span').textContent = cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'; $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
     const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
-    { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Overdrive') : 'W' + OD_WAVE;
+    { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Nuke') : 'W' + OD_WAVE;
       ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready); ob.classList.toggle('ghost', !!G.fresh && !ready && !G.odUsed);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
     // v5.1: every ability keeps its place on the rail. Empty ones dim and fill as they recharge; offline ones show their wave
@@ -1244,8 +1244,8 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|OVERDRIVE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
-  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
+  const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|NUKE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|NUKE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
   const KEY_RE = /^(BOSS HALFWAY|NEW ENEMY|BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   // v5.1.2 notices in a game go to one slim ticker under the top bar, never over the field. URGENT ones (the run is at stake)
   // flash the screen edge and buzz; everything is kept in noteLog, read back from the ticker or the +N chip (Field Report)
@@ -1543,6 +1543,13 @@ const UI = (() => {
     if (box && !box.hidden) box.hidden = true;
   }, true);
   function affixHTML(a) { return `<div class="aff" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</div>`; }
+  // 6.2 (frV 3): a Relay Pylon or Snare Beacon grows with the attack towers in its range (supGrow in sim.js)
+  function growHTML(t) {
+    if (!(G.frV >= 3) || !t.s || !supKind(t.s.kind)) return '';
+    const r2 = t.s.range * t.s.range, n = G.towers.filter(o => o !== t && canOvercharge(o) && dist2(t.cx, t.cy, o.cx, o.cy) <= r2).length, want = supTarget(t);
+    const tail = t.grow > 0 ? ' · Specialize free' : !n ? ' · none in range' : t.lvl >= MAX_LV ? '' : want > t.lvl ? '' : ` · now LV ${want}`;
+    return `<div class="sts grow">Grows with nearby attack towers${t.freeLv ? ` <b>+${t.freeLv} LV free</b>` : ''}<small>${n} in range${tail}</small></div>`;
+  }
   function towerPanelHTML(t) {
     const D = TOWERS[t.type], s = t.s;
     const spec = t.spec ? D.specs[t.spec - 1].name : '';
@@ -1563,7 +1570,7 @@ const UI = (() => {
     const fire = fireHTML(t);
     let up = '';
     if (t.lvl < 3 || t.lvl === 4) { const c = upgradeCost(t); up = `<button class="btn primary wide lvup" style="${tierStyle(t.lvl + 1)}" data-act="up" ${costBtn(c)}>Upgrade to LV ${t.lvl + 1} · ${fmt(c)}<small>${s.kind === 'snare' ? 'more catches, longer hold, wider net' : s.kind === 'support' ? 'stronger boost' : s.kind === 'eco' ? 'more income' : 'more Damage'}, new affix</small></button>`; }
-    else if (t.lvl === 3) { const c = upgradeCost(t); up = `<div class="lbl">Specialize · ${fmt(c)}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${costBtn(c)}><b>${esc(sp.name)}</b><span>${tipify(sp.desc)}</span></button>`).join('')}</div>`; }
+    else if (t.lvl === 3) { const c = t.grow > 0 ? 0 : upgradeCost(t); up = `<div class="lbl">Specialize · ${c ? fmt(c) : 'Free: grown with its towers'}</div><div class="specs">${D.specs.map((sp, i) => `<button class="spec" data-act="spec" data-v="${i + 1}" ${c ? costBtn(c) : ''}><b>${esc(sp.name)}</b><span>${tipify(sp.desc)}</span></button>`).join('')}</div>`; }
     else if (t.ascPend > 0) { const c = upgradeCost(t); up = `<button class="btn primary wide asc lvup" style="${tierStyle(towerLevel(t) + 1)}" disabled>Ascend to LV ${towerLevel(t) + 1} · ${fmt(c)}<small>Choose a perk ${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'} first</small></button>`; }
     else { const c = upgradeCost(t); up = `<button class="btn primary wide asc lvup" style="${tierStyle(towerLevel(t) + 1)}" data-act="up" ${costBtn(c)}>Ascend to LV ${towerLevel(t) + 1} · ${fmt(c)}<small>${lvTier(towerLevel(t) + 1).name} · ×${G.ascV >= 2 ? ASC_DMG_T[t.type] || ASC_DMG : ASC_DMG_OLD} Damage${G.ascV >= 2 && perkPool(t).length ? ', perk' : ''}, affix</small></button>`; }
     let vet = '';
@@ -1586,6 +1593,7 @@ const UI = (() => {
       ${stats}
       ${condHTML(t)}
       ${idle}
+      ${growHTML(t)}
       ${t.linkedTo ? `<div class="sts node">${tipify(`Node Link with ${TOWERS[t.linkedTo.type].name}: +10% Damage, shared beam`)}</div>` : ''}
       ${s.node ? `<div class="sts node">${tipify(s.kind === 'support' ? 'Power Node: +25% Boost strength' : s.kind === 'eco' ? 'Power Node: +25% Income' : s.kind === 'snare' ? 'Power Node: +25% catches, +15% Range' : 'Power Node: +25% Damage, +15% Range')}</div>` : ''}
       ${perkList}
@@ -1595,6 +1603,7 @@ const UI = (() => {
       ${t.lvl === 3 ? up : ''}
       ${perks}
       ${vet}
+      ${growHTML(t)}
       ${condHTML(t)}
       ${idle}
       ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · +${Math.round((OVERCHARGE.dmg + FX('msOc') / 100) * 100)}% per step · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${ocFree(t) ? `<span class="note">Marksman: +${ocFree(t)} free</span>` : ''}${Array.from({ length: ocMax() + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n}` : 'Off'}</button>`).join('')}</div>` : ''}
@@ -1659,7 +1668,7 @@ const UI = (() => {
       <div class="lbl">Command Uplink · LV ${c.uLvl || 0}/${UPLINK.max} · −${UPLINK.cd * (c.uLvl || 0)}% cooldowns${G.fr ? ` · +1 link per ${FRONTIER.linkUplink} levels, lift-off wait −1 wave per ${FRONTIER.cdUplink}` : ''}</div>
       <div class="cmods">${UPLINK.mods.map(m => `<span class="${(c.uLvl || 0) >= m.lv ? 'on' : ''}"><b>${(c.uLvl || 0) >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
-      <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Overdrive: used on Wave ${G.odUsed}` : odReady() ? 'Overdrive: ready · release it from the left rail. One board clear this run' : `Overdrive: unlocks at Wave ${OD_WAVE} · once per run`)}</div>
+      <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Nuke: used on Wave ${G.odUsed}` : odReady() ? 'Nuke: ready · launch it from the left rail. One board clear this run' : `Nuke: arms at Wave ${OD_WAVE} · once per run`)}</div>
       <div class="lbl">Affixes${c.affixes.length ? '' : ' · each Weapon or Shield upgrade rolls one'}</div>
       ${c.affixes.length ? `<div class="affs">${c.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="sts">${tipify(`Power grid ${gridUsed()}/${gridCap()}${G.reactorN ? ` · ${G.reactorN} reactor expansion${G.reactorN > 1 ? 's' : ''}` : ''}. Each expansion adds +1 power for the rest of the run and costs more than the last`)}</div>
@@ -1858,9 +1867,9 @@ const UI = (() => {
         if (!panel.odArm) { panel.odArm = true; renderPanel(); setTimeout(() => { if (panel && panel.kind === 'core' && panel.odArm) { panel.odArm = false; renderPanel(); } }, 3000); return; }
         panel.odArm = false;
         const r = window.act('od');
-        if (r === 'empty') { SFX.play('deny'); toast('OVERDRIVE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); renderPanel(); }
+        if (r === 'empty') { SFX.play('deny'); toast('NUKE', 'Nothing to clear yet. Save it for a crowd', '#ff4d6a'); renderPanel(); }
         else if (r !== 'ok') { SFX.play('deny'); renderPanel(); }
-        else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
+        else { closePanel(); toast('NUKE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
       }
       else if (act === 'reloc') startReloc();
       else if (act === 'frlift') startLift();
@@ -2176,7 +2185,7 @@ const UI = (() => {
       ${swarmTimelineHTML(R)}
       ${R.assaults && R.assaults.list.length ? `<p class="note hl">${tipify(`Strain Assaults: ${R.assaults.won} broken, ${R.assaults.lost} entrenched`)}${R.assaults.list.slice(-3).map(a => ` · W${a.w} ${esc(a.name)} ${a.won ? '✓' : '✗'}`).join('')}</p>` : ''}
       ${R.bounty ? `<p class="note hl" style="color:#ffd84a">Bounty claimed: ${esc(R.bounty)}</p>` : ''}
-      ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Overdrive erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
+      ${(R.crates || R.pirates || R.odKills || R.relocs) ? `<p class="note hl">${[R.crates ? `Salvage crates ${R.crates}` : '', R.pirates ? `Pirates downed ${R.pirates}` : '', R.odKills ? `Nuke erased ${fmt(R.odKills)}` : '', R.relocs ? `Core moved ${R.relocs}×` : ''].filter(Boolean).join(' · ')}</p>` : ''}
       <p class="note">${tipify(`Elites ${R.elites} · Bosses ${R.bosses} · Leaks ${R.leaks}${R.cashed ? ' · Cashed in ' + fmt(R.cashed) + ' credits' : ''}${R.lastLeak ? ' · Final hit: ' + R.lastLeak : ''}${R.anoms.length ? ' · Anomalies: ' + R.anoms.map(id => (ANOMALIES.find(a => a.id === id) || { name: id }).name).join(', ') : ''}`)}</p>
     </div>`;
   }
@@ -2311,19 +2320,19 @@ const UI = (() => {
   // ---------- v5.3 The Hunt: the choice after a bounty, hunt codes, and watching a recorded run ----------
   // v5.3.4 Veteran Picks: the "veterans ready" chip walks through every tower with a mutation waiting, one card at a time
   const vetFlow = { ix: 0, n: 0 };
-  const vetsReady = () => G ? G.towers.filter(t => t.pending > 0 || t.ascPend > 0) : []; // 5.8: veteran picks and Ascend perks
+  const vetsReady = () => G ? G.towers.filter(t => t.pending > 0 || t.ascPend > 0 || t.grow > 0) : []; // 5.8: veteran picks and Ascend perks; 6.2: a grown support tower's free Specialization
   function showOnMap(t) { openTower(t); const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); }
   function openVets() {
     const rd = vetsReady();
     if (!rd.length) { closeModal(); Render.sel = null; if (G && !G.over) G.paused = false; if (vetFlow.n) toast('VETERANS', `${vetFlow.n} pick${vetFlow.n === 1 ? '' : 's'} made. Every tower is up to date`, '#ffe14d', true, 'tip'); vetFlow.n = 0; return; }
     vetFlow.ix = ((vetFlow.ix % rd.length) + rd.length) % rd.length;
-    const t = rd[vetFlow.ix], asc = !(t.pending > 0) && t.ascPend > 0, o = asc ? ascOffer(t) || [] : vetOffer(t), left = rd.reduce((a, x) => a + (x.pending || 0) + (x.ascPend > 0 ? 1 : 0), 0);
+    const t = rd[vetFlow.ix], asc = !(t.pending > 0) && t.ascPend > 0, grow = !(t.pending > 0) && !asc && t.grow > 0, o = grow ? [] : asc ? ascOffer(t) || [] : vetOffer(t), left = rd.reduce((a, x) => a + (x.pending || 0) + (x.ascPend > 0 ? 1 : 0) + (x.grow > 0 ? 1 : 0), 0);
     closePanel(); G.paused = true;
     // 5.8: the tower is centred in the free (left) part of the board and selected, and the card docks right over a light backdrop
     { const p = Render.tileToScreen(t.cx, t.cy), L = Render.layout; Render.panBy(L.W * 0.3 - p.x, L.H / 2 - p.y); updateZoomBtn(); Render.sel = { x: t.x, y: t.y }; }
     modal(`<div class="card narrow vets"><div class="ch"><h2>Ready</h2><span class="note">Tower ${vetFlow.ix + 1} of ${rd.length} · ${left} pick${left === 1 ? '' : 's'} waiting</span><button class="x" data-act="vetDone" aria-label="Close">✕</button></div>
-      <div class="vhead"><canvas class="ico" width="32" height="32" data-ico="${t.type}"></canvas><div><b>${esc(towerLabel(t))}</b><small>${towerLabel(t) !== TOWERS[t.type].name ? esc(TOWERS[t.type].name) + ' · ' : ''}LV ${towerLevel(t)} · ${asc ? 'Ascended · choose a perk' : `${tipify('Veteran')} ${roman(t.rank)}${t.pending > 1 ? ` · ${t.pending} picks here` : ''} · choose a mutation`}</small></div></div>
-      <div class="vet">${asc ? o.map((id, i) => { const P = perkDef(t.type, id), n = perkStacks(t, id); return `<button class="aff pickable" data-act="apick" data-v="${i}" style="--c:#ff8a2a"><i>${esc(P.name)}${n ? ' ' + roman(n + 1) : ''}</i>${esc(perkText(P, n))}</button>`; }).join('')
+      <div class="vhead"><canvas class="ico" width="32" height="32" data-ico="${t.type}"></canvas><div><b>${esc(towerLabel(t))}</b><small>${towerLabel(t) !== TOWERS[t.type].name ? esc(TOWERS[t.type].name) + ' · ' : ''}LV ${towerLevel(t)} · ${grow ? 'Grown with its towers · choose a free Specialization' : asc ? 'Ascended · choose a perk' : `${tipify('Veteran')} ${roman(t.rank)}${t.pending > 1 ? ` · ${t.pending} picks here` : ''} · choose a mutation`}</small></div></div>
+      <div class="vet">${grow ? TOWERS[t.type].specs.map((sp, i) => `<button class="aff pickable" data-act="gpick" data-v="${i + 1}" style="--c:#59f0b4"><i>${esc(sp.name)} · Free</i>${tipify(sp.desc)}</button>`).join('') : asc ? o.map((id, i) => { const P = perkDef(t.type, id), n = perkStacks(t, id); return `<button class="aff pickable" data-act="apick" data-v="${i}" style="--c:#ff8a2a"><i>${esc(P.name)}${n ? ' ' + roman(n + 1) : ''}</i>${esc(perkText(P, n))}</button>`; }).join('')
         : o.map((a, i) => `<button class="aff pickable" data-act="vpick" data-v="${i}" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</button>`).join('')}</div>
       ${t.affixes.length ? `<div class="lbl">Already has</div><div class="affs mini">${t.affixes.map(affixHTML).join('')}</div>` : ''}
       <div class="foot"><button class="btn" data-act="vetMap">Show on map</button>${rd.length > 1 ? '<button class="btn" data-act="vetSkip">Next tower</button>' : ''}<button class="btn" data-act="vetDone">Later</button></div></div>`, 'vets');
@@ -2941,7 +2950,7 @@ const UI = (() => {
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds and a free respec; a lift-off lands at once. Resume fast for a bonus.'],
       ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Land the core on one for a bigger boost. Each sector expansion reveals a new one.'],
       ['Space Pirates', "Pirate ships fly over during waves and drop salvage crates. Tap a crate before its ring runs out for credits, a charge, Entropy, score or a token. Red crates are booby-trapped: double loot, but a stowaway elite breaks loose. Boss waves bring the Captain's Chest. Leave a crate too long and a Pirate Skiff may come to steal it; shoot it down to get the loot back plus a bounty."],
-      ['Overdrive', `Your one emergency button. From Wave ${OD_WAVE}, tap the core to erase every enemy on the map except bosses. Once per run.`],
+      ['Nuke', `Your one emergency button. From Wave ${OD_WAVE}, tap Nuke on the left rail to erase every enemy on the map except bosses. Once per run.`],
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
     ] },
     { id: 'progress', name: 'Progression', rows: [
@@ -2984,7 +2993,7 @@ const UI = (() => {
         ['Evolution', 'From Wave 8 enemies carry genes: up to 1 until Wave 22, 2 until Wave 45, then 3. Each gene trades HP or speed for an edge. Waves are bred from the enemies that got furthest, so traits your defence handles badly spread. The next-wave chips show what is spreading; tap one for its counter.'],
         ['Ground-only', 'Flame Projector and Gravity Well cannot hit fliers (including enemies that evolve Wings).'],
         ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
-        ['Overdrive', `Once per run, from Wave ${OD_WAVE}: tap Overdrive on the left rail (or in the core panel), then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
+        ['Nuke', `Once per run, from Wave ${OD_WAVE}: tap Nuke on the left rail, then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
         ['Bounty Purse', `${Math.round(PURSE.safe * 100)}% of the XP you earn banks at once; the rest rides in the purse. Each bounty claimed grows it ×${PURSE.bounty}, and each push through a jump door multiplies it again (×${DOOR_TIERS.map(t => t.mult).join(', ×')} by risk). Extract to bank all of it. If your core falls you keep ${Math.round(PURSE.death * 100)}%.`],
         ['Zone', 'The contract a run is fought under: which enemies come most, the weather, the events, the Most Wanted boss, plus a perk and a drawback. You pick one of three at the start, and a new one through a jump door at every bounty.'],
@@ -3201,6 +3210,7 @@ const UI = (() => {
       case 'abandon': if (!confirmAbandon) { confirmAbandon = true; openPause(); return; } closeModal(); window.act('abandon'); break;
       case 'vpick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('vet', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; if (!(t.pending > 0)) { const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; } openVets(); break; }
       case 'vetSkip': vetFlow.ix++; openVets(); break;
+      case 'gpick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('up', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; openVets(); break; } // 6.2 grown support tower: the free Specialization
       case 'apick': { const rd = vetsReady(), t = rd[vetFlow.ix]; if (!t || !window.act('ascPick', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); break; } SFX.play('upgrade'); vetFlow.n++; const nr = vetsReady(), j = nr.indexOf(t); vetFlow.ix = j >= 0 ? j : vetFlow.ix; openVets(); break; }
       case 'vetMap': { const t = vetsReady()[vetFlow.ix]; closeModal(); G.paused = false; vetFlow.n = 0; if (t) showOnMap(t); break; }
       case 'vetDone': closeModal(); Render.sel = null; if (G && !G.over) G.paused = false; vetFlow.n = 0; break;

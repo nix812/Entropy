@@ -15,7 +15,8 @@ NAMES = ['ui', 'deny', 'shot', 'shotT', 'shotC', 'shotA', 'shotV', 'shotG', 'rai
          # v5.8 tower character: spec variants, per-family impacts, split blasts, the flame roar, Lens lock-on, Forge, Pylon, Snare
          'shot2', 'rail1', 'rail2', 'pulse1', 'pulse2', 'missile1', 'missile2', 'coil', 'coil1', 'coil2', 'ignite', 'flames', 'flames1', 'flames2',
          'mortar1', 'mortar2', 'grav1', 'grav2', 'hitK', 'hitR', 'hitC', 'hitF', 'hitV', 'hitA', 'boomT', 'boomT2', 'pop', 'empboom', 'empboom1',
-         'lure', 'lure2', 'net1', 'lock', 'forge', 'forge1', 'pylon']
+         'lure', 'lure2', 'net1', 'lock', 'forge', 'forge1', 'pylon',
+         'nuke']  # 6.2: last, so its 3 s tail runs into the render's end instead of the next sound
 GAP = 1.6
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page()
