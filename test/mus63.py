@@ -145,6 +145,9 @@ def save_mp3(raw, path, sr=44100):
     wp = str(path) + '.wav'
     with wave.open(wp, 'wb') as w: w.setnchannels(2); w.setsampwidth(2); w.setframerate(sr); w.writeframes(raw)
     subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', wp, '-b:a', '128k', str(path)]); os.unlink(wp)
+def lufs_sr(a, sr):
+    import scipy.signal as ss
+    return lufs(ss.resample_poly(a, 44100 // sr, 1, axis=0)) if sr != 44100 else lufs(a)
 def lufs(a):
     import numpy as np, scipy.signal as ss
     b1, a1 = [1.53512485958697, -2.69169618940638, 1.19839281085285], [1, -1.69065929318241, 0.73248077421585]
@@ -295,3 +298,58 @@ if mode in ('ui', 'all'):
             ok(f'{W}x{H}: the ? help explains boss themes and variety', 'Play in boss fights' in txt and 'Variety' in txt)
             pg.screenshot(path=str(out / f'ui_help_{W}.png'))
             b.close()
+
+# ---------------------------------------------------------------- perf: boss themes (same measure as perfcheck.py)
+if mode in ('perf', 'all'):
+    import time
+    mkpage.mk(); worst = 0
+    with sync_playwright() as p:
+        b = p.chromium.launch(); pg = b.new_page(); pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(300)
+        for k in pg.evaluate('() => SFX.music.BOSS_IDS'):
+            pg.reload(); pg.wait_for_timeout(200)
+            r = pg.evaluate('''async ([secs, k]) => { const sr = 44100, oc = new OfflineAudioContext(2, sr * secs, sr); SFX.offlineCtx(oc);
+              SFX.music.setConfig({ custom: true, genres: ['lofi'], energy: 0.85, follow: 0 }); SFX.music.start(); SFX.music.jump({ boss: k, start: 8 });
+              const t0 = performance.now(); let js = 0;
+              for (let t = 0; t < secs; t += 0.25) oc.suspend(t).then(() => { const a = performance.now(); for (let q = 0; q < 6; q++) SFX.music.schedule(t + 0.5); js += performance.now() - a; oc.resume(); });
+              await oc.startRendering(); return { total: (performance.now() - t0) / 1000, js: js / 1000 }; }''', [16, k])
+            x = r['total'] / 16; worst = max(worst, x)
+            print(f"   {k:9s} render {x:5.2f}x realtime   (JS scheduling {r['js'] / 16 * 100:4.1f}%)", flush=True)
+        b.close()
+    ok(f'boss themes render well under realtime (worst {worst:.2f}x; genres measure 0.15 to 0.42x)', worst < 0.45)
+
+# ---------------------------------------------------------------- samples: before / after, two songs of one genre back to back
+if mode in ('samples',):
+    before = os.environ.get('BEFORE'); mkpage.mk()
+    pages = [('after', root / 'test' / 'out' / 'page.html')] + ([('before', wrap(before, out / 'page_before.html'))] if before else [])
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        for label, page in pages:
+            pg = b.new_page(); pg.goto('file://' + str(page)); pg.wait_for_timeout(300)
+            for g in ['lofi', 'synthwave', 'house', 'dnb']:
+                plan = [[0, 'jump', { 'genre': g, 'start': 16 }], [24, 'jump', { 'genre': g, 'start': 16 }], [48, 'jump', { 'genre': g, 'start': 16 }]]
+                r, a, raw = render(pg, 72, { 'custom': True, 'genres': [g], 'energy': 0.7, 'follow': 0 }, plan)
+                names = []; [names.append(f"{m[1]}") for m in r['marks'] if not names or names[-1] != m[1]]
+                save_mp3(raw, out / f'genre_{g}_{label}.mp3'); print(f'   {label:6s} {g:9s} three songs, 24 s each:', ' / '.join(names), flush=True)
+            pg.close()
+        b.close()
+
+# ---------------------------------------------------------------- levels: v2 songs keep the genre's loudness (spread vs version 1)
+if mode in ('levels', 'all'):
+    import statistics
+    mkpage.mk(); rows = {}
+    with sync_playwright() as p:
+        b = p.chromium.launch(); pg = b.new_page(); pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(300)
+        for g in (args[1].split(',') if len(args) > 1 else ['lofi', 'synthwave', 'techno', 'trance', 'dnb', 'dub']):
+            for v in (1, 2):
+                Ls = []
+                for sd in range(8):
+                    flav = pg.evaluate('(g) => Object.keys(SFX.music.GENRES[g].flavours)', g)[sd % 4] # the same flavours and seeds on both generators
+                    r, a, raw = render(pg, 20, { 'custom': True, 'genres': [g], 'energy': 0.65, 'follow': 0 }, [[0, 'jump', { 'genre': g, 'flav': flav, 'seed': 77 + sd * 13, 'v': v, 'start': 16 }]], 22050)
+                    Ls.append(float(lufs_sr(a, 22050)))
+                rows[(g, v)] = Ls
+            d1, d2 = rows[(g, 1)], rows[(g, 2)]
+            print(f'   {g:9s} v1 mean {statistics.mean(d1):6.1f} range {max(d1) - min(d1):4.1f} dB   v2 mean {statistics.mean(d2):6.1f} range {max(d2) - min(d2):4.1f} dB   v1', [round(x, 1) for x in d1], 'v2', [round(x, 1) for x in d2], flush=True)
+        b.close()
+    rng = lambda x: max(x) - min(x)
+    ok('v2 songs keep the loudness of version 1 (same flavours and seeds): mean within 2 dB; spread under 6 dB or at most 3 dB wider than v1',
+       all(abs(statistics.mean(rows[(g, 2)]) - statistics.mean(rows[(g, 1)])) < 2 and rng(rows[(g, 2)]) <= max(6, rng(rows[(g, 1)]) + 3) for g, v in rows if v == 2))

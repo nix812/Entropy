@@ -647,7 +647,7 @@ const SFX = (() => {
         flavours: {
           drift: { name: 'Drift', hard: 0, modes: ['lydian', 'ionian', 'mixolydian'], loops: [C([0, 1], [], 4), C([0, 3, 0, 4], [], 2), C([0], [], 8), C([0, 5, 3, 0], [], 2)] },
           glass: { name: 'Glass', hard: 0.3, ftrim: 0.85, modes: ['ionian', 'lydian', 'dorian'], arp: { kind: 'glass', rate: 4, oct: 2, lv: 0.2 }, loops: [C([0, 3], [], 2), C([5, 3, 0, 4], [], 2), C([0, 4, 5, 3], [], 2)] },
-          void: { name: 'Deep Space', hard: 0.45, ftrim: 0.9, modes: ['phrygian', 'aeolian'], pad: { kind: 'dark', lv: 0 }, bass: { kind: 'sub', line: 'long', lv: 0 }, lead: { kind: 'theremin', grammar: 'long', scale: 'mode', lv: 0.3, oct: 72 }, loops: [C([0, 1], [], 4), C([0], [], 8), C([0, 6, 5, 6], [], 2)] }, // 6.3
+          void: { name: 'Deep Space', hard: 0.45, ftrim: 1.0, modes: ['phrygian', 'aeolian'], pad: { kind: 'dark', lv: 0 }, bass: { kind: 'sub', line: 'long', lv: 0 }, lead: { kind: 'theremin', grammar: 'long', scale: 'mode', lv: 0.3, oct: 72 }, loops: [C([0, 1], [], 4), C([0], [], 8), C([0, 6, 5, 6], [], 2)] }, // 6.3
           nocturne: { name: 'Nocturne', hard: 0.15, ftrim: 0.72, modes: ['aeolian', 'dorian'], keys: { kind: 'piano', rhythm: 'broken', lv: 0 }, loops: [C([0, 5, 2, 6], [], 2), C([0, 3, 0, 4], [], 2), C([0, 6, 5, 6], [], 2)] },
         },
         ext: 4, voicing: 'open', drums: { K: '3000000000000000', P: '2002002002002000' }, kit: 'soft',
@@ -657,8 +657,8 @@ const SFX = (() => {
         blurb: 'Dusty swung drums, jazz chords on a warm Rhodes, tape wobble and crackle',
         flavours: {
           jazzhop: { name: 'Jazzhop', hard: 0.5, modes: ['ionian', 'dorian'], loops: [C([1, 4, 0, 0], ['m', '7']), C([1, 4, 0, 3]), C([0, 5]), C([3, 2, 5, 5]), C([1, 4, 0, 5])] },
-          boombap: { name: 'Boom Bap', hard: 0.75, modes: ['aeolian', 'dorian'], bpmX: 1.08, swing: 0.6, keys: { kind: 'piano', rhythm: 'comp', lv: 0 }, drums: { K: '90000000090000009000000009009000', S: '0000900000009000', H: '7070707070707070' }, loops: [C([0, 5], [], 2), C([0, 3, 5, 4], ['m7', 'm7', 'M7', 'm7']), C([0, 0, 5, 5], ['m', 'm7', 'M7', '6'])] }, // 6.3
-          bedroom: { name: 'Bedroom', hard: 0.1, modes: ['ionian', 'lydian'], bpmX: 0.9, kit: 'soft', lead: { kind: 'glass', grammar: 'sparse', scale: 'pentmajor', lv: 0.45, oct: 79 }, loops: [C([0, 1], [], 2), C([0, 4, 5, 3]), C([3, 4, 0, 5])] }, // 6.3
+          boombap: { name: 'Boom Bap', ftrim: 0.78, hard: 0.75, modes: ['aeolian', 'dorian'], bpmX: 1.08, swing: 0.6, keys: { kind: 'piano', rhythm: 'comp', lv: 0 }, drums: { K: '90000000090000009000000009009000', S: '0000900000009000', H: '7070707070707070' }, loops: [C([0, 5], [], 2), C([0, 3, 5, 4], ['m7', 'm7', 'M7', 'm7']), C([0, 0, 5, 5], ['m', 'm7', 'M7', '6'])] }, // 6.3
+          bedroom: { name: 'Bedroom', ftrim: 1.1, hard: 0.1, modes: ['ionian', 'lydian'], bpmX: 0.9, kit: 'soft', lead: { kind: 'glass', grammar: 'sparse', scale: 'pentmajor', lv: 0.45, oct: 79 }, loops: [C([0, 1], [], 2), C([0, 4, 5, 3]), C([3, 4, 0, 5])] }, // 6.3
           rainy: { name: 'Rainy Day', hard: 0.25, modes: ['aeolian'], keys: { kind: 'piano', rhythm: 'lofi', lv: 0 }, loops: [C([3, 0, 3, 0], [], 1), C([0, 5, 4, 4], ['m', 'M', '7', '7']), C([0, 3], [], 2), C([5, 4, 0, 0])] },
         },
         ext: 5, voicing: 'jazz', kit: 'dusty',
@@ -669,8 +669,8 @@ const SFX = (() => {
         blurb: 'Slow heavy breaks, dark minor strings, dub bass and a theremin-like lead',
         flavours: {
           triphop: { name: 'Trip Hop', hard: 0.6, modes: ['aeolian', 'harmonic', 'phrygian'], halftime: 1, loops: [C([0, 5], [], 2), C([0, 1], [], 2), C([0, 0, 0, 0], ['m', 'mM7', 'm7', 'm6']), C([0, 5, 4], ['m', 'M', '7'], 2), C([0, 3, 6, 2])] },
-          cinematic: { name: 'Cinematic', hard: 0.5, modes: ['harmonic', 'aeolian'], bpmX: 0.92, keys: { kind: 'piano', rhythm: 'broken', lv: 0 }, lead: { kind: 'glass', grammar: 'long', scale: 'mode', lv: 0.5, oct: 79 }, loops: [C([0, 5, 3, 4], ['m', 'M', 'm', '7']), C([0, 3, 4, 0], ['m', 'm', '7', 'm']), C([0, 3], [], 2)] }, // 6.3
-          noir: { name: 'Noir', hard: 0.4, modes: ['dorian', 'aeolian'], swing: 0.6, kit: 'dusty', bass: { kind: 'upright', line: 'walk' }, keys: { kind: 'rhodes', rhythm: 'comp', lv: 0 }, pad: null, lead: { kind: 'melodica', grammar: 'call', scale: 'mode', lv: 0.5, oct: 72 }, drums: { K: '9000000000900000', S: '0000900000009000', H: '6006600660066006', D: '4040404040404040' }, loops: [C([0, 3], ['m7', '7'], 2), C([1, 4, 0, 0], ['m7', '7', 'm7', 'm7']), C([0, 6], ['m7', '7'], 2)] }, // 6.3
+          cinematic: { name: 'Cinematic', ftrim: 0.83, hard: 0.5, modes: ['harmonic', 'aeolian'], bpmX: 0.92, keys: { kind: 'piano', rhythm: 'broken', lv: 0 }, lead: { kind: 'glass', grammar: 'long', scale: 'mode', lv: 0.5, oct: 79 }, loops: [C([0, 5, 3, 4], ['m', 'M', 'm', '7']), C([0, 3, 4, 0], ['m', 'm', '7', 'm']), C([0, 3], [], 2)] }, // 6.3
+          noir: { name: 'Noir', ftrim: 1.13, hard: 0.4, modes: ['dorian', 'aeolian'], swing: 0.6, kit: 'dusty', bass: { kind: 'upright', line: 'walk' }, keys: { kind: 'rhodes', rhythm: 'comp', lv: 0 }, pad: null, lead: { kind: 'melodica', grammar: 'call', scale: 'mode', lv: 0.5, oct: 72 }, drums: { K: '9000000000900000', S: '0000900000009000', H: '6006600660066006', D: '4040404040404040' }, loops: [C([0, 3], ['m7', '7'], 2), C([1, 4, 0, 0], ['m7', '7', 'm7', 'm7']), C([0, 6], ['m7', '7'], 2)] }, // 6.3
           chillout: { name: 'Chillout', hard: 0.3, modes: ['dorian', 'aeolian'], loops: [C([0, 3, 6, 2]), C([0, 6, 5, 6]), C([0, 3], [], 2)], keys: { kind: 'rhodes', rhythm: 'comp', lv: 0 } },
         },
         ext: 4, voicing: 'pad', kit: 'break',
@@ -696,7 +696,7 @@ const SFX = (() => {
             loops: [C([0, 3], [], 1), C([0, 4, 3]), C([0, 2, 4], ['m7', 'M7', 'm7']), C([5, 4], ['M7', 'm7'], 1), C([0], [], 2)] },
           disco: { name: 'Disco House', hard: 0.7, modes: ['dorian', 'mixolydian'], bpmX: 1.01, swing: 0.52, keys: { kind: 'organ', rhythm: 'disco', lv: 0.2 }, bass: { kind: 'sawoct', line: 'disco' }, filterLoop: 1,
             drums: { H: '4646464646464646', O: '0070007000700070' }, loops: [C([1, 4], ['m7', '7']), C([0, 6, 3], ['M', 'M', 'M']), C([0, 3], ['m7', '7'])] },
-          tech: { name: 'Tech House', hard: 0.8, modes: ['aeolian', 'dorian'], bpmX: 1.01, swing: 0.54, keys: { kind: 'stab', rhythm: 'techno', lv: 0.2 }, pad: null, bass: { kind: 'saw', line: 'rolling' }, lead: { kind: 'bleep', grammar: 'bleep', lv: 0.6 }, voicing: 'plane', drums: { H: '0060006000600060', R: '0000003000000300', P: '3323332333233323' }, loops: [C([0], [], 4), C([0, 6], [], 2), C([0, 0, 3, 3])] }, // 6.3
+          tech: { name: 'Tech House', ftrim: 1.5, hard: 0.8, modes: ['aeolian', 'dorian'], bpmX: 1.01, swing: 0.54, keys: { kind: 'stab', rhythm: 'techno', lv: 0.2 }, pad: null, bass: { kind: 'saw', line: 'rolling' }, lead: { kind: 'bleep', grammar: 'bleep', lv: 0.6 }, voicing: 'plane', drums: { H: '0060006000600060', R: '0000003000000300', P: '3323332333233323' }, loops: [C([0], [], 4), C([0, 6], [], 2), C([0, 0, 3, 3])] }, // 6.3
           piano: { name: 'Piano House', hard: 0.6, modes: ['ionian', 'mixolydian'], keys: { kind: 'piano', rhythm: 'offbeat', lv: 0 }, bass: { kind: 'organ', line: 'organ' }, voicing: 'triad', ext: 3,
             loops: [C([0, 4, 5, 3]), C([5, 3, 0, 4]), C([0, 6, 3], ['M', 'M', 'M']), C([1, 4, 0, 5], ['m7', '7', 'M7', 'm7'])] },
         },
@@ -720,8 +720,8 @@ const SFX = (() => {
         blurb: 'Rolling offbeat bass, gated supersaw chords, a long breakdown and a snare-roll build',
         flavours: {
           uplifting: { name: 'Uplifting', hard: 0.8, ftrim: 0.85, modes: ['aeolian'], loops: [C([0, 5, 2, 6]), C([5, 6, 0, 0]), C([0, 3, 5, 4], ['m', 'm', 'M', 'm']), C([0, 6, 5, 4], ['m', 'M', 'M', 'M'])] },
-          psy: { name: 'Psy', hard: 0.95, modes: ['phrygian', 'harmonic'], bpmX: 1.04, bass: { kind: 'acid', line: 'rolling' }, pad: { kind: 'dark', lv: 0.2 }, keys: null, lead: { kind: 'saw', grammar: 'riff', lv: 0.45 }, arp: { kind: 'pluck', rate: 16, oct: 1, lv: 0.3 }, drums: { O: '0080008000800080', H: '3333333333333333', C: '0000600000006000' }, loops: [C([0], [], 4), C([0, 1], [], 2), C([0, 1, 0, 6])] }, // 6.3
-          techtrance: { name: 'Tech Trance', hard: 0.65, modes: ['aeolian'], bpmX: 0.98, keys: { kind: 'stab', rhythm: 'techno', lv: 0 }, arp: { kind: 'juno', rate: 8, oct: 2, lv: 0.4 }, drums: { R: '0060000600600060', H: '0303030303030303' }, loops: [C([0, 5], [], 2), C([0, 6, 5, 6]), C([0], [], 4)] }, // 6.3
+          psy: { name: 'Psy', ftrim: 2.0, hard: 0.95, modes: ['phrygian', 'harmonic'], bpmX: 1.04, bass: { kind: 'acid', line: 'rolling' }, pad: { kind: 'dark', lv: 0.2 }, keys: null, lead: { kind: 'saw', grammar: 'riff', lv: 0.45 }, arp: { kind: 'pluck', rate: 16, oct: 1, lv: 0.3 }, drums: { O: '0080008000800080', H: '3333333333333333', C: '0000600000006000' }, loops: [C([0], [], 4), C([0, 1], [], 2), C([0, 1, 0, 6])] }, // 6.3
+          techtrance: { name: 'Tech Trance', ftrim: 1.9, hard: 0.65, modes: ['aeolian'], bpmX: 0.98, keys: { kind: 'stab', rhythm: 'techno', lv: 0 }, arp: { kind: 'juno', rate: 8, oct: 2, lv: 0.4 }, drums: { R: '0060000600600060', H: '0303030303030303' }, loops: [C([0, 5], [], 2), C([0, 6, 5, 6]), C([0], [], 4)] }, // 6.3
           progressive: { name: 'Progressive', hard: 0.45, ftrim: 1.25, filterLoop: 1, modes: ['aeolian', 'dorian'], bpmX: 0.94, bass: { kind: 'saw', line: 'offbeat' }, keys: { kind: 'pluck', rhythm: 'trancepluck', lv: 0.2 }, loops: [C([0, 5], [], 2), C([0, 5, 2, 6], [], 2), C([0, 3], [], 2)] },
         },
         ext: 3, voicing: 'pad', kit: '909',
@@ -732,8 +732,8 @@ const SFX = (() => {
         blurb: 'Two-step breaks at 174 with ghost snares, soulful minor-9 chords, deep sub or a growling Reese',
         flavours: {
           liquid: { name: 'Liquid', hard: 0.5, modes: ['aeolian', 'dorian'], loops: [C([0, 2, 4, 0], ['m9', 'M7', 'm7', 'm9']), C([0, 5, 6, 0]), C([3, 4, 2, 5], ['M7', '7', 'm7', 'm7']), C([0, 3], [], 2)] },
-          jungle: { name: 'Jungle', hard: 0.7, modes: ['dorian', 'aeolian'], swing: 0.53, bass: { kind: 'sub', line: 'long' }, keys: { kind: 'stab', rhythm: 'dubtechno', lv: 0.2 }, pad: { kind: 'strings', lv: 0.2 }, drums: { K: '90000000009000009000000000000000', S: '00009003003090030000900300309020', H: '0060006000600060', D: '0000000000000000', P: '3232323232323232' }, loops: [C([0, 6], [], 2), C([0], [], 4), C([0, 3], ['m7', 'm7'], 2)] }, // 6.3
-          neuro: { name: 'Neuro', hard: 1, modes: ['phrygian', 'aeolian'], bass: { kind: 'wobble', line: 'reese' }, keys: null, pad: { kind: 'dark', lv: 0.2 }, lead: { kind: 'bleep', grammar: 'bleep', lv: 0.5, oct: 76 }, drums: { K: '9000000000900000', S: '0000900000009003', H: '0060006000600060', D: '0000000000000000', P: '0000000000000000' }, loops: [C([0], [], 4), C([0, 1], [], 2)] }, // 6.3
+          jungle: { name: 'Jungle', ftrim: 1.45, hard: 0.7, modes: ['dorian', 'aeolian'], swing: 0.53, bass: { kind: 'sub', line: 'long' }, keys: { kind: 'stab', rhythm: 'dubtechno', lv: 0.2 }, pad: { kind: 'strings', lv: 0.2 }, drums: { K: '90000000009000009000000000000000', S: '00009003003090030000900300309020', H: '0060006000600060', D: '0000000000000000', P: '3232323232323232' }, loops: [C([0, 6], [], 2), C([0], [], 4), C([0, 3], ['m7', 'm7'], 2)] }, // 6.3
+          neuro: { name: 'Neuro', ftrim: 2.0, hard: 1, modes: ['phrygian', 'aeolian'], bass: { kind: 'wobble', line: 'reese' }, keys: null, pad: { kind: 'dark', lv: 0.2 }, lead: { kind: 'bleep', grammar: 'bleep', lv: 0.5, oct: 76 }, drums: { K: '9000000000900000', S: '0000900000009003', H: '0060006000600060', D: '0000000000000000', P: '0000000000000000' }, loops: [C([0], [], 4), C([0, 1], [], 2)] }, // 6.3
           roller: { name: 'Reese Roller', hard: 0.85, modes: ['aeolian', 'phrygian'], bass: { kind: 'reese', line: 'reese' }, keys: null, pad: { kind: 'dark', lv: 0 },
             drums: { K: '90900000009900009090000000900000', S: '00009003030090030300900303000090' }, loops: [C([0], [], 4), C([0, 5], [], 2), C([0, 1], [], 2)] },
         },
@@ -758,7 +758,7 @@ const SFX = (() => {
         flavours: {
           onedrop: { name: 'One Drop', hard: 0.35, modes: ['aeolian', 'dorian'], drums: { K: '0000000090000000', H: '6050605060506050' }, loops: [C([0, 6], [], 2), C([0, 3], [], 2), C([0, 5, 6, 0])] },
           rockers: { name: 'Rockers', hard: 0.6, modes: ['aeolian', 'mixolydian'], drums: { K: '9000000090000000', H: '5353535353535353' }, loops: [C([0, 3], [], 1), C([0, 6], [], 2), C([0, 3, 4, 0], ['M', 'M', 'M', 'M'])] },
-          digital: { name: 'Digital', hard: 0.7, modes: ['aeolian', 'dorian'], bpmX: 1.1, kit: '909', bass: { kind: 'tri', line: 'dub' }, keys: { kind: 'organ', rhythm: 'skank', lv: 0 }, lead: { kind: 'chip', grammar: 'call', duty: 0.25, lv: 0.45 }, drums: { K: '9000000090000000', S: '0000900000009000', R: '0000000000000000', H: '0303030303030303' }, loops: [C([0, 6], [], 2), C([0, 3, 4, 0], ['m', 'm', 'M', 'm']), C([0], [], 4)] }, // 6.3
+          digital: { name: 'Digital', ftrim: 0.86, hard: 0.7, modes: ['aeolian', 'dorian'], bpmX: 1.1, kit: '909', bass: { kind: 'tri', line: 'dub' }, keys: { kind: 'organ', rhythm: 'skank', lv: 0 }, lead: { kind: 'chip', grammar: 'call', duty: 0.25, lv: 0.45 }, drums: { K: '9000000090000000', S: '0000900000009000', R: '0000000000000000', H: '0303030303030303' }, loops: [C([0, 6], [], 2), C([0, 3, 4, 0], ['m', 'm', 'M', 'm']), C([0], [], 4)] }, // 6.3
           steppers: { name: 'Steppers', hard: 0.85, modes: ['aeolian', 'phrygian'], drums: { K: '9000900090009000' }, loops: [C([0, 6], [], 2), C([0, 1], [], 2), C([0], [], 4)] },
         },
         ext: 3, voicing: 'triad', kit: 'dub',
@@ -791,13 +791,13 @@ const SFX = (() => {
         ghost: 0.4, lines: ['dubby', 'dubby', 'long', 'dub'], leads: ['theremin', 'bell', 'flute', 'glass', 'melodica'], grammars: ['long', 'sparse', 'call'], pads: ['strings', 'dark', 'warm'],
         tempo: 0.06, fills: ['drop', 'toms', 'none'] },
       synthwave: { H: ['7070707070707070', '4444444444444444', '0707070707070707'], S: ['0000900000009004', '0000900000009090'], O: ['0000000000000000', '0000000700000007'],
-        lines: ['octave', 'octave', 'gallop', 'pulse8'], leads: ['saw', 'pulse', 'brass', 'supersaw'], grammars: ['anthem', 'riff', 'call'], pads: ['juno', 'warm', 'strings'],
+        lines: ['octave', 'octave', 'gallop', 'pulse8'], leads: ['saw', 'pulse', 'brass'], grammars: ['anthem', 'riff', 'call'], pads: ['juno', 'warm', 'strings'],
         arps: ['updown', 'up', 'down', 'pinky', 'skip'], arpRates: [16, 8], tempo: 0.06, fills: ['toms', 'snare', 'toms'] },
       house: { H: ['0060006000600060', '3363336333633363', '3060306830603068'], C: ['0000800000008080', '0000800000008002'], P: ['0000200000002000', '2020202020202020', '0302030203020302'],
         R: ['0000000300000300', '0030000000300000'], O: ['0070007000700070', '0000000000000050'], leads: ['piano', 'bell', 'bleep'], grammars: ['riff', 'call', 'bleep'], tempo: 0.025,
         fills: ['kickdrop', 'kickdrop', 'clap', 'none'] },
       techno: { R: ['0006000600060006', '0600060006000600', '0060060000600600'], H: ['0303030303030303', '3333333333333333'], O: ['0080008000800088', '0000008000000080'],
-        C: ['0000000000000000', '0000600000006000'], D: ['0000000000000000', '2020202020202020'], lines: ['rumble', 'rumble', 'offbeat', 'gallop'], leads: ['bleep', 'bell', 'glass'],
+        C: ['0000000000000000', '0000600000006000'], D: ['0000000000000000', '2020202020202020'], lines: ['rumble', 'rumble', 'offbeat'], leads: ['bleep', 'bell', 'glass'],
         grammars: ['bleep', 'riff', 'sparse'], tempo: 0.035, fills: ['none', 'kickdrop', 'none'] },
       trance: { H: ['0303030303030303', '3333333333333333'], C: ['0000700000007007', '0000000000000000'], P: ['0000000000000000', '2222222222222222'], lines: ['rolling', 'rolling', 'offbeat'],
         leads: ['supersaw', 'saw', 'brass'], grammars: ['trance', 'anthem', 'riff'], arps: ['updown', 'up', 'down', 'pinky', 'skip'], arpRates: [16, 8], tempo: 0.025 },
@@ -1828,7 +1828,7 @@ const SFX = (() => {
         }
       },
       get boss() { return bossNow; }, get bossPhase() { return bossPhase; },
-      BOSS_THEMES, BOSS_IDS,
+      BOSS_THEMES, BOSS_IDS, VX, VX_F,
       setBaseBpm(v) { cfg.calmBpm = clamp(+v || 72, 50, 110); if (P && !cfg.custom) P.bpm = pieceBpm(); },
       get config() { return cfg; },
       setConfig(c) {
