@@ -29,6 +29,9 @@ const ICONS = {
   heartO: ['.........', '.##...##.', '#..#.#..#', '#...#...#', '#.......#', '.#.....#.', '..#...#..', '...#.#...', '....#....'],
   share: ['....#....', '...###...', '..#.#.#..', '....#....', '....#....', '#...#...#', '#.......#', '#.......#', '#########'],
   edit: ['......##.', '.....#..#', '....#..#.', '...#..#..', '..#..#...', '.#..#....', '#..#.....', '##.......', '###......'],
+  speaker: ['....#....', '...##.#..', '..#.#..#.', '###.#.#.#', '#...#.#.#', '###.#.#.#', '..#.#..#.', '...##.#..', '....#....'], // 6.2 Settings tabs
+  screen: ['#########', '#.......#', '#.......#', '#.......#', '#.......#', '#########', '....#....', '...###...', '.........'],
+  sliders: ['.##......', '#########', '.##......', '......##.', '#########', '......##.', '...##....', '#########', '...##....'],
   dice: ['#########', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#########'],
 };
 function svgIcon(name, size) {
@@ -685,7 +688,7 @@ const UI = (() => {
           b: () => G.credits >= coreShieldCost() ? `Tap Shield (${fmt(coreShieldCost())}). A bigger shield soaks more leaks before the core loses health.` : `Shield costs ${fmt(coreShieldCost())} credits.`, done: () => G.core.sLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
         { id: 'battery', when: () => W() >= 6, skip: () => W() >= 8 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
           b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). ${G.fr && frDockT() ? `The docked ${TOWERS[frDockT().type].name} hits ${pct(FRONTIER.dockBat)} harder per level, and so does the plain cannon.` : "The core's own gun hits harder; some levels add a module."}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
-        info('coreMore', sel('#panel [data-act=ch]'), 'Hull and Uplink', () => G.fr ? `Later: Hull adds core health. Uplink makes abilities recharge faster, adds a link every ${FRONTIER.linkUplink} levels and shortens the lift-off wait every ${FRONTIER.cdUplink}.` : 'Later: Hull adds core health, Uplink makes abilities recharge faster.', { when: () => panel && panel.kind === 'core', skip: () => W() >= 5 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
+        info('coreMore', sel('#panel [data-act=ch]'), 'Hull and Uplink', () => G.fr ? `Later: Hull adds core health. Uplink makes abilities recharge faster, adds a link every ${FRONTIER.linkUplink} levels and shortens the lift-off wait every ${FRONTIER.cdUplink}.` : 'Later: Hull adds core health, Uplink makes abilities recharge faster.', { when: () => panel && panel.kind === 'core', skip: () => W() >= 8 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
         info('mark', () => enemyR(mem.we), 'Gene marks', () => `The ring is Ward: this one shrugs off half your ${EL[(mem.we && mem.we.gel) || 'K'].name} damage. Marks show what each enemy evolved.`,
           { ls: 'mark', when: () => W() === 6 && !!geneEnemy('ward'), skip: () => W() >= 7 || !geneEnemy('ward'), enter: () => { mem.we = geneEnemy('ward'); } }),
         // the spec: a permanent branch at LV 3, then Ascend and Sell, briefly
@@ -932,13 +935,13 @@ const UI = (() => {
     function next() { const S = cur; cur = null; i++; Render.hints = null; sig = ''; if (S && mem.shownId === S.id && !S.free && G) { mem.gapT = G.time; mem.gapW = W(); mem.gapC = cleared(); } if (S && S.leave) S.leave(); }
     // 6.2 pacing (Basic Training): steps that start a new lesson carry ls. One lesson's steps run back to back (an action chain); a
     // new lesson waits for PACE_GAP seconds of play since the last card (G.time stops while a card holds the game) or for a wave to
-    // end, and for a calm moment (teachBusy). With the countdown nearly out between waves it goes ahead, so a lesson that belongs
+    // end with at least 10 s of play since, and for a calm moment (teachBusy). With the countdown nearly out between waves it goes ahead, so a lesson that belongs
     // to this break is never lost. Call prompts (free) neither wait nor reset the clock. Field Manual lessons are one topic each: no gap.
     const PACE_GAP = 22;
     function paced(S) {
       if (plan !== 'basic' || S.free || mem.gapT === undefined || !G || lessonOf(i) === mem.lastLs) return true;
       const gap = S.gap !== undefined ? S.gap : PACE_GAP, quiet = G.time - mem.gapT;
-      const waveEnd = cleared() && (W() > mem.gapW || !mem.gapC), late = cleared() && G.next < 5 && W() < G.tutS.waves.length;
+      const waveEnd = cleared() && (W() > mem.gapW || !mem.gapC) && quiet >= 10, late = cleared() && G.next < 5 && W() < G.tutS.waves.length;
       if (!(quiet >= gap || waveEnd || late)) return false;
       if (S.busyOK || late) return true;
       if (!teachBusy()) { mem.busyT = undefined; return true; }
@@ -2512,38 +2515,72 @@ const UI = (() => {
   }
   // v4.8: buttons that raise a level wear the colour of the tier they lead to
   const tierStyle = n => { const T = lvTier(n); return `--tc:${T.col}`; };
+  // 6.2 Settings (Nic: "it's getting really crowded"): tabs on a left rail (General · Sound · Graphics · Interface) and one scrolling
+  // pane, like a console game's options screen. Every row: a name, one line on what it does, and its control on the right (a switch,
+  // a segmented choice, a slider or a button). All four pages are in the DOM (inactive ones hidden), so a tab switch is instant and
+  // older tests that click a control by data-act still find it. The open tab is remembered for the session.
+  let setTab = 'general';
+  const SET_TABS = [['general', 'General', 'gear'], ['sound', 'Sound', 'speaker'], ['graphics', 'Graphics', 'screen'], ['interface', 'Interface', 'sliders']];
   function openSettings() {
-    const S = PROF.settings;
-    modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
-      <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
-      <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
-      <div class="set"><span>Music Studio <em class="dim">genres, mixer, your tracks</em></span><button class="chip on" style="--c:#ff5fa8" data-act="studioS">Open</button></div>
-      <div class="set"><span>Sound <em class="dim" id="sndStat">${esc(soundStatus())}</em></span><button class="chip" data-act="sndFix">Restart sound</button></div>
-      <div class="set"><span>Mono Audio <em class="dim">one earbud, one speaker</em></span><button class="chip ${S.mono ? 'on' : ''}" data-act="mono">${S.mono ? 'On' : 'Off'}</button></div>
-      <label class="set"><span>Music Tempo <em id="bpmV" class="dim">${S.bpm || 72} BPM</em></span><input id="setBpm" type="range" min="56" max="100" step="2" value="${S.bpm || 72}"></label>
-      <p class="note tempo">The tempo of the Default mix. In the Music Studio each genre has its own.</p>
-      ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
-      <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
-      <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Haptics <em class="dim">buzz when the core is hit</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.haptics !== false) === v ? 'on' : ''}" data-act="haptic" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Glow <em class="dim">soft lighting on the field</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.glow !== false) === v ? 'on' : ''}" data-act="gfx" data-k="glow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Pixel scaling <em class="dim">Sharp is crisper; Simple is lighter work</em></span><div class="chips">${[[true, 'Sharp'], [false, 'Simple']].map(([v, l]) => `<button class="chip ${(S.sharp !== false) === v ? 'on' : ''}" data-act="gfx" data-k="sharp" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Boss slow-down <em class="dim">drop to 1× when a boss arrives</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.autoSlow !== false) === v ? 'on' : ''}" data-act="autoslow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
-      <div class="set"><span>Damage Numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Screen Shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
-      ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
-      ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
-      <p class="note credits">Music: Drift, a generative score written live as you play, in ten genres. No two runs sound the same.</p>
-      <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div>
-      <div class="row"><p class="note">${lastLogText() ? 'Last run log' : 'No run log yet'}</p>${lastLogText() ? '<button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button>' : ''}</div></div>`, 'settings');
-    $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
-    $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
+    const S = PROF.settings, inRun = !!(G && !G.over);
+    const prev = $('#modal .card.settings .setpane'), keep = prev && prev.dataset.tab === setTab ? prev.scrollTop : 0;
+    const row = (name, desc, ctl, cls) => `<div class="setrow${cls ? ' ' + cls : ''}"><div class="setx"><b>${name}</b>${desc ? `<span>${desc}</span>` : ''}</div><div class="setc">${ctl}</div></div>`;
+    const sec = t => `<h3 class="ssec">${t}</h3>`;
+    const sw = (on, act, attrs) => `<button class="sw ${on ? 'on' : ''}" data-act="${act}" ${attrs || ''} aria-pressed="${on}"><span>${on ? 'On' : 'Off'}</span><i></i></button>`;
+    const flip = (on, act, extra) => sw(on, act, `${extra || ''} data-v="${on ? 0 : 1}"`); // the actions that take the new value
+    const seg = (act, opts, cur, extra) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button class="${cur === v ? 'on' : ''}" data-act="${act}" data-v="${v}" ${extra || ''} aria-pressed="${cur === v}">${l}</button>`).join('')}</div>`;
+    const rng = (id, v, min, max, step, out, oid) => `<input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}"><output class="sval" id="${oid}">${out}</output>`;
+    const pctV = v => Math.round(v * 100) + '%';
+    const pages = {
+      general: sec('Gameplay')
+        + row('Boss slow-down', 'Drop to 1× speed when a boss arrives', flip(S.autoSlow !== false, 'autoslow'))
+        + row('Briefings', 'Boss and bounty cards. Pause holds the game until you tap Fight', seg('briefs', [['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']], S.briefings || 'pause'))
+        + row('Haptics', 'A buzz when the core is hit', flip(S.haptics !== false, 'haptic'))
+        + sec('Save')
+        + row('Save location', cloudOk ? 'Synced to your Claude account' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
+        + (inRun ? '' : row('Transfer save', 'Move your progress to another device with a code', '<button class="btn small" data-act="xcopy">Export</button><button class="btn small" data-act="xpaste">Import</button>'))
+        + row('Run log', lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
+        + sec('About')
+        + row("What's New", `Version ${VERSION}`, `<button class="btn small" data-act="news">Open</button>`)
+        + row('Music', 'Drift: a generative score written live as you play, in ten genres', '')
+        + (inRun ? '' : row('Reset progress', 'Erase everything on this device. There is no undo', `<button class="btn small danger" data-act="wipe">${confirmReset ? 'Tap again to erase' : 'Reset'}</button>`, 'danger')),
+      sound: sec('Volume')
+        + row('Sound effects', 'Weapons, impacts and alerts', rng('setSfx', S.sfx, 0, 1, 0.05, pctV(S.sfx), 'sfxV'))
+        + row('Music', 'The score that follows the battle', rng('setMus', S.music, 0, 1, 0.05, pctV(S.music), 'musV'))
+        + sec('Music')
+        + row('Music Studio', 'Genres, mixer, your tracks and the composer', '<button class="btn small" data-act="studioS">Open</button>')
+        + row('Music tempo', 'Average tempo of the default mix. Each genre in the Studio has its own', rng('setBpm', S.bpm || 72, 56, 100, 2, (S.bpm || 72) + ' BPM', 'bpmV'))
+        + row('Mono audio', 'One earbud or one speaker', sw(!!S.mono, 'mono'))
+        + sec('Troubleshooting')
+        + row('Sound', `<em id="sndStat">${esc(soundStatus())}</em>`, '<button class="btn small" data-act="sndFix">Restart sound</button>'),
+      graphics: sec('Effects')
+        + row('Glow', 'Soft lighting on the field', flip(S.glow !== false, 'gfx', 'data-k="glow"'))
+        + row('Screen shake', 'Big hits shake the view', sw(!!S.shake, 'shake'))
+        + sec('Display')
+        + row('Pixel scaling', 'Sharp is crisper. Simple is lighter work for older devices', seg('gfx', [['1', 'Sharp'], ['0', 'Simple']], S.sharp !== false ? '1' : '0', 'data-k="sharp"'))
+        + (fsOK() ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
+      interface: sec('Layout')
+        + row('HUD', 'Detailed shows more numbers during a run', seg('hud', [['lean', 'Minimal'], ['full', 'Detailed']], S.hud === 'full' ? 'full' : 'lean'))
+        + row('Interface size', 'Scale of buttons and text', seg('uis', [['auto', 'Auto'], ['0.85', 'Small'], ['1.2', 'Large']], String(S.uiScale || 'auto')))
+        + sec('Information')
+        + row('Notifications', 'Key keeps only what needs a reaction: Red Alert, wormholes, assaults, checkpoints, pirates', seg('notes', [['all', 'All'], ['key', 'Key'], ['off', 'Off']], S.notes || 'all'))
+        + row('Damage numbers', 'Floating damage over enemies', sw(!!S.dmgNums, 'nums')),
+    };
+    modal(`<div class="card settings"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      <div class="setwrap"><nav class="setrail" role="tablist">${SET_TABS.map(([k, l, ic]) => `<button class="settab ${setTab === k ? 'on' : ''}" data-act="setTab" data-v="${k}" role="tab" aria-selected="${setTab === k}"><i data-svg="${ic}"></i><span>${l}</span></button>`).join('')}<span class="setver">v${VERSION}</span></nav>
+      <div class="setpane" data-tab="${setTab}">${SET_TABS.map(([k]) => `<div class="spg" data-pg="${k}" ${setTab === k ? '' : 'hidden'}>${pages[k]}</div>`).join('')}</div></div></div>`, 'settings');
+    const pane = $('#modal .setpane'); if (pane) pane.scrollTop = keep;
+    const vol = () => { SFX.setVolumes(S.sfx, S.music); $('#sfxV').textContent = pctV(S.sfx); $('#musV').textContent = pctV(S.music); };
+    $('#setSfx').oninput = e => { S.sfx = +e.target.value; vol(); };
+    $('#setMus').oninput = e => { S.music = +e.target.value; vol(); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
     const bp = $('#setBpm'); if (bp) { bp.oninput = () => { PROF.settings.bpm = +bp.value; $('#bpmV').textContent = bp.value + ' BPM'; SFX.music.setBaseBpm(+bp.value); }; bp.onchange = () => Save.save(); }
+  }
+  function setSettingsTab(k) { // in place: no re-render, so the rail never loses a tap
+    if (!SET_TABS.some(t => t[0] === k)) return; setTab = k;
+    for (const b of document.querySelectorAll('#modal .settab')) { const on = b.dataset.v === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }
+    for (const p of document.querySelectorAll('#modal .spg')) p.hidden = p.dataset.pg !== k;
+    const pane = $('#modal .setpane'); if (pane) { pane.dataset.tab = k; pane.scrollTop = 0; }
   }
   // v5.5.4: one line on the state of the sound, for Settings (and for Nic to read out if the music ever goes quiet)
   function soundStatus() {
@@ -3234,6 +3271,7 @@ const UI = (() => {
       case 'htab': openHelp(b.dataset.v); break;
       case 'dcat': dictCat = b.dataset.v; openHelp(); break;
       case 'settings': if (modalOpen === 'pause') modalFrom = 'pause'; openSettings(); break;
+      case 'setTab': setSettingsTab(b.dataset.v); break;
       case 'studio': openStudio('pause'); break;
       case 'studioS': openStudio('settings'); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
