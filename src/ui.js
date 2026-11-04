@@ -1600,10 +1600,10 @@ const UI = (() => {
       ${t.affixes.length ? `<div class="lbl">Affixes</div><div class="affs">${t.affixes.map(a => s.kind === 'snare' ? affixHTML(a).replace('Boost strength', 'Net strength') : affixHTML(a)).join('')}</div>` : ''}
       ${foot}`;
     return `${head}
+      ${growHTML(t)}
       ${t.lvl === 3 ? up : ''}
       ${perks}
       ${vet}
-      ${growHTML(t)}
       ${condHTML(t)}
       ${idle}
       ${canOvercharge(t) ? `<div class="lbl">${tipify('Overcharge')} · +${Math.round((OVERCHARGE.dmg + FX('msOc') / 100) * 100)}% per step · power ${gridUsed()}/${gridCap()}</div><div class="modes oc">${ocFree(t) ? `<span class="note">Marksman: +${ocFree(t)} free</span>` : ''}${Array.from({ length: ocMax() + 1 }, (_, n) => `<button class="chip ${(t.oc || 0) === n ? 'on' : ''}" data-act="oc" data-v="${n}" ${n - (t.oc || 0) > gridFree() ? 'disabled' : ''}>${n ? `+${n}` : 'Off'}</button>`).join('')}</div>` : ''}

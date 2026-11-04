@@ -176,7 +176,9 @@ for (const seed of [1, 2]) {
 }
 // ---- 5. a Daily Hunt on Frontier rules (6.1): lift-offs, docks, moves, a bounty and a jump door replay bit for bit from the
 // recording (as resume, ladder checks and hunt codes rebuild it), rebuild halfway, and resume from the snapshot's recording
-const boost = S => Object.defineProperty(S.Hooks, 'log', { enumerable: false, configurable: true, writable: true, value: t => { if (/^Run started/.test(t)) { S.G.runMods.dmg = (S.G.runMods.dmg || 0) + 400; S.G.core.hpBonus = 40; S.recomputeAll(); S.G.core.hp = S.G.core.max; } } });
+// 6.2: a bigger boost (was +400% damage, hull bonus 40): FR_VER 3 moves Power Nodes, which reshuffles the run's dice, and the random
+// player then fell at Wave 11 on seed 4; this keeps the bounty and jump door exercised whatever the dice
+const boost = S => Object.defineProperty(S.Hooks, 'log', { enumerable: false, configurable: true, writable: true, value: t => { if (/^Run started/.test(t)) { S.G.runMods.dmg = (S.G.runMods.dmg || 0) + 1500; S.G.core.hpBonus = 200; S.recomputeAll(); S.G.core.hp = S.G.core.max; } } });
 function playDaily(S, seed, maxw, mark) {
   const R = rng(seed), sp0 = S.dailySpec('2026-11-0' + seed);
   const G = S.newRun({ seed: sp0.seed, chaos: sp0.chaos, startWave: 1, daily: sp0, frontier: 1, huntBuild: { tal: {}, caps: [], remnants: [], lvl: 40 }, nemesis: sp0.nemesis, sector: sp0.sector });
