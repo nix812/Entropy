@@ -3855,7 +3855,7 @@ function frRestat() { for (const t of G.towers) t.s = towerStats(t); recomputeAu
 // the landing preview (and the check the act makes): roads before → after, the tower it docks on, the links, the flight time
 function frPlan(x, y) {
   if (!frCanFly()) return null;
-  const P = planRelocation(x, y, true); if (!P) return null;
+  const P = planRelocation(x, y, true); if (!P || Math.min(...P.after) < FRONTIER.minRoad) return null;
   const tw = G.towerAt[tIdx(x, y)] || null, halted = G.checkpoint && !G.enemies.length;
   P.dock = tw; P.links = frLinksAt(x + 0.5, y + 0.5, tw);
   P.dist = Math.hypot(x + 0.5 - G.core.x, y + 0.5 - G.core.y);

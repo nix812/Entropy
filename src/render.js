@@ -22,6 +22,7 @@ const RES = 2;
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
+  let frSel = null, frArrows = []; // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
   // v5.8 tower character (render-only): a render clock, small screen kicks for heavy hits, hop stars and pull streaks.
@@ -593,16 +594,24 @@ const RES = 2;
   function sizeBuf(w, h) {
     if (buf.width < w || buf.height < h || buf.width > w + 512 || buf.height > h + 512) { buf.width = Math.ceil(w / 128) * 128; buf.height = Math.ceil(h / 128) * 128; }
   }
+  // Frontier: a tower that is moving glides from its old tile to the new one (lifted off the ground) while it is offline
   function drawTower(t) {
+    if (!(t.mvT > 0 && t.mvFrom)) return drawTower0(t);
+    const k = clamp(1 - t.mvT / FRONTIER.moveT, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) * (-2 * k + 2) / 2, lift = Math.sin(k * Math.PI) * 7;
+    const dx = (t.mvFrom.x - t.cx) * (1 - e) * TILE, dy = (t.mvFrom.y - t.cy) * (1 - e) * TILE;
+    b.fillStyle = 'rgba(2,3,10,0.35)'; b.beginPath(); b.ellipse(t.cx * TILE + dx + 1.5, t.cy * TILE + dy + 3, 10, 8, 0, 0, 6.283); b.fill();
+    b.save(); b.translate(dx, dy - lift); drawTower0(t); b.restore();
+  }
+  function drawTower0(t, onCore) {
     const X = t.x * TILE, Y = t.y * TILE, D0 = TOWERS[t.type], el = t.s ? t.s.el : D0.el, c = EL[el].col, cx = X + 12, cy = Y + 12;
-    blit(UNITS.base(el), cx, cy, TW_K);
+    if (!onCore) blit(UNITS.base(el), cx, cy, TW_K);
     const firing = t.flash > 0 || (t.aimT !== undefined && G.time - t.aimT < 0.25) || (t.beamTargets && t.beamTargets.length);
     const anim = { rk: t.flash > 0.03 ? 1 : 0, ld: t.type === 'missile' ? t.cd < 0.45 : 0,
       ph: t.type === 'forge' ? (frame >> 4) % 2 : (t.spec === 1 && t.type === 'pulse' && firing) || t.type === 'flame' && firing ? (frame >> 1) % 3 : 0 };
     const sp = UNITS.SPIN[t.type], ang = UNITS.ROT[t.type] ? (t.angle === undefined ? -1.57 : t.angle) : sp ? frame / 60 * sp * (t.disabled > 0 ? 0 : 1) + t.id : 0;
     if (t._wk !== el + (t.spec || 0)) { t._wk = el + (t.spec || 0); UNITS.warmTower(t.type, el, t.spec || 0); }
     const top = UNITS.top(t.type, el, t.spec || 0, ang, anim);
-    b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 12, 11, 0, 0, 6.283); b.fill();
+    if (!onCore) { b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 12, 11, 0, 0, 6.283); b.fill(); }
     // v5.8 tower character: a shot is seen when the sim stamps t.aimT; the turret kicks back along its heading and eases home
     if (t.aimT !== t._pa) { if (t._pa !== undefined && t.aimT !== undefined) towerFired(t, cx, cy, c); t._pa = t.aimT; }
     const age = t._ft === undefined ? 9 : rt - t._ft, rot = UNITS.ROT[t.type], ca = Math.cos(t.angle || 0), sa = Math.sin(t.angle || 0);
@@ -715,6 +724,19 @@ const RES = 2;
   }
   let coreKick = 0;
   function drawCore() {
+    // Frontier: in flight the core rises off the ground (its shadow stays below, thrusters flare); docked, the tower's turret
+    // sits on the drum in place of the core gun, ringed in its element's colour
+    const F = G.fr && G.frFly, dock = G.fr && !F ? frDockT() : null;
+    if (F) {
+      const k = clamp(F.t / F.dur, 0, 1), h = 6 + Math.sin(k * Math.PI) * 10;
+      b.fillStyle = 'rgba(2,3,10,0.35)'; b.beginPath(); b.ellipse(G.core.x * TILE + 3, G.core.y * TILE + 6, 20, 15, 0, 0, 6.283); b.fill();
+      b.save(); b.translate(0, -h);
+      for (let i = 0; i < 3; i++) { const a = i * 2.094 + frame / 9; parts.push({ x: G.core.x * TILE + Math.cos(a) * 14, y: G.core.y * TILE + Math.sin(a) * 10 + 8, vx: (Math.random() - 0.5) * 20, vy: 50 + Math.random() * 40, life: 0.25, max: 0.25, col: i ? '#59f0b4' : '#e6fff6', s: 2 }); }
+      drawCore0(null); b.restore(); return;
+    }
+    drawCore0(dock);
+  }
+  function drawCore0(dock) {
     const c = G.core, X = c.x * TILE, Y = c.y * TILE, pulse = (Math.sin(frame / 10) + 1) / 2;
     b.fillStyle = 'rgba(2,3,10,0.45)'; b.beginPath(); b.ellipse(X + 2, Y + 4, 25, 22, 0, 0, 6.283); b.fill();
     const hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
@@ -722,7 +744,8 @@ const RES = 2;
     blit(UNITS.core(frame / 70, hurt || kick > 0.35), X, Y, 1 - 0.07 * kick * Math.sin(kick * 9));
     D(b, X, Y, 1 + Math.round(pulse * 2), hexA('#ffffff', 0.35 + 0.4 * pulse));
     const el = c.s ? c.s.el : c.el, a = c.angle || 0;
-    blit(UNITS.coreGun(el, a), X, Y);
+    if (dock) { const dc = EL[dock.s.el].col; b.strokeStyle = hexA(dc, 0.55 + 0.3 * pulse); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 19, 0, 6.283); b.stroke(); drawTower0(dock, true); }
+    else blit(UNITS.coreGun(el, a), X, Y);
     { const wt = typeof warTier === 'function' ? warTier() : 0; // War Economy: a turret per stack of banked credits
       for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 30, ty = Y + Math.sin(a2) * 30; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
     if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.25 + 0.5 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 28, 0, 6.283); b.stroke(); }
@@ -1031,7 +1054,18 @@ const RES = 2;
         b.lineTo(bx, by); b.stroke();
       }
     }
-    for (const t of G.towers) drawTower(t);
+    const dockT = G.fr ? frDockT() : null;
+    for (const t of G.towers) if (t !== dockT) drawTower(t);
+    // Frontier links: a glowing line from the landed core to each linked tower, with a pulse running out along it
+    if (G.fr && G.frLinks && G.frLinks.length && !G.frFly) {
+      const ax = G.core.x * TILE, ay = G.core.y * TILE;
+      for (const t of G.frLinks) {
+        const bx = t.cx * TILE, by = t.cy * TILE, col = EL[t.s.el].col, off = t.disabled > 0, f = ((rt * 0.8 + t.id * 0.29) % 1);
+        b.strokeStyle = hexA('#0d3a2c', off ? 0.3 : 0.6); b.lineWidth = 4; b.beginPath(); b.moveTo(ax, ay); b.lineTo(bx, by); b.stroke();
+        b.strokeStyle = hexA(PAL.core, off ? 0.3 : 0.75 + 0.2 * Math.sin(frame / 7 + t.id)); b.lineWidth = 1.5; b.beginPath(); b.moveTo(ax, ay); b.lineTo(bx, by); b.stroke();
+        if (!off) { const px = ax + (bx - ax) * f, py = ay + (by - ay) * f; D(b, px, py, 2, hexA(col, 0.9)); R(b, px - 0.5, py - 0.5, 1, 1, '#ffffff'); }
+      }
+    }
     // v5.8 Relay Pylon: every 1.2 s a pulse runs out to each tower it boosts (amber Amplifier, cyan Uplink). The boosted set is
     // re-read once per cycle with the same range test as recomputeAuras; a newly linked tower gets a soft chirp
     for (const t of G.towers) if (t.s && t.s.kind === 'support' && t.disabled <= 0) {
@@ -1263,6 +1297,60 @@ const RES = 2;
         c.setLineDash([]); c.lineCap = 'butt'; c.lineJoin = 'miter';
         const gx = (P.x + 0.5) * TILE, gy = (P.y + 0.5) * TILE;
         ringS(gx, gy, TILE * (0.62 + 0.08 * Math.sin(frame / 5)), PAL.core, 1, 2.5, 0.25);
+      }
+    }
+    // Frontier picker: landing spots (open ground faint, dockable towers framed in their colour), then the preview: new roads,
+    // the ghost core, the docked weapon's reach and the towers it would link. Moving a tower: open tiles and the new reach
+    if (frSel && G.fr) {
+      const tw = TILE * ws, pa = 0.09 + 0.05 * Math.sin(frame / 9), P = frSel.plan;
+      c.fillStyle = hexA(frSel.kind === 'move' ? PAL.amber : PAL.core, pa);
+      for (const i of frSel.cands) { if (G.towerAt[i]) continue; const x = bx2s((i % COLS) * TILE), y = by2s(((i / COLS) | 0) * TILE); c.fillRect(Math.round(x + tw * 0.22), Math.round(y + tw * 0.22), Math.round(tw * 0.56), Math.round(tw * 0.56)); }
+      if (frSel.kind === 'land') {
+        c.lineWidth = 2;
+        for (const i of frSel.cands) { const t = G.towerAt[i]; if (!t) continue; const x = bx2s(t.x * TILE), y = by2s(t.y * TILE), m = Math.max(1, tw * 0.06) + (frame % 40 < 20 ? 0 : 1);
+          c.strokeStyle = hexA(EL[t.s.el].col, 0.9); c.strokeRect(Math.round(x + m) + 0.5, Math.round(y + m) + 0.5, Math.round(tw - 2 * m), Math.round(tw - 2 * m)); }
+        if (P) {
+          c.lineCap = 'round'; c.lineJoin = 'round';
+          for (const route of P.routes) {
+            c.beginPath();
+            route.forEach((i, k) => { const x = bx2s(((i % COLS) + 0.5) * TILE), y = by2s((((i / COLS) | 0) + 0.5) * TILE); if (k) c.lineTo(x, y); else c.moveTo(x, y); });
+            c.strokeStyle = 'rgba(7,8,15,0.7)'; c.lineWidth = Math.max(3, tw * 0.3); c.setLineDash([]); c.stroke();
+            c.strokeStyle = hexA(PAL.amber, 0.95); c.lineWidth = Math.max(2, tw * 0.14); c.setLineDash([tw * 0.35, tw * 0.25]); c.lineDashOffset = -frame / 2; c.stroke();
+          }
+          c.setLineDash([]); c.lineCap = 'butt'; c.lineJoin = 'miter';
+          const gx = (P.x + 0.5) * TILE, gy = (P.y + 0.5) * TILE;
+          for (const t of P.links) { c.strokeStyle = hexA(PAL.core, 0.8); c.lineWidth = 2; c.setLineDash([4, 4]); c.lineDashOffset = -frame / 3; c.beginPath(); c.moveTo(bx2s(gx), by2s(gy)); c.lineTo(bx2s(t.cx * TILE), by2s(t.cy * TILE)); c.stroke(); c.setLineDash([]); ringS(t.cx * TILE, t.cy * TILE, TILE * 0.55, PAL.core, 0.9, 1.5, 0); }
+          if (P.dock) ringS(gx, gy, (P.dock.s.range + FRONTIER.dockRange) * TILE, EL[P.dock.s.el].col, 0.85, 1.5, 0.06);
+          ringS(gx, gy, FRONTIER.linkR * TILE, PAL.core, 0.35, 1, 0);
+          ringS(gx, gy, TILE * (0.62 + 0.08 * Math.sin(frame / 5)), PAL.core, 1, 2.5, 0.25);
+        }
+      } else if (frSel.t && frSel.dest) {
+        const t = frSel.t, gx = (frSel.dest.x + 0.5) * TILE, gy = (frSel.dest.y + 0.5) * TILE;
+        c.strokeStyle = hexA(PAL.amber, 0.85); c.lineWidth = 2; c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.beginPath(); c.moveTo(bx2s(t.cx * TILE), by2s(t.cy * TILE)); c.lineTo(bx2s(gx), by2s(gy)); c.stroke(); c.setLineDash([]);
+        if (t.s.range) ringS(gx, gy, t.s.range * TILE, EL[t.s.el].col, 0.85, 1.5, 0.07);
+      }
+    }
+    // Frontier edge arrows: bosses, and enemies close to the core, that are off screen (tap one to look)
+    frArrows.length = 0;
+    if (G.fr && !G.over) {
+      const pad = 16, th = [];
+      for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0))) continue; const near = e.L && e.L.len - e.d < 10; if (!e.boss && !near) continue; th.push(e); }
+      th.sort((p, q) => (q.boss ? 1 : 0) - (p.boss ? 1 : 0) || (p.L.len - p.d) - (q.L.len - q.d));
+      const homeOff = (() => { const x = bx2s(G.core.x * TILE) - ox, y = by2s(G.core.y * TILE) - oy; return x < 0 || y < 0 || x > DW || y > DH; })();
+      const list = th.slice(0, 6).map(e => ({ x: e.x, y: e.y, col: e.boss ? PAL.bad : PAL.amber, big: !!e.boss }));
+      if (homeOff) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
+      const cx0 = ox + DW / 2, cy0 = oy + DH / 2;
+      for (const A of list) {
+        const sx2 = bx2s(A.x * TILE), sy2 = by2s(A.y * TILE);
+        if (sx2 >= ox && sy2 >= oy && sx2 <= ox + DW && sy2 <= oy + DH) continue;
+        const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy)));
+        const px = cx0 + dx * k, py = cy0 + dy * k, an = Math.atan2(dy, dx), r = A.big ? 11 : 8, pl = 0.75 + 0.25 * Math.sin(frame / 6);
+        if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) continue;
+        c.save(); c.translate(px, py); c.rotate(an);
+        c.fillStyle = 'rgba(7,8,15,0.75)'; c.beginPath(); c.moveTo(r + 3, 0); c.lineTo(-r + 1, -r); c.lineTo(-r * 0.4, 0); c.lineTo(-r + 1, r); c.closePath(); c.fill();
+        c.fillStyle = hexA(A.col, pl); c.beginPath(); c.moveTo(r, 0); c.lineTo(-r + 3, -r + 2.5); c.lineTo(-r * 0.4 + 1, 0); c.lineTo(-r + 3, r - 2.5); c.closePath(); c.fill();
+        c.restore();
+        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home });
       }
     }
     // the old sector border fades out as the camera pulls back
@@ -1684,6 +1772,9 @@ const RES = 2;
       if (g === 'regen') { gx.globalAlpha = 0.3; gx.drawImage(tintOf(sp, '#59f0b4'), x - sw / 2, y - sh / 2, sw, sh); gx.globalAlpha = 1; }
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
+    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, // Frontier picker and edge arrows
+    arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
+    lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
       if (cv.width < sp.width * 2) { const cs = getComputedStyle(cv); cv.style.width = cs.width; cv.style.height = cs.height; cv.width = cv.height = sp.width * 2; }
       const k = Math.max(1, Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height)));

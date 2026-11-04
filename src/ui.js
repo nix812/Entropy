@@ -149,7 +149,7 @@ const UI = (() => {
     $('#bLaunch2').hidden = !snap;
     $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
     const dk = dailyKey(), dd = PROF.daily && PROF.daily.date === dk ? PROF.daily : null;
-    $('#hPlaySub').textContent = snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : '';
+    $('#hPlaySub').textContent = snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `${snap.fr ? 'Frontier · ' : ''}Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : '';
     // v5.3 The Hunt: what is waiting for you, what you've won, and today's Daily Hunt, before you press Play
     const H = PROF.hunt || {}, N = PROF.nemesis, hh = $('#hHunt'), rows = [];
     if (N) rows.push(`<div class="hhr nem"><span class="lbl">Nemesis</span><b>${esc(N.name)}</b><small>${N.kind === 'boss' ? 'takes your next bounty' : 'leads your next Strain Assault'} · ended you on Wave ${N.lastW}</small></div>`);
@@ -161,6 +161,7 @@ const UI = (() => {
   // ---------- Setup ----------
   function openSetup() {
     const ls = PROF.lastSetup || { startWave: 1, chaos: 1 };
+    if (setup.mode === 'std' && ls.fr) setup.mode = 'fr'; // Frontier: the last run's mode comes back
     setup.chaos = ls.chaos ?? 1; if (!chaosUnlocked(setup.chaos)) setup.chaos = 1;
     const maxStart = Math.max(1, Math.floor((PROF.bestWave - 5) / 5) * 5);
     setup.startWave = Math.min(ls.startWave || 1, maxStart);
@@ -169,8 +170,9 @@ const UI = (() => {
     renderSetup();
   }
   function rerollMap() {
-    setRows(CHAOS_LEVELS[setup.chaos ?? 1].rows);
-    setCols(fitCols());
+    const fr = setup.mode === 'fr'; // Frontier: the bigger board (FRONTIER in data.js), the same for every screen
+    setRows(fr ? frRows(setup.chaos ?? 1) : CHAOS_LEVELS[setup.chaos ?? 1].rows);
+    setCols(fr ? frCols(ROWS) : fitCols());
     setup.seed = Math.floor(Math.random() * 1e9);
     setup.map = genMap(mulberry32(setup.seed));
   }
@@ -188,6 +190,7 @@ const UI = (() => {
         <div class="ch"><h2>New Run</h2>${modeChips()}<button class="x" data-act="close">✕</button></div>
         <div class="setup-grid">
           <div class="col">
+            ${setup.mode === 'fr' ? `<p class="note frpitch"><b>Frontier</b> · prototype. A bigger, slower map. Your core lifts off and lands anywhere: on a tower it docks and fires that tower's weapon, and it links the towers around it.</p>` : ''}
             <div class="lbl">Starting Wave</div>
             <div class="chips wrap">${starts.map(w => `<button class="chip ${w === sw ? 'on' : ''}" data-act="sw" data-v="${w}">${w}</button>`).join('')}</div>
             <p class="note">${starts.length === 1 ? 'Reach Wave 10 to unlock later starts.' : sw === 1 ? 'Later starts skip early waves and grant bonus credits.' : `${fmt(credits)} starting credits. Tougher enemies, bigger rewards.`}</p>
@@ -232,7 +235,7 @@ const UI = (() => {
   // the sector's poster boss, when it can show up by the first bounty (Wave 20)
   function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B) <= 20 ? `${M.name} ${B.name}` : ''; }
   function modeChips() {
-    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button></div>`;
+    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Standard</button><button class="chip ${setup.mode === 'fr' ? 'on' : ''}" data-act="mode" data-v="fr" style="--c:#59f0b4">Frontier</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button></div>`;
   }
   function renderDaily() {
     const spec = dailySpec(dailyKey());
@@ -278,10 +281,12 @@ const UI = (() => {
     else if (tut) { setRows(TUT.rows); setCols(fitCols()); newRun({ tut: TUT.v, cols: COLS, lesson: typeof tut === 'string' ? tut : undefined }); } // 5.8 Training and lessons
     else if (setup.mode === 'daily') { const sp = setup.daily; newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, cols: COLS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); }
     else {
-      PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
-      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks() });
+      const fr = setup.mode === 'fr';
+      PROF.lastSetup = Object.assign({ startWave: setup.startWave, chaos: setup.chaos }, fr ? { fr: 1 } : {});
+      newRun(Object.assign({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks() }, fr ? { frontier: 1, rows: ROWS } : {}));
     }
     Render.resetCam(); updateZoomBtn();
+    document.body.classList.toggle('fr', !!G.fr); { const lb = $('#bLift'); if (lb) { lb.hidden = !G.fr; lb.dataset.l = ''; } } // Frontier
     if (!PROF.zoomHint && !G.tut) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave; G.fresh = freshProfile() || !!G.tut;
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
@@ -323,6 +328,7 @@ const UI = (() => {
   function onboardingTick() {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
+    if (G.fr && G.time > 1 && introCard('frontier', 'Frontier', 'Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. The towers around the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slower here, but tougher.')) return;
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
@@ -1029,6 +1035,8 @@ const UI = (() => {
     }
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     { const rdy = vetsReady().length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} ready</span>`);
+      { const lb = $('#bLift'); if (lb) { const on = !!(G.fr && !G.over && !G.watch), lbl = on ? (G.frFly ? 'Flying' : frCanFly() ? 'Lift Off' : `Lift · W${G.frReady}`) : ''; // Frontier
+        if (lb.hidden === on) lb.hidden = !on; if (on && lb.dataset.l !== lbl) { lb.dataset.l = lbl; lb.firstChild.textContent = lbl; lb.classList.toggle('fly', !!G.frFly); lb.classList.toggle('cool', !G.frFly && !frCanFly()); lb.classList.add('go'); } } }
       const rb = $('#bReady'); if (rb) { const was = +rb.dataset.n || 0; if (rdy !== was) { rb.dataset.n = rdy; $('#rdyN').textContent = rdy; rb.hidden = !rdy; if (rdy > was) { rb.classList.remove('pulse'); void rb.offsetWidth; rb.classList.add('pulse'); } } } } // 5.8 Ready button
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap${performance.now() < stormPulse ? ' pulse' : ''}" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
@@ -1304,6 +1312,7 @@ const UI = (() => {
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
+    frEnd();
     document.body.classList.remove('panel-l', 'panel-r');
   }
   function openPanel(p) {
@@ -1330,6 +1339,8 @@ const UI = (() => {
     else if (panel.kind === 'core') el.innerHTML = corePanelHTML();
     else if (panel.kind === 'cash') el.innerHTML = cashPanelHTML();
     else if (panel.kind === 'reloc') el.innerHTML = relocPanelHTML();
+    else if (panel.kind === 'frland') el.innerHTML = frLandPanelHTML();
+    else if (panel.kind === 'frmove') el.innerHTML = frMovePanelHTML();
     else if (panel.kind === 'enemy') el.innerHTML = enemyPanelHTML(panel.e);
     el.classList.remove('framed');
     const nb = frameBox(el, 'ph', 'pfoot', 'pbody');
@@ -1489,7 +1500,7 @@ const UI = (() => {
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${t.lvl === 3 ? `<button class="btn wide lvup" disabled>Choose a Specialization<small>${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'}</small></button>` : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}${G.fr ? (t === frDockT() ? '<button class="btn frmove" disabled>Move<small>Docked</small></button>' : `<button class="btn frmove" data-act="frmove" ${t.mvT > 0 ? 'disabled' : costBtn(frMoveFee(t))}>Move · ${fmt(frMoveFee(t))}${t.mvT > 0 ? '<small>Moving</small>' : ''}</button>`) : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
@@ -1549,8 +1560,8 @@ const UI = (() => {
       <div class="row2"><button class="btn" data-act="reactor" ${costBtn(reactorCost())}>Reactor +1 · ${fmt(reactorCost())}</button>${c.affixes.length ? `<button class="btn" data-act="crr" ${costBtn(coreRerollCost())}>Reroll · ${fmt(coreRerollCost())}</button>` : ''}</div></div>`;
     if ((panel.tab || 'act') === 'act') return `${head}
       <div class="sg mini"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>${tipify('Power')}<b>${gridUsed()}/${gridCap()}</b></span></div>
-      <div class="lbl">Weapon Element</div>
-      <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>
+      ${G.fr ? frCoreHTML() : `<div class="lbl">Weapon Element</div>
+      <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>`}
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       ${foot}`;
     return `${head}
@@ -1566,6 +1577,66 @@ const UI = (() => {
       <div class="sts">${tipify(`Power grid ${gridUsed()}/${gridCap()}${G.reactorN ? ` · ${G.reactorN} reactor expansion${G.reactorN > 1 ? 's' : ''}` : ''}. Each expansion adds +1 power for the rest of the run and costs more than the last`)}</div>
       ${canRelocate() ? '' : relocHTML()}
       ${foot}`;
+  }
+  // ---------- Frontier: the core panel's flight block, the landing picker and preview, and moving a tower ----------
+  // The picker state lives here (frSel), not in G; Render draws it. The game pauses while you choose and resumes after.
+  let frSel = null;
+  function frLiftLabel() { return G.frFly ? 'In flight' : frCanFly() ? 'Lift Off' : `Lift Off · Wave ${G.frReady}`; }
+  function frCoreHTML() {
+    const d = frDockT(), n = (G.frLinks || []).length;
+    const gun = G.frFly ? `<div class="sts">${tipify('In the air: the gun is offline and the shield is down until it lands')}</div>`
+      : d ? `<div class="sts frdock" style="--c:${EL[d.s.el].col}">Docked: <b>${esc(TOWERS[d.type].name)}</b> LV ${towerLevel(d)} · ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range</div>`
+      : `<div class="sts">${tipify('Plain cannon. Land on an attack tower to dock it: the core fires its weapon')}</div>`;
+    return `<div class="lbl">Flight</div>${gun}
+      <div class="sts ${n ? 'good' : 'dim'}">${G.frFly ? 'Links break while flying' : `Links ${n}/${frLinkN()} · linked towers +${pct(FRONTIER.linkDmg)} Damage and Rate · core +${pct(FRONTIER.linkCore * n)}`}</div>
+      <div class="row2"><button class="btn frlift" data-act="frlift" ${frCanFly() ? '' : 'disabled'}>${G.frFly ? 'In flight' : 'Lift Off'}<small>${frCanFly() ? 'Land anywhere · on a tower to dock' : G.frFly ? 'Landing' : `Ready on Wave ${G.frReady}`}</small></button>${d ? '<button class="btn" data-act="frtower">Docked tower<small>Upgrade, Fire, Aim</small></button>' : ''}</div>`;
+  }
+  function frPause(on) { if (!G) return; if (on) { if (frSel && frSel.paused === undefined) { frSel.paused = G.paused; G.paused = true; } } else if (frSel && frSel.paused === false && !modalOpen) G.paused = false; }
+  function startLift() {
+    if (!G || !G.fr || G.over) return;
+    if (!frCanFly()) { SFX.play('deny'); toast('LIFT OFF', G.frFly ? 'Already in the air' : `Recharging: ready on Wave ${G.frReady}`, '#59f0b4', true, 'tip'); return; }
+    frEnd(); closePanel();
+    frSel = { kind: 'land', cands: new Set(frCands()), plan: null }; Render.frSel = frSel; frPause(true);
+    openPanel({ kind: 'frland', x: G.map.core.x, y: G.map.core.y });
+    updateHud(true);
+  }
+  function startMove(t) {
+    if (!G || !G.fr || !t) return;
+    if (t === frDockT()) { SFX.play('deny'); toast('MOVE', 'The core sits on this tower. Lift off first', '#ffb03a', true, 'tip'); return; }
+    if (t.mvT > 0) { SFX.play('deny'); return; }
+    const R = G.region, c = new Set(); for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) c.add(tIdx(x, y));
+    frEnd(); closePanel();
+    frSel = { kind: 'move', cands: c, t, dest: null }; Render.frSel = frSel; frPause(true);
+    Render.sel = { x: t.x, y: t.y };
+    openPanel({ kind: 'frmove', x: t.x, y: t.y });
+  }
+  function frEnd() { if (!frSel) return; frPause(false); frSel = null; Render.frSel = null; }
+  function frLandPanelHTML() {
+    const P = frSel && frSel.plan;
+    const head = `<div class="ph"><div class="pt"><b>Lift Off</b><small>Paused while you choose</small></div><button class="x" data-act="frcancel" aria-label="Cancel">✕</button></div>`;
+    if (!P) return head + `<p class="note">Tap a highlighted tile to land there. A framed tower docks: the core fires its weapon at ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range.</p>
+      <p class="note">Every road swings to the landing spot, and enemies already walking turn toward it. In the air the gun is offline and the shield is down. Flight: about 1 s per ${FRONTIER.flySpd} tiles.</p>
+      <div class="pfoot"><button class="btn" data-act="frcancel">Cancel</button></div>`;
+    const tot = a => a.reduce((x, y) => x + y, 0), dd = tot(P.after) - tot(P.before);
+    const rows = P.before.map((b, i) => { const a = P.after[i], d = a - b, L = G.map.lanes[i]; return `<span>${i === 0 ? 'Main road' : L.openWave ? 'Forming' : 'Lane ' + (i + 1)}<b class="${d > 0 ? 'good' : d < 0 ? 'bad' : ''}">${b} → ${a}</b></span>`; }).join('');
+    const D = P.dock, ds = D && D.s;
+    const gun = D ? `<div class="sts frdock" style="--c:${EL[ds.el].col}">Docks <b>${esc(TOWERS[D.type].name)}</b> LV ${towerLevel(D)}: Damage ${fmt(ds.dmg)} → ${fmt(ds.dmg * frDockX() * (1 + FRONTIER.linkCore * P.links.length))} · Range ${num1(ds.range)} → ${num1(ds.range + FRONTIER.dockRange)}</div>`
+      : `<div class="sts">${tipify(`Plain cannon · ${EL[G.core.el].name}`)}</div>`;
+    const links = P.links.length ? `Links ${P.links.length}: ${P.links.map(t => esc(TSHORT[t.type] || TOWERS[t.type].name)).join(', ')}` : `No towers within ${FRONTIER.linkR} tiles to link`;
+    return head + `<div class="lbl">Road length (tiles)</div><div class="sg">${rows}</div>
+      <div class="sts ${dd > 0 ? 'good' : dd < 0 ? 'bad' : ''}">${dd === 0 ? 'Same total road length' : `${dd > 0 ? '+' : '−'}${Math.abs(dd)} tiles of road in total`}${dd > 0 ? ': enemies walk further' : dd < 0 ? ': enemies arrive sooner' : ''}</div>
+      ${gun}
+      <div class="sts ${P.links.length ? 'good' : 'dim'}">${links}</div>
+      ${isNode(P.x, P.y) ? `<div class="sts node">${tipify('Power Node: the core will be overcharged, +50% Damage, +20% Rate')}</div>` : ''}
+      <div class="sts">${P.secs > 0 ? `Flight ${num1(P.secs)} s · ` : ''}next lift-off ${frCd()} waves after landing</div>
+      <div class="pfoot"><button class="btn primary wide" data-act="frgo">${D ? 'Land and dock' : 'Land here'}</button><button class="btn" data-act="frcancel">Cancel</button></div>`;
+  }
+  function frMovePanelHTML() {
+    const t = frSel && frSel.t; if (!t) return '';
+    const fee = frMoveFee(t), d = frSel.dest;
+    return `<div class="ph"><div class="pt"><b>Move ${esc(TOWERS[t.type].name)}</b><small>Paused while you choose</small></div><button class="x" data-act="frcancel" aria-label="Cancel">✕</button></div>
+      <p class="note">${d ? 'Tap another tile to compare, or confirm.' : 'Tap an open tile inside the sector.'} It flies over and is offline for ${FRONTIER.moveT} s. Fee ${fmt(fee)} (${pct(FRONTIER.moveFee)} of what it cost).</p>
+      <div class="pfoot"><button class="btn primary wide" data-act="frmovego" ${d ? costBtn(fee) : 'disabled'}>Move here · ${fmt(fee)}</button><button class="btn" data-act="frcancel">Cancel</button></div>`;
   }
   const relocPrice = () => relocCost() ? `${fmt(RELOCATE_COST)}` : 'Free';
   function relocHTML() {
@@ -1613,7 +1684,7 @@ const UI = (() => {
     }
     if (panel.kind === 'tower') {
       const t = panel.t;
-      const sig = t.pending + ':' + t.rank + ':' + t.reson + ':' + t.affixes.length + ':' + t.lvl + ':' + (t.ascPend || 0) + ':' + (t.perks ? t.perks.length : 0);
+      const sig = t.pending + ':' + t.rank + ':' + t.reson + ':' + t.affixes.length + ':' + t.lvl + ':' + (t.ascPend || 0) + ':' + (t.perks ? t.perks.length : 0) + (G.fr ? ':' + (t.mvT > 0 ? 1 : 0) + (t === frDockT() ? 'd' : '') : '');
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const d = el.querySelector('[data-live="dps"]'); if (d) d.textContent = fmt(t.dps);
@@ -1627,7 +1698,7 @@ const UI = (() => {
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; } panel.sig = sig; return; }
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; renderPanel(); } return; }
     if (panel.kind === 'core') {
-      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0);
+      const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0) + (G.fr ? ':' + frLiftLabel() + (frDockT() ? 'd' : '') + (G.frLinks || []).length : '');
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
       panel.sig = sig;
       const a = el.querySelector('[data-live="chp"]'); if (a) a.textContent = `${Math.ceil(c.hp)}/${Math.round(c.max)}`;
@@ -1669,6 +1740,7 @@ const UI = (() => {
       else if (act === 'reroll') { if (!window.act('reroll', t.x, t.y, 0)) SFX.play('deny'); renderPanel(); }
       else if (act === 'rerollTok') { if (!window.act('reroll', t.x, t.y, 1)) SFX.play('deny'); renderPanel(); }
       else if (act === 'sell') { window.act('sell', t.x, t.y); closePanel(); }
+      else if (act === 'frmove') startMove(t);
       else if (act === 'oc') { if (!window.act('oc', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
       else if (act === 'vet') { if (!window.act('vet', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       return;
@@ -1703,7 +1775,25 @@ const UI = (() => {
         else { closePanel(); toast('OVERDRIVE', `${G.stats.odKills} enemies erased`, '#59f0b4'); updateHud(); }
       }
       else if (act === 'reloc') startReloc();
+      else if (act === 'frlift') startLift();
+      else if (act === 'frtower') { const d = frDockT(); if (d) openTower(d); }
       else if (act === 'reactor') { if (!window.act('reactor')) SFX.play('deny'); else toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud(); }
+      return;
+    }
+    if (panel.kind === 'frland' || panel.kind === 'frmove') {
+      if (act === 'frcancel') { closePanel(); return; }
+      if (act === 'frgo' && frSel && frSel.plan) {
+        const P = frSel.plan, wasPaused = frSel.paused;
+        if (!window.act('frFly', P.x, P.y)) { SFX.play('deny'); toast('NO ROUTE', 'That spot is no longer open. Pick another', '#ff4d6a', true, 'tip'); frSel.cands = new Set(frCands()); frSel.plan = null; renderPanel(); return; }
+        closePanel(); if (!wasPaused && !modalOpen) G.paused = false;
+        toast('LIFT OFF', P.secs > 0 ? `Landing in ${num1(P.secs)} s${P.dock ? ` on ${TOWERS[P.dock.type].name}` : ''}. The roads already lead there` : 'Landed', '#59f0b4', true, 'tip');
+        updateHud(true); Save.save();
+      }
+      if (act === 'frmovego' && frSel && frSel.t && frSel.dest) {
+        const t = frSel.t, d = frSel.dest;
+        if (!window.act('frMove', t.x, t.y, d.x, d.y)) { SFX.play('deny'); return; }
+        closePanel(); openTower(t); updateHud();
+      }
       return;
     }
     if (panel.kind === 'reloc') {
@@ -1838,6 +1928,7 @@ const UI = (() => {
       updateZoomBtn(); SFX.play('ui'); return;
     }
     lastTap = { t: now, x: sx, y: sy };
+    if (G.fr) { const A = Render.arrowAt(sx, sy); if (A) { lastTap = null; if (A.home) Render.resetCam(); else Render.lookAt(A.x, A.y); updateZoomBtn(); SFX.play('ui'); return; } } // Frontier edge arrows
     tapTile(Render.screenToTile(sx, sy));
   }
   let lastTap = null;
@@ -1855,6 +1946,13 @@ const UI = (() => {
       if (window.act('beacon', tx, ty)) { SFX.play('ui'); toast('POWER NODE PLANTED', 'Towers built here draw no power and hit harder', '#6ae2ff'); updateHud(); }
       else { SFX.play('deny'); toast('NODE BEACON', 'Needs an empty ground tile inside the sector. Tap the core to cancel', '#ff4d6a', true); }
       return;
+    }
+    if (frSel) { // Frontier picker: a landing spot (preview) or a tower's new tile
+      const i = tIdx(tx, ty);
+      if (!frSel.cands.has(i)) { SFX.play('deny'); return; }
+      if (frSel.kind === 'land') { const P = frPlan(tx, ty); if (!P) { const Q = planRelocation(tx, ty, true); SFX.play('deny'); toast('NO ROUTE', Q ? `Too close: a road from a wormhole would be under ${FRONTIER.minRoad} tiles` : 'A road cannot reach that tile', '#ff4d6a', true, 'tip'); return; } frSel.plan = P; }
+      else frSel.dest = { x: tx, y: ty };
+      SFX.play('ui'); Render.sel = { x: tx, y: ty }; renderPanel(); return;
     }
     if (G.reloc) {
       if (!G.reloc.cands.has(tIdx(tx, ty))) { SFX.play('deny'); return; }
@@ -1894,7 +1992,7 @@ const UI = (() => {
     if (G.aimAbility) { G.aimAbility = null; Render.aim = null; updateHud(); SFX.play('ui'); return; }
     if (panel) { closePanel(); SFX.play('ui'); }
   }
-  function updateZoomBtn() { const b = $('#bZoom'); if (b) { const close = Render.homeZoom > 1.05; b.hidden = Render.home && !close; b.innerHTML = svgIcon('fit', 16) + (Render.home ? 'Map' : 'Fit · ' + (Render.zoom / Render.homeZoom).toFixed(1) + '×'); } }
+  function updateZoomBtn() { const b = $('#bZoom'); if (b) { const close = Render.homeZoom > 1.05; b.hidden = Render.home && !close; b.innerHTML = svgIcon('fit', 16) + (Render.home ? 'Map' : G && G.fr ? 'Home' : 'Fit · ' + (Render.zoom / Render.homeZoom).toFixed(1) + '×'); } } // Frontier: Home recentres on the core
   function fitCols() {
     // measure the playfield the game screen will have: app minus safe areas, the two thumb rails and the status bar
     let pr = document.getElementById('fitProbe');
@@ -2995,7 +3093,7 @@ const UI = (() => {
           break;
         }
         launch(); break; }
-      case 'mode': setup.mode = b.dataset.v; if (setup.mode === 'std') rerollMap(); renderSetup(); break;
+      case 'mode': setup.mode = b.dataset.v; if (setup.mode !== 'daily') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
       case 'help': if (modalOpen === 'pause') modalFrom = 'pause'; openHelp(); break;
       case 'htab': openHelp(b.dataset.v); break;
@@ -3132,6 +3230,7 @@ const UI = (() => {
     $('#bLaunch2').onclick = () => { SFX.init(); SFX.play('ui'); openSetup(); };
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
     $('#bReady').onclick = () => { SFX.play('ui'); if (!G || G.over) return; vetFlow.ix = 0; openVets(); };
+    $('#bLift').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.fr) return; startLift(); }; // Frontier
     $('#bTutH').onclick = () => { SFX.init(); SFX.play('ui'); openTutPick(); }; // 5.8: always on the main menu
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
@@ -3191,6 +3290,9 @@ const UI = (() => {
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
     Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) openAssault(true); }, 700); };
+    Hooks.frLanded = d => { if (!G || G.replaying) return; const n = (G.frLinks || []).length; // Frontier
+      toast(d ? 'DOCKED' : 'LANDED', `${d ? `The core fires the ${TOWERS[d.type].name}: ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range` : 'Plain cannon'} · ${n} link${n === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, d ? EL[d.s.el].col : '#59f0b4');
+      if (panel && (panel.kind === 'core' || panel.kind === 'tower')) renderPanel(); updateHud(true); };
     Hooks.gridFull = () => { const T = topTower(); toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Build on a Power Node (free), sell an idle tower, or expand the reactor${T ? `. Or Overcharge your best: ${TOWERS[T.type].name}` : ''}`, '#ffb03a'); };
     Hooks.log = log;
     Hooks.toast = toast;
