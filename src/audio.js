@@ -208,6 +208,21 @@ const SFX = (() => {
     const L = locate(x, y); if (!L) return { pan: 0, k: 1, dull: false };
     return { pan: Math.max(-0.75, Math.min(0.75, L.px * 0.75)), k: L.on ? 1 : 0.45, dull: !L.on };
   }
+  // 6.2 tower fire and impacts follow the camera (Nic: "closer to the center the louder"): volume and a gentle pan from the
+  // source's distance to the screen centre, in units of the half-view (1 = the screen edge), so zooming changes it too.
+  // Full within 0.6, easing down to PROX_FLOOR by 2.2 (well off screen) and never silent; off screen is also dulled.
+  // Worked out once per sound (no per-frame work); a far, quiet sound plays at most every 0.25 s per sound name, so a busy
+  // battle off screen costs a fraction of the voices it used to.
+  const PROX_FLOOR = 0.2, PROX_IN = 0.6, PROX_OUT = 2.2;
+  let curP = null;
+  function prox(arg) {
+    const x = arg && (arg.cx !== undefined ? arg.cx : arg.x), y = arg && (arg.cy !== undefined ? arg.cy : arg.y);
+    if (x === undefined || !locate) return null;
+    const L = locate(x, y); if (!L) return null;
+    const ny = L.py === undefined ? 0 : L.py, r = Math.sqrt(L.px * L.px + ny * ny), u = Math.min(1, Math.max(0, (r - PROX_IN) / (PROX_OUT - PROX_IN)));
+    const k = 1 - (1 - PROX_FLOOR) * u * u * (3 - 2 * u);
+    return { pan: Math.max(-0.6, Math.min(0.6, L.px * 0.5)), k, dull: !L.on, far: u >= 0.85 };
+  }
   function duck(db, att, hold, rel, mus) {
     if (!duckW) return;
     const t = T(), v = Math.pow(10, db / 20);
@@ -231,8 +246,8 @@ const SFX = (() => {
   // start a sound: bus, base volume, pitch jitter (semitones), placement and sends
   function ev(name, bus, vol, o, arg) {
     o = o || {};
-    const P = place(arg), jit = o.jit === undefined ? 0.6 : o.jit;
-    const dens = bus === busW || bus === busH ? density() : 1;
+    const wh = bus === busW || bus === busH, P = (wh && (curP || prox(arg))) || place(arg), jit = o.jit === undefined ? 0.6 : o.jit; // 6.2: weapons and impacts follow the camera
+    const dens = wh ? density() : 1;
     const c = chain(bus, { vol: vol * dB((TRIM[o.tn || name] || 0) + (o.trim || 0)) * P.k * dens * rnd(0.9, 1.05), pan: o.pan !== undefined ? o.pan : P.pan, dull: P.dull, room: o.room, hall: o.hall, pitch: (o.pitch || 1) * semi(rnd(-jit, jit)) });
     c.name = name; return c;
   }
@@ -502,9 +517,9 @@ const SFX = (() => {
   };
   function play(name, arg, arg2) {
     if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
-    if (WEAP[name]) return WEAP[name](arg, arg2);
-    if (HIT[name]) return HIT[name](arg, arg2);
-    if (name === 'die') return die(arg);
+    if (WEAP[name] || HIT[name] || name === 'die') { // 6.2: placed once by camera distance; a far one is thinned out before it builds anything
+      const P = prox(arg); if (P && P.far && !allow(name + '~far', 0.25, 1)) return;
+      curP = P; try { return WEAP[name] ? WEAP[name](arg, arg2) : HIT[name] ? HIT[name](arg, arg2) : die(arg); } finally { curP = null; } }
     if (name === 'bosswarn') return EVT.boss(arg);
     if (name === 'combo') { const n = typeof arg === 'string' ? arg : arg && arg.n; if (!COMBO[n] || !allow('combo' + n, 0.12, 2)) return; const c = ev('combo' + n, busE, 0.6, { room: 0.3 }, typeof arg === 'object' ? arg : null); COMBO[n](c); done(c); return; }
     if (name === 'ui' || name === 'deny') { if (!allow(name, name === 'ui' ? 0.03 : 0.1)) return; return UIS[name](); }
@@ -513,7 +528,8 @@ const SFX = (() => {
   // Void Lens: one shared beam hum. Its level follows how many beams are firing; its pitch climbs as they ramp up.
   // v5.8: eh / pr = share of firing Lenses that are Event Horizon (a sub octave under the hum) or Prism Split (a wider chorus)
   let beamOn = 0, beamOff = 0;
-  function beams(n, ramp, eh, pr) {
+  // 6.2: pk = the firing Lenses' average camera-distance gain (prox), so the hum fades when the beams are off screen
+  function beams(n, ramp, eh, pr, pk) {
     if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
     if (!beamV) {
       const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator(), o4 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
@@ -529,7 +545,7 @@ const SFX = (() => {
     // after 2.5 s of steady firing; a fresh burst after a second of silence swells back to full
     if (on) { if (!beamOn || t - beamOff > 1) beamOn = t; beamOff = t; } else if (beamOn && t - beamOff > 1) beamOn = 0;
     const settle = on && beamOn && t - beamOn > 2.5 ? 0.65 : 1;
-    beamV.g.gain.setTargetAtTime(on ? Math.min(0.055, 0.022 + 0.012 * Math.log2(1 + n)) * settle : 0, t, on ? (settle < 1 ? 0.8 : 0.05) : 0.12);
+    beamV.g.gain.setTargetAtTime(on ? Math.min(0.055, 0.022 + 0.012 * Math.log2(1 + n)) * settle * (pk === undefined ? 1 : pk) : 0, t, on ? (settle < 1 ? 0.8 : 0.05) : 0.12);
     const f0 = 98 * semi(k * 12), w = 0.005 + 0.012 * (pr || 0);
     beamV.o1.frequency.setTargetAtTime(f0, t, 0.1); beamV.o2.frequency.setTargetAtTime(f0 * (1 + w), t, 0.1); beamV.o4.frequency.setTargetAtTime(f0 * (1 - w), t, 0.1);
     beamV.o3.frequency.setTargetAtTime(f0 / 2, t, 0.1);
@@ -1481,7 +1497,7 @@ const SFX = (() => {
     return API;
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------

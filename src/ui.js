@@ -2002,7 +2002,7 @@ const UI = (() => {
     if (en) { const I = enemyInfo(en); tip.innerHTML = `<b>${esc(I.name)}</b><span>${esc(I.beat ? 'Beat it: ' + I.beat : I.desc || '')}</span>`; tip.hidden = false;
       const sr = $('#stage').getBoundingClientRect(), x = e.clientX - sr.left, y = e.clientY - sr.top; tip.style.left = Math.round(Math.min(sr.width - 230, x + 14) / UIS) + 'px'; tip.style.top = Math.round(Math.max(0, y - 46) / UIS) + 'px'; }
     else tip.hidden = true;
-    const live = en || inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheAt(tx, ty));
+    const live = en || inside && (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y) || canBuildAt(tx, ty) || cacheNear(p, tx, ty));
     $('#cv').style.cursor = G.aimAbility ? 'crosshair' : live ? 'pointer' : 'default';
   }
   function canvasUp(e) {
@@ -2029,6 +2029,16 @@ const UI = (() => {
     tapTile(Render.screenToTile(sx, sy));
   }
   let lastTap = null;
+  // 6.2 (Nic: "1 square buffer, I miss them sometimes"): a tap within about a tile of a crate claims it (the nearest one; the
+  // claim is recorded with the crate's own tile). A tap on a tower or the core still opens that, so building and selecting work
+  const CACHE_REACH = 1.5;
+  function cacheNear(p, tx, ty) {
+    const on = cacheAt(tx, ty); if (on) return on;
+    if (G.towerAt[tIdx(tx, ty)] || (tx === G.map.core.x && ty === G.map.core.y)) return null;
+    let best = null, bd = CACHE_REACH;
+    for (const c of G.caches || []) { const d = Math.hypot(p.x - (c.x + 0.5), p.y - (c.y + 0.5)); if (d <= bd) { bd = d; best = c; } }
+    return best;
+  }
   function tapTile(p) {
     if (G.watch) return; // a replay plays itself
     if (G.aimAbility) {
@@ -2057,9 +2067,9 @@ const UI = (() => {
       if (!P) { SFX.play('deny'); toast('NO ROUTE', 'A road cannot reach that tile', '#ff4d6a'); return; }
       SFX.play('ui'); G.reloc.plan = P; Render.sel = { x: tx, y: ty }; renderPanel(); return;
     }
-    if (!inRegion(tx, ty, G.region)) { closePanel(); return; }
-    const cc = cacheAt(tx, ty);
-    if (cc) { const kind = cc.kind, m = window.act('cache', tx, ty); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
+    const cc = cacheNear(p, tx, ty);
+    if (!cc && !inRegion(tx, ty, G.region)) { closePanel(); return; }
+    if (cc) { const kind = cc.kind, m = window.act('cache', cc.x, cc.y); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
     const isCore = tx === G.map.core.x && ty === G.map.core.y;
     const t = G.towerAt[tIdx(tx, ty)];
     if (!isCore && !t) { const en = enemyAt(p); if (en) { SFX.play('ui'); if (panel && panel.kind === 'enemy' && panel.e === en) { closePanel(); return; } openEnemy(en); return; } }
@@ -3391,7 +3401,7 @@ const UI = (() => {
     // hooks
     Hooks.sfx = (n, a, b) => { SFX.play(n, a, b); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view
-    SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; });
+    SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, py: p.y / L.H * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; }); // 6.2: py for the camera-distance mix
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
@@ -3429,7 +3439,7 @@ const UI = (() => {
   }
   let eqT = 0; const eqBuf = new Uint8Array(128);
   // 6.2: the buttons and banners over the battlefield, in stage px, so the edge arrows (Render) never hide under one
-  let koT = 0;
+  let koT = 0, beamKT = 0, beamK = 1;
   const KEEP_OUT = '#bLift, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
   function keepOutRects() {
     const cv = $('#cv'); if (!cv) return []; const o = cv.getBoundingClientRect(), out = [];
@@ -3464,11 +3474,11 @@ const UI = (() => {
     // v5.8: the hum's ramp is the beam's seconds on target out of the sim's 4 s cap (it used to divide seconds by the damage multiplier),
     // Event Horizon adds a sub octave and Prism Split a wider chorus; a Lens that locks onto a new target chirps.
     // Flame Projectors share one continuous roar; one that starts firing gives a short ignition chirp
-    let nb = 0, rk = 0, neh = 0, npr = 0, nf = 0, nfi = 0, nfp = 0;
+    let nb = 0, rk = 0, neh = 0, npr = 0, nf = 0, nfi = 0, nfp = 0, pkS = 0; beamKT -= dt; const pkNow = beamKT <= 0; if (pkNow) beamKT = 0.25;
     if (live) for (const t of G.towers) {
       if (t.type === 'lens') {
         const tg = t.disabled <= 0 && t.beamTargets && t.beamTargets.length ? t.beamTargets[0] : null;
-        if (tg) { nb++; rk = Math.max(rk, Math.min(1, (t.ramp || 0) / 4)); if (t.spec === 1) neh++; else if (t.spec === 2) npr++; if (tg !== t._lock) SFX.play('lock', t); }
+        if (tg) { nb++; if (pkNow) pkS += SFX.proxK(t.cx, t.cy); rk = Math.max(rk, Math.min(1, (t.ramp || 0) / 4)); if (t.spec === 1) neh++; else if (t.spec === 2) npr++; if (tg !== t._lock) SFX.play('lock', t); }
         t._lock = tg;
       } else if (t.type === 'flame') {
         const on = t.disabled <= 0 && t.aimT !== undefined && G.time - t.aimT < 0.3 && G.time >= t.aimT;
@@ -3476,7 +3486,8 @@ const UI = (() => {
         t._flOn = on;
       }
     }
-    SFX.beams(nb, rk, nb ? neh / nb : 0, nb ? npr / nb : 0);
+    if (pkNow) beamK = nb ? pkS / nb : 1; // 6.2: the hum follows the beams' average distance from the screen centre (4 times a second)
+    SFX.beams(nb, rk, nb ? neh / nb : 0, nb ? npr / nb : 0, beamK);
     SFX.flames(nf, nf ? nfi / nf : 0, nf ? nfp / nf : 0);
     SFX.danger(live && G.core.hp < G.core.max * 0.35 ? 1 - G.core.hp / (G.core.max * 0.35) : 0, dt);
   }
