@@ -32,13 +32,15 @@ Nothing was removed. The old two explanatory notes (tempo, briefings/notificatio
 
 | | 6.1.0 | 6.2 qolB |
 |---|---|---|
-| Coach cards | 64 | 59 |
-| Lessons (groups of cards) | ~64 single bursts | 19, each one action chain |
-| Cards less than 5 s of play after the previous one | 52 | (chain steps only) |
-| New lesson less than 15 s after the previous | 54 | see final run below |
-| Median play between new lessons | 0 s | 22 s |
-| Biggest burst | 15 cards at once (Rail, Lift Off, dock, links, Move, all after Wave 3) | 6 before Wave 1 (core, health, road, build spots, build, start) |
-| Wall time at 1× with 3 s per card (estimate) | 875 s | 865 s |
+| Coach cards | 64 | 62 |
+| Lessons (a new topic) | 64 cards in 13 bursts | 19, each one action chain |
+| New topic less than 15 s of play after the last | 54 | 4 (12.3 s and 11.8 s after a wave end or for the Strike pack; 8.6 s once, when a lesson was due before the countdown ran out) |
+| Shortest gap between topics | 0 s | 8.6 s |
+| Median gap between topics | 0 s | 22 s |
+| Biggest burst | 15 cards at once after Wave 3 (threat, Rail, Lift Off, dock, links, Move) | 6 before Wave 1 (core, health, road, build spots, build, start) |
+| Training length (play) / wall time at 1× with 3 s per card | 704 s / 875 s | 710 s / 875 s |
+
+Lesson starts after the change (play seconds): 0 start · 22 camera · 44 credits · 54 second tower · 100 upgrade · 122 ranking up · 147 Threat Board · 169 Lift Off · 194 Move · 220 inspect · 232 upgrade arrow · 244 Strike · 267 veterans · 275 swarm adapts · 297 core · 313 specialty · 335 Most Wanted · 578 boss · 710 bounty. Before: 0 (8 cards) · 28 · 47 (4) · 94 (8) · 140 (15) · 158 (2) · 236 (10) · 243 (3) · 273 (4) · 277 · 323 (6) · 563 · 704.
 
 How it works now:
 - Steps that start a lesson carry `ls`. A lesson's steps run back to back (Lift Off → pick → preview → land is one chain). A new lesson waits for **22 s of play** since the last card, or for **the end of a wave with at least 10 s of play since**, and for a calm moment (no tap in the last 2.5 s, not aiming or picking a landing, the core not in flight, fewer than two enemies at the core, no boss close). A busy spell can delay a lesson by at most 25 s. Between waves, with under 5 s left on the countdown, a lesson that belongs to this break goes ahead so it is never lost. The Strike lesson waits only 12 s (the pack is the moment), the boss and bounty cards don't wait. Call prompts ("Wave 3 · Tap Next") neither wait nor reset the clock. Field Manual lessons are one topic each and are not paced.
@@ -62,7 +64,7 @@ How it works now:
 - New `test/qolbshot.py [sizes] [settings|music|deck|camera|all]`: settings (four tabs, every 6.1 control present, each tab shows only its page, 44 px targets, no sideways spill, last row reachable, switch / segmented / slider work, tab remembered, reset two taps, in-run hides Transfer and Reset, back to pause); music (fresh and old profile get Compose, migration only once, ? opens on the current tab, each help tab ≥ 6 controls + Advanced, closes to the same tab, Compose keeps the radio held); deck (heart keeps the playing song with its sound, fills, confirms, the Studio list has it, second tap removes); camera (Training step in Wave 1 after ≥ 15 s, text, a drag completes it; first real run WELCOME then LOOK AROUND ≥ 30 s apart, once). Screens in `test/out/qolb/`.
 - New `test/tutcadence.py [WxH] [tag]`: plays Basic Training with the coach bot and prints every card with its play-time gap, chain and the alerts/tips, plus a summary; writes `test/out/tutcadence_<tag>.json`.
 - Updated `test/studio55.py`: Compose is there from the start (was "five taps unlock").
-- Results: see the final report section below.
+- Results (this session): build ok; `audit.py n` and `audit.py ipadA 1180 820 0,0,20` ERRORS []; `uiaudit.py` only the known flags (hangar version text, setup zone line, Dictionary 'Elite Affixes'/'Evolution' clipping; nothing in Settings or the Studio); `trackcollide.py` FAILED [] at all sizes with the wider deck; `splashshot.py` FAILED []; `node replay.js` all replays match; `node test/tutorial.js` all match; `qolbshot.py 667x375,1180x820 all` 106 passed, FAILED []; `tutorialshot.py` basic at 852×393, 667×375 and 1180×820: all 63 steps shown (no optional step skipped), checklist complete, misc checks pass; lessons at 852×393: all complete, FAILED []; `studio55.py` at 852×393, 667×375, 1180×820 FAILED []; `monocheck.py`, `soundcheck.py`, `newsshot.py` clean.
 
 ## Open issues
 - The Dictionary row "Zoom" (GUIDE in ui.js) still says "Tap Home to return to the core". qolA removes Home; whoever merges should update that line (left alone here to avoid a conflict).
