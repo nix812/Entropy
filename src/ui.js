@@ -219,8 +219,10 @@ const UI = (() => {
         </div>
         <div class="foot"><button class="btn" data-act="tutStart">Training</button><button class="btn primary" data-act="launch">Start · Wave ${sw}</button></div>
       </div>`, 'setup');
-    Render.preview_map($('#mapPrev'), setup.map, setup.frac);
+    Render.preview_map($('#mapPrev'), setup.map, setup.frac, setupSector()); zoneSwatches(6, 2); // 6.3: the map and the zone buttons in each zone's look
   }
+  // 6.3: paint every zone swatch canvas in the open modal (a patch of that zone's board)
+  function zoneSwatches(cols, rows) { document.querySelectorAll('#modal canvas[data-zsw]').forEach(cv => Render.zoneSwatch(cv, cv.dataset.zsw, cols, rows)); }
   // 5.8 sector contracts: three offers from the setup seed (a new map, new offers). A fresh profile gets the gentle default, unasked
   // short numbers for tight chips: 940, 12K, 1.2M
   const fmtS = n => { n = Math.round(n || 0); return n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'K' : String(n); };
@@ -238,7 +240,7 @@ const UI = (() => {
     const cur = setupSector(); if (freshProfile()) return '';
     const S = SECTOR_BY[cur], P = sectorWantedName(cur);
     return `<div class="lbl">Zone</div>
-      <div class="secs">${setup.secOffers.map(id => { const X = SECTOR_BY[id]; return `<button class="secb${id === cur ? ' on' : ''}" data-act="sector" data-v="${id}" style="--c:${X.col}"><b>${esc(X.name)}</b></button>`; }).join('')}</div>
+      <div class="secs">${setup.secOffers.map(id => { const X = SECTOR_BY[id]; return `<button class="secb${id === cur ? ' on' : ''}" data-act="sector" data-v="${id}" style="--c:${X.col}"><canvas class="zsw" width="144" height="48" data-zsw="${id}"></canvas><b>${esc(X.name)}</b></button>`; }).join('')}</div>
       <p class="note secnote"><b style="color:${S.col}">${esc(S.pitch)}</b> ${sectorLine(S)}${P ? ` · Most Wanted: ${esc(P)}` : ''}</p>`;
   }
   // the sector's poster boss, when it can show up by the first bounty (Wave 20)
@@ -300,7 +302,8 @@ const UI = (() => {
     G.unlocks = []; G.bestAtStart = PROF.bestWave; G.fresh = freshProfile() || !!G.tut;
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
-    Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false;
+    Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false; Render.zfx = zfxOn();
+    zoneSeen = null; { const zb = $('#zoneBan'); if (zb) zb.hidden = true; } // 6.3: the zone banner shows once the field is clear
     document.body.classList.toggle('hudfull', hudFull);
     closePanel();
     buildAbilityBar();
@@ -1430,6 +1433,20 @@ const UI = (() => {
     bossT = setTimeout(hide, first ? 4800 : 3400);
     log(`${B.name} incoming`, '#ff4d6a');
   }
+  // 6.3 zone arrival (Nic: "You should know when you're in a different zone"): "Entering <zone>" in the zone's colour with its
+  // pitch, for 2.5 s; taps pass through. Shown when a run starts or resumes in a zone and when a jump door changes it, once nothing
+  // modal covers the field (UI.tick). The board's own re-tint is Render's (the zone wipe)
+  let zoneSeen = null, zoneT = null;
+  function zoneBanner(id) {
+    const S = SECTOR_BY[id], box = $('#zoneBan'); if (!S || !box) return;
+    box.style.setProperty('--zc', S.col); box.querySelector('h3').textContent = S.name; box.querySelector('span').textContent = S.pitch;
+    const cp = G && G.core ? Render.tileToScreen(G.core.x, G.core.y) : null; box.classList.toggle('low', !!cp && cp.y < Render.layout.H * 0.5 && !panel); // keep clear of the core (beside an open panel it already sits in the other half)
+    box.classList.remove('out'); box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
+    clearTimeout(zoneT); zoneT = setTimeout(() => { box.classList.add('out'); zoneT = setTimeout(() => { box.hidden = true; box.classList.remove('out'); }, 350); }, 2500);
+    SFX.play('zone', id);
+  }
+  // Settings · Zone effects: on unless the player turned it off (or the device asks for reduced motion and they never chose)
+  const zfxOn = () => PROF.settings.zfx !== undefined ? PROF.settings.zfx !== false : !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   // minor sim events: only shown in the feed when Stats is on
   function log(text, col) {
     feedLines.push({ title: '', body: text, col, t: performance.now(), n: 1, minor: true });
@@ -1711,9 +1728,11 @@ const UI = (() => {
     const gunSts = dk ? `<div class="sts frdock" style="--c:${EL[dS.el].col}">Docked: <b>${esc(towerLabel(dk))}</b> LV ${towerLevel(dk)} · ${EL[dS.el].name} · ×${num1(frDockX())} Damage (Battery +${pct(FRONTIER.dockBat)} per level), +${FRONTIER.dockRange} Range</div><div class="sts dim">${tipify('Battery modules fire with the plain cannon, not while docked')}</div>`
       : air ? `<div class="sts">${tipify('In the air: the gun is offline and the shield is down until it lands')}</div>`
       : `<div class="sts">${tipify(`Shells hit whatever is closest to reaching the core · Blast ${num1(s.splash)}`)}</div>`;
+    const zS = SECTOR_BY[G.sector]; // 6.3: the zone, in its colour
     return `${head}
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span>${gunSg}</div>
       ${gunSts}
+      ${zS ? `<div class="sts zline" style="--c:${zS.col}">Zone: <b>${esc(zS.name)}</b>. ${esc(zS.pitch)}</div>` : ''}
       ${G.fr ? `<div class="sts ${(G.frLinks || []).length ? 'good' : 'dim'}">${G.frFly ? 'Links break while flying' : `Links ${(G.frLinks || []).length}/${frLinkN()} within ${FRONTIER.linkR} tiles · linked towers +${pct(FRONTIER.linkDmg)} Damage and Rate · core +${pct(FRONTIER.linkCore * (G.frLinks || []).length)}`}</div>` : ''}
       ${mods}
       <div class="lbl">Command Uplink · LV ${c.uLvl || 0}/${UPLINK.max} · −${UPLINK.cd * (c.uLvl || 0)}% cooldowns${G.fr ? ` · +1 link per ${FRONTIER.linkUplink} levels, lift-off wait −1 wave per ${FRONTIER.cdUplink}` : ''}</div>
@@ -2422,8 +2441,9 @@ const UI = (() => {
       <div class="pursebox"><span>Bounty Purse</span><b>${fmt(P)} XP</b><em>Extract banks all of it. Push on and fall later, and you keep ${Math.round(PURSE.death * 100)}%.</em></div>
       <div class="dchoice">
         <button class="hopt ext" data-act="extract"><b>Extract</b><span>End the run as a win and bank ${fmt(P)} XP. ${G.daily ? 'Your Daily Hunt result is locked in.' : 'Counts toward the next Chaos level.'}</span><span>${G.tut && !G.lesson ? 'Jump doors open in real runs.' : 'Or take a jump door: a new zone for 20 waves, and the purse grows.'}</span></button>
-        ${C.doors.map((d, i) => { const S = SECTOR_BY[d.sector], T = DOOR_TIERS[d.tier]; return `<button class="hopt door" data-act="door" data-v="${i}" style="--c:${S.col};--t:${T.col}"${G.tut && !G.lesson ? ' disabled' : ''}><b>${esc(S.name)} <i>${esc(T.name)} · purse ×${d.mult}</i></b><span class="dp">${esc(S.pitch)}</span><span>${sectorLine(S, d.tier)}</span><span class="dw">Next bounty: ${esc(d.wanted)}, Wave ${C.next}</span></button>`; }).join('')}
+        ${C.doors.map((d, i) => { const S = SECTOR_BY[d.sector], T = DOOR_TIERS[d.tier]; return `<button class="hopt door" data-act="door" data-v="${i}" style="--c:${S.col};--t:${T.col}"${G.tut && !G.lesson ? ' disabled' : ''}><canvas class="zsw" width="72" height="120" data-zsw="${d.sector}"></canvas><b>${esc(S.name)} <i>${esc(T.name)} · purse ×${d.mult}</i></b><span class="dp">${esc(S.pitch)}</span><span>${sectorLine(S, d.tier)}</span><span class="dw">Next bounty: ${esc(d.wanted)}, Wave ${C.next}</span></button>`; }).join('')}
       </div></div>`, 'hunt');
+    zoneSwatches(3, 5); // 6.3: each door shows the board you would land on
     SFX.play('levelup');
   }
   let huntCodeCache = null;
@@ -2585,6 +2605,7 @@ const UI = (() => {
       graphics: sec('Effects')
         + row('Glow', 'Soft lighting on the field', flip(S.glow !== false, 'gfx', 'data-k="glow"'))
         + row('Screen shake', 'Big hits shake the view', sw(!!S.shake, 'shake'))
+        + row('Zone effects', 'Weather and particles in each zone. The zone colours stay on', flip(zfxOn(), 'gfx', 'data-k="zfx"'))
         + sec('Display')
         + row('Pixel scaling', 'Sharp is crisper. Simple is lighter work for older devices', seg('gfx', [['1', 'Sharp'], ['0', 'Simple']], S.sharp !== false ? '1' : '0', 'data-k="sharp"'))
         + (fsOK() ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
@@ -3439,7 +3460,7 @@ const UI = (() => {
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'uis': PROF.settings.uiScale = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v; Save.save(); UI.fitVV(); openSettings(); break;
-      case 'gfx': PROF.settings[b.dataset.k] = b.dataset.v === '1'; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false; Save.save(); openSettings(); break;
+      case 'gfx': PROF.settings[b.dataset.k] = b.dataset.v === '1'; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false; Render.zfx = zfxOn(); Save.save(); openSettings(); break;
       case 'autoslow': PROF.settings.autoSlow = b.dataset.v === '1'; Save.save(); openSettings(); break;
       case 'haptic': PROF.settings.haptics = b.dataset.v === '1'; Save.save(); if (PROF.settings.haptics) Haptics.tap(true); openSettings(); break;
       case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
@@ -3653,6 +3674,7 @@ const UI = (() => {
     if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
     if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) enemyCard(enemyCards.shift());
     if (evoWait && screen === 'game' && G && !G.over && !G.tut && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) { evoWait = false; if (!PROF.seenEvo) { teachMark(); openEvo(true); } }
+    if (screen === 'game' && G && !G.over && (G.sector || null) !== zoneSeen && !modalOpen && !Tree.isOpen && !G.draft && !G.huntChoice) { zoneSeen = G.sector || null; if (zoneSeen && !G.tut) zoneBanner(zoneSeen); } // 6.3
     onboardingTick(); Coach.tick();
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
     // v5.2: fast-forward is safe to leave on. A boss arriving (or reaching Red Alert) drops the game to 1×; the old speed comes back when it falls.
@@ -3690,6 +3712,7 @@ const UI = (() => {
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
+    zoneBanner, // 6.3 test hook
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
     _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },

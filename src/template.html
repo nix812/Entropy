@@ -347,6 +347,22 @@ body.panel-l #tutlist { visibility: hidden; }
 .secs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .secb { border: 0; padding: 7px 6px; background: var(--panel2); color: var(--c); font: inherit; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: inset 0 0 0 1px var(--line2); cursor: pointer; min-height: 34px; }
 .secb b { font-weight: 400; } .secb.on { box-shadow: inset 0 0 0 2px var(--c); }
+/* 6.3 zone swatches: a patch of each zone's board behind the New Run zone buttons and beside each jump door */
+.secb { position: relative; overflow: hidden; } .secb .zsw { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; opacity: 0.85; }
+.secb b { position: relative; background: rgba(7, 8, 15, 0.78); padding: 2px 5px; } .secb::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px var(--line2); pointer-events: none; } .secb.on::after { box-shadow: inset 0 0 0 2px var(--c); }
+.dchoice .hopt.door { position: relative; padding-left: 52px; } .hopt.door .zsw { position: absolute; left: 6px; top: 6px; width: 36px; height: calc(100% - 12px); object-fit: cover; image-rendering: pixelated; box-shadow: 0 0 0 1px var(--c); }
+/* 6.3 zone arrival banner: the zone's name in its colour and its pitch, 2.5 s, taps pass through */
+#zoneBan { --zc: #6ae2ff; position: absolute; left: 50%; top: 31%; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; text-align: center; max-width: min(540px, 66%);
+  background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 2px var(--zc), inset 0 0 22px rgba(0, 0, 0, 0.6); padding: 7px 18px 8px; animation: zbin 0.4s ease-out; }
+#zoneBan[hidden] { display: none; } #zoneBan.out { animation: zbout 0.35s ease-in forwards; }
+#zoneBan em { display: block; font-style: normal; font-family: var(--f-pix); font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--zc); }
+#zoneBan h3 { margin: 2px 0 1px; font-family: var(--f-pix); font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px var(--zc); }
+#zoneBan span { display: block; font-size: 15px; line-height: 1.15; color: var(--ink); }
+body.panel-l #zoneBan { left: 73%; max-width: calc(50% - 12px); } body.panel-r #zoneBan { left: 27%; max-width: calc(50% - 12px); } /* beside an open side panel (min(270px, 46%) wide) */ #zoneBan.low { top: 64%; } body.panel-l #zoneBan.low, body.panel-r #zoneBan.low { top: 31%; } body.panel-l #zoneBan h3, body.panel-r #zoneBan h3 { font-size: 15px; } body.panel-l #zoneBan span, body.panel-r #zoneBan span { font-size: 14px; }
+@media (max-height: 420px) { #zoneBan { top: 33%; padding: 5px 14px 6px; } #zoneBan.low { top: 63%; } #zoneBan h3 { font-size: 16px; } #zoneBan span { font-size: 14px; } }
+@keyframes zbin { from { opacity: 0; transform: translate(-50%, -50%) scaleX(1.4); filter: brightness(2.5); } }
+@keyframes zbout { to { opacity: 0; transform: translate(-50%, -80%); } }
+@media (prefers-reduced-motion: reduce) { #zoneBan, #zoneBan.out { animation: none; } }
 .note.secnote { line-height: 1.3; } .note.secnote > b:first-child { font-weight: 400; }
 .pursebox { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 10px; margin: 6px 0 2px; background: rgba(255,216,74,0.07); box-shadow: inset 2px 0 0 #ffd84a; }
 .pursebox span { font-family: var(--f-pix); font-size: 11px; color: #ffd84a; text-transform: uppercase; letter-spacing: 1px; } .pursebox b { font-weight: 400; font-size: 22px; color: #ffd84a; }
@@ -568,6 +584,7 @@ body.fr .rdybtn { top: 52px; }
 body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
 .note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
 .sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
+.sts.zline { box-shadow: inset 3px 0 0 var(--c); padding-left: 8px; } .sts.zline b { color: var(--c); font-weight: 400; }
 .pfoot .btn.frlift, .row2 .btn.frlift { color: var(--core); box-shadow: inset 0 0 0 2px var(--core), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
 .row2 .btn.frlift:disabled { color: #6f9c8c; box-shadow: inset 0 0 0 1px #3d6a5a; }
 #modal.side { background: rgba(4, 5, 10, 0.25); justify-content: flex-end; } /* the Ready walkthrough: the card docks right, the tower stays visible */
@@ -1184,6 +1201,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <div id="ticker" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
       <div id="mdeck" hidden><button class="mdb" id="bTrkBack" aria-label="Tap to replay this song, double-tap for the last song" data-svg="prev"></button><button class="mdname" id="mdName" aria-label="Open the Music Studio"><b></b><span></span></button><button class="mdb mdlike" id="bTrkLike" aria-label="Keep this song in My Tracks" aria-pressed="false" data-svg="heartO"></button><button class="mdb" id="bTrkNext" aria-label="Next song" data-svg="next"></button></div>
+      <div id="zoneBan" hidden><em>Entering</em><h3></h3><span></span></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">

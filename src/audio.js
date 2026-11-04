@@ -448,6 +448,9 @@ const SFX = (() => {
     call() { const c = ev('call', busE, 0.55, { room: 0.3, jit: 0, pan: 0 }); tone(c, { w: 0.25, f0: 220, f1: 1760, slide: 0.18, d: 0.22, v: 0.12, lp: 5000 }); click(c, 0.3, 0.18, 5000); done(c); },
     milestone() { const c = ev('milestone', busE, 0.6, { hall: 0.35, jit: 0, pan: 0 }); arp(c, [69, 72, 76, 81], 0.07, { v: 0.11, d: 0.2, bell: 1 }); done(c); },
     levelup() { duck(-5, 0.03, 0.4, 0.8, true); const c = ev('levelup', busE, 0.65, { hall: 0.45, jit: 0, pan: 0 }); arp(c, [69, 72, 76, 79, 81, 84], 0.07, { v: 0.11, d: 0.3, bell: 1 }); tone(c, { w: 'triangle', f0: note(45), d: 0.8, v: 0.18, at: 0.35 }); done(c); },
+    // 6.3 (zone63): arriving in a zone: a soft rising whoosh, then two bell notes pitched per zone
+    zone(id) { const r = { drift: 0, hive: 3, iron: -2, skies: 5, ghost: -4, salvage: 2, tempest: -5, demo: -3, choir: 4, oddball: 7 }[id] || 0; const c = ev('zone', busE, 0.5, { hall: 0.5, jit: 0, pan: 0, trim: 5 }); // +5 dB lands it in the notice tier (sfxrender: about -23 dB)
+      nz(c, { f0: 300, f1: 2400, q: 1.2, d: 0.7, v: 0.16, a: 0.35, curve: 'lin' }); arp(c, [69 + r, 76 + r], 0.16, { v: 0.1, d: 0.5, bell: 1, at: 0.3 }); done(c); },
     unbreak() { const c = ev('unbreak', busE, 0.6, { hall: 0.4, jit: 0, pan: 0 }); arp(c, [60, 64, 67, 72], 0.05, { v: 0.12, d: 0.4, bell: 1 }); done(c); },
     freeze(e) { if (!allow('freeze', 0.12, 2)) return; const c = ev('freeze', busH, 0.4, { room: 0.35 }, e); fmv(c, { f0: 2794, f1: 1397, r: 3.5, i: 2, d: 0.18, v: 0.15 }); nz(c, { ft: 'highpass', f0: 6000, f1: 3000, d: 0.15, v: 0.25 }); done(c); },
     net(e, t) { if (!allow('net', 0.1, 2)) return; const sp = t && t.spec || 0; const c = ev('net', busH, 0.4, { room: 0.2, tn: sp === 1 ? 'net1' : 'net' }, e);

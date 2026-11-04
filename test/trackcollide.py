@@ -1,4 +1,5 @@
-"""5.8: plus the bounty chip with the Bounty Purse stays in the chip row, clear of every control.
+"""6.3: plus the zone arrival banner stays over the field, clear of every control.
+5.8: plus the bounty chip with the Bounty Purse stays in the chip row, clear of every control.
 5.5.14 the music deck never sits on anything and the Music tile never overlaps an ability button: with the log and the doctrine list full, the ticker and the assault
 banner up, the full HUD's stats box, toasts, the Map button, and a tower panel open on either side; at four screen sizes
 (including an iPhone Pro Max).
@@ -32,6 +33,9 @@ JS_HITS = '''(over) => {
   if (G && G.fr) { const lb = vis(document.querySelector('#bLift'));
     if (!lb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Lift Off button missing');
     if (lb) for (const s of ['#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(lb, q)) out.push('Lift Off x ' + s); } } }
+  // 6.3: the zone arrival banner ("Entering <zone>") sits over the field only, clear of every control (it lets taps through)
+  { const zb = vis(document.querySelector('#zoneBan')); if (!zb) out.push('zone banner missing');
+    else for (const s of ['#bLift', '#bReady', '#railL', '#railR', '#abils', '#hud', '#chips', '#panel', '#cpBanner', '#docbar']) { const q = vis(document.querySelector(s)); if (q && hit(zb, q)) out.push('zone banner x ' + s); } } // the music deck is a popover: it may cover banners
   // 6.2: no Home button; the edge arrows stay clear of every control and banner and of each other
   if (document.querySelector('#bZoom')) out.push('the Home button is back');
   // the page re-reads these rects 4 times a second (and soon after a log line or toast changes); log lines fade and reflow, so
@@ -76,13 +80,13 @@ with sync_playwright() as p:
           for (let x = 0; x < COLS && !L; x++) for (let y = 0; y < ROWS && !L; y++) if (ok(x, y) && window.act('build', 'pulse', x, y)) L = G.towers[G.towers.length - 1];
           for (let x = COLS - 1; x >= 0 && !R; x--) for (let y = 0; y < ROWS && !R; y++) if (ok(x, y) && window.act('build', 'pulse', x, y)) R = G.towers[G.towers.length - 1];
           window._L = L; window._R = R; }''')
-        pg.evaluate(FILL); pg.evaluate(TRE); pg.wait_for_timeout(600)
+        pg.evaluate(FILL); pg.evaluate(TRE); pg.evaluate('() => UI.zoneBanner("tempest")'); pg.wait_for_timeout(600)
         pg.evaluate('() => document.querySelector("#bMusic").click()'); pg.wait_for_timeout(450)
         states = {}
         states['field, everything up'] = pg.evaluate(JS_HITS, OVER)
         pg.screenshot(path=str(root / 'test' / 'out' / f'trk_all_{W}{"_cls" if MODE == "cls" else ""}.png'))
         for side, t in [('left', '_L'), ('right', '_R')]:
-            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(800)
+            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => UI.zoneBanner("tempest")'); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(800)
             cls = pg.evaluate('() => document.body.className')
             states[f'tower panel ({side}: {"panel-l" if "panel-l" in cls else "panel-r" if "panel-r" in cls else "?"})'] = pg.evaluate(JS_HITS, OVER)
             pg.screenshot(path=str(root / 'test' / 'out' / f'trk_panel_{side}_{W}{"_cls" if MODE == "cls" else ""}.png'))
