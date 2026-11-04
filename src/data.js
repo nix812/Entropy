@@ -1091,19 +1091,19 @@ const ANOM_RARITY = [
 ];
 // classic: share of offer slots that hold a classic card. dr: drawback power per boon power. Budget ×(1 + grow per draw, up to growN
 // draws, + wave / waveDiv, wave counted up to waveMax)
-const ANOM_GEN = { classic: 0.25, dr: 0.8, grow: 0.08, growN: 6, waveDiv: 600, waveMax: 120 };
+const ANOM_GEN = { classic: 0.25, dr: 0.8, grow: 0.06, growN: 5, waveDiv: 800, waveMax: 120 };
 const ANOM_UP = [
-  { id: 'dmg', k: 'dmg', p: 1, lo: 10, hi: 60, cap: 120, st: 5, w: 1.2, words: ['Brutal', 'Savage', 'Heavy', 'Feral'] },
-  { id: 'dmgK', k: 'dmgK', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'K', words: ['Iron', 'Steel', 'Tungsten', 'Ballistic'] },
-  { id: 'dmgT', k: 'dmgT', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'T', words: ['Solar', 'Cinder', 'Ember', 'Furnace'] },
-  { id: 'dmgC', k: 'dmgC', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'C', words: ['Glacial', 'Rime', 'Polar', 'Winter'] },
-  { id: 'dmgA', k: 'dmgA', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'A', words: ['Storm', 'Volt', 'Ion', 'Thunder'] },
-  { id: 'dmgV', k: 'dmgV', p: 0.5, lo: 20, hi: 120, cap: 180, st: 5, el: 'V', words: ['Hollow', 'Abyssal', 'Umbral', 'Null'] },
-  { id: 'rate', k: 'rate', p: 1.2, lo: 10, hi: 50, cap: 90, st: 5, w: 1.1, words: ['Rapid', 'Quickfire', 'Frantic', 'Twitchy'] },
+  { id: 'dmg', k: 'dmg', p: 1, lo: 10, hi: 60, cap: 90, st: 5, w: 1.2, words: ['Brutal', 'Savage', 'Heavy', 'Feral'] },
+  { id: 'dmgK', k: 'dmgK', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'K', words: ['Iron', 'Steel', 'Tungsten', 'Ballistic'] },
+  { id: 'dmgT', k: 'dmgT', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'T', words: ['Solar', 'Cinder', 'Ember', 'Furnace'] },
+  { id: 'dmgC', k: 'dmgC', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'C', words: ['Glacial', 'Rime', 'Polar', 'Winter'] },
+  { id: 'dmgA', k: 'dmgA', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'A', words: ['Storm', 'Volt', 'Ion', 'Thunder'] },
+  { id: 'dmgV', k: 'dmgV', p: 0.8, lo: 15, hi: 90, cap: 120, st: 5, el: 'V', words: ['Hollow', 'Abyssal', 'Umbral', 'Null'] },
+  { id: 'rate', k: 'rate', p: 1.2, lo: 10, hi: 45, cap: 60, st: 5, w: 1.1, words: ['Rapid', 'Quickfire', 'Frantic', 'Twitchy'] },
   { id: 'range', k: 'range', p: 1.8, lo: 5, hi: 30, cap: 45, st: 5, w: 0.9, words: ['Farsight', 'Longshot', 'Wide', 'Distant'] },
   { id: 'critC', k: 'critC', p: 0.9, lo: 10, hi: 40, cap: 60, st: 5, need: 'crit', words: ['Lucky', 'Keen', 'Sharp'] },
   { id: 'critM', k: 'critM', p: 0.35, lo: 30, hi: 120, cap: 200, st: 10, need: 'crit', words: ['Cruel', 'Lethal', 'Vicious'] },
-  { id: 'credits', k: 'credits', p: 0.8, lo: 10, hi: 50, cap: 100, st: 5, words: ['Gilded', 'Golden', 'Rich'] },
+  { id: 'credits', k: 'credits', p: 1, lo: 10, hi: 40, cap: 60, st: 5, words: ['Gilded', 'Golden', 'Rich'] },
   { id: 'costRed', k: 'costRed', p: 1.6, lo: 5, hi: 25, cap: 30, st: 5, w: 0.7, grp: 'cost', words: ['Thrifty', 'Bargain', 'Discount'] },
   { id: 'upgRed', k: 'upgRed', p: 1, lo: 10, hi: 35, cap: 40, st: 5, w: 0.7, grp: 'upg', words: ['Tinker', 'Retrofit', 'Workshop'] },
   { id: 'coreDmg', k: 'coreDmg', p: 0.15, lo: 60, hi: 300, cap: 400, st: 20, w: 0.6, words: ['Wrathful', 'Angry', 'Furious'] },
@@ -1120,9 +1120,9 @@ const ANOM_UP = [
   { id: 'coreHP', k: 'coreHP', p: 0.5, lo: 20, hi: 100, cap: 150, st: 10, w: 0.5, grp: 'hull', words: ['Armored', 'Stout', 'Bastion'] },
   { id: 'abilPower', k: 'abilPower', p: 0.5, lo: 20, hi: 80, cap: 120, st: 5, w: 0.4, words: ['Orbital', 'Uplinked', 'Command'] },
   { id: 'stormPow', k: 'stormPow', p: 0.4, lo: 25, hi: 100, cap: 150, st: 5, w: 0.4, words: ['Tempest', 'Squall', 'Monsoon'] },
-  { id: 'echo', k: 'echo', t: 'af', p: 1.1, lo: 5, hi: 25, cap: 30, st: 5, w: 0.8, words: ['Echoing', 'Twin', 'Doubled'] },
+  { id: 'echo', k: 'echo', t: 'af', p: 1.2, lo: 5, hi: 20, cap: 25, st: 5, w: 0.8, words: ['Echoing', 'Twin', 'Doubled'] },
   { id: 'groundSlow', k: 'groundSlow', t: 'af', p: 2, lo: 5, hi: 20, cap: 30, st: 5, w: 0.7, words: ['Molasses', 'Sticky', 'Tarpit'] },
-  { id: 'boom', k: 'boom', t: 'af', p: 1.2, lo: 5, hi: 25, cap: 30, st: 5, w: 0.7, words: ['Volatile', 'Unstable', 'Popping'] },
+  { id: 'boom', k: 'boom', t: 'af', p: 1.6, lo: 5, hi: 15, cap: 20, st: 5, w: 0.7, words: ['Volatile', 'Unstable', 'Popping'] },
   { id: 'fractal', k: 'fractal', t: 'af', sp: 1, p: 30, words: ['Fractal', 'Splintered'] },
   { id: 'prism', k: 'prism', t: 'af', sp: 1, p: 25, words: ['Prismatic', 'Spectral'] },
   { id: 'fill', k: 'fill', t: 'af', sp: 1, p: 20, words: ['Restless', 'Feedback'] },
