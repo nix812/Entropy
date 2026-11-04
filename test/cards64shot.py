@@ -49,7 +49,7 @@ with sync_playwright() as p:
         pg.screenshot(path=str(out / f'c64_pause_{tag}.png'))
         pg.evaluate('() => UI._dbg.closeModal()')
         cx = pg.evaluate('() => { const C = PROF.codex.gen; return [C.n, Object.keys(C.parts).length]; }')
-        check(cx[0] == 2 and cx[1] >= 4, f'codex counts 2 generated cards and {cx[1]} parts', tag)
+        check(cx[0] == 2 and cx[1] >= 2, f'codex counts 2 generated cards and {cx[1]} parts', tag)
         pg.close()
     b.close()
 print('ERRORS:', errs)

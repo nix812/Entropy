@@ -100,7 +100,29 @@ that element's share, crit parts by the crit share, ability/storm/fill at half, 
   `test/harness.js` exports the new functions in a second `Object.assign` line (separate from the long export line).
 
 ## Balance
-BALANCE_TABLE
+Smartbot `FR=1`, Normal, 8 seeds per batch, frozen copies of src (pitfall 26). 0 points: best wave 40. 60 points: best wave
+80. "Random pick" (`ANOMPICK=rand`) picks a card at random, like the old bot, so it compares card power with the 21
+classics. "Smart pick" is the new bot scoring (`botAnom`). Waves reached, sorted:
+
+| Batch | 0 points | Median | 60 points | Median |
+|---|---|---|---|---|
+| 6.3.0 baseline (85b4b54), classic cards, random pick | 31 40 41 41 47 52 55 64 | **44** | 22 40 61 61 62 62 62 67 | **61.5** |
+| cards64 final, random pick | 23 32 41 41 41 48 61 63 | **41** | 61 62 62 62 62 75 80 123 | **62** |
+| cards64 final, smart pick | 31 32 39 41 48 51 65 72 | **44.5** | 41 65 81 82 82 84 84 84 | **82** |
+| first draft (looser caps), random pick | 23 41 41 41 41 53 61 62 | 41 | 32 50 63 65 84 108 142 162 | 74.5 |
+| first draft, smart pick | 30 32 36 50 62 62 63 66 | 56 | 41 61 62 63 70 83 86 143 | 66.5 |
+
+- **Card power matches the classics.** With random picks the final cards land at 41 / 62 against 44 / 61.5 (inside bot
+  noise, pitfall 16).
+- **The first draft was too strong late.** Its 60-point runs reached 108–162 waves, all on Void Lens builds (66–85% Void
+  damage). The build bias kept offering Void damage boons at the old price (0.5 power per %) up to +180%. The fix: element
+  boons cost 0.8 per % (cap +120%), Damage cap 90%, Attack Speed cap 60%, Credits 1.0 per % (cap 60%), echo cap 25%, death
+  blasts 1.6 per % (cap 20%), budget growth 6% per draw up to 5 draws and wave / 800.
+- **Choosing well pays at 60 points** (82 with smart picks against 62 random). The old bot never chose, so the baseline has no
+  "smart" row to compare. A player who reads the cards gets a stronger run than one who taps at random. That is the point
+  of generated cards, but watch Nic's runs: if late runs feel easy, raise `ANOM_GEN.dr` (0.8 → 0.9) first.
+- The container restarted during the second batch; the final rows mix `par.sh` (smart 60) and a 4-at-a-time runner (the
+  rest). Same seeds and settings.
 
 ## Open issues and risks
 - Bot numbers are noisy (±10 waves on 8 seeds); the random-pick control is the fair comparison of card power.
@@ -112,3 +134,7 @@ BALANCE_TABLE
 - A resumed snapshot always plays at the current frV (existing behaviour); a 6.3 snapshot with an open classic offer
   works (tested).
 - No one-time teaching card: the existing "Entropy full" card still fits. The Dictionary explains rarity.
+- Definition of done (final code): audit n and ipadA `ERRORS: []`, uiaudit, trackcollide, splashshot `FAILED: []`,
+  `replay.js` all replays match, qola 28/28, frontier 92/92, cards64 28/28, cards64shot clean, hookcompat, ascend and
+  tutorial replays match. One earlier `audit.py n` run timed out on `#bEnt` (a modal intercepted the tap under heavy bot
+  load). It passed on rerun and in the final suite.
