@@ -787,7 +787,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
-    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null }];
+    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}) }]; // Frontier runs say so in the log
   return G;
 }
 
@@ -3871,7 +3871,7 @@ function frLiftOff(x, y) {
   G.frN = (G.frN || 0) + 1;
   G.core.shield = 0; G.core.sinceHit = 0;
   G.frFly = { x0: from.x, y0: from.y, x1: x + 0.5, y1: y + 0.5, t: 0, dur: P.secs };
-  rlog('frFly', { x, y, dock: P.dock ? P.dock.type : null, secs: +P.secs.toFixed(1) });
+  rlog('frFly', { x, y, dock: P.dock ? P.dock.type : null, lvl: P.dock ? P.dock.lvl : 0, links: P.links.length, road: [P.before.reduce((a, b) => a + b, 0), P.after.reduce((a, b) => a + b, 0)], secs: +P.secs.toFixed(1) });
   frRestat();
   Hooks.sfx('lane'); Hooks.fx('upgrade', { x: from.x, y: from.y, col: '#59f0b4' });
   if (P.secs <= 0) frLand();
@@ -3924,7 +3924,7 @@ function frMoveTower(t, x, y) {
   if (!frMoveOk(t, x, y)) return false;
   if (isNode(t.x, t.y) && !isNode(x, y) && gridFree() < 1) { if (Hooks.gridFull) Hooks.gridFull(); return false; }
   const fee = frMoveFee(t); if (G.credits < fee) return false;
-  G.credits -= fee;
+  G.credits -= fee; G.stats.frMoves = (G.stats.frMoves || 0) + 1;
   delete G.towerAt[tIdx(t.x, t.y)];
   t.mvFrom = { x: t.cx, y: t.cy };
   t.x = x; t.y = y; t.cx = x + 0.5; t.cy = y + 0.5;
@@ -3937,8 +3937,16 @@ function frMoveTower(t, x, y) {
   Hooks.sfx('build', t); Hooks.fx('sell', { x: t.mvFrom.x, y: t.mvFrom.y });
   return true;
 }
+// run-end Frontier telemetry for the log: flights, moves, seconds in the air, share of landed time per weapon
+function frSummary() {
+  const d = G.stats.frDock || {}, tot = Object.values(d).reduce((a, b) => a + b, 0) || 1, share = {};
+  for (const k in d) share[k] = Math.round(100 * d[k] / tot);
+  return { flights: G.frN || 0, moves: G.stats.frMoves || 0, air: Math.round(G.stats.frAir || 0), dockPct: share };
+}
 function frUpdate(dt) {
   const F = G.frFly;
+  if (!F) { const d = frDockT(), st = G.stats.frDock || (G.stats.frDock = {}), k = d ? d.type : 'cannon'; st[k] = (st[k] || 0) + dt; } // telemetry only: seconds landed per weapon
+  else G.stats.frAir = (G.stats.frAir || 0) + dt;
   if (F) {
     F.t += dt;
     const k = Math.min(1, F.t / F.dur), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) * (-2 * k + 2) / 2;
@@ -4027,7 +4035,7 @@ function gameOver() {
   bankPurse();
   if (ghostRun()) { Hooks.onGameOver(); return; }
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
-    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain() }); }
+    rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
   huntEnd();
   masteryEnd();
