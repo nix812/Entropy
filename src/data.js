@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.0.1';
+const VERSION = '6.0.2';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -658,8 +658,8 @@ const BOSSES = [
   { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'Disables nearby towers' },
   { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
   // oddballs: random stand-ins on boss waves
-  { id: 'cat', odd: 1, tip: 'Swats towers, naps', name: 'Mr. Whiskers', hp: 38, spd: 0.55, size: 2, desc: 'Swats nearby towers offline. Naps mid-lane, and takes far less damage while asleep',
-    titles: ['Devourer of Moons', 'Knocker of Things Off Tables', 'Destroyer of Couches', 'Who Is A Good Boy (No)'] },
+  { id: 'cat', odd: 1, tip: 'Shreds towers, naps', name: 'Leia', hp: 38, spd: 0.55, size: 2, desc: 'Shreds nearby towers offline like they\'re the couch. Naps mid-lane, and takes far less damage while asleep',
+    titles: ['Destroyer of Couches', 'Shredder of Upholstery', 'Knocker of Things Off Tables', 'Sits On Your Keyboard', 'Not Sorry', 'Who Is A Good Girl (Not Her)'] }, // 6.0.2: Nic's cat Leia (was Mr. Whiskers)
   { id: 'gloop', odd: 1, tip: 'Splits when popped', name: 'Gloop', hp: 42, spd: 0.5, size: 2, desc: 'Splits into two smaller Gloops on death. Twice',
     titles: ['The Unbothered', 'Lord of the Leftovers', 'It Came From The Fridge', 'Mostly Water'] },
   { id: 'whale', odd: 1, tip: 'Flies, heals allies', name: 'Space Whale', hp: 58, spd: 0.32, fly: 1, size: 2, desc: 'Flies. Its song heals every enemy nearby',
