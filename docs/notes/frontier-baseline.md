@@ -102,7 +102,7 @@ Gate: `^FAIL `, a non-empty `FAILED: [...]`, `ERRORS: [.+]` or a Traceback. Brow
 | Classic, COLS 48 | 31 40 41 56 59 65 | **48.5** | 0.67 |
 | Frontier (`FR=1`, docks and moves) | 21 23 32 53 61 63 | **42.5** | 0.69 |
 
-Frontier runs: 1–25 lift-offs and 28–61 moves each; time in the air about 1%; docks spread across Pulse, Rail, EMP, Missile, Flame and Lens (one run held the Rail Lance 70% of the time, one stayed on the plain cannon 70%). Same picture as the prototype (Classic 52 / Frontier 35 on 8 seeds): the bot is a weaker Frontier player than Classic player, and a Frontier wave takes about as long as a Classic one. No balance was changed.
+Two more seeds run while the browser suites finished (seed 7: Frontier 55, Classic 54; seed 8: Frontier 41, Classic 59). Over all 8 seeds: Frontier 21 23 32 41 53 55 61 63 (median **47**), Classic 31 40 41 54 56 59 59 65 (median **55**). Frontier runs: 1–25 lift-offs and 28–61 moves each; time in the air about 1%; docks spread across Pulse, Rail, EMP, Missile, Flame and Lens (one run held the Rail Lance 70% of the time, one stayed on the plain cannon 70%). Same picture as the prototype (Classic 52 / Frontier 35 on 8 seeds): the bot is a weaker Frontier player than Classic player, and a Frontier wave takes about as long as a Classic one. No balance was changed.
 
 ## Left undone / open
 
