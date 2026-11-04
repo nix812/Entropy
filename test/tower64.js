@@ -115,14 +115,14 @@ const roadSpots = (S, G) => { const out = [], seen = new Set(); for (const L of 
     let d0 = 0; for (let i = 0; i < L.pts.length - 1; i++) { const p = L.pts[i]; if (Math.hypot(p.x - w.x, p.y - w.y) < 0.01) d0 = L.cum[i]; }
     const e = mob(G, L, Math.max(0, d0 - 1.2), { spd: 1.5, hp: 1e9 }); steps(G, 30 * 3);
     ok(e.jammed && Math.hypot(e.x - w.x, e.y - w.y) < 1 && e.st.frozen > 0 || e.st.chill > 0, `Rimewall: the enemy stops at the wall and Chills (jammed ${e.jammed}, chill ${e.st.chill}, frozen ${(e.st.frozen || 0).toFixed(1)})`);
-    steps(G, 30 * 7); ok(!t.wall && t.cd > 0, 'Rimewall: one enemy wears the 8-second wall down, then it regrows on a timer');
+    steps(G, 30 * 8.5); ok(!t.wall && t.cd > 0, 'Rimewall: one enemy wears the 10-second wall down, then it regrows on a timer');
     const { G: G2, t: t2, L: L2 } = setup('rime'); steps(G2, 60); const w2 = t2.wall; let d2 = 0; for (let i = 0; i < L2.pts.length - 1; i++) if (Math.hypot(L2.pts[i].x - w2.x, L2.pts[i].y - w2.y) < 0.01) d2 = L2.cum[i];
     const bo = mob(G2, L2, Math.max(0, d2 - 0.6), { spd: 1, hp: 1e9 }); bo.boss = 'behemoth'; steps(G2, 10); ok(!t2.wall, 'Rimewall: a boss smashes the wall');
   }
   { // Entangler: a hit on one linked enemy is copied to the others
     const { G, t, L, D } = setup('tangle'); const es = [mob(G, L, D), mob(G, L, D + 0.5), mob(G, L, D + 1)]; t.cd = 0; steps(G, 2);
     const g = (G.tangles || [])[0]; const hp = es.map(e => e.hp); S.hit(es[0], 1000, 'K', null, {});
-    const c1 = hp[1] - es[1].hp, c2 = hp[2] - es[2].hp; ok(g && g.m.length === 3 && c1 >= 300 && c1 < 400 && Math.abs(c1 - c2) < 1, `Entangler: links 3; a 1000 hit on one copies 30% to each other, before their Marks (${Math.round(c1)}, ${Math.round(c2)})`);
+    const c1 = hp[1] - es[1].hp, c2 = hp[2] - es[2].hp; ok(g && g.m.length === 3 && c1 >= 220 && c1 < 300 && Math.abs(c1 - c2) < 1, `Entangler: links 3; a 1000 hit on one copies 22% to each other, before their Marks (${Math.round(c1)}, ${Math.round(c2)})`);
     steps(G, 30 * 5); ok(!es[0].lnk || es[0].lnk !== g, 'Entangler: the link ends after 4 s');
   }
   { // Gatekeeper: stops 2 leaks a wave while the core is in range; never a boss; resets next wave

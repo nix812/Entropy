@@ -118,18 +118,18 @@ const TOWERS = {
     blurb: 'Pulses fire. Burning enemies in range explode for their remaining Burn. The rest catch fire.',
     specs: [{ name: 'Chain Reaction', desc: 'Explosions set enemies within 1.5 tiles on fire', m: { detSpread: 1.5 } },
             { name: 'Furnace', desc: '×1.8 explosion damage. +0.5 Range', m: { detXm: 1.8, rangeAdd: 0.5 } }] },
-  surge: { name: 'Surge Spire', el: 'A', cost: 130, dmg: 20, rate: 1.1, range: 3, kind: 'surge', chain: 3, st: { shock: 0.4 }, capT: 'A', unlock: 999, cells: 10, // first bot pass: under 1% of damage at 16 dmg, chain 2, idle-only charge
+  surge: { name: 'Surge Spire', el: 'A', cost: 130, dmg: 24, rate: 1.1, range: 3, kind: 'surge', chain: 3, st: { shock: 0.4 }, capT: 'A', unlock: 999, cells: 10, // first bot pass: under 1% of damage at 16 dmg, chain 2, idle-only charge
     blurb: 'Chain lightning. Stores charge while idle and from its kills, then fires 4× as fast until the charge is gone.',
     specs: [{ name: 'Deep Cell', desc: 'Stores 20 charges. ×1.2 Damage', m: { cells: 10, dmgX: 1.2 } },
             { name: 'Forked Surge', desc: '+2 Chain. ×1.25 Damage', m: { chain: 2, dmgX: 1.25 } }] },
-  rime: { ground: 1, name: 'Rimewall', el: 'C', cost: 140, dmg: 6, rate: 0.125, range: 2.4, kind: 'wall', st: { chill: 1 }, capT: 'C', unlock: 999, hold: 8,
+  rime: { ground: 1, name: 'Rimewall', el: 'C', cost: 140, dmg: 6, rate: 0.15, range: 2.4, kind: 'wall', st: { chill: 1 }, capT: 'C', unlock: 999, hold: 10, // bot pass: wall 8, regrow 8 s held only 0-270 enemy-seconds a run
     blurb: 'Raises an ice wall on the road. Ground enemies stop at it and Chill until it breaks.',
     specs: [{ name: 'Pack Ice', desc: '×2 wall strength. Regrows 25% faster', m: { holdX: 2, rateX: 1.25 } },
             { name: 'Rime Spikes', desc: '×3 Damage to held enemies. They take +25% Kinetic Damage', m: { dmgX: 3, spikes: 0.25 } }] },
-  tangle: { name: 'Entangler', el: 'V', cost: 140, dmg: 10, rate: 0.5, range: 3.2, kind: 'tether', st: { mark: 1 }, capT: 'V', unlock: 999, links: 3, share: 0.3, linkT: 4, // first bot pass: 81% of one 96-point run at 35%
-    blurb: 'Links 3 enemies. 30% of the damage one takes is copied to the others.',
-    specs: [{ name: 'Wide Web', desc: 'Links 5 enemies. Copies 25%', m: { links: 2, share: -0.05 } },
-            { name: 'Shared Fate', desc: 'Copies 45%. Linked enemies are 20% slower', m: { share: 0.15, tslow: 0.2 } }] },
+  tangle: { name: 'Entangler', el: 'V', cost: 140, dmg: 10, rate: 0.5, range: 3.2, kind: 'tether', st: { mark: 1 }, capT: 'V', unlock: 999, links: 3, share: 0.22, linkT: 4, // bot passes: 81% of one 96-point run at 35%; up to 34% (14× damage per credit) at 30%
+    blurb: 'Links 3 enemies. 22% of the damage one takes is copied to the others.',
+    specs: [{ name: 'Wide Web', desc: 'Links 5 enemies. Copies 18%', m: { links: 2, share: -0.04 } },
+            { name: 'Shared Fate', desc: 'Copies 35%. Linked enemies are 20% slower', m: { share: 0.13, tslow: 0.2 } }] },
   aegis: { name: 'Gatekeeper', el: 'N', cost: 150, dmg: 12, rate: 1.2, range: 3, kind: 'aegis', capT: 'E', unlock: 999, guards: 2, pspd: 14,
     blurb: 'Guards the core. Stops 2 leaks per wave while the core is in range. Shoots what comes close.',
     specs: [{ name: 'Bulkhead', desc: '+2 leaks stopped per wave', m: { guards: 2 } },
@@ -312,13 +312,13 @@ const PERKS = {
   ],
   tangle: [
     { id: 'linkP', name: 'Extra Strand', v: [1, 2], d: v => `+${v} link${v > 1 ? 's' : ''}` },
-    { id: 'shareP', name: 'Resonant Link', v: [4, 7, 10], d: v => `Copies +${v}%` },
+    { id: 'shareP', name: 'Resonant Link', v: [3, 6, 8], d: v => `Copies +${v}%` },
     { id: 'longT', name: 'Long Link', v: [2, 3], d: v => `Links last +${v} s` },
     { id: 'nullW', name: 'Null Weight', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
     { id: 'reachT', name: 'Far Reach', v: [0.5, 0.8], d: v => `+${v} Range` },
     { id: 'bond', name: 'Dark Bond', v: [1], d: () => 'Linked enemies gain 1 Mark per second' },
     { id: 'web', name: 'Spider Web', spec: 1, v: [1], d: () => '+1 link' },
-    { id: 'fate', name: 'Doom Bond', spec: 2, v: [8], d: () => 'Copies +8%' },
+    { id: 'fate', name: 'Doom Bond', spec: 2, v: [6], d: () => 'Copies +6%' },
   ],
   aegis: [
     { id: 'guard', name: 'Extra Guard', v: [1, 2], d: v => `+${v} leak${v > 1 ? 's' : ''} stopped per wave` },
@@ -425,7 +425,7 @@ const LEGENDARIES = [
   { id: 'mFlash', pool: 'atk', tower: 'flashover', name: 'Napalm Heart', pkv: { smoulder: 1, blastR: 0.5 }, t: () => 'Burn stays after an explosion, at half strength. +0.5 explosion radius' },
   { id: 'mSurge', pool: 'atk', tower: 'surge', name: 'Thunderhead', pkv: { cellsP: 8, chain: 1 }, t: () => 'Stores +8 charges. +1 Chain' },
   { id: 'mRime', pool: 'atk', tower: 'rime', name: 'Glacier Heart', pkv: { thick: 60, shardW: 1 }, t: () => '+60% wall strength. A broken wall hits enemies within 1.5 tiles for ×4 Damage' },
-  { id: 'mTangle', pool: 'atk', tower: 'tangle', name: "Cat's Cradle", pkv: { linkP: 2, shareP: 10 }, t: () => '+2 links. Copies +10%' },
+  { id: 'mTangle', pool: 'atk', tower: 'tangle', name: "Cat's Cradle", pkv: { linkP: 2, shareP: 8 }, t: () => '+2 links. Copies +8%' },
   { id: 'mAegis', pool: 'atk', tower: 'aegis', name: 'Last Line', pkv: { guard: 2, salv: 1 }, t: () => '+2 leaks stopped per wave. Stopped leaks pay double credits' },
   { id: 'mJoker', pool: 'atk', tower: 'joker', name: 'Royal Flush', pkv: { hot: 4, dbl: 15 }, t: () => 'Jackpot 4 shots sooner. 15% chance to fire twice' },
   { id: 'bulwark', pool: 'core', name: 'Bulwark Matrix', t: () => 'Shield fully recharges at the start of each wave' },

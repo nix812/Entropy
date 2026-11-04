@@ -3668,7 +3668,7 @@ function wallBreak(t) {
 }
 // Entangler: links up to s.links enemies for s.linkT s (a group, G.tangles). An enemy is in one group at most. A hit on a member
 // (not damage over time, not a copy) copies s.share of the damage it dealt to every other member (bosses take half a copy)
-const TANGLE = { links: 6, share: 0.6 }; // caps: a hit is copied at most 5 times, at most 60% each
+const TANGLE = { links: 6, share: 0.5 }; // caps: a hit is copied at most 5 times, at most 50% each
 function tangleLink(t, range, sw) {
   const s = t.s, tg = findTargets(t, range, Math.max(1, s.links));
   if (!tg.length) return false;

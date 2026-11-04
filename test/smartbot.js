@@ -213,7 +213,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     let guard = 0;
     while (guard++ < 20) {
       // 6.4: a learned capstone tier tower joins the rotation after every third plan entry (two Aegis Stations at most)
-      const want = PLAN.filter(k => S.TOWERS[k].unlock <= Math.max(1, S.PROF.bestWave)).flatMap((k, i) => i % 3 === 2 && met.capT.length ? [k, met.capT[(i / 3 | 0) % met.capT.length]] : [k]);
+      const want = PLAN.filter(k => S.TOWERS[k].unlock <= Math.max(1, S.PROF.bestWave)).flatMap((k, i) => i % 3 === 2 && met.capT.length ? [k, met.capT[((i / 3 | 0) + 6 * (pi / 25 | 0)) % met.capT.length]] : [k]); // each pass through the plan shifts which tier towers come up
       let type = want[pi % want.length];
       if (type === 'forge' && G.wave > 35) { pi++; continue; }
       if (type === 'aegis' && G.towers.filter(tw => tw.type === 'aegis').length >= 2) { pi++; continue; }
