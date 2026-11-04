@@ -556,8 +556,8 @@ const RES = 2;
       if (d % 13 === 4) { hp(m, X + 9, Y + 15, '#ffe08a'); hp(m, X + 9.5, Y + 15, '#a07a30'); C.glints.push(X + 9.25, Y + 15.25); }
     },
     tempest(m, X, Y, d) {
-      if (d % 4 === 1) { const cx = X + 7 + d % 10, cy = Y + 8 + (d >> 2) % 9, rx = 5 + d % 4; ell(m, cx, cy, rx, rx * 0.45, '#07080f'); ell(m, cx, cy - 0.5, rx - 1, rx * 0.3, '#121a2c'); hline(m, cx - rx + 1.5, cy - 0.5, cx - 0.5, cy - 0.5, '#4a6a8a'); hp(m, cx + 1, cy, '#ffe14d'); }
-      if (d % 3 === 0) for (let k = 0; k < 3; k++) { const x = X + 3 + ((d * (k + 3)) % 17), y = Y + 2 + ((d * (k + 5)) % 15); hline(m, x, y, x + 1.5, y + 3, '#1c2836'); }
+      if (d % 6 === 1) { const cx = X + 7 + d % 10, cy = Y + 8 + (d >> 2) % 9, rx = 5 + d % 4; ell(m, cx, cy, rx, rx * 0.45, '#07080f'); ell(m, cx, cy - 0.5, rx - 1, rx * 0.3, '#121a2c'); hline(m, cx - rx + 1.5, cy - 0.5, cx - 0.5, cy - 0.5, '#4a6a8a'); hp(m, cx + 1, cy, '#ffe14d'); }
+      if (d % 2 === 0) for (let k = 0; k < 3; k++) { const x = X + 3 + ((d * (k + 3)) % 17), y = Y + 2 + ((d * (k + 5)) % 15); hline(m, x + 1.5, y, x, y + 3, '#2c3c4a'); } // rain-swept sheen
     },
     demo(m, X, Y, d) {
       if (d % 4 === 1) { let x = X + 2 + d % 8, y = Y + 3 + (d >> 3) % 6; for (let k = 0; k < 5; k++) { const nx = x + 2 + ((d >> k) & 3), ny = y + ((d >> (k + 1)) & 1 ? 3 : -1) + 1.5; hline(m, x, y, nx, ny, '#14120f'); hline(m, x, y + 0.5, nx, ny + 0.5, '#4e4a44'); x = nx; y = ny; if (x > X + 22 || y > Y + 22 || y < Y + 1) break; } }
@@ -591,11 +591,11 @@ const RES = 2;
       const n = Math.max(C.sw ? 2 : 0, Math.round(C.cols * C.rows / 30));
       for (let k = 0; k < n; k++) { const cx = C.zr() * C.cols * TILE, cy = C.zr() * C.rows * TILE, w = 20 + C.zr() * 40;
         for (let j = 0; j < 4; j++) { const ex = cx + (j - 1.5) * w * 0.3, ey = cy + (C.zr() - 0.5) * 6, rx = w * (0.25 + C.zr() * 0.2), ry = rx * 0.42;
-          for (let dy = -ry; dy <= ry; dy += 0.5) { const hw = rx * Math.sqrt(Math.max(0, 1 - dy * dy / (ry * ry))); for (let x = Math.round((ex - hw) * 2) / 2; x < ex + hw; x += 0.5) if ((((x * 2) | 0) + ((dy * 2) | 0)) & 1) { m.fillStyle = dy < -ry * 0.3 ? '#2c4a7c' : '#24406c'; m.fillRect(x, ey + dy, 0.5, 0.5); } } } }
+          for (let dy = -ry; dy <= ry; dy += 1) { const hw = rx * Math.sqrt(Math.max(0, 1 - dy * dy / (ry * ry))); if (hw < 0.5) continue; m.fillStyle = dy < -ry * 0.3 ? '#2c4a7c' : '#24406c'; m.fillRect(Math.round((ex - hw) * 2) / 2, Math.round((ey + dy) * 2) / 2, Math.round(hw * 4) / 2, 0.5); } } } // scanline-dithered
     },
     ghost(m, C) { // broken lane markings, and old lanes that lead nowhere
       for (let ty = 0; ty < C.rows; ty++) for (let tx = 0; tx < C.cols; tx++) { if (vn(tx / 5, ty / 4, 41) < 0.56 || C.isP(tx, ty)) continue; // banks of fog
-        m.fillStyle = '#211d33'; for (let y = 0; y < TILE; y += 1) for (let x = (y & 1); x < TILE; x += 2) m.fillRect(tx * TILE + x, ty * TILE + y, 0.5, 0.5); }
+        m.fillStyle = '#211d33'; for (let y = 0.5; y < TILE; y += 1) m.fillRect(tx * TILE, ty * TILE + y, TILE, 0.5); }
       const n = Math.max(C.sw ? 4 : 0, Math.round(C.cols * C.rows / 40));
       for (let k = 0; k < n; k++) { const hz = C.zr() < 0.5, x0 = Math.floor(C.zr() * C.cols), y0 = Math.floor(C.zr() * C.rows), len = 3 + Math.floor(C.zr() * 6);
         for (let s = 0; s < len * 3; s++) { const tx = hz ? x0 + s / 3 : x0, ty = hz ? y0 : y0 + s / 3; if (C.isP(Math.floor(tx), Math.floor(ty)) || C.zr() < 0.3) continue;
@@ -646,7 +646,7 @@ const RES = 2;
   zlook('oddball', [24, 16, 36], [140, 110, 190], { g2: [14, 28, 34], gv: [1, 1, 1], mkf: [0, 0, 0, 0, 0], road: '#2b2048', edge: ['#a8801a', '#ffd23a', '#0d0a18'], chev: '#ffd23a', glow: [255, 200, 70], dot: '#ffd23a',
     cond: ['#0a0812', '#3a2c54'], emit: ['#ffd23a', '#7ff0d8', '#ff8ad8'], bg: '#08060c', neb: [[64, 24, 64], [16, 56, 60]], stars: 0.6, amb: 'odd', salt: 0xaa });
   const zoneId = () => (G && G.sector && ZLOOK[G.sector]) ? G.sector : '_';
-  let mapZone = null, oldLayer = null, wipe = null, zGlints = [];
+  let mapZone = null, oldLayer = null, wipe = null, zGlints = [], zMs = 0; // zMs: time spent in the zone layer per frame, summed (drawbench ZONE)
   // crate palettes: frame, body, lid, beacon
   const CACHE_PAL = { normal: ['#3a2a10', '#a8741c', '#e0a640', '#ffe14d'], cursed: ['#2a0a18', '#8a1a3a', '#c8325a', '#ff4d6a'], gold: ['#5a4206', '#e8b820', '#fff0a0', '#ffffff'] };
   // bakes a board into m (world units): ground and its decals, obstacles, roads, edges and chevrons, conduits and the road glow.
@@ -818,7 +818,7 @@ const RES = 2;
   // ambient: one light particle layer per zone, in world units under the units. Pooled (objects reused, swap-remove), capped,
   // halved on a crowded field (LITE) and with Simple pixel scaling, off with Settings · Zone effects. Real time, so weather
   // keeps moving at a checkpoint
-  const AMB = { motes: [16, 2.5], spores: [26, 6], sparks: [40, 0], clouds: [6, 0.4], mist: [10, 1.2], glints: [14, 4], rain: [90, 240], dust: [24, 4], choir: [26, 5], odd: [16, 2.5] }; // cap, spawns per second
+  const AMB = { motes: [16, 2.5], spores: [26, 6], sparks: [40, 0], clouds: [6, 0.4], mist: [10, 1.2], glints: [14, 4], rain: [110, 280], dust: [24, 4], choir: [26, 5], odd: [16, 2.5] }; // cap, spawns per second
   const AMBC = { motes: ['#6ae2ff', '#bff4ff', '#8a98f0'], spores: ['#ff9ad5', '#ffb84a', '#ffd0e8'], sparks: ['#fff0c0', '#ffb03a', '#ff7b29'], glints: ['#8a7458', '#6a5a44'], dust: ['#8a8278', '#6a645a', '#ff7b39'], choir: ['#b8ff8a', '#8ee35a', '#e8ffd0'], odd: ['#ffd23a', '#7ff0d8', '#ff8ad8'] };
   const zp = []; let zn = 0, zLast = 0, zAcc = 0, zFlash = -1, zNext = 6, zBurst = 0, zChime = 1, zDuckT = 8;
   function zoneAmbReset() { zn = 0; zAcc = 0; zFlash = -1; zNext = 5 + Math.random() * 6; zBurst = 0.5; zChime = 1; zDuckT = 6 + Math.random() * 6; }
@@ -893,7 +893,7 @@ const RES = 2;
       else if (kind === 'odd') { if (p.k) { b.globalAlpha = 0.85; duck(b, Math.round(p.x), Math.round(p.y + Math.sin(now * 3) * 0.75)); }
         else { b.globalAlpha = fade * 0.5; b.fillStyle = C[(Math.floor(now * 0.8 + p.ph) % 3 + 3) % 3]; b.fillRect(X, Y, 1, 1); } }
     }
-    if (rainPath) { b.globalAlpha = 1; b.strokeStyle = 'rgba(180,210,255,0.45)'; b.lineWidth = 0.5; b.stroke(); }
+    if (rainPath) { b.globalAlpha = 1; b.strokeStyle = 'rgba(185,215,255,0.55)'; b.lineWidth = 0.5; b.stroke(); }
     b.globalAlpha = 1;
     // Tempest Front: lightning lights the board now and then (a bright flicker, then a softer one)
     if (kind === 'rain') { zNext -= dt; if (zNext <= 0) { zNext = 7 + rnd() * 9; zFlash = 0; }
@@ -1377,7 +1377,7 @@ const RES = 2;
     { const x0 = Math.max(0, vxI), y0 = Math.max(0, vyI), x1 = Math.min(BW, vxI + vwI), y1 = Math.min(BH, vyI + vhI);
       const blitL = L => { if (x1 > x0 && y1 > y0) b.drawImage(L, x0 * RES, y0 * RES, (x1 - x0) * RES, (y1 - y0) * RES, x0, y0, x1 - x0, y1 - y0); };
       if (wipe) { // 6.3: the new zone's board spreads out from the core behind a ring in the zone's colour (a plain fade with Zone effects off)
-        const f = clamp((performance.now() - wipe.at) / 1000, 0, 1), e = 1 - (1 - f) * (1 - f) * (1 - f), Z = ZLOOK[mapZone] || ZL0;
+        const f = clamp((performance.now() - wipe.at) / 1000, 0, 1), e = f * f * (3 - 2 * f), Z = ZLOOK[mapZone] || ZL0;
         blitL(oldLayer);
         if (f > 0 && R_.zfx) { const cx = G.core.x * TILE, cy = G.core.y * TILE, rr = e * Math.hypot(Math.max(cx - v.vx, v.vx + v.vw - cx), Math.max(cy - v.vy, v.vy + v.vh - cy)) + 1; // sweeps across what the camera sees
           b.save(); b.beginPath(); b.arc(cx, cy, rr, 0, 6.283); b.clip(); blitL(mapLayer); b.restore();
@@ -1388,7 +1388,7 @@ const RES = 2;
     drawVeil();
     // animated path glow running toward the core
     if (frame % 2 === 0) { const dc = hexA((ZLOOK[mapZone] || ZL0).dot, 0.35); for (const L of G.map.lanes) if (!L.openWave) { const k = (frame >> 1) % L.tiles.length; for (let j = k; j < L.tiles.length; j += 9) { const p = L.tiles[j]; R(b, p.x * TILE + 11, p.y * TILE + 11, 2, 2, dc); } } }
-    zoneAmb(v); // 6.3: the zone's weather and particles, under everything that matters
+    if (window.__rdbg & 16) { const t0 = performance.now(); zoneAmb(v); zMs += performance.now() - t0; } else zoneAmb(v); // 6.3: the zone's weather and particles, under everything that matters (__rdbg 16: timed for drawbench)
     if (G.rift && !G.spawningDone) { const p = G.rift.pts[0]; strokeRing(p.x * TILE, p.y * TILE, 9 + Math.sin(frame / 5) * 2, '#b86cff', 0.9, 2); strokeRing(p.x * TILE, p.y * TILE, 5 + Math.sin(frame / 3), '#ff4d6a', 0.9, 2); }
     if (G.spawningDone && G.prep && G.prep.fly) for (const L of G.map.lanes) if (!L.openWave) {
       const a = L.fly.pts[0], c2 = L.fly.pts[1];
@@ -1665,7 +1665,11 @@ const RES = 2;
       mctx.drawImage(buf, 0, 0, bw, bh, 0, 0, bw * k, bh * k); src = mid;
     }
     // 6.3: past the map edge, the zone's backdrop (only drawn when the view reaches past the map)
-    if (v.vx < 0 || v.vy < 0 || v.vx + v.vw > BW || v.vy + v.vh > BH) { const bd = backdrop(mapZone); if (bd) { c.imageSmoothingEnabled = false; c.drawImage(bd, 0, 0, bd.width * 3, bd.height * 3); } }
+    if (v.vx < 0 || v.vy < 0 || v.vx + v.vw > BW || v.vy + v.vh > BH) { const t0 = performance.now(), bd = backdrop(mapZone);
+      if (bd) { c.imageSmoothingEnabled = false; // only the strips past the map edge (the board covers the rest), on 3 px steps so they meet cleanly
+        const f3 = q => Math.floor(q / 3) * 3, c3 = q => Math.ceil(q / 3) * 3, L0 = clamp(c3(-v.vx * v.ws), 0, c3(W)), T0 = clamp(c3(-v.vy * v.ws), 0, c3(H)), R0 = clamp(f3((BW - v.vx) * v.ws), 0, c3(W)), B0 = clamp(f3((BH - v.vy) * v.ws), 0, c3(H));
+        const strip = (x, y, w, h) => { if (w > 0 && h > 0) c.drawImage(bd, x / 3, y / 3, w / 3, h / 3, x, y, w, h); };
+        strip(0, 0, c3(W), T0); strip(0, B0, c3(W), c3(H) - B0); strip(0, T0, L0, B0 - T0); strip(R0, T0, c3(W) - R0, B0 - T0); } if (window.__rdbg & 16) zMs += performance.now() - t0; }
     c.imageSmoothingEnabled = true;
     const DW = W, DH = H, X0 = sx, Y0 = sy, KR = RES * k;
     c.drawImage(src, (v.vx - vxI) * KR, (v.vy - vyI) * KR, v.vw * KR, v.vh * KR, X0, Y0, DW, DH);
@@ -2218,7 +2222,7 @@ const RES = 2;
   }
   return {
     set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
-    zoneSwatch, get zoneWipe() { return !!wipe; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
+    zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
