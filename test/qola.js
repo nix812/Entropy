@@ -12,7 +12,7 @@ const openAll = (S, G, upto) => { for (let w = 1; w <= upto; w++) { G.wave = w; 
 // ---- 1. the rules version
 {
   const S = fresh(), G = S.newRun({ seed: 1, chaos: 1, frontier: 1 });
-  ok(S.FR_VER === 3 && G.frV === 3 && G.recOpts.frV === 3, `a new Frontier run records frV ${G.recOpts.frV}`);
+  ok(S.FR_VER >= 3 && G.frV === S.FR_VER && G.recOpts.frV === S.FR_VER, /* 6.4: FR_VER 4 */ `a new Frontier run records frV ${G.recOpts.frV}`);
   const O = S.newRun({ seed: 1, chaos: 1, frontier: 1, v: '6.1.0', frV: 2, hk: S.HOOK_VER }); ok(O.frV === 2, 'a 6.1 recording keeps frV 2');
 }
 
