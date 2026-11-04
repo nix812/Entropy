@@ -567,6 +567,7 @@ function placeNodes(n, R, P) {
   for (let k = 0; k < 300 && placed < n; k++) {
     const x = rngInt(r, R.x0 + 1, R.x1 - 2), y = rngInt(r, R.y0 + 1, R.y1 - 2), i = tIdx(x, y);
     if ((P && inRegion(x, y, P)) || map.tiles[i] !== 0 || G.towerAt[i]) continue;
+    if (G.frV >= 3 && frNearWorm(x, y)) continue; // FR_VER 3: never inside a wormhole's no-build zone
     if (Math.abs(x - map.core.x) + Math.abs(y - map.core.y) < 3) continue;
     if (list.some(q => Math.abs(q.x - x) + Math.abs(q.y - y) < 6)) continue;
     if (k < 200 && !nearRoad(x, y)) continue;
@@ -575,6 +576,20 @@ function placeNodes(n, R, P) {
   setNodes(list);
   if (placed) G.mapRev = (G.mapRev || 0) + 1;
   return placed;
+}
+// FR_VER 3: a Power Node that a wormhole's no-build zone covers (a wormhole detected after the node appeared) moves: it is
+// dropped and a replacement appears elsewhere in the sector. A node with a tower or the core on it stays put until that tile
+// is free again (sold, moved, lifted off), so nothing the player built loses its bonus. Called when a wormhole appears, every
+// wave, and when a tower leaves a tile.
+function frNodeFix() {
+  if (!(G.frV >= 3) || !G.nodes || !G.nodes.length) return 0;
+  const bad = G.nodes.filter(q => frNearWorm(q.x, q.y) && G.map.tiles[tIdx(q.x, q.y)] === 0 && !G.towerAt[tIdx(q.x, q.y)]);
+  if (!bad.length) return 0;
+  setNodes(G.nodes.filter(q => !bad.includes(q)));
+  placeNodes(bad.length, G.region, null);
+  G.mapRev = (G.mapRev || 0) + 1;
+  Hooks.log(bad.length > 1 ? `${bad.length} Power Nodes moved out of a wormhole zone` : 'Power Node moved out of a wormhole zone', '#6ae2ff');
+  return bad.length;
 }
 
 // ---------- Salvage caches: drop in during waves, tap to claim before they decay ----------
@@ -765,6 +780,7 @@ function newRun(opts) {
   while (G.laneWaves[G.lanesOpened] !== undefined && G.laneWaves[G.lanesOpened] <= sw) {
     const P0 = G.region, grew = growRegion(G.lanesOpened + 1, true);
     genExtraLane(r); G.lanesOpened++;
+    frNodeFix();
     if (grew) placeNodes(1, G.region, P0);
   }
   G.nextMs = 1500;
@@ -981,7 +997,7 @@ function buildTower(type, x, y) {
 function upgradeTower(t, specIdx) {
   if (t.lvl === 3 && !specIdx) return false;
   if (t.lvl >= MAX_LV && t.ascPend > 0) return false; // v5.8: pick the last Ascension's perk first
-  const cost = upgradeCost(t);
+  const cost = t.grow > 0 && t.lvl === 3 && G.frV >= 3 ? 0 : upgradeCost(t); // FR_VER 3: a grown support tower's Specialization is free
   if (G.credits < cost) return false;
   G.credits -= cost; t.invested += cost;
   if (t.lvl >= MAX_LV) {
@@ -1045,7 +1061,7 @@ function sellTower(t) {
   G.credits += sellRefund(t);
   G.towers = G.towers.filter(o => o !== t);
   delete G.towerAt[tIdx(t.x, t.y)];
-  recomputeAuras();
+  recomputeAuras(); frNodeFix();
   Hooks.sfx('sell', t);
   Hooks.fx('sell', { x: t.cx, y: t.cy });
 }
@@ -1194,7 +1210,37 @@ function capPlay(t, s, D) {
 function chaosRoll() { for (const t of G.towers) if (canOvercharge(t)) { t.wild = pick(G.r, ELS); t.s = towerStats(t); } recomputeAuras(); }
 // Forge Works: a Forge's slug deals FORGE_GUN.dmg × its income per shot
 const FORGE_GUN = { dmg: 0.4, range: 3, rate: 1 };
+// FR_VER 3: support towers (Relay Pylon, Snare Beacon) grow for free with the attack towers they serve. A support tower's level
+// rises to the rounded-down average level of the attack towers in its range (LV 1-5; Ascension stays paid). Free levels roll an
+// affix like a paid one but add nothing to the sell value (invested is what was paid), and levels never go down. LV 3 → 4 needs
+// a Specialization: growth stops there and t.grow = 1 marks a free pick (Ready lists it, the spec costs nothing). Runs inside
+// the sim (from recomputeAuras, so after every build, upgrade, sell and move): no player action, nothing recorded.
+const supKind = k => k === 'support' || k === 'snare';
+function supTarget(t) {
+  if (!t.s || !(t.s.range > 0)) return 0;
+  const r2 = t.s.range * t.s.range; let n = 0, sum = 0;
+  for (const o of G.towers) if (o !== t && canOvercharge(o) && dist2(t.cx, t.cy, o.cx, o.cy) <= r2) { n++; sum += Math.min(MAX_LV, o.lvl); }
+  return n ? Math.min(MAX_LV, Math.floor(sum / n)) : 0;
+}
+function supGrow() {
+  for (const t of G.towers) {
+    if (!t.s || !supKind(t.s.kind)) continue;
+    const want = supTarget(t); let n = 0;
+    while (t.lvl < want && t.lvl < MAX_LV && !(t.lvl === 3 && !t.spec)) {
+      t.lvl++; n++; t.affixes.push(rollAffix(t));
+      if (G.mods.ks.celestial) t.affixes.push(rollAffix(t));
+    }
+    t.grow = want >= 4 && t.lvl === 3 && !t.spec ? 1 : 0;
+    if (n) {
+      t.freeLv = (t.freeLv || 0) + n; t.s = towerStats(t);
+      G.stats.supGrow = (G.stats.supGrow || 0) + n;
+      Hooks.fx('grow', { x: t.cx, y: t.cy, lv: t.lvl }); Hooks.sfx('upgrade', t);
+      Hooks.log(`${towerLabel(t)} grew to LV ${t.lvl} with its towers`, '#59f0b4');
+    }
+  }
+}
 function recomputeAuras() {
+  if (G.frV >= 3) supGrow();
   for (const t of G.towers) { t.buff = { dmg: 0, rate: 0, crit: 0 }; t.isolated = true; t.reson = 0; t.resonWith = []; }
   for (const t of G.towers) {
     const els = new Set();
@@ -1483,11 +1529,13 @@ function rollEvents(w) {
 }
 function prepareWave(w) {
   // build the next wave during the countdown so the player can see it coming
+  frNodeFix(); // FR_VER 3: a node freed since the last wave (the core lifted off it, a resumed older save) leaves the zone
   // a wormhole appears two waves before its lane opens
   if (G.laneWaves[G.lanesOpened] === w + 1) {
     const P0 = G.region, grew = growRegion(G.lanesOpened + 1);
     const L = genExtraLane(G.r, w + 1);
     G.lanesOpened++;
+    frNodeFix();
     if (grew && placeNodes(1, G.region, P0)) Hooks.log('New Power Node in the expanded sector', '#6ae2ff');
     if (L) {
       G.mapRev = (G.mapRev || 0) + 1;
@@ -2089,6 +2137,7 @@ function marketBuy(id) {
 // Node Beacon: the tile becomes a Power Node (towers there draw no power and hit harder)
 function marketPlaceNode(x, y) {
   if (G.placing !== 'beacon' || !inRegion(x, y, G.region) || G.map.tiles[tIdx(x, y)] !== 0 || isNode(x, y)) return false;
+  if (G.frV >= 3 && frNearWorm(x, y)) return false; // FR_VER 3: no Power Nodes in a wormhole's no-build zone
   if (Math.abs(x - G.map.core.x) + Math.abs(y - G.map.core.y) < 2) return false;
   G.placing = null; G.placingRefund = 0; setNodes(G.nodes.concat([{ x, y }])); G.market.beacons = (G.market.beacons || 0) + 1; G.mapRev = (G.mapRev || 0) + 1;
   for (const t of G.towers) t.s = towerStats(t); recomputeAuras();
@@ -3960,6 +4009,7 @@ function frMoveTower(t, x, y) {
   t.ramp = 0; t.beamTargets = null; t.fenceTo = null;
   t.s = towerStats(t); recomputeAuras();
   if (t.s.kind === 'snare') lureAll();
+  frNodeFix();
   rlog('frMove', { type: t.type, x, y, fee });
   Hooks.sfx('build', t); Hooks.fx('sell', { x: t.mvFrom.x, y: t.mvFrom.y });
   return true;
@@ -4297,7 +4347,7 @@ function snapshotRun(waveNum) {
   if (!G || G.over || ghostRun()) return;
   const gut = []; let owed = 0; for (const e of G.enemies) if (!e.dead) { if (e.gut) for (const t of e.gut) if (!G.towerAt[tIdx(t.x, t.y)]) gut.push(t); if (e.audited) owed += e.audited; }
   const tw = G.towers.concat(gut).map(t => ({ type: t.type, x: t.x, y: t.y, lvl: t.lvl, spec: t.spec, affixes: t.affixes, rerolls: t.rerolls, invested: t.invested, kills: t.kills, dmgDone: Math.round(t.dmgDone), mode: t.mode,
-    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0, fire: t.fire || undefined, wild: t.wild || undefined, perks: t.perks || [], ascPend: t.ascPend || 0, aOffer: t.aOffer || null }));
+    vxp: t.vxp, rank: t.rank, pending: t.pending, name: t.name, asc: t.asc, oc: t.oc || 0, vetN: t.vetN || 0, fire: t.fire || undefined, wild: t.wild || undefined, perks: t.perks || [], ascPend: t.ascPend || 0, aOffer: t.aOffer || null, grow: t.grow || 0, freeLv: t.freeLv || 0 }));
   PROF.runSnap = {
     seed: G.seed, cols: G.cols, rows: ROWS, grow: G.fullMap ? 0 : 1, chaos: G.chaos, startWave: G.startWave, wave: waveNum || G.wave + 1, credits: Math.round(G.credits + owed), score: Math.round(G.score),
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
@@ -4335,7 +4385,7 @@ function resumeRun(S) {
       invested: T.invested, cd: 0.3, angle: -Math.PI / 2, kills: T.kills, dmgDone: T.dmgDone, dps: 0, dpsAcc: 0, mode: T.mode || 'first', disabled: 0,
       ramp: 0, olT: 0, buff: { dmg: 0, rate: 0, crit: 0 }, isolated: false, flash: 0,
       vxp: T.vxp || 0, rank: T.rank || 0, pending: T.pending || 0, offer: null, name: T.name || null, asc: T.asc || 0, reson: 0, resonWith: [], oc: T.oc || 0, vetN: T.vetN || 0, fire: T.fire || undefined, wild: T.wild || undefined,
-      perks: (T.perks || []).slice(), ascPend: T.ascPend || 0, aOffer: T.aOffer ? T.aOffer.slice() : null };
+      perks: (T.perks || []).slice(), ascPend: T.ascPend || 0, aOffer: T.aOffer ? T.aOffer.slice() : null, grow: T.grow || 0, freeLv: T.freeLv || 0 };
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t;
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
