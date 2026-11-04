@@ -29,6 +29,9 @@ const ICONS = {
   heartO: ['.........', '.##...##.', '#..#.#..#', '#...#...#', '#.......#', '.#.....#.', '..#...#..', '...#.#...', '....#....'],
   share: ['....#....', '...###...', '..#.#.#..', '....#....', '....#....', '#...#...#', '#.......#', '#.......#', '#########'],
   edit: ['......##.', '.....#..#', '....#..#.', '...#..#..', '..#..#...', '.#..#....', '#..#.....', '##.......', '###......'],
+  speaker: ['....#....', '...##.#..', '..#.#..#.', '###.#.#.#', '#...#.#.#', '###.#.#.#', '..#.#..#.', '...##.#..', '....#....'], // 6.2 Settings tabs
+  screen: ['#########', '#.......#', '#.......#', '#.......#', '#.......#', '#########', '....#....', '...###...', '.........'],
+  sliders: ['.##......', '#########', '.##......', '......##.', '#########', '......##.', '...##....', '#########', '...##....'],
   dice: ['#########', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#########'],
 };
 function svgIcon(name, size) {
@@ -50,6 +53,13 @@ function hydrateIcons(root) {
   for (const cv of (root || document).querySelectorAll('canvas[data-gico]')) Render.geneIcon(cv.dataset.gico, cv, cv.dataset.el); // v5.8 gene marks
 }
 
+// 6.2 (Nic: "Make the music full composer visible by default"): the Compose tab no longer hides behind five taps on the visualizer.
+// Fresh profiles get it on; existing ones are switched on once (cmpV), so the flag stays a plain setting from then on.
+function studioMig(st) {
+  st = st && typeof st === 'object' ? st : {};
+  if (!st.cmpV) { st.composer = true; st.cmpV = 1; }
+  return st;
+}
 // ---------------- Saves ----------------
 const Save = (() => {
   const KEY = 'entropy.save.v1';
@@ -59,6 +69,7 @@ const Save = (() => {
     if (!p || typeof p !== 'object') return d;
     const out = Object.assign(d, p);
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
+    out.settings.studio = studioMig(out.settings.studio);
     out.webV = p.webV || 1;
     out.alloc = ['start'];
     out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
@@ -286,7 +297,6 @@ const UI = (() => {
     }
     Render.resetCam(); updateZoomBtn();
     frModeUI();
-    if (!PROF.zoomHint && !G.tut) { PROF.zoomHint = 1; setTimeout(() => toast('BIGGER MAPS', 'Pinch or double-tap to zoom. Drag to pan.', '#6ae2ff', 1), 1200); }
     G.unlocks = []; G.bestAtStart = PROF.bestWave; G.fresh = freshProfile() || !!G.tut;
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
@@ -298,7 +308,7 @@ const UI = (() => {
     Save.save();
     try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
     // v5.3: no wall of rules on the first run. Glowing tiles show where to build; How to Play waits in the pause menu
-    if (!PROF.seenHelp && !G.tut) { PROF.seenHelp = true; setTimeout(() => toast('WELCOME', 'Enemies walk the road to your core. Tap a glowing tile beside it to build a tower. How to Play is in the pause menu', '#59f0b4', true, 'alert'), 900); }
+    // (6.2: the WELCOME line and the camera tip now wait their turn in onboardingTick, with every other first-time card)
     G.wantedTold = !!snap || briefMode() === 'off' || !!G.tut;
     G.hints = !snap && !G.tut && !tutState().done && (PROF.bestWave || 0) < 10 && G.wave <= 1 ? buildHints() : null; Render.hints = G.hints; // 5.8: Training covers it
     if (G.tut) Coach.start(G.lesson || 'basic'); else Coach.stop();
@@ -312,11 +322,27 @@ const UI = (() => {
     for (const c of cands) { if (out.length >= 3) break; if (out.every(o => Math.abs(o.x - c.x) + Math.abs(o.y - c.y) >= 4)) out.push(c); }
     return out;
   }
+  // 6.2 pacing (a friend's feedback: "you get spammed with dialog boxes"): every first-time card, teaching tip and nudge in a real
+  // run goes through one gate. No two within TEACH_GAP seconds of play (G.time stops while a card holds the game), and never in a
+  // busy moment: a tap in the last 2.5 s, aiming, the core picker or flight, enemies at the core, a boss closing in. A card that
+  // has to wait is asked again next frame (its seen flag is set only when it shows). UI state only: nothing is written to G.
+  const TEACH_GAP = 30;
+  let teachG = null, teachAt = -1e9, teachTap = 0, camUser = 0; // camUser: camera moves made by the player (the Training camera step)
+  const teachClock = () => { if (teachG !== G) { teachG = G; teachAt = -1e9; } return G ? G.time : 0; };
+  function teachBusy() {
+    if (!G) return false;
+    if (performance.now() - teachTap < 2500 || G.aimAbility || frSel || G.frFly) return true;
+    let n = 0; for (const e of G.enemies) if (!e.dead && !e.gen && e.L && e.L.len && e.d > e.L.len - 3.5) { if (e.boss) return true; n++; }
+    return n >= 2 || G.enemies.some(e => e.boss && !e.dead && !e.gen && e.L && e.d > e.L.len * 0.6);
+  }
+  const teachOK = () => !!G && !G.tut && teachClock() - teachAt >= TEACH_GAP && !teachBusy();
+  const teachMark = () => { teachClock(); if (G) teachAt = G.time; };
   // v5.3 one-time intro cards: each system says what it is the first time it shows up, in two lines
   function introCard(key, title, body, lesson) { // 5.8: lesson = the Field Manual entry its Learn more opens
     const S = PROF.seenSys || (PROF.seenSys = { v58: 1 }); if (S[key]) return false;
     if (modalOpen || Tree.isOpen || (G && G.draft)) return false;
-    S[key] = 1; Save.save();
+    if (!teachOK()) return true; // 6.2: it waits its turn (true: nothing after it in onboardingTick jumps the queue this frame)
+    S[key] = 1; Save.save(); teachMark();
     if (briefMode() !== 'pause') { toast(title.toUpperCase(), body, '#6ae2ff', true, 'alert'); return true; }
     closePanel(); G.paused = true; G.briefing = true;
     modal(`<div class="card narrow brief intro"><div class="bi"><em>New</em><h3>${esc(title)}</h3><p class="desc">${tipify(body)}</p></div>
@@ -327,8 +353,11 @@ const UI = (() => {
   function onboardingTick() {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
+    if (!PROF.seenHelp && G.time > 1) { if (!teachOK()) return; PROF.seenHelp = true; Save.save(); teachMark(); toast('WELCOME', 'Enemies walk the road to your core. Tap a glowing tile beside it to build a tower. How to Play is in the pause menu', '#59f0b4', true, 'alert'); return; }
     if (G.fr && G.time > 1 && introCard('frontier', 'Lift Off', `Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. Towers near the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slow but tough. No building within ${FRONTIER.wormBuild} tiles of a wormhole.`, 'lift')) return;
-    if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
+    // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
+    if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
+    if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
     if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button at the top right to pick each one a mutation.', 'veterans')) return;
@@ -346,7 +375,7 @@ const UI = (() => {
     // credits piling up: say so once in a while, with what to do about it
     if (G.spawningDone && G.wave >= 6 && G.wave - nudgeW >= 8 && G.towers.length) {
       const cheap = Math.min(...G.towers.map(t => upgradeCost(t))), lim = Math.max(900, cheap * 4, 250 * G.wave);
-      if (G.credits > lim) { nudgeW = G.wave; toast('CREDITS PILING UP', `${fmt(G.credits)} credits banked. Spend them: the arrow marks your best upgrade, or build, expand the reactor, or reinforce the core's Hull${G.wave >= 28 ? '. Leeches steal from big banks' : ''}`, '#ffb03a', false, 'alert'); }
+      if (G.credits > lim && teachOK()) { nudgeW = G.wave; teachMark(); toast('CREDITS PILING UP', `${fmt(G.credits)} credits banked. Spend them: the arrow marks your best upgrade, or build, expand the reactor, or reinforce the core's Hull${G.wave >= 28 ? '. Leeches steal from big banks' : ''}`, '#ffb03a', false, 'alert'); }
     }
   }
 
@@ -540,7 +569,7 @@ const UI = (() => {
     }
     // ---- step builders ----
     const info = (id, at, t, b, x) => Object.assign({ id, hold: 1, ok: 'Got it', at, t, b }, x || {});
-    const call = (id, w, b, x) => Object.assign({ id, at: sel('#bCall'), t: () => `Wave ${(G.startWave || 1) - 1 + w}`, b: b || 'Tap Next, or let the timer run.', done: () => W() >= w || (G.next <= 0 && G.spawningDone), skip: () => W() >= w }, x || {});
+    const call = (id, w, b, x) => Object.assign({ id, free: 1, at: sel('#bCall'), t: () => `Wave ${(G.startWave || 1) - 1 + w}`, b: b || 'Tap Next, or let the timer run.', done: () => W() >= w || (G.next <= 0 && G.spawningDone), skip: () => W() >= w }, x || {});
     const build = (id, type, key, t, first, x) => Object.assign({ id, hold: () => afford(type) && gridFree() >= 1, at: () => flowAt(type, key), t,
       b: () => !afford(type) ? `${TOWERS[type].name} costs ${fmt(towerCost(type))} credits. Kills pay; the next wave is coming.` : gridFree() < 1 ? 'The grid is full: upgrade instead.' : flowText(type, first), done: () => has(type), leave: shut }, x || {});
     const tapTw = (id, get, t, b, x) => Object.assign({ id, hold: 1, at: () => towerR(get()), t, b, done: () => !!get() && panT() === get() }, x || {});
@@ -576,7 +605,7 @@ const UI = (() => {
     function frSteps(when, gone) { // when: the steps may start; gone: the moment has passed (the next wave began)
       const off = () => !frOn() || gone(), back = () => !inPick('land') && !flew() && frCanFly() && 'lift', mvBack = () => !panT() && !inPick('move') && !used('frMove') && 'mvTap';
       return [
-        { id: 'lift', when, hold: 1, at: sel('#bLift'), t: 'Lift Off', enter: () => { closePanel(); mem.dock = dockPick(); mem.land = mem.dock ? null : landPick(); mem.fn0 = G.frN || 0; },
+        { id: 'lift', ls: 'lift', when, hold: 1, at: sel('#bLift'), t: 'Lift Off', enter: () => { closePanel(); mem.dock = dockPick(); mem.land = mem.dock ? null : landPick(); mem.fn0 = G.frN || 0; },
           b: () => dockT() ? `Your core can fly. Land it on your ${TOWERS[dockT().type].name} and the core fires it, twice as hard. Tap Lift Off.` : 'Your core can fly, and the roads follow wherever it lands. Tap Lift Off.',
           done: () => inPick('land'), skip: () => off() || (!frCanFly() && !inPick('land')) },
         { id: 'pick', hold: 1, at: () => dockT() ? towerR(dockT()) : mem.land ? worldR(mem.land.x + 0.5, mem.land.y + 0.5, 0.62) : null, t: 'Pick a landing spot',
@@ -592,7 +621,7 @@ const UI = (() => {
         { id: 'links', when: () => !G.frFly, hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Links', skip: off,
           b: () => { const n = (G.frLinks || []).length; return `${n ? `The green lines link ${n} tower${n === 1 ? '' : 's'} to the core` : 'No tower is linked yet'}. The landed core links the ${frLinkN()} nearest attack towers within ${FRONTIER.linkR} tiles: each gets +${pct(FRONTIER.linkDmg)} damage and rate, and the core +${pct(FRONTIER.linkCore)} per link.`; } },
         tapTw('mvTap', mvT, 'Move a tower', () => `${mem.mvL ? `Towers can move too. Your ${TOWERS[mvT().type].name} can cover more road` : roadIn(mvT().x, mvT().y, mvT().s.range) ? `Your ${TOWERS[mvT().type].name} is out of link reach` : `Your ${TOWERS[mvT().type].name} guards empty ground now`}. Tap it.`,
-          { when: () => !G.frFly, skip: () => off() || used('frMove') || !mvT() }),
+          { ls: 'move', when: () => !G.frFly, skip: () => off() || used('frMove') || !mvT() }),
         { id: 'mvBtn', hold: 1, at: sel('#panel [data-act=frmove]'), t: 'Move', b: () => `Tap Move: ${fmt(frMoveFee(mvT()))} credits, ${pct(FRONTIER.moveFee)} of what it cost.`, done: () => inPick('move'), skip: () => off() || used('frMove') || !mvT(), back: mvBack },
         { id: 'mvPick', hold: 1, at: () => { const d = mvTo(); if (!d) return null; Render.hints = [d]; return worldR(d.x + 0.5, d.y + 0.5, 0.62); }, t: 'Its new tile',
           b: () => mvNear(mvTo()) ? `Tap the marked tile: in reach of the core, so it ${mem.mvL ? 'stays linked' : 'links'}.` : 'Tap the marked tile: it covers more road.', done: () => inPick('move') && !!frSel.dest, skip: () => off() || used('frMove'), back: mvBack },
@@ -603,22 +632,24 @@ const UI = (() => {
     }
     const PLANS = {
       basic: [
-        { id: 'core', hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Your core', b: 'Enemies walk the road to it. If its health runs out, the run is over.' },
+        // 6.2 pacing: each ls starts a lesson; a new lesson waits for ~20 s of play or the end of a wave (Coach.paced)
+        { id: 'core', ls: 'start', hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Your core', b: 'Enemies walk the road to it. If its health runs out, the run is over.' },
         info('hp', sel('#hud .corebox'), 'Core health', () => `${Math.round(G.core.hp)} health plus ${Math.round(G.core.shield)} shield. Leaks hit the shield first; it recharges between hits.`, { ok: 'Next' }),
         { id: 'road', hold: 1, ok: 'Next', at: () => { const p = G.map.lanes[0].pts[0]; return worldR(p.x, p.y, 1); }, t: 'The road', b: 'Enemies come out of the wormhole and follow the road. Towers beside it shoot them.' },
         { id: 'spots', hold: 1, nodim: 1, ok: 'Next', t: 'Build spots', b: () => `Every green tile is a build spot: a tower fits on any of them. Beside the road is best.${G.fr ? ` Nothing can be built within ${FRONTIER.wormBuild} tiles of a wormhole.` : ''}`, enter: () => { Render.spots = allSpots(); }, leave: () => { Render.spots = null; } },
-        info('power0', sel('#hud .hs.pwr'), 'Power', () => `⚡ ${gridUsed()}/${gridCap()}: how many towers you can run. It grows as waves pass. In real runs, Power Nodes (diamond tiles) are free spots: no power used.`, { ok: 'Next' }),
         build('build1', 'pulse', 'a', 'Build a tower', 'Tap the marked tile beside the road.', { hold: 1 }),
-        info('wave', () => appR(q('#hud #wave') && q('#hud #wave').closest('.hs')), 'The wave', 'Wave number and the countdown to the next one. Waves start on their own when it hits zero.', { ok: 'Next' }),
-        { id: 'call1', hold: 1, at: sel('#bCall'), t: 'Start the wave', b: 'Tap Next to send Wave 1 now. Calling early pays bonus credits.', done: () => G.wave >= 1 || G.next <= 0 },
-        info('credits', sel('#hud .hs.cr'), 'Credits', 'Every kill pays credits. You spend them on towers and upgrades.', { when: () => G.kills >= 1 }),
-        info('score', sel('#bCash'), 'Score', 'Kills and waves raise your score. It turns into XP: levels and talent points.', { when: () => after(1), skip: () => W() >= 2 }),
-        build('build2', 'pulse', 'b', 'A second tower', 'Build another one on the marked tile.', { when: () => after(1), skip: () => W() >= 2, done: () => G.towers.length >= 2,
+        { id: 'call1', hold: 1, at: sel('#bCall'), t: 'Start the wave', b: 'The top bar counts down to each wave; at zero it starts on its own. Tap Next to send Wave 1 now: calling early pays bonus credits.', done: () => G.wave >= 1 || G.next <= 0 },
+        // the camera (6.2), once the first wave is under way
+        { id: 'camera', ls: 'camera', hold: 1, nodim: 1, ok: 'Got it', when: () => W() >= 1, skip: () => W() >= 3, enter: () => { mem.cu0 = camUser; }, done: () => camUser - mem.cu0 > 12, t: 'Look around',
+          b: 'Drag to pan, pinch to zoom. When something is off screen, an arrow at the edge points to it: tap one to look there. Tap the core arrow to come back home.' },
+        info('credits', sel('#hud .hs.cr'), 'Credits', 'Every kill pays credits. You spend them on towers and upgrades.', { ls: 'money', when: () => G.kills >= 1, skip: () => W() >= 3 }),
+        info('score', sel('#bCash'), 'Score', 'Kills and waves raise your score. It turns into XP: levels and talent points.', { skip: () => W() >= 3 }),
+        build('build2', 'pulse', 'b', 'A second tower', 'Build another one on the marked tile.', { ls: 'power', when: () => after(1), skip: () => W() >= 2, done: () => G.towers.length >= 2,
           at: () => flowAt(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'b'), b: () => afford('pulse') ? flowText(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'Build another one on the marked tile. Any tower works.') : `Towers start at ${towerCost('pulse')} credits. Kills pay.` }),
-        info('power', sel('#hud .hs.pwr'), 'Power', () => `${gridUsed()} of ${gridCap()} used: full. Each tower draws 1 power. Capacity grows as waves pass.`, { when: () => after(1), skip: () => W() >= 2 }),
+        info('power', sel('#hud .hs.pwr'), 'Power', () => `⚡ ${gridUsed()}/${gridCap()}: full. Each tower draws 1 power, and capacity grows as waves pass. In real runs, towers on Power Nodes (diamond tiles) use none.`, { when: () => after(1), skip: () => W() >= 2 }),
         call('call2', 2, 'Tap Next, or let the timer run. Power is full, so the next credits go into upgrades.', { when: () => after(1) }),
         // upgrading, step by step (Nic's brother: "didn't understand how to upgrade towers or what that meant")
-        tapTw('tapTower', tw, 'Upgrade', 'Towers you built can be tapped. Tap your first tower to open its panel.', { when: () => after(2), skip: () => W() >= 3 || noTw(), hold: () => G.credits >= upgradeCost(tw()),
+        tapTw('tapTower', tw, 'Upgrade', 'Towers you built can be tapped. Tap your first tower to open its panel.', { ls: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: () => G.credits >= upgradeCost(tw()),
           b: () => G.credits >= upgradeCost(tw()) ? 'Towers you built can be tapped. Tap your first tower to open its panel.' : `An upgrade costs ${upgradeCost(tw())} credits. Kills pay.`, done: () => !!panT() }),
         { id: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: 1, at: sel('#panel [data-act=up]'), t: 'The Upgrade button', enter: () => { mem.ut = panT(); mem.b4 = mem.ut && stat(mem.ut); },
           b: () => `Upgrading costs ${fmt(panT() ? upgradeCost(panT()) : 0)} credits: the price is on the button. It makes this tower stronger. Tap it.`,
@@ -626,61 +657,62 @@ const UI = (() => {
         info('upDone', sel('#panel .lvtag'), 'Upgraded', () => upLine(mem.ut, mem.b4) + ' Every upgrade rolls one.', { when: () => !!panT(), skip: () => W() >= 3 || !panT(), ok: 'Next' }),
         { id: 'affix', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Its bonus', b: 'That random bonus is an affix. Tap Details to see it.', skip: () => W() >= 3 || !panT(), done: () => panel && panel.tab === 'info' },
         info('affixes', () => appR(q('#panel .affs')) || appR(q('#panel .pbody')), 'Affixes', 'Every upgrade adds one. Rarer ones are coloured gold or purple. Reroll swaps them for credits.', { skip: () => W() >= 3 || !panT(), okFn: () => { mem.affix = 1; if (panel) { panel.tab = 'act'; renderPanel(); } }, enter: scrollTo('#panel .affs') }),
-        info('rank', () => towerR(mem.ut), 'Ranking up', 'The coloured bar under a tower is its level; its panel shows the LV badge. Each level adds damage and an affix. At LV 3 it picks a specialty; LV 5 is the top.', { skip: () => W() >= 3 || !mem.ut, ok: 'Next' }),
-        info('upWhy', sel('#hud .hs.pwr'), 'Why upgrade?', () => `Power is limited: ${gridUsed()} of ${gridCap()}. A new tower needs power; an upgrade costs only credits.`, { skip: () => W() >= 3, leave: shut }),
         call('call3', 3, 'Next wave when you are ready.', { when: () => after(2) }),
-        threatOpen('threat', 'Threat Board', 'This chip shows the next wave. Juggernauts are coming. Tap it.', { when: () => after(3), skip: () => W() >= 4 }),
+        // (6.2: ranking up waits for some play in Wave 3 instead of following the upgrade at once)
+        info('rank', () => towerR(mem.ut), 'Ranking up', 'The coloured bar under a tower is its level; its panel shows the LV badge. Each level adds damage and an affix. At LV 3 it picks a specialty; LV 5 is the top.', { ls: 'rank', when: () => W() >= 3, skip: () => W() >= 4 || !mem.ut || !G.towers.includes(mem.ut), ok: 'Next', enter: shut }),
+        info('upWhy', sel('#hud .hs.pwr'), 'Why upgrade?', () => `Power is limited: ${gridUsed()} of ${gridCap()}. A new tower needs power; an upgrade costs only credits.`, { skip: () => W() >= 4, leave: shut }),
+        threatOpen('threat', 'Threat Board', 'This chip shows the next wave. Juggernauts are coming. Tap it.', { ls: 'threat', when: () => after(3), skip: () => W() >= 4 }),
         inThreat('jugg', rowOf('tank'), 'Juggernaut', 'Plated: Pulse shots lose a third. A Rail Lance pierces Plating.', { when: () => after(3), skip: () => W() >= 4 || modalOpen !== 'evo', enter: () => { const c = q('#modal canvas[data-eico=tank]'); if (c) c.closest('.threv').scrollIntoView({ block: 'center' }); } }),
         build('rail', 'rail', 'c', 'Build a Rail Lance', 'Tap the marked tile.', { when: () => after(3), skip: () => W() >= 4, at: () => flowAt('rail', 'c', null, false, frOn() ? dockable : null) }),
-        ...frSteps(() => after(3), () => W() >= 4), // 6.1: dock on the Rail, links, Move
         call('call4', 4, 'Juggernauts are slow. Let them walk into the Rail.', { when: () => after(3) }),
-        { id: 'inspect', when: () => W() === 4 && G.enemies.some(e => e.type === 'tank' && onField(e)), skip: () => W() >= 5, hold: 1, enter: () => { mem.tank = G.enemies.find(e => e.type === 'tank' && onField(e)); },
+        ...frSteps(() => W() >= 4, () => W() >= 5), // 6.1: dock on the Rail, links, Move (6.2: during Wave 4, one lesson at a time)
+        { id: 'inspect', ls: 'inspect', when: () => W() === 4 && G.enemies.some(e => e.type === 'tank' && onField(e)), skip: () => W() >= 5 || !G.enemies.some(e => e.type === 'tank' && onField(e)), hold: 1, enter: () => { mem.tank = G.enemies.find(e => e.type === 'tank' && onField(e)); },
           at: () => enemyR(mem.tank), t: 'Inspect', b: 'Tap the Juggernaut. Any enemy can be tapped.', done: () => panel && panel.kind === 'enemy' },
         info('inspected', () => appR(q('#panel .sts.good')) || appR(q('#panel .ehp')), 'Enemy panel', 'Health, speed, Plating, genes and what beats it. Tap empty ground to close it.', { when: () => panel && panel.kind === 'enemy', skip: () => W() >= 5 || !(panel && panel.kind === 'enemy'), okFn: () => closePanel() }),
         // the second upgrade: the arrow cue
-        tapTw('arrow', () => mem.au, 'The upgrade arrow', 'An arrow over a tower means you can afford its upgrade. Tap that tower.', { when: () => after(4) && !!bestUp(), skip: () => W() >= 5, enter: () => { mem.au = bestUp(); } }),
+        tapTw('arrow', () => mem.au, 'The upgrade arrow', 'An arrow over a tower means you can afford its upgrade. Tap that tower.', { ls: 'arrow', when: () => after(4) && !!bestUp(), skip: () => W() >= 5, enter: () => { mem.au = bestUp(); } }),
         { id: 'up2', when: () => after(4), skip: () => W() >= 5 || !mem.au, hold: 1, at: sel('#panel [data-act=up]'), t: 'Upgrade it', enter: () => { mem.b4 = stat(mem.au); },
           b: () => `${fmt(upgradeCost(mem.au))} credits. Tap Upgrade.`, done: () => towerLevel(mem.au) > mem.b4.lvl, back: () => panT() !== mem.au && 'arrow' },
         info('up2Done', sel('#panel .lvtag'), 'Stronger', () => upLine(mem.au, mem.b4), { when: () => !!panT(), skip: () => W() >= 5 || !panT(), leave: shut }),
-        // the core's own upgrades (a supply drop lands as Wave 4 ends, so both are affordable)
-        { id: 'tapCore', when: () => after(4), skip: () => W() >= 5 || G.core.sLvl >= 2 && G.core.wLvl >= 2, hold: 1, at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core', b: 'The core has upgrades too. Tap it.', done: () => panel && panel.kind === 'core' },
-        { id: 'shield', when: () => after(4), skip: () => W() >= 5 || G.core.sLvl >= 2, hold: () => G.credits >= coreShieldCost(), enter: scrollTo('#panel [data-act=cs]'), at: sel('#panel [data-act=cs]'), t: 'Shield',
-          b: () => G.credits >= coreShieldCost() ? `Tap Shield (${fmt(coreShieldCost())}). A bigger shield soaks more leaks before the core loses health.` : `Shield costs ${fmt(coreShieldCost())} credits.`, done: () => G.core.sLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
-        { id: 'battery', when: () => after(4), skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
-          b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). ${G.fr && frDockT() ? `The docked ${TOWERS[frDockT().type].name} hits ${pct(FRONTIER.dockBat)} harder per level, and so does the plain cannon.` : "The core's own gun hits harder; some levels add a module."}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
-        info('coreMore', sel('#panel [data-act=ch]'), 'Hull and Uplink', () => G.fr ? `Later: Hull adds core health. Uplink makes abilities recharge faster, adds a link every ${FRONTIER.linkUplink} levels and shortens the lift-off wait every ${FRONTIER.cdUplink}.` : 'Later: Hull adds core health, Uplink makes abilities recharge faster.', { when: () => panel && panel.kind === 'core', skip: () => W() >= 5 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
-        { id: 'ready', when: () => after(4) && vetsReady().length > 0 && !panel, skip: () => W() >= 5 || used('vet'), hold: 1, at: sel('#bReady'), t: 'Veterans ready',
-          b: 'Towers that fight earn veteran ranks. This button counts towers with a pick waiting. Tap it.', done: () => modalOpen === 'vets' },
-        { id: 'vpick', when: () => modalOpen === 'vets', skip: () => W() >= 5 || used('vet') || modalOpen !== 'vets', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices for this tower; the colour is its rarity. Tap one. It walks you through every waiting tower.', done: () => used('vet') },
         call('call5', 5, 'A big pack is coming. Get ready to use an ability.', { when: () => after(4) }),
-        { id: 'strike', when: () => W() === 5 && (G.charges.strike || 0) > 0 && (pack() || [0, 0, 0])[2] >= 6, skip: () => W() >= 6, hold: 1, enter: () => { mem.c0 = G.charges.strike; },
+        { id: 'strike', ls: 'strike', gap: 12, busyOK: 1, when: () => W() === 5 && (G.charges.strike || 0) > 0 && (pack() || [0, 0, 0])[2] >= 6, skip: () => W() >= 6, hold: 1, enter: () => { mem.c0 = G.charges.strike; },
           at: sel('#abils [data-abil=strike]'), t: 'Orbital Strike', b: 'A tight pack. Abilities live on the left. Tap Strike.', done: () => G.aimAbility === 'strike' || (G.charges.strike || 0) < mem.c0 },
         { id: 'aim', when: () => W() === 5, skip: () => W() >= 6, hold: 1, enter: () => { mem.pk = pack(); },
           at: () => packAt(), t: 'Aim', b: 'Tap the middle of the pack.', done: () => (G.charges.strike || 0) < mem.c0, back: () => G.aimAbility !== 'strike' && (G.charges.strike || 0) >= mem.c0 && 'strike' },
         info('recharge', sel('#abils [data-abil=strike]'), 'Recharging', 'The bar on the button refills over time. Then it is ready again.', { when: () => W() === 5, skip: () => W() >= 6, hold: 0 }),
-        threatOpen('evo', 'The swarm adapts', 'It breeds against whatever does your damage. Open the Threat Board.', { when: () => after(5), skip: () => W() >= 6 }),
+        { id: 'ready', ls: 'vets', when: () => W() >= 5 && vetsReady().length > 0 && !panel, skip: () => W() >= 8 || used('vet'), hold: 1, at: sel('#bReady'), t: 'Veterans ready',
+          b: 'Towers that fight earn veteran ranks. This button counts towers with a pick waiting. Tap it.', done: () => modalOpen === 'vets' },
+        { id: 'vpick', when: () => modalOpen === 'vets', skip: () => W() >= 8 || used('vet') || modalOpen !== 'vets', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices for this tower; the colour is its rarity. Tap one. It walks you through every waiting tower.', done: () => used('vet') },
+        threatOpen('evo', 'The swarm adapts', 'It breeds against whatever does your damage. Open the Threat Board.', { ls: 'evo', when: () => after(5), skip: () => W() >= 6 }),
         inThreat('arms', () => appR(q('#modal .armrow')) || appR(q('#modal .arms')), 'Arms Race',
           () => { const I = G.stats.dmgByEl, tot = ELS.reduce((a, k) => a + (I[k] || 0), 0) || 1, k = topEl(); return `${Math.round((I[k] || 0) / tot * 100)}% of your damage is ${EL[k].name}, so the swarm bred ${EL[k].name} Ward. Mix elements to stay ahead.`; },
           { when: () => after(5), skip: () => W() >= 6 || modalOpen !== 'evo' }),
         build('counter', 'cryo', 'd', 'Answer it', '', { when: () => after(5), skip: () => W() >= 6, at: () => flowAt(counterOf(), 'd'), hold: () => afford(counterOf()) && gridFree() >= 1, done: () => has(counterOf()),
           b: () => { const c = counterOf(), D = TOWERS[c]; return !afford(c) ? `A ${D.name} costs ${towerCost(c)} credits.` : gridFree() < 1 ? 'The grid is full: this wave, upgrade instead.' : flowText(c, `Build a ${D.name}: ${EL[D.el].name} damage goes straight through ${EL[topEl()].name} Ward.`); } }),
         call('call6', 6, 'Warded enemies are coming.', { when: () => after(5) }),
+        // the core's own upgrades, during Wave 6 (6.2; supply drops as Waves 3 and 4 end pay for them)
+        { id: 'tapCore', ls: 'core', when: () => W() >= 6 && !G.frFly, skip: () => W() >= 8 || G.core.sLvl >= 2 && G.core.wLvl >= 2, hold: 1, at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core', b: 'The core has upgrades too. Tap it.', done: () => panel && panel.kind === 'core' },
+        { id: 'shield', when: () => W() >= 6, skip: () => W() >= 8 || G.core.sLvl >= 2, hold: () => G.credits >= coreShieldCost(), enter: scrollTo('#panel [data-act=cs]'), at: sel('#panel [data-act=cs]'), t: 'Shield',
+          b: () => G.credits >= coreShieldCost() ? `Tap Shield (${fmt(coreShieldCost())}). A bigger shield soaks more leaks before the core loses health.` : `Shield costs ${fmt(coreShieldCost())} credits.`, done: () => G.core.sLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
+        { id: 'battery', when: () => W() >= 6, skip: () => W() >= 8 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
+          b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). ${G.fr && frDockT() ? `The docked ${TOWERS[frDockT().type].name} hits ${pct(FRONTIER.dockBat)} harder per level, and so does the plain cannon.` : "The core's own gun hits harder; some levels add a module."}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
+        info('coreMore', sel('#panel [data-act=ch]'), 'Hull and Uplink', () => G.fr ? `Later: Hull adds core health. Uplink makes abilities recharge faster, adds a link every ${FRONTIER.linkUplink} levels and shortens the lift-off wait every ${FRONTIER.cdUplink}.` : 'Later: Hull adds core health, Uplink makes abilities recharge faster.', { when: () => panel && panel.kind === 'core', skip: () => W() >= 8 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
         info('mark', () => enemyR(mem.we), 'Gene marks', () => `The ring is Ward: this one shrugs off half your ${EL[(mem.we && mem.we.gel) || 'K'].name} damage. Marks show what each enemy evolved.`,
-          { when: () => W() === 6 && !!geneEnemy('ward'), skip: () => W() >= 7, enter: () => { mem.we = geneEnemy('ward'); } }),
+          { ls: 'mark', when: () => W() === 6 && !!geneEnemy('ward'), skip: () => W() >= 7 || !geneEnemy('ward'), enter: () => { mem.we = geneEnemy('ward'); } }),
         // the spec: a permanent branch at LV 3, then Ascend and Sell, briefly
         tapTw('tapLv3', () => mem.st, 'Specialize', () => G.credits >= upgradeCost(mem.st) ? 'Tap your strongest tower. Get it to LV 3.' : `Next upgrade: ${fmt(upgradeCost(mem.st))} credits. Kills pay.`,
-          { when: () => after(6), skip: () => W() >= 8 || noTw(), hold: () => G.credits >= upgradeCost(mem.st), enter: () => { mem.st = G.towers.slice().sort((a, b) => b.lvl - a.lvl || b.dmgDone - a.dmgDone)[0]; } }),
-        { id: 'toLv3', when: () => after(6) || after(7), skip: () => W() >= 8 || !mem.st || mem.st.lvl >= 3, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel [data-act=up]'), t: 'To LV 3',
+          { ls: 'spec', when: () => after(6) || W() >= 7, skip: () => W() >= 8 || noTw(), hold: () => G.credits >= upgradeCost(mem.st), enter: () => { mem.st = G.towers.slice().sort((a, b) => b.lvl - a.lvl || b.dmgDone - a.dmgDone)[0]; } }),
+        { id: 'toLv3', when: () => after(6) || W() >= 7, skip: () => W() >= 8 || !mem.st || mem.st.lvl >= 3, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel [data-act=up]'), t: 'To LV 3',
           b: () => `Upgrade to LV ${mem.st.lvl + 1}: ${fmt(upgradeCost(mem.st))} credits.`, done: () => mem.st.lvl >= 3, back: () => panT() !== mem.st && 'tapLv3' },
-        { id: 'spec', when: () => (after(6) || after(7)) && mem.st && mem.st.lvl >= 3, skip: () => W() >= 8 || !mem.st || mem.st.spec, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel .specs'), t: 'Pick a spec',
+        { id: 'spec', when: () => (after(6) || W() >= 7) && mem.st && mem.st.lvl >= 3, skip: () => W() >= 8 || !mem.st || mem.st.spec, hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel .specs'), t: 'Pick a spec',
           b: () => G.credits >= upgradeCost(mem.st) ? `At LV 3 a tower specializes: one of two branches, for good. Read both and tap one (${fmt(upgradeCost(mem.st))} credits).` : `The spec costs ${fmt(upgradeCost(mem.st))} credits. Kills pay.`,
           done: () => !!mem.st.spec, back: () => panT() !== mem.st && G.credits >= upgradeCost(mem.st) && 'tapLv3' },
         info('ascend', sel('#panel [data-act=up]'), 'LV 5 and Ascend', `One more upgrade reaches LV 5, the top. After that a tower can Ascend: more damage${typeof PERKS !== 'undefined' ? ' and a perk' : ''} each time, at a steep price.`, { when: () => !!panT() && mem.st && mem.st.spec, skip: () => W() >= 8 || !panT() }),
         info('sell', sel('#panel [data-act=sell]'), 'Sell', 'Selling refunds 70% of what you put in. Sell a tower that sits idle and build where enemies walk.', { when: () => !!panT(), skip: () => W() >= 8 || !panT(), leave: shut }),
-        info('free', () => appR(q('#chips [data-wanted]')) || appR(q('#chips [data-more]')), 'Most Wanted', () => `This chip is the bounty: a boss lands on Wave ${G.wanted ? G.wanted.w : 9}. Until then, build and upgrade as you like.`, { when: () => after(6) || after(7), skip: () => W() >= 8, hold: 0 }),
-        { id: 'boss', when: () => G.enemies.some(e => e.boss && !e.gen && onField(e)), skip: () => G.huntChoice || G.over, hold: 1, ok: 'Fight', enter: () => { mem.boss = G.enemies.find(e => e.boss && !e.gen && onField(e)); },
+        info('free', () => appR(q('#chips [data-wanted]')) || appR(q('#chips [data-more]')), 'Most Wanted', () => `This chip is the bounty: a boss lands on Wave ${G.wanted ? G.wanted.w : 9}. Until then, build and upgrade as you like.`, { ls: 'wanted', when: () => W() >= 7, skip: () => W() >= 9, hold: 0 }),
+        { id: 'boss', ls: 'boss', gap: 0, busyOK: 1, when: () => G.enemies.some(e => e.boss && !e.gen && onField(e)), skip: () => G.huntChoice || G.over, hold: 1, ok: 'Fight', enter: () => { mem.boss = G.enemies.find(e => e.boss && !e.gen && onField(e)); },
           at: () => enemyR(mem.boss), t: () => mem.boss ? mem.boss.bossName : 'Boss', b: 'The Most Wanted boss: huge health, Plated, slow. Kill it to claim the bounty. Strike helps.' },
-        { id: 'bounty', when: () => modalOpen === 'hunt', hold: 1, modal: 'hunt', at: sel('#modal [data-act=extract]'), t: 'Bounty claimed',
+        { id: 'bounty', ls: 'bounty', gap: 0, busyOK: 1, when: () => modalOpen === 'hunt', hold: 1, modal: 'hunt', at: sel('#modal [data-act=extract]'), t: 'Bounty claimed',
           b: `Extract banks your Bounty Purse and ends the run as a win. In real runs a jump door pushes on for a bigger purse; fall later and you keep ${Math.round(PURSE.death * 100)}%.`, done: () => G.over },
       ],
       towers: [
@@ -908,7 +940,22 @@ const UI = (() => {
       if (p === 'basic') { tutState().seen = 1; Save.save(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); return; } // 6.0: never offer a new run over a saved one
       if (G && G.tut) G = null; if (Tree.isOpen) Tree.close(); show('hangar'); renderHangar(); openManual();
     }
-    function next() { const S = cur; cur = null; i++; Render.hints = null; sig = ''; if (S && S.leave) S.leave(); }
+    function next() { const S = cur; cur = null; i++; Render.hints = null; sig = ''; if (S && mem.shownId === S.id && !S.free && G) { mem.gapT = G.time; mem.gapW = W(); mem.gapC = cleared(); } if (S && S.leave) S.leave(); }
+    // 6.2 pacing (Basic Training): steps that start a new lesson carry ls. One lesson's steps run back to back (an action chain); a
+    // new lesson waits for PACE_GAP seconds of play since the last card (G.time stops while a card holds the game) or for a wave to
+    // end with at least 10 s of play since, and for a calm moment (teachBusy). With the countdown nearly out between waves it goes ahead, so a lesson that belongs
+    // to this break is never lost. Call prompts (free) neither wait nor reset the clock. Field Manual lessons are one topic each: no gap.
+    const PACE_GAP = 22;
+    function paced(S) {
+      if (plan !== 'basic' || S.free || mem.gapT === undefined || !G || lessonOf(i) === mem.lastLs) return true;
+      const gap = S.gap !== undefined ? S.gap : PACE_GAP, quiet = G.time - mem.gapT;
+      const waveEnd = cleared() && (W() > mem.gapW || !mem.gapC) && quiet >= 10, late = cleared() && G.next < 5 && W() < G.tutS.waves.length;
+      if (!(quiet >= gap || waveEnd || late)) return false;
+      if (S.busyOK || late) return true;
+      if (!teachBusy()) { mem.busyT = undefined; return true; }
+      if (mem.busyT === undefined) mem.busyT = G.time; return G.time - mem.busyT > 25; // a busy spell can't hold a lesson for ever
+    }
+    const lessonOf = k => { const P = STEPS(); for (let j = Math.min(k, P.length - 1); j >= 0; j--) if (P[j].ls) return P[j].ls; return null; };
     function go(id) { const k = STEPS().findIndex(s => s.id === id); if (k >= 0) { cur = null; i = k; sig = ''; Render.hints = null; } }
     function hide() { if (el && !el.hidden) el.hidden = true; }
     const ov = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
@@ -940,7 +987,7 @@ const UI = (() => {
     }
     function show2(S, t, b, r, ok, idle) {
       const key = plan + i + '|' + t + '|' + b + '|' + (ok || '') + (idle ? 'i' : ''); // (the button too: a chip that folds into +N brings up "Open it")
-      el.hidden = false; el.classList.toggle('idle', !!idle);
+      el.hidden = false; el.classList.toggle('idle', !!idle); if (!idle && S.id) { mem.shownId = S.id; if (!S.free) mem.lastLs = lessonOf(i); }
       if (key !== sig) {
         sig = key;
         const T = G && G.tutS, n = T ? T.waves.length : 0, Lt = LESSON_BY[plan];
@@ -978,7 +1025,7 @@ const UI = (() => {
       const S = P[i];
       if (!S) { if (tour() || (G && G.lesson)) lessonDone(plan); else idle(); return; }
       if (G && G.over && plan === 'basic') { held = false; hide(); return; }
-      if (!cur) { if (S.when && !S.when()) { idle(); return; } cur = S; sig = ''; if (S.enter) S.enter(); }
+      if (!cur) { if ((S.when && !S.when()) || !paced(S)) { idle(); return; } cur = S; sig = ''; if (S.enter) S.enter(); }
       if (S.done && S.done()) { next(); idle(); return; }
       if (S.skip && S.skip()) { next(); idle(); return; }
       const bk = S.back && S.back(); if (bk) { go(bk); idle(); return; }
@@ -989,6 +1036,7 @@ const UI = (() => {
       if (!panned && r && c) see(S, r, c);
     }
     return { start, stop, tick, get hold() { return on && held; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
+      get chain() { return on && cur ? lessonOf(i) : null; }, // 6.2: the lesson the current step belongs to (test/tutcadence.py)
       steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS) };
   })();
 
@@ -1342,19 +1390,21 @@ const UI = (() => {
   let bossT = null;
   const briefMode = () => G && G.watch ? 'off' : PROF.settings.briefings || 'pause';
   // v5.1: the first time you meet an enemy, a short card says what it is and what beats it (queued if something is open)
-  const enemyCards = []; let readyIx = -1;
+  const enemyCards = []; let readyIx = -1, evoWait = false;
   function enemyCard(k) {
     const D = ENEMIES[k]; if (!D) return;
+    if (screen === 'game' && G && !G.over && !teachOK()) { if (!enemyCards.includes(k)) enemyCards.push(k); return; } // 6.2: waits its turn like every first-time card
+    teachMark();
     if (briefMode() !== 'pause' || screen !== 'game') { toast('NEW ENEMY · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ff4d6a', true); return; }
     if (modalOpen || Tree.isOpen || (G && G.draft)) { if (!enemyCards.includes(k)) enemyCards.push(k); return; }
     closePanel(); if (G && !G.over) { G.paused = true; G.briefing = true; }
-    modal(`<div class="card narrow brief ecard"><div class="erow"><canvas width="88" height="88" data-eico="${k}"></canvas><div class="bi"><em>New enemy · next wave</em><h3>${esc(D.name)}</h3><p class="desc">${tipify(D.desc)}.</p><p class="ph good">Beat it: ${tipify(D.beat)}</p></div></div>
+    modal(`<div class="card narrow brief ecard"><div class="erow"><canvas width="88" height="88" data-eico="${k}"></canvas><div class="bi"><em>${G && G.enemies.some(e => e.type === k && !e.dead) ? 'New enemy · on the field' : 'New enemy · next wave'}</em><h3>${esc(D.name)}</h3><p class="desc">${tipify(D.desc)}.</p><p class="ph good">Beat it: ${tipify(D.beat)}</p></div></div>
       <div class="foot"><span class="note">Tap any enemy on the field to inspect it</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
     const cv = $('#modal canvas[data-eico]'); if (cv) Render.enemyIcon(k, cv);
   }
   function bossIntro(e, B) {
     const box = $('#bossIntro'); if (!box || (G && G.tut)) return; // 5.8: the Training coach introduces its boss
-    const first = !PROF.codex.bosses[B.id];
+    const first = !PROF.codex.bosses[B.id]; if (first) teachMark(); // 6.2: a first boss counts as a first-time card (it can't wait; the next card does)
     if (briefMode() === 'off') { log(`${B.name} incoming`, '#ff4d6a'); return; }
     if (briefMode() === 'pause' && !modalOpen && !Tree.isOpen && screen === 'game') {
       const tag = e.wanted ? `Most Wanted · ${(WANTED_MODS.find(m => m.id === e.wanted) || { name: '' }).name} · ${fmt(G.wanted ? G.wanted.bounty * (e.wantedLoaded ? 2 : 1) : 0)} bounty` : first ? 'New boss · first encounter' : B.odd ? 'Boss?!' : 'Boss incoming';
@@ -1983,12 +2033,12 @@ const UI = (() => {
     p.x = (e.clientX / UIS); p.y = (e.clientY / UIS);
     if (gesture.kind === 'pinch' && ptrs.size >= 2) {
       const [a, b] = [...ptrs.values()], d = Math.max(20, Math.hypot(a.x - b.x, a.y - b.y));
-      Render.zoomAt((a.x + b.x) / 2 - (r.left / UIS), (a.y + b.y) / 2 - (r.top / UIS), d / gesture.d);
+      Render.zoomAt((a.x + b.x) / 2 - (r.left / UIS), (a.y + b.y) / 2 - (r.top / UIS), d / gesture.d); camUser++;
       gesture.d = d; updateZoomBtn();
     } else if (gesture.kind === 'tap' || gesture.kind === 'pan') {
       gesture.moved += Math.abs(dx) + Math.abs(dy);
       if (gesture.moved > 12) gesture.kind = 'pan';
-      if (gesture.kind === 'pan') { Render.panBy(dx, dy); updateZoomBtn(); if (e.pointerType === 'mouse') $('#cv').style.cursor = 'grabbing'; }
+      if (gesture.kind === 'pan') { Render.panBy(dx, dy); updateZoomBtn(); camUser++; if (e.pointerType === 'mouse') $('#cv').style.cursor = 'grabbing'; }
     }
   }
   // v5.0.1 mouse hover: faint corners on the tile under the cursor, a range ring on towers, and a pointer cursor on anything you can click
@@ -2091,7 +2141,7 @@ const UI = (() => {
     const r = $('#cv').getBoundingClientRect();
     // v5.0.1: scale by how far the wheel moved, so trackpads (small deltas, pinch = ctrl+wheel) zoom smoothly and mouse notches still step
     const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, k = Math.exp(-clamp(dy, -120, 120) * (e.ctrlKey ? 0.01 : 0.0012));
-    Render.zoomAt((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS), k);
+    Render.zoomAt((e.clientX / UIS) - (r.left / UIS), (e.clientY / UIS) - (r.top / UIS), k); camUser++;
     updateZoomBtn();
   }
   // right click: cancel whatever is in progress (aiming an ability, placing a beacon), otherwise close the open panel
@@ -2493,38 +2543,72 @@ const UI = (() => {
   }
   // v4.8: buttons that raise a level wear the colour of the tier they lead to
   const tierStyle = n => { const T = lvTier(n); return `--tc:${T.col}`; };
+  // 6.2 Settings (Nic: "it's getting really crowded"): tabs on a left rail (General · Sound · Graphics · Interface) and one scrolling
+  // pane, like a console game's options screen. Every row: a name, one line on what it does, and its control on the right (a switch,
+  // a segmented choice, a slider or a button). All four pages are in the DOM (inactive ones hidden), so a tab switch is instant and
+  // older tests that click a control by data-act still find it. The open tab is remembered for the session.
+  let setTab = 'general';
+  const SET_TABS = [['general', 'General', 'gear'], ['sound', 'Sound', 'speaker'], ['graphics', 'Graphics', 'screen'], ['interface', 'Interface', 'sliders']];
   function openSettings() {
-    const S = PROF.settings;
-    modal(`<div class="card narrow"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2">✕</button></div>
-      <label class="set"><span>Sound Effects</span><input id="setSfx" type="range" min="0" max="1" step="0.05" value="${S.sfx}"></label>
-      <label class="set"><span>Music</span><input id="setMus" type="range" min="0" max="1" step="0.05" value="${S.music}"></label>
-      <div class="set"><span>Music Studio <em class="dim">genres, mixer, your tracks</em></span><button class="chip on" style="--c:#ff5fa8" data-act="studioS">Open</button></div>
-      <div class="set"><span>Sound <em class="dim" id="sndStat">${esc(soundStatus())}</em></span><button class="chip" data-act="sndFix">Restart sound</button></div>
-      <div class="set"><span>Mono Audio <em class="dim">one earbud, one speaker</em></span><button class="chip ${S.mono ? 'on' : ''}" data-act="mono">${S.mono ? 'On' : 'Off'}</button></div>
-      <label class="set"><span>Music Tempo <em id="bpmV" class="dim">${S.bpm || 72} BPM</em></span><input id="setBpm" type="range" min="56" max="100" step="2" value="${S.bpm || 72}"></label>
-      <p class="note tempo">The tempo of the Default mix. In the Music Studio each genre has its own.</p>
-      ${fsOK() ? `<div class="set"><span>Full Screen</span><button class="chip ${fsOn() ? 'on' : ''}" data-act="fs">${fsOn() ? 'On' : 'Off'}</button></div>` : ''}
-      <div class="set"><span>HUD</span><div class="chips"><button class="chip ${S.hud === 'lean' ? 'on' : ''}" data-act="hud" data-v="lean">Minimal</button><button class="chip ${S.hud === 'full' ? 'on' : ''}" data-act="hud" data-v="full">Detailed</button></div></div>
-      <div class="set"><span>Interface Size</span><div class="chips">${[['auto', 'Auto'], [0.85, 'Small'], [1.2, 'Large']].map(([v, l]) => `<button class="chip ${(S.uiScale || 'auto') === v ? 'on' : ''}" data-act="uis" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Haptics <em class="dim">buzz when the core is hit</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.haptics !== false) === v ? 'on' : ''}" data-act="haptic" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Glow <em class="dim">soft lighting on the field</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.glow !== false) === v ? 'on' : ''}" data-act="gfx" data-k="glow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Pixel scaling <em class="dim">Sharp is crisper; Simple is lighter work</em></span><div class="chips">${[[true, 'Sharp'], [false, 'Simple']].map(([v, l]) => `<button class="chip ${(S.sharp !== false) === v ? 'on' : ''}" data-act="gfx" data-k="sharp" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Boss slow-down <em class="dim">drop to 1× when a boss arrives</em></span><div class="chips">${[[true, 'On'], [false, 'Off']].map(([v, l]) => `<button class="chip ${(S.autoSlow !== false) === v ? 'on' : ''}" data-act="autoslow" data-v="${v ? 1 : 0}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Briefings <em class="dim">bosses, bounty</em></span><div class="chips">${[['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.briefings || 'pause') === v ? 'on' : ''}" data-act="briefs" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <div class="set"><span>Notifications</span><div class="chips">${[['all', 'All'], ['key', 'Key'], ['off', 'Off']].map(([v, l]) => `<button class="chip ${(S.notes || 'all') === v ? 'on' : ''}" data-act="notes" data-v="${v}">${l}</button>`).join('')}</div></div>
-      <p class="note tempo">Pause stops the game for a boss or bounty card until you tap Fight. Key notifications keep only what needs a reaction: Red Alert, wormholes, assaults, Maelstroms, checkpoints, pirates.</p>
-      <div class="set"><span>Damage Numbers</span><button class="chip ${S.dmgNums ? 'on' : ''}" data-act="nums">${S.dmgNums ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Screen Shake</span><button class="chip ${S.shake ? 'on' : ''}" data-act="shake">${S.shake ? 'On' : 'Off'}</button></div>
-      <div class="set"><span>Save Location</span><span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span></div>
-      ${G && !G.over ? '' : `<div class="set"><span>Transfer Save</span><div class="chips"><button class="chip" data-act="xcopy">Export</button><button class="chip" data-act="xpaste">Import</button></div></div>`}
-      ${G && !G.over ? '' : `<button class="btn danger wide" data-act="wipe">${confirmReset ? 'Tap again to erase all progress' : 'Reset Progress'}</button>`}
-      <p class="note credits">Music: Drift, a generative score written live as you play, in ten genres. No two runs sound the same.</p>
-      <div class="row"><p class="note">Version ${VERSION}</p><button class="btn small" data-act="news">What's New</button></div>
-      <div class="row"><p class="note">${lastLogText() ? 'Last run log' : 'No run log yet'}</p>${lastLogText() ? '<button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button>' : ''}</div></div>`, 'settings');
-    $('#setSfx').oninput = e => { S.sfx = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
-    $('#setMus').oninput = e => { S.music = +e.target.value; SFX.setVolumes(S.sfx, S.music); };
+    const S = PROF.settings, inRun = !!(G && !G.over);
+    const prev = $('#modal .card.settings .setpane'), keep = prev && prev.dataset.tab === setTab ? prev.scrollTop : 0;
+    const row = (name, desc, ctl, cls) => `<div class="setrow${cls ? ' ' + cls : ''}"><div class="setx"><b>${name}</b>${desc ? `<span>${desc}</span>` : ''}</div><div class="setc">${ctl}</div></div>`;
+    const sec = t => `<h3 class="ssec">${t}</h3>`;
+    const sw = (on, act, attrs) => `<button class="sw ${on ? 'on' : ''}" data-act="${act}" ${attrs || ''} aria-pressed="${on}"><span>${on ? 'On' : 'Off'}</span><i></i></button>`;
+    const flip = (on, act, extra) => sw(on, act, `${extra || ''} data-v="${on ? 0 : 1}"`); // the actions that take the new value
+    const seg = (act, opts, cur, extra) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button class="${cur === v ? 'on' : ''}" data-act="${act}" data-v="${v}" ${extra || ''} aria-pressed="${cur === v}">${l}</button>`).join('')}</div>`;
+    const rng = (id, v, min, max, step, out, oid) => `<input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${v}"><output class="sval" id="${oid}">${out}</output>`;
+    const pctV = v => Math.round(v * 100) + '%';
+    const pages = {
+      general: sec('Gameplay')
+        + row('Boss slow-down', 'Drop to 1× speed when a boss arrives', flip(S.autoSlow !== false, 'autoslow'))
+        + row('Briefings', 'Boss and bounty cards. Pause holds the game until you tap Fight', seg('briefs', [['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']], S.briefings || 'pause'))
+        + row('Haptics', 'A buzz when the core is hit', flip(S.haptics !== false, 'haptic'))
+        + sec('Save')
+        + row('Save location', cloudOk ? 'Synced to your Claude account' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
+        + (inRun ? '' : row('Transfer save', 'Move your progress to another device with a code', '<button class="btn small" data-act="xcopy">Export</button><button class="btn small" data-act="xpaste">Import</button>'))
+        + row('Run log', lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
+        + sec('About')
+        + row("What's New", `Version ${VERSION}`, `<button class="btn small" data-act="news">Open</button>`)
+        + row('Music', 'Drift: a generative score written live as you play, in ten genres', '')
+        + (inRun ? '' : row('Reset progress', 'Erase everything on this device. There is no undo', `<button class="btn small danger" data-act="wipe">${confirmReset ? 'Tap again to erase' : 'Reset'}</button>`, 'danger')),
+      sound: sec('Volume')
+        + row('Sound effects', 'Weapons, impacts and alerts', rng('setSfx', S.sfx, 0, 1, 0.05, pctV(S.sfx), 'sfxV'))
+        + row('Music', 'The score that follows the battle', rng('setMus', S.music, 0, 1, 0.05, pctV(S.music), 'musV'))
+        + sec('Music')
+        + row('Music Studio', 'Genres, mixer, your tracks and the composer', '<button class="btn small" data-act="studioS">Open</button>')
+        + row('Music tempo', 'Average tempo of the default mix. Each genre in the Studio has its own', rng('setBpm', S.bpm || 72, 56, 100, 2, (S.bpm || 72) + ' BPM', 'bpmV'))
+        + row('Mono audio', 'One earbud or one speaker', sw(!!S.mono, 'mono'))
+        + sec('Troubleshooting')
+        + row('Sound', `<em id="sndStat">${esc(soundStatus())}</em>`, '<button class="btn small" data-act="sndFix">Restart sound</button>'),
+      graphics: sec('Effects')
+        + row('Glow', 'Soft lighting on the field', flip(S.glow !== false, 'gfx', 'data-k="glow"'))
+        + row('Screen shake', 'Big hits shake the view', sw(!!S.shake, 'shake'))
+        + sec('Display')
+        + row('Pixel scaling', 'Sharp is crisper. Simple is lighter work for older devices', seg('gfx', [['1', 'Sharp'], ['0', 'Simple']], S.sharp !== false ? '1' : '0', 'data-k="sharp"'))
+        + (fsOK() ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
+      interface: sec('Layout')
+        + row('HUD', 'Detailed shows more numbers during a run', seg('hud', [['lean', 'Minimal'], ['full', 'Detailed']], S.hud === 'full' ? 'full' : 'lean'))
+        + row('Interface size', 'Scale of buttons and text', seg('uis', [['auto', 'Auto'], ['0.85', 'Small'], ['1.2', 'Large']], String(S.uiScale || 'auto')))
+        + sec('Information')
+        + row('Notifications', 'Key keeps only what needs a reaction: Red Alert, wormholes, assaults, checkpoints, pirates', seg('notes', [['all', 'All'], ['key', 'Key'], ['off', 'Off']], S.notes || 'all'))
+        + row('Damage numbers', 'Floating damage over enemies', sw(!!S.dmgNums, 'nums')),
+    };
+    modal(`<div class="card settings"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      <div class="setwrap"><nav class="setrail" role="tablist">${SET_TABS.map(([k, l, ic]) => `<button class="settab ${setTab === k ? 'on' : ''}" data-act="setTab" data-v="${k}" role="tab" aria-selected="${setTab === k}"><i data-svg="${ic}"></i><span>${l}</span></button>`).join('')}<span class="setver">v${VERSION}</span></nav>
+      <div class="setpane" data-tab="${setTab}">${SET_TABS.map(([k]) => `<div class="spg" data-pg="${k}" ${setTab === k ? '' : 'hidden'}>${pages[k]}</div>`).join('')}</div></div></div>`, 'settings');
+    const pane = $('#modal .setpane'); if (pane) pane.scrollTop = keep;
+    const vol = () => { SFX.setVolumes(S.sfx, S.music); $('#sfxV').textContent = pctV(S.sfx); $('#musV').textContent = pctV(S.music); };
+    $('#setSfx').oninput = e => { S.sfx = +e.target.value; vol(); };
+    $('#setMus').oninput = e => { S.music = +e.target.value; vol(); };
     $('#setSfx').onchange = $('#setMus').onchange = () => Save.save();
     const bp = $('#setBpm'); if (bp) { bp.oninput = () => { PROF.settings.bpm = +bp.value; $('#bpmV').textContent = bp.value + ' BPM'; SFX.music.setBaseBpm(+bp.value); }; bp.onchange = () => Save.save(); }
+  }
+  function setSettingsTab(k) { // in place: no re-render, so the rail never loses a tap
+    if (!SET_TABS.some(t => t[0] === k)) return; setTab = k;
+    for (const b of document.querySelectorAll('#modal .settab')) { const on = b.dataset.v === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }
+    for (const p of document.querySelectorAll('#modal .spg')) p.hidden = p.dataset.pg !== k;
+    const pane = $('#modal .setpane'); if (pane) { pane.dataset.tab = k; pane.scrollTop = 0; }
   }
   // v5.5.4: one line on the state of the sound, for Settings (and for Nic to read out if the music ever goes quiet)
   function soundStatus() {
@@ -2737,6 +2821,89 @@ const UI = (() => {
     if (M.held || M.paused || !(M.piece && M.piece.comp)) cpPlay(true); else M.compose(c.draft); // any change plays your song
     if (rerender === 'grid') { const gb = $('#cpGridBox'); if (gb) gb.innerHTML = cpGridHTML(); } else if (rerender) openStudio();
   }
+  // ---- 6.2 the ? sheet (Nic: "a ? button that has all the details regarding the music overlay and some advanced notes"). It covers the
+  // Studio card, opens on the tab you were on and has the same three tabs; each explains every control there, then Advanced: how the
+  // controls interact, recipes for moods, and how seeds, likes and playlists work. Every line is checked against audio.js and this file.
+  let stHelp = null; // null, or the help tab showing
+  const ST_HELP = {
+    listen: { rows: [
+      ['Now playing', 'The bar at the top stays put on every tab: song name, genre and style, key, tempo, the section it is in (intro, groove, drop) and how far through it is.'],
+      ['⏮ Back', 'The previous song. The Studio remembers the last 40 this session.'],
+      ['⏸ Pause', 'Silences the music. Game sounds keep playing.'],
+      ['⏭ Skip', 'A new song now, from the genres you have on.'],
+      ['Repeat', 'This song plays again when it ends instead of moving on. Lasts until you close the game.'],
+      ['♥ Keep', 'Adds the song to My Tracks with your current sound. Tap again to take it out.'],
+      ['Share', 'Copies a track code for the song playing.'],
+      ['Vibe', 'Sets the genre list in one tap. Calm: Ambient, Lo-fi, Trip Hop. Club: House, Techno, Trance, Drum & Bass. Retro: Synthwave, Chiptune. Everything: all ten.'],
+      ['Genres', 'Tap one to add it to the rotation or take it out (one always stays on). A genre you add plays at once. ▶ plays one song of that genre now without changing the list.'],
+      ['My Tracks', 'Every song you keep. ▶ plays it, the pencil opens a composed song in Compose, share copies its code, ✕ deletes it (tap twice). Tap a name to rename it.'],
+      ['Only my tracks', 'The radio plays your kept songs in turn instead of new ones.'],
+      ['Paste a code', 'Adds a friend’s TRACK code to My Tracks and plays it.'],
+    ], adv: [
+      ['Seeds', 'Every song grows from a seed. The same seed, genre and style always give the same chords, melody and drums, on any device. A kept song or a code is that seed plus a name, so it plays back exactly.'],
+      ['Likes keep the sound', 'Keeping a song also stores your sound: Energy, Follow, the mixer, mutes, effects and that genre’s tempo. Playing it brings that sound back, so your Shape sliders move to match.'],
+      ['Likes on the battlefield', 'The ♥ on the Music deck (tap the Music tile at the top of the left rail) keeps the song playing into the same My Tracks list.'],
+      ['Build a playlist', 'Keep songs as they come up, rename and delete to taste, then turn on Only my tracks. My Tracks holds 80; past that the oldest drops off.'],
+      ['Default mix', 'Until you change something, the Studio plays the default mix: the Calm genres, steered by the battle, at the tempo in Settings › Sound. Your first change switches to your own settings. Shape › Reset sound goes back.'],
+      ['Boss fights', 'During a boss, new songs avoid major keys. The default mix also switches to Trip Hop.'],
+    ] },
+    shape: { rows: [
+      ['Energy', 'How full the music is: Still, Chill, Groove, Peak. Low energy thins the music to its core; high energy brings in more parts and picks the harder styles of each genre.'],
+      ['Follow battle', 'How much the fight moves Energy. At 100% a calm menu pulls it down and a boss wave pushes it up. At 0% the music stays where you set it.'],
+      ['Tempo', 'BPM for the genre playing now; each genre keeps its own. Greyed out for composed songs: they carry their own tempo.'],
+      ['Song length', 'Short changes song about every minute. Standard is a radio edit (intro, build, drop, outro), about 3 minutes. Long is an extended mix, about 5. The song playing takes the new shape at once.'],
+      ['Reset sound', 'Back to the default mix. Keeps My Tracks, your Compose song and the song length.'],
+      ['Mixer', 'Pads, Keys, Arps, Bass, Drums and Lead, up to 125%. Drag a fader; double-tap it for 100%. Tap a name to mute that part. The thin bar inside a fader is its live level.'],
+      ['Effects', 'Reverb, Echo, Tone, Tape & Vinyl and Pump. The middle is the genre’s own amount; left takes it down to off, right adds up to double. Tone is darker to the left, brighter to the right. Pump makes the music duck on each kick.'],
+    ], adv: [
+      ['Energy plus Follow', 'The music runs at Energy, plus Follow times how hard the battle is. The menu reads as calm, so with Follow high the hangar sounds thinner than the slider says, and a boss wave fuller.'],
+      ['Composed songs', 'A composed song always plays every part you wrote. Energy and Follow shape the radio’s songs, not yours.'],
+      ['Mute to compare', 'A muted part comes back at its old level, so muting is quicker than dragging a fader down and back.'],
+      ['Keep after shaping', 'A kept song saves this whole panel. Set the sound first, then press ♥.'],
+      ['Settings tempo', 'Settings › Sound › Music tempo moves only the default mix. After your first change here, each genre uses its own Tempo slider.'],
+    ], recipes: [
+      ['Focus', 'Calm vibe, Energy at Chill, Follow 0%, Reverb and Tape & Vinyl right of middle, Pump off.'],
+      ['Tension', 'Club vibe, Follow 100%, Pump up, Echo down. Boss waves hit hardest.'],
+      ['Night drive', 'Synthwave only, Energy at Groove, Echo and Reverb right of middle.'],
+      ['Console', 'Chiptune only, Reverb and Tape & Vinyl off for a dry 8-bit sound.'],
+    ] },
+    compose: { rows: [
+      ['Start', 'Pick a style to start a song: you get its beat, bassline and chords, and no melody yet. Or remix the last radio song.'],
+      ['Name', 'Tap the name to rename your song.'],
+      ['Style', 'Genre and flavour. Changing it resets drums, bass, lead and tempo to that style’s own.'],
+      ['Mood', 'The scale: Bright, Dreamy, Bluesy, Soulful, Moody, Dark, Exotic. If the chords don’t fit the new mood, they change to ones that do.'],
+      ['Key', 'The home note. Everything moves with it.'],
+      ['Tempo', 'In steps of 2 BPM, a little past either end of the style’s range.'],
+      ['Chords', 'Progressions that fit the mood, written as numerals (I V vi IV). ×2 means two bars on each chord.'],
+      ['Bass', 'Fifteen bass lines. Style means the style’s own.'],
+      ['Lead', 'The instrument that plays the melody. None silences it.'],
+      ['Drums', 'One bar of 16 steps, looping, one row per drum. Every lit square plays; tap to switch it. The white column is where the song is. Reset brings back the style’s beat; Clear empties the grid.'],
+      ['Melody', 'Eight rows; higher rows are higher notes. Follow chords: rows are steps above each chord’s root, so every note fits. Fixed notes: rows are notes of the key (named on the left) and stay put while the chords move. Faint squares are a rolled melody: tap the grid to make it yours. Roll writes a new one; Clear removes it.'],
+      ['Play / Stop', 'Your song loops while you work. Walking into Compose stops the radio; any change starts your song; leaving brings the radio back.'],
+      ['Save', 'Adds the song to My Tracks with your current sound.'],
+      ['New song', 'Starts again from the style list. Tap twice: unsaved changes go.'],
+    ], adv: [
+      ['Live edits', 'Changes are heard at once while your song plays. Your draft is saved as you go: close the Studio and it is still here.'],
+      ['Safe or bold', 'Follow chords can’t clash: notes on strong beats snap to the chord. Fixed notes is how a hook works: the same notes over moving chords, so some land as tension. Give it a slow loop with few chords.'],
+      ['Groove', 'A kick on 1, 5, 9 and 13 is four on the floor. A kick on 1 with the snare on 9 is a half-time feel. Hats on every other step drive it; Shaker or Ride add motion without weight.'],
+      ['Saved songs', 'A saved song keeps everything: style, mood, key, tempo, chords, parts, drums, melody and your sound. Its code carries all of it, so a friend hears exactly your song.'],
+      ['Editing a kept song', 'The pencil in My Tracks opens a saved song as your draft. Save adds a new copy; the old one stays until you delete it.'],
+    ], recipes: [
+      ['Uplifting', 'Bright, chords I V vi IV, Piano or Bell lead.'],
+      ['Melancholy', 'Moody, Lo-fi style, Upright bass, a sparse melody in Follow chords.'],
+      ['Menace', 'Dark, Techno or Drum & Bass, Acid 303 or Reese bass.'],
+      ['Floaty', 'Dreamy, a two-chord loop, Glass or Theremin lead, few drums.'],
+    ] },
+  };
+  function stHelpHTML() {
+    const k = ST_HELP[stHelp] ? stHelp : 'listen', H = ST_HELP[k];
+    const dl = L => `<dl class="shdl">${L.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>`;
+    return `<div class="sthelp" role="dialog" aria-label="How the Music Studio works"><div class="shh"><b>How it works</b>
+      <div class="chips sttabs">${[['listen', 'Listen'], ['shape', 'Shape'], ['compose', 'Compose']].map(([v, l]) => `<button class="chip ${k === v ? 'on' : ''}" data-act="stHelpTab" data-v="${v}">${l}</button>`).join('')}</div>
+      <button class="stb shx" data-act="stHelpX" aria-label="Back to the Studio">✕</button></div>
+      <div class="shbody" data-tab="${k}"><div class="shcols"><section><h3 class="ssec">Controls</h3>${dl(H.rows)}</section>
+      <section class="shadv"><h3 class="ssec">Advanced</h3>${dl(H.adv)}${H.recipes ? `<h3 class="ssec">Moods to try</h3>${dl(H.recipes)}` : ''}</section></div></div></div>`;
+  }
   // ---- the card ----
   function openStudio(from) {
     SFX.init(); if (from) studioBack = from;
@@ -2745,9 +2912,11 @@ const UI = (() => {
     if (stTab === 'compose' && !c.composer) stTab = 'listen';
     const tabs = [['listen', 'Listen'], ['shape', 'Shape']].concat(c.composer ? [['compose', 'Compose']] : []);
     const prev = $('#modal .card.studio .cbody'), keep = prev ? prev.scrollTop : 0, wasTab = prev ? prev.dataset.tab : '';
-    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2><div class="chips sttabs">${tabs.map(([k, l]) => `<button class="chip ${stTab === k ? 'on' : ''}" data-act="stTab" data-v="${k}">${l}</button>`).join('')}</div><button class="x" data-act="stClose" aria-label="Close">✕</button>
+    const hPrev = $('#modal .sthelp .shbody'), hKeep = hPrev && hPrev.dataset.tab === stHelp ? hPrev.scrollTop : 0;
+    modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2><div class="chips sttabs">${tabs.map(([k, l]) => `<button class="chip ${stTab === k ? 'on' : ''}" data-act="stTab" data-v="${k}">${l}</button>`).join('')}</div><button class="stb sthq" data-act="stHelp" aria-label="How the Music Studio works">?</button><button class="x" data-act="stClose" aria-label="Close">✕</button>
       ${stNowHTML()}</div>
       ${stTab === 'shape' ? stShapeHTML() : stTab === 'compose' ? stComposeHTML() : stListenHTML()}</div>`, 'studio');
+    if (stHelp) { const cd = $('#modal .card.studio'); if (cd) { cd.insertAdjacentHTML('beforeend', stHelpHTML()); const hb = cd.querySelector('.shbody'); if (hb) hb.scrollTop = hKeep; } }
     const body = $('#modal .card.studio .cbody'); if (body) { body.dataset.tab = stTab; if (wasTab === stTab) body.scrollTop = keep; }
     if (stTab === 'compose' && !stInCompose) { stInCompose = true; enterCompose(); } else if (stTab !== 'compose' && stInCompose) { stInCompose = false; leaveCompose(); }
     const card = $('#modal .card.studio'); if (card) card.classList.toggle('composing', stTab === 'compose');
@@ -2827,6 +2996,9 @@ const UI = (() => {
     if (act !== 'stDel') stDelArm = -1; if (act !== 'cpOver') stOverArm = false;
     switch (act) {
       case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; SFX.play('ui'); openStudio(); return true;
+      case 'stHelp': stHelp = stTab; SFX.play('ui'); openStudio(); return true; // 6.2 the ? sheet, on the tab you are on
+      case 'stHelpTab': stHelp = b.dataset.v; SFX.play('ui'); openStudio(); return true;
+      case 'stHelpX': stHelp = null; SFX.play('ui'); openStudio(); return true;
       case 'stVibe': {
         studioTouch(); const v = ST_VIBES.find(x => x[0] === b.dataset.v); c.genres = (v[2] || M.GENRE_IDS).slice(); c.favOnly = false;
         M.apply(); studioSave(); if (M.piece && !c.genres.includes(M.piece.genre)) stPlayNow(); openStudio(); return true;
@@ -2909,7 +3081,7 @@ const UI = (() => {
       case 'cpMelAbs': { const d = c.draft; if (d) { d.melAbs = !d.melAbs; if (d.melAbs && !(d.mel && d.mel.length === 16)) d.mel = cpRollFixed(); cpApply(true); } return true; }
       case 'cpDice': { const d = c.draft; if (d && d.melAbs) { d.mel = cpRollFixed(); if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); return true; } if (d) { d.mel = null; d.melSeed = (Math.random() * 4294967296) >>> 0; if (d.lead === 'none') d.lead = 'bell'; SFX.play('ui'); cpApply(true); } return true; }
       case 'cpMelClr': { const d = c.draft; if (d) { d.mel = []; cpApply(true); } return true; }
-      case 'stClose': { cancelAnimationFrame(studioRaf); if (stInCompose) { stInCompose = false; leaveCompose(); } M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
+      case 'stClose': { stHelp = null; cancelAnimationFrame(studioRaf); if (stInCompose) { stInCompose = false; leaveCompose(); } M.editing = false; const back = studioBack; studioBack = null; stEdit = -1; stPaste = false; closeModal();
         if (M.paused) toast('MUSIC PAUSED', 'Press play in the Music Studio to bring it back', '#ff5fa8');
         if (back === 'settings') { if (G && !G.over && screen === 'game') modalFrom = 'pause'; openSettings(); }
         else if (back === 'pause' && G && !G.over && screen === 'game') openPause();
@@ -3215,6 +3387,7 @@ const UI = (() => {
       case 'htab': openHelp(b.dataset.v); break;
       case 'dcat': dictCat = b.dataset.v; openHelp(); break;
       case 'settings': if (modalOpen === 'pause') modalFrom = 'pause'; openSettings(); break;
+      case 'setTab': setSettingsTab(b.dataset.v); break;
       case 'studio': openStudio('pause'); break;
       case 'studioS': openStudio('settings'); break;
       case 'exit': G.paused = false; snapshotNow(); Save.save(); G = null; closeModal(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
@@ -3283,6 +3456,7 @@ const UI = (() => {
 
   // ---------- wiring ----------
   function wire() {
+    $('#app').addEventListener('pointerdown', () => { teachTap = performance.now(); }, true); // 6.2: a busy hand delays teaching cards
     $('#panel').addEventListener('pointerdown', () => { panelHeld = true; });
     const panelLift = () => { if (!panelHeld) return; panelHeld = false; if (panelDirty) setTimeout(() => { if (panelDirty && !panelHeld) renderPanel(); }, 30); };
     window.addEventListener('pointerup', panelLift, true); window.addEventListener('pointercancel', panelLift, true);
@@ -3311,13 +3485,24 @@ const UI = (() => {
     $('#bCash').onclick = () => { SFX.play('ui'); if (!G || G.over) return; if (marketShut()) { toast('EXCHANGE', 'The Black Market and Cash In open at Wave 10. Score comes from kills', '#8a8fa8', true, 'tip'); return; } if (panel && panel.kind === 'cash') closePanel(); else { closePanel(); openPanel({ kind: 'cash', x: 0, y: 0 }); } updateHud(); };
     // v5.5.14 music: the rail tile opens a deck (back · song · next). Back: one tap replays the song, a double tap goes to the
     // last one (the single tap waits TRK_DBL to see whether a second follows). The deck tucks away after a few idle seconds.
-    let trkBackT = 0, trkBackTimer = 0, deckT = 0; const TRK_DBL = 350;
+    let trkBackT = 0, trkBackTimer = 0, deckT = 0, deckNoteT = 0; const TRK_DBL = 350;
     const deckFill = () => { const M = SFX.music, p = M.piece, d = $('#mdeck'); if (!d || !p) return; const col = (M.GENRES[p.genre] || {}).col || '#59f0b4';
-      d.style.setProperty('--mc', col); d.querySelector('.mdname b').textContent = p.name; d.querySelector('.mdname span').textContent = `${p.genreName} · ${p.section}${M.paused ? ' · paused' : ''}`; };
+      d.style.setProperty('--mc', col); d.querySelector('.mdname b').textContent = p.name;
+      const sp = d.querySelector('.mdname span'); if (performance.now() > deckNoteT) { sp.textContent = `${p.genreName} · ${p.section}${M.paused ? ' · paused' : ''}`; sp.classList.remove('liked'); }
+      const lk = $('#bTrkLike'), on = M.isSaved(); if (lk && lk.dataset.on !== String(on)) { lk.dataset.on = on; lk.innerHTML = svgIcon(on ? 'heart' : 'heartO'); lk.classList.toggle('on', on); lk.setAttribute('aria-pressed', on); lk.setAttribute('aria-label', on ? 'Remove this song from My Tracks' : 'Keep this song in My Tracks'); } };
     const deckShow = on => { const d = $('#mdeck'); d.hidden = !on; $('#bMusic').classList.toggle('on', on); clearTimeout(deckT); if (on) { deckFill(); deckT = setTimeout(() => deckShow(false), 5000); } };
     UI.deckFill = deckFill;
     $('#bMusic').onclick = () => { SFX.init(); SFX.play('ui'); deckShow($('#mdeck').hidden); };
     $('#mdName').onclick = () => { deckShow(false); openStudio(); };
+    // 6.2 (Nic: "let people like songs to their playlist there while they're on the battle field"): Keep, as in the Studio
+    $('#bTrkLike').onclick = () => {
+      SFX.init(); const M = SFX.music; if (!M.piece) return; let line = '';
+      if (M.isSaved()) { M.unsave(); line = 'Removed from My Tracks'; } else if (M.save()) line = '♥ Kept in My Tracks';
+      studioSave(); SFX.play('ui'); deckShow(true);
+      const d = $('#mdeck'), sp = d && d.querySelector('.mdname span'), lk = $('#bTrkLike');
+      deckFill(); if (sp && line) { sp.textContent = line; sp.classList.add('liked'); deckNoteT = performance.now() + 1800; }
+      if (lk) { lk.classList.remove('pop'); void lk.offsetWidth; lk.classList.add('pop'); }
+    };
     $('#bTrkNext').onclick = () => { SFX.init(); const M = SFX.music; M.setPaused(false); M.jump(null); deckShow(true); setTimeout(deckFill, 60); };
     $('#bTrkBack').onclick = () => {
       SFX.init(); const M = SFX.music, now = performance.now(); deckShow(true);
@@ -3385,7 +3570,7 @@ const UI = (() => {
       if (modalOpen || Tree.isOpen || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase(), P = 70;
       const pan = { arrowleft: [P, 0], a: [P, 0], arrowright: [-P, 0], d: [-P, 0], arrowup: [0, P], w: [0, P], arrowdown: [0, -P], s: [0, -P] }[k];
-      if (pan) { e.preventDefault(); Render.panBy(pan[0], pan[1]); updateZoomBtn(); return; }
+      if (pan) { e.preventDefault(); Render.panBy(pan[0], pan[1]); updateZoomBtn(); camUser++; return; }
       const L = Render.layout;
       if (k === '=' || k === '+') { Render.zoomAt(L.W / 2, L.H / 2, 1.2); updateZoomBtn(); return; }
       if (k === '-' || k === '_') { Render.zoomAt(L.W / 2, L.H / 2, 1 / 1.2); updateZoomBtn(); return; }
@@ -3404,8 +3589,8 @@ const UI = (() => {
     SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, py: p.y / L.H * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; }); // 6.2: py for the camera-distance mix
     Hooks.fx = (t, d) => Render.fx(t, d);
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
-    Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && !modalOpen && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over) openEvo(true); }, 600); };
-    Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) openAssault(true); }, 700); };
+    Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && screen === 'game') evoWait = true; }; // 6.2: shown by tick when the teaching gate allows
+    Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) { teachMark(); openAssault(true); } }, 700); }; // (an assault can't wait: it is this wave)
     Hooks.frLanded = d => { if (!G || G.replaying) return; const n = (G.frLinks || []).length; // Frontier
       toast(d ? 'DOCKED' : 'LANDED', `${d ? `The core fires the ${TOWERS[d.type].name}: ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range` : 'Plain cannon'} · ${n} link${n === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, d ? EL[d.s.el].col : '#59f0b4');
       if (panel && (panel.kind === 'core' || panel.kind === 'tower')) renderPanel(); updateHud(true); };
@@ -3465,7 +3650,8 @@ const UI = (() => {
     if (screen === 'game') { koWatch(); const bc = document.body.className, now = performance.now(); if (now >= koT || bc !== koCls) { koT = now + 250; koCls = bc; Render.keepOut = keepOutRects(); } } // 6.2: edge arrows slide clear of these (at once when a panel or banner moves the layout)
     if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
     if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
-    if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());
+    if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) enemyCard(enemyCards.shift());
+    if (evoWait && screen === 'game' && G && !G.over && !G.tut && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) { evoWait = false; if (!PROF.seenEvo) { teachMark(); openEvo(true); } }
     onboardingTick(); Coach.tick();
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
     // v5.2: fast-forward is safe to leave on. A boss arriving (or reaching Red Alert) drops the game to 1×; the old speed comes back when it falls.
@@ -3686,7 +3872,7 @@ function talentsToast(kind) {
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
-  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
+  SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)
   // and reload onto it from the main menu, never mid-run

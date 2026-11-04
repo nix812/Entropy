@@ -774,6 +774,56 @@ h2.void { color: #d6a6ff; }
 .over h2 { font-size: 22px; }
 .set { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .set input[type=range] { width: 50%; }
+/* ---------- 6.2 Settings: a tab rail on the left, one scrolling pane on the right (console-style options screen) ---------- */
+.card.settings { width: min(880px, 100%); height: min(560px, 100%); }
+.card.settings > .ch { margin-bottom: 0; box-shadow: 0 1px 0 var(--line); }
+.card.settings > .cbody { display: flex; overflow: hidden; padding: 0; margin: 0 -14px -12px; }
+.setwrap { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 168px minmax(0, 1fr); }
+.setrail { display: flex; flex-direction: column; gap: 2px; padding: 10px 0 10px 8px; background: #0a0c19; box-shadow: inset -1px 0 0 var(--line); min-height: 0; }
+.settab { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 12px; border: 0; background: none; color: var(--dim); text-align: left;
+  font-family: var(--f-pix); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.settab .svgi { width: 18px; height: 18px; }
+.settab.on { margin-right: -1px; color: var(--ink); background: var(--panel); box-shadow: inset 3px 0 0 var(--amber), inset 0 1px 0 var(--line), inset 0 -1px 0 var(--line); }
+.settab.on .svgi { color: var(--amber); }
+.settab:active { filter: brightness(1.3); }
+.setver { margin-top: auto; padding: 0 12px 2px; font-family: var(--f-pix); font-size: 8px; letter-spacing: 0.08em; color: #4c4f72; }
+.setpane { min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; padding: 2px 18px 16px; }
+.ssec { display: flex; align-items: center; gap: 10px; margin: 14px 0 2px; font-family: var(--f-pix); font-weight: 400; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); }
+.ssec::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.setrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center; min-height: 54px; padding: 5px 0; border-bottom: 1px solid rgba(42, 47, 82, 0.55); }
+.setx { min-width: 0; }
+.setx b { display: block; font-weight: 400; font-size: 19px; line-height: 1.05; color: var(--ink); }
+.setx span { display: block; font-size: 15px; line-height: 1.1; color: var(--dim); margin-top: 2px; }
+.setx em { font-style: normal; }
+.setc { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.setc .btn { min-height: 44px; min-width: 64px; justify-content: center; }
+.setc input[type=range] { width: 190px; height: 44px; }
+.card.settings .x { width: 44px; height: 44px; top: 6px !important; }
+.sval { min-width: 52px; text-align: right; font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+/* switch: a pixel track with a square knob; the word says the state */
+.sw { display: flex; align-items: center; gap: 10px; min-height: 44px; min-width: 88px; justify-content: flex-end; padding: 0 2px; border: 0; background: none;
+  font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+.sw i { position: relative; width: 42px; height: 22px; background: #1b1f3a; box-shadow: inset 0 0 0 2px var(--line2); flex: none; }
+.sw i::after { content: ''; position: absolute; top: 5px; left: 5px; width: 12px; height: 12px; background: var(--dim); }
+.sw.on { color: var(--ink); }
+.sw.on i { background: var(--amber); box-shadow: inset 0 0 0 2px #c98423; }
+.sw.on i::after { left: 25px; background: #1a1004; }
+/* segmented choice: one strip, the chosen part filled */
+.seg { display: flex; box-shadow: inset 0 0 0 1px var(--line2); background: var(--panel2); }
+.seg button { min-height: 44px; min-width: 62px; padding: 0 10px; border: 0; background: none; font-family: var(--f-pix); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); }
+.seg button + button { box-shadow: inset 1px 0 0 var(--line2); }
+.seg button.on { background: var(--amber); color: #1a1004; box-shadow: none; }
+.seg button:active:not(.on) { filter: brightness(1.3); }
+.setrow.danger .setx b { color: #ff9aac; }
+@media (max-width: 760px) {
+  .setwrap { grid-template-columns: 124px minmax(0, 1fr); }
+  .settab { padding: 0 8px; gap: 8px; font-size: 10px; letter-spacing: 0.03em; } .settab .svgi { width: 16px; height: 16px; }
+  .setpane { padding: 0 12px 12px; }
+  .setrow { gap: 4px 10px; min-height: 50px; }
+  .setx b { font-size: 18px; } .setx span { font-size: 14px; }
+  .setc input[type=range] { width: 130px; } .sval { min-width: 44px; font-size: 16px; }
+  .seg button { min-width: 50px; padding: 0 7px; font-size: 9px; }
+}
 /* v4.8 pixel sliders: a chunky track filled up to the thumb (--p is set by paintRange in ui.js), square thumb, 44px touch row */
 input[type=range] { -webkit-appearance: none; appearance: none; height: 30px; background: transparent; margin: 0; cursor: pointer; touch-action: pan-y; --fc: var(--amber); }
 input[type=range]::-webkit-slider-runnable-track { height: 8px; background: linear-gradient(to right, var(--fc) 0 var(--p, 50%), #232845 var(--p, 50%) 100%); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.06); }
@@ -940,6 +990,19 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .strow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
 .stcode, .stren, #cpName { flex: 1 1 140px; min-width: 0; background: #05060c; border: 0; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); font-family: var(--f-term); font-size: 17px; padding: 6px 8px; min-height: 36px; }
 .stcode:focus, .stren:focus, #cpName:focus { outline: 2px solid var(--gc, var(--amber)); outline-offset: -2px; }
+/* 6.2 the ? sheet: covers the Studio card, same three tabs, Controls then Advanced */
+.card.studio > .ch .sthq { margin-left: auto; font-family: var(--f-pix); font-size: 13px; color: var(--amber); }
+.sthelp { position: absolute; inset: 2px; z-index: 6; display: flex; flex-direction: column; background: var(--panel); }
+.shh { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px 8px; box-shadow: 0 1px 0 var(--line); }
+.shh > b { font-family: var(--f-pix); font-weight: 700; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.shh .shx { margin-left: auto; font-size: 18px; }
+.shbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; padding: 0 16px 14px; }
+.shcols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0 24px; }
+.shdl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 12px; }
+.shdl dt { font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gc, var(--amber)); padding-top: 3px; max-width: 110px; }
+.shdl dd { margin: 0; font-size: 16px; line-height: 1.15; color: var(--ink); }
+.shadv .shdl dd { color: #cfcbe0; }
+@media (max-width: 760px) { .shcols { grid-template-columns: minmax(0, 1fr); } .shdl dt { max-width: 92px; } .shh { gap: 6px; padding: 8px 10px 6px; } .shh > b { display: none; } }
 /* Listen */
 .stlisten { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; }
 .stvibe { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -999,6 +1062,12 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .mdname b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mdname span { font-size: 14px; color: var(--mc, var(--dim)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.watching #mdeck { display: none; }
+/* 6.2 like from the battlefield: the same ♥ as the Studio's Keep; filled when the song is in My Tracks, a short pop and a line to confirm */
+.mdb.mdlike { color: #c9c6dc; } .mdb.mdlike.on { color: #ff5fa8; box-shadow: inset 0 0 0 2px #ff5fa8; }
+.mdb.mdlike.pop .svgi { animation: mdpop 0.36s steps(3); }
+@keyframes mdpop { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+.mdname span.liked { color: #ff5fa8; }
+@media (prefers-reduced-motion: reduce) { .mdb.mdlike.pop .svgi { animation: none; } }
 body.panel-l #mdeck { left: auto; right: 6px; top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } /* a left panel covers the corner: the deck opens on the right, under Map */
 body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } /* Map moves to the top-left then; the deck sits under it */
 /* v5.5.10 typing panel (outside the scaled game layer, pinned to what the keyboard leaves visible) */
@@ -1114,7 +1183,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <div id="etip" hidden></div>
       <div id="ticker" hidden></div>
       <div id="watchbar" hidden><em>Replay</em><b></b><button class="btn small" data-act="watchEnd">Exit</button></div>
-      <div id="mdeck" hidden><button class="mdb" id="bTrkBack" aria-label="Tap to replay this song, double-tap for the last song" data-svg="prev"></button><button class="mdname" id="mdName" aria-label="Open the Music Studio"><b></b><span></span></button><button class="mdb" id="bTrkNext" aria-label="Next song" data-svg="next"></button></div>
+      <div id="mdeck" hidden><button class="mdb" id="bTrkBack" aria-label="Tap to replay this song, double-tap for the last song" data-svg="prev"></button><button class="mdname" id="mdName" aria-label="Open the Music Studio"><b></b><span></span></button><button class="mdb mdlike" id="bTrkLike" aria-label="Keep this song in My Tracks" aria-pressed="false" data-svg="heartO"></button><button class="mdb" id="bTrkNext" aria-label="Next song" data-svg="next"></button></div>
       <div class="cpbanner" id="cpBanner" hidden><b>Checkpoint · Full refunds · Free respec</b><span></span><i class="cpbar"><i id="cpFill"></i></i></div>
     </div>
     <div class="rail" id="railR">
