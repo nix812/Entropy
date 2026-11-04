@@ -797,6 +797,8 @@ h2.void { color: #d6a6ff; }
 .codex span { font-size: 15px; padding: 1px 6px; box-shadow: inset 0 0 0 1px var(--line); color: var(--dim); }
 .codex span.on { color: var(--ink); box-shadow: inset 0 0 0 1px var(--amber); }
 @media (max-width: 700px) { .boons.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 6.4: short phones (667x375) fit a 2-boon Exotic card in the 2x2 Anomaly grid */
+@media (max-width: 700px) and (max-height: 420px) { .boons.four .boon { padding: 8px 10px; gap: 3px; min-height: 0; } .boons.four .boon span { font-size: 14px; } .boons.four .boon .cost { margin: 2px 0 -2px; padding-top: 4px; } }
 .bigstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 6px 0 10px; }
 .bigstats.two { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .bigstats span { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; color: var(--dim); display: flex; flex-direction: column; background: var(--panel2); padding: 6px 8px; }

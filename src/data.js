@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.3.0';
+const VERSION = '6.4.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -458,16 +458,15 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.3.0', title: 'Last Gradient 6.3 · Boss Fight', items: [
-  ['Boss themes', 'Every boss has its own theme song. It starts when the boss arrives. It moves up 1 semitone at a new boss phase. A kill plays a victory sting. Then your song comes back.'],
-  ['Theme list', 'Studio › Listen lists all 13 themes. Beat a boss to play its theme there. Tap ♥ to keep a theme in My Tracks.'],
-  ['Boss music switch', 'Studio › Listen › Play in boss fights turns the themes off. Your song then keeps playing.'],
-  ['More music variety', 'Every genre now has 4 styles. Each new song picks its own drums, bass, lead, tempo and key. Melodies are short hooks that repeat and grow.'],
-  ['Old tracks', 'Tracks you kept before 6.3, and their codes, sound exactly as before.'],
-  ['Zones look different', 'Each of the 10 zones has its own ground, roads, decals and weather. Rain and lightning in Tempest Front, spores in The Hive, a rubber duck in The Odd Belt.'],
-  ['Entering a zone', 'A banner shows the zone name when a run starts and after each jump door. The new board spreads out from the core with a short sound.'],
-  ['Zone previews', 'Jump doors and New Run zone buttons show a strip of each zone\'s board.'],
-  ['Zone effects', 'Settings › Graphics › Zone effects turns off the weather and lightning. The colours stay.'],
+const WHATS_NEW = { ver: '6.4.0', title: 'Last Gradient 6.4 · Wild Cards', items: [
+  ['New cards every draw', 'Entropy cards are now built fresh each draw. Each card pairs 1 boon with 1 cost, so the same card rarely comes twice.'],
+  ['Rarity', 'Cards come as Common, Rare or Exotic. Exotic cards carry 2 boons. Your later draws in a run swing harder.'],
+  ['Cards fit your build', 'Boons lean toward the towers you field. Crit, Chill, Burn, Shock and Mark boons need the matching towers.'],
+  ['Classic cards', 'The 21 old cards still appear, about 1 slot in 4, with a purple frame.'],
+  ['Capstone tier', 'Each talent tree has a new gold tile under its Capstones. It opens at 16 points in that tree, costs 1 point and takes no Capstone slot.'],
+  ['7 new towers', 'Each Capstone tier tile unlocks a new tower for your runs. Locked towers show greyed in the build menu.'],
+  ['The towers', 'Buzzsaw (Ballistics), Flashover (Combustion), Surge Spire (Voltaic), Rimewall (Cryogenics), Entangler (Singularity), Gatekeeper (Bastion), Wildcard (Command).'],
+  ['Daily Hunts', 'Daily Hunts keep the original 12 towers, so the ladder stays fair.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
