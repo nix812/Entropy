@@ -1,4 +1,4 @@
-// Frontier prototype checks (G.fr): board size, slower and heavier waves, lift-off and flight, docking, links, tower moves,
+// Frontier checks (G.fr; the only run type since 6.1, Daily Hunts and Training included): board size, slower and heavier waves, lift-off and flight, docking, links, tower moves,
 // the cooldown, enemies re-routing to the landing spot, and that a scripted Frontier run (lift-offs, docks and moves through act())
 // replays bit for bit, rebuilds halfway (mid-flight), and resumes from a snapshot taken mid-flight.
 // usage: node test/frontier.js [maxWave]
@@ -18,8 +18,22 @@ const till = (S, f, cap) => { for (let i = 0; i < (cap || 60000) && !f() && !S.G
   ok(!G.fr && !('frontier' in G.recOpts) && G.frFly === undefined, 'a Classic run has no Frontier state');
   ok(S.ROWS === 26 && S.COLS === 44, `Classic board stays ${S.COLS}x${S.ROWS}`);
   ok(S.act('frFly', 10, 10) === false && S.act('frMove', 1, 1, 2, 2) === false, 'Frontier acts do nothing in a Classic run');
-  const D = S.newRun({ seed: 12, chaos: 1, cols: 44, frontier: 1, daily: S.dailySpec('2026-11-03'), huntBuild: { tal: {}, caps: [], remnants: [], lvl: 40 } });
-  ok(!D.fr, 'a Daily Hunt never runs Frontier rules');
+  const D0 = S.newRun({ seed: 12, chaos: 2, cols: 44, daily: S.dailySpec('2026-11-03'), huntBuild: { tal: {}, caps: [], remnants: [], lvl: 40 } });
+  ok(!D0.fr && !('frontier' in D0.recOpts), 'a Daily Hunt without the flag (old recordings and hunt codes) stays Classic');
+  const D = S.newRun({ seed: 12, chaos: 2, frontier: 1, daily: S.dailySpec('2026-11-03'), huntBuild: { tal: {}, caps: [], remnants: [], lvl: 40 } });
+  ok(D.fr === 1 && D.daily && D.recOpts.frontier === 1 && S.ROWS === S.frRows(2) && S.COLS === S.frCols(S.ROWS), `6.1: a flagged Daily Hunt runs Frontier rules on the ${S.COLS}x${S.ROWS} board`);
+  ok(D.frV === S.FR_VER && D.recOpts.frV === S.FR_VER, `a new Frontier run records its rules version (frV ${D.recOpts.frV})`);
+  const O = S.newRun({ seed: 13, chaos: 1, frontier: 1, cols: 64, rows: 36, v: '6.0.2', hk: 1 }); ok(O.fr === 1 && O.frV === 1, 'a lab recording (flag, no frV) replays on the prototype rules (frV 1)');
+}
+// ---- 1b. Training and lessons run on Frontier rules when flagged (6.1); without the flag they stay Classic
+{
+  const S = fresh(); const T = S.newRun({ tut: 1, frontier: 1, cols: 46 });
+  ok(T.fr === 1 && T.tut && S.ROWS === S.TUT.fr.rows && S.COLS === 46 && T.tutS.waves === S.TUT.fr.waves, `Frontier Training: ${S.COLS}x${S.ROWS}, its own wave script`);
+  ok(S.frCanFly() && T.recOpts.frontier === 1, 'Lift Off is open in Training');
+  const L = S.newRun({ tut: 1, frontier: 1, cols: 46, lesson: 'lift' });
+  ok(L.fr === 1 && L.lesson === 'lift' && L.towers.length === 3 && L.towers.some(t => t.type === 'rail' && t.lvl === 3), 'the Lift Off lesson starts with a Rail Lance and two Pulse Blasters beside the road');
+  const dock = L.towers.filter(t => S.frCands().includes(S.tIdx(t.x, t.y)) && S.frPlan(t.x, t.y)); ok(dock.length >= 1, `the lesson has a tower to dock on (${dock.map(t => t.type).join(', ')})`);
+  const C = S.newRun({ tut: 1, cols: 44 }); ok(!C.fr && S.ROWS === S.TUT.rows, 'an old Training recording (no flag) stays Classic');
 }
 
 // ---- 2. the board, the waves and the enemies
@@ -73,6 +87,7 @@ const till = (S, f, cap) => { for (let i = 0; i < (cap || 60000) && !f() && !S.G
   const ground = G.enemies.filter(e => !e.fly && !e.dead);
   ok(ground.length > 0 && ground.every(e => { const p = e.L.pts[e.L.pts.length - 1]; return Math.abs(p.x - (rx + 0.5)) < 0.01 && Math.abs(p.y - (ry + 0.5)) < 0.01; }), `${ground.length} walking enemies re-routed to the landing spot`);
   ok(G.map.lanes.every(L => { const p = L.tiles[L.tiles.length - 1]; return p.x === rx && p.y === ry; }), 'every lane ends at the landing spot');
+  ok(ground.every(e => S.eProg(e) > 0 && S.eProg(e) < 1) && ground.some(e => e.L.pre > 0), `FR_VER 2: re-routed enemies keep their place in line ('First' targeting: ${ground.map(e => S.eProg(e).toFixed(2)).join(' ')})`);
   ok(!S.frDockT() && !rail.s.docked, 'nothing is docked while flying');
   let shots = 0; const pc = G.projs.length; step(S, 10); shots = G.projs.filter(p => p.src === G.core).length;
   ok(shots === 0 && G.core.shield === 0, 'the core gun is offline in the air');
@@ -157,6 +172,52 @@ for (const seed of [1, 2]) {
     const dk = G4.towerAt[S4.tIdx(tgt[0], tgt[1])]; ok(!dk || S4.frDockT() === dk, 'docking comes back with it');
     const s2 = JSON.parse(JSON.stringify(mark.snap)); delete s2.fr; delete s2.frFly; delete s2.frReady; delete s2.frN;
     const S5 = fresh(); S5.resumeRun(Object.assign(s2, { cols: 44, rows: 26 })); ok(!S5.G.fr, 'a snapshot without the flag resumes as Classic');
+  }
+}
+// ---- 5. a Daily Hunt on Frontier rules (6.1): lift-offs, docks, moves, a bounty and a jump door replay bit for bit from the
+// recording (as resume, ladder checks and hunt codes rebuild it), rebuild halfway, and resume from the snapshot's recording
+const boost = S => Object.defineProperty(S.Hooks, 'log', { enumerable: false, configurable: true, writable: true, value: t => { if (/^Run started/.test(t)) { S.G.runMods.dmg = (S.G.runMods.dmg || 0) + 400; S.G.core.hpBonus = 40; S.recomputeAll(); S.G.core.hp = S.G.core.max; } } });
+function playDaily(S, seed, maxw, mark) {
+  const R = rng(seed), sp0 = S.dailySpec('2026-11-0' + seed);
+  const G = S.newRun({ seed: sp0.seed, chaos: sp0.chaos, startWave: 1, daily: sp0, frontier: 1, huntBuild: { tal: {}, caps: [], remnants: [], lvl: 40 }, nemesis: sp0.nemesis, sector: sp0.sector });
+  let guard = 0, flights = 0, docks = 0, moves = 0, doors = 0;
+  while (!G.over && G.wave < maxw && guard++ < 600000) {
+    if (G.draft) { S.act('boon', Math.floor(R() * G.draft.length)); continue; }
+    if (G.huntChoice) { const D = G.huntChoice.doors; if (S.act('push', D ? 0 : undefined)) doors++; continue; }
+    if (G.anomOffers) S.act('stab');
+    if (G.checkpoint && !G.enemies.length) { S.act('cpResume', 3 + R() * 10); continue; }
+    if (guard % 25 === 0) {
+      const x = R();
+      if (x < 0.4 && S.gridFree() > 0) { const sp = spots(S, G); if (sp.length) { const [tx, ty] = sp[Math.floor(R() * sp.length)]; S.act('build', ['pulse', 'rail', 'cryo', 'missile', 'pulse'][Math.floor(R() * 5)], tx, ty); } }
+      else if (x < 0.62 && G.towers.length) { const t = G.towers[Math.floor(R() * G.towers.length)]; S.act('up', t.x, t.y, t.lvl === 3 ? 1 : null); }
+      else if (x < 0.66) S.act('core', ['weapon', 'shield', 'uplink'][Math.floor(R() * 3)]);
+      else if (x < 0.71 && G.towers.length > 3) { const t = G.towers[Math.floor(R() * G.towers.length)], sp = spots(S, G); if (sp.length && S.act('frMove', t.x, t.y, ...sp[Math.floor(R() * sp.length)])) moves++; }
+      else if (x < 0.8 && S.frCanFly() && G.enemies.length > 2) {
+        const c = S.frCands(), tw = G.towers.filter(t => !['pylon', 'forge', 'snare'].includes(t.type)).sort((a, b) => b.dmgDone - a.dmgDone || a.id - b.id).find(t => c.includes(S.tIdx(t.x, t.y)) && S.frPlan(t.x, t.y));
+        if (tw && S.act('frFly', tw.x, tw.y)) { flights++; docks++; if (mark && !mark.tick && G.frFly && G.frFly.dur > 0.5) mark.arm = G.tick + 8; }
+      }
+      else if (x < 0.83) S.act('call');
+    }
+    if (mark && mark.arm && G.tick === mark.arm && G.frFly) { mark.tick = G.tick; mark.hash = S.runHash(); S.snapshotRun(G.wave); mark.snap = JSON.parse(JSON.stringify(S.PROF.runSnap)); }
+    if (!G.draft && !G.huntChoice && !(G.checkpoint && !G.enemies.length)) S.simStep(S.SIM_STEP);
+  }
+  return { G, flights, docks, moves, doors };
+}
+for (const seed of [4, 6]) {
+  const S = fresh(); boost(S); const mark = {};
+  const { G, flights, docks, moves, doors } = playDaily(S, seed, Math.max(MAXW, 24), mark);
+  const end = { tick: G.tick, wave: G.wave, score: Math.round(G.score), hash: S.runHash() };
+  ok(G.fr === 1 && G.daily && flights >= 2 && docks >= 2 && moves >= 2, `daily ${seed}: Frontier Daily Hunt to Wave ${G.wave} with ${flights} lift-offs (${docks} docks), ${moves} moves, ${G.bounties.length} bounties, ${doors} doors`);
+  if (seed === 4) ok(G.bounties.length >= 1 && doors >= 1, `daily ${seed}: claimed the bounty and pushed through a jump door`); else ok(true, `daily ${seed}: ${G.over ? 'the run ended (the replay covers game over)' : 'still running'}`);
+  // a hunt code is the recording as JSON
+  const rec = JSON.parse(JSON.stringify({ opts: G.recOpts, inputs: G.inputs, end: G.tick }));
+  ok(rec.opts.frontier === 1 && rec.opts.daily && rec.opts.rows === S.frRows(2) && rec.opts.frV === S.FR_VER, 'the recording carries the Daily, the Frontier flag, its version and the board');
+  const S2 = fresh(); boost(S2); const r2 = S2.replayRun(rec, { quiet: true, until: G.over ? Infinity : G.tick });
+  ok(S2.runHash() === end.hash && r2.wave === end.wave && r2.score === end.score && r2.tick === end.tick && S2.G.fr === 1, `daily ${seed}: replay ${r2.wave}/${r2.score}/${S2.runHash()} vs ${end.hash}`);
+  ok(!!mark.tick && !!mark.snap && !!mark.snap.rec && mark.snap.rec.opts.frontier === 1, `daily ${seed}: snapshot mid-flight (tick ${mark.tick}) carries its recording`);
+  if (mark.snap && mark.snap.rec) { // the Daily resume path: replay the snapshot's recording to its end
+    const S3 = fresh(); boost(S3); S3.replayRun(mark.snap.rec, { quiet: true, until: mark.snap.rec.end });
+    ok(S3.runHash() === mark.hash && S3.G.tick === mark.tick && !!S3.G.frFly, `daily ${seed}: resume by replay lands mid-flight on the same state (${S3.runHash()} vs ${mark.hash})`);
   }
 }
 console.log(`frontier.js: ${n - fails} passed, ${fails} failed`);

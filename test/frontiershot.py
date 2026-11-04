@@ -1,6 +1,6 @@
-"""Frontier prototype through the real UI: New Run with the Frontier tab, the first-time card, the Lift Off button, the landing
+"""Frontier (the only run type since 6.1) through the real UI: New Run (Endless / Daily Hunt, no mode choice), the first-time card, the Lift Off button, the landing
 picker and its preview, landing and docking on a tower, links, the core panel, moving a tower, the edge arrows and the
-zoomed-out board. Screenshots in test/out/frontier/. usage: python3 frontiershot.py [WxH ...]  (default 667x375 852x393 1180x820)"""
+zoomed-out board, the docked core's Details tab, a Daily Hunt on Frontier rules (resume by replay, hunt code, watch). Screenshots in test/out/frontier/. usage: python3 frontiershot.py [WxH ...]  (default 667x375 852x393 1180x820)"""
 import pathlib, sys
 from playwright.sync_api import sync_playwright
 import mkpage
@@ -26,17 +26,18 @@ with sync_playwright() as p:
         pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}'))
         pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
         pg.evaluate(f'() => {{ PROF.seenVer = VERSION; PROF.seenHelp = true; PROF.zoomHint = true; PROF.bestWave = 12; PROF.runSnap = null; PROF.seenSys = {SEEN}; PROF.tut = Object.assign(PROF.tut || {{}}, {{ seen: 1, done: 1 }}); UI.renderHangar(); }}')
-        # 1. New Run: the Frontier tab
+        # 1. New Run: one kind of run (Endless) beside the Daily Hunt, on the Frontier board
         pg.click('#bLaunch'); pg.wait_for_timeout(300)
-        pg.click('[data-act=mode][data-v=fr]'); pg.wait_for_timeout(300)
-        check('Frontier' in pg.inner_text('#modal') and pg.evaluate('() => COLS === 64 && ROWS === 36'), 'New Run shows the Frontier tab and pitch, board 64x36', tag)
+        chips = pg.evaluate('() => [...document.querySelectorAll("#modal [data-act=mode]")].map(b => b.dataset.v + ":" + b.textContent.trim())')
+        txt = pg.inner_text('#modal')
+        check(chips == ['std:Endless', 'daily:Daily Hunt'] and 'prototype' not in txt.lower() and 'flies' in txt and pg.evaluate('() => COLS === 64 && ROWS === 36'), f'New Run: no mode choice {chips}, one-line pitch, board 64x36', tag)
         pg.screenshot(path=str(out / f'f01_setup_{tag}.png'))
         pg.click('[data-act=launch]'); pg.wait_for_timeout(1600)
         check(pg.evaluate('() => G.fr === 1 && G.recOpts.frontier === 1'), 'the run starts in Frontier', tag)
         # 2. the first-time card
         try: pg.wait_for_selector('#modal .intro', timeout=4000)
         except Exception: pass
-        has_intro = pg.evaluate('() => !!document.querySelector("#modal .intro") && /frontier/i.test(document.querySelector("#modal").innerText)')
+        has_intro = pg.evaluate('() => !!document.querySelector("#modal .intro") && /lift off/i.test(document.querySelector("#modal").innerText)')
         check(has_intro, 'first-time Frontier card', tag)
         pg.screenshot(path=str(out / f'f02_intro_{tag}.png'))
         clear(pg); pg.evaluate('() => { PROF.settings.briefings = "off"; }')
@@ -89,6 +90,10 @@ with sync_playwright() as p:
         txt = pg.inner_text('#panel')
         check('Docked' in txt and 'Links' in txt and 'Weapon Element' not in txt, 'core panel: docked weapon, links, no element buttons', tag)
         pg.screenshot(path=str(out / f'f07_core_panel_{tag}.png'))
+        pg.click('#panel [data-act=tab][data-v=info]'); pg.wait_for_timeout(250)
+        txt = pg.inner_text('#panel'); want = pg.evaluate('() => { const d = frDockT(); return [Math.round(d.s.dmg * (1 + d.buff.dmg)), Math.round(coreStats().dmg)]; }')
+        check('Docked' in txt and 'Rail Lance' in txt and 'Shells hit' not in txt and pg.evaluate(f'() => fmt({want[0]})') in txt, f'core Details tab shows the docked Rail Lance (damage {want[0]}, plain cannon {want[1]})', tag)
+        pg.screenshot(path=str(out / f'f07b_core_details_docked_{tag}.png'))
         pg.evaluate('() => UI.closePanel()'); pg.wait_for_timeout(150)
         # 7. move a linked tower
         t = pg.evaluate('() => { const t = G.frLinks[0]; return { x: t.x, y: t.y, id: t.id }; }')
@@ -124,6 +129,50 @@ with sync_playwright() as p:
         pg.evaluate('() => { G.lanesOpened = G.laneWaves.length; G.region = { x0: 0, y0: 0, x1: COLS, y1: ROWS }; }'); pg.wait_for_timeout(2900)
         pg.evaluate('() => { Render.overview(); Render.zoomAt(200, 150, 0.2); UI.zoomChanged(); }'); pg.wait_for_timeout(400)
         pg.screenshot(path=str(out / f'f11_board_zoomed_out_after_dock_{tag}.png'))
+        # 10. a Daily Hunt runs on Frontier rules: the setup tab, the run, a lift-off and a move, resume by replay, its hunt code
+        pg.evaluate('() => { G = null; PROF.runSnap = null; PROF.daily = null; UI.closePanel(); UI.show("hangar"); UI.renderHangar(); UI.openSetupDaily(); }'); pg.wait_for_timeout(400)
+        check(pg.evaluate('() => COLS === frCols(frRows(2)) && ROWS === frRows(2)') and 'daily hunt' in pg.inner_text('#modal').lower(), 'Daily setup shows the Frontier board', tag)
+        pg.screenshot(path=str(out / f'f12_daily_setup_{tag}.png'))
+        pg.evaluate('() => document.querySelector("[data-act=launchDaily]").click()'); pg.wait_for_timeout(400)
+        pg.evaluate('() => { const b = document.querySelector("#modal [data-act=launchDaily][data-v=anyway]"); if (b) b.click(); }'); pg.wait_for_timeout(1500); clear(pg)
+        check(pg.evaluate('() => !!(G && G.daily && G.fr === 1 && G.recOpts.frontier === 1 && G.recOpts.frV >= 2 && G.huntBuild)') and pg.evaluate('() => !document.querySelector("#bLift").hidden'), 'the Daily Hunt is a Frontier run (flag in its recording), Lift Off on the field', tag)
+        d = pg.evaluate('''() => { const c = G.map.core, sp = []; for (const q of G.map.lanes[0].tiles) for (const [dx, dy] of [[1,0],[0,1],[-1,0],[0,-1]]) { const x = q.x + dx, y = q.y + dy; if (canBuildAt(x, y)) sp.push([x, y]); }
+          let n = 0; for (const [x, y] of sp.slice(Math.floor(sp.length * 0.4))) { if (n >= 3) break; if (window.act('build', n ? 'pulse' : 'rail', x, y)) n++; }
+          window.act('call'); return n; }''')
+        pg.evaluate('() => { G.speed = 3; }'); pg.wait_for_timeout(5000); pg.evaluate('() => { G.speed = 1; }')
+        flown = pg.evaluate('''() => { const att = G.towers.filter(t => frCands().includes(tIdx(t.x, t.y)) && frPlan(t.x, t.y)); const t = att[0]; if (!t) return false; return window.act('frFly', t.x, t.y); }''')
+        check(flown, 'lifted off in the Daily Hunt (docking on a tower)', tag)
+        pg.wait_for_function('() => !G.frFly', timeout=20000); clear(pg)
+        moved = pg.evaluate('''() => { const t = G.towers.find(o => o !== frDockT()); if (!t) return false; for (let y = G.region.y0; y < G.region.y1; y++) for (let x = G.region.x0; x < G.region.x1; x++) if (canBuildAt(x, y) && Math.abs(x - t.x) + Math.abs(y - t.y) === 3 && window.act('frMove', t.x, t.y, x, y)) return true; return false; }''')
+        check(moved and pg.evaluate('() => !!frDockT()'), 'docked, and moved a tower', tag)
+        pg.evaluate('() => Render.resetCam()'); pg.wait_for_timeout(500)
+        pg.screenshot(path=str(out / f'f13_daily_docked_{tag}.png'))
+        # save and resume: a Daily Hunt resumes by replaying its inputs, exactly
+        h = pg.evaluate('() => { snapshotNow(); Save.save(); return { h: runHash(), t: G.tick, w: G.wave, n: G.inputs.length }; }')
+        pg.evaluate('() => { G = null; UI.show("hangar"); UI.renderHangar(); }'); pg.wait_for_timeout(300)
+        check('daily hunt' in pg.inner_text('#hPlaySub').lower(), 'hangar offers the Daily Hunt resume', tag)
+        pg.click('#bLaunch'); pg.wait_for_timeout(1500); clear(pg)
+        r = pg.evaluate('() => G && G.resumedHunt ? { h: G.resumedHunt.h, t: G.resumedHunt.tick, fr: G.fr, dock: !!frDockT(), cols: COLS } : null')
+        check(r and r['h'] == h['h'] and r['t'] == h['t'] and r['fr'] == 1 and r['dock'], f'Daily resume replays to the same state {r} vs {h}', tag)
+        # its hunt code rebuilds the same run (Frontier board and all)
+        rec = pg.evaluate('() => ({ opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick })')
+        code = pg.evaluate('async () => await UI._dbg.huntCode({ opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick })')
+        back = pg.evaluate('async c => { const r = await UI._dbg.readHuntCode(c); return r ? { fr: r.opts.frontier, frV: r.opts.frV, cols: r.opts.cols, rows: r.opts.rows, n: r.inputs.length } : null; }', code)
+        check(code.startswith('HUNT') and back and back['fr'] == 1 and back['n'] == len(rec['inputs']), f'hunt code carries the Frontier flag {back}', tag)
+        pg.evaluate('async c => { const r = await UI._dbg.readHuntCode(c); G = null; UI._dbg.watchRun(r, "Code"); }', code); pg.wait_for_timeout(800)
+        check(pg.evaluate('() => !!(G && G.watch && G.fr === 1 && !document.querySelector("#bLift").hidden === false)') or pg.evaluate('() => !!(G && G.watch && G.fr === 1)'), 'watching the code plays a Frontier run', tag)
+        pg.evaluate('() => { G.speed = 8; }'); pg.wait_for_function(f'() => G.tick >= {h["t"]} + 30 || G.over', timeout=60000)
+        check(pg.evaluate('() => !!(G.watch && frDockT() && G.rlog.some(e => e.k === "frFly") && G.rlog.some(e => e.k === "frMove"))'), 'the watched run lifts off, docks and moves like the original', tag)
+        pg.screenshot(path=str(out / f'f14_daily_watch_{tag}.png'))
+        pg.evaluate('() => UI._dbg.endWatch()'); pg.wait_for_timeout(300)
+        # 11. an old Classic save resumes as Classic: no Lift Off, the element buttons, "Classic" on the hangar
+        pg.evaluate('''() => { setRows(26); setCols(44); newRun({ seed: 77, chaos: 1, cols: 44 }); snapshotRun(1); const s = PROF.runSnap; G = null; UI.show("hangar"); UI.renderHangar(); return !!s; }''')
+        check('classic' in pg.inner_text('#hPlaySub').lower(), 'hangar marks a pre-6.1 save as Classic', tag)
+        pg.click('#bLaunch'); pg.wait_for_timeout(1200); clear(pg)
+        check(pg.evaluate('() => !!(G && !G.fr && COLS === 44) && document.querySelector("#bLift").hidden && !document.body.classList.contains("fr")'), 'the Classic save resumes as Classic (no Lift Off)', tag)
+        c = pg.evaluate('() => G.map.core'); tap_tile(pg, c['x'], c['y'])
+        check('weapon element' in pg.inner_text('#panel').lower(), 'a Classic run keeps its core element buttons', tag)
+        pg.evaluate('() => { UI.closePanel(); G = null; PROF.runSnap = null; UI.show("hangar"); }')
         pg.close()
     b.close()
 print('ERRORS:', errs[:5])

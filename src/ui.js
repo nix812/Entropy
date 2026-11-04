@@ -468,17 +468,24 @@ const UI = (() => {
       Render.hints = [s];
       return worldR(s.x + 0.5, s.y + 0.5, 0.62); // (an off-screen spot is brought into view by see(), for every world target)
     }
-    // 6.1 the camera: a world target that is off screen (or under a side panel) is brought into view, once per step and spot
-    function see(S, r) {
-      if (!r || !wAt || !G || screen !== 'game' || S.modal || S.tree) return;
-      const key = S.id + ':' + Math.round(wAt.x * 2) + ',' + Math.round(wAt.y * 2); if (mem.cam === key) return;
-      const cv = $('#cv').getBoundingClientRect(), L = Render.layout; if (!cv.width || Math.abs(cv.width / UIS - L.W) > 2 || Math.abs(cv.height / UIS - L.H) > 2 || (Render.home && Math.abs(Render.zoom - Render.homeZoom) > 1e-3)) return; // the camera is not settled yet: try next frame
+    // 6.1 the camera: a world target that is off screen (or under a side panel) is brought into view, once per step and spot;
+    // and one the card can't help covering (a small phone stage) is moved to the side of the stage away from the card
+    function see(S, r, c) {
+      if (!r || !wAt || !G || screen !== 'game' || S.modal || S.tree) return false;
+      const key = S.id + ':' + Math.round(wAt.x * 2) + ',' + Math.round(wAt.y * 2); if (c ? mem.cam !== key || mem.camC === key : mem.cam === key) return false;
+      const cv = $('#cv').getBoundingClientRect(), L = Render.layout; if (!cv.width || Math.abs(cv.width / UIS - L.W) > 2 || Math.abs(cv.height / UIS - L.H) > 2 || (Render.home && Math.abs(Render.zoom - Render.homeZoom) > 1e-3)) return false; // the camera is not settled yet: try next frame
       const pn = panel ? appR($('#panel')) : null, ox = cv.left / UIS, p = Render.tileToScreen(wAt.x, wAt.y);
       let x0 = 0, x1 = L.W; if (pn) { const a = pn.x - ox, b = a + pn.w; if (a > L.W / 2) x1 = Math.min(x1, a); else x0 = Math.max(x0, b); }
-      const m = 48; mem.cam = key;
-      if (p.x >= x0 + m && p.x <= x1 - m && p.y >= m && p.y <= L.H - m) return;
-      if (Math.abs((x0 + x1) / 2 - p.x) < 2 && Math.abs(L.H / 2 - p.y) < 2) return;
-      Render.panBy((x0 + x1) / 2 - p.x, L.H / 2 - p.y); updateZoomBtn();
+      const m = 48;
+      if (c) { // the card covers the target: send the target to the far side from the card
+        mem.camC = key; if (!ov(c, grow(r, 8))) return false; // (the ring sits 5 px outside the target)
+        const left = c.x + c.w / 2 - ox < (x0 + x1) / 2, top = c.y + c.h / 2 - cv.top / UIS < L.H / 2;
+        Render.panBy((left ? x0 + (x1 - x0) * 0.76 : x0 + (x1 - x0) * 0.24) - p.x, (top ? L.H * 0.7 : L.H * 0.3) - p.y); updateZoomBtn(); return true;
+      }
+      mem.cam = key;
+      if (p.x >= x0 + m && p.x <= x1 - m && p.y >= m && p.y <= L.H - m) return false;
+      if (Math.abs((x0 + x1) / 2 - p.x) < 2 && Math.abs(L.H / 2 - p.y) < 2) return false;
+      Render.panBy((x0 + x1) / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); return true;
     }
     const flowText = (type, first) => { const D = TOWERS[type], st = flowStage(type);
       return st === 0 ? first : st === 1 ? `Tap ${D.name}: ${TOWER_ROLE[type] || D.blurb}.` : `Tap Build: ${fmt(towerCost(type))} credits and 1 power.`; };
@@ -944,7 +951,7 @@ const UI = (() => {
       const sp = el.querySelector('.cspot'), rg = el.querySelector('.cring'), ar = el.querySelector('.carrow');
       sp.hidden = rg.hidden = ar.hidden = !r;
       const c = place(S, r, idle);
-      if (!r) return;
+      if (!r) return c;
       const s = grow(r, 5), set = (nd, R) => { nd.style.left = Math.round(R.x) + 'px'; nd.style.top = Math.round(R.y) + 'px'; nd.style.width = Math.round(R.w) + 'px'; nd.style.height = Math.round(R.h) + 'px'; };
       set(sp, s); set(rg, s);
       // the arrow sits on the side of the target that faces the card, pointing at it
@@ -952,6 +959,7 @@ const UI = (() => {
       const dir = horiz ? (dx > 0 ? 'l' : 'r') : (dy > 0 ? 'u' : 'd'), A = 14;
       const ax = horiz ? (dx > 0 ? s.x + s.w + 4 : s.x - A - 4) : s.x + s.w / 2 - A / 2, ay = horiz ? s.y + s.h / 2 - A / 2 : (dy > 0 ? s.y + s.h + 4 : s.y - A - 4);
       ar.className = 'carrow ' + dir; ar.style.left = Math.round(ax) + 'px'; ar.style.top = Math.round(ay) + 'px';
+      return c;
     }
     function idle() {
       held = false;
@@ -975,8 +983,9 @@ const UI = (() => {
       const bk = S.back && S.back(); if (bk) { go(bk); idle(); return; }
       if ((modalOpen && S.modal !== modalOpen) || (!modalOpen && S.modal) || (Tree.isOpen && !S.tree)) { held = false; hide(); return; }
       held = !!(typeof S.hold === 'function' ? S.hold() : S.hold);
-      wAt = null; const r = S.at ? S.at() : null; see(S, r); miss = !!S.at && !r && !(typeof S.ok === 'function' ? S.ok() : S.ok); // a read step with a button still works without its target
-      show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok);
+      wAt = null; const r = S.at ? S.at() : null, panned = see(S, r); miss = !!S.at && !r && !(typeof S.ok === 'function' ? S.ok() : S.ok); // a read step with a button still works without its target
+      const c = show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok);
+      if (!panned && r && c) see(S, r, c);
     }
     return { start, stop, tick, get hold() { return on && held; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
       steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS) };
@@ -1634,11 +1643,19 @@ const UI = (() => {
       <div class="elgrid">${ELS.map(e => `<button class="chip ${c.el === e ? 'on' : ''}" data-act="cel" data-v="${e}" style="--c:${EL[e].col};color:${c.el === e ? '' : EL[e].col}">${EL[e].name}</button>`).join('')}</div>`}
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       ${foot}`;
+    // 6.1 Frontier: docked, the core's gun is the docked tower (its stats, kills and element); in the air it is offline
+    const dk = G.fr ? frDockT() : null, dS = dk && dk.s, air = G.fr && G.frFly;
+    const gunSg = dk ? `<span>Damage<b>${fmt(dS.dmg * (1 + dk.buff.dmg))}</b></span><span>Rate<b>${num1(dS.rate * (1 + dk.buff.rate))}/s</b></span><span>Range<b>${num1(dk.effRange || dS.range)}</b></span><span>Kills<b>${dk.kills}</b></span>`
+      : `<span>Damage<b>${air ? '—' : fmt(s.dmg)}</b></span><span>Rate<b>${air ? '—' : num1(s.rate) + '/s'}</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span>`;
+    const gunSts = dk ? `<div class="sts frdock" style="--c:${EL[dS.el].col}">Docked: <b>${esc(towerLabel(dk))}</b> LV ${towerLevel(dk)} · ${EL[dS.el].name} · ×${num1(frDockX())} Damage (Battery +${pct(FRONTIER.dockBat)} per level), +${FRONTIER.dockRange} Range</div><div class="sts dim">${tipify('Battery modules fire with the plain cannon, not while docked')}</div>`
+      : air ? `<div class="sts">${tipify('In the air: the gun is offline and the shield is down until it lands')}</div>`
+      : `<div class="sts">${tipify(`Shells hit whatever is closest to reaching the core · Blast ${num1(s.splash)}`)}</div>`;
     return `${head}
-      <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span><span>Damage<b>${fmt(s.dmg)}</b></span><span>Rate<b>${num1(s.rate)}/s</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span></div>
-      <div class="sts">${tipify(`Shells hit whatever is closest to reaching the core · Blast ${num1(s.splash)}`)}</div>
+      <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span>${gunSg}</div>
+      ${gunSts}
+      ${G.fr ? `<div class="sts ${(G.frLinks || []).length ? 'good' : 'dim'}">${G.frFly ? 'Links break while flying' : `Links ${(G.frLinks || []).length}/${frLinkN()} within ${FRONTIER.linkR} tiles · linked towers +${pct(FRONTIER.linkDmg)} Damage and Rate · core +${pct(FRONTIER.linkCore * (G.frLinks || []).length)}`}</div>` : ''}
       ${mods}
-      <div class="lbl">Command Uplink · LV ${c.uLvl || 0}/${UPLINK.max} · −${UPLINK.cd * (c.uLvl || 0)}% cooldowns</div>
+      <div class="lbl">Command Uplink · LV ${c.uLvl || 0}/${UPLINK.max} · −${UPLINK.cd * (c.uLvl || 0)}% cooldowns${G.fr ? ` · +1 link per ${FRONTIER.linkUplink} levels, lift-off wait −1 wave per ${FRONTIER.cdUplink}` : ''}</div>
       <div class="cmods">${UPLINK.mods.map(m => `<span class="${(c.uLvl || 0) >= m.lv ? 'on' : ''}"><b>${(c.uLvl || 0) >= m.lv ? '' : 'LV ' + m.lv + ' · '}${esc(m.name)}</b>${tipify(m.desc)}</span>`).join('')}</div>
       ${s.node ? `<div class="sts node">${tipify('Power Node: core overcharged, +50% Damage, +20% Rate')}</div>` : ''}
       <div class="sts ${G.odUsed ? 'dim' : odReady() ? 'good' : ''}">${tipify(G.odUsed ? `Overdrive: used on Wave ${G.odUsed}` : odReady() ? 'Overdrive: ready · release it from the left rail. One board clear this run' : `Overdrive: unlocks at Wave ${OD_WAVE} · once per run`)}</div>
@@ -2889,9 +2906,13 @@ const UI = (() => {
       ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
       ['Specialize', 'At LV 3, choose one of two specializations.'],
       ['Core Battery', 'The core is a long-range gun that shells whatever is closest to reaching it, almost anywhere on the map. It starts as light support; Battery upgrades are expensive but make it a real weapon, with Twin Battery at LV 4, Siege Shells at LV 8 and Orbital Uplink at LV 12. Tap the core to upgrade, repair or reroll it.'],
+      ['Lift Off', `The core flies. Tap Lift Off (under Map, or in the core panel), then a tile to land on: the preview shows the new roads, what the core will fire and the towers it will link. Every road swings to the landing spot. In the air the gun is offline and the shield is down. After landing it recharges for ${FRONTIER.cd} waves.`],
+      ['Dock', `Land the core on an attack tower and the core fires that tower's weapon: ×${FRONTIER.dockDmg} Damage, +${FRONTIER.dockRange} Range, +${pct(FRONTIER.dockBat)} per Battery level. Lift off again and the tower is set back down, intact.`],
+      ['Links', `The landed core links its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate each, and the core +${pct(FRONTIER.linkCore)} per link. Flying breaks them.`],
+      ['Move', `Tap a tower, then Move, then a new tile. It is offline for ${FRONTIER.moveT} s and costs ${pct(FRONTIER.moveFee)} of what it cost. No towers within ${FRONTIER.wormBuild} tiles of a wormhole.`],
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
-      ['Zoom', 'Pinch to zoom, drag to pan. Tap Fit to reset the view.'],
+      ['Zoom', 'Pinch to zoom, drag to pan. Tap Home to return to the core, Map to see the whole sector. Edge arrows point at bosses and enemies near the core that are off screen: tap one to look there.'],
       ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V B abilities, Space pause, 1–3 speed, Esc close.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
@@ -2916,8 +2937,8 @@ const UI = (() => {
       ['Bosses', 'Every 10 waves, always on the longest road (flying bosses skim it). Drop a boon and a Recalibration token. If one reaches your core, the run ends, so watch the Red Alert.'],
       ['Red Alert', `A boss within ${RED_ALERT.tiles} tiles of the core: sirens, the field turns red and the core goes to Last Stand, hitting it ×${RED_ALERT.coreDmg}. That is the moment for Stasis, a Strike or a burst of Overcharge.`],
       ['Black Market', 'Tap Score to open the Exchange: Cash In, plus a pirate trader with 3 items in stock (a Legendary for your next towers, a bribe for the boss, a stolen blueprint...). Prices climb with the wave; new stock after every boss.'],
-      ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds, free respec, and you can relocate the core. Resume fast for a bonus.'],
-      ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Move the core onto one for a bigger boost. Each sector expansion reveals a new one.'],
+      ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds and a free respec; a lift-off lands at once. Resume fast for a bonus.'],
+      ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Land the core on one for a bigger boost. Each sector expansion reveals a new one.'],
       ['Space Pirates', "Pirate ships fly over during waves and drop salvage crates. Tap a crate before its ring runs out for credits, a charge, Entropy, score or a token. Red crates are booby-trapped: double loot, but a stowaway elite breaks loose. Boss waves bring the Captain's Chest. Leave a crate too long and a Pirate Skiff may come to steal it; shoot it down to get the loot back plus a bounty."],
       ['Overdrive', `Your one emergency button. From Wave ${OD_WAVE}, tap the core to erase every enemy on the map except bosses. Once per run.`],
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
@@ -2955,8 +2976,8 @@ const UI = (() => {
         ['Ascend', `Upgrade past max level: ×${ASC_DMG} Damage (Void Lens ×${ASC_DMG_T.lens}), a new affix and a perk you choose from 3 (4 at Mastery 4).`], ['Mastery', 'Each tower type ranks up from its share of your runs. Towers that are not your top damage dealer earn nearly as much. Ranks 1 to 5: badge, +5% stat, trim, a fourth perk choice, its own legendary.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
         ['Milestone', 'Score threshold. Grants an extra ability charge and a small bonus.'], ['Conditions', 'In a tower\'s panel: every live modifier on it (storms, events, Frenzy, outages) with numbers.'], ['Headline', 'The enemy a wave leans on. Amber chip in the top bar; tap it for what beats it.'], ['IDLE', 'Tag on a tower that hasn\'t fired for three waves. Move it to where the enemies are.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
-        ['Wormhole', 'Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.'],
-        ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds, free respec and core relocation. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
+        ['Wormhole', `Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. Nothing can be built within ${FRONTIER.wormBuild} tiles of one, and the core lands at least ${FRONTIER.wormGap} tiles away. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.`],
+        ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds and a free respec; a lift-off lands at once. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
         ['Power', `Every tower draws 1 power from your grid; capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes draw none. When it's full, make towers better instead of adding more.`],
         ['Overcharge', `Spend spare power on one tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Free to change at any time, so shift it to whatever the wave needs.`],
         ['Evolution', 'From Wave 8 enemies carry genes: up to 1 until Wave 22, 2 until Wave 45, then 3. Each gene trades HP or speed for an edge. Waves are bred from the enemies that got furthest, so traits your defence handles badly spread. The next-wave chips show what is spreading; tap one for its counter.'],
@@ -2976,7 +2997,10 @@ const UI = (() => {
         ['Black Market', `In the Exchange (tap Score). A pirate trader stocks ${MARKET.slots} items, restocked every ${MARKET.refresh} waves. Prices rise with the wave, and each item sells once per stock.`],
         ['Node Beacon', 'Black Market item: tap an empty tile and it becomes a Power Node. Two per run.'], ['Boss Bribe', 'Black Market item: the next boss arrives at 70% health.'],
         ['Stolen Blueprint', 'Black Market item: your next locked tower is unlocked for the rest of this run.'],
-        ['Relocate Core', `At Checkpoints: move the core up to ${RELOCATE_RADIUS} tiles. Every road re-routes to reach it. The first move each run is free, then ${RELOCATE_COST} credits each.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
+        ['Lift Off', `The core flies to any open tile in the sector, or onto an attack tower (docking). Every road re-routes to the landing spot and enemies already walking turn toward it. Gun offline and shield down in the air; ${FRONTIER.cd} waves to recharge after landing (Uplink shortens it).`],
+        ['Docking', `The landed core fires the attack tower under it: its element, affixes, spec, perks and Technique, at ×${FRONTIER.dockDmg} Damage and +${FRONTIER.dockRange} Range. Support towers can't be docked.`],
+        ['Core link', `A green line from the landed core to one of its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate for the tower, +${pct(FRONTIER.linkCore)} Damage for the core.`],
+        ['No-build zone', `The ground within ${FRONTIER.wormBuild} tiles of a wormhole: no towers, so the swarm is seen before it is shot.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
         ['Common', 'Base value.', RARITY[0].col], ['Magic', '×1.7 value.', RARITY[1].col], ['Rare', '×2.6 value.', RARITY[2].col], ['Legendary', 'Unique effect. See Legendaries.', RARITY[3].col], ['Curse', 'Negative affix. See Curses.', RARITY[4].col],
