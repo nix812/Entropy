@@ -6,6 +6,7 @@ function load() {
   vm.createContext(ctx);
   vm.runInContext(src + `
 this.S = { get G(){return G}, set G(v){G=v}, get PROF(){return PROF}, set PROF(v){PROF=v},
+  CAP_TOWERS, capTowersOwned, TTOP, wallSpot, aegisCatch, // 6.4 tower64
   get COLS(){return COLS}, get ROWS(){return ROWS}, TALENTS, TAL, TOWERS, TOWER_ORDER, ENEMIES, BOSSES, ANOMALIES, LV_COST, TILE, EL, ELS,
   newRun, simStep, buildTower, upgradeTower, upgradeCost, towerCost, canBuildAt, talentAdd, talentBlock, talentRemove, talentCanRemove, talentReset, treePts, capsHeld, activeCaps, capSlots, takeBoon,
   useAbility, Hooks, tIdx, profLevel, pointsFree, callEarly, resumeRun, snapshotRun, reactorCost, expandReactor, geneShares, potentialDps, sellTower, gridCap, gridFree, gridUsed, setOvercharge, geneCap, breedPlan, levelFromXP, towerStats, recomputeAll, warTier, ocMax, ocFree, coreStats, get DOCTRINES(){return DOCTRINES}, towerStats, readDefence, planAssault, resolveAssault, idleWaves, topTower, sellRefund,

@@ -85,7 +85,8 @@ function maxed(S, type, spec, i) {
   let err = '', n = 0;
   for (const type of Object.keys(TYPES())) for (const spec of [1, 2]) {
     try {
-      const S = fresh(); const t = maxed(S, type, spec);
+      const S = fresh(); if (S.TOWERS[type].capT) { S.newRun({ seed: 4242, chaos: 1, startWave: 1, frontier: 1, capT: [type] }); S.G.credits = 1e7; S.G.gridBonus = 99; } // 6.4: tier towers need a Frontier run that lists them
+      const t = maxed(S, type, spec);
       t.perks = []; for (const P of S.PERKS[type]) if (!P.spec || P.spec === spec) for (let k = 0; k < P.v.length; k++) t.perks.push(P.id);
       t.affixes.push({ id: S.LEGENDARIES.find(L => L.tower === type).id, tier: 3, v: 0 });
       t.s = S.towerStats(t); S.recomputeAuras(); n += t.perks.length;
@@ -94,7 +95,7 @@ function maxed(S, type, spec, i) {
       if (type !== 'pylon' && type !== 'forge' && type !== 'snare' && !(t.dmgDone > 0)) err += ` ${type}/${spec}: no damage`;
     } catch (e) { err += ` ${type}/${spec}: ${e.message}`; }
   }
-  ok(!err, `all perks fight (${n} perk stacks across 12 towers × 2 specs)${err}`);
+  ok(!err, `all perks fight (${n} perk stacks across ${Object.keys(TYPES()).length} towers × 2 specs)${err}`);
 }
 function TYPES() { return load().TOWERS; }
 

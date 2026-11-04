@@ -108,8 +108,40 @@ const TOWERS = {
     blurb: 'Pulls enemies back along the path.',
     specs: [{ name: 'Singularity', desc: '×3 Damage. Pulses apply Mark', m: { dmgX: 3, addMark: 1 } },
             { name: 'Tidal Lock', desc: '×2 pull distance', m: { pullX: 2 } }] },
+  // 6.4 capstone tier towers (tower64): capT = the tree whose capstone tier node unlocks the tower for a run (newRun opts.capT → G.capT).
+  // unlock 999 keeps them out of the wave unlocks, the Stolen Blueprint and the base build menu. Rules: docs/notes/tower64.md
+  saw: { ground: 1, name: 'Buzzsaw', el: 'K', cost: 140, dmg: 38, rate: 0.55, range: 3, kind: 'saw', capT: 'K', unlock: 999, sawLen: 6, sawSpd: 6, sawR: 0.55, // first bot pass: 1-8% of damage at 30 dmg, 0.5/s, 5 tiles
+    blurb: 'Throws a blade onto the road. It runs back up the road and cuts every ground enemy once. Ignores Plating.',
+    specs: [{ name: 'Grinder', desc: 'Blades run 40% slower and 40% wider. ×1.4 Damage', m: { sawSpdX: 0.6, sawRX: 1.4, dmgX: 1.4 } },
+            { name: 'Twin Saw', desc: 'Throws 2 blades at 2 targets. ×1.1 Damage', m: { multi: 1, dmgX: 1.1 } }] },
+  flashover: { name: 'Flashover', el: 'T', cost: 130, dmg: 22, rate: 0.4, range: 2.6, kind: 'det', capT: 'T', unlock: 999, detX: 2.5, detR: 1,
+    blurb: 'Pulses fire. Burning enemies in range explode for their remaining Burn. The rest catch fire.',
+    specs: [{ name: 'Chain Reaction', desc: 'Explosions set enemies within 1.5 tiles on fire', m: { detSpread: 1.5 } },
+            { name: 'Furnace', desc: '×1.8 explosion damage. +0.5 Range', m: { detXm: 1.8, rangeAdd: 0.5 } }] },
+  surge: { name: 'Surge Spire', el: 'A', cost: 130, dmg: 24, rate: 1.2, range: 3, kind: 'surge', chain: 3, st: { shock: 0.4 }, capT: 'A', unlock: 999, cells: 10, // first bot pass: under 1% of damage at 16 dmg, chain 2, idle-only charge
+    blurb: 'Chain lightning. Stores charge while idle and from its kills, then fires 4× as fast until the charge is gone.',
+    specs: [{ name: 'Deep Cell', desc: 'Stores 20 charges. ×1.2 Damage', m: { cells: 10, dmgX: 1.2 } },
+            { name: 'Forked Surge', desc: '+2 Chain. ×1.25 Damage', m: { chain: 2, dmgX: 1.25 } }] },
+  rime: { ground: 1, name: 'Rimewall', el: 'C', cost: 140, dmg: 6, rate: 0.15, range: 2.4, kind: 'wall', st: { chill: 1 }, capT: 'C', unlock: 999, hold: 10, // bot pass: wall 8, regrow 8 s held only 0-270 enemy-seconds a run
+    blurb: 'Raises an ice wall on the road. Ground enemies stop at it and Chill until it breaks.',
+    specs: [{ name: 'Pack Ice', desc: '×2 wall strength. Regrows 25% faster', m: { holdX: 2, rateX: 1.25 } },
+            { name: 'Rime Spikes', desc: '×3 Damage to held enemies. They take +25% Kinetic Damage', m: { dmgX: 3, spikes: 0.25 } }] },
+  tangle: { name: 'Entangler', el: 'V', cost: 140, dmg: 10, rate: 0.5, range: 3.2, kind: 'tether', st: { mark: 1 }, capT: 'V', unlock: 999, links: 3, share: 0.3, linkT: 4, // share is split among the other links. Bot passes with a full copy to each: 81% of one 96-point run at 35%, up to 45% (25× damage per credit) at 22%
+    blurb: 'Links 3 enemies. 30% of each hit one of them takes is shared out to the others.',
+    specs: [{ name: 'Wide Web', desc: 'Links 5 enemies. Shares 35%', m: { links: 2, share: 0.05 } },
+            { name: 'Shared Fate', desc: 'Shares 45%. Linked enemies are 20% slower', m: { share: 0.15, tslow: 0.2 } }] },
+  aegis: { name: 'Gatekeeper', el: 'N', cost: 150, dmg: 12, rate: 1.2, range: 3, kind: 'aegis', capT: 'E', unlock: 999, guards: 2, pspd: 14,
+    blurb: 'Guards the core. Stops 2 leaks per wave while the core is in range. Shoots what comes close.',
+    specs: [{ name: 'Bulkhead', desc: '+2 leaks stopped per wave', m: { guards: 2 } },
+            { name: 'Interceptor', desc: '×2.5 Damage. +1 Range', m: { dmgX: 2.5, rangeAdd: 1 } }] },
+  joker: { name: 'Wildcard', el: 'N', cost: 120, dmg: 20, rate: 0.9, range: 3.2, kind: 'joker', capT: 'X', unlock: 999, pspd: 12, jack: 10,
+    blurb: 'Every shot rolls a random element and attack. Every 10th shot is a Jackpot.',
+    specs: [{ name: 'Loaded Dice', desc: 'Its rolled status always lands. ×1.2 Damage', m: { sure: 1, dmgX: 1.2 } },
+            { name: 'High Roller', desc: 'A Jackpot every 5th shot', m: { jackEvery: 5 } }] },
 };
-const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav'];
+// 6.4: the capstone tier towers, in tree order (TALENTS[i].top unlocks CAP_TOWERS[i])
+const CAP_TOWERS = ['saw', 'flashover', 'surge', 'rime', 'tangle', 'aegis', 'joker'];
+const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav'].concat(CAP_TOWERS);
 const LV_DMG = [0, 1, 1.65, 2.6, 4.1, 6.4];
 const LV_COST = [0, 1, 0.8, 1.2, 2.0, 3.0];
 const MAX_LV = 5;
@@ -236,6 +268,78 @@ const PERKS = {
     { id: 'tar', name: 'Tar', v: [0.1, 0.15], d: v => `+${Math.round(v * 100)}% net slow` },
     { id: 'exposed', name: 'Exposed', v: [15, 25], d: v => `Netted take +${v}% Damage` },
   ],
+  // 6.4 capstone tier towers. Ids that existing code already reads (amps, chain, super, taser, overcur, crown, brittle) work as they do elsewhere
+  saw: [
+    { id: 'teeth', name: 'Sharper Teeth', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'run', name: 'Long Run', v: [1.5, 2.5], d: v => `Blades run +${v} tiles` },
+    { id: 'boomer', name: 'Boomerang', v: [1], d: () => 'Blades run back once' },
+    { id: 'serr', name: 'Serrated', v: [8, 14], d: v => `+${v}% Crit Chance` },
+    { id: 'wideS', name: 'Wide Blade', v: [30, 50], d: v => `Blades ${v}% wider` },
+    { id: 'spin2', name: 'Overspin', v: [15, 27, 37], d: v => `+${v}% throw rate` },
+    { id: 'grind', name: 'Grind', spec: 1, v: [1], d: () => 'Blades stop 1 s at the end of their run' },
+    { id: 'third', name: 'Third Blade', spec: 2, v: [1], d: () => '+1 blade' },
+  ],
+  flashover: [
+    { id: 'fuse', name: 'Short Fuse', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'volat', name: 'Volatile', v: [40, 70], d: v => `+${v}% explosion damage` },
+    { id: 'blastR', name: 'Blast Radius', v: [0.4, 0.7], d: v => `+${v} explosion radius` },
+    { id: 'haze', name: 'Heat Haze', v: [0.4, 0.7], d: v => `+${v} Range` },
+    { id: 'smoulder', name: 'Smoulder', v: [1], d: () => 'Burn stays after an explosion, at half strength' },
+    { id: 'bellows', name: 'Bellows', v: [15, 27, 37], d: v => `+${v}% pulse rate` },
+    { id: 'storm', name: 'Firestorm', spec: 1, v: [0.5], d: () => '+0.5 spread radius' },
+    { id: 'cruc', name: 'Crucible', spec: 2, v: [30], d: () => '+30% explosion damage' },
+  ],
+  surge: [
+    { id: 'amps', name: 'Amperage', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'cellsP', name: 'Spare Cells', v: [4, 7], d: v => `Stores +${v} charges` },
+    { id: 'quickC', name: 'Fast Charge', v: [40, 65], d: v => `Charges ${v}% faster` },
+    { id: 'chain', name: 'Extra Arc', v: [1, 2], d: v => `+${v} Chain` },
+    { id: 'super', name: 'Superconductor', v: [1], d: () => 'No damage lost per jump' },
+    { id: 'taser', name: 'Taser', v: [8, 14], d: v => `+${v}% Stun chance` },
+    { id: 'overcur', name: 'Overcurrent', v: [20, 32], d: v => `+${v}% Damage to Shocked` },
+    { id: 'reserve', name: 'Reserve Cell', spec: 1, v: [10], d: () => '+10 charges' },
+    { id: 'crown', name: 'Fork Storm', spec: 2, v: [2], d: () => '+2 Chain' },
+  ],
+  rime: [
+    { id: 'thick', name: 'Thick Ice', v: [25, 45, 60], d: v => `+${v}% wall strength` },
+    { id: 'regrow', name: 'Quick Freeze', v: [15, 27, 37], d: v => `Regrows ${v}% faster` },
+    { id: 'bite', name: 'Frostbite', v: [30, 55], d: v => `+${v}% Damage` },
+    { id: 'shardW', name: 'Ice Shards', v: [1], d: () => 'A broken wall hits enemies within 1.5 tiles for ×4 Damage' },
+    { id: 'reachW', name: 'Long Reach', v: [0.5, 0.8], d: v => `+${v} Range` },
+    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Its Frozen take +${v}% Damage` },
+    { id: 'pack', name: 'Glacier Pack', spec: 1, v: [50], d: () => '+50% wall strength' },
+    { id: 'barbs', name: 'Ice Barbs', spec: 2, v: [0.15], d: () => 'Held enemies take +15% more Kinetic Damage' },
+  ],
+  tangle: [
+    { id: 'linkP', name: 'Extra Strand', v: [1, 2], d: v => `+${v} link${v > 1 ? 's' : ''}` },
+    { id: 'shareP', name: 'Resonant Link', v: [3, 6, 8], d: v => `Shares +${v}%` },
+    { id: 'longT', name: 'Long Link', v: [2, 3], d: v => `Links last +${v} s` },
+    { id: 'nullW', name: 'Null Weight', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'reachT', name: 'Far Reach', v: [0.5, 0.8], d: v => `+${v} Range` },
+    { id: 'bond', name: 'Dark Bond', v: [1], d: () => 'Linked enemies gain 1 Mark per second' },
+    { id: 'web', name: 'Spider Web', spec: 1, v: [1], d: () => '+1 link' },
+    { id: 'fate', name: 'Doom Bond', spec: 2, v: [6], d: () => 'Shares +6%' },
+  ],
+  aegis: [
+    { id: 'guard', name: 'Extra Guard', v: [1, 2], d: v => `+${v} leak${v > 1 ? 's' : ''} stopped per wave` },
+    { id: 'pd', name: 'Point Defense', v: [15, 27, 37], d: v => `+${v}% Damage` },
+    { id: 'watch', name: 'Wide Watch', v: [0.6, 1], d: v => `+${v} Range` },
+    { id: 'salv', name: 'Salvage Rights', v: [1], d: () => 'Stopped leaks pay double credits' },
+    { id: 'patch', name: 'Patch Job', v: [2, 3], d: v => `Each stop repairs ${v}% core HP` },
+    { id: 'qsight', name: 'Quick Sights', v: [15, 27], d: v => `+${v}% Attack Speed` },
+    { id: 'last', name: 'Last Wall', spec: 1, v: [1], d: () => '+1 leak stopped per wave' },
+    { id: 'flak', name: 'Flak Rounds', spec: 2, v: [1], d: () => 'Shots burst for 50% in 0.8 tiles' },
+  ],
+  joker: [
+    { id: 'luck', name: 'Lucky Streak', v: [10, 18, 25], d: v => `+${v}% status chance` },
+    { id: 'edge', name: 'House Edge', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
+    { id: 'hot', name: 'Hot Table', v: [2, 3], d: v => `Jackpot ${v} shots sooner` },
+    { id: 'dbl', name: 'Double Down', v: [10, 18], d: v => `${v}% chance to fire twice` },
+    { id: 'odds', name: 'Long Odds', v: [0.5, 0.8], d: v => `+${v} Range` },
+    { id: 'deal', name: 'Fast Deal', v: [15, 27, 37], d: v => `+${v}% Attack Speed` },
+    { id: 'marked', name: 'Marked Cards', spec: 1, v: [25], d: () => '+25% Damage' },
+    { id: 'allin', name: 'All In', spec: 2, v: [1], d: () => 'Jackpots deal ×3 instead of ×2' },
+  ],
   forge: [
     { id: 'overtime', name: 'Overtime', v: [20, 35, 45], d: v => `+${v}% income` },
     { id: 'fee', name: "Finder's Fee", v: [4, 7], d: v => `+${v}% kill credits` },
@@ -316,6 +420,14 @@ const LEGENDARIES = [
   { id: 'mPylon', pool: 'pylon', tower: 'pylon', name: 'Overmind', pkv: { ampP: 10, mast: 1 }, t: () => '+10% Damage boost. +1 Range' },
   { id: 'mSnare', pool: 'pylon', tower: 'snare', name: 'Kraken Net', pkv: { bigNet: 8, exposed: 20 }, t: () => '+8 catches per wave. Netted fliers take +20% more damage' },
   { id: 'mForge', pool: 'forge', tower: 'forge', name: 'Golden Goose', pkv: { overtime: 50, compound: 0.5 }, t: () => '+50% income. Earns 0.5% interest on banked credits each wave' },
+  // 6.4 capstone tier towers (Mastery 5)
+  { id: 'mSaw', pool: 'atk', tower: 'saw', name: 'Sawmill', pkv: { boomer: 1, run: 2 }, t: () => 'Blades run back once. Blades run +2 tiles' },
+  { id: 'mFlash', pool: 'atk', tower: 'flashover', name: 'Napalm Heart', pkv: { smoulder: 1, blastR: 0.5 }, t: () => 'Burn stays after an explosion, at half strength. +0.5 explosion radius' },
+  { id: 'mSurge', pool: 'atk', tower: 'surge', name: 'Thunderhead', pkv: { cellsP: 8, chain: 1 }, t: () => 'Stores +8 charges. +1 Chain' },
+  { id: 'mRime', pool: 'atk', tower: 'rime', name: 'Glacier Heart', pkv: { thick: 60, shardW: 1 }, t: () => '+60% wall strength. A broken wall hits enemies within 1.5 tiles for ×4 Damage' },
+  { id: 'mTangle', pool: 'atk', tower: 'tangle', name: "Cat's Cradle", pkv: { linkP: 2, shareP: 8 }, t: () => '+2 links. Shares +8%' },
+  { id: 'mAegis', pool: 'atk', tower: 'aegis', name: 'Last Line', pkv: { guard: 2, salv: 1 }, t: () => '+2 leaks stopped per wave. Stopped leaks pay double credits' },
+  { id: 'mJoker', pool: 'atk', tower: 'joker', name: 'Royal Flush', pkv: { hot: 4, dbl: 15 }, t: () => 'Jackpot 4 shots sooner. 15% chance to fire twice' },
   { id: 'bulwark', pool: 'core', name: 'Bulwark Matrix', t: () => 'Shield fully recharges at the start of each wave' },
   { id: 'retribution', pool: 'core', name: 'Retribution', t: () => 'When an enemy reaches the core, it blasts everything within 2.5 tiles for 4× core damage' },
 ];
@@ -988,6 +1100,10 @@ const TALENTS = [
       CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['Every wave, each attack tower takes a random element for that wave (its shots, statuses, talents and Resonance follow it)', '+25% Damage'] }),
       CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 25 }, lines: ['Using an ability takes 30% off every other ability\'s cooldown', '+25% ability power'] })] },
 ];
+// 6.4 capstone tier (tower64): one node per tree above the Capstones. It needs TTOP points in that tree, costs 1 point, takes no
+// Capstone slot and unlocks that tree's new tower (CAP_TOWERS) for your runs. Row 5 in TAL; stored in PROF.tal like any talent
+const TTOP = 16;
+TALENTS.forEach((tr, i) => { tr.top = T_(tr.id.toLowerCase() + 'Top', TOWERS[CAP_TOWERS[i]].name, 1, {}, { unlockT: CAP_TOWERS[i] }); });
 // v5.8: Capstones that were replaced by play styles; a Supernova Remnant of the old one becomes the new one (migrateWeb)
 const CAP_RENAMED = { glass: 'nest', deadeye: 'rico', overgrid: 'stormrider', thunder: 'blackout', abszero: 'artillery', winter: 'hoarfrost', singularity: 'garden', dimret: 'forgeworks', unbreakable: 'bulwark' };
 // v5.8 Techniques: alternate fire modes. A talent unlocks one (need), then the tower panel switches each tower of that type between
@@ -1011,6 +1127,7 @@ const TAL = {};
 for (const tr of TALENTS) {
   tr.rows.forEach((row, r) => row.forEach(t => { t.tree = tr.id; t.row = r; TAL[t.id] = t; }));
   for (const c of tr.caps) { c.tree = tr.id; c.row = 4; c.max = 1; TAL[c.id] = c; }
+  if (tr.top) { tr.top.tree = tr.id; tr.top.row = 5; TAL[tr.top.id] = tr.top; } // 6.4 capstone tier
 }
 const TREE_BY_ID = Object.fromEntries(TALENTS.map(t => [t.id, t]));
 // points that fill a tree (every talent at max rank): the Talents screen's bars
@@ -1022,6 +1139,7 @@ const CAP_NEXT = lvl => lvl < 25 ? 25 : lvl < 60 ? 60 : 0;
 HUNT.pts = 30; const HUNT_CAPS = 1;
 // a talent's description at a given rank
 function talentLines(t, rank) {
+  if (t.unlockT) { const D = TOWERS[t.unlockT]; return [`New tower: the ${D.name} (${EL[D.el].name})`, D.blurb, 'You can build it in every run from now on. Daily Hunts use the base towers']; }
   if (t.cap) return t.lines || (t.doc !== undefined ? DOCTRINES[t.doc].lines : []);
   if (t.tech) { const F = fireModes(t.tech).find(f => f.need === t.id); return F ? [`Technique for the ${TOWERS[t.tech].name}: ${F.name}`, F.desc, 'Switch it per tower from the tower panel'] : []; }
   const r = Math.max(1, rank || 1);
@@ -1052,6 +1170,8 @@ const AFFIX_BAN = {
   beam: ['pierce', 'chain', 'splash', 'ricochet', 'echo'],
   mortar: ['pierce', 'chain', 'ricochet'],
   grav: ['pierce', 'chain', 'splash', 'multi', 'ricochet', 'echo'],
+  saw: ['pierce', 'chain', 'splash', 'ricochet'], det: ['pierce', 'chain', 'splash', 'multi', 'ricochet'], surge: ['pierce', 'splash'], // 6.4
+  wall: ['pierce', 'chain', 'splash', 'multi', 'ricochet', 'echo'], tether: ['pierce', 'chain', 'splash', 'ricochet', 'echo'], aegis: ['pierce', 'chain', 'ricochet'], joker: ['pierce', 'chain', 'multi'],
 };
 
 // ---------- Anomalies: double-edged run mutators drawn from the Entropy meter ----------

@@ -128,7 +128,7 @@ const Save = (() => {
 
 // ---------------- UI ----------------
 const UI = (() => {
-  let screen = 'hangar', panel = null, pick = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null, modalFrom = null;
+  let screen = 'hangar', panel = null, pick = null, capPeek = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null, modalFrom = null;
   let hudClock = 0, cloudOk = null, setup = { startWave: 1, chaos: 1, seed: 0, map: null, mode: 'std' };
   let confirmAbandon = false, confirmReset = false, confirmWebReset = false;
   const stage = () => $('#stage');
@@ -295,7 +295,7 @@ const UI = (() => {
     else if (setup.mode === 'daily') { const sp = setup.daily; setRows(frRows(sp.chaos)); setCols(frCols(ROWS)); newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, frontier: 1, cols: COLS, rows: ROWS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); } // 6.1: Frontier rules (the flag rides in recOpts, so resume, codes and ladder checks rebuild it)
     else {
       PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
-      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, rows: ROWS, frontier: 1, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks() }); // 6.1: every run is a Frontier run
+      newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, rows: ROWS, frontier: 1, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks(), capT: capTowersOwned() }); // 6.1: every run is a Frontier run
     }
     Render.resetCam(); updateZoomBtn();
     frModeUI();
@@ -375,6 +375,8 @@ const UI = (() => {
     if (G.spawningDone && G.prep && G.prep.boss && introCard('boss', 'Boss next wave', 'Save Strike and Stasis for it. If it reaches the core, the run ends.', 'bosses')) return;
     if (!marketShut() && G.wave >= 10 && introCard('market', 'Exchange open', 'Tap Score at the top right: the Black Market sells items, Cash In turns credits into score.', 'market')) return;
     if (towerUnlocked('pylon') && G.wave >= 2 && introCard('support', 'Support towers', 'The Relay Pylon boosts the towers around it. The Credit Forge (Wave 12) pays every wave.', 'support')) return;
+    { const nt = (G.capT || []).find(k => !(PROF.seenSys || {})['capT_' + k]); // 6.4: the first run with a new capstone tier tower
+      if (nt && G.time > 3 && introCard('capT_' + nt, `New tower: ${TOWERS[nt].name}`, `${TOWERS[nt].blurb} ${TOWER_ROLE[nt].split(' · ')[0]}. It is in the build menu with a gold corner.`)) return; }
     if (typeof TOWER_FIRE !== 'undefined' && G.towers.some(t => fireModes(t.type).some(f => fireLearned(t.type, f.id))) && introCard('tech', 'Techniques', 'You learned a second fire mode. Open a tower of that type: the Fire row switches it.', 'techniques')) return;
     // credits piling up: say so once in a while, with what to do about it
     if (G.spawningDone && G.wave >= 6 && G.wave - nudgeW >= 8 && G.towers.length) {
@@ -1456,7 +1458,7 @@ const UI = (() => {
 
   // ---------- Panels ----------
   function closePanel() {
-    panel = null; pick = null;
+    panel = null; pick = null; capPeek = null;
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
@@ -1512,21 +1514,40 @@ const UI = (() => {
     coil: 'Shields and crowds · ×3 vs shields, stops Shell recharging, chains', forge: 'Economy · credits every wave',
     flame: 'Ground crowds · Burn stops Regrowth · can\'t hit air', lens: 'Plating, Bulk and bosses · beam ignores Plating, weak vs swarms',
     emp: 'Control · stuns and strips shields, hits air', grav: 'Control · drags ground enemies back · can\'t hit air',
+    // 6.4 capstone tier towers
+    saw: 'Road clearer · cuts every ground enemy on a stretch of road · ignores Plating · can\'t hit air',
+    flashover: 'Burn payoff · Burning enemies explode · pair with Flame and Missile',
+    surge: 'Wave opener · stores charge while idle, unloads chain lightning',
+    rime: 'Blocker · an ice wall holds ground enemies · bosses smash it',
+    tangle: 'Damage sharing · links enemies, a hit on one spreads to the rest',
+    aegis: 'Leak insurance · stops leaks at the core each wave · bosses excepted',
+    joker: 'Combo engine · random element, attack and status every shot',
   };
+  // 6.4: the tree whose capstone tier unlocks a tower, for the build menu and the codex
+  const capTreeOf = k => TALENTS.find(tr => tr.top && tr.top.unlockT === k);
   function buildPanelHTML() {
-    const order = G.tut ? G.tutS.towers.slice() : TOWER_ORDER.filter(towerUnlocked).concat(TOWER_ORDER.filter(k => !towerUnlocked(k)));
+    const order = G.tut ? G.tutS.towers.slice() : TOWER_ORDER.filter(towerUnlocked).concat(TOWER_ORDER.filter(k => !towerUnlocked(k) && !TOWERS[k].capT)); // 6.4: locked tier towers sit in their own strip
     const tiles = order.map(k => {
       const D = TOWERS[k];
       if (!towerUnlocked(k)) return `<div class="bt locked" aria-label="${esc(D.name)} locked"><canvas class="tcard" data-card="${k}" data-lock="1"></canvas><span class="bn"><em>???</em><b>Wave ${D.unlock}</b></span></div>`;
       const cost = towerCost(k);
       const mr = masteryRank(k);
-      return `<button class="bt ${pick === k ? 'on' : ''}" data-act="pick" data-type="${k}" aria-label="${esc(D.name)}" style="--c:${EL[D.el].col}">${mr ? `<span class="mrank r${mr}">${mr}</span>` : ''}<canvas class="tcard" data-card="${k}"></canvas><span class="bn"><em>${esc(TSHORT[k] || D.name)}</em><b ${costBtn(cost)}>${fmt(cost)}</b></span></button>`;
+      return `<button class="bt ${pick === k ? 'on' : ''}${D.capT ? ' capt' : ''}" data-act="pick" data-type="${k}" aria-label="${esc(D.name)}" style="--c:${EL[D.el].col}">${mr ? `<span class="mrank r${mr}">${mr}</span>` : ''}<canvas class="tcard" data-card="${k}"></canvas><span class="bn"><em>${esc(TSHORT[k] || D.name)}</em><b ${costBtn(cost)}>${fmt(cost)}</b></span></button>`;
     }).join('');
+    // 6.4: the capstone tier towers this run can't build yet, greyed in one strip so players know they exist (tap one: how to get it)
+    const capLock = G.tut || G.daily ? [] : CAP_TOWERS.filter(k => !towerUnlocked(k));
+    const strip = capLock.length ? `<div class="capstrip"><span class="lbl">Capstone tier</span>${capLock.map(k => `<button class="cst${capPeek === k ? ' on' : ''}" data-act="cappeek" data-type="${k}" aria-label="${esc(TOWERS[k].name)} locked"><canvas class="ico" width="24" height="24" data-ico="${k}"></canvas></button>`).join('')}</div>` : '';
     let info, foot;
-    if (pick) {
+    if (capPeek && !towerUnlocked(capPeek) && !pick) {
+      const D = TOWERS[capPeek], tr = capTreeOf(capPeek);
+      info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p class="role">${tipify(TOWER_ROLE[capPeek] || '')}</p><p>${esc(D.blurb)}</p><p class="bst lockline">Unlock: ${esc(tr ? tr.name : '')} capstone tier (${TTOP} points in ${esc(tr ? tr.name : '')})${PROF.tal && tr && PROF.tal[tr.top.id] ? '. Learned: it joins your next run' : ''}</p></div>`;
+      foot = '';
+    } else if (pick) {
       const D = TOWERS[pick], cost = towerCost(pick);
       const stat = D.kind === 'snare' ? `Catches ${D.catches} fliers per wave · Lure range ${D.range}` : D.kind === 'support' ? `+${D.buffDmg}% Damage, +${D.buffRate}% Attack Speed · Range ${D.range}`
         : D.kind === 'eco' ? `+${D.income} credits per wave`
+        : D.kind === 'wall' ? `Wall strength ${D.hold} · regrows every ${Math.round(1 / D.rate)}s · Range ${num1(D.range * G.mods.range)}`
+        : D.kind === 'aegis' ? `Stops ${D.guards} leaks per wave · Damage ${num1(D.dmg * G.mods.dmg)} · Range ${num1(D.range * G.mods.range)}`
         : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
       info = `<div class="binfo"><b>${esc(D.name)} <span style="color:${EL[D.el].col}">${EL[D.el].name}</span></b><p class="role">${tipify(TOWER_ROLE[pick] || '')}</p><p>${esc(D.blurb)}</p><p class="bst">${stat}</p></div>`;
       const full = gridFree() < 1 && !isNode(panel.x, panel.y);
@@ -1537,7 +1558,7 @@ const UI = (() => {
       foot = gridFree() < 1 && !isNode(panel.x, panel.y) ? `<button class="btn primary wide" data-act="reactor" ${costBtn(reactorCost())}>Expand reactor · ${fmt(reactorCost())}<small>Grid full (${gridUsed()}/${gridCap()}): +1 power</small></button>` : '';
     }
     const nodeNote = isNode(panel.x, panel.y) ? `<div class="sts node">${tipify('Power Node: towers here draw no power and get +25% Damage, +15% Range (support and economy +25%)')}</div>` : '';
-    return `<div class="ph"><b>Build</b><small class="grid ${gridFree() < 1 ? 'full' : ''}">Power ${gridUsed()}/${gridCap()}</small>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
+    return `<div class="ph"><b>Build</b><small class="grid ${gridFree() < 1 ? 'full' : ''}">Power ${gridUsed()}/${gridCap()}</small>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${strip}${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
   }
 
   // ---------- tappable glossary terms ----------
@@ -1618,6 +1639,18 @@ const UI = (() => {
     const tail = t.grow > 0 ? ' · Specialize free' : !n ? ' · none in range' : t.lvl >= MAX_LV ? '' : want > t.lvl ? '' : ` · now LV ${want}`;
     return `<div class="sts grow">Grows with nearby attack towers${t.freeLv ? ` <b>+${t.freeLv} LV free</b>` : ''}<small>${n} in range${tail}</small></div>`;
   }
+  // 6.4 (tower64): one live line per capstone tier tower, in plain words
+  function capInfoHTML(t) {
+    const s = t.s; let txt = '';
+    if (s.kind === 'saw') txt = `Blade runs ${num1(s.sawLen)} tiles up the road${s.boomer ? ' and back' : ''} · ignores Plating · ground only`;
+    else if (s.kind === 'det') txt = `Explosions: hit + remaining Burn ×${num1(s.detX)} · radius ${num1(s.detR)}${s.detSpread ? ` · spreads fire ${num1(s.detSpread)} tiles` : ''}`;
+    else if (s.kind === 'surge') txt = `Charge ${Math.floor(t.charge || 0)}/${s.cells} · fills 1 per ${num1(1 / s.chargeRate)}s while idle · fires 4× as fast while charged`;
+    else if (s.kind === 'wall') txt = t.wall ? `Wall ${Math.max(0, Math.ceil(t.wall.hp))}/${Math.round(s.hold)} · elites wear it 2× as fast` : `Wall down · regrows in ${Math.max(0, Math.ceil(t.cd / Math.max(0.01, s.rate)))}s`;
+    else if (s.kind === 'tether') txt = `Links ${s.links} enemies for ${num1(s.linkT)}s · shares ${pct(s.share)} of each hit among them${s.tslow ? ` · linked ${pct(s.tslow)} slower` : ''}`;
+    else if (s.kind === 'aegis') { const c = G.core, r = s.range + 0.5, ok = dist2(t.cx, t.cy, c.x, c.y) <= r * r; txt = `Stops left this wave ${Math.max(0, s.guards - (t.guardN || 0))}/${s.guards} · ${ok ? 'core in range' : 'core out of range: no stops'}`; }
+    else if (s.kind === 'joker') txt = `Jackpot every ${s.jack}th shot · next in ${s.jack - ((t.jn || 0) % s.jack)}${s.sure ? ' · statuses always land' : ''}`;
+    return txt ? `<div class="sts capinfo">${tipify(txt)}</div>` : '';
+  }
   function towerPanelHTML(t) {
     const D = TOWERS[t.type], s = t.s;
     const spec = t.spec ? D.specs[t.spec - 1].name : '';
@@ -1633,7 +1666,8 @@ const UI = (() => {
       if (s.multi) sts.push(`+${s.multi} target`);
       stats = `<div class="sg"><span>Damage<b>${fmt(s.dmg * (1 + t.buff.dmg))}</b></span><span>Rate<b>${num1(s.rate * (1 + t.buff.rate))}/s</b></span><span>Range<b>${num1(t.effRange || s.range)}</b></span><span>Crit<b>${Math.round(s.critC + t.buff.crit)}%</b></span><span>DPS<b data-live="dps">${fmt(t.dps)}</b></span><span>Kills<b data-live="kills">${t.kills}</b></span></div>${sts.length ? `<div class="sts">${tipify(sts.join(' · '))}</div>` : ''}${t.isolated && G.mods.loneWolf ? `<div class="sts amber">${tipify('Lone Wolf: active')}</div>` : ''}${t.reson ? `<div class="sts reson">${tipify(`Resonance: +${Math.round(t.reson * RESON_DMG * 100)}% Damage (${t.resonWith.map(o => EL[o.s.el].name).join(', ')})`)}</div>` : ''}`;
     }
-    const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' ? '' :
+    if (TOWERS[t.type].capT) stats += capInfoHTML(t); // 6.4 capstone tier towers: what this one is doing right now
+    const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' || s.kind === 'det' || s.kind === 'wall' ? '' :
       `<div class="firerow"><span class="lbl">Aim</span>${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${{ first: 'First', last: 'Last', strong: 'Strong', close: 'Near' }[m]}</button>`).join('')}</div>`; // v5.8: label inline (one row) to make room for Fire
     const fire = fireHTML(t);
     let up = '';
@@ -1879,9 +1913,10 @@ const UI = (() => {
     if (!panel || !G || G.over) return; // a stale tap on a panel that just closed
     if (act === 'tab') { panel.tab = b.dataset.v; panel.resetScroll = true; renderPanel(); return; }
     if (panel.kind === 'build') {
+      if (act === 'cappeek') { capPeek = b.dataset.type; pick = null; Render.prev = null; renderPanel(); const pb = $('#panel > .pbody'); if (pb) pb.scrollTop = pb.scrollHeight; return; } // 6.4: a locked tier tower: say how to get it (scrolled into view on a phone)
       if (act === 'pick') {
         if (pick === b.dataset.type && G.credits >= towerCost(pick)) return panelAction('build', b);
-        pick = b.dataset.type;
+        pick = b.dataset.type; capPeek = null;
         const D = TOWERS[pick];
         Render.prev = D.range ? { x: panel.x, y: panel.y, range: D.range * G.mods.range * (pick === 'pulse' || pick === 'rail' ? 1 + G.mods.rangeKR : 1), col: EL[D.el].col } : null;
         renderPanel();
@@ -1984,10 +2019,10 @@ const UI = (() => {
     Render.sel = { x: t.x, y: t.y }; Render.selT = t; Render.prev = null; G.selCore = false;
     openPanel({ kind: 'tower', t, x: t.x, y: t.y });
   }
-  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', lens: 'Lens', emp: 'EMP', grav: 'Gravity' };
+  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', lens: 'Lens', emp: 'EMP', saw: 'Buzzsaw', flashover: 'Flashover', surge: 'Surge', rime: 'Rimewall', tangle: 'Tangler', aegis: 'Gatekeeper', joker: 'Wildcard', grav: 'Gravity' };
   function openBuild(x, y) {
     Render.sel = { x, y }; Render.selT = null; G.selCore = false;
-    pick = null; Render.prev = null;
+    pick = null; capPeek = null; Render.prev = null;
     openPanel({ kind: 'build', x, y });
   }
   // ---------- v5.1 Know Your Enemy: tap (or hover) any enemy to see what it is, what it does and what beats it ----------
@@ -3256,7 +3291,7 @@ const UI = (() => {
       { id: 'talent', name: 'Talents', rows: TALENTS.flatMap(tr => tr.rows.flat().map(T => [T.name, `${talentLines(T, T.max).join('. ')}. <em>${esc(tr.name)} · ${T.max > 1 ? 'at ' + T.max + ' ranks' : 'one rank'}</em>`, tr.col])) },
       { id: 'cap', name: 'Capstones', rows: TALENTS.flatMap(tr => tr.caps.map(T => [T.name, `${talentLines(T).join('. ')}. <em>${esc(tr.name)} Capstone</em>`, tr.col])) },
       { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
-      { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · Unlocks at Wave ${D.unlock}</em>`, EL[D.el].col]; }) },
+      { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · ${D.capT ? `Unlock: ${TREE_BY_ID[D.capT].name} capstone tier` : `Unlocks at Wave ${D.unlock}`}</em>`, EL[D.el].col]; }) },
     ];
   }
   function dictHTML() {
@@ -3340,8 +3375,8 @@ const UI = (() => {
     setTimeout(() => { renderHangar(); toast('GALAXY REBORN', `Supernova ${PROF.nova}. Score ×${(1 + PROF.nova * NOVA_SCORE + PROF.laws.length * LAW_SCORE).toFixed(2)}, XP +${Math.round(PROF.nova * NOVA_XP * 100)}%.`, '#ff9adf', 1); }, 900);
   }
   function openArchive() {
-    const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = towerUnlocked(k), xp = masteryXp(k), r = masteryRankOf(xp);
-      return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? `${masteryPips(r)}<u>${r < 5 ? `${xp}/${MASTERY.xp[r + 1]}` : esc(LEGENDARIES.find(L => L.tower === k).name)}</u>` : 'Wave ' + D.unlock}</em></div>`; }).join('');
+    const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = D.capT ? capTowersOwned().includes(k) || masteryXp(k) > 0 : towerUnlocked(k), xp = masteryXp(k), r = masteryRankOf(xp); // 6.4: tier towers count once learned
+      return `<div class="arow ${ok ? '' : 'dim'}"><canvas class="ico" width="20" height="20" data-ico="${k}"></canvas><span>${esc(D.name)}</span><small style="color:${EL[D.el].col}">${EL[D.el].name}</small><em>${ok ? `${masteryPips(r)}<u>${r < 5 ? `${xp}/${MASTERY.xp[r + 1]}` : esc(LEGENDARIES.find(L => L.tower === k).name)}</u>` : D.capT ? esc(TREE_BY_ID[D.capT].name) + ' tier' : 'Wave ' + D.unlock}</em></div>`; }).join('');
     const ks = activeCaps().map(id => TAL[id].name);
     const hrs = Math.floor(PROF.playTime / 3600), mins = Math.floor(PROF.playTime / 60) % 60;
     modal(`<div class="card"><div class="ch"><h2>Archive</h2><button class="x" data-act="close2">✕</button></div>
@@ -3784,8 +3819,9 @@ const Tree = (() => {
   function add(id) {
     const why = talentBlock(id);
     if (why) { SFX.play('deny'); UI.toast('NOT YET', blockMsg(id, why), '#ff4d6a'); return; }
-    talentAdd(id); SFX.play(TAL[id].cap ? 'levelup' : 'upgrade');
+    talentAdd(id); SFX.play(TAL[id].cap || TAL[id].unlockT ? 'levelup' : 'upgrade');
     if (TAL[id].cap) UI.toast('CAPSTONE', `${TAL[id].name} · ${TREE_BY_ID[TAL[id].tree].name}`, TREE_BY_ID[TAL[id].tree].col);
+    if (TAL[id].unlockT && TS() === PROF) UI.toast('NEW TOWER UNLOCKED', `${TAL[id].name} · ${G && !G.over && !(G.capT || []).includes(TAL[id].unlockT) ? 'Build it from your next run' : 'Build it in your next run'}`, TREE_BY_ID[TAL[id].tree].col); // 6.4 capstone tier
     Save.save(); refresh();
   }
   function remove(id) {
@@ -3800,7 +3836,8 @@ const Tree = (() => {
     if (why === 'have') return 'Already yours';
     if (why === 'locked') return 'Your Daily Hunt build is locked for this run';
     if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${slotsNow()} Capstone${slotsNow() > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
-    if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${treePts(tr.id)})`;
+    if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${T.row >= 5 ? treePts(tr.id, 5) : treePts(tr.id)})`;
+    if (why === 'daily') return 'Daily Hunts use the base towers. Learn it on your own build';
     if (why === 'tree') return `One Capstone per tree. Remove ${capName(capsHeld().find(c => TAL[c].tree === T.tree))} first`;
     if (why.startsWith('conflict:')) return `Can't sit beside ${capName(why.slice(9))}: Conflagration turns every Chill into Burn`;
     return 'Not available';
@@ -3815,6 +3852,14 @@ const Tree = (() => {
     const desc = F ? `${TOWERS[T.tech].name} technique: ${F.short}` : talentLines(T, Math.max(1, r)).join(' · ');
     return `<div class="${cls}" style="--c:${tr.col}"><button class="tbody" data-tact="sel" data-v="${T.id}"><b>${esc(T.name)}${rem ? ' <em>Remnant</em>' : ''}</b>${T.cap ? '' : `<small>${r}/${T.max}</small>`}${rankPips(T, r)}<span class="td">${esc(desc)}</span></button>${canAdd ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Add a rank">+</button>` : ''}</div>`;
   }
+  // 6.4 capstone tier: the top of the tree, one wide tile with the tower it unlocks
+  function tierHTML(tr) {
+    const T = tr.top; if (!T) return '';
+    const D = TOWERS[T.unlockT], r = talRank(T.id), why = talentBlock(T.id), ok = treePts(tr.id, 5) >= TTOP;
+    const cls = ['ttile', 'tier', r ? 'have' : '', why === 'row' || why === 'daily' ? 'locked' : '', sel === T.id ? 'sel' : ''].join(' ');
+    return `<div class="trow toprow ${ok ? '' : 'locked'}"><div class="trl"><b>▲</b><small>${TTOP} pts</small></div><div class="trt"><div class="${cls}" style="--c:${tr.col}">
+      <button class="tbody" data-tact="sel" data-v="${T.id}"><canvas class="ico" width="24" height="24" data-ico="${T.unlockT}"></canvas><em>Capstone tier · new tower</em><b>${esc(D.name)}${r ? ' <i>Unlocked</i>' : ''}</b><span class="td">${esc(D.blurb)}</span></button>${!why ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Unlock">+</button>` : ''}</div></div></div>`;
+  }
   function treeHTML(tr) {
     const pts = treePts(tr.id), rowsHTML = tr.rows.map((row, r) => {
       const need = rowNeed(r), ok = pts >= need || treePts(tr.id, r) >= need;
@@ -3823,7 +3868,8 @@ const Tree = (() => {
     const capOk = pts >= TCAP;
     return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${rowsHTML}
       <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
-      <p class="note tfoot">Capstones change how you play. Pick one per tree; ${TS() !== PROF ? `this build holds ${slotsNow()}` : `you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}`}.</p>`;
+      ${tierHTML(tr)}
+      <p class="note tfoot">The capstone tier (${TTOP} points, no slot) unlocks a new tower. Capstones change how you play. Pick one per tree; ${TS() !== PROF ? `this build holds ${slotsNow()}` : `you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}`}.</p>`;
   }
   function sumHTML() {
     const M = computeMods(null, null), lines = [];
@@ -3833,19 +3879,20 @@ const Tree = (() => {
     const caps = activeCaps();
     return `<div class="thead"><b>Your build</b><span>Everything your talents give you, in one place</span><em>${pointsSpent()} spent · ${pointsFree()} free</em></div>
       <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(TS().remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : '<p class="note">None yet. Spend 20 points in one tree to reach its Capstones.</p>'}
+      ${(() => { const nt = TALENTS.filter(tr => tr.top && talRank(tr.top.id)); return nt.length ? `<div class="lbl">New towers</div><p class="note">${nt.map(tr => `<b style="color:${tr.col}">${esc(tr.top.name)}</b>`).join(' · ')}</p>` : ''; })()}
       <div class="lbl">Bonuses</div><p class="note">Every point spent: +${TAL_PT_DMG}% Damage to all towers (now +${+(pointsSpent() * TAL_PT_DMG).toFixed(1)}%).</p>${lines.length ? `<ul class="tsum">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="note">No talents yet.</p>'}
       <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / treeMax(tr.id) * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
   }
   function infoHTML() {
     if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after ${TROW} points in that tree. Capstones open at ${TCAP}. Techniques unlock a tower's alternate fire mode. Every point also adds +${TAL_PT_DMG}% Damage to all towers.</p></div>`;
-    const T = TAL[sel], tr = TREE_BY_ID[T.tree], r = T.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id);
+    const T0 = TAL[sel], T = T0.unlockT ? Object.assign({}, T0, { cap: 1 }) : T0, tr = TREE_BY_ID[T.tree], r = T0.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id); // 6.4: a tier node reads like a Capstone
     const now = r ? talentLines(T, r) : null, next = !T.cap && r < T.max ? talentLines(T, r + 1) : null;
     const rem = (TS().remnants || []).includes(T.id);
-    return `<div class="tinfo-t" style="--c:${tr.col}"><em>${esc(tr.name)}${T.cap ? ' · Capstone' : ` · Row ${T.row + 1}`}</em><b>${esc(T.name)}</b>${T.cap ? `<small>${r ? (rem ? 'Remnant: always on' : 'Yours') : 'Not taken'}</small>` : `<small>Rank ${r} of ${T.max}</small>`}</div>
+    return `<div class="tinfo-t" style="--c:${tr.col}"><em>${esc(tr.name)}${T.unlockT ? ' · Capstone tier' : T.cap ? ' · Capstone' : ` · Row ${T.row + 1}`}</em><b>${esc(T.name)}</b>${T.cap ? `<small>${r ? (rem ? 'Remnant: always on' : 'Yours') : 'Not taken'}</small>` : `<small>Rank ${r} of ${T.max}</small>`}</div>
       ${T.cap ? `<ul class="tl">${talentLines(T).map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : `${now ? `<div class="lbl">Now</div><ul class="tl">${now.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}${next ? `<div class="lbl">${r ? 'Next rank' : 'Rank 1'}</div><ul class="tl dim">${next.map(l => `<li>${tipify(l)}</li>`).join('')}</ul>` : ''}`}
       ${why && why !== 'max' && why !== 'have' ? `<p class="note bad">${esc(blockMsg(T.id, why))}</p>` : ''}
       <div class="tbtns">${!rem && (r > 0) ? `<button class="btn" data-tact="rem" data-v="${T.id}" ${rw && rw !== 'tokens' ? 'disabled' : ''}>Remove${refundFree() ? '' : `<small>${refundCost(T.id)} token${refundCost(T.id) > 1 ? 's' : ''}</small>`}</button>` : ''}
-      ${!why ? `<button class="btn primary" data-tact="add" data-v="${T.id}">${T.cap ? 'Take Capstone' : r ? 'Add rank' : 'Learn'}<small>1 point</small></button>` : ''}</div>`;
+      ${!why ? `<button class="btn primary" data-tact="add" data-v="${T.id}">${T.unlockT ? 'Unlock tower' : T.cap ? 'Take Capstone' : r ? 'Add rank' : 'Learn'}<small>1 point</small></button>` : ''}</div>`;
   }
   function buildsHTML() {
     return `<div class="tbuilds"><div class="lbl">Builds <em>save a layout, load it later${refundFree() ? '' : ' (2 tokens mid-run)'}</em></div>${PROF.builds.map((b, i) => `<div class="tb"><b>${b && b.tal ? esc(b.name) : `Slot ${i + 1}`}</b><small>${b && b.tal ? `${b.lvl} pts · ${(b.caps || []).map(capName).map(esc).join(', ') || 'no Capstone'}` : 'empty'}</small><button class="btn small" data-tact="bsave" data-v="${i}">Save</button><button class="btn small" data-tact="bload" data-v="${i}" ${b && b.tal ? '' : 'disabled'}>Load</button></div>`).join('')}</div>`;
@@ -3858,9 +3905,10 @@ const Tree = (() => {
     el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
     const tk = el('tTok'); tk.hidden = !(G && !G.over); if (G) tk.innerHTML = `<b>${G.tokens}</b> tokens`;
     const rs = el('tReset'); rs.hidden = !refundFree(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
-    el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
+    el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}${tr.top && talRank(tr.top.id) ? ' · ▲' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
     el('tgrid').innerHTML = (drawer === 'builds' ? buildsHTML() : '') + (cur === 'sum' ? sumHTML() : treeHTML(TREE_BY_ID[cur] || TALENTS[0]));
     el('tinfo').innerHTML = infoHTML();
+    for (const cv of el('tgrid').querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv); // 6.4: the tier tile's tower
     document.body.classList.toggle('tsel', !!sel);
   }
   function open(m) {

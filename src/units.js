@@ -147,9 +147,70 @@ const UNITS = (() => {
       parts.push(P(S.dome(0, 0, v === 1 ? 10 : 8.5, 9), 3, ['#020106', '#06030e', '#0c0618', '#160c2a', '#2a1a4a', '#6a4aa0']));
       return parts;
     },
+    // ---------- 6.4 capstone tier towers (tower64) ----------
+    saw(c, v, a) { // Buzzsaw: a launcher arm with a serrated disc blade racked on it (Grinder: one big blade, Twin Saw: two)
+      const rk = a.rk * 4, blade = (cx, cy, R, h, n) => (x, y) => { const dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy); if (r > R) return -1; const q = ((Math.atan2(dy, dx) / 6.2832 * n) % 1 + 1) % 1; return r > R - 3 * q ? -1 : r < R * 0.32 ? h + 2 : r > R - 4.5 ? h * 0.7 : h; };
+      const parts = [P(S.rbox(-15, -10, 4, 10, 4, 6, 2), 2, HULL, { d: (x, y) => (Math.abs(y) < 0.7 ? -1 : 0) + (x < -12 ? -1 : 0) }),
+        P(S.box(-4, -3, 14 - rk, 3, 4, 1.5), 6, GUN, { d: stripes(4, 1) })];
+      const B = v === 2 ? [[7 - rk, -7, 7.5], [7 - rk, 7, 7.5]] : [[8 - rk, 0, v === 1 ? 13 : 11]];
+      for (const [bx, by, R] of B) { parts.push(P(blade(bx, by, R, 3, v === 1 ? 14 : 11), 9, ramp('#c9cfe4', 0.85), { d: (x, y) => (Math.hypot(x - bx, y - by) < R * 0.55 && Math.hypot(x - bx, y - by) > R * 0.45 ? -1.5 : 0) }));
+        parts.push(P(S.dome(bx, by, R * 0.3, 3), 13, ramp(c, 0.9), { e: glow(mix(c, '#ffffff', 0.5), (x, y) => Math.hypot(x - bx + 1, y - by + 1) < 1.2) })); }
+      return parts;
+    },
+    flashover(c, v, a) { // Flashover: a squat furnace with four vents and a glowing heart (Chain Reaction: igniter coils, Furnace: a chimney ring)
+      const parts = [P(S.puck(0, 0, 15, 5, 3), 0, ramp('#4a2a1c', 0.5), { d: (x, y) => (Math.floor((Math.atan2(y, x) + 3.1416) * 2.55) % 2 ? -1 : 0) })];
+      for (let k = 0; k < 4; k++) { const an = k * 1.5708, vx = Math.cos(an) * 12, vy = Math.sin(an) * 12;
+        parts.push(P(S.dome(vx, vy, 4, 6), 4, ramp('#7a3a1c', 0.6), { e: glow(['#ffe14d', '#ff9a3c', c][(k + (a.ph || 0)) % 3], (x, y) => Math.hypot(x - vx, y - vy) < 1.8) })); }
+      if (v === 1) for (let k = 0; k < 4; k++) { const an = k * 1.5708 + 0.785; parts.push(P(S.ring(Math.cos(an) * 11, Math.sin(an) * 11, 1.4, 3.4, 0), 7, ramp(EL.A.col, 0.8))); }
+      if (v === 2) parts.push(P(S.ring(0, 0, 8, 11, 0), 7, ramp('#5a3020', 0.5), { d: stripes(3, 1) }));
+      parts.push(P(S.dome(0, 0, 8, 9), 6, ramp('#3a1a10', 0.4), { e: (x, y) => { const r = Math.hypot(x + 1, y + 1); return r < 3 ? '#fff2c0' : r < 5.5 ? '#ffb03a' : r < 6.5 ? c : null; } }));
+      return parts;
+    },
+    surge(c, v, a) { // Surge Spire: a stack of capacitor cells under a crackling sphere (Deep Cell: a double stack, Forked Surge: three prongs)
+      const parts = [P(S.puck(0, 0, 15, 3, 2), 0, ramp('#3a3020', 0.5), { e: glow(c, (x, y) => Math.abs(Math.hypot(x, y) - 12.5) < 0.8 && (Math.floor(Math.atan2(y, x) * 2.5) % 2 === 0)) })];
+      const cols = v === 1 ? [-5, 5] : [0];
+      for (const ox of cols) for (let k = 0; k < 3; k++) parts.push(P(S.puck(ox, 0, (v === 1 ? 5.5 : 8) - k * 1.2, 4, 1), 3 + k * 4, ramp(k % 2 ? '#c89a3a' : '#6a6a52', 0.7), { d: (x, y) => Math.abs(Math.hypot(x - ox, y) - ((v === 1 ? 5.5 : 8) - k * 1.2) + 1) < 0.6 ? -1 : 0 }));
+      if (v === 2) for (let k = 0; k < 3; k++) { const an = k / 3 * 6.283 - 1.57; parts.push(P(S.dome(Math.cos(an) * 7, Math.sin(an) * 7, 2.4, 3), 16, ramp(c, 0.8))); }
+      parts.push(P(S.dome(0, 0, v === 1 ? 5 : 4.5, 5), 17, ramp(c, 0.95), { e: (x, y) => Math.hypot(x + 1.2, y + 1.2) < 1.8 ? '#ffffff' : null }));
+      return parts;
+    },
+    rime(c, v, a) { // Rimewall: an ice-block generator, a frost projector in front (Pack Ice: stacked blocks, Rime Spikes: a ring of spikes)
+      const ICE = ramp(mix(c, '#e8fbff', 0.35), 0.9), parts = [P(S.puck(0, 0, 14, 3, 2), 0, STEEL, { d: (x, y) => (Math.hypot(x, y) > 12 ? 1 : 0) })];
+      if (v === 2) for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283 + 0.39; parts.push(P(S.gem(Math.cos(an) * 14, Math.sin(an) * 14, 3, 3, 10), 2, ICE)); }
+      const blocks = v === 1 ? [[-6, -6, 7], [6, -6, 7], [0, 6, 8]] : [[0, 0, 10]];
+      for (const [bx, by, r] of blocks) parts.push(P(S.rbox(bx - r, by - r * 0.8, bx + r, by + r * 0.8, 2, v === 1 ? 9 : 12, 2.5), 3, ICE, { d: (x, y) => (Math.abs(x - bx + y - by) < 0.8 ? 1.5 : 0), e: (x, y, t) => t >= 5 ? '#ffffff' : null }));
+      parts.push(P(S.hexgem(0, 0, 4, 8), v === 1 ? 13 : 15, ramp(c, 0.95), { e: (x, y, t) => t >= 4 ? '#ffffff' : null }));
+      return parts;
+    },
+    tangle(c, v, a) { // Entangler: a dark loom ring with anchor hooks and threads to its core (Wide Web: five hooks, Shared Fate: a second ring)
+      const n = v === 1 ? 5 : 3, parts = [P(S.ring(0, 0, 11, 16, 0), 2, ramp('#2e2448', 0.5), { d: (x, y) => (Math.floor((Math.atan2(y, x) + 3.1416) * 3) % 2 ? -1 : 0) })];
+      for (let k = 0; k < n; k++) { const an = k / n * 6.283, hx = Math.cos(an) * 14, hy = Math.sin(an) * 14;
+        parts.push(P(S.dome(hx, hy, 3.6, 6), 4, ramp('#5a4a7a', 0.6), { e: glow(c, (x, y) => Math.hypot(x - hx, y - hy) < 1.4) }));
+        parts.push(P((x, y) => { const L = Math.hypot(hx, hy), u = (x * hx + y * hy) / (L * L); if (u < 0.2 || u > 0.85) return -1; return Math.abs(x * hy - y * hx) / L < 0.9 ? 1 : -1; }, 6, ramp(c, 0.9), { e: (x, y) => mix(c, '#ffffff', 0.25) })); }
+      if (v === 2) parts.push(P(S.ring(0, 0, 6, 8.5, 0), 7, ramp(c, 0.8)));
+      parts.push(P(S.dome(0, 0, 5.5, 8), 8, ['#020106', '#06030e', '#0c0618', '#160c2a', '#2a1a4a', '#6a4aa0'], { e: (x, y) => Math.hypot(x + 1.5, y + 1.5) < 1.2 ? mix(c, '#ffffff', 0.6) : null }));
+      return parts;
+    },
+    aegis(c, v, a) { // Aegis Station: a shield emitter dome, a projector arc in front and a light twin gun (Bulkhead: armour plates, Interceptor: a long barrel)
+      const rk = a.rk * 3, parts = [P(S.rbox(-14, -12, 6, 12, 5, 6, 2), 2, HULL, { d: stripes(4, 1, 1) })];
+      if (v === 1) for (const y of [-14, 14]) parts.push(P(S.rbox(-12, y - 3, 4, y + 3, 1.5, 7, 1.5), 3, ramp(mix(c, '#5d6798', 0.6), 0.7)));
+      parts.push(P((x, y) => { const r = Math.hypot(x + 2, y), an = Math.atan2(y, x + 2); return r < 15 || r > 18 || Math.abs(an) > 1.1 ? -1 : 3; }, 6, ramp(c, 0.9), { e: (x, y) => Math.abs(Math.hypot(x + 2, y) - 16.5) < 0.6 ? mix(c, '#ffffff', 0.4) : null }));
+      const L = v === 2 ? 21 : 16;
+      for (const y of [-3, 3]) parts.push(P(S.tube(0, L - rk, y, 1.8, 0), 9, GUN, { d: stripes(5, 1) }));
+      parts.push(P(S.dome(-4, 0, 7, 9), 8, ramp(c, 0.85), { e: (x, y) => Math.hypot(x + 6.5, y + 2.5) < 1.6 ? '#ffffff' : null }));
+      return parts;
+    },
+    joker(c, v, a) { // Wildcard: a die on a turntable, five element gems on the rim (Loaded Dice: gold pips, High Roller: a crown of points)
+      const pip = v === 1 ? '#ffd84a' : '#ffffff', parts = [P(S.puck(0, 0, 15, 3, 2), 0, ramp('#3a2a44', 0.5))];
+      ELS.forEach((el, k) => { const an = k / 5 * 6.283 - 1.57, gx = Math.cos(an) * 12.5, gy = Math.sin(an) * 12.5; parts.push(P(S.gem(gx, gy, 2.6, 2.6, 6), 3, ramp(EL[el].col, 0.85))); });
+      if (v === 2) for (let k = 0; k < 5; k++) { const an = k / 5 * 6.283 - 1.57 + 0.63; parts.push(P(S.gem(Math.cos(an) * 12, Math.sin(an) * 12, 2, 4, 9), 3, ramp('#ffd84a', 0.8))); }
+      const P5 = [[-4, -4], [4, -4], [0, 0], [-4, 4], [4, 4]];
+      parts.push(P(S.rbox(-8, -8, 8, 8, 2.5, 9, 2), 4, ramp(mix(c, '#e8e4ff', 0.75), 0.9), { e: (x, y) => P5.some(([px, py]) => Math.hypot(x - px, y - py) < 1.5) ? pip : null, d: (x, y) => P5.some(([px, py]) => Math.hypot(x - px, y - py) < 2.2) ? -2 : 0 }));
+      return parts;
+    },
   };
   // non-rotating tops spin as an idle animation (lighting stays fixed, so only the asymmetric details move)
-  const SPIN = { cryo: 0.25, lens: 0.4, coil: 0, pylon: 0.9, forge: 0, snare: 1.4, grav: 0.7 };
+  const SPIN = { cryo: 0.25, lens: 0.4, coil: 0, pylon: 0.9, forge: 0, snare: 1.4, grav: 0.7, flashover: 0.15, surge: 0, rime: 0, tangle: 0.5, joker: 0.6 };
   function top(type, el, spec, ang, anim) {
     const ai = idxOf(ang), rk = anim.rk ? 1 : 0, ph = anim.ph || 0, ld = anim.ld ? 1 : 0;
     const key = `tt:${type}:${el}:${spec}:${ai}:${rk}:${ph}:${ld}`;
@@ -163,7 +224,7 @@ const UNITS = (() => {
       g.drawImage(base(el), 4, 4); g.drawImage(top(type, el, 0, ROT[type] ? -0.6 : 0, { ld: 1 }), 0, 0); cv.u = 0.5; return cv;
     });
   }
-  const ROT = { pulse: 1, rail: 1, missile: 1, flame: 1, emp: 1 };
+  const ROT = { pulse: 1, rail: 1, missile: 1, flame: 1, emp: 1, saw: 1, aegis: 1 };
 
   // ---------- enemies ----------
   // ground units face their heading; frames animate legs, wings and tendrils

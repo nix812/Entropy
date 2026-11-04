@@ -35,8 +35,8 @@ const capsHeld = () => (TS().caps || []).filter(id => TAL[id]);
 const pointsSpent = () => { let t = 0; for (const k in TS().tal || {}) if (TAL[k]) t += TS().tal[k]; return t + capsHeld().length; };
 const pointsFree = () => talLevel() - pointsSpent();
 // points spent in a tree, optionally only in rows above `row`
-function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; }
-const rowNeed = r => r >= 4 ? TCAP : r * TROW;
+function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && !T.unlockT && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; } // 6.4: the capstone tier node isn't a tree point
+const rowNeed = r => r >= 5 ? TTOP : r >= 4 ? TCAP : r * TROW; // 6.4: row 5 is the capstone tier
 // Capstone slots for the build being edited: the profile's by level, the Daily Hunt build's fixed HUNT_CAPS
 const slotsNow = () => TS() === PROF ? capSlots(talLevel()) : HUNT_CAPS;
 // why a talent can't take another rank right now ('' = it can)
@@ -54,6 +54,7 @@ function talentBlock(id) {
     return '';
   }
   if (talRank(id) >= T.max) return 'max';
+  if (T.unlockT && TS() !== PROF) return 'daily'; // 6.4: the Daily Hunt build keeps the base towers
   if (treePts(T.tree, T.row) < rowNeed(T.row)) return 'row';
   return '';
 }
@@ -134,7 +135,7 @@ function treeLoadBuild(slot) {
   if (!refundFree()) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   // replay it rank by rank, row by row, so every gate is honoured
   TS().tal = {}; TS().caps = [];
-  for (let r = 0; r < 4; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) TS().tal[k] = Math.min(T.max, b.tal[k]); }
+  for (let r = 0; r < 6; r++) for (const k in b.tal) { const T = TAL[k]; if (T && !T.cap && T.row === r) TS().tal[k] = Math.min(T.max, b.tal[k]); }
   for (const c of b.caps || []) if (TAL[c] && treePts(TAL[c].tree) >= TCAP && capsHeld().length < slotsNow() && !capsHeld().some(h => TAL[h].tree === TAL[c].tree)) TS().caps.push(c);
   if (G && !G.over) recomputeAll();
   Hooks.onChange('tree');
@@ -158,7 +159,10 @@ const chaosUnlocked = i => i <= 1 || (PROF.bestWave || 0) >= CHAOS_GATE[i] || ((
 function huntBuildProf() { const b = PROF.huntBuild || (PROF.huntBuild = { tal: {}, caps: [], remnants: [] }); b.lvl = HUNT.pts; b.remnants = []; b.tal = b.tal || {}; b.caps = b.caps || []; return b; }
 // a profile still learning the game (best wave under 10): locked controls stay out of sight until they come online
 const freshProfile = () => (PROF.bestWave || 0) < 10;
-const towerUnlocked = id => huntRun() || TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
+// 6.4: a capstone tier tower is unlocked only by the run's own list (G.capT, from newRun opts), never by the profile mid-run
+const towerUnlocked = id => TOWERS[id].capT ? !!(G && G.capT && G.capT.includes(id)) : huntRun() || TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
+// 6.4: the capstone tier towers this profile has learned (passed to newRun as opts.capT; the sim reads only G.capT)
+const capTowersOwned = () => TALENTS.filter(tr => tr.top && (PROF.tal || {})[tr.top.id]).map(tr => tr.top.unlockT);
 // the Capstones currently in force (held + remnants), as ks flags or fx bundles
 const activeCaps = () => [...new Set(capsHeld().concat((TS().remnants || []).filter(r => TAL[r])))];
 
@@ -507,12 +511,14 @@ function growRegion(stage, quiet) {
 const NODE_TOWER = { dmg: 1.25, range: 1.15, aura: 1.25 }, NODE_CORE = { dmg: 1.5, rate: 1.2 };
 const isNode = (x, y) => !!(G.nodeSet && G.nodeSet.has(tIdx(x, y)));
 // v3.1: what the defence could pour into one boss, from tower stats (measured DPS reads low early: small waves never let towers fire flat out)
+const PD_KIND = { saw: 3, det: 3, tether: 3, wall: 16, joker: 1.5 };
 function potentialDps() {
   let tot = 0;
   for (const t of G.towers) {
     const s = t.s; if (!s || !s.dmg || s.kind === 'eco' || s.kind === 'support' || s.kind === 'snare') continue;
     let d = s.dmg * s.rate * (1 + t.buff.dmg) * (1 + t.buff.rate) * (1 + Math.min(1, (s.critC + t.buff.crit) / 100) * (s.critM - 1)) * (1 + (s.boss || 0));
     if (s.kind === 'beam') d *= 1 + (s.rampMax - 1) * 0.7;
+    if (PD_KIND[s.kind]) d *= PD_KIND[s.kind]; // 6.4: towers whose hits land on several enemies (or every half second, the Rimewall)
     tot += d;
   }
   return tot;
@@ -758,6 +764,8 @@ function newRun(opts) {
   G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }, G.fr ? { frontier: 1, frV: G.frV } : {}))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
   if (T) { G.tut = T.v; G.lesson = T.id || null; G.tutS = T; G.huntBuild = JSON.parse(JSON.stringify(T.build || { tal: {}, caps: [], remnants: [], lvl: 0 })); } // the same for everyone: no talents, laws or Supernova
+  // 6.4 (FR_VER 4): the capstone tier towers this run may build. Daily Hunts, Training and older rules get none (fixed, so they replay)
+  G.capT = G.frV >= 4 && !opts.daily && !opts.huntBuild && !T && Array.isArray(opts.capT) ? opts.capT.filter(k => TOWERS[k] && TOWERS[k].capT) : [];
   G.ascV = ascV; G.mastery = opts.daily || opts.huntBuild ? {} : Object.assign({}, opts.mastery || {}); // Daily Hunts: no Mastery, same for everyone
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
@@ -807,7 +815,7 @@ function newRun(opts) {
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
   G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
-    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}) }]; // Frontier runs say so in the log
+    ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}), ...(G.capT.length ? { capT: G.capT.slice() } : {}) }]; // Frontier runs say so in the log; 6.4: the tier towers too
   return G;
 }
 
@@ -1150,6 +1158,7 @@ function towerStats(t) {
     if (D.kind === 'support') { s.buffDmg = Math.min(0.9, s.buffDmg * NODE_TOWER.aura); s.buffRate = Math.min(0.6, s.buffRate * NODE_TOWER.aura); }
     if (D.kind === 'snare') s.catches = Math.round(s.catches * NODE_TOWER.aura);
   }
+  if (D.capT) capStats(t, s, D, sp, pv, lv); // 6.4 capstone tier towers
   if (D.kind === 'eco') {
     s.income = D.income * (1 + 0.5 * (lv - 1)) * (sp.incomeX || 1) * (1 + (A.yield || 0) / 100) * (leg.midas ? 2 : 1) * (s.node ? NODE_TOWER.aura : 1) * (1 + pv('overtime') / 100) * mst;
     s.fbounty = (A.fbounty || 0) / 100 + pv('fee') / 100; s.bountyAura = sp.bounty || 0; s.interest = (leg.midas ? 0.01 : 0) + pv('compound') / 100; s.hazard = pv('hazard');
@@ -1163,6 +1172,25 @@ function towerStats(t) {
   if (G.mods.ks.artisan && canOvercharge(t)) s.dmg *= t.rank ? 1 + (0.05 + FX('aRank') / 100) * t.rank : 0.75; // v4.4: 6%/−20% measured 16 waves above no Doctrine (bots); trimmed
   if (G.fr && t === frDockT()) { s.dmg *= frDockX(); s.range += FRONTIER.dockRange; s.docked = 1; } // Frontier: mounted on the core
   return s;
+}
+// ---------- 6.4 capstone tier towers (tower64): their own numbers. Perk ids shared with older towers (amps, chain, crown, taser,
+// super, overcur, brittle) are already read above or in the attack code. Rules: docs/notes/tower64.md
+function capStats(t, s, D, sp, pv, lv) {
+  const asc = t.asc || 0, lf = 1 + 0.05 * (lv - 1) + 0.03 * asc;
+  s.dmg *= 1 + (pv('teeth') + pv('fuse') + pv('nullW') + pv('pd') + pv('edge') + pv('bite') + pv('marked')) / 100;
+  s.rate *= 1 + (pv('spin2') + pv('bellows') + pv('regrow') + pv('qsight') + pv('deal')) / 100;
+  s.range += (pv('haze') + pv('reachW') + pv('reachT') + pv('watch') + pv('odds')) * lf * G.mods.range;
+  s.critC += pv('serr');
+  switch (D.kind) {
+    case 'saw': s.sawLen = D.sawLen + pv('run'); s.sawSpd = D.sawSpd * (sp.sawSpdX || 1); s.sawR = D.sawR * (sp.sawRX || 1) * (1 + pv('wideS') / 100); s.boomer = pv('boomer'); s.grind = pv('grind'); s.multi += pv('third'); s.shred = true; break;
+    case 'det': s.detX = D.detX * (sp.detXm || 1) * (1 + (pv('volat') + pv('cruc')) / 100); s.detR = D.detR + pv('blastR'); s.detSpread = sp.detSpread ? sp.detSpread + pv('storm') : 0; s.smoulder = pv('smoulder'); s.burn = 1; break;
+    case 'surge': s.cells = D.cells + (sp.cells || 0) + pv('cellsP') + pv('reserve'); s.chargeRate = 1 + pv('quickC') / 100; break;
+    case 'wall': s.hold = D.hold * (1 + 0.5 * (lv - 1) + 0.25 * asc) * (sp.holdX || 1) * (1 + (pv('thick') + pv('pack')) / 100) * (s.node ? NODE_TOWER.aura : 1); s.spikes = (sp.spikes || 0) + pv('barbs'); s.shardW = pv('shardW'); break;
+    case 'tether': s.links = Math.min(TANGLE.links, D.links + (sp.links || 0) + pv('linkP') + pv('web') + s.multi); s.share = Math.min(TANGLE.share, D.share + (sp.share || 0) + (pv('shareP') + pv('fate')) / 100); s.linkT = D.linkT + pv('longT'); s.tslow = sp.tslow || 0; s.bond = pv('bond'); break;
+    case 'aegis': s.guards = D.guards + Math.floor((lv - 1) / 2) + (sp.guards || 0) + pv('guard') + pv('last') + Math.floor(asc / 2); s.salv = pv('salv'); s.patch = pv('patch'); s.flak = pv('flak'); break;
+    case 'joker': s.jack = Math.max(3, (sp.jackEvery || D.jack) - pv('hot')); s.sure = sp.sure || 0; s.luck = pv('luck') / 100; s.dbl = pv('dbl') / 100; s.allin = pv('allin');
+      s.b0 = { burn: s.burn, chill: s.chill, shock: s.shock, mark: s.mark }; break;
+  }
 }
 // ---------- v5.8 Techniques: a tower's alternate fire mode (TOWER_FIRE in data.js) ----------
 // t.fire is the chosen mode id ('' or undefined = Standard). It only counts while its talent is learned in the run's talent source
@@ -1990,6 +2018,7 @@ function startWave() {
   snapshotRun(G.wave + 1);
   G.wave++;
   const w = G.wave;
+  if (G.capT && G.capT.length) for (const t of G.towers) if (t.guardN) t.guardN = 0; // 6.4 Gatekeeper: stops reset each wave
   abilOnlineCheck(w);
   if (G.tut && G.tutS.charge && G.tutS.charge[tutIdx(w)]) { const k = G.tutS.charge[tutIdx(w)]; G.charges[k] = Math.max(1, G.charges[k] || 0); }
   if (G.mods.ks.chaos) chaosRoll(); // v5.8 Chaos Engine
@@ -2097,7 +2126,7 @@ function cashIn(amount) {
 // ---------- v4.4 The Black Market: three items a stock, restocked after every boss wave, prices climbing with the wave ----------
 const marketStockN = w => Math.floor(Math.max(1, w) / MARKET.refresh);
 const marketPrice = I => MARKET.price(I.base, G.wave);
-const nextLockedTower = () => TOWER_ORDER.filter(k => !towerUnlocked(k)).sort((a, b) => TOWERS[a].unlock - TOWERS[b].unlock)[0] || null;
+const nextLockedTower = () => TOWER_ORDER.filter(k => !TOWERS[k].capT && !towerUnlocked(k)).sort((a, b) => TOWERS[a].unlock - TOWERS[b].unlock)[0] || null;
 function marketOk(I) {
   if (I.id === 'blueprint') return !!nextLockedTower();
   if (I.id === 'beacon') return (G.market ? G.market.beacons || 0 : 0) < I.max;
@@ -2648,6 +2677,7 @@ function updateEnemies(dt) {
       for (const e of arr) { if (e.st.frozen > 0) { wall = e.d; continue; } if (wall !== null && wall - e.d < 0.55) { e.jammed = true; wall = e.d; } else wall = null; }
     }
   }
+  if (G.capT && G.capT.length) wallHold(dt); // 6.4 Rimewall (only runs with a capstone tier tower)
   // gravity fields
   for (const e of G.enemies) e.fieldSlow = 0;
   for (const t of G.towers) {
@@ -2941,6 +2971,7 @@ function bulwarkWave(c) {
 }
 function leak(e) {
   if (G.tut && tutLeak(e)) return;
+  if (!e.boss && G.capT && G.capT.length && aegisCatch(e)) return; // 6.4 Gatekeeper (only runs with a capstone tier tower)
   e.dead = true;
   geneRecord(e, true); assaultHit(e, true);
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
@@ -3037,6 +3068,7 @@ function hit(e, dmg, el, src, o) {
   if (e.boss && !e.gen && e.boss !== 'gloop' && e.phase < BOSS_PHASES.length && e.hp < e.maxHp * BOSS_PHASES[e.phase]) bossPhase(e);
   if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += dealt;
   if (src && src.dmgDone !== undefined) { src.dmgDone += dealt; src.dpsAcc += dealt; src.lastFireW = G.wave; }
+  if (e.lnk && !o.echo && !o.dot && dealt > 0) tangleEcho(e, dealt, el); // 6.4 Entangler (only exists in runs with the tower)
   if (!o.dot) { e.hitFlash = 0.08; if (!o.combo && !o.abil) Hooks.sfx(o.crit ? 'hitcrit' : blunt || glance ? 'hitarmor' : 'hit', e, src);
     if ((blunt || glance) && (e.pingT || 0) < G.time) { e.pingT = G.time + 0.25; Hooks.fx(glance ? 'glance' : 'ping', { x: e.x, y: e.y, sx: src && src.cx, sy: src && src.cy }); } }
   if (!o.dot && (o.crit || o.combo || o.abil || dmg * mult > e.maxHp * 0.25)) Hooks.fx('num', { x: e.x, y: e.y, v: amt, crit: o.crit, combo: o.combo, col: EL[el] ? EL[el].col : '#fff' });
@@ -3183,7 +3215,7 @@ function kill(e, src, o) {
   G.credits += cr;
   G.kills++; if (!ghostRun()) PROF.kills++;
   addScore(e.score);
-  if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); }
+  if (src) { src.kills = (src.kills || 0) + 1; grantVxp(src, e.boss ? 30 : e.elite.length ? 3 : 1); if (src.s && src.s.kind === 'surge') src.charge = Math.min(src.s.cells, (src.charge || 0) + 1); } // 6.4: a Surge Spire's kill refills a cell
   if (e.elite.length) { G.stats.elites++; if (G.entWaveCombo < 6) { G.entWaveCombo += 0.25; addEntropy(0.25); } }
   if (G.af.boom && depth0(o) < 2) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, hpBase(e) * G.af.boom * (o2.boss ? 0.3 : 1), 'T', null, { noStatus: 1, depth: depth0(o) + 1 });
@@ -3381,6 +3413,7 @@ function updateTowers(dt) {
     if (t.hot && M.ks.wildfire) rate *= 0.75;
     if (M.ks.stormrider && s.el0 === 'A' && sw.inStorm) rate *= 1.6; // v5.8 Storm Rider
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
+    if (s.kind === 'surge') { if (t.surgeIdle) t.charge = Math.min(s.cells, (t.charge || 0) + dt * s.chargeRate); if ((t.charge || 0) >= 1) rate *= SURGE.burst; } // 6.4 Surge Spire
     t.effRange = range;
     t.cd -= dt * rate;
     if (s.kind === 'beam') { beamUpdate(t, dt, range, sw); if (t.beamTargets) t.lastFireW = G.wave; continue; }
@@ -3482,7 +3515,12 @@ function towerAttack(t, range, sw) {
       Hooks.sfx('missile', t);
       return true;
     }
-    case 'chain': {
+    case 'surge': { // 6.4 Surge Spire: idle time fills its cells (updateTowers); a charged bolt spends one. Then it fires as an Arc Coil
+      if (!findTargets(t, range, 1).length) { t.surgeIdle = 1; return false; }
+      t.surgeIdle = 0;
+      if ((t.charge || 0) >= 1) { t.charge -= 1; t.surgeT = G.time; }
+    } // falls through
+    case 'chain': { // eslint-disable-line no-fallthrough
       if (s.fence) return fenceAttack(t, sw);
       const tg = findTargets(t, range, 1 + s.multi);
       if (!tg.length) return false;
@@ -3506,7 +3544,7 @@ function towerAttack(t, range, sw) {
         ricochet(t, e0, dmg, s.el);
         Hooks.fx('chain', { pts, col: EL[s.el].col, t });
       }
-      Hooks.sfx('coil', t);
+      Hooks.sfx(s.kind === 'surge' ? 'surge' : 'coil', t);
       return true;
     }
     case 'cone': {
@@ -3564,6 +3602,12 @@ function towerAttack(t, range, sw) {
       Hooks.sfx('grav', t);
       return true;
     }
+    case 'saw': return sawThrow(t, range, sw); // 6.4 capstone tier towers
+    case 'det': return flashPulse(t, range, sw);
+    case 'wall': return wallRaise(t, range);
+    case 'tether': return tangleLink(t, range, sw);
+    case 'aegis': return aegisShot(t, range);
+    case 'joker': return jokerShot(t, range, sw);
     case 'eco': { // v5.8 Forge Works: a Forge fires Kinetic slugs worth part of its income
       if (!s.fdmg) return false;
       const tg = findTargets(t, range, 1);
@@ -3652,6 +3696,221 @@ function updateMines(dt) {
     }
   }
   G.mines = G.mines.filter(m => m.t > 0);
+}
+// ---------- 6.4 capstone tier towers (tower64) ----------
+const SURGE = { burst: 4 };
+// Buzzsaw: a blade lands on its target's road just ahead of it and runs back up the road (toward the wormhole), cutting every
+// ground enemy it touches once. Boomerang runs it back down once; Grind holds it at the end of its run for 1 s
+const SAW = { fly: 0.22, lead: 0.6 };
+const SAW_TMP = { x: 0, y: 0, seg: 0 };
+function sawThrow(t, range, sw) {
+  const s = t.s, tg = findTargets(t, range, 1 + s.multi);
+  if (!tg.length) return false;
+  for (const e of tg) {
+    if (!e.L || !e.L.pts) continue;
+    const crit = rollCrit(t), d0 = Math.min(e.L.len, e.d + SAW.lead);
+    t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
+    G.projs.push({ k: 'saw', L: e.L, d: d0, from: d0, end: Math.max(0, d0 - s.sawLen), dir: -1, x: t.cx, y: t.cy, seg: 0, fly: SAW.fly, spd: s.sawSpd, r: s.sawR,
+      dmg: atkDmg(t, sw, crit), crit, el: s.el, src: t, hitSet: new Set(), back: s.boomer ? 1 : 0, dwell: s.grind ? 1 : 0, dwellT: 0, life: 6 });
+  }
+  Hooks.sfx('saw', t);
+  return true;
+}
+function sawStep(p, dt) {
+  p.life -= dt; if (p.life <= 0) { p.dead = true; return; }
+  if (p.fly > 0) { const q = lanePos(p.L, p.d, SAW_TMP), k = Math.min(1, dt / p.fly); p.x += (q.x - p.x) * k; p.y += (q.y - p.y) * k; p.fly -= dt; return; }
+  if (p.dwellT > 0) { p.dwellT -= dt; sawCut(p); if (p.dwellT <= 0) p.dead = true; return; }
+  p.d += p.dir * p.spd * dt;
+  const done = p.dir < 0 ? p.d <= p.end : p.d >= p.end;
+  if (done) p.d = p.end;
+  lanePos(p.L, p.d, p);
+  sawCut(p);
+  if (!done) return;
+  if (p.back) { p.back = 0; p.dir = -p.dir; p.end = p.from; p.hitSet = new Set(); }
+  else if (p.dwell) { p.dwell = 0; p.dwellT = 1; p.hitSet = new Set(); }
+  else p.dead = true;
+}
+function sawCut(p) {
+  for (const e of G.enemies) {
+    if (e.fly || p.hitSet.has(e) || !enemyTargetable(e)) continue;
+    const rr = p.r + (e.size || 0.3);
+    if (dist2(e.x, e.y, p.x, p.y) > rr * rr) continue;
+    p.hitSet.add(e); hit(e, p.dmg, p.el, p.src, { crit: p.crit });
+  }
+}
+// Flashover: a ring pulse. Burning enemies explode for the hit plus their remaining Burn × detX (40% splashes around, Chain
+// Reaction lights the neighbours); the rest take a lighter hit that sets them on fire (its Burn chance is 100%)
+function flashPulse(t, range, sw) {
+  const s = t.s, r2 = range * range, tg = G.enemies.filter(e => enemyTargetable(e) && dist2(e.x, e.y, t.cx, t.cy) <= r2);
+  if (!tg.length) return false;
+  const crit = rollCrit(t), dmg = atkDmg(t, sw, crit), R = Math.max(s.detR, s.detSpread);
+  let booms = 0;
+  for (const e of tg) {
+    if (e.dead) continue;
+    const B = e.st.burn;
+    if (B && B.t > 0) {
+      const big = dmg + B.dps * B.t * s.detX, x = e.x, y = e.y;
+      e.st.burn = s.smoulder ? { dps: B.dps * 0.5, t: B.t, src: B.src } : null;
+      hit(e, big, s.el, t, { crit, noStatus: 1 });
+      for (const o of G.enemies) {
+        if (o === e || o.dead) continue;
+        const d2 = dist2(o.x, o.y, x, y); if (d2 > R * R) continue;
+        if (d2 <= s.detR * s.detR) hit(o, big * 0.4, s.el, t, { noStatus: 1 });
+        if (s.detSpread && !o.dead && !o.st.burn && d2 <= s.detSpread * s.detSpread) o.st.burn = { dps: B.dps, t: 3 * G.mods.burnDur, src: t };
+      }
+      if (booms++ < 6) Hooks.fx('boom', { x, y, r: s.detR, col: EL.T.col });
+    } else hit(e, dmg * 0.6, s.el, t, { crit });
+  }
+  Hooks.fx('heat', { x: t.cx, y: t.cy, r: range, n: booms });
+  Hooks.sfx('flashover', t, booms);
+  return true;
+}
+// Rimewall: an ice wall on the road tile nearest the tower. Ground enemies touching it stop (e.jammed), wear it down (1 a second
+// each, elites 2) and take a cold tick every WALL.tick s (its Chill chance is 100%, so they Freeze). A boss smashes it. Broken
+// walls regrow after 1/rate s (t.cd). Walls live on the tower (t.wall) and are not saved: a resumed wave raises them again
+const WALL = { r: 0.45, tick: 0.5 };
+function wallSpot(t, range) {
+  let best = null, bs = 1e9; const r2 = range * range;
+  for (const L of G.map.lanes) {
+    if (L.openWave) continue;
+    for (let i = 1; i < L.pts.length - 1; i++) { const p = L.pts[i], d2 = dist2(p.x, p.y, t.cx, t.cy); if (d2 > r2) continue; const sc = d2 - 0.01 * L.cum[i] / L.len; if (sc < bs) { bs = sc; best = p; } }
+  }
+  return best;
+}
+const wallOnRoad = w => G.map.lanes.some(L => !L.openWave && L.pts.some(p => dist2(p.x, p.y, w.x, w.y) < 0.04));
+function wallRaise(t, range) {
+  if (t.wall) { if ((G.tick + t.id) % 30 === 0 && (!wallOnRoad(t.wall) || dist2(t.wall.x, t.wall.y, t.cx, t.cy) > (range + 0.5) ** 2)) { t.wall = null; t.cd = 0; } return false; } // the road or the tower moved (Frontier)
+  const p = wallSpot(t, range); if (!p) return false;
+  t.wall = { x: p.x, y: p.y, hp: t.s.hold, max: t.s.hold, tick: 0 };
+  Hooks.fx('wallup', { x: p.x, y: p.y }); Hooks.sfx('rime', t);
+  return true;
+}
+function wallHold(dt) {
+  for (const t of G.towers) {
+    const w = t.wall; if (!w) continue;
+    w.tick -= dt; const tick = w.tick <= 0; if (tick) w.tick = WALL.tick;
+    let dmg = -1, crit = false;
+    for (const e of G.enemies) {
+      if (e.dead || e.fly || e.burrowT > 0) continue;
+      const rr = WALL.r + (e.size || 0.3);
+      if (dist2(e.x, e.y, w.x, w.y) > rr * rr) continue;
+      if (e.boss) { w.hp = 0; hit(e, towerDmg(t, stormAt(t.cx, t.cy)) * 2, t.s.el, t, {}); break; } // a boss smashes it (and is Chilled)
+      e.jammed = true; G.stats.held = (G.stats.held || 0) + dt; // enemy-seconds held, for the run log and the bots
+      w.hp -= dt * (e.elite.length ? 2 : 1);
+      if (t.s.spikes) { e.shatterT = Math.max(e.shatterT || 0, 0.6); e.shatterV = Math.max(e.shatterV || 0, t.s.spikes); }
+      if (tick) { if (dmg < 0) { crit = rollCrit(t); dmg = atkDmg(t, stormAt(t.cx, t.cy), crit) * WALL.tick; } hit(e, dmg, t.s.el, t, { crit }); }
+    }
+    if (w.hp <= 0) wallBreak(t);
+  }
+}
+function wallBreak(t) {
+  const w = t.wall; t.wall = null; t.cd = 1;
+  Hooks.fx('wallbreak', { x: w.x, y: w.y }); Hooks.sfx('crack', w);
+  if (t.s.shardW) { const d = towerDmg(t, stormAt(t.cx, t.cy)) * 4; for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, w.x, w.y) <= 2.25) hit(e, d, t.s.el, t, { noStatus: 1 }); }
+}
+// Entangler: links up to s.links enemies for s.linkT s (a group, G.tangles). An enemy is in one group at most. A hit on a member
+// (not damage over time, not a copy) shares s.share of the damage it dealt out among the other members (bosses take half a share)
+const TANGLE = { links: 6, share: 0.5 }; // caps: a hit is copied at most 5 times, at most 50% each
+function tangleLink(t, range, sw) {
+  const s = t.s, tg = findTargets(t, range, Math.max(1, s.links));
+  if (!tg.length) return false;
+  const crit = rollCrit(t), dmg = atkDmg(t, sw, crit);
+  if (tg.length >= 2) {
+    const g = { m: tg.slice(), t: s.linkT, src: t, share: s.share, slow: s.tslow, bond: s.bond, bt: 1 };
+    for (const e of tg) e.lnk = g;
+    (G.tangles || (G.tangles = [])).push(g);
+  }
+  t.angle = Math.atan2(tg[0].y - t.cy, tg[0].x - t.cx);
+  for (const e of tg) hit(e, dmg, s.el, t, { crit });
+  Hooks.fx('tether', { x: t.cx, y: t.cy, es: tg.map(e => ({ x: e.x, y: e.y })) });
+  Hooks.sfx('tangle', t);
+  return true;
+}
+function tangleEcho(e, v, el) {
+  const g = e.lnk; if (!g || g.t <= 0) return;
+  let n = 0; for (const m of g.m) if (m !== e && !m.dead && m.lnk === g) n++;
+  if (!n) return;
+  const a = v * g.share / n; // the share is split among the other links, so a hit is worth at most 1 + share in total
+  for (const m of g.m) if (m !== e && !m.dead && m.lnk === g) hit(m, a * (m.boss ? 0.5 : 1), el, g.src, { echo: 1, dot: 1, noStatus: 1 });
+}
+function updateTangles(dt) {
+  for (const g of G.tangles) {
+    g.t -= dt; g.m = g.m.filter(e => !e.dead && e.lnk === g);
+    if (g.m.length < 2) g.t = 0;
+    if (g.t <= 0) { for (const e of g.m) if (e.lnk === g) e.lnk = null; continue; }
+    if (g.slow) for (const e of g.m) if (!e.elite.includes('jugg')) slowTag(e, g.slow, 0.25);
+    if (g.bond && (g.bt -= dt) <= 0) { g.bt = 1; for (const e of g.m) { e.st.mark = Math.min(G.mods.markMax, e.st.mark + 1); e.st.markT = 4; } }
+  }
+  G.tangles = G.tangles.filter(g => g.t > 0);
+}
+// Gatekeeper: a light gun (no element), and up to s.guards leaks a wave stopped at the gate while the core is in its range.
+// The enemy dies there and pays as a kill. Bosses are never stopped. t.guardN counts this wave's stops (startWave clears it)
+function aegisShot(t, range) {
+  const s = t.s, tg = findTargets(t, range, 1);
+  if (!tg.length) return false;
+  const e = tg[0], crit = rollCrit(t);
+  t.angle = Math.atan2(e.y - t.cy, e.x - t.cx);
+  const d = s.dmg * (1 + t.buff.dmg) * (crit ? s.critM : 1) * (t.capMult || 1);
+  G.projs.push({ k: 'bullet', x: t.cx, y: t.cy, e, spd: s.pspd, dmg: d, crit, el: 'N', src: t, bounces: 0, hitSet: new Set(), splash: s.flak ? 0.8 : s.splash, life: 2 });
+  Hooks.sfx('aegis', t);
+  return true;
+}
+function aegisCatch(e) {
+  const c = G.core; let A = null, bd = 1e9;
+  for (const t of G.towers) {
+    if (t.s.kind !== 'aegis' || t.disabled > 0 || t.mvT > 0 || (t.guardN || 0) >= t.s.guards) continue;
+    const d = dist2(t.cx, t.cy, c.x, c.y), r = t.s.range + 0.5;
+    if (d <= r * r && d < bd) { bd = d; A = t; }
+  }
+  if (!A) return false;
+  A.guardN = (A.guardN || 0) + 1; G.stats.aegis = (G.stats.aegis || 0) + 1;
+  Hooks.fx('aegis', { x1: A.cx, y1: A.cy, x2: e.x, y2: e.y, left: A.s.guards - A.guardN }); Hooks.sfx('aegisblock', A);
+  const c0 = G.credits;
+  kill(e, A, {});
+  if (A.s.salv) G.credits += Math.max(0, G.credits - c0);
+  if (A.s.patch) c.hp = Math.min(c.max, c.hp + c.max * A.s.patch / 100);
+  return true;
+}
+// Wildcard: every shot rolls an element and a delivery (a bolt, a lance, a burst, an arc), with a 50% chance (Loaded Dice: 100%) of
+// that element's status (Kinetic: a crit). Every s.jack-th shot is a Jackpot: lance, burst and arc at ×2 (All In ×3) with every
+// status. The tower keeps the last roll in t.s (el and status chances) until its next shot, so its rounds in flight land with it
+const JOKER_FORMS = ['bolt', 'lance', 'burst', 'arc'];
+function jokerShot(t, range, sw) {
+  const s = t.s, tg = findTargets(t, range, 1);
+  if (!tg.length) return false;
+  const e = tg[0], M = G.mods;
+  t.jn = (t.jn || 0) + 1;
+  const jack = t.jn % s.jack === 0, el = M.ks.conflag ? 'T' : pick(G.r, ELS), forms = jack ? ['lance', 'burst', 'arc'] : [pick(G.r, JOKER_FORMS)];
+  const B = s.b0, P = jack || s.sure ? 1 : Math.min(1, 0.5 + s.luck);
+  s.el = el; s.burn = el === 'T' || jack ? Math.max(B.burn, P) : B.burn; s.chill = el === 'C' || jack ? Math.max(B.chill, P) : B.chill;
+  s.shock = el === 'A' || jack ? Math.max(B.shock, P) : B.shock; s.mark = el === 'V' || jack ? Math.max(B.mark, P) : B.mark;
+  const crit = (el === 'K' && (jack || G.r() < P)) || rollCrit(t);
+  const dmg = s.dmg * M.el[el] * (1 + t.buff.dmg) * (sw[el] || 1) * (crit ? s.critM : 1) * (t.capMult || 1) * (jack ? (s.allin ? 3 : 2) : 1);
+  t.angle = Math.atan2(e.y - t.cy, e.x - t.cx); t.jForm = forms[0]; if (jack) t.jackT = G.time;
+  for (const f of forms) jokerForm(t, f, e, range, dmg, el, crit);
+  if (s.dbl && !jack && G.r() < s.dbl) jokerForm(t, pick(G.r, JOKER_FORMS), e, range, dmg, el, false);
+  if (jack) Hooks.fx('jackpot', { x: t.cx, y: t.cy });
+  Hooks.sfx('joker', t, jack ? 1 : 0);
+  return true;
+}
+function jokerForm(t, f, e, range, dmg, el, crit) {
+  const s = t.s;
+  if (f === 'bolt') G.projs.push({ k: 'bullet', x: t.cx, y: t.cy, e, spd: s.pspd, dmg, crit, el, src: t, bounces: 1, hitSet: new Set(), splash: s.splash, life: 2 });
+  else if (f === 'burst') G.projs.push({ k: 'mortar', jk: 1, x: t.cx, y: t.cy, sx: t.cx, sy: t.cy, tx: e.x, ty: e.y, t: 0, fl: Math.hypot(e.x - t.cx, e.y - t.cy) / 8 + 0.25, dmg, crit, el, src: t, splash: 1 + s.splash });
+  else if (f === 'lance') { // a piercing line through up to 3 enemies (it ignores Plating, like a Rail Lance)
+    const ang = Math.atan2(e.y - t.cy, e.x - t.cx), dx = Math.cos(ang), dy = Math.sin(ang), len = range + 1, hits = [];
+    for (const o of G.enemies) { if (!enemyTargetable(o)) continue; const px = o.x - t.cx, py = o.y - t.cy, al = px * dx + py * dy; if (al < 0 || al > len) continue; if (Math.abs(px * dy - py * dx) < 0.35 + (o.boss ? 0.4 : 0)) hits.push([al, o]); }
+    hits.sort((a, b) => a[0] - b[0]);
+    const sh = s.shred; s.shred = true;
+    for (const [, o] of hits.slice(0, 3)) hit(o, dmg, el, t, { crit });
+    s.shred = sh;
+    Hooks.fx('rail', { x1: t.cx, y1: t.cy, x2: t.cx + dx * len, y2: t.cy + dy * len, col: EL[el].col, crit, t });
+  } else { // arc: chain lightning to 3 more enemies
+    const pts = [{ x: t.cx, y: t.cy }, { x: e.x, y: e.y }], hs = new Set([e]); let cur = e, d = dmg;
+    hit(e, d, el, t, { crit });
+    for (let j = 0; j < 3; j++) { let best = null, bd = 2.89; for (const o of G.enemies) if (enemyTargetable(o) && !hs.has(o)) { const q = dist2(o.x, o.y, cur.x, cur.y); if (q < bd) { bd = q; best = o; } } if (!best) break; d *= 0.85; hs.add(best); pts.push({ x: best.x, y: best.y }); hit(best, d, el, t); cur = best; }
+    Hooks.fx('chain', { pts, col: EL[el].col, t });
+  }
 }
 // v5.8 fields: Blackout's static (Shock + slow) and Hoarfrost's ice (Chill + Kinetic vulnerability), on the road for a few seconds
 function addField(k, x, y, r, t) { const F = G.fields || (G.fields = []); if (F.length >= 40) F.shift(); F.push({ k, x, y, r, t, max: t }); }
@@ -3758,7 +4017,7 @@ function updateProjs(dt) {
     } else if (p.k === 'bomblet') {
       p.t -= dt;
       if (p.t <= 0) { explode(p); p.dead = true; }
-    }
+    } else if (p.k === 'saw') sawStep(p, dt); // 6.4 Buzzsaw
   }
   G.projs = G.projs.filter(p => !p.dead);
   if (G.projs.length > 500) G.projs.splice(0, G.projs.length - 500);
@@ -3780,7 +4039,7 @@ function explode(p) {
   Hooks.fx('boom', { x: p.x, y: p.y, r, col: EL[p.el].col, k: p.k, t: src });
   Hooks.sfx(p.k === 'mortar' ? 'empboom' : p.k === 'bomblet' ? 'pop' : 'boomT', p); // cosmetic: each payload has its own impact
   for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, p.x, p.y) <= (r + e.size) * (r + e.size)) {
-    if (p.k === 'mortar' && !p.frost && e.shield > 0) e.shield *= s.pkv.eater ? 0 : 0.5; // EMP strips shields (v5.8 Shield Eater: all of it)
+    if (p.k === 'mortar' && !p.frost && !p.jk && e.shield > 0) e.shield *= s.pkv.eater ? 0 : 0.5; // EMP strips shields (v5.8 Shield Eater: all of it)
     hit(e, p.dmg, p.el, src, { crit: p.crit });
   }
   if (p.k === 'missile' && s.cluster) for (let i = 0; i < s.cluster; i++) {
@@ -3817,6 +4076,7 @@ function updateZones(dt) {
   G.zones = G.zones.filter(z => z.t > 0);
   if (G.mines && G.mines.length) updateMines(dt);
   if (G.fields && G.fields.length) updateFields(dt);
+  if (G.tangles && G.tangles.length) updateTangles(dt); // 6.4 Entangler
   // meteor event
   if (G.ev.meteor) {
     G.evT.meteor -= dt;
@@ -4278,7 +4538,7 @@ function masteryGains() {
   const waves = Math.max(0, G.wave - G.startWave + 1); if (waves < 3) return [];
   const by = Object.assign({}, G.stats.dmgSold || {}), n = {};
   for (const t of G.towers) { by[t.type] = (by[t.type] || 0) + t.dmgDone; n[t.type] = (n[t.type] || 0) + 1; }
-  const combat = k => !['support', 'snare', 'eco'].includes(TOWERS[k].kind);
+  const combat = k => !['support', 'snare', 'eco', 'wall', 'aegis'].includes(TOWERS[k].kind); // 6.4: Rimewall and Aegis earn like support towers (their work isn't damage)
   let tot = 0, top = null; for (const k in by) if (combat(k)) { tot += by[k]; if (!top || by[k] > by[top]) top = k; }
   const out = [];
   for (const k of TOWER_ORDER) {
@@ -4499,7 +4759,7 @@ function snapshotRun(waveNum) {
     rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
-    ascV: G.ascV || 1, mastery: G.mastery || {}, // v5.8
+    ascV: G.ascV || 1, mastery: G.mastery || {}, capT: G.capT && G.capT.length ? G.capT.slice() : undefined, // v5.8; 6.4 capT
     fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), ganoms: G.ganoms || [], anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
@@ -4509,7 +4769,7 @@ function snapshotRun(waveNum) {
 function snapshotNow() { if (G && !G.over) snapshotRun(G.spawningDone ? G.wave + 1 : G.wave); }
 function resumeRun(S) {
   const r = mulberry32((S.seed ^ (S.wave * 7919)) >>> 0);
-  newRun(Object.assign({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null, ascV: S.ascV || 1, mastery: S.mastery || {} }, S.fr ? { frontier: 1 } : {})); // v5.8: a save from before perks keeps the old Ascend
+  newRun(Object.assign({ seed: S.seed, chaos: S.chaos, startWave: S.startWave, cols: S.cols || 32, rows: S.rows || 15, sector: S.sector || null, ascV: S.ascV || 1, mastery: S.mastery || {}, capT: S.capT || [] }, S.fr ? { frontier: 1 } : {})); // v5.8: a save from before perks keeps the old Ascend
   PROF.runs--; // newRun counted it; a resume is the same run
   G.r = r;
   G.map.tiles = S.tiles.slice();
