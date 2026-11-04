@@ -70,7 +70,39 @@ Nic, after playtesting the lab build: "make frontier the new baseline game. We d
 
 ## Test results (final build)
 
-RESULTS_PLACEHOLDER
+Gate: `^FAIL `, a non-empty `FAILED: [...]`, `ERRORS: [.+]` or a Traceback. Browser suites run one at a time.
+
+| Suite | Result |
+|---|---|
+| `node test/replay.js` | all replays match (5 runs, 2 Classic Dailies) |
+| `node test/resume.js` | resumes the same wave, credits and core |
+| `node test/hook.js` | 36 checks, FAILED: [] |
+| `node test/hookcompat.js` | old recordings match (5.7.4 fixture, Classic) |
+| `node test/fixes.js` | all ok |
+| `node test/ascend.js` | all ascend checks pass (v574 recording) |
+| `node test/techniques.js` | 127 passed, 0 failed |
+| `node test/tutorial.js` | all tutorial replays match: Frontier Basic Training (the bot lifts off 3×, moves 6×, 0 leaks, 298 s), every lesson on Frontier rules, and the old Classic Training and lessons |
+| `node test/maps.js` | ok |
+| `node test/lab.js 8 1` | 46 configs, exit 0 |
+| `node test/frontier.js` | 92 passed, 0 failed |
+| `frontiershot.py` (667×375, 852×393, 1180×820) | FAILED: [], ERRORS: [] |
+| `tutorialshot.py` basic + misc (3 sizes) | FAILED: [], every Basic step shown (64 at 852, including all optional ones), checklist 15/15 |
+| `tutorialshot.py` lessons (3 sizes) | FAILED: [] (19 lessons; "not shown" only for steps a lesson skips by design: swarm `rail` is pre-built, hunt `esc`/`end` end by extracting) |
+| `trackcollide.py` (4 Frontier sizes + 2 Classic resumes) | FAILED: [], every state clear |
+| `splashshot.py` | FAILED: [] |
+| `audit.py n`, `audit.py ipadA 1180 820 0,0,20` | ERRORS: [] |
+| `updshot.py` | reloads once from the menu, not mid-run; errors [] |
+| `soundcheck.py` | FAILED: [], ERRORS: [] |
+| `uiaudit.py` | only the known false positives: the version label (`hangar_0`), dictionary chips (`help_dict_*`), and the setup zone line at 667 (`setup_1`) |
+
+**Balance check** (smartbot, Normal, 0 points, best wave 40, the same 6 seeds; frozen copy; one run at a time; bots are noisy, ±5 waves):
+
+| Batch | Waves reached (sorted) | Median | Minutes per wave (median) |
+|---|---|---|---|
+| Classic, COLS 48 | 31 40 41 56 59 65 | **48.5** | 0.67 |
+| Frontier (`FR=1`, docks and moves) | 21 23 32 53 61 63 | **42.5** | 0.69 |
+
+Frontier runs: 1–25 lift-offs and 28–61 moves each; time in the air about 1%; docks spread across Pulse, Rail, EMP, Missile, Flame and Lens (one run held the Rail Lance 70% of the time, one stayed on the plain cannon 70%). Same picture as the prototype (Classic 52 / Frontier 35 on 8 seeds): the bot is a weaker Frontier player than Classic player, and a Frontier wave takes about as long as a Classic one. No balance was changed.
 
 ## Left undone / open
 
