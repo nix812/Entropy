@@ -8752,6 +8752,7 @@ const RES = 2;
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
+  let wormFlashAt = 0; // Frontier: when the no-build ring around the wormholes was last flashed
   let frSel = null, frArrows = []; // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
@@ -9713,7 +9714,8 @@ const RES = 2;
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
-    if (G.fr) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', L.openWave ? 0.1 : 0.16), 3, 0); strokeRing(X, Y, r, '#ff4d6a', L.openWave ? 0.4 : 0.7, 2, [4, 4]); } // Frontier: the no-build zone
+    const wfA = G.fr && wormFlashAt ? Math.max(0, Math.min(1, (2.5 - (performance.now() - wormFlashAt) / 1000) / 0.8)) : 0; // shown for 2.5 s after a refused build, fading over the last 0.8 s
+    if (wfA > 0) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', (L.openWave ? 0.1 : 0.16) * wfA), 3, 0); strokeRing(X, Y, r, '#ff4d6a', (L.openWave ? 0.4 : 0.7) * wfA, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
     for (const t of G.snares || []) {
       if (!t.s) continue;
@@ -10503,6 +10505,7 @@ const RES = 2;
       if (g === 'regen') { gx.globalAlpha = 0.3; gx.drawImage(tintOf(sp, '#59f0b4'), x - sw / 2, y - sh / 2, sw, sh); gx.globalAlpha = 1; }
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
+    flashWorm() { wormFlashAt = performance.now(); },
     set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
     lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
@@ -11134,7 +11137,7 @@ const UI = (() => {
   function onboardingTick() {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
-    if (G.fr && G.time > 1 && introCard('frontier', 'Frontier', 'Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. The towers around the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slower here, but tougher. No building inside the red ring around a wormhole.')) return;
+    if (G.fr && G.time > 1 && introCard('frontier', 'Frontier', 'Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. The towers around the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slower here, but tougher. No building close to a wormhole.')) return;
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
@@ -12755,7 +12758,7 @@ const UI = (() => {
     }
     if (frSel) { // Frontier picker: a landing spot (preview) or a tower's new tile
       const i = tIdx(tx, ty);
-      if (!frSel.cands.has(i)) { SFX.play('deny'); return; }
+      if (!frSel.cands.has(i)) { SFX.play('deny'); if (frSel.kind === 'move' && frNearWorm(tx, ty)) { Render.flashWorm(); toast('TOO CLOSE', `No towers within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); } return; }
       if (frSel.kind === 'land') { const P = frPlan(tx, ty); if (!P) { const Q = planRelocation(tx, ty, true); SFX.play('deny'); toast('NO ROUTE', Q ? `Too close: a road from a wormhole would be under ${FRONTIER.minRoad} tiles` : 'A road cannot reach that tile', '#ff4d6a', true, 'tip'); return; } frSel.plan = P; }
       else frSel.dest = { x: tx, y: ty };
       SFX.play('ui'); Render.sel = { x: tx, y: ty }; renderPanel(); return;
@@ -12782,7 +12785,7 @@ const UI = (() => {
     if (isCore) return openCore();
     if (t) return openTower(t);
     if (canBuildAt(tx, ty)) return openBuild(tx, ty);
-    if (G.fr && frNearWorm(tx, ty) && G.map.tiles[tIdx(tx, ty)] === 0 && !G.towerAt[tIdx(tx, ty)]) { SFX.play('deny'); toast('TOO CLOSE', `No building within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); }
+    if (G.fr && frNearWorm(tx, ty) && G.map.tiles[tIdx(tx, ty)] === 0 && !G.towerAt[tIdx(tx, ty)]) { SFX.play('deny'); Render.flashWorm(); toast('TOO CLOSE', `No building within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); }
     closePanel();
   }
   function canvasWheel(e) {
