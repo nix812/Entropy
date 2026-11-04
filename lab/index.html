@@ -1512,6 +1512,7 @@ const FRONTIER = {
   links: 3, linkR: 4, linkUplink: 3,               // links: 3 towers within 4 tiles (+1 per 3 Uplink levels)
   linkDmg: 0.1, linkRate: 0.1, linkCore: 0.05,     // linked towers +10% damage and rate; the core +5% damage per link
   moveT: 4, moveFee: 0.1,                          // moving a tower: 4 s offline, 10% of what it cost
+  wormBuild: 6,                                    // no towers within 6 tiles of a wormhole (open or opening), so the swarm is seen before it's shot
   wormGap: 10, minRoad: 10,                        // landing spots stay 10 tiles (Manhattan) from every wormhole; no road shorter than 10
 };
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
@@ -3205,8 +3206,17 @@ function affixText(a) {
 function canBuildAt(x, y) {
   if (x < 0 || y < 0 || x >= COLS || y >= ROWS || (G.region && !inRegion(x, y, G.region))) return false;
   const i = tIdx(x, y);
-  return G.map.tiles[i] === 0 && !G.towerAt[i];
+  return G.map.tiles[i] === 0 && !G.towerAt[i] && !frNearWorm(x, y);
 }
+// Frontier: the ground around every wormhole (open or opening) is a no-build zone
+function frNearWorm(x, y) {
+  if (!G.fr) return false;
+  const r2 = FRONTIER.wormBuild * FRONTIER.wormBuild;
+  for (const L of G.map.lanes) { const p = L.tiles[0], dx = x - p.x, dy = y - p.y; if (dx * dx + dy * dy < r2) return true; }
+  return false;
+}
+// a free tile, ignoring the no-build zone (swallowed towers are put back wherever there's room)
+function tileFreeAt(x, y) { return x >= 0 && y >= 0 && x < COLS && y < ROWS && (!G.region || inRegion(x, y, G.region)) && G.map.tiles[tIdx(x, y)] === 0 && !G.towerAt[tIdx(x, y)]; }
 // ---------- Snare Beacons: lure fliers off their straight line into a net ----------
 function lure(e) {
   if (!e.fly || e.boss || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
@@ -4913,8 +4923,8 @@ function wormSurface(e) {
 function wormRelease(e) { // put swallowed towers back where they stood (or the nearest free tile)
   let back = 0;
   for (const t of e.gut || []) {
-    let spot = canBuildAt(t.x, t.y) ? [t.x, t.y] : null;
-    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (canBuildAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
+    let spot = tileFreeAt(t.x, t.y) ? [t.x, t.y] : null;
+    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (tileFreeAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
     if (!spot) continue;
     t.x = spot[0]; t.y = spot[1]; t.cx = t.x + 0.5; t.cy = t.y + 0.5; t.disabled = 1;
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t; back++;
@@ -9703,6 +9713,7 @@ const RES = 2;
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
+    if (G.fr) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', L.openWave ? 0.1 : 0.16), 3, 0); strokeRing(X, Y, r, '#ff4d6a', L.openWave ? 0.4 : 0.7, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
     for (const t of G.snares || []) {
       if (!t.s) continue;
@@ -11123,7 +11134,7 @@ const UI = (() => {
   function onboardingTick() {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
-    if (G.fr && G.time > 1 && introCard('frontier', 'Frontier', 'Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. The towers around the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slower here, but tougher.')) return;
+    if (G.fr && G.time > 1 && introCard('frontier', 'Frontier', 'Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. The towers around the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slower here, but tougher. No building inside the red ring around a wormhole.')) return;
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
@@ -12771,6 +12782,7 @@ const UI = (() => {
     if (isCore) return openCore();
     if (t) return openTower(t);
     if (canBuildAt(tx, ty)) return openBuild(tx, ty);
+    if (G.fr && frNearWorm(tx, ty) && G.map.tiles[tIdx(tx, ty)] === 0 && !G.towerAt[tIdx(tx, ty)]) { SFX.play('deny'); toast('TOO CLOSE', `No building within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); }
     closePanel();
   }
   function canvasWheel(e) {
