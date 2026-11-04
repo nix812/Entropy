@@ -68,18 +68,32 @@ Design: `docs/Frontier-Design.md` (Project doc "Frontier-Design"). Nic, after 6.
 | Landing | 10 tiles from wormholes; every road at least 10 tiles |
 
 ## Balance (bots, Normal, 0 points, best wave 40, 8 seeds; medians; bots are noisy, ±5 waves)
-BALANCE_PLACEHOLDER
+Measured with `smartbot.js` (`FR=1`), frozen source copy, final numbers (HP 1.75, bosses 1.3, gap 13):
+
+| Batch | Waves reached (sorted) | Median | Minutes per wave |
+|---|---|---|---|
+| Classic, COLS 48 (same bot, same seeds) | 17 40 41 50 54 61 61 63 | **52** | about 0.70 |
+| Frontier, bot never flies or moves (`NOFLY=1 NOMOVE=1`) | 13 49 57 57 64 64 66 69 | **60.5** | about 0.85 |
+| Frontier, bot docks and moves | 22 30 32 32 38 52 64 66 | **35** | about 0.70 |
+
+- First guess (HP 2.0, bosses 1.5, gap 15): no-fly median 41, flying 36.5. Trimmed to the values above.
+- The mode itself (bigger, slower, heavier) sits at or a little easier than Classic for this bot, and runs about 20% longer per wave.
+- The flying bot does *worse*: it docks on its top-DPS tower, the roads swing away from the towers it built for the old roads, and its 2-a-wave idle moves can't keep up (27–80 moves a run). That is a bot problem, but it is also a real warning: a careless dock can strand half your defence, and the preview's "towers that keep road" line (planned for Phase 2) would help players see it.
+- Dock share (time the core held each dock, flying runs): Rail Lance 13–80% (median about 35%), Pulse 7–41%, EMP, Missile, Coil, Cryo and Flame in the rest, plain cannon 2–33%, in the air about 1%. One run of eight had one dock above half the time (Rail 80%).
+- Nothing crashed; no stalls; runs ended by bosses (Phase Wraith, Space Whale) and normal leaks as in Classic.
 
 ## Tests
 - `node test/frontier.js [maxWave]` (new, 69 checks): Classic untouched (no flag, acts refused, Daily never Frontier); board per chaos; enemy speed; fewer/tougher units over the same spawn time; heavier roster; lift-off (preview docks, links, flight time), shield down and gun offline in the air, no second lift-off, every lane and every walking enemy re-routed to the landing spot, landing, docking (×2, +1 range), links (+10%/+5%), cooldown, Battery scaling, Move (docked can't, fee, tile held, offline, link breaks, back after 4 s), lift-off again sets the tower back intact, plain cannon, no element switch; two scripted runs with lift-offs, docks and moves through `act()` replay bit for bit, rebuild halfway mid-flight, and resume from a snapshot taken mid-flight (lands on the spot the roads lead to, docking comes back); a snapshot without the flag resumes as Classic.
 - `python3 test/frontiershot.py [WxH ...]` (new; default 667×375, 852×393, 1180×820): New Run tab, intro card, Lift Off button, picker (paused), preview text, flight, docked core with links, core panel, Move (pick, confirm, offline), edge arrow for an off-screen boss and tapping it, Home, the zoomed-out board. Screens in `test/out/frontier/`.
 - `test/trackcollide.py`: Frontier runs at 852, 667 and 1180 check the Lift Off button against every control and banner, and Ready against Lift Off.
-- All existing suites pass unchanged (see the final report).
+- Gate run on the final build: `node test/replay.js`, `hookcompat.js`, `ascend.js`, `tutorial.js`, `techniques.js`, `hook.js`, `fixes.js`, `frontier.js` all pass; `audit.py n` and `audit.py ipadA 1180 820 0,0,20` ERRORS: []; `trackcollide.py` (7 configurations), `splashshot.py`, `tutorialshot.py 667x375 basic`, `frontiershot.py` (3 sizes) FAILED: []; `uiaudit.py` flags the same states as 6.0.0, plus a random `setup_1` at 852×393 (zone text half under the fixed header mid-scroll; it depends on which zones the random seed offers and comes and goes between runs).
+- `tutorial.js` hashes differ run to run on 6.0.0 too (its bot uses `Math.random`); each run still replays itself.
 
 ## Known gaps
 - The bot is a weak Frontier player (it docks by DPS and moves idle towers, nothing smarter), so the balance numbers say little about a human who plans docks.
 - No lift-off/landing/docking sounds or animation beyond the lift and thrusters (Phase 3). Lift-off reuses the lane sound, landing the upgrade sound.
 - `frReroute` gives each walking enemy its own lane, so the progress-based targeting ("First", Glacier jams) treats rerouted enemies as just spawned until the next wave.
+- Landing near a wormhole cuts the road there (the rest of the old road is dropped): a Rail Lance two turns from the gate took the main road from 64 tiles to 11 in a test. The preview shows it in red and nothing under 10 tiles is allowed, but it is the biggest single risk to the feel.
 - The landing picker highlights every open tile; on the full 64×36 board the dock targets (framed towers) are what matters, and a phone has to pan to reach far spots.
 - Support towers can't be docked; Salvage fields, high ground and siege enemies aren't built.
 - Run length per wave is about 20–25% above Classic in bot runs.

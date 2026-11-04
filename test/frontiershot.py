@@ -40,6 +40,9 @@ with sync_playwright() as p:
         check(has_intro, 'first-time Frontier card', tag)
         pg.screenshot(path=str(out / f'f02_intro_{tag}.png'))
         clear(pg); pg.evaluate('() => { PROF.settings.briefings = "off"; }')
+        pg.evaluate('() => { Render.overview(); Render.zoomAt(200, 150, 0.2); UI.zoomChanged(); }'); pg.wait_for_timeout(400)
+        pg.screenshot(path=str(out / f'f02b_board_zoomed_out_start_{tag}.png'))  # the 64x36 board, the starting sector lit
+        pg.evaluate('() => { Render.resetCam(); UI.zoomChanged(); }'); pg.wait_for_timeout(200)
         check(pg.evaluate('() => !document.querySelector("#bLift").hidden && /lift/i.test(document.querySelector("#bLift").innerText)'), 'Lift Off button on the field', tag)
         # 3. a fortress away from the core: a Rail Lance with three Pulse Blasters around it
         rail = pg.evaluate('''() => { G.credits = 50000; const c = G.map.core, sp = [];
@@ -87,12 +90,13 @@ with sync_playwright() as p:
         pg.screenshot(path=str(out / f'f08_move_pick_{tag}.png'))
         cr0 = pg.evaluate('() => G.credits')
         pg.click('[data-act=frmovego]'); pg.wait_for_timeout(700)
-        check(pg.evaluate(f'() => {{ const t = G.towers.find(o => o.id === {t["id"]}); return t.x === {dest["x"]} && t.y === {dest["y"]} && t.mvT > 0 && t.disCause === "MOVING"; }}') and pg.evaluate('() => G.credits') < cr0,
+        check(pg.evaluate(f'() => {{ const t = G.towers.find(o => o.id === {t["id"]}); return t.x === {dest["x"]} && t.y === {dest["y"]} && t.mvT > 0 && t.disCause === "MOVING"; }}') and pg.evaluate('() => G.rlog.some(e => e.k === "frMove" && e.fee > 0)'),
               'tower moved, offline while it flies, fee paid', tag)
         pg.screenshot(path=str(out / f'f09_moving_{tag}.png'))
         pg.evaluate('() => UI.closePanel()')
         # 8. edge arrows: a boss far up the road, off screen; tapping the arrow looks at it
-        pg.evaluate('''() => { Render.resetCam(); const L = G.map.lanes.reduce((a, l) => l.len > a.len ? l : a); const e = spawnBoss({ boss: 'behemoth', lane: L, hpm: 50 }); e.d = 0.5; }''')
+        pg.evaluate('''() => { Render.resetCam(); const L = G.map.lanes.reduce((a, l) => l.len > a.len ? l : a); const e = spawnBoss({ boss: 'behemoth', lane: L, hpm: 50 }); e.d = 0.5;
+          const c = Render.tileToScreen(G.core.x, G.core.y); Render.zoomAt(c.x, c.y, 2.5); }''')  # zoomed in on the core, so the boss is off screen on every size
         pg.wait_for_timeout(500)
         arr = pg.evaluate('() => Render.frArrows.map(a => [Math.round(a.sx), Math.round(a.sy), a.home])')
         check(len(arr) >= 1, f'edge arrow for the off-screen boss {arr[:3]}', tag)
@@ -106,7 +110,7 @@ with sync_playwright() as p:
         # 9. the bigger board, zoomed all the way out
         pg.evaluate('() => { G.lanesOpened = G.laneWaves.length; G.region = { x0: 0, y0: 0, x1: COLS, y1: ROWS }; }'); pg.wait_for_timeout(2900)
         pg.evaluate('() => { Render.overview(); Render.zoomAt(200, 150, 0.2); UI.zoomChanged(); }'); pg.wait_for_timeout(400)
-        pg.screenshot(path=str(out / f'f11_board_zoomed_out_{tag}.png'))
+        pg.screenshot(path=str(out / f'f11_board_zoomed_out_after_dock_{tag}.png'))
         pg.close()
     b.close()
 print('ERRORS:', errs[:5])
