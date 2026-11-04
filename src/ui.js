@@ -328,7 +328,7 @@ const UI = (() => {
   function onboardingTick() {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
-    if (G.fr && G.time > 1 && introCard('frontier', 'Frontier', 'Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. The towers around the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slower here, but tougher.')) return;
+    if (G.fr && G.time > 1 && introCard('frontier', 'Frontier', 'Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. The towers around the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slower here, but tougher. No building inside the red ring around a wormhole.')) return;
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { G.wantedTold = 1; wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
@@ -1976,6 +1976,7 @@ const UI = (() => {
     if (isCore) return openCore();
     if (t) return openTower(t);
     if (canBuildAt(tx, ty)) return openBuild(tx, ty);
+    if (G.fr && frNearWorm(tx, ty) && G.map.tiles[tIdx(tx, ty)] === 0 && !G.towerAt[tIdx(tx, ty)]) { SFX.play('deny'); toast('TOO CLOSE', `No building within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); }
     closePanel();
   }
   function canvasWheel(e) {

@@ -336,6 +336,7 @@ const FRONTIER = {
   links: 3, linkR: 4, linkUplink: 3,               // links: 3 towers within 4 tiles (+1 per 3 Uplink levels)
   linkDmg: 0.1, linkRate: 0.1, linkCore: 0.05,     // linked towers +10% damage and rate; the core +5% damage per link
   moveT: 4, moveFee: 0.1,                          // moving a tower: 4 s offline, 10% of what it cost
+  wormBuild: 6,                                    // no towers within 6 tiles of a wormhole (open or opening), so the swarm is seen before it's shot
   wormGap: 10, minRoad: 10,                        // landing spots stay 10 tiles (Manhattan) from every wormhole; no road shorter than 10
 };
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));

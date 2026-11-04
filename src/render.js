@@ -983,6 +983,7 @@ const RES = 2;
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
+    if (G.fr) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', L.openWave ? 0.1 : 0.16), 3, 0); strokeRing(X, Y, r, '#ff4d6a', L.openWave ? 0.4 : 0.7, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
     for (const t of G.snares || []) {
       if (!t.s) continue;

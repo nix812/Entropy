@@ -922,8 +922,17 @@ function affixText(a) {
 function canBuildAt(x, y) {
   if (x < 0 || y < 0 || x >= COLS || y >= ROWS || (G.region && !inRegion(x, y, G.region))) return false;
   const i = tIdx(x, y);
-  return G.map.tiles[i] === 0 && !G.towerAt[i];
+  return G.map.tiles[i] === 0 && !G.towerAt[i] && !frNearWorm(x, y);
 }
+// Frontier: the ground around every wormhole (open or opening) is a no-build zone
+function frNearWorm(x, y) {
+  if (!G.fr) return false;
+  const r2 = FRONTIER.wormBuild * FRONTIER.wormBuild;
+  for (const L of G.map.lanes) { const p = L.tiles[0], dx = x - p.x, dy = y - p.y; if (dx * dx + dy * dy < r2) return true; }
+  return false;
+}
+// a free tile, ignoring the no-build zone (swallowed towers are put back wherever there's room)
+function tileFreeAt(x, y) { return x >= 0 && y >= 0 && x < COLS && y < ROWS && (!G.region || inRegion(x, y, G.region)) && G.map.tiles[tIdx(x, y)] === 0 && !G.towerAt[tIdx(x, y)]; }
 // ---------- Snare Beacons: lure fliers off their straight line into a net ----------
 function lure(e) {
   if (!e.fly || e.boss || e.pirate || e.lured || e.dead || !G.snares || !G.snares.length) return;
@@ -2630,8 +2639,8 @@ function wormSurface(e) {
 function wormRelease(e) { // put swallowed towers back where they stood (or the nearest free tile)
   let back = 0;
   for (const t of e.gut || []) {
-    let spot = canBuildAt(t.x, t.y) ? [t.x, t.y] : null;
-    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (canBuildAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
+    let spot = tileFreeAt(t.x, t.y) ? [t.x, t.y] : null;
+    for (let r = 1; r <= 3 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) if (tileFreeAt(t.x + dx, t.y + dy)) spot = [t.x + dx, t.y + dy];
     if (!spot) continue;
     t.x = spot[0]; t.y = spot[1]; t.cx = t.x + 0.5; t.cy = t.y + 0.5; t.disabled = 1;
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t; back++;

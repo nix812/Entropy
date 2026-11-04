@@ -38,6 +38,15 @@ const till = (S, f, cap) => { for (let i = 0; i < (cap || 60000) && !f() && !S.G
   for (const [ch, rows] of [[0, 30], [2, 40], [3, 40]]) { const S3 = fresh(); S3.newRun({ seed: 5, chaos: ch, frontier: 1 }); ok(S3.ROWS === rows && S3.COLS === S3.frCols(rows), `chaos ${ch}: ${S3.COLS}x${S3.ROWS}`); }
 }
 
+// ---- 2b. no building within FRONTIER.wormBuild tiles of a wormhole
+{
+  const S = fresh(); const G = S.newRun({ seed: 7, chaos: 1, frontier: 1 }); G.credits = 1e6;
+  const p = G.map.lanes[0].tiles[0]; let bad = 0, ok2 = 0;
+  for (let y = 0; y < S.ROWS; y++) for (let x = 0; x < S.COLS; x++) if (S.canBuildAt(x, y)) { for (const L of G.map.lanes) { const q = L.tiles[0]; if (Math.hypot(x - q.x, y - q.y) < S.FRONTIER.wormBuild) bad++; } ok2++; }
+  ok(bad === 0 && ok2 > 50, `no buildable tile within ${S.FRONTIER.wormBuild} of a wormhole (${ok2} buildable)`);
+  const c = S.newRun({ seed: 7, chaos: 1 }); let near = 0; for (const L of c.map.lanes) { const q = L.tiles[0]; for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (S.canBuildAt(q.x + dx, q.y + dy)) near++; }
+  ok(near > 0, 'Classic can still build beside a wormhole');
+}
 // ---- 3. lift-off, flight, docking, links, cooldown, re-routing, moving a tower
 {
   const S = fresh(); const G = S.newRun({ seed: 31, chaos: 1, frontier: 1 }); G.credits = 1e6;
@@ -92,7 +101,7 @@ const till = (S, f, cap) => { for (let i = 0; i < (cap || 60000) && !f() && !S.G
   ok(S.frCanFly() && G.wave >= G.frReady, `lift-off open again on Wave ${G.wave}`);
   const empty = S.frCands().map(i => [i % S.COLS, (i / S.COLS) | 0]).find(([a, b]) => !G.towerAt[S.tIdx(a, b)] && S.frPlan(a, b));
   ok(!!empty && S.act('frFly', empty[0], empty[1]), 'lift off to open ground');
-  ok(G.towerAt[S.tIdx(rx, ry)] === rail && !rail.s.docked && Math.abs(rail.s.dmg - base.dmg) < 1e-6 && Math.abs(rail.s.range - base.range) < 1e-6, 'the Rail Lance is back on its tile, undocked and intact');
+  ok(G.towerAt[S.tIdx(rx, ry)] === rail && !rail.s.docked && rail.s.dmg < base.dmg * 1.25 && Math.abs(rail.s.range - base.range) < 1e-6, 'the Rail Lance is back on its tile, undocked and intact (damage may have grown from kills)');
   till(S, () => !G.frFly, 3000);
   ok(!S.frDockT(), 'landed on open ground: the plain cannon');
   till(S, () => G.projs.some(p => p.src === G.core) || G.over, 30 * 120); ok(G.projs.some(p => p.src === G.core) || !G.enemies.length, 'the plain cannon fires again');
