@@ -2681,15 +2681,15 @@ function bossBehavior(e, dt) {
       e.timer = 1;
       if (e.napT > 0) { e.napT -= 1; if (e.napT <= 0) { e.armorAll = 0; Hooks.fx('say', { x: e.x, y: e.y, t: '*stretch*' }); } else Hooks.fx('say', { x: e.x, y: e.y, t: 'z' + 'z'.repeat(3 - Math.ceil(e.napT)) + 'Z' }); break; }
       e.timer2 -= 1;
-      if (e.timer2 <= 0) { e.timer2 = 12; e.napT = 3; e.armorAll = 0.6; Hooks.fx('say', { x: e.x, y: e.y, t: 'zzz' }); Hooks.log('Mr. Whiskers is napping. Do not disturb.', '#ff9a3c'); break; }
+      if (e.timer2 <= 0) { e.timer2 = 12; e.napT = 3; e.armorAll = 0.6; Hooks.fx('say', { x: e.x, y: e.y, t: 'zzz' }); Hooks.log('Leia is napping. Do not disturb (she bites).', '#ff9a3c'); break; }
       if (big) { // the zoomies: swats every tower nearby
         for (const t of G.towers) if (dist2(t.cx, t.cy, e.x, e.y) <= 3.5 * 3.5) { t.disabled = Math.max(t.disabled, 3); t.disCause = 'EMP'; Hooks.fx('emp', { x: t.cx, y: t.cy, r: 0.7 }); }
-        e.d += 1.5; Hooks.sfx('meow'); break;
+        e.d += 1.5; Hooks.fx('say', { x: e.x, y: e.y, t: '*ZOOMIES*' }); Hooks.sfx('meow'); break;
       }
       if (e.timer2 % 5 === 0) {
         let best = null, bd = 2.5 * 2.5;
         for (const t of G.towers) { const d = dist2(t.cx, t.cy, e.x, e.y); if (d <= bd) { bd = d; best = t; } }
-        if (best) { best.disabled = Math.max(best.disabled, 3); Hooks.fx('emp', { x: best.cx, y: best.cy, r: 0.7 }); Hooks.fx('say', { x: e.x, y: e.y, t: '*swat*' }); Hooks.log('Mr. Whiskers knocked a tower off the table', '#ff9a3c'); Hooks.sfx('meow'); }
+        if (best) { best.disabled = Math.max(best.disabled, 3); Hooks.fx('emp', { x: best.cx, y: best.cy, r: 0.7 }); Hooks.fx('say', { x: e.x, y: e.y, t: ['*shred*', '*hiss*', '*swat*'][(e.swats = (e.swats || 0) + 1) % 3] }); Hooks.log(['Leia shredded a tower like it was the couch', 'Leia knocked a tower off the table. On purpose', 'Leia sharpened her claws on a tower'][e.swats % 3], '#ff9a3c'); Hooks.sfx('meow'); }
       }
       break;
     }

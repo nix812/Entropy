@@ -309,19 +309,35 @@ const UNITS = (() => {
       parts.push(P(S.dome(0, 0, 18, 10), 30, ramp('#ffe14d', 1), { e: (x, y) => Math.hypot(x, y) < (f ? 9 : 7) ? '#fff6c0' : null }));
       return parts;
     },
-    cat(f, v) { // Mr. Whiskers. v = 1: asleep
-      const c = '#ff9a3c', C = ramp(c, 0.6), parts = [];
-      parts.push(P((x, y) => { const tx = 46 + Math.sin(y * 0.12 + f * 1.4) * 7; return y < 6 || y > 64 || Math.abs(x - tx) > 6 ? -1 : 6 * Math.sqrt(1 - ((x - tx) / 6) ** 2); }, 0, C, { d: (x, y) => (Math.floor(y / 6) % 2 ? -1 : 0) }));
-      parts.push(P(S.dome(0, 30, 40, 26), 2, C, { d: (x, y) => (Math.abs(((x + 60) % 14) - 7) < 1.6 && Math.abs(x) > 18 ? -1.2 : 0) }));
-      parts.push(P(S.ell(0, 40, 20, 18, 8), 26, ramp('#ffd29a', 0.8)));
-      for (const s of [-1, 1]) parts.push(P(S.dome(s * 20, 62, 11, 9), 10, ramp('#ffd29a', 0.8)));
-      parts.push(P(S.dome(0, -16, 36, 30), 20, C, { d: (x, y) => (Math.abs(x) < 1.6 && y < -26 ? -1 : 0) + (Math.abs(Math.abs(x) - 9) < 1.4 && y < -30 ? -1 : 0) }));
-      for (const s of [-1, 1]) { parts.push(P(S.poly([[s * 12, -42], [s * 32, -64], [s * 34, -30]], 14, 4), 26, C)); parts.push(P(S.poly([[s * 17, -42], [s * 30, -57], [s * 31, -36]], 4, 2), 36, ramp('#ff8fb0', 0.8))); }
+    cat(f, v) { // Leia (was Mr. Whiskers, 6.0.2): Nic's long-haired grey-and-white cat. v = 1: asleep
+      const G = ramp('#7c8496', 0.55), W = ramp('#ece8f2', 0.95), parts = [];
+      // fluffy outlines: a dome or ellipse whose edge breaks into tufts
+      const fluff = (cx, cy, rx, ry, h, n, amp, ph) => (x, y) => { const a = Math.atan2(y - cy, x - cx), k = 1 + amp * (Math.abs(Math.sin(a * n + (ph || 0))) - 0.5), u = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2; if (u / (k * k) > 1) return -1; return Math.sqrt(Math.max(0.03, 1 - u)) * h; }; // tufted edge, smooth lighting
+      const fur = (x, y) => nz(x * 1.3, y * 1.3) * 0.45; // soft, uneven fur
+      // the big plume of a tail, swishing
+      parts.push(P((x, y) => { const tx = 48 + Math.sin(y * 0.09 + f * 1.4) * 7, w = 8 + 3 * Math.sin(Math.max(0, Math.min(1, (y - 2) / 64)) * Math.PI); return y < 2 || y > 66 || Math.abs(x - tx) > w ? -1 : 7 * Math.sqrt(1 - ((x - tx) / w) ** 2); }, 0, G, { d: fur }));
+      // body: grey back and sides, a big white chest ruff and belly
+      parts.push(P(fluff(0, 30, 42, 28, 26, 16, 0.06), 2, G, { d: fur, e: (x, y, t) => (((x / 25) ** 2 + ((y - 36) / 26) ** 2 < 1) ? W[t] : null) }));
+      parts.push(P(fluff(0, 22, 24, 15, 8, 12, 0.14, 1), 24, W, { d: fur })); // the ruff under the chin
+      for (const s of [-1, 1]) parts.push(P(fluff(s * 20, 62, 12, 9, 10, 6, 0.12), 10, W, { d: fur })); // white mitts
+      // head: grey cap over the ears and eyes, a white blaze down the nose into a white muzzle
+      const face = (x, y, t) => { const ax = Math.abs(x); return (y > -8 && ax < 24 - Math.max(0, -y) * 0.6) || (y > -46 && y <= -8 && ax < 2.2 + (y + 46) * 0.11) ? W[t] : null; };
+      parts.push(P(fluff(0, -16, 37, 31, 30, 18, 0.05), 20, G, { d: (x, y) => (Math.abs(x) < 1.6 && y < -28 && y > -40 ? -1 : 0), e: face }));
       for (const s of [-1, 1]) {
-        if (v) parts.push(P(S.box(s * 15 - 8, -20, s * 15 + 8, -16, 2, 1), 50, ramp('#3a1606')));
-        else parts.push(...eye(s * 15, -18, 9, '#8dff4a', '#0a0a0a', 0).map(q => Object.assign(q, { f: S.ell(s * 15, -18, 8, 9, 7) })));
+        parts.push(P(fluff(s * 27, 0, 11, 9, 10, 7, 0.22, 2), 30, W, { d: fur })); // cheek floof
+        parts.push(P(S.poly([[s * 12, -42], [s * 32, -64], [s * 34, -30]], 14, 4), 26, G));
+        parts.push(P(S.poly([[s * 17, -42], [s * 30, -57], [s * 31, -36]], 4, 2), 36, ramp('#ffa3bd', 0.8)));
+        parts.push(P(S.poly([[s * 20, -42], [s * 27, -52], [s * 29, -40]], 3, 1), 40, W)); // ear tufts
       }
-      parts.push(P(S.poly([[-5, -4], [5, -4], [0, 1]], 4, 1), 52, ramp('#ff6f9a', 0.9)));
+      for (const s of [-1, 1]) {
+        if (v) parts.push(P(S.box(s * 15 - 8, -20, s * 15 + 8, -16, 2, 1), 50, ramp('#2a2e3a')));
+        else {
+          parts.push(...eye(s * 15, -18, 9, '#c4cc3e', '#0a0a0a', 0).map(q => Object.assign(q, { f: S.ell(s * 15, -18, 8, 9, 7), e: (x, y) => { const dx = x - s * 15, dy = y + 18; return Math.abs(dx) < 1.6 && Math.abs(dy) < 6 ? '#0a0a0a' : Math.hypot(dx, dy) < 7 ? (dy < -2 ? '#d8de5a' : '#a9b236') : null; } })));
+          parts.push(P(S.poly([[s * 6, -24], [s * 25, -29], [s * 25, -26], [s * 7, -22]], 3, 1), 52, G)); // lids sloping in: unimpressed
+        }
+      }
+      parts.push(P(S.poly([[-5, -4], [5, -4], [0, 1]], 4, 1), 52, ramp('#ff9ab4', 0.9)));
+      for (const s of [-1, 1]) for (const [dy, sl] of [[-1, -0.12], [3, 0.1]]) parts.push(P((x, y) => { const xx = s * x; if (xx < 16 || xx > 40) return -1; return Math.abs(y - (dy + (xx - 16) * sl)) < 0.6 ? 1 : -1; }, 54, W)); // whiskers
       return parts;
     },
     gloop(f) {
