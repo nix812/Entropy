@@ -20,7 +20,7 @@ tree, and each node unlocks one new tower.
 ### The towers (each plays a job none of the 12 does)
 | Tree | Tower | Job | How it plays |
 |---|---|---|---|
-| K Ballistics | **Buzzsaw** (`saw`) | Road clearer | Throws a blade onto the road ahead of its target. The blade runs back up the road (against the flow) for 5 tiles and cuts every ground enemy it meets once. Ignores Plating. Can't hit air. Best beside long, bending roads. |
+| K Ballistics | **Buzzsaw** (`saw`) | Road clearer | Throws a blade onto the road ahead of its target. The blade runs back up the road (against the flow) for 6 tiles and cuts every ground enemy it meets once. Ignores Plating. Can't hit air. Best beside long, bending roads. |
 | T Combustion | **Flashover** (`flashover`) | Burn payoff | Pulses fire in a ring. Enemies already Burning explode for their remaining Burn ×2.5 plus a hit, splashing 40% around. Enemies not Burning catch fire. Alone it alternates ignite/explode; beside Flame and Missile it detonates their Burn. |
 | A Voltaic | **Surge Spire** (`surge`) | Alpha strike | Chain lightning that stores 1 charge a second while it has nothing to shoot, and 1 per kill (10 max). With charge it fires ×4 as fast until the cells are empty. Hits hardest at the start of every wave and when a boss walks in. |
 | C Cryogenics | **Rimewall** (`rime`) | Blocker | Raises an ice wall on the nearest road tile. Ground enemies stop at it, take cold damage and Chill (and Freeze) until they wear it down (8 enemy-seconds at LV 1, elites ×2). Bosses smash it. Regrows after 8 s. Makes a pile for splash towers. |
