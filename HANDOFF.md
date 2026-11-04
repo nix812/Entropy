@@ -1,10 +1,11 @@
 # Entropy — Project Handoff
 
-**Version at handoff: 6.1.0 · November 4, 2026**
+**Version at handoff: 6.2.0 · November 4, 2026**
 
 > **The game is now called Last Gradient (5.6.0).** Repo, URLs, save keys, code prefixes (`HUNT1:`, `TRACK1:`), file names (`dist/entropy.html`) and the in-game Entropy gauge keep the old word on purpose. Player-facing name: Last Gradient.
 
-### Start here (state at 6.1.0)
+### Start here (state at 6.2.0)
+- **6.2.0 "Fallout" (Nov 4): Nic's in-flight small batch.** Built as two branches, details in `docs/notes/qolA.md` (Nuke, support growth, treasure arrows, chest reach, positional tower sound, Power Nodes out of no-build zones, Home button removed; sim rules gated on `FR_VER = 3`/`G.frV >= 3`) and `docs/notes/qolB.md` (tabbed Settings, Studio ? help, deck ♥, composer visible, tutorial pacing with the `TEACH_GAP` queue; `TEACH_NOW` lets boss and wormhole warnings skip it).
 - **6.1.0 "Lift Off" (Nov 4): Frontier is the only run type.** Section 4.19. Classic rules live on only for old saves and recordings (no `frontier` flag in recOpts). Roadmap for 6.2–6.5 is in section 9 and the Project doc "Roadmap-Nov-2026".
 - **6.0.0 "The big one" (Nov 2–3):** a mechanics audit (Project doc "Mechanics Audit 2026-11-02", also `docs/Mechanics-Audit-2026-11-02.md`) led to seven feature branches built in parallel and merged into one release. Each has a notes file in `docs/notes/` that is the detailed reference: **read the one for the system you touch.** Summary in section 4.18.
   - `tutorial.md`: Basic Training (guided first run with a checklist), Field Manual (18 lessons), Tutorial button, the Ready button and walkthrough.
@@ -17,7 +18,7 @@
 - **Rules gates:** old recordings must replay exactly. New sim rules check `G.hk`, `G.ascV` or recOpts flags, never `VERSION`. `test/hookcompat.js` (5.7.4 fixture) and `test/ascend.js` (v574 recording) prove it.
 - **Studio splash (5.7.0):** "Nigel Industries presents" on cold start (`UI.splash`, ui.js before `boot`; Nic's cat Nigel, pixel art in `docs/brand/`). It skips itself when `navigator.webdriver` is set so the other Playwright tests are not blocked; `test/splashshot.py` forces it with `UI.splash(true)`.
 - **Renamed (5.6.0):** Nic chose **Last Gradient** after a name search (section 4.17). The hangar title is a canvas effect, `TitleFX` at the end of render.js.
-- **Live:** 6.1.0 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
+- **Live:** 6.2.0 on GitHub Pages (`main`), source on `source`. Nic plays the Home Screen copy; the Claude artifact copy is far behind (4.4) and nobody uses it.
 - **Nov 1 build cycle:** a Fable design review (doc "Entropy Design Review" in the Project) found the game had no reason to start the next run. 5.2 First Hour (Threat Board, boss slow-down, first runs pay, fresh profiles see less) and 5.3 **The Hunt** (bounty win line with Extract/Push, Nemesis, Daily Hunt with a fixed build, input recording, exact replay and resume). Details in 4.15 and the version table.
 - **The sim is replayable (5.3).** Every player action goes through `act(name, ...args)` (sim.js `ACTS`): stamped with `G.tick`, appended to `G.inputs`. `newRun(G.recOpts)` + the inputs reproduce a run bit for bit (`test/replay.js`). **Any new player action must be an `ACTS` entry called through `window.act` from ui.js**, never a direct sim call or a direct write to `G`, or replays and Daily resume break (pitfall 39).
 - **Latest session (Nov 1, 5.4.2 → 5.5.14):** hangar sky backdrop, then a long Music Studio cycle: rebuilt Listen/Shape tabs, share codes (`TRACK1:`), the hidden Composer (five taps on the visualizer) that plays exactly what's written, Mono Audio, sound health and wake-up fixes, a musician's harmony pass, song length/arrangement, one-tap share, a typing panel that clears the iPhone keyboard, and battlefield music controls (Music tile + deck, 5.5.14). All in section 4.16 and the version table. Nic is happy with where music is.
@@ -882,7 +883,7 @@ The expanding sector made every level a little easier, because the compact early
 ---
 
 ## 9. Backlog and ideas discussed
-- **Roadmap from Nic's in-flight list (Nov 4, Project doc "Roadmap-Nov-2026"):** 6.2.0 small batch (Power Nodes outside no-build zones, Overdrive → Nuke, remove the Home/camera reset button, spaced-out tutorial plus a pan/zoom tip, yellow treasure arrows, chest tap buffer, tower sound by camera distance, music flyout ♥ and ? help, tabbed Settings, support towers grow with neighbours). 6.3.0 music variety, boss themes, zone looks. 6.4.0 generative entropy cards, capstone-row tower unlocks. 6.5.0 tap-to-send probe, loot sites, neutral guards, fog of war, roaming black hole event. Nic picked the recommended option on all four questions.
+- **Roadmap from Nic's in-flight list (Nov 4, Project doc "Roadmap-Nov-2026"):** 6.2.0 small batch (shipped) (Power Nodes outside no-build zones, Overdrive → Nuke, remove the Home/camera reset button, spaced-out tutorial plus a pan/zoom tip, yellow treasure arrows, chest tap buffer, tower sound by camera distance, music flyout ♥ and ? help, tabbed Settings, support towers grow with neighbours). 6.3.0 music variety, boss themes, zone looks. 6.4.0 generative entropy cards, capstone-row tower unlocks. 6.5.0 tap-to-send probe, loot sites, neutral guards, fog of war, roaming black hole event. Nic picked the recommended option on all four questions.
 - **Open threads as of 6.0.0 (November 3, 2026):**
   - **Tutorial playtest:** Nic's brother is the test player (he couldn't find how to build or upgrade before). Ask what he got stuck on. Known: lessons only played at 852×393 by the bot; at 667×375 the Threat step shows an "Open it" button because the chip folds into "+N".
   - **Balance:** 60-point runs still go too long (median 106 vs 72–82 target); some seeds still have the Lens at 57–94%. See `balance.md`.
@@ -943,6 +944,7 @@ The expanding sector made every level a little easier, because the compact early
 | 6.0.1 | Void Lens hum about 4 dB quieter, settles to 65% after 2.5 s of steady firing, a little less bright (it is a constant drone through the glue compressor, so it pulled every other sound down; Nic: "a little loud and can sometimes take over") |
 | 6.0.2 | Leia cameo: the Mr. Whiskers oddball boss is now Leia, Nic's long-haired grey-and-white cat (new sprite: grey cap, white blaze, bib and mitts, gold-green eyes, judgy lids; couch-shredding titles and lines). Text and art only; id stays `cat`, same stats and RNG use |
 | 6.1.0 | Lift Off (4.19): Frontier is the only run type. New Run has Endless and Daily Hunt tabs; Daily Hunts and Basic Training run Frontier rules; Training teaches Lift Off, docking, links and Move; new Field Manual lesson; docked core Details tab; First targeting fixed after landings (`frV`); old saves resume Classic |
+| 6.2.0 | Fallout: Overdrive → Nuke (mushroom-cloud detonation, deep boom), support towers grow with nearby attack towers (frV 3), yellow treasure edge arrows, crate tap reach 1.5 tiles, tower sound by camera distance (fewer voices when zoomed), Power Nodes out of no-build zones (frV 3), Home button removed (core arrow pans home), tabbed Settings, Studio ? help, battlefield ♥, composer shown, spaced tutorial and a 30 s first-time card queue, pan/zoom tip |
 | 1.6 | Flat web view, profile radar, region chips, oddball bosses |
 | 1.6.1 | Constellations |
 | 1.6.2 | Here and Center buttons |

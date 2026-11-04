@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.1.0';
+const VERSION = '6.2.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -346,15 +346,16 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.1.0', title: 'Last Gradient 6.1 · Lift Off', items: [
-  ['Your core flies', 'Every run is now played on the big Frontier map. Tap Lift Off, pick a spot, and your core flies there. Land it on a tower and the core fires that weapon, twice as hard.'],
-  ['Docking and links', 'The landed core links its 3 nearest attack towers: +10% damage and fire rate each. The core panel shows the docked weapon\'s damage, rate, range and kills.'],
-  ['Move towers', 'Pick up a tower and set it down somewhere better, for 10% of what it cost and 4 seconds offline. No more selling stranded towers.'],
-  ['No-build zones', 'You can\'t build within 6 tiles of a wormhole, so enemies get a moment on the map before they meet your guns. A red ring flashes if you try.'],
-  ['Getting around', 'Pan and pinch to explore the bigger map. Edge arrows point back to your core.'],
-  ['Daily Hunts on Frontier', 'Daily Hunts use the same Frontier board on every device, so scores are fair.'],
-  ['Training, updated', 'Basic Training now teaches Lift Off, docking, links and moving towers, and there is a new Field Manual lesson for them.'],
-  ['Old saves', 'A run saved before this update resumes on the old rules.'],
+const WHATS_NEW = { ver: '6.2.0', title: 'Last Gradient 6.2 · Fallout', items: [
+  ['Nuke', 'Overdrive is now the Nuke. Same one-shot board clear, now with a white-out flash, a fireball, a shockwave and a mushroom cloud.'],
+  ['Support towers grow', 'Relay Pylons and Snare Beacons level up for free to match the attack towers around them. At LV 3 they offer a free Specialization.'],
+  ['Treasure arrows', 'Yellow arrows at the screen edge point at crates you can\'t see. Tap one to look there. Crates also claim from a tap up to a tile and a half away.'],
+  ['Cleaner view', 'The Home button is gone. Tap the green core arrow at the screen edge to come back home.'],
+  ['Sound you can place', 'Towers sound louder near the middle of the screen and quieter far away, with a little left and right.'],
+  ['Power Nodes', 'Power Nodes never sit in a wormhole\'s no-build zone. A node caught by a new wormhole moves.'],
+  ['Settings in tabs', 'General, Sound, Graphics and Interface, each setting with a line on what it does.'],
+  ['Music', 'The composer is open by default. A ? in the Studio explains every control. Keep the song playing with the ♥ on the battlefield music deck.'],
+  ['Calmer tutorial', 'Training lessons are spaced out so you get to play between them, and new tips in a run arrive at least 30 seconds apart. New: a pan and zoom tip.'],
 ]};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come

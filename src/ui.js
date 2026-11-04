@@ -327,6 +327,7 @@ const UI = (() => {
   // busy moment: a tap in the last 2.5 s, aiming, the core picker or flight, enemies at the core, a boss closing in. A card that
   // has to wait is asked again next frame (its seen flag is set only when it shows). UI state only: nothing is written to G.
   const TEACH_GAP = 30;
+  const TEACH_NOW = { boss: 1, wormhole: 1 }; // 6.2: these warn about the next wave, so they never wait behind the 30 s gap
   let teachG = null, teachAt = -1e9, teachTap = 0, camUser = 0; // camUser: camera moves made by the player (the Training camera step)
   const teachClock = () => { if (teachG !== G) { teachG = G; teachAt = -1e9; } return G ? G.time : 0; };
   function teachBusy() {
@@ -341,7 +342,7 @@ const UI = (() => {
   function introCard(key, title, body, lesson) { // 5.8: lesson = the Field Manual entry its Learn more opens
     const S = PROF.seenSys || (PROF.seenSys = { v58: 1 }); if (S[key]) return false;
     if (modalOpen || Tree.isOpen || (G && G.draft)) return false;
-    if (!teachOK()) return true; // 6.2: it waits its turn (true: nothing after it in onboardingTick jumps the queue this frame)
+    if (!TEACH_NOW[key] && !teachOK()) return true; // 6.2: it waits its turn (true: nothing after it in onboardingTick jumps the queue this frame); warnings tied to a moment skip the queue
     S[key] = 1; Save.save(); teachMark();
     if (briefMode() !== 'pause') { toast(title.toUpperCase(), body, '#6ae2ff', true, 'alert'); return true; }
     closePanel(); G.paused = true; G.briefing = true;
