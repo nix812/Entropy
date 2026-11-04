@@ -323,6 +323,23 @@ const LEGENDARIES = [
 const CORE_LEGS = ['bulwark', 'retribution', 'detonator', 'siphon', 'ricochet', 'prism', 'echo'];
 // Core relocation at wormhole checkpoints: first move each run is free, then a fixed price
 const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
+// Frontier (prototype mode, newRun({ frontier: 1 }) → G.fr): a bigger, slower map, a core that lifts off, docks on a tower and
+// links to the towers around it, and towers that can move. Every tunable lives here (docs/notes/frontier.md)
+const FRONTIER = {
+  rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
+  spd: 0.6, count: 0.6, hp: 2.0, bossHp: 1.5,    // enemies 60% speed; 60% as many per wave, each 2× HP (wave HP ×1.2); bosses 1.5× HP
+  gap: 15,                                         // seconds between waves (Classic 13): the walk is longer
+  w: { tank: 2.5, splitter: 1.6, carrier: 2, reflector: 1.5, shielder: 1.3, medic: 1.3, swarmer: 0.4, drone: 0.6 }, // heavier rosters
+  flySpd: 3, flyMin: 1, cd: 3,                     // flight 3 tiles/s (at least 1 s); lift-off cooldown in waves after landing
+  cdUplink: 4,                                     // every 4 Uplink levels: −1 wave of cooldown (never below 1)
+  dockDmg: 2, dockRange: 1, dockBat: 0.2,          // a docked tower: ×2 damage, +1 range, +20% damage per Battery level above 1
+  links: 3, linkR: 4, linkUplink: 3,               // links: 3 towers within 4 tiles (+1 per 3 Uplink levels)
+  linkDmg: 0.1, linkRate: 0.1, linkCore: 0.05,     // linked towers +10% damage and rate; the core +5% damage per link
+  moveT: 4, moveFee: 0.1,                          // moving a tower: 4 s offline, 10% of what it cost
+  wormGap: 6,                                      // landing spots stay this far (Manhattan) from every wormhole
+};
+const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
+const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
 const WHATS_NEW = { ver: '6.0.0', title: 'Last Gradient 6.0 · The big one', items: [
   ['Tutorial', 'New to the game? The Tutorial button on the main menu walks you through everything, step by step with a checklist: build, upgrade, the core, veterans, Strike, bounties. The ? button is now the Field Manual: a short lesson for every system.'],
