@@ -3667,7 +3667,7 @@ function wallBreak(t) {
   if (t.s.shardW) { const d = towerDmg(t, stormAt(t.cx, t.cy)) * 4; for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, w.x, w.y) <= 2.25) hit(e, d, t.s.el, t, { noStatus: 1 }); }
 }
 // Entangler: links up to s.links enemies for s.linkT s (a group, G.tangles). An enemy is in one group at most. A hit on a member
-// (not damage over time, not a copy) copies s.share of the damage it dealt to every other member (bosses take half a copy)
+// (not damage over time, not a copy) shares s.share of the damage it dealt out among the other members (bosses take half a share)
 const TANGLE = { links: 6, share: 0.5 }; // caps: a hit is copied at most 5 times, at most 50% each
 function tangleLink(t, range, sw) {
   const s = t.s, tg = findTargets(t, range, Math.max(1, s.links));
@@ -3686,7 +3686,9 @@ function tangleLink(t, range, sw) {
 }
 function tangleEcho(e, v, el) {
   const g = e.lnk; if (!g || g.t <= 0) return;
-  const a = v * g.share;
+  let n = 0; for (const m of g.m) if (m !== e && !m.dead && m.lnk === g) n++;
+  if (!n) return;
+  const a = v * g.share / n; // the share is split among the other links, so a hit is worth at most 1 + share in total
   for (const m of g.m) if (m !== e && !m.dead && m.lnk === g) hit(m, a * (m.boss ? 0.5 : 1), el, g.src, { echo: 1, dot: 1, noStatus: 1 });
 }
 function updateTangles(dt) {

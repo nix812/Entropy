@@ -1519,7 +1519,7 @@ const UI = (() => {
     flashover: 'Burn payoff · Burning enemies explode · pair with Flame and Missile',
     surge: 'Wave opener · stores charge while idle, unloads chain lightning',
     rime: 'Blocker · an ice wall holds ground enemies · bosses smash it',
-    tangle: 'Damage sharing · links enemies, hits on one copy to the rest',
+    tangle: 'Damage sharing · links enemies, a hit on one spreads to the rest',
     aegis: 'Leak insurance · stops leaks at the core each wave · bosses excepted',
     joker: 'Combo engine · random element, attack and status every shot',
   };
@@ -1646,7 +1646,7 @@ const UI = (() => {
     else if (s.kind === 'det') txt = `Explosions: hit + remaining Burn ×${num1(s.detX)} · radius ${num1(s.detR)}${s.detSpread ? ` · spreads fire ${num1(s.detSpread)} tiles` : ''}`;
     else if (s.kind === 'surge') txt = `Charge ${Math.floor(t.charge || 0)}/${s.cells} · fills 1 per ${num1(1 / s.chargeRate)}s while idle · fires 4× as fast while charged`;
     else if (s.kind === 'wall') txt = t.wall ? `Wall ${Math.max(0, Math.ceil(t.wall.hp))}/${Math.round(s.hold)} · elites wear it 2× as fast` : `Wall down · regrows in ${Math.max(0, Math.ceil(t.cd / Math.max(0.01, s.rate)))}s`;
-    else if (s.kind === 'tether') txt = `Links ${s.links} enemies for ${num1(s.linkT)}s · copies ${pct(s.share)} of each hit${s.tslow ? ` · linked ${pct(s.tslow)} slower` : ''}`;
+    else if (s.kind === 'tether') txt = `Links ${s.links} enemies for ${num1(s.linkT)}s · shares ${pct(s.share)} of each hit among them${s.tslow ? ` · linked ${pct(s.tslow)} slower` : ''}`;
     else if (s.kind === 'aegis') { const c = G.core, r = s.range + 0.5, ok = dist2(t.cx, t.cy, c.x, c.y) <= r * r; txt = `Stops left this wave ${Math.max(0, s.guards - (t.guardN || 0))}/${s.guards} · ${ok ? 'core in range' : 'core out of range: no stops'}`; }
     else if (s.kind === 'joker') txt = `Jackpot every ${s.jack}th shot · next in ${s.jack - ((t.jn || 0) % s.jack)}${s.sure ? ' · statuses always land' : ''}`;
     return txt ? `<div class="sts capinfo">${tipify(txt)}</div>` : '';
