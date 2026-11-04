@@ -1,5 +1,5 @@
-"""6.2 camera-distance mix: how many tower sounds a busy battle triggers, and the JS time spent starting them, at home, zoomed in
-on the middle and zoomed in on a corner (the fight mostly off screen). Pass another build's page.html to compare.
+"""6.2 camera-distance mix: a fixed stream of tower sounds (12 every 50 ms, seeded spots across the sector): how many voices
+start and the JS time spent starting them, at home, zoomed in on the middle and zoomed in on a corner. Pass another build's page.html to compare.
 usage: python3 sfxload.py [page.html] [secs]"""
 import sys, pathlib, mkpage
 from playwright.sync_api import sync_playwright
@@ -19,17 +19,21 @@ with sync_playwright() as p:
       const L = G.map.lanes[0].tiles; const near = (x, y) => Math.min(...L.map(p => Math.abs(p.x - x) + Math.abs(p.y - y)));
       spots.sort((a, b) => near(a[0], a[1]) - near(b[0], b[1]));
       const types = ['pulse', 'rail', 'missile', 'cryo', 'coil', 'flame', 'emp']; for (let i = 0; i < 30 && spots.length; i++) { const s = spots.shift(); buildTower(types[i % types.length], s[0], s[1]); }
-      window._spawn = () => { for (let i = 0; i < 40; i++) { const e = spawnEnemy(['drone', 'swarmer', 'tank', 'flyer'][i % 4], { d: (i * 0.53) % 20 }); e.hp = e.maxHp = 3e4; } };
+      window._spawn = () => { for (let i = 0; i < 40; i++) { const e = spawnEnemy(['drone', 'swarmer', 'tank', 'flyer'][i % 4], { lane: G.map.lanes[0], d: (i * 0.53) % 20 }); e.hp = e.maxHp = 3e4; } };
       const pl = SFX.play; window._sfxT = 0; window._sfxN = 0; SFX.play = function () { const t = performance.now(); const r = pl.apply(this, arguments); window._sfxT += performance.now() - t; window._sfxN++; return r; };
       Hooks.sfx = (n, a, a2) => SFX.play(n, a, a2); }''')
     out = {}
+    # a fixed stream, the same in every build: 12 tower sounds every 50 ms (shots, impacts, deaths) at seeded spots across the sector
     for view in ['home', 'zoom middle', 'zoom corner']:
-        pg.evaluate('''v => { G.enemies.length = 0; _spawn(); const L = Render.layout; Render.resetCam();
+        r = pg.evaluate('''async ([v, secs]) => { G.enemies.length = 0; G.paused = true; const L = Render.layout; Render.resetCam();
           if (v === 'zoom middle') Render.zoomAt(L.W / 2, L.H / 2, 3); if (v === 'zoom corner') { Render.zoomAt(L.W / 2, L.H / 2, 3); Render.lookAt(G.region.x0 + 2, G.region.y0 + 2); }
-          G.paused = false; G.speed = 1; window._p0 = SFX.stats().played; window._sfxT = 0; window._sfxN = 0; }''', view)
-        pg.wait_for_timeout(int(secs * 1000))
-        r = pg.evaluate('() => ({ dbg: [G.towers.reduce((a, t) => a + (t.dmgDone || 0), 0) | 0, G.projs.length, G.towers.length, G.enemies.filter(e => !e.dead).length, G.paused, !!G.draft, G.tick, document.querySelector("#modal").hidden], played: SFX.stats().played - _p0, calls: _sfxN, ms: _sfxT, state: SFX.state })')
-        out[view] = r
+          let a = 777; const rnd = () => { a = (a * 1103515245 + 12345) & 0x7fffffff; return a / 0x7fffffff; }; const R = G.region;
+          const p0 = SFX.stats().played; let ms = 0, n = 0; const names = ['shot', 'rail', 'missile', 'hit', 'hit', 'die'];
+          for (let k = 0; k < secs * 20; k++) { for (let j = 0; j < 12; j++) { const x = R.x0 + rnd() * (R.x1 - R.x0), y = R.y0 + rnd() * (R.y1 - R.y0), nm = names[j % names.length];
+              const arg = nm === 'die' ? { x, y, type: 'drone' } : nm === 'hit' ? { x, y } : { cx: x, cy: y, s: { el: 'K' }, spec: 0, type: nm === 'shot' ? 'pulse' : nm };
+              const t0 = performance.now(); SFX.play(nm, arg, nm === 'hit' ? { type: 'pulse' } : undefined); ms += performance.now() - t0; n++; }
+            await new Promise(res => setTimeout(res, 50)); }
+          return { calls: n, played: SFX.stats().played - p0, ms, state: SFX.state }; }''', [view, secs])
         c = max(1, r['calls'])
-        print(f"{view:12s} sound requests {r['calls']:5d}  voices started {r['played']:5d} ({100 * r['played'] / c:5.1f} per 100)  JS in SFX.play {r['ms'] / secs:6.2f} ms/s ({100 * r['ms'] / c:5.2f} ms per 100)  [{r['state']}]", flush=True)
+        print(f"{view:12s} sound requests {r['calls']:5d}  voices started {r['played']:5d} ({100 * r['played'] / c:5.1f} per 100)  JS in SFX.play {r['ms'] / secs:6.2f} ms/s  [{r['state']}]", flush=True)
     b.close()

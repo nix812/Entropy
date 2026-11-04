@@ -3439,7 +3439,7 @@ const UI = (() => {
   }
   let eqT = 0; const eqBuf = new Uint8Array(128);
   // 6.2: the buttons and banners over the battlefield, in stage px, so the edge arrows (Render) never hide under one
-  let koT = 0, beamKT = 0, beamK = 1;
+  let koT = 0, koCls = '', beamKT = 0, beamK = 1;
   const KEEP_OUT = '#bLift, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
   function keepOutRects() {
     const cv = $('#cv'); if (!cv) return []; const o = cv.getBoundingClientRect(), out = [];
@@ -3453,7 +3453,7 @@ const UI = (() => {
       if (p) tile.style.setProperty('--mc', (M.GENRES[p.genre] || {}).col || '#59f0b4'); const quiet = !p || M.paused || M.held || SFX.state !== 'running'; tile.classList.toggle('quiet', quiet);
       M.spectrum(eqBuf); const band = [[1, 3], [3, 7], [7, 14], [14, 28], [28, 56]]; bars.forEach((b, i) => { let v = 0; if (!quiet) for (let k = band[i][0]; k < band[i][1]; k++) v = Math.max(v, eqBuf[k]); b.style.height = Math.max(3, Math.round(v / 255 * 16)) + 'px'; });
       if (!$('#mdeck').hidden) UI.deckFill && UI.deckFill(); } } }
-    if (screen === 'game') { koT -= dt; if (koT <= 0) { koT = 0.25; Render.keepOut = keepOutRects(); } } // 6.2: edge arrows slide clear of these
+    if (screen === 'game') { koT -= dt; const lg = $('#log'), tl = $('#toasts'), bc = document.body.className + (lg ? lg.childElementCount : 0) + ':' + (tl ? tl.childElementCount : 0); if (koT <= 0 || bc !== koCls) { koT = 0.25; koCls = bc; Render.keepOut = keepOutRects(); } } // 6.2: edge arrows slide clear of these (at once when a panel or banner moves the layout)
     if (panel && panel.kind === 'tower' && G && !G.towers.includes(panel.t)) closePanel(); // swallowed by the worm, or otherwise gone
     if (panel && panel.kind === 'enemy' && (panel.e.dead || !G || !G.enemies.includes(panel.e))) closePanel();
     if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft) enemyCard(enemyCards.shift());

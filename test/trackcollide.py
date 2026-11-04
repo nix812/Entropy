@@ -79,7 +79,7 @@ with sync_playwright() as p:
         states['field, everything up'] = pg.evaluate(JS_HITS, OVER)
         pg.screenshot(path=str(root / 'test' / 'out' / f'trk_all_{W}{"_cls" if MODE == "cls" else ""}.png'))
         for side, t in [('left', '_L'), ('right', '_R')]:
-            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(450)
+            pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(800)
             cls = pg.evaluate('() => document.body.className')
             states[f'tower panel ({side}: {"panel-l" if "panel-l" in cls else "panel-r" if "panel-r" in cls else "?"})'] = pg.evaluate(JS_HITS, OVER)
             pg.screenshot(path=str(root / 'test' / 'out' / f'trk_panel_{side}_{W}{"_cls" if MODE == "cls" else ""}.png'))

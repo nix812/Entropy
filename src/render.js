@@ -1439,6 +1439,7 @@ const RES = 2;
             else py = py > cy0 ? Math.min(...qs.map(q => q.t)) - m - 1 : Math.max(...qs.map(q => q.b)) + m + 1;
             break; }
         }
+        if (ko.some(q => px > q.l - r - 3 && px < q.r + r + 3 && py > q.t - r - 3 && py < q.b + r + 3)) continue; // no clear spot left: no arrow (it could not be tapped)
         const an = Math.atan2(sy2 - py, sx2 - px), pl = A.tre ? 1 : 0.75 + 0.25 * Math.sin(frame / 6); // treasure stays solid yellow
         if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) continue;
         c.save(); c.translate(px, py); c.rotate(an);

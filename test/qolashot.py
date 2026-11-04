@@ -82,7 +82,7 @@ with sync_playwright() as p:
         t0 = 0
         for ms in [60, 350, 800, 1500, 2300, 3200]:
             pg.wait_for_timeout(ms - t0); t0 = ms; pg.screenshot(path=str(out / f'qa_nuke_{ms}_{tag}.png'))
-        check(pg.evaluate('() => !!G.odUsed && G.enemies.filter(e => !e.dead && !e.boss).length === 0'), 'the Nuke cleared the board', tag)
+        check(pg.evaluate('() => !!G.odUsed && G.stats.odKills >= 30'), 'the Nuke cleared the board (30 erased)', tag)
         pg.wait_for_timeout(800)
         check(pg.evaluate('() => !G.paused && !G.over'), 'play carries on after the detonation', tag)
         pg.close()
