@@ -17,6 +17,8 @@ this.S = { get G(){return G}, set G(v){G=v}, get PROF(){return PROF}, set PROF(v
   FRONTIER, FR_VER, frNodeFix, frNearWorm, setNodes, supGrow, supTarget, eProg, tutSpec, TUT, frRows, frCols, frPlan, frLiftOff, frCands, frDockT, frCanFly, frCd, frLinkN, frLinksAt, frMoveTower, frMoveOk, frMoveFee, frDockX, planRelocation, ascOffer, claimPerk, perkPool, perkStacks, masteryGains, masteryRanks, masteryRankOf, masteryProf, PERKS, MASTERY, LEGENDARIES, rollAffix, TUT, tutMap, ghostRun, LESSONS };`, ctx);
   // 6.4 cards64: generated Anomalies
   vm.runInContext(`Object.assign(this.S, { ANOM_PART, ANOM_UPS, ANOM_DNS, ANOM_RARITY, ANOM_GEN, anomPartTxt, anomTotals, anomRoom, anomSize, anomBuild, anomGenCard, anomOffersGen, takeGenAnomaly, anomInfo, anomTaken, anomCount, addEntropy, computeAf, anomMods, runHash, replayRun, act, SIM_STEP, rlog })`, ctx);
+  // 6.5 sky65: fog of war and the Black Hole event
+  vm.runInContext(`Object.assign(this.S, { HOLE, FOG, EVENTS, holeSpawn, holeUpdate, holeEnemy, holeRate, holeZone, fogOn, fogSources, fogMark, fogInit, fogPack, fogUnpack, rollEvents, runHash, replayRun, act })`, ctx);
   return ctx.S;
 }
 module.exports = { load };

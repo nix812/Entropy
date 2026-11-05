@@ -803,6 +803,7 @@ function newRun(opts) {
   }
   if (T) tutSetup(T); else planWanted();
   if (opts.nemesis && !T) nemesisArrive(opts.nemesis, r);
+  G.hole = null; fogInit(); // 6.5 (frV 5): no black hole yet; fog of war starts from what the core and the roads show
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
   // harder difficulties: the swarm arrives already adapted to one or two weaknesses (seeded as strong parents)
@@ -1419,6 +1420,7 @@ function towerConditions(t) {
   if (ev.overcharge) out.push({ t: 'Overcharge event: +30% Attack Speed', good: 1 });
   if (ev.emp) out.push({ t: 'EMP Storm: 2 random towers shut down every 5s', bad: 1 });
   if (G.overclockT > 0) out.push({ t: `Frenzy: +100% Attack Speed for ${Math.ceil(G.overclockT)}s`, good: 1 });
+  { const z = holeZone(t); if (z > 0) out.push({ t: `Black Hole edge: +${Math.round(HOLE.ring * G.hole.k * 100)}% Attack Speed`, good: 1 }); else if (z < 0) out.push({ t: `Black Hole horizon: ${Math.round(HOLE.inner * G.hole.k * 100)}% Attack Speed`, bad: 1 }); }
   if (t.hot && G.mods.ks.wildfire) out.push({ t: 'Overheated (Wildfire): −25% Attack Speed', bad: 1 });
   if (G.flux && G.flux.el === s.el) out.push({ t: `Flux: ${EL[s.el].name} ×2 Damage`, good: 1 });
   // v5.8 Techniques and play-style Capstones
@@ -1538,6 +1540,88 @@ function updateStorms(dt) {
   G.storms = G.storms.filter(s => !s.dead);
 }
 
+// ---------- 6.5 Black Hole event (G.frV >= 5; HOLE in data.js) ----------
+// G.hole = { x, y, tx, ty, dx, dy, ph (0 drifting in, 1 holding, 2 collapsing), t, k (strength 0..1) } or null. It enters from past
+// the sector edge, stops on a road point, drifts slowly for HOLE.hold s, then collapses. One draw of G.r per number at the spawn,
+// nothing after, so it adds no hidden randomness to the tick
+const COMPASS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
+function holeSpawn() {
+  if (G.hole) return; // one at a time: a second roll while one is still out does nothing
+  const R = G.region, cand = [];
+  for (const L of G.map.lanes) { if (L.openWave && L.openWave > G.wave) continue; const n = L.tiles.length;
+    for (let i = Math.floor(n * 0.25); i < Math.floor(n * 0.85); i++) { const p = L.tiles[i]; if (inRegion(p.x, p.y, R)) cand.push(p); } }
+  if (!cand.length) return;
+  const p = pick(G.r, cand), a = G.r() * 6.2832, dx = Math.cos(a), dy = Math.sin(a);
+  const tx = clamp(p.x + 0.5 + (G.r() - 0.5) * 2, R.x0 + 1, R.x1 - 1), ty = clamp(p.y + 0.5 + (G.r() - 0.5) * 2, R.y0 + 1, R.y1 - 1);
+  // back along the drift line to the sector edge, then HOLE.off tiles past it
+  const ex = Math.abs(dx) < 1e-6 ? 1e9 : (dx > 0 ? tx - R.x0 : R.x1 - tx) / Math.abs(dx), ey = Math.abs(dy) < 1e-6 ? 1e9 : (dy > 0 ? ty - R.y0 : R.y1 - ty) / Math.abs(dy);
+  const back = Math.min(ex, ey) + HOLE.off, x = tx - dx * back, y = ty - dy * back;
+  G.hole = { x, y, tx, ty, dx, dy, ph: 0, t: 0, k: 1 };
+  const ang = Math.atan2(y - G.core.y, x - G.core.x), dir = COMPASS[((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8];
+  Hooks.toast('BLACK HOLE', `Inbound from the ${dir}. Arrives in ${Math.max(1, Math.round(back / HOLE.inSpd))}s. Towers at its edge +${Math.round(HOLE.ring * 100)}% Attack Speed`, '#b86cff');
+  Hooks.sfx('hole', { x, y }); Hooks.fx('hole', { x, y });
+  G.stats.holes = (G.stats.holes || 0) + 1; rlog('hole', { x: Math.round(tx), y: Math.round(ty) });
+}
+function holeUpdate(dt) {
+  const h = G.hole; h.t += dt;
+  if (h.ph === 0) {
+    const ddx = h.tx - h.x, ddy = h.ty - h.y, d = Math.hypot(ddx, ddy), st = HOLE.inSpd * dt;
+    if (d <= st) { h.x = h.tx; h.y = h.ty; h.ph = 1; h.t = 0; } else { h.x += ddx / d * st; h.y += ddy / d * st; }
+  } else if (h.ph === 1) {
+    h.x += h.dx * HOLE.drift * dt; h.y += h.dy * HOLE.drift * dt;
+    if (h.t >= HOLE.hold) { h.ph = 2; h.t = 0; }
+  } else {
+    h.k = Math.max(0, 1 - h.t / HOLE.out);
+    if (h.t >= HOLE.out) { Hooks.fx('holeEnd', { x: h.x, y: h.y }); Hooks.sfx('holeEnd', { x: h.x, y: h.y }); G.hole = null; }
+  }
+}
+// an enemy inside the reach: e.hk = its time factor (move and act), returns its speed factor (dilation × the drag along its road)
+const HOLE_P = { x: 0, y: 0, seg: 0 };
+function holeEnemy(e) {
+  const h = G.hole, dx = h.x - e.x, dy = h.y - e.y, d2 = dx * dx + dy * dy;
+  if (d2 >= HOLE.r * HOLE.r || !e.L) { e.hk = 1; return 1; }
+  const d = Math.sqrt(d2), f = (1 - d / HOLE.r) * h.k * (e.boss ? HOLE.boss : 1), tk = 1 - HOLE.dil * f;
+  HOLE_P.seg = e.seg || 0; lanePos(e.L, e.d + 0.25, HOLE_P); // where the road takes it next
+  const ux = HOLE_P.x - e.x, uy = HOLE_P.y - e.y, ul = Math.hypot(ux, uy), cos = ul > 1e-4 && d > 1e-3 ? (ux * dx + uy * dy) / (ul * d) : 0;
+  e.hk = tk;
+  return Math.max(HOLE.floor, tk * (1 + HOLE.pull * f * cos));
+}
+// a tower's Attack Speed factor: the ring fires faster, the horizon slower
+function holeRate(t) {
+  const h = G.hole, d2 = dist2(t.cx, t.cy, h.x, h.y);
+  if (d2 > HOLE.r * HOLE.r) return 1;
+  return 1 + (d2 < HOLE.horizon * HOLE.horizon ? HOLE.inner : HOLE.ring) * h.k;
+}
+const holeZone = t => { const h = G && G.hole; if (!h || !t) return 0; const d2 = dist2(t.cx, t.cy, h.x, h.y); return d2 > HOLE.r * HOLE.r ? 0 : d2 < HOLE.horizon * HOLE.horizon ? -1 : 1; };
+
+// ---------- 6.5 fog of war (G.frV >= 5, Frontier, not Training; FOG in data.js) ----------
+// Presentation only: the sim never reads vision or G.fogEx to decide anything. G.fogEx (Uint8Array, one byte per tile, 1 =
+// explored) is updated every FOG.every ticks from the vision sources and the roads (always known), with no randomness, so a
+// replay rebuilds it exactly. Render.js keeps the live vision at half-tile resolution and draws the fog
+const fogOn = () => !!(G && G.fr && G.frV >= 5 && !G.tut);
+function fogSources() { // flat [x, y, r, ...] in tiles: the core (gun range), towers (range + pad), the probe
+  const out = [], cr = G.core ? Math.max(FOG.core, coreStats().range) : FOG.core;
+  out.push(G.core.x, G.core.y, cr);
+  for (const t of G.towers) out.push(t.cx, t.cy, Math.max(FOG.tower, ((t.s && t.s.range) || 0) + FOG.pad));
+  const P = G.probe; if (P && P.alive && P.vis > 0) out.push(P.x, P.y, P.vis); // G.probe is probe65's ({ x, y, alive, vis }); read only
+  return out;
+}
+function fogMark(src) {
+  const ex = G.fogEx; let n = 0;
+  for (let i = 0; i < src.length; i += 3) {
+    const x = src[i], y = src[i + 1], r = src[i + 2], r2 = r * r;
+    const y0 = Math.max(0, Math.floor(y - r)), y1 = Math.min(ROWS - 1, Math.floor(y + r)), x0 = Math.max(0, Math.floor(x - r)), x1 = Math.min(COLS - 1, Math.floor(x + r));
+    for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) { const k = ty * COLS + tx; if (!ex[k] && (tx + 0.5 - x) ** 2 + (ty + 0.5 - y) ** 2 <= r2) { ex[k] = 1; n++; } }
+  }
+  for (const L of G.map.lanes) for (const p of L.tiles) { const k = p.y * COLS + p.x; if (!ex[k]) { ex[k] = 1; n++; } }
+  if (n) G.fogRev = (G.fogRev || 0) + 1; // Render redraws the fog when this changes
+}
+function fogInit() { if (!fogOn()) { G.fogEx = null; return; } G.fogEx = new Uint8Array(COLS * ROWS); G.fogRev = 0; fogMark(fogSources()); }
+function fogTick() { if (G.fogEx && G.tick % FOG.every === 0) fogMark(fogSources()); }
+// snapshots: run lengths of alternating 0/1 tiles, starting with 0
+function fogPack(ex) { const o = []; let v = 0, n = 0; for (let i = 0; i < ex.length; i++) { if (ex[i] === v) n++; else { o.push(n); v = ex[i]; n = 1; } } o.push(n); return o.join('.'); }
+function fogUnpack(str, ex) { if (typeof str !== 'string') return; let i = 0, v = 0; for (const p of str.split('.')) { const n = p | 0; if (v) for (let j = 0; j < n && i + j < ex.length; j++) ex[i + j] = 1; i += n; v ^= 1; } }
+
 // ---------- waves ----------
 function rollEvents(w) {
   const ev = {}, list = [];
@@ -1548,7 +1632,7 @@ function rollEvents(w) {
   for (let i = 0; i < maxN; i++) {
     if (G.r() > chance) break;
     const bad = list.filter(x => !x.good).length; // v5.4: never more than two bad events in one wave (Nic's Wave 88: Overcharge, Rift Breach and Blackout at once)
-    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)) && (E.good || bad < 2));
+    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !(E.fr > G.frV) && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)) && (E.good || bad < 2));
     if (!opts.length) break;
     const sev = G.hk && SECTOR_BY[G.sector] && SECTOR_BY[G.sector].ev; // 5.8: each sector has its own event mix
     const E = wpick(G.r, opts, e => e.w * ((sev && sev[e.id]) || 1));
@@ -1557,7 +1641,7 @@ function rollEvents(w) {
   }
   // Gambler: one more roll of the dice every wave
   // a fair coin: good or bad, and always good on a boss wave (a breach ends the run)
-  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5 || list.filter(x => !x.good).length >= 2; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
+  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5 || list.filter(x => !x.good).length >= 2; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id] && !(E.fr > G.frV)); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
   return { ev, list };
 }
 function prepareWave(w) {
@@ -2026,6 +2110,7 @@ function startWave() {
   const P = G.prep; G.prep = null;
   G.ev = P.ev; G.evList = P.list; G.evT = { emp: 5, meteor: 1.2, phase: 4 };
   for (const E of G.evList) Hooks.log(`${E.name}: ${E.desc}`, E.good ? '#59f0b4' : '#ff4d6a');
+  if (G.ev.hole) holeSpawn(); // 6.5 (frV 5): the event only rolls at frV 5
   G.rift = P.rift;
   if (G.rift) Hooks.fx('rift', { x: G.rift.pts[0].x, y: G.rift.pts[0].y });
   G.laneWarn = null;
@@ -2699,6 +2784,7 @@ function updateEnemies(dt) {
   for (const e of G.enemies) {
     if (e.dead) continue;
     const st = e.st;
+    const hm = G.hole ? holeEnemy(e) : 1, dtE = G.hole ? dt * e.hk : dt; // 6.5 Black Hole: speed factor, and dilated time for what it does
     e.hitFlash = Math.max(0, e.hitFlash - dt);
     e.ovlCD -= dt; e.supCD -= dt;
     // statuses
@@ -2737,7 +2823,7 @@ function updateEnemies(dt) {
     if ((e.boss === 'wraith' || e.wcloak) && e.cloakT > 0) { e.cloakT -= dt; if (e.cloakT <= 0) e.cloaked = false; }
     if (e.wcloak && !e.cloaked) { e.wcT = (e.wcT === undefined ? 7 : e.wcT) - dt; if (e.wcT <= 0) { e.wcT = 7; e.cloaked = true; e.cloakT = 2; Hooks.fx('blink', { x: e.x, y: e.y }); } }
     // behaviors
-    e.timer -= dt;
+    e.timer -= dtE;
     if (e.type === 'medic' && e.timer <= 0) {
       e.timer = 1;
       const healed = [];
@@ -2751,11 +2837,11 @@ function updateEnemies(dt) {
       Hooks.fx('shieldpulse', { x: e.x, y: e.y, to: sh.slice(0, 5) });
     }
     // v5.1 new enemies
-    if (e.type === 'carrier') { e.dropT = (e.dropT === undefined ? 2.5 : e.dropT) - dt;
+    if (e.type === 'carrier') { e.dropT = (e.dropT === undefined ? 2.5 : e.dropT) - dtE;
       if (e.dropT <= 0 && !e.cloaked) { e.dropT = CARRIER.every;
         for (let i = 0; i < CARRIER.n; i++) { const m = spawnEnemy('drone', { fromPt: { x: e.x + (i ? 0.35 : -0.35), y: e.y + 0.2 }, hpm: hpBase(e) * CARRIER.hp / ENEMIES.drone.hp }); m.fly = true; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); m.leak = 3; }
         Hooks.fx('drop', { x: e.x, y: e.y }); } }
-    if (e.type === 'sapper') { e.sapCD = (e.sapCD || 0) - dt;
+    if (e.type === 'sapper') { e.sapCD = (e.sapCD || 0) - dtE;
       if (e.sapCD <= 0 && !(st.stun > 0) && !(st.frozen > 0) && !(G.stasisT > 0)) {
         let tg = null, bd = SAPPER.range * SAPPER.range;
         for (const t of G.towers) { if (t.disabled > 0) continue; const d = dist2(t.cx, t.cy, e.x, e.y); if (d < bd) { bd = d; tg = t; } }
@@ -2786,7 +2872,7 @@ function updateEnemies(dt) {
       if (M.ks.horizon) spd *= 1.12;
       if (e.jammed) spd = 0;
       if (G.dragT > 0) spd *= e.boss ? 0.8 : 0.6; // Uplink Undertow: leaving Stasis is slow going
-      spd *= netK;
+      spd *= netK * hm;
       if (G.slime && G.slime.length && e.boss !== 'snail') for (const p of G.slime) if (p.L === e.L && Math.abs(p.d - e.d) < 0.4) { spd *= 1.4; break; }
       e.slow = 1 - spd / e.spd;
       e.d += spd * dt;
@@ -3407,6 +3493,7 @@ function updateTowers(dt) {
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
     if (M.ks.nest && t.type === 'rail' && t.isolated) range *= 1.4; // v5.8 Sniper Nest
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
+    if (G.hole) rate *= holeRate(t); // 6.5 Black Hole: +40% in the ring, −50% inside the horizon
     if (s.leg.overloop) { t.olT = (t.olT + dt) % 8; if (t.olT < 3) rate *= 2.5; }
     if (s.pkv.spin) { t.spin = clamp((t.spin || 0) + (G.time - (t.aimT === undefined ? -9 : t.aimT) < 0.6 ? dt / 4 : -dt / 2), 0, 1); rate *= 1 + s.pkv.spin / 100 * t.spin; }
     if (burning && s.el === 'T') rate *= 1 + Math.min(0.4, 0.02 * burning);
@@ -4495,6 +4582,7 @@ function simStep(dt) {
   G.time += dt;
   updateWaves(dt);
   updateStorms(dt);
+  if (G.hole) holeUpdate(dt); // 6.5 Black Hole (frV 5)
   updateEnemies(dt);
   if (G.over) return;
   updateTowers(dt);
@@ -4506,6 +4594,7 @@ function simStep(dt) {
   updateAbils(dt);
   updateLinkBeams(dt);
   updateCaches(dt);
+  if (G.fogEx) fogTick(); // 6.5 fog of war: explored tiles (presentation only)
 }
 
 function gameOver() {
@@ -4761,6 +4850,7 @@ function snapshotRun(waveNum) {
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     ascV: G.ascV || 1, mastery: G.mastery || {}, capT: G.capT && G.capT.length ? G.capT.slice() : undefined, // v5.8; 6.4 capT
     fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
+    fog: G.fogEx ? fogPack(G.fogEx) : undefined, hole: G.hole ? Object.assign({}, G.hole) : null, // 6.5 explored tiles (run lengths), a black hole still out
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), ganoms: G.ganoms || [], anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -4815,6 +4905,8 @@ function resumeRun(S) {
     if (G.frFly) { G.core.shield = 0; frUpdate(0); }
     frRestat();
   }
+  if (G.fogEx) { fogUnpack(S.fog, G.fogEx); fogMark(fogSources()); } // 6.5: explored tiles come back (an older snapshot: what the core, towers and roads show now)
+  G.hole = G.frV >= 5 && S.hole && typeof S.hole.x === 'number' ? Object.assign({}, S.hole) : null;
   prepareWave(S.wave);
   Hooks.log(`Run resumed · Wave ${S.wave}`, '#59f0b4');
   return G;

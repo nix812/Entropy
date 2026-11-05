@@ -440,7 +440,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 4;
+const FR_VER = 5;
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -523,7 +523,7 @@ const SECTORS = [
     lean: { flyer: 2.2, carrier: 2.5, tank: 0.6, sapper: 0.6 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
     up: '+20% Arc Damage, +8% Range', down: '+10% tower cost', m: { dmgA: 20, range: 8 }, af: { costX: 0.1 } },
   { id: 'ghost', name: 'Ghost Lanes', col: '#b86cff', pitch: 'Phantoms cloak in and out. Bring a Relay Pylon to reveal them.',
-    lean: { phantom: 3, medic: 1.5, leech: 2 }, storm: 'void', ev: { blackout: 2, phase: 2 }, boss: 'wraith', mod: 'spectral',
+    lean: { phantom: 3, medic: 1.5, leech: 2 }, storm: 'void', ev: { blackout: 2, phase: 2, hole: 2.5 }, boss: 'wraith', mod: 'spectral',
     up: '+25% Void Damage', down: '−10% Range', m: { dmgV: 25, range: -10 } },
   { id: 'salvage', name: 'Salvage Belt', col: '#e0a458', pitch: 'Rich wrecks and pirate traffic. Leeches steal your banked credits.',
     lean: { leech: 3, sapper: 2, drone: 1.3 }, storm: 'static', ev: { gold: 3, emp: 1.5 }, boss: 'auditor', mod: 'loaded',
@@ -538,7 +538,7 @@ const SECTORS = [
     lean: { medic: 4, shielder: 1.5 }, storm: 'solar', ev: { regen: 3 }, boss: 'snail', mod: 'colossal',
     up: '+15% Thermal Damage, Burn +30%', down: 'Enemies regenerate 0.5% HP per second', m: { dmgT: 15, burnDmg: 30 }, af: { regen: 0.005 } },
   { id: 'oddball', name: 'The Odd Belt', col: '#ff4d6a', pitch: 'The strange bosses live here. Expect the cat.',
-    lean: {}, storm: 'void', ev: { meteor: 2, phase: 1.5 }, boss: 'cat', mod: 'loaded',
+    lean: {}, storm: 'void', ev: { meteor: 2, phase: 1.5, hole: 2 }, boss: 'cat', mod: 'loaded',
     up: 'Oddball bosses drop 3× credits', down: 'Every boss wave brings an oddball', af: { oddAll: 1 } },
 ];
 const SECTOR_BY = Object.fromEntries(SECTORS.map(s => [s.id, s]));
@@ -867,7 +867,26 @@ const EVENTS = [
   { id: 'gold', name: 'Gold Rush', good: 1, w: 7, from: 5, desc: '×2 Credits' },
   { id: 'overcharge', name: 'Overcharge', good: 1, w: 6, from: 5, desc: '+30% Attack Speed' },
   { id: 'meteor', name: 'Meteor Shower', good: 1, w: 6, from: 7, desc: 'Meteors strike the path' },
+  { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'Drifts in for 30s. Drags and slows enemies. Towers at its edge +40% Attack Speed, near its centre −50%' },
 ];
+// 6.5 (FR_VER 5, G.frV >= 5): the Black Hole event (fr: 5 keeps it out of older rules, so their event rolls are unchanged).
+// It drifts in from past the sector edge to a point on a road, hangs there drifting slowly, then collapses. Inside its reach:
+// enemies are slowed (time dilation, strongest at the centre) and dragged along the road toward it (faster on the way in,
+// slower on the way out; they never leave the road). Towers in the ring (horizon to reach) fire faster, towers inside the
+// horizon slower. Bosses feel half of every enemy effect
+const HOLE = {
+  r: 6, horizon: 2.5,            // reach and event horizon, in tiles
+  ring: 0.4, inner: -0.5,        // tower Attack Speed: +40% from 2.5 to 6 tiles, −50% inside 2.5
+  dil: 0.5,                      // enemies at the centre move and act 50% slower (falling to 0 at the reach)
+  pull: 0.6, floor: 0.25,        // along-road drag: up to ±60% speed toward / away from the centre; never under 25% of normal speed
+  boss: 0.5,                     // bosses: half of the dilation and the drag
+  inSpd: 1.2, off: 3,            // drifts in at 1.2 tiles/s from 3 tiles past the sector edge
+  hold: 30, drift: 0.12, out: 1.5, // then 30 s at 0.12 tiles/s, then a 1.5 s collapse
+};
+// 6.5 (FR_VER 5) fog of war: presentation only (the sim never reads it). Vision comes from the core (its gun range, at least
+// FOG.core tiles), every tower (its range + FOG.pad, at least FOG.tower) and the probe (G.probe.vis). G.fogEx remembers explored
+// tiles (sim.js fogTick, every FOG.every ticks); roads are always known
+const FOG = { core: 10, tower: 4, pad: 1.5, every: 15 };
 
 // ---------- Abilities ----------
 // v5.1: abilities recharge on a cooldown into charge slots (1 each, more from Command talents). Charges from crates, chests
