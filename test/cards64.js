@@ -15,7 +15,8 @@ const build = (S, types) => { const G = S.G; G.credits = 1e7; let i = 0; for (co
 // ---- 1. rules version
 {
   const S = fresh(), G = S.newRun({ seed: 1, chaos: 1, frontier: 1 });
-  ok(S.FR_VER === 4 && G.frV === 4 && G.recOpts.frV === 4, `a new Frontier run records frV ${G.recOpts.frV}`);
+  ok(S.FR_VER >= 4 && G.frV === S.FR_VER && G.recOpts.frV === S.FR_VER, // 6.5: FR_VER 5 (probe65, sky65)
+     `a new Frontier run records frV ${G.recOpts.frV}`);
   ok(Array.isArray(G.ganoms) && !G.ganoms.length, 'a new run starts with no generated Anomalies');
 }
 // ---- 2. old rules: frV 3 (6.2/6.3 recordings) and Classic runs draw the old way, string ids only, same dice
