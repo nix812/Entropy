@@ -843,9 +843,9 @@ const RES = 2;
     const X = Pb.x * TILE, Y = Pb.y * TILE - (Pb.home ? 4 : 8), a = Pb.home ? -0.6 : Pb.ang, ca = Math.cos(a), sa = Math.sin(a), hit = G.time - Pb.hitT < 0.12;
     if (!prIn(Pb.x, Pb.y, 30, v)) return;
     if (!Pb.home) R(b, X - 4, Pb.y * TILE + 3, 8, 2, 'rgba(0,0,0,0.3)');
-    for (const o of [-1, 1]) R(b, X - sa * 4 * o - 1 - ca * 1, Y + ca * 4 * o - 1 - sa * 1, 3, 3, PR_COL.trim); // side pods
-    D(b, X, Y, 3, hit ? '#ff5a7a' : PR_COL.body); R(b, X - 1 + ca * 2, Y - 1 + sa * 2, 2, 2, PR_COL.glow); // body, cockpit toward its heading
-    if (!Pb.home || frame % 30 < 15) R(b, X - ca * 4 - 1, Y - sa * 4 - 1, 2, 2, frame % 4 < 2 ? '#ffffff' : PR_COL.glow); // engine
+    for (const o of [-1, 1]) { R(b, X - sa * 5 * o - 2 - ca, Y + ca * 5 * o - 2 - sa, 4, 4, '#1c3a66'); R(b, X - sa * 5 * o - 1 - ca, Y + ca * 5 * o - 1 - sa, 3, 3, PR_COL.trim); } // side pods
+    D(b, X, Y, 5, '#1c3a66'); D(b, X, Y, 4, hit ? '#ff5a7a' : PR_COL.body); D(b, X - 1, Y - 1, 2, '#ffffff'); R(b, X - 1 + ca * 2.5, Y - 1 + sa * 2.5, 3, 3, PR_COL.glow); // body (dark outline), cockpit toward its heading
+    if (!Pb.home || frame % 30 < 15) R(b, X - ca * 5.5 - 1, Y - sa * 5.5 - 1, 3, 3, frame % 4 < 2 ? '#ffffff' : PR_COL.glow); // engine
     if (!Pb.home && frame % 3 === 0 && !LITE) parts.push({ x: X - ca * 5, y: Y - sa * 5, vx: -ca * 12, vy: -sa * 12, life: 0.3, max: 0.3, col: PR_COL.glow, s: 1 });
   }
 
@@ -1936,7 +1936,14 @@ const RES = 2;
         }
         if (ko.some(q => px > q.l - r - 3 && px < q.r + r + 3 && py > q.t - r - 3 && py < q.b + r + 3)) continue; // no clear spot left: no arrow (it could not be tapped)
         const an = Math.atan2(sy2 - py, sx2 - px), pl = A.tre || A.site || A.prb ? 1 : 0.75 + 0.25 * Math.sin(frame / 6); // treasure, loot sites and the probe stay solid
-        if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) continue;
+        if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) { // 6.5: a crowded spot: slide along the edge to the nearest free place, or skip
+          let to = null;
+          for (const dd of [20, -20, 40, -40]) { const qx = side ? px : px + dd, qy = side ? py + dd : py;
+            if (qx < ox + pad || qy < oy + pad || qx > ox + DW - pad || qy > oy + DH - pad) continue;
+            if (frArrows.some(o => Math.hypot(o.sx - qx, o.sy - qy) < 18) || ko.some(q => qx > q.l - r - 3 && qx < q.r + r + 3 && qy > q.t - r - 3 && qy < q.b + r + 3)) continue;
+            to = [qx, qy]; break; }
+          if (!to) continue; px = to[0]; py = to[1];
+        }
         c.save(); c.translate(px, py); c.rotate(an);
         c.fillStyle = 'rgba(7,8,15,0.75)'; c.beginPath(); c.moveTo(r + 3, 0); c.lineTo(-r + 1, -r); c.lineTo(-r * 0.4, 0); c.lineTo(-r + 1, r); c.closePath(); c.fill();
         c.fillStyle = hexA(A.col, pl); c.beginPath(); c.moveTo(r, 0); c.lineTo(-r + 3, -r + 2.5); c.lineTo(-r * 0.4 + 1, 0); c.lineTo(-r + 3, r - 2.5); c.closePath(); c.fill();

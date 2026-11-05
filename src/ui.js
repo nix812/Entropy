@@ -1848,11 +1848,11 @@ const UI = (() => {
     const P = G.probe; if (!P) return '';
     const S = prStats(), st = panel.site ? siteById(panel.site) : null;
     const head = `<div class="ph"><div class="pt"><b>Probe</b><small data-live="prst">${esc(prStatus())}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>`;
-    const site = st ? `<div class="sts prsite">${prSiteTxt(st)}</div>${P.alive ? `<button class="btn primary wide" data-act="prsend">Send probe</button>` : ''}` : '';
-    const stats = `<div class="sg mini"><span>Hull<b data-live="prhp">${P.alive ? `${Math.ceil(P.hp)}/${Math.round(P.max)}` : '—'}</b></span><span>Lance<b>${S.dps > 0 ? fmt(S.dps) + '/s' : 'None'}</b></span><span>Speed<b>${S.spd}</b></span></div>
+    const site = st ? `<div class="sts prsite">${prSiteTxt(st)}</div>${P.alive ? (P.task === st.id ? '<button class="btn wide" disabled>Probe on its way</button>' : '<button class="btn primary wide" data-act="prsend">Send probe</button>') : ''}` : '';
+    const stats = `<div class="sg mini"><span>Hull<b data-live="prhp">${P.alive ? `${Math.ceil(P.hp)}/${Math.round(P.max)}` : '—'}</b></span><span>Lance<b>${S.dps > 0 ? fmt(S.dps) + '/s' : 'None'}</b></span><span>Speed<b>${S.spd}/s</b></span></div>
       <div class="sts">Cargo: <b data-live="prcargo">${esc(prCargoTxt(P.cargo))}</b></div>`;
     const how = !P.alive ? `<div class="sts bad">${P.rb > 0 ? `In the yard: ready in <b data-live="prrb">${Math.ceil(P.rb)}</b> s` : `Lost. Rebuild: ${fmt(prRebuildCost())} credits and ${PROBE.rbT} s. Upgrades stay`}</div>`
-      : st ? '' : `<p class="note">Tap the map to send the probe. Tap a site to work it. Loot banks when it docks at the core.</p>`;
+      : st ? '' : `<p class="note">Tap the map to send it. Tap a site to work it.</p>`;
     const ups = PROBE.upOrder.map(k => { const lv = P.lv[k], c = prUpCost(k), max = lv >= 3;
       return `<button class="mkt" data-act="prup" data-v="${k}" ${max ? 'disabled' : costBtn(c)} style="--c:${PR_UPCOL[k]}"><b>${PROBE.up[k].name} ${max ? 'MAX' : lv + 1}</b><span>${prUpTxt(k)}</span><em>${max ? 'Max' : fmt(c)}</em></button>`; }).join('');
     const foot = `<div class="pfoot">${!P.alive ? `<button class="btn primary wide" data-act="prbuild" ${P.rb > 0 ? 'disabled' : costBtn(prRebuildCost())}>${P.rb > 0 ? 'Rebuilding' : `Rebuild · ${fmt(prRebuildCost())}`}</button>`

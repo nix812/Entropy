@@ -5,6 +5,7 @@ banner up, the full HUD's stats box, toasts, the Map button, and a tower panel o
 (including an iPhone Pro Max).
 6.2: the Home/Map button is gone (Lift Off, then Ready, top the right column); the edge arrows (yellow treasure arrows with a
 chest, the green core arrow) never sit under a control or banner, never overlap each other, and at most 3 treasure arrows show.
+6.5: the Probe button (under Lift Off) clears every control and banner; loot site arrows (at most 3) and the probe arrow too.
 usage: python3 trackcollide.py"""
 import pathlib, mkpage
 from playwright.sync_api import sync_playwright
@@ -28,14 +29,18 @@ JS_HITS = '''(over) => {
   // 5.8: the Ready button sits at the top right (under Lift Off on Frontier), clear of every control and banner (it hides while a right-hand panel is open)
   const rb = vis(document.querySelector('#bReady'));
   if (!rb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Ready button missing');
-  if (rb) for (const s of ['#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#bLift']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
+  if (rb) for (const s of ['#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#bLift', '#bProbe']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
   // Frontier: Lift Off tops the right column, above Ready, clear of every control and banner (it hides while a side panel is open)
   if (G && G.fr) { const lb = vis(document.querySelector('#bLift'));
     if (!lb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Lift Off button missing');
     if (lb) for (const s of ['#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(lb, q)) out.push('Lift Off x ' + s); } } }
+  // 6.5: the Probe button sits under Lift Off (Ready moves under it), clear of every control and banner; it hides with a side panel
+  if (G && G.probe) { const pb = vis(document.querySelector('#bProbe'));
+    if (!pb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Probe button missing');
+    if (pb) for (const s of ['#bLift', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(pb, q)) out.push('Probe button x ' + s); } } }
   // 6.3: the zone arrival banner ("Entering <zone>") sits over the field only, clear of every control (it lets taps through)
   { const zb = vis(document.querySelector('#zoneBan')); if (!zb) out.push('zone banner missing');
-    else for (const s of ['#bLift', '#bReady', '#railL', '#railR', '#abils', '#hud', '#chips', '#panel', '#cpBanner', '#docbar']) { const q = vis(document.querySelector(s)); if (q && hit(zb, q)) out.push('zone banner x ' + s); } } // the music deck is a popover: it may cover banners
+    else for (const s of ['#bLift', '#bProbe', '#bReady', '#railL', '#railR', '#abils', '#hud', '#chips', '#panel', '#cpBanner', '#docbar']) { const q = vis(document.querySelector(s)); if (q && hit(zb, q)) out.push('zone banner x ' + s); } } // the music deck is a popover: it may cover banners
   // 6.2: no Home button; the edge arrows stay clear of every control and banner and of each other
   if (document.querySelector('#bZoom')) out.push('the Home button is back');
   // the page re-reads these rects 4 times a second (and soon after a log line or toast changes); log lines fade and reflow, so
@@ -43,15 +48,19 @@ JS_HITS = '''(over) => {
   Render.keepOut = UI._dbg.keepOutRects(); Render.draw(0);
   const cvr = document.querySelector('#cv').getBoundingClientRect(), arr = Render.frArrows;
   if (arr.filter(a => a.tre).length > 3) out.push('more than 3 treasure arrows');
+  if (arr.filter(a => a.site).length > 3) out.push('more than 3 loot site arrows');
+  if (window._wantSite && !arr.some(a => a.site)) out.push('no loot site arrow');
   if (window._wantTre && !arr.some(a => a.tre)) out.push('no treasure arrow');
   for (let i = 0; i < arr.length; i++) { const a = arr[i], x = cvr.left + a.sx * UIS, y = cvr.top + a.sy * UIS, h = 11 * UIS;
     const box = { left: x - h, right: x + h, top: y - h, bottom: y + h };
     for (const o of arr.slice(i + 1)) if (Math.hypot(o.sx - a.sx, o.sy - a.sy) < 18) out.push('arrows overlap');
-    for (const s of ['#bLift', '#bReady', '#railL', '#railR', '#panel', '#mdeck', '#ticker', '#asbar', '#docbar', '#log > *', '#dps', '#cpBanner', '#tip', '#toasts > *']) for (const el of document.querySelectorAll(s)) { const q = vis(el); if (q && hit(box, q)) out.push((a.tre ? 'treasure' : a.home ? 'core' : 'enemy') + ' arrow x ' + s); } }
+    for (const s of ['#bLift', '#bProbe', '#bReady', '#railL', '#railR', '#panel', '#mdeck', '#ticker', '#asbar', '#docbar', '#log > *', '#dps', '#cpBanner', '#tip', '#toasts > *']) for (const el of document.querySelectorAll(s)) { const q = vis(el); if (q && hit(box, q)) out.push((a.tre ? 'treasure' : a.site ? 'site' : a.prb ? 'probe' : a.home ? 'core' : 'enemy') + ' arrow x ' + s); } }
   return out; }'''
 TRE = '''() => { // crates all around the sector edges, the camera zoomed in on the middle: arrows on every side
   const R = G.region, pts = [[R.x0 + 1, R.y0 + 1], [R.x1 - 2, R.y0 + 1], [R.x0 + 1, R.y1 - 2], [R.x1 - 2, R.y1 - 2], [(R.x0 + R.x1) >> 1, R.y0 + 1], [(R.x0 + R.x1) >> 1, R.y1 - 2], [R.x0 + 1, (R.y0 + R.y1) >> 1], [R.x1 - 2, (R.y0 + R.y1) >> 1], [R.x1 - 3, R.y0 + 2], [R.x1 - 2, R.y0 + 3]];
   G.caches = pts.map(([x, y], i) => ({ x, y, t: 999, id: 9000 + i, kind: i % 3 ? 'normal' : 'gold' })); window._wantTre = 1;
+  if (G.probe) { G.sites = [[1.5, 1.5], [COLS - 1.5, 1.5], [1.5, ROWS - 1.5], [COLS - 1.5, ROWS - 1.5], [COLS / 2, 1.5], [COLS / 2, ROWS - 1.5], [COLS - 1.5, ROWS / 2]].map(([x, y], i) => ({ id: 9100 + i, k: ['wreck', 'cloud', 'rock'][i % 3], x, y, t: 999, life: 999, val: 100, rich: i % 2, prog: 0, g: [], z: i, jp: 0, hp: 50, max: 50, chunks: 0, ent: 5 }));
+    G.probe.home = 0; G.probe.x = 2.5; G.probe.y = ROWS / 2; window._wantSite = 1; } // 6.5: loot sites on every side and the probe off screen
   const L = Render.layout; Render.resetCam(); Render.zoomAt(L.W / 2, L.H / 2, 2.6); }'''
 FILL = '''() => {
   document.body.classList.add('hudfull');

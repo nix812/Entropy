@@ -3,7 +3,8 @@ GENES=1: every enemy carries 1-3 evolved genes and a third are Strain Assault un
 NUKE=1 (6.2): each timed section starts a Nuke detonation at the core (the first second, its busiest part).
 ZONE=id (6.3): the run is in that zone (default: none, the plain board). ZFXAB=1: also times each view with Zone effects off,
 interleaved in short blocks, and the zone layer itself (ambient particles, backdrop) per frame: <view>ZoneLayer. The board decals are baked
-into the map layer and cost nothing per frame."""
+into the map layer and cost nothing per frame.
+PROBE=1 (6.5): 5 loot sites (with their guards) around the core and the probe in flight, selected, with cargo."""
 import os, pathlib, sys, mkpage
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent
@@ -27,6 +28,8 @@ with sync_playwright() as p:
         const q = { d: (i * 0.37) % 25 }; if (GENES) { q.genes = GS[i % GS.length].filter(g => geneOk(ty, g, 30)); q.gel = 'T'; if (i % 3 === 0) { q.assault = 1; q.genes = ['plating', 'haste'].filter(g => geneOk(ty, g, 30)); } }
         const e = spawnEnemy(ty, q); }
       G.paused = true; window.__stopLoop = true; }''')
+    if os.environ.get('PROBE'): pg.evaluate('''() => { if (!G.probe) return; G.sites = []; for (let i = 0; i < 5; i++) { const s = siteSpawn(); if (!s) continue; const a = i * 1.3; s.x = G.core.x + Math.cos(a) * 6; s.y = G.core.y + Math.sin(a) * 4; for (const g of s.g) { g.x = s.x + 1; g.y = s.y; g.hx = g.x; g.hy = g.y; g.hp = g.max * 0.6; } }
+      const P = G.probe; P.home = 0; P.x = G.core.x + 3; P.y = G.core.y + 2; P.tx = G.core.x - 6; P.ty = G.core.y; P.hp = P.max * 0.7; P.cargo.cr = 500; Render.prSel = true; }''')  # 6.5 PROBE=1: 5 loot sites with guards and the probe in flight, selected
     res = pg.evaluate('''async () => {
       const NUKE = ''' + ('true' if os.environ.get('NUKE') else 'false') + ''', nk = () => { if (NUKE) Render.fx('overdrive', { x: G.core.x, y: G.core.y, r: 60 }); };
       const t = (n) => { nk(); const t0 = performance.now(); for (let i = 0; i < n; i++) { for (const e of G.enemies) { e.x += 0.01; } for (const tw of G.towers) tw.angle = (tw.angle || 0) + 0.2; Render.draw(1 / 60); } return (performance.now() - t0) / n; };
