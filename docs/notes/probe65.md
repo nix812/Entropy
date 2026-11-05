@@ -115,9 +115,41 @@ Sim rules gated on `G.frV >= 5` (`FR_VER = 5`, the same one-line edit as sky65).
 
 ## Balance
 
-BALANCE_PLACEHOLDER
+Smartbot `FR=1`, Normal, best wave 40 (0 points) / 80 (60 points), MAXW 150, 8 seeds per batch, frozen copies (pitfall
+26). The box was shared with sky65's batches, so the numbers are noisy; the bot extracts at bounties, which piles 60-point
+runs up near Waves 60–65. Waves reached, sorted:
+
+| Batch | Waves | Median (mean) |
+|---|---|---|
+| 6.4.0 baseline, 0 points | 23 31 32 48 51 61 64 73 | **49.5** (47.9) |
+| first draft (loot ×1.6 of final), 0 points | 23 41 41 60 61 62 62 63 | 60.5 (51.6) |
+| **final, 0 points** | 23 40 41 43 48 56 62 63 | **45.5** (47.0) |
+| 6.4.0 baseline, 60 points | 61 63 82 82 85 91 93 105 | **83.5** (82.8) |
+| final, 60 points (batch 1) | 40 60 62 63 67 80 82 83 | 65 (67.1) |
+| final, 60 points (batch 2) | 41 61 62 65 65 81 105 111 | 65 (73.9) |
+| final, 60 points, `NOPROBE=1` (frV 5, probe left docked) | 23 40 60 61 61 84 102 103 | 61 (66.8) |
+
+- **The first draft was too strong**: about 100,000 credits banked by Wave 60 (roughly half again the run's income), 4–10
+  jackpots per run, no losses. It was cut to the final numbers (loot ×0.6, upgrades +25%, guards +50% damage, jackpot per
+  guard 4% → 2%, dock repair halved).
+- **Final: a modest edge, not a crutch.** Probe use against the same rules with the probe left docked: 65 / 65 against 61
+  at 60 points (+4 median, inside noise). The gap to the 6.4 baseline at 60 points shows in the `NOPROBE` batch too, so it
+  is not the probe's loot; the new sites draw from `G.r`, which reshuffles every later roll of a run (different bosses,
+  zones, events), and these batches are small. Re-measure on a quiet box after sky65 merges.
+- **What the bot hauls (final)**: 0 points, 22–84 sites, 2,300–46,000 credits by the end (median about 24,000), 0–6
+  jackpots, 4–12 upgrades. 60 points: 42–193 sites, 13,000–398,000 credits (late runs scale with `crateCr`), 0–13 jackpots,
+  9–15 upgrades. It lost the probe in 2 of 24 runs (it is careful; see Open issues).
+- `drawbench.py` (852×393 at 3×, loaded box, 3 interleaved rounds, ms per frame home / zoomed in / zoomed out): 6.4.0
+  37.8–45.5 / 28.6–30.4 / 45.6–51.4; probe65 without sites 43.7–51.4 / 33.6–42.0 / 48.6–61.3; probe65 with 5 guarded sites
+  and the probe in flight 44.8–56.0 / 39.0–46.0 / 50.6–63.0. The rounds overlap; the scene with sites costs at most a few ms on
+  this box (a handful of rects and 3 arcs per cloud). Re-run on a quiet machine before the performance sweep.
 
 ## Open issues
+
+- `test/frontiershot.py` failed once at 852×393 (core panel) and once at 1180×820 (core arrow) while 20+ bot processes ran;
+  both passed on rerun and the probe code does not touch those paths. `monkey.py` reports a "stall" when it lands in Basic
+  Training's coach hold (it doesn't know `UI.coachHold`); not a probe issue.
+- `test/cards64.js` line 18 now reads `FR_VER` instead of the literal 4 (sky65 may make a similar edit).
 
 - The bot is careful (it skips sites whose guards out-damage 75% of its hull), so its runs rarely lose the probe; real
   players will lose it more. Watch Nic's run logs (`prLost`, `prBank`).
