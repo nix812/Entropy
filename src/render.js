@@ -784,6 +784,138 @@ const RES = 2;
     b.strokeRect(x0 - 0.5, y0 - 0.5, x1 - x0 + 1, y1 - y0 + 1); b.setLineDash([]);
   }
 
+  // ---------- 6.5 fog of war (sim.js fogOn: Frontier at frV 5, not Training; docs/notes/sky65.md) ----------
+  // fogCv holds one alpha pixel per half tile: 0 visible, FOG_EX explored (terrain remembered, dimmed), FOG_UN unseen (dark).
+  // The live vision (fogSources: the core, towers, the probe) is re-rasterised only when a source moves or changes, or the sim
+  // marks new explored tiles (G.fogRev); a 3×3 blur softens the edge, and only the changed pixels are written back (one
+  // putImageData of the dirty rectangle). Each frame costs one smoothed drawImage. fogVis (binary) decides what is hidden
+  let fogHi = null, fogHx = null, fogBlk = null, fogBX = 0, fogBY = 0, fogCv = null, fogCx = null, fogImg = null, fogVis = null, fogT = null, fogH = null, fogSeen = null, fogSig = -1, fogGr = null, fogLive = false, fogW2 = 0, fogH2 = 0;
+  const FOG_EX = 150, FOG_UN = 246, FOG_HI = 6, FOG_B = 8; // FOG_B: half tiles per block of the 'any fog here' map, so fully visible ground costs no blit // FOG_HI: fogHi px per half tile (a smoothed copy, so each frame's blit can be nearest-neighbour)
+  function fogUpdate() {
+    if (typeof fogOn !== 'function' || !fogOn() || !G.fogEx) { fogLive = false; return false; }
+    const W2 = COLS * 2, H2 = ROWS * 2, n = W2 * H2;
+    if (fogGr !== G || !fogCv || fogW2 !== W2 || fogH2 !== H2) {
+      if (!fogCv) fogCv = document.createElement('canvas');
+      fogCv.width = W2; fogCv.height = H2; fogW2 = W2; fogH2 = H2; fogCx = fogCv.getContext('2d');
+      fogImg = fogCx.createImageData(W2, H2); const d = fogImg.data; for (let i = 0; i < d.length; i += 4) { d[i] = 5; d[i + 1] = 6; d[i + 2] = 14; d[i + 3] = FOG_UN; }
+      fogVis = new Uint8Array(n); fogT = new Uint8Array(n); fogH = new Uint16Array(n); fogSeen = new Uint8Array(n); fogSig = -1; fogGr = G; fogCx.putImageData(fogImg, 0, 0);
+      fogBX = Math.ceil(W2 / FOG_B); fogBY = Math.ceil(H2 / FOG_B); fogBlk = new Uint8Array(fogBX * fogBY).fill(1);
+      if (!fogHi) fogHi = document.createElement('canvas'); fogHi.width = W2 * FOG_HI; fogHi.height = H2 * FOG_HI; fogHx = fogHi.getContext('2d'); fogHx.imageSmoothingEnabled = true; fogHx.drawImage(fogCv, 0, 0, fogHi.width, fogHi.height);
+    }
+    fogLive = true;
+    if (fogSig >= 0 && (frame & 1) && !G.frFly) return true; // vision is checked every other frame (every frame while the core flies)
+    const src = fogSources();
+    let h = (2166136261 ^ (G.fogRev || 0) ^ (src.length << 20)) >>> 0;
+    for (let i = 0; i < src.length; i++) { h ^= Math.round(src[i] * 8); h = Math.imul(h, 16777619) >>> 0; }
+    if (h === fogSig) return true;
+    fogSig = h;
+    fogVis.fill(0);
+    for (let i = 0; i < src.length; i += 3) { // each source: one filled span per row, in half tiles
+      const cx = src[i] * 2, cy = src[i + 1] * 2, r = src[i + 2] * 2, r2 = r * r;
+      for (let j = Math.max(0, Math.floor(cy - r)), j1 = Math.min(H2 - 1, Math.floor(cy + r)); j <= j1; j++) {
+        const dy = j + 0.5 - cy, q = r2 - dy * dy; if (q < 0) continue;
+        const hw = Math.sqrt(q), x0 = Math.max(0, Math.ceil(cx - hw - 0.5)), x1 = Math.min(W2 - 1, Math.floor(cx + hw - 0.5));
+        if (x1 >= x0) fogVis.fill(1, j * W2 + x0, j * W2 + x1 + 1);
+      }
+    }
+    const ex = G.fogEx, d = fogImg.data;
+    for (let j = 0; j < H2; j++) { const tr = (j >> 1) * COLS, row = j * W2;
+      for (let i = 0; i < W2; i++) { const k = row + i; if (fogVis[k]) { fogSeen[k] = 1; fogT[k] = 0; } else fogT[k] = fogSeen[k] || ex[tr + (i >> 1)] ? FOG_EX : FOG_UN; } }
+    for (let j = 0; j < H2; j++) { const row = j * W2; // horizontal 3-tap sums, then vertical: a 3×3 box blur of the target alpha
+      for (let i = 0; i < W2; i++) { const k = row + i; fogH[k] = fogT[k] + fogT[i > 0 ? k - 1 : k] + fogT[i < W2 - 1 ? k + 1 : k]; } }
+    let mx0 = W2, my0 = H2, mx1 = -1, my1 = -1; fogBlk.fill(0);
+    for (let j = 0; j < H2; j++) { const row = j * W2, up = j > 0 ? row - W2 : row, dn = j < H2 - 1 ? row + W2 : row, br = ((j / FOG_B) | 0) * fogBX;
+      for (let i = 0; i < W2; i++) { const a = ((fogH[row + i] + fogH[up + i] + fogH[dn + i]) / 9) | 0, p = (row + i) * 4 + 3;
+        if (a > 3) fogBlk[br + ((i / FOG_B) | 0)] = 1;
+        if (d[p] !== a) { d[p] = a; if (i < mx0) mx0 = i; if (i > mx1) mx1 = i; if (j < my0) my0 = j; if (j > my1) my1 = j; } } }
+    if (mx1 >= 0) { fogCx.putImageData(fogImg, 0, 0, mx0, my0, mx1 - mx0 + 1, my1 - my0 + 1);
+      // the smoothed copy: the dirty rectangle plus 1 px of margin (the filter reads its neighbours)
+      const x0 = Math.max(0, mx0 - 1), y0 = Math.max(0, my0 - 1), x1 = Math.min(W2, mx1 + 2), y1 = Math.min(H2, my1 + 2);
+      fogHx.save(); fogHx.beginPath(); fogHx.rect(x0 * FOG_HI, y0 * FOG_HI, (x1 - x0) * FOG_HI, (y1 - y0) * FOG_HI); fogHx.clip(); fogHx.clearRect(x0 * FOG_HI, y0 * FOG_HI, (x1 - x0) * FOG_HI, (y1 - y0) * FOG_HI);
+      fogHx.imageSmoothingEnabled = true; fogHx.drawImage(fogCv, 0, 0, fogHi.width, fogHi.height); fogHx.restore(); }
+    return true;
+  }
+  // is this point (tiles) in vision now? (false off the board)
+  function fogSee(x, y) { const i = (x * 2) | 0, j = (y * 2) | 0; return i >= 0 && j >= 0 && i < fogW2 && j < fogH2 && fogVis[j * fogW2 + i] === 1; }
+  // a disc (a storm, the black hole) shows if its centre or any of 8 points at 0.7 of its radius is in vision
+  function fogSeeR(x, y, r) { if (fogSee(x, y)) return true; for (let a = 0; a < 8; a++) if (fogSee(x + Math.cos(a * 0.785) * r * 0.7, y + Math.sin(a * 0.785) * r * 0.7)) return true; return false; }
+  function drawFog(x0, y0, x1, y1) { // the view rectangle in world units, clipped to the board
+    if (x1 <= x0 || y1 <= y0) return;
+    const k = 2 * FOG_HI / TILE, bw = TILE / 2 * FOG_B; b.imageSmoothingEnabled = false; // bw: a block in world units
+    // only blocks with any fog in them, merged into runs along each block row (a view in full vision draws nothing)
+    for (let by = Math.max(0, Math.floor(y0 / bw)), by1 = Math.min(fogBY - 1, Math.floor((y1 - 0.01) / bw)); by <= by1; by++) {
+      const ry0 = Math.max(y0, by * bw), ry1 = Math.min(y1, (by + 1) * bw);
+      for (let bx = Math.max(0, Math.floor(x0 / bw)), bx1 = Math.min(fogBX - 1, Math.floor((x1 - 0.01) / bw)); bx <= bx1; bx++) {
+        if (!fogBlk[by * fogBX + bx]) continue;
+        let ex = bx; while (ex < bx1 && fogBlk[by * fogBX + ex + 1]) ex++;
+        const rx0 = Math.max(x0, bx * bw), rx1 = Math.min(x1, (ex + 1) * bw);
+        b.drawImage(fogHi, rx0 * k, ry0 * k, (rx1 - rx0) * k, (ry1 - ry0) * k, rx0, ry0, rx1 - rx0, ry1 - ry0);
+        bx = ex;
+      }
+    }
+  }
+
+  // ---------- 6.5 the Black Hole event (sim.js holeSpawn/holeUpdate, G.hole; HOLE in data.js) ----------
+  // Pre-rendered once: the accretion disk (a dithered spiral, drawn rotating) and the core with its photon ring. Per frame: a
+  // magnified copy of the board under it (lensing, skipped when LITE), the disk, the core, 3 rings closing in (time dilation),
+  // the reach (dashed, violet) and horizon (dashed, red) rings, and a pool of 48 motes spiralling in. No gradients, no shadowBlur
+  let holeSpr = null, holeMotes = null, holeG = null;
+  function holeSprites() {
+    if (holeSpr) return holeSpr;
+    const R1 = 2.4 * TILE, R0 = 0.7 * TILE, S = Math.ceil(R1 * 2 * RES) + 2, c0 = S / 2, cvD = document.createElement('canvas'); cvD.width = cvD.height = S;
+    const g = cvD.getContext('2d'), im = g.createImageData(S, S), D = im.data, BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+    const RAMP = [[70, 26, 120], [140, 44, 150], [226, 84, 60], [255, 160, 64], [255, 226, 160], [255, 255, 240]];
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const dx = (x + 0.5 - c0) / RES, dy = (y + 0.5 - c0) / RES, r = Math.hypot(dx, dy); if (r < R0 || r > R1) continue;
+      const u = (r - R0) / (R1 - R0), th = Math.atan2(dy, dx), arm = 0.5 + 0.5 * Math.sin(2 * th + 6 * Math.log(r / R0)), fine = 0.5 + 0.5 * Math.sin(9 * th + 14 * Math.log(r / R0));
+      let v = Math.pow(1 - u, 1.2) * (0.2 + 0.8 * arm * arm) * (0.8 + 0.2 * fine) + (u < 0.14 ? (1 - u / 0.14) * 0.85 : 0);
+      v = Math.min(1, v * 1.25);
+      const th2 = BAY[(y & 3) * 4 + (x & 3)] / 16; if (v < 0.1 + th2 * 0.25) continue; // dithered gaps between the arms
+      const q = Math.max(0, Math.min(5, Math.round(v * 5 + (th2 - 0.5) * 0.8))), C = RAMP[q], p = (y * S + x) * 4;
+      D[p] = C[0]; D[p + 1] = C[1]; D[p + 2] = C[2]; D[p + 3] = q >= 2 ? 255 : 200;
+    }
+    g.putImageData(im, 0, 0); cvD.u = 1 / RES;
+    const RC = 0.82 * TILE, SC = Math.ceil(RC * 2 * RES) + 6, cc = SC / 2, cvC = document.createElement('canvas'); cvC.width = cvC.height = SC;
+    const h = cvC.getContext('2d'), im2 = h.createImageData(SC, SC), E = im2.data;
+    for (let y = 0; y < SC; y++) for (let x = 0; x < SC; x++) {
+      const r = Math.hypot(x + 0.5 - cc, y + 0.5 - cc) / RES, p = (y * SC + x) * 4;
+      if (r < RC - 1.5) { E[p] = 3; E[p + 1] = 2; E[p + 2] = 8; E[p + 3] = 255; }
+      else if (r < RC) { E[p] = 255; E[p + 1] = 246; E[p + 2] = 222; E[p + 3] = 255; } // the photon ring
+      else if (r < RC + 1 && ((x + y) & 1)) { E[p] = 255; E[p + 1] = 190; E[p + 2] = 100; E[p + 3] = 210; }
+    }
+    h.putImageData(im2, 0, 0); cvC.u = 1 / RES;
+    return (holeSpr = { disk: cvD, core: cvC });
+  }
+  const holeVisible = () => !!(G && G.hole && (!fogLive || fogSeeR(G.hole.x, G.hole.y, 2.5)));
+  function drawHole(vxI, vyI, vw, vh, dt0) {
+    const h = G.hole; if (!h) return;
+    const X = h.x * TILE, Y = h.y * TILE, k = h.ph === 2 ? h.k : 1, RR = HOLE.r * TILE, LR = 2.7 * TILE * k;
+    if (X + RR < vxI || Y + RR < vyI || X - RR > vxI + vw || Y - RR > vyI + vh) return;
+    const S = holeSprites();
+    if (holeG !== G || !holeMotes) { holeG = G; holeMotes = []; for (let i = 0; i < 48; i++) holeMotes.push({ a: Math.random() * 6.283, r: RR * (0.3 + Math.random() * 0.7), c: i % 3 }); }
+    if (!LITE && R_.zfx !== false && LR > 4) { // lensing: the ground under the hole, magnified ×1.35 inside a circle
+      const m = 1.35, sr = LR / m;
+      b.save(); b.beginPath(); b.arc(X, Y, LR, 0, 6.283); b.clip(); b.imageSmoothingEnabled = false;
+      b.drawImage(buf, (X - sr - vxI) * RES, (Y - sr - vyI) * RES, sr * 2 * RES, sr * 2 * RES, X - LR, Y - LR, LR * 2, LR * 2); b.restore();
+      strokeRing(X, Y, LR, '#c9b6ff', 0.35, 1); // the Einstein ring hides the seam
+    }
+    fillRing(X, Y, 1.5 * TILE * k, '#05030c', 0.45); // the dark around the hole
+    // reach and horizon: where towers speed up and slow down
+    strokeRing(X, Y, RR, '#b86cff', 0.55 * k, 1, [3, 5]); strokeRing(X, Y, HOLE.horizon * TILE, '#ff4d6a', 0.6 * k, 1, [2, 3]);
+    for (let i = 0; i < 3; i++) { const f = ((rt * 0.5 + i / 3) % 1), rr = RR - (RR - HOLE.horizon * TILE) * f; strokeRing(X, Y, rr, '#9a7cff', 0.28 * f * k, 1); } // time dilation: rings closing in
+    // motes spiral in: faster and hotter near the centre
+    const dt = Math.min(0.05, dt0 || 0);
+    for (const p of holeMotes) {
+      p.r -= (14 + 900 / Math.max(6, p.r)) * dt; p.a += (40 / Math.max(8, p.r)) * dt * 3;
+      if (p.r < 0.55 * TILE) { p.r = RR * (0.75 + Math.random() * 0.25); p.a = Math.random() * 6.283; }
+      const u = p.r / RR, col = u < 0.25 ? '#fff0c8' : u < 0.5 ? '#ff9a4a' : p.c ? '#b86cff' : '#7d6cff';
+      R(b, X + Math.cos(p.a) * p.r * k, Y + Math.sin(p.a) * p.r * k, u < 0.4 ? 2 : 1, u < 0.4 ? 2 : 1, col);
+    }
+    // the disk turns (one sprite, rotated), then the core sits on top
+    const dw = S.disk.width * S.disk.u * k; b.save(); b.translate(X, Y); b.rotate(-rt * 0.9); b.drawImage(S.disk, -dw / 2, -dw / 2, dw, dw); b.restore();
+    const cw = S.core.width * S.core.u * Math.max(0.2, k); b.drawImage(S.core, X - cw / 2, Y - cw / 2, cw, cw);
+  }
+
   // ---------- 6.3 zone change wipe, backdrop past the map edge, ambient layer ----------
   function startWipe(copy) {
     if (!oldLayer) oldLayer = document.createElement('canvas');
@@ -1420,6 +1552,9 @@ const RES = 2;
         if (f >= 1) { wipe = null; oldLayer.width = oldLayer.height = 1; }
       } else blitL(mapLayer); }
     drawVeil();
+    // 6.5 fog of war: which enemies are hidden this frame (bosses and Scanned enemies always show; a boss in fog is drawn over it)
+    const FOGON = fogUpdate();
+    for (const e of G.enemies) { const see = !FOGON || fogSee(e.x, e.y); e._fogH = !see && !e.boss && !(e.scanned > 0); e._fogB = !see && !!e.boss; }
     // animated path glow running toward the core
     if (frame % 2 === 0) { const dc = hexA((ZLOOK[mapZone] || ZL0).dot, 0.35); for (const L of G.map.lanes) if (!L.openWave) { const k = (frame >> 1) % L.tiles.length; for (let j = k; j < L.tiles.length; j += 9) { const p = L.tiles[j]; R(b, p.x * TILE + 11, p.y * TILE + 11, 2, 2, dc); } } }
     if (window.__rdbg & 16) { const t0 = performance.now(); zoneAmb(v); zMs += performance.now() - t0; } else zoneAmb(v); // 6.3: the zone's weather and particles, under everything that matters (__rdbg 16: timed for drawbench)
@@ -1430,6 +1565,7 @@ const RES = 2;
       b.beginPath(); b.moveTo(a.x * TILE, a.y * TILE); b.lineTo(c2.x * TILE, c2.y * TILE); b.stroke(); b.setLineDash([]);
     }
     for (const s of G.storms) {
+      if (FOGON && !fogSeeR(s.x, s.y, s.r)) continue; // 6.5: a storm out in the fog is hidden
       const col = s.mael ? '#ff4d6a' : STORMS[s.types[(frame >> 5) % s.types.length]].col;
       ditherDisc(s.x * TILE, s.y * TILE, s.r * TILE, hexA(col, s.mael ? 0.2 : 0.14), s.mael ? 2 : 3, (frame >> 3) % 3);
       const arms = s.mael ? 5 : 3;
@@ -1443,6 +1579,7 @@ const RES = 2;
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
+    if (G.hole && holeVisible()) drawHole(vxI, vyI, vwI, vhI, dt); // 6.5 Black Hole (under the enemies it drags)
     const wfA = G.fr && wormFlashAt ? Math.max(0, Math.min(1, (2.5 - (performance.now() - wormFlashAt) / 1000) / 0.8)) : 0; // shown for 2.5 s after a refused build, fading over the last 0.8 s
     if (wfA > 0) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', (L.openWave ? 0.1 : 0.16) * wfA), 3, 0); strokeRing(X, Y, r, '#ff4d6a', (L.openWave ? 0.4 : 0.7) * wfA, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
@@ -1459,10 +1596,10 @@ const RES = 2;
         b.strokeStyle = 'rgba(89,240,180,0.12)'; b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, R2, a - 0.5, a); b.stroke(); }
     }
     b.strokeStyle = 'rgba(89,240,180,0.45)'; b.lineWidth = 1; b.setLineDash([2, 4]);
-    for (const e of G.enemies) if (e.lureT && !e.netted) { b.beginPath(); b.moveTo(e.x * TILE, e.y * TILE - 7); b.lineTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.stroke(); }
+    for (const e of G.enemies) if (e.lureT && !e.netted && !e._fogH) { b.beginPath(); b.moveTo(e.x * TILE, e.y * TILE - 7); b.lineTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.stroke(); }
     b.setLineDash([]);
     // v5.8: a held flier strains on a taut tether back to its beacon
-    for (const e of G.enemies) if (e.netted && e.netHold > 0 && e.lureT && !e.dead) { const ex = e.x * TILE, ey = e.y * TILE - 7, q = 0.55 + 0.35 * Math.sin(frame / 2 + e.id);
+    for (const e of G.enemies) if (e.netted && e.netHold > 0 && e.lureT && !e.dead && !e._fogH) { const ex = e.x * TILE, ey = e.y * TILE - 7, q = 0.55 + 0.35 * Math.sin(frame / 2 + e.id);
       b.strokeStyle = hexA('#9fffd8', q); b.lineWidth = 1; b.beginPath(); b.moveTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.lineTo(ex, ey); b.stroke(); R(b, ex - 1, ey - 1, 2, 2, '#e6fff6'); }
     // Power Nodes: a pulsing cyan diamond; with a tower on top, corner brackets show the charge
     for (const q of G.nodes || []) {
@@ -1477,6 +1614,7 @@ const RES = 2;
     }
     // salvage caches: a crate with a beacon that blinks faster as it decays
     for (const cc of G.caches || []) {
+      if (FOGON && !fogSee(cc.x + 0.5, cc.y + 0.5)) continue; // 6.5: salvage in the fog is hidden
       const X = cc.x * TILE + 5, Y = cc.y * TILE + 7, late = cc.t < 6, on = late ? (frame >> 2) % 2 : (frame >> 4) % 2;
       const P2 = CACHE_PAL[cc.kind || 'normal'];
       R(b, X - 1, Y + 1, 16, 12, 'rgba(0,0,0,0.45)');
@@ -1572,11 +1710,12 @@ const RES = 2;
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
     geneRanks();
-    for (const e of G.enemies) if (!e.fly) drawEnemy(e);
+    for (const e of G.enemies) if (!e.fly && !e._fogH && !e._fogB) drawEnemy(e);
     if (G.capT && G.capT.length) drawCapField(); // 6.4 Rimewall walls (in front of the ground enemies they hold) and Entangler links
-    for (const e of G.enemies) if (e.fly) drawEnemy(e);
+    for (const e of G.enemies) if (e.fly && !e._fogH && !e._fogB) drawEnemy(e);
     // pirate drop ships
     for (const P2 of G.pirates || []) {
+      if (FOGON && !fogSee(P2.x, P2.y)) continue;
       const gold = P2.kind === 'gold', sp = pirateSprite(gold), k = (gold ? 1.5 : 1) * (sp.u || 1), w = sp.width * k, h = sp.height * k, X = P2.x * TILE, Y = P2.y * TILE - 16;
       b.fillStyle = 'rgba(0,0,0,0.3)'; b.fillRect(Math.round(X - w * 0.4), Math.round(P2.y * TILE + 4), Math.round(w * 0.8), 3);
       b.save(); b.translate(Math.round(X), Math.round(Y + Math.sin(frame / 5 + P2.id) * 1.5)); if (P2.vx < 0) b.scale(-1, 1); b.drawImage(sp, -w / 2, -h / 2, w, h); b.restore();
@@ -1663,6 +1802,10 @@ const RES = 2;
     }
     parts = parts.filter(p => p.life > 0);
     if (parts.length > 800) parts.splice(0, parts.length - 800);
+    if (FOGON) { // 6.5: the fog over everything on the board, then any boss under it (a boss at the core ends the run, so it always shows)
+      drawFog(Math.max(0, vxI), Math.max(0, vyI), Math.min(BW, vxI + vwI), Math.min(BH, vyI + vhI));
+      for (const e of G.enemies) if (e._fogB && !e.dead) drawEnemy(e);
+    }
     if (nuke) drawNuke(dt, v.vy, v.vh);
     if (G.aimAbility && aimPos) D(b, aimPos.x * TILE, aimPos.y * TILE, 2, '#ffffff');
 
@@ -1675,20 +1818,22 @@ const RES = 2;
     let np = 0;
     for (const p of G.projs) { if (np++ > 160) break; light(p.x * TILE, p.y * TILE, TILE * (p.k === 'bullet' ? 0.45 : 0.75), EL[p.el] ? EL[p.el].col : '#ffffff', p.k === 'bullet' ? 0.3 : 0.4); }
     for (const e of G.enemies) {
+      if (e._fogH) continue;
       if (e.boss) light(e.x * TILE, e.y * TILE, TILE * (e.gen ? 1.8 : 3.4), BOSS_COL[e.boss] || '#ff3355', 0.22);
       else if (e.elite.length) light(e.x * TILE, e.y * TILE, TILE * 1.1, ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, 0.18);
       if (e.st.burn) light(e.x * TILE, e.y * TILE, TILE * 0.7, EL.T.col, 0.16);
     }
     for (const Rg of rings) { if (Rg.nl || Rg.dl > 0) continue; const k = 1 - Math.max(0, Rg.life / Rg.max); light(Rg.x, Rg.y, (Rg.r0 + (Rg.r1 - Rg.r0) * k) * 1.3 + 6, Rg.col, (1 - k) * (Rg.fill ? 0.5 : 0.3)); }
     for (const L of lines) { if (L.dl > 0) continue; const a = Math.max(0, L.life / L.max), q = L.pts[L.pts.length - 1]; light(q.x, q.y, 16, L.col, a * 0.5); light(L.pts[0].x, L.pts[0].y, 12, L.col, a * 0.35); }
-    for (const s2 of G.storms) light(s2.x * TILE, s2.y * TILE, s2.r * TILE * 1.1, s2.mael ? '#ff4d6a' : STORMS[s2.types[0]].col, 0.13);
+    for (const s2 of G.storms) if (!FOGON || fogSeeR(s2.x, s2.y, s2.r)) light(s2.x * TILE, s2.y * TILE, s2.r * TILE * 1.1, s2.mael ? '#ff4d6a' : STORMS[s2.types[0]].col, 0.13);
     for (const z of G.zones) light(z.x * TILE, z.y * TILE, z.r * TILE * 1.2, '#ff7b39', 0.22);
     for (const q of conduits) light(q.x, q.y, 14, q.col, 0.05 + 0.05 * Math.sin(frame / 20 + q.ph));
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
-    for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
+    for (const cc of G.caches || []) if (!FOGON || fogSee(cc.x + 0.5, cc.y + 0.5)) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
     if (nuke) { const t = nuke.t; light(nuke.x, nuke.y, TILE * (3 + 3 * Math.min(1, t / 0.4)), t < 0.6 ? '#fff0c0' : '#ff8a2a', Math.max(0, 0.9 - t * 0.3)); light(nuke.x, nuke.y - TILE * 3.5 * Math.min(1, t / 1.5), TILE * 3, '#ff7b29', Math.max(0, 0.45 - t * 0.14)); }
     if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
+    if (G.hole && holeVisible()) light(G.hole.x * TILE, G.hole.y * TILE, TILE * 1.8 * (G.hole.ph === 2 ? G.hole.k : 1), '#ff9a4a', 0.14);
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
     // ---------- composite ----------
@@ -1818,10 +1963,11 @@ const RES = 2;
         th.sort((p, q) => (q.boss ? 1 : 0) - (p.boss ? 1 : 0) || (p.L.len - p.d) - (q.L.len - q.d));
         for (const e of th.slice(0, 6)) list.push({ x: e.x, y: e.y, col: e.boss ? PAL.bad : PAL.amber, big: !!e.boss }); }
       if (!onS(bx2s(G.core.x * TILE), by2s(G.core.y * TILE))) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
+      if (G.hole && (G.hole.ph === 0 || holeVisible())) list.push({ x: G.hole.x, y: G.hole.y, col: '#b86cff', big: G.hole.ph === 0, hole: 1 }); // 6.5: a black hole drifting in always warns, even out in the fog
       // treasure: project each off-screen crate to the edge, merge crates whose arrows would land within 34 px, keep the 3 closest
       const edge = (sx2, sy2) => { const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy))); return { px: cx0 + dx * k, py: cy0 + dy * k }; };
       const tre = [];
-      for (const cc of G.caches || []) { const x = cc.x + 0.5, y = cc.y + 0.5, sx2 = bx2s(x * TILE), sy2 = by2s(y * TILE); if (onS(sx2, sy2)) continue;
+      for (const cc of G.caches || []) { const x = cc.x + 0.5, y = cc.y + 0.5, sx2 = bx2s(x * TILE), sy2 = by2s(y * TILE); if (onS(sx2, sy2) || (fogLive && !fogSee(x, y))) continue;
         const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = tre.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
         if (m) { m.n++; if (d < m.d) Object.assign(m, { x, y, d }); } else tre.push({ x, y, d, px: E.px, py: E.py, n: 1, col: '#ffe14d', tre: 1 }); }
       tre.sort((p, q) => p.d - q.d); for (const A of tre.slice(0, 3)) list.push(A);
@@ -1857,7 +2003,7 @@ const RES = 2;
           c.fillStyle = '#b07a20'; c.fillRect(qx - 5, qy - 4, 10, 8); c.fillStyle = '#ffe14d'; c.fillRect(qx - 5, qy - 4, 10, 3); c.fillStyle = '#3a2410'; c.fillRect(qx - 5, qy - 1, 10, 1); c.fillStyle = '#fff6c0'; c.fillRect(qx - 1, qy - 2, 2, 3);
           if (A.n > 1) { c.font = '9px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(7,8,15,0.9)'; c.fillRect(qx + 4, qy - 11, 10, 9); c.fillStyle = '#ffe14d'; c.fillText(String(A.n), qx + 9, qy - 6); c.textBaseline = 'alphabetic'; }
         }
-        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home, tre: !!A.tre });
+        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home, tre: !!A.tre, hole: !!A.hole });
       }
     }
     // the old sector border fades out as the camera pulls back
@@ -1872,7 +2018,7 @@ const RES = 2;
     }
     // v5.8 gene marks, in screen space so they stay readable at phone zoom
     { const u = clamp(Math.round(ws * 1.1), 2, 4);
-      for (const e of G.enemies) if (e._gmOn && !e.dead && !(e.cloaked && !(e.revealed > 0))) {
+      for (const e of G.enemies) if (e._gmOn && !e.dead && !e._fogH && !(e.cloaked && !(e.revealed > 0))) {
         const x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - (e.fly ? 7 : 0))), hw = (e._hw || 6) * ws, hh = (e._hh || 6) * ws;
         if (x < -40 || y < -40 || x > DW + 40 || y > DH + 40) continue;
         for (const g of e._gmOn) geneMark(c, g, x, y, hw, hh, u, e);
@@ -1903,7 +2049,7 @@ const RES = 2;
       }
     }
     // v4.7 elite crowns: gold, one gem per affix, drawn above everything so a crowd can't bury them
-    for (const e of G.enemies) if (e._crown && !e.dead) {
+    for (const e of G.enemies) if (e._crown && !e.dead && !e._fogH) {
       const x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - (e.fly ? 7 : 0) - (e._hh || 6) - 4)), u = clamp(Math.round(ws * 1.1), 2, 4), n = e._crown.length, cw = (5 + n * 2) * u;
       c.fillStyle = '#090b16'; c.fillRect(x - cw / 2 - u, y - 4 * u, cw + 2 * u, 5 * u);
       c.fillStyle = '#ffd84a'; c.fillRect(x - cw / 2, y - u * 1.5, cw, u * 2); for (const dx of [-cw / 2, -u / 2, cw / 2 - u]) c.fillRect(x + dx, y - 3 * u, u, 2 * u);
@@ -1929,7 +2075,7 @@ const RES = 2;
         c.fillStyle = '#9a96b0'; c.fillText('IDLE', x, y); c.textBaseline = 'alphabetic';
       } }
     // v5.2 pirates: the skiff's flight path ahead of it, its target, and its captain's name
-    for (const e of G.enemies) if (e.pirate && !e.dead) {
+    for (const e of G.enemies) if (e.pirate && !e.dead && !e._fogH) {
       const P = e.pirate, L = e.L, pts = [{ x: e.x, y: e.y }]; for (let i = 0; i < L.pts.length; i++) if (L.cum[i] > e.d) pts.push(L.pts[i]);
       c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.lineWidth = 2; c.strokeStyle = hexA('#ff4d6a', 0.55); c.beginPath();
       pts.forEach((q, i) => { const x = bx2s(q.x * TILE), y = by2s(q.y * TILE - 7); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.setLineDash([]);
@@ -1945,6 +2091,18 @@ const RES = 2;
       for (const t of G.towers) { if (dist2(t.cx, t.cy, st.x, st.y) > r2) continue;
         const boosted = t.s && els.includes(t.s.el), x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
         c.lineWidth = boosted ? 2 : 1; c.strokeStyle = hexA(col, boosted ? 0.9 : 0.45); if (!boosted) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
+    }
+    // 6.5 Black Hole: towers in its ring wear a solid amber frame (+40% Attack Speed), towers inside the horizon a dashed red one
+    // (−50%); the two numbers sit on top of the two rings
+    if (G.hole && holeVisible()) { const h = G.hole, R2 = HOLE.r * HOLE.r, H2 = HOLE.horizon * HOLE.horizon, u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const t of G.towers) { const d2 = dist2(t.cx, t.cy, h.x, h.y); if (d2 > R2) continue;
+        const inner = d2 < H2, x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
+        c.lineWidth = 2; c.strokeStyle = inner ? 'rgba(255,77,106,0.9)' : 'rgba(255,225,77,0.85)'; if (inner) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
+      if (h.ph !== 2) { c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
+        for (const [rr, txt, col] of [[HOLE.r, `+${Math.round(HOLE.ring * 100)}%`, '#ffe14d'], [HOLE.horizon, `${Math.round(HOLE.inner * 100)}%`.replace('-', '−'), '#ff4d6a']]) {
+          const x = Math.round(bx2s(h.x * TILE)), y = Math.round(by2s((h.y - rr) * TILE)), tw = c.measureText(txt).width;
+          c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), Math.round(y - 2.5 * u), Math.round(tw + 2 * u), Math.round(5 * u)); c.fillStyle = col; c.fillText(txt, x, y); }
+        c.textBaseline = 'alphabetic'; }
     }
     { const u = clamp(Math.round(ws * 1.1), 2, 4);
       for (const t of G.towers) if (t.disabled > 0) {
@@ -2041,7 +2199,8 @@ const RES = 2;
       const mw = 64, mh = mw * reg.h / reg.w, mx = W - mw - 8, my = H - mh - 8;
       c.fillStyle = 'rgba(7,8,15,0.7)'; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
       c.drawImage(mapLayer, reg.x * RES, reg.y * RES, reg.w * RES, reg.h * RES, mx, my, mw, mh);
-      for (const cc of G.caches || []) { c.fillStyle = (frame >> 3) % 2 ? CACHE_PAL[cc.kind || 'normal'][3] : '#3a3020'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
+      if (fogLive) { const q = 2 / TILE; c.drawImage(fogCv, reg.x * q, reg.y * q, reg.w * q, reg.h * q, mx, my, mw, mh); } // 6.5 the fog on the minimap too
+      for (const cc of G.caches || []) if (!fogLive || fogSee(cc.x + 0.5, cc.y + 0.5)) { c.fillStyle = (frame >> 3) % 2 ? CACHE_PAL[cc.kind || 'normal'][3] : '#3a3020'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
     // scanlines: one dark row every 3 px, drawn as plain stripes in one path. v5.3.2: a repeating createPattern fill left three
@@ -2061,6 +2220,9 @@ const RES = 2;
   const K = TILE / 10;
   function fx(type, d) {
     switch (type) {
+      case 'holeEnd': { if (fogLive && !fogSeeR(d.x, d.y, 2.5)) break; const x = T2P(d.x), y = T2P(d.y); // 6.5 the Black Hole collapses: a white pinch, then a ring and sparks thrown out
+        stars.push({ x, y, life: 0.12, max: 0.12, col: '#ffffff', s: TILE * 0.7, disc: 1 }); rings.push({ x, y, r0: 4, r1: HOLE.r * TILE, life: 0.7, max: 0.7, col: '#b86cff', w: 3 });
+        rings.push({ x, y, r0: 2, r1: TILE * 2.2, life: 0.35, max: 0.35, col: '#fff0c8', fill: 1, w: 2 }); burst(x, y, LITE ? 14 : 40, '#ff9a4a', 70 * K, 0.7); kick(3, 0.5); break; }
       case 'build': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 22, life: 0.35, max: 0.35, col: d.col }); burst(T2P(d.x), T2P(d.y), 14, d.col, 30 * K, 0.4); break;
       case 'upgrade': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 22, r1: 4, life: 0.4, max: 0.4, col: d.col }); burst(T2P(d.x), T2P(d.y), 18, d.col, 25 * K, 0.6, -30 * K); break;
       case 'sell': burst(T2P(d.x), T2P(d.y), 16, '#8a8aa6', 20 * K, 0.5, 30 * K); break;
@@ -2293,7 +2455,8 @@ const RES = 2;
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     flashWorm() { wormFlashAt = performance.now(); },
-    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
+    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, fogAt(x, y) { if (!fogLive) return -1; const i = (x * 2) | 0, j = (y * 2) | 0, k = j * fogW2 + i; return fogVis[k] ? 0 : fogImg.data[k * 4 + 3] > 200 ? 2 : 1; }, get fogLive() { return fogLive; }, // 6.5 tests
+     set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
     lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
