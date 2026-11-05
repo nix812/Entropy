@@ -4139,7 +4139,9 @@ function talentsToast(kind) {
         while (acc >= STEP && n < 10) { simStep(STEP); acc -= STEP; n++; }
         if (n >= 10) acc = 0;
       }
-      Render.draw(halted ? 0 : dt);
+      // 6.6 (perf66): the opaque Talents screen hides the field, so it isn't drawn
+      if (Tree.isOpen) { ART.frameStart(); ART.idle(1.5); }
+      else Render.draw(halted ? 0 : dt);
     } else { if (UI.screen === 'hangar') { drawBg(dt); TitleFX.draw(dt); } ART.idle(4); } // menus: pre-render unit art in the background
     if (Tree.isOpen) Tree.draw();
     wakeT -= dt; if (wakeT <= 0) { wakeT = 2; if (!document.hidden) SFX.wake(); } // iOS can leave the sound 'interrupted'
