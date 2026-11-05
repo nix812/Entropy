@@ -115,11 +115,18 @@ const RES = 2;
     const u = (s.u || 1) * (k || 1), w = s.width * u, h = s.height * u;
     b.drawImage(s, Math.round((cx - w / 2) * RES) / RES, Math.round((cy - h / 2) * RES) / RES, w, h);
   }
-  const tintW = new WeakMap();
+  // 6.6 (perf66): tinted copies (hit flash, frost, chill, regrowth, elite and strain rims) are kept for the TINT_CAP most recently
+  // used. Every enemy frame (heading × gait × type × genes) times every tint colour used to stay forever (700+ canvases by Wave 14,
+  // never freed); the least recently used copy is now dropped and its canvas reused, and is redrawn identically if it comes back
+  const tintW = new WeakMap(), tintLRU = new Map(), TINT_CAP = 1024; let tintMade = 0, tintSpare = null;
   function tintOf(src, col) {
     let m = tintW.get(src); if (!m) { m = new Map(); tintW.set(src, m); }
     let c = m.get(col);
-    if (!c) { c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.u = src.u; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); m.set(col, c); }
+    if (c) { const k = tintLRU.get(c); tintLRU.delete(c); tintLRU.set(c, k); return c; } // most recently used goes last
+    c = tintSpare || document.createElement('canvas'); tintSpare = null; tintMade++;
+    c.width = src.width; c.height = src.height; c.u = src.u; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'source-over';
+    m.set(col, c); tintLRU.set(c, [m, col]);
+    if (tintLRU.size > TINT_CAP) { const [old, [om, oc]] = tintLRU.entries().next().value; tintLRU.delete(old); om.delete(oc); tintSpare = old; }
     return c;
   }
   // v5.8 Cloak gene: the sprite's silhouette in a 2×2 checker of one colour (cached per sprite like tintOf)
@@ -2540,6 +2547,7 @@ const RES = 2;
   }
   return {
     set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
+    tintStats: () => ({ kept: tintLRU.size, made: tintMade, cap: TINT_CAP }), // 6.6 test hook (perf66)
     zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
