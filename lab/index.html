@@ -1207,7 +1207,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.5.0 + DEEP FIELD';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.5.1 + DEEP FIELD';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -1303,7 +1303,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.5.0';
+const VERSION = '6.5.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1761,7 +1761,7 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.5.0', title: 'Last Gradient 6.5 · Deep Field', items: [
+const WHATS_NEW = { ver: '6.5.1', title: 'Last Gradient 6.5 · Deep Field', items: [
   ['The probe', 'Every run starts with a free probe docked at the core. Tap Probe, then tap any spot. It flies there in a straight line. Tap the core to call it home.'],
   ['Loot sites', 'Wreckage, gas clouds and drifting asteroids appear across the map from Wave 2. Wreckage takes 2.5 s. A cloud takes 12 s. An asteroid breaks in 3 chunks.'],
   ['Cargo', 'Loot rides in the probe and counts only when it docks. Loot can be credits, Entropy, a boon pick or a full Entropy gauge.'],
@@ -1772,6 +1772,7 @@ const WHATS_NEW = { ver: '6.5.0', title: 'Last Gradient 6.5 · Deep Field', item
   ['Fair warning', 'Bosses, Sensor Sweep marks, wormholes, wave previews and edge arrows show through fog.'],
   ['Black Hole', 'From Wave 10, a Black Hole can drift in and sit on a road for 30 s. Enemies near it slow down by up to 50%.'],
   ['Pick your spot', 'Towers 2.5 to 6 tiles from a Black Hole fire 40% faster. Towers closer than 2.5 tiles fire 50% slower.'],
+  ['Lighter on battery', 'The top bar updates only what changed. The battlefield stops drawing behind Talents and draws half as often behind full menus.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -10687,11 +10688,18 @@ const RES = 2;
     const u = (s.u || 1) * (k || 1), w = s.width * u, h = s.height * u;
     b.drawImage(s, Math.round((cx - w / 2) * RES) / RES, Math.round((cy - h / 2) * RES) / RES, w, h);
   }
-  const tintW = new WeakMap();
+  // 6.6 (perf66): tinted copies (hit flash, frost, chill, regrowth, elite and strain rims) are kept for the TINT_CAP most recently
+  // used. Every enemy frame (heading × gait × type × genes) times every tint colour used to stay forever (700+ canvases by Wave 14,
+  // never freed); the least recently used copy is now dropped and its canvas reused, and is redrawn identically if it comes back
+  const tintW = new WeakMap(), tintLRU = new Map(), TINT_CAP = 1024; let tintMade = 0, tintSpare = null;
   function tintOf(src, col) {
     let m = tintW.get(src); if (!m) { m = new Map(); tintW.set(src, m); }
     let c = m.get(col);
-    if (!c) { c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.u = src.u; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); m.set(col, c); }
+    if (c) { const k = tintLRU.get(c); tintLRU.delete(c); tintLRU.set(c, k); return c; } // most recently used goes last
+    c = tintSpare || document.createElement('canvas'); tintSpare = null; tintMade++;
+    c.width = src.width; c.height = src.height; c.u = src.u; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'source-over';
+    m.set(col, c); tintLRU.set(c, [m, col]);
+    if (tintLRU.size > TINT_CAP) { const [old, [om, oc]] = tintLRU.entries().next().value; tintLRU.delete(old); om.delete(oc); tintSpare = old; }
     return c;
   }
   // v5.8 Cloak gene: the sprite's silhouette in a 2×2 checker of one colour (cached per sprite like tintOf)
@@ -12157,8 +12165,8 @@ const RES = 2;
   function panBy(dx, dy) { const ws = scale * cam.z; cam.x -= dx / ws; cam.y -= dy / ws; clampCam(); atHome = false; }
 
   // ---------- frame ----------
-  function draw(dt) {
-    frame++; rt += dt;
+  function draw(dt, fs) { // fs: animation steps this frame (6.6: 2 when the veiled field is drawn every other frame)
+    frame += fs || 1; rt += dt;
     ART.frameStart(); ART.idle(dt > 0 ? 3 : 1.5);
     const c = ctx;
     c.setTransform(1, 0, 0, 1, 0, 0);
@@ -13112,6 +13120,7 @@ const RES = 2;
   }
   return {
     set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
+    tintStats: () => ({ kept: tintLRU.size, made: tintMade, cap: TINT_CAP }), // 6.6 test hook (perf66)
     zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
@@ -14527,30 +14536,33 @@ const UI = (() => {
     $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Nuke">${svgIcon('overdrive')}<span>Nuke</span></button>` +
       ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt"></em><i class="cdf"></i></button>`).join('');
   }
+  // 6.6 (perf66): HUD writes skip values that haven't changed (a text write always replaces the node and dirties layout)
+  const setT = (el, v) => { v = String(v); if (el && el.textContent !== v) el.textContent = v; };
+  const setHid = (el, v) => { v = !!v; if (el && el.hidden !== v) el.hidden = v; };
   function updateHud(force) {
     if (!G) return;
     const c = G.core;
     $('#hpfill').style.width = pct(Math.max(0, c.hp / c.max));
     $('#shfill').style.width = pct(c.smax ? c.shield / c.smax : 0);
-    $('#hptxt').textContent = `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`;
+    setT($('#hptxt'), `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`);
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
     { const lm = $('#leakmark'), P = Math.min(1, G.breachP || 0); if (lm) { lm.style.width = pct(P); lm.classList.toggle('hot', P >= 0.5); } } // v5.4: last wave's leaks against shield + hull
-    $('#cr').textContent = fmt(G.credits);
-    $("#wave").textContent = G.wave || "—";
+    setT($('#cr'), fmt(G.credits));
+    setT($("#wave"), G.wave || "—");
     const cpWait = G.spawningDone && cpPending();
-    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `next in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`;
-    $('#score').textContent = fmt(G.score);
+    setT($('#nextw'), G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `next in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`);
+    setT($('#score'), fmt(G.score));
     const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint && !cpWait;
     const cb = $('#bCall');
     cb.disabled = !canCall && !G.checkpoint;
     cb.classList.toggle('cp', !!G.checkpoint);
-    cb.querySelector('span').textContent = G.checkpoint ? 'Resume' : 'Next';
+    setT(cb.querySelector('span'), G.checkpoint ? 'Resume' : 'Next');
     const cpb = G.checkpoint ? cpBonus() : null;
-    cb.querySelector('b').textContent = G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '';
-    $('#cpBanner').hidden = !G.checkpoint || !!G.reloc;
-    if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); $('#cpBanner').querySelector('span').textContent = cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'; $('#cpFill').style.width = pct(cpb.f); }
+    setT(cb.querySelector('b'), G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '');
+    setHid($('#cpBanner'), !G.checkpoint || !!G.reloc);
+    if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); setT($('#cpBanner').querySelector('span'), cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'); $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
-    const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
+    const sp = $('#bSpeed'); setT(sp.querySelector('b'), G.speed + '×'); sp.classList.toggle('fast', G.speed > 1);
     { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Nuke') : 'W' + OD_WAVE;
       ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready); ob.classList.toggle('ghost', !!G.fresh && !ready && !G.odUsed);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
@@ -14581,11 +14593,11 @@ const UI = (() => {
     $('#bStats').classList.toggle('on', hudFull);
     const eb = $('#bEnt');
     $('#entFill').style.height = pct(Math.min(1, G.entropy / 100));
-    $('#entTxt').textContent = G.anomOffers ? 'DRAW' : Math.floor(G.entropy) + '%';
+    setT($('#entTxt'), G.anomOffers ? 'DRAW' : Math.floor(G.entropy) + '%');
     eb.classList.toggle('ready', !!G.anomOffers);
-    $('#entCount').textContent = anomCount() ? '×' + anomCount() : '';
-    $('#webBadge').textContent = free > 0 ? free : '';
-    $('#webBadge').hidden = free <= 0;
+    setT($('#entCount'), anomCount() ? '×' + anomCount() : '');
+    setT($('#webBadge'), free > 0 ? free : '');
+    setHid($('#webBadge'), free <= 0);
     // chips: events + storms
     const chips = [];
     if (G.spawningDone && G.prep) {
@@ -17562,7 +17574,7 @@ function talentsToast(kind) {
   }, 1000);
   // hangar backdrop (v5.5: HangarFX in render.js)
   const bg = $('#bgfx'); const drawBg = dt => HangarFX.draw(bg, dt);
-  let last = performance.now(), acc = 0, wakeT = 2;
+  let last = performance.now(), acc = 0, wakeT = 2, veilOdd = false; const modalEl = $('#modal');
   const STEP = 1 / 30;
   function frame(ts) {
     requestAnimationFrame(frame);
@@ -17578,7 +17590,11 @@ function talentsToast(kind) {
         while (acc >= STEP && n < 10) { simStep(STEP); acc -= STEP; n++; }
         if (n >= 10) acc = 0;
       }
-      Render.draw(halted ? 0 : dt);
+      // 6.6 (perf66): the opaque Talents screen hides the field, so it isn't drawn; under a full modal (Pause, Settings, a boon or
+      // card pick, a briefing) the halted field sits behind an 80% veil and is drawn every other frame, two animation steps at a time
+      if (Tree.isOpen) { ART.frameStart(); ART.idle(1.5); }
+      else if (halted && UI.modalOpen && !modalEl.classList.contains('side')) { veilOdd = !veilOdd; if (veilOdd) Render.draw(0, 2); else { ART.frameStart(); ART.idle(1.5); } }
+      else Render.draw(halted ? 0 : dt);
     } else { if (UI.screen === 'hangar') { drawBg(dt); TitleFX.draw(dt); } ART.idle(4); } // menus: pre-render unit art in the background
     if (Tree.isOpen) Tree.draw();
     wakeT -= dt; if (wakeT <= 0) { wakeT = 2; if (!document.hidden) SFX.wake(); } // iOS can leave the sound 'interrupted'
