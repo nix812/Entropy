@@ -20,7 +20,7 @@ def tap_at(pg, x, y):
 # a gallery of every site kind around a spot (the sim's own objects, placed by hand for the picture)
 GALLERY = '''([cx, cy]) => { const ws = 1 + G.wave / PROBE.wS, mk = (k, dx, dy, o) => Object.assign({ id: G.eid++, k, x: cx + dx, y: cy + dy, t: 99, life: 120, val: 400, rich: 0, prog: 0, g: [], z: 1, jp: 0.05, hp: 60, max: 60, chunks: 0, ent: 15, crystal: 0, vx: 0, vy: 0 }, o || {});
   G.sites = [mk('wreck', -3, -1.2), mk('cloud', 0.2, -1), mk('rock', 3, -1.2, { crystal: 1 }), mk('wreck', -3, 1.8, { rich: 1 }), mk('rock', 0, 2, { hp: 25, chunks: 1 }), mk('lost', 3, 1.8)];
-  G.sites[1].prog = 0.3; G.sites[3].prog = 0.6; Render.lookAt(cx, cy + 0.3); Render.zoomAt(Render.layout.W / 2, Render.layout.H / 2, 2.2); UI.zoomChanged(); }'''
+  G.sites[1].prog = 0.3; G.sites[3].prog = 0.6; Render.resetCam(); Render.zoomAt(Render.layout.W / 2, Render.layout.H / 2, 2.2); Render.lookAt(cx, cy + 0.3); UI.zoomChanged(); }'''
 with sync_playwright() as p:
     b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
     for W, H in sizes:
@@ -76,7 +76,7 @@ with sync_playwright() as p:
         check(pg.evaluate(f'() => G.probe.lv.gun === 1 && G.credits < {cr0} && G.inputs.some(i => i[1] === "prUp" && i[2] === "gun") && /Lance 2/i.test(document.querySelector("#panel").innerText)'), 'buying Lance 1 (prUp recorded, the row now offers Lance 2)', tag)
         pg.evaluate('() => document.querySelector("#panel [data-act=close]").click()'); pg.wait_for_timeout(150)
         # 6. every site kind up close
-        pg.evaluate(GALLERY, [P0[0] + side * 9, max(4, min(P0[5] - 4, P0[1]))]); pg.wait_for_timeout(500)
+        pg.evaluate(GALLERY, [max(8, min(P0[4] - 8, P0[0] + side * 9)), max(8, min(P0[5] - 8, P0[1]))]); pg.wait_for_timeout(500)
         pg.screenshot(path=str(out / f'p05_sites_{tag}.png'))
         # 7. a guard fight: the probe with a Lance beside a guarded wreck (2 drones, a brute)
         pg.evaluate('''() => { const ws = 1 + G.wave / PROBE.wS, P = G.probe, s = G.sites[0]; s.g = ['drone', 'drone', 'brute'].map((k, j) => { const D = PROBE.guard[k], m = D.hp * Math.pow(ws, 1.2), a = j * 2.1; return { id: G.eid++, k, hp: m * (j ? 1 : 0.5), max: m, a, x: s.x + Math.cos(a), y: s.y + Math.sin(a), hx: s.x + Math.cos(a), hy: s.y + Math.sin(a), cd: 0, calm: 0, hitT: -9 }; });
