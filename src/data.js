@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.4.0';
+const VERSION = '6.5.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -458,15 +458,17 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.4.0', title: 'Last Gradient 6.4 · Wild Cards', items: [
-  ['New cards every draw', 'Entropy cards are now built fresh each draw. Each card pairs 1 boon with 1 cost, so the same card rarely comes twice.'],
-  ['Rarity', 'Cards come as Common, Rare or Exotic. Exotic cards carry 2 boons. Your later draws in a run swing harder.'],
-  ['Cards fit your build', 'Boons lean toward the towers you field. Crit, Chill, Burn, Shock and Mark boons need the matching towers.'],
-  ['Classic cards', 'The 21 old cards still appear, about 1 slot in 4, with a purple frame.'],
-  ['Capstone tier', 'Each talent tree has a new gold tile under its Capstones. It opens at 16 points in that tree, costs 1 point and takes no Capstone slot.'],
-  ['7 new towers', 'Each Capstone tier tile unlocks a new tower for your runs. Locked towers show greyed in the build menu.'],
-  ['The towers', 'Buzzsaw (Ballistics), Flashover (Combustion), Surge Spire (Voltaic), Rimewall (Cryogenics), Entangler (Singularity), Gatekeeper (Bastion), Wildcard (Command).'],
-  ['Daily Hunts', 'Daily Hunts keep the original 12 towers, so the ladder stays fair.'],
+const WHATS_NEW = { ver: '6.5.0', title: 'Last Gradient 6.5 · Deep Field', items: [
+  ['The probe', 'Every run starts with a free probe docked at the core. Tap Probe, then tap any spot. It flies there in a straight line. Tap the core to call it home.'],
+  ['Loot sites', 'Wreckage, gas clouds and drifting asteroids appear across the map from Wave 2. Wreckage takes 2.5 s. A cloud takes 12 s. An asteroid breaks in 3 chunks.'],
+  ['Cargo', 'Loot rides in the probe and counts only when it docks. Loot can be credits, Entropy, a boon pick or a full Entropy gauge.'],
+  ['Guards', 'Some sites have guards. Guards and loot both grow with the wave. Gold-trimmed sites pay 2.5× loot.'],
+  ['Probe upgrades', 'Lance, Armour, Engine, Rig and Scanner, 3 levels each. The Lance lets the probe fight guards.'],
+  ['Losing the probe', 'A lost probe drops its cargo as a wreck. Rebuilding costs credits and takes 40 s. You keep your upgrades.'],
+  ['Fog of war', 'You see what your core, towers and probe see. Ground you have never seen is dark. Ground you have seen is dim, and enemies there are hidden.'],
+  ['Fair warning', 'Bosses, Sensor Sweep marks, wormholes, wave previews and edge arrows show through fog.'],
+  ['Black Hole', 'From Wave 10, a Black Hole can drift in and sit on a road for 30 s. Enemies near it slow down by up to 50%.'],
+  ['Pick your spot', 'Towers 2.5 to 6 tiles from a Black Hole fire 40% faster. Towers closer than 2.5 tiles fire 50% slower.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids

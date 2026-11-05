@@ -60,7 +60,7 @@ with sync_playwright() as p:
         pg.screenshot(path=str(out / f's01_fog_full_{tag}.png'))
         # 2. a probe stub out in the fog: vision around it; after it moves on, the ground stays explored (dim) and enemies hide again
         pr = pg.evaluate('''() => { const c = G.core; let best = null; for (const L of G.map.lanes) for (const t of L.tiles) { const d = Math.hypot(t.x - c.x, t.y - c.y); if (Render.fogAt(t.x + 0.5, t.y + 0.5) !== 0 && (!best || d > best.d) && t.x > 4 && t.y > 4 && t.x < COLS - 5 && t.y < ROWS - 5) best = { x: t.x + 0.5, y: t.y + 0.5, d }; }
-          G.probe = { x: best.x, y: best.y, alive: true, vis: 5 }; fogMark(fogSources()); return best; }''')
+          if (G.probe && G.probe.cargo) { Object.assign(G.probe, { x: best.x, y: best.y, alive: true, vis: 5, home: 0, tx: null, ty: null, task: 0 }); PROBE.up.scan.v = PROBE.up.scan.v.map(() => 5); } else G.probe = { x: best.x, y: best.y, alive: true, vis: 5 }; /* 6.5 merge: move the real probe */ fogMark(fogSources()); return best; }''')
         pg.wait_for_timeout(250)
         sp = pg.evaluate('''(p) => ({ at: Render.fogAt(p.x, p.y), near: G.enemies.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 4).map(e => e._fogH) })''', pr)
         check(sp['at'] == 0, 'the probe stub sees around itself', tag)
