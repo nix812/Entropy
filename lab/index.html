@@ -595,6 +595,14 @@ body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel mo
 .liftbtn.go:not(.cool):not(.fly) { animation: liftp 1.6s steps(4) infinite; } @keyframes liftp { 50% { box-shadow: inset 0 0 0 2px #e6fff6, 0 0 10px rgba(89, 240, 180, 0.6); } }
 body.fr .rdybtn { top: 52px; }
 body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
+/* 6.5 the probe: its button sits under Lift Off (Ready moves down one more slot); it hides with a side panel like Lift Off */
+.probebtn { position: absolute; right: 6px; top: 52px; z-index: 4; height: 34px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; border: 0; cursor: pointer;
+  background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
+.probebtn.away { color: #e6f4ff; } .probebtn.hit { color: #ff8a9c; box-shadow: inset 0 0 0 2px #ff5a7a; animation: pulse 0.6s infinite; }
+.probebtn.dead { color: #ff8a9c; box-shadow: inset 0 0 0 1px #8a3040; background: rgba(30, 10, 16, 0.9); }
+body.prb.fr .rdybtn { top: 92px; }
+body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
+.sts.prsite { box-shadow: inset 3px 0 0 #ff6ad5; line-height: 1.25; padding-left: 10px; } .sts.prsite b { color: #ff6ad5; }
 .note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
 .sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
 .sts.zline { box-shadow: inset 3px 0 0 var(--c); padding-left: 8px; } .sts.zline b { color: var(--c); font-weight: 400; }
@@ -1199,7 +1207,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.4.0 + WILD CARDS';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.5.0 + DEEP FIELD';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -1248,6 +1256,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
       <canvas id="cv"></canvas>
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
+      <button class="probebtn" id="bProbe" hidden aria-label="Select the probe"><span>Probe</span></button>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>
@@ -1294,7 +1303,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.4.0';
+const VERSION = '6.5.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1734,7 +1743,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 4;
+const FR_VER = 5;
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -1752,16 +1761,47 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.4.0', title: 'Last Gradient 6.4 · Wild Cards', items: [
-  ['New cards every draw', 'Entropy cards are now built fresh each draw. Each card pairs 1 boon with 1 cost, so the same card rarely comes twice.'],
-  ['Rarity', 'Cards come as Common, Rare or Exotic. Exotic cards carry 2 boons. Your later draws in a run swing harder.'],
-  ['Cards fit your build', 'Boons lean toward the towers you field. Crit, Chill, Burn, Shock and Mark boons need the matching towers.'],
-  ['Classic cards', 'The 21 old cards still appear, about 1 slot in 4, with a purple frame.'],
-  ['Capstone tier', 'Each talent tree has a new gold tile under its Capstones. It opens at 16 points in that tree, costs 1 point and takes no Capstone slot.'],
-  ['7 new towers', 'Each Capstone tier tile unlocks a new tower for your runs. Locked towers show greyed in the build menu.'],
-  ['The towers', 'Buzzsaw (Ballistics), Flashover (Combustion), Surge Spire (Voltaic), Rimewall (Cryogenics), Entangler (Singularity), Gatekeeper (Bastion), Wildcard (Command).'],
-  ['Daily Hunts', 'Daily Hunts keep the original 12 towers, so the ladder stays fair.'],
+const WHATS_NEW = { ver: '6.5.0', title: 'Last Gradient 6.5 · Deep Field', items: [
+  ['The probe', 'Every run starts with a free probe docked at the core. Tap Probe, then tap any spot. It flies there in a straight line. Tap the core to call it home.'],
+  ['Loot sites', 'Wreckage, gas clouds and drifting asteroids appear across the map from Wave 2. Wreckage takes 2.5 s. A cloud takes 12 s. An asteroid breaks in 3 chunks.'],
+  ['Cargo', 'Loot rides in the probe and counts only when it docks. Loot can be credits, Entropy, a boon pick or a full Entropy gauge.'],
+  ['Guards', 'Some sites have guards. Guards and loot both grow with the wave. Gold-trimmed sites pay 2.5× loot.'],
+  ['Probe upgrades', 'Lance, Armour, Engine, Rig and Scanner, 3 levels each. The Lance lets the probe fight guards.'],
+  ['Losing the probe', 'A lost probe drops its cargo as a wreck. Rebuilding costs credits and takes 40 s. You keep your upgrades.'],
+  ['Fog of war', 'You see what your core, towers and probe see. Ground you have never seen is dark. Ground you have seen is dim, and enemies there are hidden.'],
+  ['Fair warning', 'Bosses, Sensor Sweep marks, wormholes, wave previews and edge arrows show through fog.'],
+  ['Black Hole', 'From Wave 10, a Black Hole can drift in and sit on a road for 30 s. Enemies near it slow down by up to 50%.'],
+  ['Pick your spot', 'Towers 2.5 to 6 tiles from a Black Hole fire 40% faster. Towers closer than 2.5 tiles fire 50% slower.'],
 ]};
+// 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
+// spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
+// (mined in 3 chunks, they drift). Some have neutral guards. Loot rides home in the cargo hold and banks at the core; a lost probe
+// drops its cargo as a wreck and costs credits and time to rebuild. Probe and guards both grow with the wave (wS); guards a bit faster.
+const PROBE = {
+  wS: 15,                                         // wave scale: 1 + wave / 15 (Wave 15 = ×2, Wave 60 = ×5)
+  hp: 80, spd: 2.0, vis: 5, dps: 14, fireT: 0.5,  // base hull (× wave scale), tiles/s, vision tiles, lance damage per second (× wave scale), seconds per shot
+  regen: 0.08, repair: 0.0005,                    // docked: +8% of its hull per second; repairs the core +0.05% of max hull per second
+  up: { // 3 levels each; the value at levels 0..3. Price: cost[lv] × (1 + wave / 30)
+    hull: { name: 'Armour', v: [1, 1.6, 2.4, 3.5] },     // hull ×
+    eng:  { name: 'Engine', v: [2.0, 2.6, 3.2, 4.0] },   // tiles per second
+    gun:  { name: 'Lance', v: [0, 1, 1.9, 3.2], r: [0, 2.8, 3.2, 3.6] }, // damage × (0: no weapon), range in tiles
+    rig:  { name: 'Rig', v: [1, 1.5, 2, 3] },            // harvest and mining speed ×
+    scan: { name: 'Scanner', v: [5, 7, 9, 12], loot: 0.1 }, // vision tiles; +10% loot per level
+  },
+  upOrder: ['gun', 'hull', 'eng', 'rig', 'scan'],
+  cost: [150, 400, 900],
+  rb0: 120, rbW: 12, rbLv: 0.15, rbT: 40,         // rebuild: (120 + 12 × wave) × (1 + 15% per upgrade level), then 40 s in the yard
+  home: 0.3,                                      // within 0.3 tiles of its dock beside the core: docked, cargo banks
+  site: { from: 2, first: 25, gap: [22, 36], max: 2, maxW: 15, maxCap: 4, minCore: 12, roadGap: 2, apart: 6, out: 0.75 }, // spawns from Wave 2: one every 22–36 s while under 2 (+1 per 15 waves, max 4); 12+ tiles from the core, 2+ from roads, 6+ apart; 75% outside the sector when it can
+  life: { wreck: 120, cloud: 110, rock: 140, lost: 90 }, // seconds before a site fades
+  wreckT: 2.5, cloudT: 12, cloudR: 1.6, cloudZap: 0.015, rockHp: 40, mine: 6, rockR: 1.7, rockDrift: 0.12, // work: salvage time, harvest time and radius, static 1.5% hull/s, rock HP and mining damage per second (× wave scale), mining reach, drift tiles/s
+  loot: { wreck: 0.4, cloud: 0.3, rock: 0.4, ramp: [0.35, 30], rich: 2.5, guard: 0.1, brute: 0.2, cloudEnt: 15, charge: 0.35, crystal: 0.2 }, // × crate value (crateCr), ×(0.35 + wave/30, max 1) early
+  jack: { base: 0.02, guard: 0.02, rich: 0.1 }, // jackpot chance per finished site: a boon pick or a full Entropy gauge
+  richFrom: 8, rich: 0.12,                        // from Wave 8, 12% of sites are rich (×2.5 loot, +1 guard)
+  guard: { from: 3, p0: 0.3, pW: 80, pMax: 0.75, nW: 20, nMax: 4, bruteFrom: 15, bruteP: 0.3, aggro: 4, leash: 5.5, heal: 0.2, calm: 5,
+    drone: { hp: 40, dmg: 6, cd: 1.2, r: 3.5, orbit: 1.3 },  // HP × wS^1.2, damage per shot × wS
+    brute: { hp: 130, dps: 15, spd: 1.7, r: 0.7 } },         // HP × wS^1.2, melee damage per second × wS
+};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
 const PIRATE_CAPTAINS = ['Captain Rustbeard', 'Black Static', 'Mad Mags Vortex', 'One-Eye Orrin', 'Calico Jett', 'Nebula Nell', 'Scurvy Quasar', 'Red Ronin Rook', 'Dread Pixel Pete', 'Salty Sal Saturn'];
@@ -1817,7 +1857,7 @@ const SECTORS = [
     lean: { flyer: 2.2, carrier: 2.5, tank: 0.6, sapper: 0.6 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
     up: '+20% Arc Damage, +8% Range', down: '+10% tower cost', m: { dmgA: 20, range: 8 }, af: { costX: 0.1 } },
   { id: 'ghost', name: 'Ghost Lanes', col: '#b86cff', pitch: 'Phantoms cloak in and out. Bring a Relay Pylon to reveal them.',
-    lean: { phantom: 3, medic: 1.5, leech: 2 }, storm: 'void', ev: { blackout: 2, phase: 2 }, boss: 'wraith', mod: 'spectral',
+    lean: { phantom: 3, medic: 1.5, leech: 2 }, storm: 'void', ev: { blackout: 2, phase: 2, hole: 2.5 }, boss: 'wraith', mod: 'spectral',
     up: '+25% Void Damage', down: '−10% Range', m: { dmgV: 25, range: -10 } },
   { id: 'salvage', name: 'Salvage Belt', col: '#e0a458', pitch: 'Rich wrecks and pirate traffic. Leeches steal your banked credits.',
     lean: { leech: 3, sapper: 2, drone: 1.3 }, storm: 'static', ev: { gold: 3, emp: 1.5 }, boss: 'auditor', mod: 'loaded',
@@ -1832,7 +1872,7 @@ const SECTORS = [
     lean: { medic: 4, shielder: 1.5 }, storm: 'solar', ev: { regen: 3 }, boss: 'snail', mod: 'colossal',
     up: '+15% Thermal Damage, Burn +30%', down: 'Enemies regenerate 0.5% HP per second', m: { dmgT: 15, burnDmg: 30 }, af: { regen: 0.005 } },
   { id: 'oddball', name: 'The Odd Belt', col: '#ff4d6a', pitch: 'The strange bosses live here. Expect the cat.',
-    lean: {}, storm: 'void', ev: { meteor: 2, phase: 1.5 }, boss: 'cat', mod: 'loaded',
+    lean: {}, storm: 'void', ev: { meteor: 2, phase: 1.5, hole: 2 }, boss: 'cat', mod: 'loaded',
     up: 'Oddball bosses drop 3× credits', down: 'Every boss wave brings an oddball', af: { oddAll: 1 } },
 ];
 const SECTOR_BY = Object.fromEntries(SECTORS.map(s => [s.id, s]));
@@ -2161,7 +2201,27 @@ const EVENTS = [
   { id: 'gold', name: 'Gold Rush', good: 1, w: 7, from: 5, desc: '×2 Credits' },
   { id: 'overcharge', name: 'Overcharge', good: 1, w: 6, from: 5, desc: '+30% Attack Speed' },
   { id: 'meteor', name: 'Meteor Shower', good: 1, w: 6, from: 7, desc: 'Meteors strike the path' },
+  { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'Drifts in for 30s. Drags and slows enemies. Towers at its edge +40% Attack Speed, near its centre −50%',
+    long: 'Drifts in from past the sector edge, stays 30s, then collapses. Enemies within 6 tiles slow down, up to 50% at the centre. It drags them along the road toward it. Towers 2.5 to 6 tiles away: +40% Attack Speed. Towers within 2.5 tiles: −50%. Bosses feel half' },
 ];
+// 6.5 (FR_VER 5, G.frV >= 5): the Black Hole event (fr: 5 keeps it out of older rules, so their event rolls are unchanged).
+// It drifts in from past the sector edge to a point on a road, hangs there drifting slowly, then collapses. Inside its reach:
+// enemies are slowed (time dilation, strongest at the centre) and dragged along the road toward it (faster on the way in,
+// slower on the way out; they never leave the road). Towers in the ring (horizon to reach) fire faster, towers inside the
+// horizon slower. Bosses feel half of every enemy effect
+const HOLE = {
+  r: 6, horizon: 2.5,            // reach and event horizon, in tiles
+  ring: 0.4, inner: -0.5,        // tower Attack Speed: +40% from 2.5 to 6 tiles, −50% inside 2.5
+  dil: 0.5,                      // enemies at the centre move and act 50% slower (falling to 0 at the reach)
+  pull: 0.6, floor: 0.25,        // along-road drag: up to ±60% speed toward / away from the centre; never under 25% of normal speed
+  boss: 0.5,                     // bosses: half of the dilation and the drag
+  inSpd: 1.2, off: 3,            // drifts in at 1.2 tiles/s from 3 tiles past the sector edge
+  hold: 30, drift: 0.12, out: 1.5, // then 30 s at 0.12 tiles/s, then a 1.5 s collapse
+};
+// 6.5 (FR_VER 5) fog of war: presentation only (the sim never reads it). Vision comes from the core (its gun range, at least
+// FOG.core tiles), every tower (its range + FOG.pad, at least FOG.tower) and the probe (G.probe.vis). G.fogEx remembers explored
+// tiles (sim.js fogTick, every FOG.every ticks); roads are always known
+const FOG = { core: 10, tower: 4, pad: 1.5, every: 15 };
 
 // ---------- Abilities ----------
 // v5.1: abilities recharge on a cooldown into charge slots (1 each, more from Command talents). Charges from crates, chests
@@ -3416,6 +3476,7 @@ function newRun(opts) {
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
   if (G.fr) { G.frReady = 0; G.frFly = null; G.frN = 0; G.frLinks = []; } // Frontier: lift-off from Wave 1, nothing in the air
+  G.probe = null; G.sites = []; G.siteT = PROBE.site.first; if (G.frV >= 5 && !T) prNew(); // 6.5: the probe (Frontier rules 5; not in Training)
   setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
   G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
@@ -3440,6 +3501,7 @@ function newRun(opts) {
   }
   if (T) tutSetup(T); else planWanted();
   if (opts.nemesis && !T) nemesisArrive(opts.nemesis, r);
+  G.hole = null; fogInit(); // 6.5 (frV 5): no black hole yet; fog of war starts from what the core and the roads show
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
   // harder difficulties: the swarm arrives already adapted to one or two weaknesses (seeded as strong parents)
@@ -4056,6 +4118,7 @@ function towerConditions(t) {
   if (ev.overcharge) out.push({ t: 'Overcharge event: +30% Attack Speed', good: 1 });
   if (ev.emp) out.push({ t: 'EMP Storm: 2 random towers shut down every 5s', bad: 1 });
   if (G.overclockT > 0) out.push({ t: `Frenzy: +100% Attack Speed for ${Math.ceil(G.overclockT)}s`, good: 1 });
+  { const z = holeZone(t); if (z > 0) out.push({ t: `Black Hole edge: +${Math.round(HOLE.ring * G.hole.k * 100)}% Attack Speed`, good: 1 }); else if (z < 0) out.push({ t: `Black Hole horizon: ${Math.round(HOLE.inner * G.hole.k * 100)}% Attack Speed`, bad: 1 }); }
   if (t.hot && G.mods.ks.wildfire) out.push({ t: 'Overheated (Wildfire): −25% Attack Speed', bad: 1 });
   if (G.flux && G.flux.el === s.el) out.push({ t: `Flux: ${EL[s.el].name} ×2 Damage`, good: 1 });
   // v5.8 Techniques and play-style Capstones
@@ -4175,6 +4238,88 @@ function updateStorms(dt) {
   G.storms = G.storms.filter(s => !s.dead);
 }
 
+// ---------- 6.5 Black Hole event (G.frV >= 5; HOLE in data.js) ----------
+// G.hole = { x, y, tx, ty, dx, dy, ph (0 drifting in, 1 holding, 2 collapsing), t, k (strength 0..1) } or null. It enters from past
+// the sector edge, stops on a road point, drifts slowly for HOLE.hold s, then collapses. One draw of G.r per number at the spawn,
+// nothing after, so it adds no hidden randomness to the tick
+const COMPASS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
+function holeSpawn() {
+  if (G.hole) return; // one at a time: a second roll while one is still out does nothing
+  const R = G.region, cand = [];
+  for (const L of G.map.lanes) { if (L.openWave && L.openWave > G.wave) continue; const n = L.tiles.length;
+    for (let i = Math.floor(n * 0.25); i < Math.floor(n * 0.85); i++) { const p = L.tiles[i]; if (inRegion(p.x, p.y, R)) cand.push(p); } }
+  if (!cand.length) return;
+  const p = pick(G.r, cand), a = G.r() * 6.2832, dx = Math.cos(a), dy = Math.sin(a);
+  const tx = clamp(p.x + 0.5 + (G.r() - 0.5) * 2, R.x0 + 1, R.x1 - 1), ty = clamp(p.y + 0.5 + (G.r() - 0.5) * 2, R.y0 + 1, R.y1 - 1);
+  // back along the drift line to the sector edge, then HOLE.off tiles past it
+  const ex = Math.abs(dx) < 1e-6 ? 1e9 : (dx > 0 ? tx - R.x0 : R.x1 - tx) / Math.abs(dx), ey = Math.abs(dy) < 1e-6 ? 1e9 : (dy > 0 ? ty - R.y0 : R.y1 - ty) / Math.abs(dy);
+  const back = Math.min(ex, ey) + HOLE.off, x = tx - dx * back, y = ty - dy * back;
+  G.hole = { x, y, tx, ty, dx, dy, ph: 0, t: 0, k: 1 };
+  const ang = Math.atan2(y - G.core.y, x - G.core.x), dir = COMPASS[((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8];
+  Hooks.toast('BLACK HOLE', `Inbound from the ${dir}. Arrives in ${Math.max(1, Math.round(back / HOLE.inSpd))}s. Towers at its edge +${Math.round(HOLE.ring * 100)}% Attack Speed`, '#b86cff');
+  Hooks.sfx('hole', { x, y }); Hooks.fx('hole', { x, y });
+  G.stats.holes = (G.stats.holes || 0) + 1; rlog('hole', { x: Math.round(tx), y: Math.round(ty) });
+}
+function holeUpdate(dt) {
+  const h = G.hole; h.t += dt;
+  if (h.ph === 0) {
+    const ddx = h.tx - h.x, ddy = h.ty - h.y, d = Math.hypot(ddx, ddy), st = HOLE.inSpd * dt;
+    if (d <= st) { h.x = h.tx; h.y = h.ty; h.ph = 1; h.t = 0; } else { h.x += ddx / d * st; h.y += ddy / d * st; }
+  } else if (h.ph === 1) {
+    h.x += h.dx * HOLE.drift * dt; h.y += h.dy * HOLE.drift * dt;
+    if (h.t >= HOLE.hold) { h.ph = 2; h.t = 0; }
+  } else {
+    h.k = Math.max(0, 1 - h.t / HOLE.out);
+    if (h.t >= HOLE.out) { Hooks.fx('holeEnd', { x: h.x, y: h.y }); Hooks.sfx('holeEnd', { x: h.x, y: h.y }); G.hole = null; }
+  }
+}
+// an enemy inside the reach: e.hk = its time factor (move and act), returns its speed factor (dilation × the drag along its road)
+const HOLE_P = { x: 0, y: 0, seg: 0 };
+function holeEnemy(e) {
+  const h = G.hole, dx = h.x - e.x, dy = h.y - e.y, d2 = dx * dx + dy * dy;
+  if (d2 >= HOLE.r * HOLE.r || !e.L) { e.hk = 1; return 1; }
+  const d = Math.sqrt(d2), f = (1 - d / HOLE.r) * h.k * (e.boss ? HOLE.boss : 1), tk = 1 - HOLE.dil * f;
+  HOLE_P.seg = e.seg || 0; lanePos(e.L, e.d + 0.25, HOLE_P); // where the road takes it next
+  const ux = HOLE_P.x - e.x, uy = HOLE_P.y - e.y, ul = Math.hypot(ux, uy), cos = ul > 1e-4 && d > 1e-3 ? (ux * dx + uy * dy) / (ul * d) : 0;
+  e.hk = tk;
+  return Math.max(HOLE.floor, tk * (1 + HOLE.pull * f * cos));
+}
+// a tower's Attack Speed factor: the ring fires faster, the horizon slower
+function holeRate(t) {
+  const h = G.hole, d2 = dist2(t.cx, t.cy, h.x, h.y);
+  if (d2 > HOLE.r * HOLE.r) return 1;
+  return 1 + (d2 < HOLE.horizon * HOLE.horizon ? HOLE.inner : HOLE.ring) * h.k;
+}
+const holeZone = t => { const h = G && G.hole; if (!h || !t) return 0; const d2 = dist2(t.cx, t.cy, h.x, h.y); return d2 > HOLE.r * HOLE.r ? 0 : d2 < HOLE.horizon * HOLE.horizon ? -1 : 1; };
+
+// ---------- 6.5 fog of war (G.frV >= 5, Frontier, not Training; FOG in data.js) ----------
+// Presentation only: the sim never reads vision or G.fogEx to decide anything. G.fogEx (Uint8Array, one byte per tile, 1 =
+// explored) is updated every FOG.every ticks from the vision sources and the roads (always known), with no randomness, so a
+// replay rebuilds it exactly. Render.js keeps the live vision at half-tile resolution and draws the fog
+const fogOn = () => !!(G && G.fr && G.frV >= 5 && !G.tut);
+function fogSources() { // flat [x, y, r, ...] in tiles: the core (gun range), towers (range + pad), the probe
+  const out = [], cr = G.core ? Math.max(FOG.core, coreStats().range) : FOG.core;
+  out.push(G.core.x, G.core.y, cr);
+  for (const t of G.towers) out.push(t.cx, t.cy, Math.max(FOG.tower, ((t.s && t.s.range) || 0) + FOG.pad));
+  const P = G.probe; if (P && P.alive && P.vis > 0) out.push(P.x, P.y, P.vis); // G.probe is probe65's ({ x, y, alive, vis }); read only
+  return out;
+}
+function fogMark(src) {
+  const ex = G.fogEx; let n = 0;
+  for (let i = 0; i < src.length; i += 3) {
+    const x = src[i], y = src[i + 1], r = src[i + 2], r2 = r * r;
+    const y0 = Math.max(0, Math.floor(y - r)), y1 = Math.min(ROWS - 1, Math.floor(y + r)), x0 = Math.max(0, Math.floor(x - r)), x1 = Math.min(COLS - 1, Math.floor(x + r));
+    for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) { const k = ty * COLS + tx; if (!ex[k] && (tx + 0.5 - x) ** 2 + (ty + 0.5 - y) ** 2 <= r2) { ex[k] = 1; n++; } }
+  }
+  for (const L of G.map.lanes) for (const p of L.tiles) { const k = p.y * COLS + p.x; if (!ex[k]) { ex[k] = 1; n++; } }
+  if (n) G.fogRev = (G.fogRev || 0) + 1; // Render redraws the fog when this changes
+}
+function fogInit() { if (!fogOn()) { G.fogEx = null; return; } G.fogEx = new Uint8Array(COLS * ROWS); G.fogRev = 0; fogMark(fogSources()); }
+function fogTick() { if (G.fogEx && G.tick % FOG.every === 0) fogMark(fogSources()); }
+// snapshots: run lengths of alternating 0/1 tiles, starting with 0
+function fogPack(ex) { const o = []; let v = 0, n = 0; for (let i = 0; i < ex.length; i++) { if (ex[i] === v) n++; else { o.push(n); v = ex[i]; n = 1; } } o.push(n); return o.join('.'); }
+function fogUnpack(str, ex) { if (typeof str !== 'string') return; let i = 0, v = 0; for (const p of str.split('.')) { const n = p | 0; if (v) for (let j = 0; j < n && i + j < ex.length; j++) ex[i + j] = 1; i += n; v ^= 1; } }
+
 // ---------- waves ----------
 function rollEvents(w) {
   const ev = {}, list = [];
@@ -4185,16 +4330,17 @@ function rollEvents(w) {
   for (let i = 0; i < maxN; i++) {
     if (G.r() > chance) break;
     const bad = list.filter(x => !x.good).length; // v5.4: never more than two bad events in one wave (Nic's Wave 88: Overcharge, Rift Breach and Blackout at once)
-    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)) && (E.good || bad < 2));
+    const opts = EVENTS.filter(E => E.from <= w && !ev[E.id] && !(E.fr > G.frV) && !((E.id === 'swarm' && ev.elite) || (E.id === 'elite' && ev.swarm)) && (E.good || bad < 2));
     if (!opts.length) break;
     const sev = G.hk && SECTOR_BY[G.sector] && SECTOR_BY[G.sector].ev; // 5.8: each sector has its own event mix
     const E = wpick(G.r, opts, e => e.w * ((sev && sev[e.id]) || 1));
     ev[E.id] = 1; list.push(E);
     chance *= 0.6;
   }
+  if (G.frV >= 5 && w >= 10 && !ev.hole && ENVN('HOLEALL', 0)) { ev.hole = 1; list.push(EVENTS.find(E => E.id === 'hole')); } // 6.5 bot knob: a Black Hole every wave from 10 (balance check only)
   // Gambler: one more roll of the dice every wave
   // a fair coin: good or bad, and always good on a boss wave (a breach ends the run)
-  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5 || list.filter(x => !x.good).length >= 2; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id]); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
+  if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5 || list.filter(x => !x.good).length >= 2; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id] && !(E.fr > G.frV)); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
   return { ev, list };
 }
 function prepareWave(w) {
@@ -4663,6 +4809,7 @@ function startWave() {
   const P = G.prep; G.prep = null;
   G.ev = P.ev; G.evList = P.list; G.evT = { emp: 5, meteor: 1.2, phase: 4 };
   for (const E of G.evList) Hooks.log(`${E.name}: ${E.desc}`, E.good ? '#59f0b4' : '#ff4d6a');
+  if (G.ev.hole) holeSpawn(); // 6.5 (frV 5): the event only rolls at frV 5
   G.rift = P.rift;
   if (G.rift) Hooks.fx('rift', { x: G.rift.pts[0].x, y: G.rift.pts[0].y });
   G.laneWarn = null;
@@ -5336,6 +5483,7 @@ function updateEnemies(dt) {
   for (const e of G.enemies) {
     if (e.dead) continue;
     const st = e.st;
+    const hm = G.hole ? holeEnemy(e) : 1, dtE = G.hole ? dt * e.hk : dt; // 6.5 Black Hole: speed factor, and dilated time for what it does
     e.hitFlash = Math.max(0, e.hitFlash - dt);
     e.ovlCD -= dt; e.supCD -= dt;
     // statuses
@@ -5374,7 +5522,7 @@ function updateEnemies(dt) {
     if ((e.boss === 'wraith' || e.wcloak) && e.cloakT > 0) { e.cloakT -= dt; if (e.cloakT <= 0) e.cloaked = false; }
     if (e.wcloak && !e.cloaked) { e.wcT = (e.wcT === undefined ? 7 : e.wcT) - dt; if (e.wcT <= 0) { e.wcT = 7; e.cloaked = true; e.cloakT = 2; Hooks.fx('blink', { x: e.x, y: e.y }); } }
     // behaviors
-    e.timer -= dt;
+    e.timer -= dtE;
     if (e.type === 'medic' && e.timer <= 0) {
       e.timer = 1;
       const healed = [];
@@ -5388,11 +5536,11 @@ function updateEnemies(dt) {
       Hooks.fx('shieldpulse', { x: e.x, y: e.y, to: sh.slice(0, 5) });
     }
     // v5.1 new enemies
-    if (e.type === 'carrier') { e.dropT = (e.dropT === undefined ? 2.5 : e.dropT) - dt;
+    if (e.type === 'carrier') { e.dropT = (e.dropT === undefined ? 2.5 : e.dropT) - dtE;
       if (e.dropT <= 0 && !e.cloaked) { e.dropT = CARRIER.every;
         for (let i = 0; i < CARRIER.n; i++) { const m = spawnEnemy('drone', { fromPt: { x: e.x + (i ? 0.35 : -0.35), y: e.y + 0.2 }, hpm: hpBase(e) * CARRIER.hp / ENEMIES.drone.hp }); m.fly = true; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); m.leak = 3; }
         Hooks.fx('drop', { x: e.x, y: e.y }); } }
-    if (e.type === 'sapper') { e.sapCD = (e.sapCD || 0) - dt;
+    if (e.type === 'sapper') { e.sapCD = (e.sapCD || 0) - dtE;
       if (e.sapCD <= 0 && !(st.stun > 0) && !(st.frozen > 0) && !(G.stasisT > 0)) {
         let tg = null, bd = SAPPER.range * SAPPER.range;
         for (const t of G.towers) { if (t.disabled > 0) continue; const d = dist2(t.cx, t.cy, e.x, e.y); if (d < bd) { bd = d; tg = t; } }
@@ -5423,7 +5571,7 @@ function updateEnemies(dt) {
       if (M.ks.horizon) spd *= 1.12;
       if (e.jammed) spd = 0;
       if (G.dragT > 0) spd *= e.boss ? 0.8 : 0.6; // Uplink Undertow: leaving Stasis is slow going
-      spd *= netK;
+      spd *= netK * hm;
       if (G.slime && G.slime.length && e.boss !== 'snail') for (const p of G.slime) if (p.L === e.L && Math.abs(p.d - e.d) < 0.4) { spd *= 1.4; break; }
       e.slow = 1 - spd / e.spd;
       e.d += spd * dt;
@@ -6002,7 +6150,7 @@ function updateTowers(dt) {
   if (dpsTick) {
     G.dpsClock = 0;
     // the defence's recent peak damage output, held between waves and fading slowly (half-life about 2 min): bosses size themselves to it
-    let tot = 0; for (const t of G.towers) tot += t.dps;
+    let tot = 0; for (const t of G.towers) tot += G.hole ? t.dps / holeRate(t) : t.dps; // 6.5: a passing Black Hole's ring bonus does not size the next boss
     G.power = Math.max(tot, (G.power || 0) * 0.995);
   }
   // EMP storm event
@@ -6044,6 +6192,7 @@ function updateTowers(dt) {
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
     if (M.ks.nest && t.type === 'rail' && t.isolated) range *= 1.4; // v5.8 Sniper Nest
     let rate = s.rate * (1 + t.buff.rate) * (ev.overcharge ? 1.3 : 1) * (G.overclockT > 0 ? 2 : 1);
+    if (G.hole) rate *= holeRate(t); // 6.5 Black Hole: +40% in the ring, −50% inside the horizon
     if (s.leg.overloop) { t.olT = (t.olT + dt) % 8; if (t.olT < 3) rate *= 2.5; }
     if (s.pkv.spin) { t.spin = clamp((t.spin || 0) + (G.time - (t.aimT === undefined ? -9 : t.aimT) < 0.6 ? dt / 4 : -dt / 2), 0, 1); rate *= 1 + s.pkv.spin / 100 * t.spin; }
     if (burning && s.el === 'T') rate *= 1 + Math.min(0.4, 0.02 * burning);
@@ -7076,6 +7225,262 @@ function frUpdate(dt) {
   }
 }
 
+// ---------- 6.5 the probe, loot sites and neutral guards (G.frV >= 5; tunables in PROBE, data.js; docs/notes/probe65.md) ----------
+// G.probe = { x, y, alive, vis } is the contract the fog of war reads: tile coordinates (floats), alive, vision radius in tiles. Its
+// other fields belong to this block. The probe flies in a straight line anywhere on the map (tap it, tap a spot: ACTS prGo). Loot
+// rides in its cargo hold and banks when it docks at the core (prHome). Guards are neutral: they never walk a road, never leak, and
+// towers ignore them. Everything here draws from G.r inside the sim, so a recording replays it exactly.
+const prW = () => Math.max(1, G.wave);
+const prWS = () => 1 + prW() / PROBE.wS;
+const prLvN = () => { const L = G.probe.lv; return L.hull + L.eng + L.gun + L.rig + L.scan; };
+function prStats() {
+  const L = G.probe.lv, U = PROBE.up, ws = prWS();
+  return { max: PROBE.hp * ws * U.hull.v[L.hull], spd: U.eng.v[L.eng], dps: PROBE.dps * ws * U.gun.v[L.gun], range: U.gun.r[L.gun], rig: U.rig.v[L.rig], vis: U.scan.v[L.scan], assay: 1 + U.scan.loot * L.scan };
+}
+const prUpCost = k => { const lv = G.probe.lv[k]; return lv >= 3 ? 0 : Math.round(PROBE.cost[lv] * (1 + prW() / 30)); };
+const prRebuildCost = () => Math.round((PROBE.rb0 + PROBE.rbW * prW()) * (1 + PROBE.rbLv * prLvN()));
+const prVal = () => crateCr(prW()) * G.mods.credits * Math.min(1, PROBE.loot.ramp[0] + prW() / PROBE.loot.ramp[1]); // one crate's worth, less in the first waves
+const prHomePt = () => ({ x: G.core.x + 0.55, y: G.core.y - 0.55 });
+const prCargoN = c => Math.round(c.cr) + c.ent + c.ch + c.tok + c.jp;
+const siteById = id => (G.sites || []).find(s => s.id === id) || null;
+// how close the probe has to be to work a site (and where it stops when sent to one)
+const siteReach = s => s.k === 'cloud' ? PROBE.cloudR : s.k === 'rock' ? PROBE.rockR : 0.6;
+function prNew() {
+  const h = prHomePt();
+  const P = { x: h.x, y: h.y, alive: true, vis: PROBE.up.scan.v[0], hp: 0, max: 0, lv: { hull: 0, eng: 0, gun: 0, rig: 0, scan: 0 }, tx: null, ty: null, task: 0, home: 1, ret: 0, rb: 0, cd: 0,
+    cargo: { cr: 0, ent: 0, ch: 0, tok: 0, jp: 0 }, hitT: -9, ang: 0 };
+  G.probe = P; const S = prStats(); P.max = P.hp = S.max; P.vis = S.vis;
+  return P;
+}
+// a new loot site somewhere in the outer map: mostly outside the sector while there is unrevealed ground, never on or beside a road
+function siteSpawn() {
+  const w = prW(), C = PROBE.site, R = G.region, map = G.map, full = R.x1 - R.x0 >= COLS && R.y1 - R.y0 >= ROWS, out = !full && G.r() < C.out;
+  const roadNear = (x, y) => { for (let dy = -C.roadGap; dy <= C.roadGap; dy++) for (let dx = -C.roadGap; dx <= C.roadGap; dx++) { const ux = x + dx, uy = y + dy; if (ux < 0 || uy < 0 || ux >= COLS || uy >= ROWS) continue; const t = map.tiles[tIdx(ux, uy)]; if (t === 1 || t === 4 || t === 5) return true; } return false; };
+  for (let k = 0; k < 60; k++) {
+    const x = rngInt(G.r, 1, COLS - 2), y = rngInt(G.r, 1, ROWS - 2), i = tIdx(x, y), cx = x + 0.5, cy = y + 0.5;
+    if (map.tiles[i] !== 0 || G.towerAt[i] || (G.nodeSet && G.nodeSet.has(i))) continue;
+    if (k < 40 && out === inRegion(x, y, R)) continue;
+    if (Math.hypot(cx - G.core.x, cy - G.core.y) < C.minCore || roadNear(x, y)) continue;
+    if (G.sites.some(s => Math.hypot(s.x - cx, s.y - cy) < C.apart)) continue;
+    const roll = G.r(), k2 = roll < 0.4 ? 'wreck' : roll < 0.7 ? 'cloud' : 'rock', ws = prWS(), Gd = PROBE.guard;
+    const s = { id: G.eid++, k: k2, x: cx, y: cy, t: PROBE.life[k2], life: PROBE.life[k2], val: prVal() * PROBE.loot[k2], rich: 0, prog: 0, g: [], z: G.r() * 6.283 };
+    let n = 0;
+    if (w >= Gd.from && G.r() < Math.min(Gd.pMax, Gd.p0 + w / Gd.pW) * (k2 === 'cloud' ? 0.6 : 1)) n = Math.min(Gd.nMax, 1 + Math.floor(G.r() * (1 + w / Gd.nW)));
+    if (w >= PROBE.richFrom && G.r() < PROBE.rich) { s.rich = 1; s.val *= PROBE.loot.rich; n = Math.min(Gd.nMax, n + 1); }
+    for (let j = 0; j < n; j++) {
+      const brute = w >= Gd.bruteFrom && G.r() < Gd.bruteP, D = brute ? Gd.brute : Gd.drone, a = s.z + j * 6.283 / n, max = D.hp * Math.pow(ws, 1.2);
+      const px = s.x + Math.cos(a) * (brute ? 0.9 : D.orbit), py = s.y + Math.sin(a) * (brute ? 0.9 : D.orbit);
+      s.g.push({ id: G.eid++, k: brute ? 'brute' : 'drone', hp: max, max, a, x: px, y: py, hx: px, hy: py, cd: G.r() * 0.6, calm: 9, hitT: -9 });
+    }
+    s.jp = PROBE.jack.base + PROBE.jack.guard * n + (s.rich ? PROBE.jack.rich : 0);
+    if (k2 === 'rock') { const a = G.r() * 6.283; s.vx = Math.cos(a) * PROBE.rockDrift; s.vy = Math.sin(a) * PROBE.rockDrift; s.max = s.hp = PROBE.rockHp * ws * (s.rich ? 1.6 : 1); s.chunks = 0; s.crystal = G.r() < PROBE.loot.crystal ? 1 : 0; }
+    if (k2 === 'cloud') s.ent = PROBE.loot.cloudEnt * (s.rich ? 2 : 1);
+    G.sites.push(s); G.siteN = (G.siteN || 0) + 1;
+    rlog('site', { k: k2, x, y, g: n, rich: s.rich });
+    Hooks.fx('site', { x: s.x, y: s.y, k: k2 });
+    return s;
+  }
+  return null;
+}
+function sitesUpdate(dt) {
+  const P = G.probe, C = PROBE.site, w = prW();
+  for (const s of G.sites) {
+    if (s.done && (!s.g.length || s.g.every(g => g.calm > PROBE.guard.calm))) { s.t = 0; continue; } // a looted site leaves once its guards settle
+    const busy = P.alive && P.task === s.id && Math.hypot(P.x - s.x, P.y - s.y) <= siteReach(s) + 0.2;
+    if (!busy) s.t -= dt; // a site the probe is working never fades under it
+    if (s.vx) { s.x += s.vx * dt; s.y += s.vy * dt; for (const g of s.g) { g.x += s.vx * dt; g.y += s.vy * dt; g.hx += s.vx * dt; g.hy += s.vy * dt; } if (s.x < 0.3 || s.y < 0.3 || s.x > COLS - 0.3 || s.y > ROWS - 0.3) s.t = 0; }
+  }
+  if (G.sites.some(s => s.t <= 0)) { G.sites = G.sites.filter(s => s.t > 0); if (P.task && !siteById(P.task)) P.task = 0; }
+  if (w < C.from || G.over) return;
+  G.siteT -= dt;
+  if (G.siteT > 0) return;
+  if (G.sites.filter(s => s.k !== 'lost' && !s.done).length >= Math.min(C.maxCap, C.max + Math.floor(w / C.maxW))) { G.siteT = 5; return; }
+  G.siteT = C.gap[0] + G.r() * (C.gap[1] - C.gap[0]);
+  siteSpawn();
+}
+// loot lands in the cargo hold, never straight in the bank
+function prLoot(cr, ent, ch, tok, x, y) {
+  const c = G.probe.cargo, a = prStats().assay;
+  c.cr += cr * a; c.ent += ent || 0; c.ch += ch || 0; c.tok += tok || 0;
+  if (cr > 0) Hooks.fx('num', { x: x == null ? G.probe.x : x, y: y == null ? G.probe.y : y, v: Math.round(cr * a), col: '#ffe14d', combo: 'LOOT' });
+}
+function siteDone(s) {
+  const P = G.probe; if (P.task === s.id) P.task = 0;
+  if (s.g.length) { s.done = 1; s.t = Math.min(s.t, 30); } else G.sites = G.sites.filter(o => o !== s); // the loot is gone; its living guards stay until they calm down
+  const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 }); st.sites++;
+  let ch = 0, tok = 0;
+  if (s.k === 'wreck' && G.r() < PROBE.loot.charge) ch = 1;
+  if (s.k === 'rock' && s.crystal) { ch = 1; tok = 1; }
+  if (s.k === 'wreck' || s.k === 'lost') prLoot(s.val, 0, ch, tok, s.x, s.y);
+  else if (s.k === 'rock') prLoot(s.val / 3, 0, ch, tok, s.x, s.y); // the last chunk
+  else prLoot(0, 0, ch, tok);
+  if (s.k !== 'lost' && G.r() < s.jp) { P.cargo.jp++; Hooks.fx('jackpot', { x: s.x, y: s.y }); }
+  if (s.k === 'lost') { const c = P.cargo; c.ent += s.ent || 0; c.ch += s.ch || 0; c.tok += s.tok || 0; c.jp += s.jp2 || 0; } // your own wreck: everything it carried
+  rlog('siteDone', { k: s.k, rich: s.rich });
+  Hooks.fx('siteDone', { x: s.x, y: s.y, k: s.k }); Hooks.sfx('cash', { x: s.x, y: s.y });
+}
+// the cargo banks at the core: credits, Entropy, charges, tokens; each jackpot is a boon pick or a full Entropy gauge
+function prBank() {
+  const P = G.probe, c = P.cargo; if (!prCargoN(c)) return;
+  const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 });
+  const cr = Math.round(c.cr), parts = [];
+  if (cr > 0) { G.credits += cr; st.cr += cr; parts.push(`+${cr} credits`); }
+  if (c.ent > 0) { addEntropy(c.ent); parts.push(`+${Math.round(c.ent)} Entropy`); }
+  for (let i = 0; i < c.ch; i++) { const k = lootCharge(); parts.push(`+${FX('quarter') ? 2 : 1} ${ABILITIES[k].name} charge`); }
+  if (c.tok > 0) { G.tokens += c.tok; parts.push(`+${c.tok} Recalibration token${c.tok > 1 ? 's' : ''}`); }
+  for (let i = 0; i < c.jp; i++) { st.jp++; parts.push(prJackpot()); }
+  st.trips++;
+  rlog('prBank', { cr, ent: Math.round(c.ent), ch: c.ch, tok: c.tok, jp: c.jp });
+  P.cargo = { cr: 0, ent: 0, ch: 0, tok: 0, jp: 0 };
+  Hooks.fx('cacheClaim', { x: G.core.x, y: G.core.y, kind: 'gold' }); Hooks.sfx('cash');
+  Hooks.toast('PROBE HOME', parts.join(' · '), '#ffe14d');
+}
+function prJackpot() {
+  if (G.r() < 0.5 && !G.draft && !G.huntChoice) {
+    const pool = BOONS.slice(), opts = []; for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
+    G.draft = opts; Hooks.onDraft(opts); return 'jackpot: a boon pick';
+  }
+  if (!G.anomOffers) { G.entropy = 100; addEntropy(0); return 'jackpot: the Entropy gauge is full'; }
+  const v = Math.round(prVal()); G.credits += v; return `jackpot: +${v} credits`;
+}
+function prLose() {
+  const P = G.probe, c = P.cargo, st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 });
+  P.alive = false; P.hp = 0; P.task = 0; P.ret = 0; P.home = 0; P.tx = P.ty = null; st.lost++;
+  const had = prCargoN(c) > 0;
+  if (had) G.sites.push({ id: G.eid++, k: 'lost', x: P.x, y: P.y, t: PROBE.life.lost, life: PROBE.life.lost, val: c.cr / prStats().assay, ent: c.ent, ch: c.ch, tok: c.tok, jp2: c.jp, rich: 0, prog: 0, g: [], z: 0, jp: 0 });
+  P.cargo = { cr: 0, ent: 0, ch: 0, tok: 0, jp: 0 };
+  rlog('prLost', { x: Math.round(P.x), y: Math.round(P.y), lv: prLvN() });
+  Hooks.fx('prBoom', { x: P.x, y: P.y, big: 1 }); Hooks.sfx('boom', { x: P.x, y: P.y });
+  Hooks.toast('PROBE LOST', `${had ? `Its cargo lies in the wreck for ${PROBE.life.lost} s. ` : ''}Rebuild: ${prRebuildCost()} credits, ${PROBE.rbT} s`, '#ff4d6a', true, 'alert');
+}
+// the guards of every site: drones orbit and shoot, brutes chase within their leash; out of a fight for 5 s, they heal
+function guardsUpdate(dt) {
+  const P = G.probe, Gd = PROBE.guard, ws = prWS(), on = P.alive;
+  for (const s of G.sites) {
+    if (!s.g.length) continue;
+    const near = on && Math.hypot(P.x - s.x, P.y - s.y) <= Gd.aggro;
+    for (const g of s.g) {
+      const D = Gd[g.k], dp = on ? Math.hypot(P.x - g.x, P.y - g.y) : 99, fight = near || (on && dp <= Gd.aggro * 0.75);
+      if (fight) g.calm = 0; else { g.calm += dt; if (g.calm > Gd.calm) g.hp = Math.min(g.max, g.hp + g.max * Gd.heal * dt); }
+      if (g.k === 'drone') {
+        g.a += dt * (fight ? 1.4 : 0.7); g.x = s.x + Math.cos(g.a) * D.orbit; g.y = s.y + Math.sin(g.a) * D.orbit;
+        g.cd -= dt;
+        if (fight && dp <= D.r && g.cd <= 0) { g.cd = D.cd; P.hp -= D.dmg * ws; P.hitT = G.time; Hooks.fx('rail', { x1: g.x, y1: g.y, x2: P.x, y2: P.y, col: '#ff5a7a' }); Hooks.sfx('zap', { x: g.x, y: g.y }); }
+      } else {
+        const chase = fight && Math.hypot(P.x - s.x, P.y - s.y) <= Gd.leash, tx = chase ? P.x : g.hx, ty = chase ? P.y : g.hy, d = Math.hypot(tx - g.x, ty - g.y), stop = chase ? D.r * 0.8 : 0;
+        if (d > stop + 0.01) { const m = Math.min(D.spd * dt, d - stop); g.x += (tx - g.x) / d * m; g.y += (ty - g.y) / d * m; }
+        if (chase && Math.hypot(P.x - g.x, P.y - g.y) <= D.r) { P.hp -= D.dps * ws * dt; P.hitT = G.time; if ((g.cd -= dt) <= 0) { g.cd = 0.5; Hooks.fx('spark', { x: P.x, y: P.y, col: '#ff9a3c' }); } }
+      }
+    }
+  }
+}
+// the Lance (from Armoury level 1): the nearest guard in range, one shot every 0.5 s
+function prFire(dt, S) {
+  const P = G.probe; if (S.dps <= 0) return;
+  P.cd = Math.max(0, P.cd - dt); if (P.cd > 0) return;
+  let best = null, bs = null, bd = S.range * S.range;
+  for (const s of G.sites) for (const g of s.g) { const d = dist2(P.x, P.y, g.x, g.y); if (d <= bd) { bd = d; best = g; bs = s; } }
+  if (!best) return;
+  P.cd = PROBE.fireT; best.hp -= S.dps * PROBE.fireT; best.hitT = G.time; best.calm = 0;
+  Hooks.fx('rail', { x1: P.x, y1: P.y, x2: best.x, y2: best.y, col: '#7fe8ff' }); Hooks.sfx('zap', { x: P.x, y: P.y });
+  if (best.hp <= 0) {
+    bs.g = bs.g.filter(g => g !== best);
+    const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 }); st.kills++;
+    prLoot(prVal() * (best.k === 'brute' ? PROBE.loot.brute : PROBE.loot.guard), 0, 0, 0, best.x, best.y);
+    Hooks.fx('prBoom', { x: best.x, y: best.y, big: best.k === 'brute' ? 1 : 0, guard: 1 }); Hooks.sfx('crack', { x: best.x, y: best.y });
+  }
+}
+// working the site under the probe: salvage a wreck, harvest a cloud (static hurts), mine a rock in 3 chunks
+function prWork(dt, S) {
+  const P = G.probe;
+  for (const s of G.sites.slice()) {
+    if (s.done) continue;
+    const d = Math.hypot(P.x - s.x, P.y - s.y);
+    if (s.k === 'cloud') {
+      if (d > PROBE.cloudR) continue;
+      const k = Math.min(1 - s.prog, dt * S.rig / PROBE.cloudT); s.prog += k;
+      const c = P.cargo, a = S.assay; c.cr += s.val * k * a; c.ent += s.ent * k;
+      s.acc = (s.acc || 0) + s.val * k * a; if (s.acc >= 25 || s.prog >= 1) { Hooks.fx('num', { x: P.x, y: P.y, v: Math.round(s.acc), col: '#c58cff', combo: 'GAS' }); s.acc = 0; }
+      P.hp -= S.max * PROBE.cloudZap * dt;
+      if (s.prog >= 1 - 1e-9) siteDone(s);
+      continue;
+    }
+    if (P.task !== s.id) continue; // wrecks and rocks: only the one it was sent to
+    if (d > siteReach(s) + 0.05) continue;
+    if (s.k === 'rock') {
+      s.hp -= PROBE.mine * prWS() * S.rig * dt;
+      const ch = Math.min(3, Math.floor(3 * (1 - s.hp / s.max)));
+      while (s.chunks < ch && s.chunks < 2) { s.chunks++; prLoot(s.val / 3, 0, 0, 0, s.x, s.y); Hooks.fx('siteChunk', { x: s.x, y: s.y }); Hooks.sfx('crack', { x: s.x, y: s.y }); }
+      if (s.hp <= 0) siteDone(s);
+    } else {
+      s.prog += dt * S.rig / PROBE.wreckT;
+      if (s.prog >= 1) siteDone(s);
+    }
+  }
+}
+function probeUpdate(dt) {
+  const P = G.probe, S = prStats();
+  sitesUpdate(dt);
+  if (!P.alive) {
+    if (P.rb > 0) { P.rb -= dt; if (P.rb <= 0) { const h = prHomePt(); Object.assign(P, { rb: 0, alive: true, home: 1, ret: 0, x: h.x, y: h.y, max: S.max, hp: S.max, cd: 0 }); Hooks.fx('build', { x: P.x, y: P.y, col: '#9fd8ff' }); Hooks.sfx('build', {}); Hooks.log('Probe rebuilt', '#9fd8ff'); } }
+    guardsUpdate(dt);
+    return;
+  }
+  if (P.max !== S.max) { P.hp = P.hp * S.max / (P.max || S.max); P.max = S.max; }
+  P.vis = S.vis;
+  if (P.home) {
+    const h = prHomePt(); P.x = h.x; P.y = h.y;
+    P.hp = Math.min(P.max, P.hp + P.max * PROBE.regen * dt);
+    if (G.core.hp < G.core.max) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * PROBE.repair * dt);
+  } else {
+    const s = P.task ? siteById(P.task) : null; let tx = P.tx, ty = P.ty, stop = 0;
+    if (P.ret) { const h = prHomePt(); tx = h.x; ty = h.y; }
+    else if (s) { tx = s.x; ty = s.y; stop = s.k === 'wreck' || s.k === 'lost' ? 0 : siteReach(s) * 0.55; }
+    if (tx !== null) {
+      const dx = tx - P.x, dy = ty - P.y, d = Math.hypot(dx, dy);
+      if (d > stop + 0.01) { const m = Math.min(S.spd * dt, d - stop); P.x += dx / d * m; P.y += dy / d * m; P.ang = Math.atan2(dy, dx); }
+      if (P.ret && Math.hypot(tx - P.x, ty - P.y) <= PROBE.home) { P.ret = 0; P.home = 1; P.tx = P.ty = null; P.x = tx; P.y = ty; prBank(); }
+    }
+  }
+  guardsUpdate(dt);
+  prFire(dt, S);
+  if (!P.home) prWork(dt, S);
+  if (P.hp <= 0) prLose();
+}
+// ACTS: send the probe to (x, y) in tiles (a tap on a site sends it to work that site; a tap on the core recalls it)
+function probeGo(x, y) {
+  const P = G.probe; if (!P || !P.alive || G.over || !isFinite(x) || !isFinite(y)) return false;
+  x = clamp(+x, 0.3, COLS - 0.3); y = clamp(+y, 0.3, ROWS - 0.3);
+  if (Math.hypot(x - G.core.x, y - G.core.y) <= 1.1) return probeRecall();
+  let best = null, bd = 1e9;
+  for (const s of G.sites) { if (s.done) continue; const d = Math.hypot(s.x - x, s.y - y), r = Math.max(1.3, s.k === 'cloud' ? PROBE.cloudR : 0); if (d <= r && d < bd) { bd = d; best = s; } }
+  P.task = best ? best.id : 0; P.tx = best ? best.x : x; P.ty = best ? best.y : y; P.home = 0; P.ret = 0;
+  return true;
+}
+function probeRecall() {
+  const P = G.probe; if (!P || !P.alive || G.over) return false;
+  if (P.home) return false;
+  P.ret = 1; P.task = 0; P.tx = P.ty = null;
+  return true;
+}
+function probeUpgrade(k) {
+  const P = G.probe, U = PROBE.up[k]; if (!P || !U || G.over || P.lv[k] >= 3) return false;
+  const c = prUpCost(k); if (G.credits < c) return false;
+  G.credits -= c; P.lv[k]++;
+  const S = prStats(); if (P.alive) { P.hp = P.hp * S.max / (P.max || S.max); P.max = S.max; P.vis = S.vis; } else P.max = S.max;
+  rlog('prUp', { k, lv: P.lv[k], c });
+  Hooks.sfx('upgrade', {}); if (P.alive) Hooks.fx('upgrade', { x: P.x, y: P.y, col: '#9fd8ff' });
+  return true;
+}
+function probeRebuild() {
+  const P = G.probe; if (!P || P.alive || P.rb > 0 || G.over) return false;
+  const c = prRebuildCost(); if (G.credits < c) return false;
+  G.credits -= c; P.rb = PROBE.rbT; const h = prHomePt(); P.x = h.x; P.y = h.y;
+  rlog('prBuild', { c });
+  Hooks.sfx('build', {});
+  return true;
+}
+
 // ---------- abilities ----------
 function useAbility(k, x, y) {
   if (!G.charges[k] || G.charges[k] <= 0) return false;
@@ -7132,17 +7537,20 @@ function simStep(dt) {
   G.time += dt;
   updateWaves(dt);
   updateStorms(dt);
+  if (G.hole) holeUpdate(dt); // 6.5 Black Hole (frV 5)
   updateEnemies(dt);
   if (G.over) return;
   updateTowers(dt);
   updateCore(dt);
   if (G.fr) frUpdate(dt);
+  if (G.probe) probeUpdate(dt); // 6.5 (frV 5)
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
   updateAbils(dt);
   updateLinkBeams(dt);
   updateCaches(dt);
+  if (G.fogEx) fogTick(); // 6.5 fog of war: explored tiles (presentation only)
 }
 
 function gameOver() {
@@ -7150,6 +7558,7 @@ function gameOver() {
   G.over = true;
   bankPurse();
   if (ghostRun()) { Hooks.onGameOver(); return; }
+  if (G.probe) rlog('prEnd', Object.assign({ lv: Object.values(G.probe.lv).join(''), alive: G.probe.alive ? 1 : 0 }, G.stats.pr || {})); // 6.5 probe telemetry for the run log
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
     rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, ...(G.ganoms && G.ganoms.length ? { gan: G.ganoms.map(a => a.name) } : {}), reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);
@@ -7333,6 +7742,7 @@ const ACTS = {
   reloc: (x, y) => { const P = planRelocation(x, y); return !!P && !P.fail && applyRelocation(P); },
   frFly: (x, y) => frLiftOff(x, y), // Frontier: lift off and land at (x, y) (a tower tile docks it)
   frMove: (fx, fy, x, y) => { const t = twAt(fx, fy); return !!t && frMoveTower(t, x, y); }, // Frontier: move a tower
+  prGo: (x, y) => probeGo(x, y), prHome: () => probeRecall(), prUp: k => probeUpgrade(k), prBuild: () => probeRebuild(), // 6.5 the probe: send, recall, upgrade, rebuild
   extract: () => huntExtract(),
   push: door => huntPush(door == null ? undefined : door), // 5.8: the jump door's index; none (5.7 recordings) pushes on as before
   abandon: () => { abandonRun(); return true; },
@@ -7378,6 +7788,7 @@ function runHash() {
   mix(G.tick | 0); mix(G.wave | 0); mix(Math.round(G.score)); mix(Math.round(G.credits * 10)); mix(G.kills | 0); mix(Math.round(G.core.hp * 100));
   for (const t of G.towers) { mix(t.x * 97 + t.y); mix(t.lvl); mix(Math.round(t.dmgDone)); }
   for (const e of G.enemies) { mix(Math.round(e.hp * 10)); mix(Math.round(e.d * 100)); }
+  if (G.probe) { const P = G.probe; mix(Math.round(P.x * 100)); mix(Math.round(P.y * 100)); mix(Math.round(P.hp * 10)); for (const s of G.sites || []) { mix(s.id); mix(s.g.length); } } // 6.5
   return h.toString(16);
 }
 
@@ -7398,6 +7809,8 @@ function snapshotRun(waveNum) {
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     ascV: G.ascV || 1, mastery: G.mastery || {}, capT: G.capT && G.capT.length ? G.capT.slice() : undefined, // v5.8; 6.4 capT
     fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
+    probe: G.probe ? JSON.parse(JSON.stringify(G.probe)) : null, sites: G.probe ? JSON.parse(JSON.stringify(G.sites || [])) : undefined, siteT: G.probe ? G.siteT : undefined, // 6.5
+    fog: G.fogEx ? fogPack(G.fogEx) : undefined, hole: G.hole ? Object.assign({}, G.hole) : null, // 6.5 explored tiles (run lengths), a black hole still out
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), ganoms: G.ganoms || [], anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -7452,6 +7865,9 @@ function resumeRun(S) {
     if (G.frFly) { G.core.shield = 0; frUpdate(0); }
     frRestat();
   }
+  if (G.probe && S.probe) { G.probe = Object.assign(G.probe, JSON.parse(JSON.stringify(S.probe))); G.sites = JSON.parse(JSON.stringify(S.sites || [])); G.siteT = S.siteT || PROBE.site.first; } // 6.5: older saves get a fresh probe
+  if (G.fogEx) { fogUnpack(S.fog, G.fogEx); fogMark(fogSources()); } // 6.5: explored tiles come back (an older snapshot: what the core, towers and roads show now)
+  G.hole = G.frV >= 5 && S.hole && typeof S.hole.x === 'number' ? Object.assign({}, S.hole) : null;
   prepareWave(S.wave);
   Hooks.log(`Run resumed · Wave ${S.wave}`, '#59f0b4');
   return G;
@@ -7978,6 +8394,9 @@ const SFX = (() => {
     // 6.3 (zone63): arriving in a zone: a soft rising whoosh, then two bell notes pitched per zone
     zone(id) { const r = { drift: 0, hive: 3, iron: -2, skies: 5, ghost: -4, salvage: 2, tempest: -5, demo: -3, choir: 4, oddball: 7 }[id] || 0; const c = ev('zone', busE, 0.5, { hall: 0.5, jit: 0, pan: 0, trim: 5 }); // +5 dB lands it in the notice tier (sfxrender: about -23 dB)
       nz(c, { f0: 300, f1: 2400, q: 1.2, d: 0.7, v: 0.16, a: 0.35, curve: 'lin' }); arp(c, [69 + r, 76 + r], 0.16, { v: 0.1, d: 0.5, bell: 1, at: 0.3 }); done(c); },
+    // 6.5 the Black Hole: arrival is a slow sub swell under a falling filtered rush; the collapse a rising suck, then a deep thump
+    hole(p) { duck(-3, 0.3, 0.8, 1.2); const c = ev('hole', busE, 0.6, { hall: 0.55, jit: 0, trim: -1 }, p); /* sfxrender: about -14 dB, under the Maelstrom */ sub(c, 48, 30, 1.6, 0.55); nz(c, { ft: 'lowpass', f0: 1800, f1: 120, d: 1.4, v: 0.22, a: 0.5, curve: 'lin' }); tone(c, { w: 'sine', f0: 62, f1: 41, slide: 1.4, d: 1.6, v: 0.16, a: 0.4 }); done(c); },
+    holeEnd(p) { const c = ev('holeEnd', busE, 0.6, { hall: 0.5, jit: 0, trim: 1 }, p); nz(c, { ft: 'bandpass', f0: 200, f1: 2600, q: 2, d: 0.5, v: 0.2, a: 0.45, curve: 'lin' }); sub(c, 90, 32, 0.5, 0.6, 0.5); click(c, 0.35, 0.5, 2500); done(c); },
     unbreak() { const c = ev('unbreak', busE, 0.6, { hall: 0.4, jit: 0, pan: 0 }); arp(c, [60, 64, 67, 72], 0.05, { v: 0.12, d: 0.4, bell: 1 }); done(c); },
     freeze(e) { if (!allow('freeze', 0.12, 2)) return; const c = ev('freeze', busH, 0.4, { room: 0.35 }, e); fmv(c, { f0: 2794, f1: 1397, r: 3.5, i: 2, d: 0.18, v: 0.15 }); nz(c, { ft: 'highpass', f0: 6000, f1: 3000, d: 0.15, v: 0.25 }); done(c); },
     net(e, t) { if (!allow('net', 0.1, 2)) return; const sp = t && t.spec || 0; const c = ev('net', busH, 0.4, { room: 0.2, tn: sp === 1 ? 'net1' : 'net' }, e);
@@ -8113,6 +8532,25 @@ const SFX = (() => {
     flameV.bg.gain.setTargetAtTime(on ? 0.03 * (pl || 0) * Math.min(1, 0.5 + 0.25 * n) : 0, t, on ? 0.05 : 0.1);
     flameV.bp.frequency.setTargetAtTime(600 * (pl ? 1 + 0.4 * pl : 1) * (inf ? 1 - 0.2 * inf : 1), t, 0.2);
   }
+  // 6.5 Black Hole drone: two detuned low saws and a sine sub through a lowpass that opens as the camera gets close, on the event
+  // bus (glue compressor, limiter). k = strength × camera proximity (0 = silent; built on first use); pan from its screen position
+  let holeV = null;
+  function hole(k, pan) {
+    if (!ctx || (!offline && ctx.state !== 'running') || !busE) return;
+    if (!holeV) {
+      if (!(k > 0)) return;
+      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), p = ctx.createStereoPanner(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      o1.type = 'sawtooth'; o2.type = 'sawtooth'; o3.type = 'sine'; o1.frequency.value = 41; o2.frequency.value = 41.7; o3.frequency.value = 27.5;
+      f.type = 'lowpass'; f.Q.value = 4; f.frequency.value = 160; lfo.frequency.value = 0.35; lg.gain.value = 50; lfo.connect(lg); lg.connect(f.frequency);
+      g.gain.value = 0; o1.connect(f); o2.connect(f); f.connect(g); o3.connect(g); g.connect(p); p.connect(busE);
+      for (const o of [o1, o2, o3, lfo]) o.start(); holeV = { o1, o2, f, g, p };
+    }
+    const t = T(), q = Math.max(0, Math.min(1, k || 0));
+    holeV.g.gain.setTargetAtTime(q * 0.16, t, q > 0 ? 0.4 : 0.25);
+    holeV.f.frequency.setTargetAtTime(140 + 520 * q * q, t, 0.3); // rises as it gets near
+    holeV.o1.frequency.setTargetAtTime(41 * (1 + 0.12 * q), t, 0.5); holeV.o2.frequency.setTargetAtTime(41.7 * (1 + 0.12 * q), t, 0.5);
+    holeV.p.pan.setTargetAtTime(Math.max(-0.6, Math.min(0.6, pan || 0)), t, 0.2);
+  }
   // low core: a soft double heartbeat whose rate climbs as the hull falls (k = 0 healthy … 1 critical)
   function danger(k, dt) {
     if (!ctx || ctx.state !== 'running' || !busE || k <= 0) { dangerT = 0; return; }
@@ -8121,7 +8559,7 @@ const SFX = (() => {
     const c = ev('heart', busE, 0.25 + 0.3 * k, { jit: 0, pan: 0 }); sub(c, 70, 45, 0.12, 0.5); sub(c, 62, 40, 0.14, 0.4, 0.2); done(c);
   }
   // offline rendering for tests: play(name) into an OfflineAudioContext at time t
-  function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; beamV = null; flameV = null; buildMasterOffline(); }
+  function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; beamV = null; flameV = null; holeV = null; buildMasterOffline(); }
   function buildMasterOffline() {
     limiter = ctx.createDynamicsCompressor(); limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
     master = ctx.createGain(); master.gain.value = 1; sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
@@ -9433,7 +9871,7 @@ const SFX = (() => {
     return API;
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -10918,6 +11356,203 @@ const RES = 2;
     b.strokeRect(x0 - 0.5, y0 - 0.5, x1 - x0 + 1, y1 - y0 + 1); b.setLineDash([]);
   }
 
+  // ---------- 6.5 the probe, loot sites and neutral guards (sim in sim.js "6.5 the probe"; all cosmetic here) ----------
+  // Sites sit on the ground layer (after salvage crates); guards and the probe fly (after the flying enemies). A few rects and
+  // arcs each, culled to the camera view (v: buffer px). Sites outside the sector draw over the veil, so they read as beacons.
+  const PR_COL = { site: '#ff6ad5', probe: '#9fd8ff', body: '#d8ecff', trim: '#3f8fe0', glow: '#7fe8ff', guard: '#ff5a7a', cloud: '#b98cff', gold: '#ffd84a' };
+  let prSelOn = false;
+  const prIn = (x, y, m, v) => x * TILE > v.vx - m && x * TILE < v.vx + v.vw + m && y * TILE > v.vy - m && y * TILE < v.vy + v.vh + m;
+  function drawSites(v) {
+    for (const s of G.sites || []) {
+      if (s.done || !prIn(s.x, s.y, 60, v)) continue;
+      const X = s.x * TILE, Y = s.y * TILE, fade = s.t < 10 ? ((frame >> 2) % 2 ? 0.45 : 1) : 1, gold = s.rich;
+      if (s.k === 'cloud') {
+        const r = PROBE.cloudR * TILE * (1 - 0.45 * s.prog), col = gold ? PR_COL.gold : PR_COL.cloud;
+        for (let k = 0; k < 3; k++) { const a = s.z + k * 2.1 + frame / 140, rr = r * (0.62 + 0.12 * k);
+          b.fillStyle = hexA(col, (0.1 + 0.05 * k) * fade); b.beginPath(); b.arc(X + Math.cos(a) * r * 0.32, Y + Math.sin(a) * r * 0.25, rr, 0, 6.283); b.fill(); }
+        for (let k = 0; k < 4; k++) { const a = s.z * 3 + k * 1.7 + frame / 60; if ((frame + k * 7) % 24 < 12) P(b, X + Math.cos(a) * r * 0.7, Y + Math.sin(a * 1.3) * r * 0.5, '#f4e8ff'); }
+        if ((frame + (s.id % 40)) % 90 < 3) { b.strokeStyle = hexA('#f4e8ff', 0.8); b.lineWidth = 1; b.beginPath(); b.moveTo(X - r * 0.4, Y - 3); b.lineTo(X - 2, Y + 2); b.lineTo(X + r * 0.3, Y - 1); b.stroke(); } // static
+      } else if (s.k === 'rock') {
+        const r = Math.round(5 + 5 * Math.max(0.25, s.hp / s.max)) + (gold ? 1 : 0), by = Math.round(Math.sin(frame / 30 + s.z) * 1);
+        R(b, X - r, Y + r - 1, r * 2, 2, 'rgba(0,0,0,0.35)');
+        D(b, X, Y + by, r, '#4c4038'); D(b, X - 1, Y + by - 1, r - 1, '#6f6052'); D(b, X - 2, Y + by - 2, Math.max(1, r - 4), '#8c7a66');
+        R(b, X + r * 0.3, Y + by + 1, 2, 2, '#3a302a'); R(b, X - r * 0.5, Y + by + r * 0.3, 2, 1, '#3a302a'); R(b, X - 1, Y + by - r * 0.5, 1, 1, '#b4a28a');
+        if (s.crystal) { R(b, X + r - 3, Y + by - r + 1, 2, 4, '#7ff2ff'); R(b, X + r - 5, Y + by - r + 3, 2, 3, '#bff9ff'); }
+        if (gold) { P(b, X - r + 2, Y + by - 1, PR_COL.gold); P(b, X + 1, Y + by + r - 3, PR_COL.gold); }
+      } else if (s.k === 'wreck') {
+        R(b, X - 11, Y + 4, 22, 3, 'rgba(0,0,0,0.4)');
+        R(b, X - 10, Y - 4, 11, 7, '#4a5468'); R(b, X - 9, Y - 4, 9, 2, '#8a96ad'); R(b, X - 12, Y - 8, 3, 5, '#363e50'); R(b, X - 7, Y - 1, 2, 2, '#2a3040');
+        R(b, X + 2, Y - 2, 8, 5, '#3e4658'); R(b, X + 3, Y - 2, 6, 1, '#76829c'); R(b, X + 9, Y + 1, 3, 2, '#2a3040');
+        R(b, X - 1, Y - 2, 3, 4, '#1a1e28'); R(b, X, Y - 1, 1, 2, (frame >> 3) % 3 ? '#ffb03a' : '#ff6a2a');
+        if (gold) { R(b, X - 9, Y + 2, 9, 1, PR_COL.gold); R(b, X + 3, Y + 2, 6, 1, PR_COL.gold); }
+        if (frame % 50 < 2) P(b, X + 1, Y - 4 - (frame % 50), '#ffe9b0');
+      } else { // lost: your probe's own wreck, a blinking beacon over its debris
+        R(b, X - 6, Y + 2, 12, 2, 'rgba(0,0,0,0.4)'); R(b, X - 5, Y - 2, 4, 3, '#7c8ea8'); R(b, X + 1, Y - 1, 5, 2, '#5b6a82'); R(b, X - 1, Y, 2, 2, PR_COL.trim);
+        R(b, X - 1, Y - 6, 2, 3, (frame >> 3) % 2 ? '#ffffff' : '#ff4d6a');
+      }
+      // the work done (bright) and the time left (dim) as two arcs; a guarded site shows a red tick per guard
+      const rr = s.k === 'cloud' ? PROBE.cloudR * TILE * 0.55 : 15, f = Math.max(0, s.t / s.life);
+      b.lineWidth = 1; b.strokeStyle = hexA(s.t < 10 ? '#ff4d6a' : PR_COL.site, 0.45 * fade); b.beginPath(); b.arc(X, Y, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
+      const pg = s.k === 'rock' ? 1 - s.hp / s.max : s.prog;
+      if (pg > 0) { b.lineWidth = 2; b.strokeStyle = hexA('#ffe14d', 0.9); b.beginPath(); b.arc(X, Y, rr + 2, -1.5708, -1.5708 + 6.2832 * Math.min(1, pg)); b.stroke(); }
+    }
+  }
+  function drawGuard(g) {
+    const X = g.x * TILE, Y = g.y * TILE - 6, hit = G.time - g.hitT < 0.12, bob = Math.round(Math.sin(frame / 8 + g.id) * 1);
+    if (g.k === 'drone') {
+      R(b, X - 3, Y + 9, 6, 1, 'rgba(0,0,0,0.3)');
+      R(b, X - 4, Y - 1 + bob, 8, 3, hit ? '#ffffff' : '#5a1c2a'); R(b, X - 3, Y - 2 + bob, 6, 1, '#8a3040'); R(b, X - 1, Y + bob, 2, 1, (frame >> 2) % 4 ? PR_COL.guard : '#ffd0d8');
+      P(b, X - 5, Y + bob, '#3a1018'); P(b, X + 4, Y + bob, '#3a1018');
+    } else {
+      R(b, X - 6, Y + 11, 12, 2, 'rgba(0,0,0,0.35)');
+      R(b, X - 5, Y - 2 + bob, 10, 7, hit ? '#ffffff' : '#4a1a12'); R(b, X - 4, Y - 3 + bob, 8, 2, '#7a2c1c'); R(b, X - 2, Y + bob, 4, 2, '#ff9a3c'); R(b, X - 1, Y + 1 + bob, 2, 1, '#fff0c0');
+      R(b, X - 7, Y + 3 + bob, 2, 3, '#3a120c'); R(b, X + 5, Y + 3 + bob, 2, 3, '#3a120c');
+    }
+  }
+  function drawProbe(v) {
+    for (const s of G.sites || []) if (s.g.length && prIn(s.x, s.y, 140, v)) for (const g of s.g) drawGuard(g);
+    const Pb = G.probe; if (!Pb || !Pb.alive) return;
+    const X = Pb.x * TILE, Y = Pb.y * TILE - (Pb.home ? 4 : 8), a = Pb.home ? -0.6 : Pb.ang, ca = Math.cos(a), sa = Math.sin(a), hit = G.time - Pb.hitT < 0.12;
+    if (!prIn(Pb.x, Pb.y, 30, v)) return;
+    if (!Pb.home) R(b, X - 4, Pb.y * TILE + 3, 8, 2, 'rgba(0,0,0,0.3)');
+    for (const o of [-1, 1]) { R(b, X - sa * 5 * o - 2 - ca, Y + ca * 5 * o - 2 - sa, 4, 4, '#1c3a66'); R(b, X - sa * 5 * o - 1 - ca, Y + ca * 5 * o - 1 - sa, 3, 3, PR_COL.trim); } // side pods
+    D(b, X, Y, 5, '#1c3a66'); D(b, X, Y, 4, hit ? '#ff5a7a' : PR_COL.body); D(b, X - 1, Y - 1, 2, '#ffffff'); R(b, X - 1 + ca * 2.5, Y - 1 + sa * 2.5, 3, 3, PR_COL.glow); // body (dark outline), cockpit toward its heading
+    if (!Pb.home || frame % 30 < 15) R(b, X - ca * 5.5 - 1, Y - sa * 5.5 - 1, 3, 3, frame % 4 < 2 ? '#ffffff' : PR_COL.glow); // engine
+    if (!Pb.home && frame % 3 === 0 && !LITE) parts.push({ x: X - ca * 5, y: Y - sa * 5, vx: -ca * 12, vy: -sa * 12, life: 0.3, max: 0.3, col: PR_COL.glow, s: 1 });
+  }
+  // ---------- 6.5 fog of war (sim.js fogOn: Frontier at frV 5, not Training; docs/notes/sky65.md) ----------
+  // fogCv holds one alpha pixel per half tile: 0 visible, FOG_EX explored (terrain remembered, dimmed), FOG_UN unseen (dark).
+  // The live vision (fogSources: the core, towers, the probe) is re-rasterised only when a source moves or changes, or the sim
+  // marks new explored tiles (G.fogRev); a 3×3 blur softens the edge, and only the changed pixels are written back (one
+  // putImageData of the dirty rectangle). Each frame costs one smoothed drawImage. fogVis (binary) decides what is hidden
+  let fogHi = null, fogHx = null, fogBlk = null, fogBX = 0, fogBY = 0, fogCv = null, fogCx = null, fogImg = null, fogVis = null, fogT = null, fogH = null, fogSeen = null, fogSig = -1, fogGr = null, fogLive = false, fogW2 = 0, fogH2 = 0;
+  const FOG_EX = 150, FOG_UN = 246, FOG_HI = 6, FOG_B = 8; // FOG_B: half tiles per block of the 'any fog here' map, so fully visible ground costs no blit // FOG_HI: fogHi px per half tile (a smoothed copy, so each frame's blit can be nearest-neighbour)
+  function fogUpdate() {
+    if (typeof fogOn !== 'function' || !fogOn() || !G.fogEx) { fogLive = false; return false; }
+    const W2 = COLS * 2, H2 = ROWS * 2, n = W2 * H2;
+    if (fogGr !== G || !fogCv || fogW2 !== W2 || fogH2 !== H2) {
+      if (!fogCv) fogCv = document.createElement('canvas');
+      fogCv.width = W2; fogCv.height = H2; fogW2 = W2; fogH2 = H2; fogCx = fogCv.getContext('2d');
+      fogImg = fogCx.createImageData(W2, H2); const d = fogImg.data; for (let i = 0; i < d.length; i += 4) { d[i] = 5; d[i + 1] = 6; d[i + 2] = 14; d[i + 3] = FOG_UN; }
+      fogVis = new Uint8Array(n); fogT = new Uint8Array(n); fogH = new Uint16Array(n); fogSeen = new Uint8Array(n); fogSig = -1; fogGr = G; fogCx.putImageData(fogImg, 0, 0);
+      fogBX = Math.ceil(W2 / FOG_B); fogBY = Math.ceil(H2 / FOG_B); fogBlk = new Uint8Array(fogBX * fogBY).fill(1);
+      if (!fogHi) fogHi = document.createElement('canvas'); fogHi.width = W2 * FOG_HI; fogHi.height = H2 * FOG_HI; fogHx = fogHi.getContext('2d'); fogHx.imageSmoothingEnabled = true; fogHx.drawImage(fogCv, 0, 0, fogHi.width, fogHi.height);
+    }
+    fogLive = true;
+    if (fogSig >= 0 && (frame & 1) && !G.frFly) return true; // vision is checked every other frame (every frame while the core flies)
+    const src = fogSources();
+    let h = (2166136261 ^ (G.fogRev || 0) ^ (src.length << 20)) >>> 0;
+    for (let i = 0; i < src.length; i++) { h ^= Math.round(src[i] * 8); h = Math.imul(h, 16777619) >>> 0; }
+    if (h === fogSig) return true;
+    fogSig = h;
+    fogVis.fill(0);
+    for (let i = 0; i < src.length; i += 3) { // each source: one filled span per row, in half tiles
+      const cx = src[i] * 2, cy = src[i + 1] * 2, r = src[i + 2] * 2, r2 = r * r;
+      for (let j = Math.max(0, Math.floor(cy - r)), j1 = Math.min(H2 - 1, Math.floor(cy + r)); j <= j1; j++) {
+        const dy = j + 0.5 - cy, q = r2 - dy * dy; if (q < 0) continue;
+        const hw = Math.sqrt(q), x0 = Math.max(0, Math.ceil(cx - hw - 0.5)), x1 = Math.min(W2 - 1, Math.floor(cx + hw - 0.5));
+        if (x1 >= x0) fogVis.fill(1, j * W2 + x0, j * W2 + x1 + 1);
+      }
+    }
+    const ex = G.fogEx, d = fogImg.data;
+    for (let j = 0; j < H2; j++) { const tr = (j >> 1) * COLS, row = j * W2;
+      for (let i = 0; i < W2; i++) { const k = row + i; if (fogVis[k]) { fogSeen[k] = 1; fogT[k] = 0; } else fogT[k] = fogSeen[k] || ex[tr + (i >> 1)] ? FOG_EX : FOG_UN; } }
+    for (let j = 0; j < H2; j++) { const row = j * W2; // horizontal 3-tap sums, then vertical: a 3×3 box blur of the target alpha
+      for (let i = 0; i < W2; i++) { const k = row + i; fogH[k] = fogT[k] + fogT[i > 0 ? k - 1 : k] + fogT[i < W2 - 1 ? k + 1 : k]; } }
+    let mx0 = W2, my0 = H2, mx1 = -1, my1 = -1; fogBlk.fill(0);
+    for (let j = 0; j < H2; j++) { const row = j * W2, up = j > 0 ? row - W2 : row, dn = j < H2 - 1 ? row + W2 : row, br = ((j / FOG_B) | 0) * fogBX;
+      for (let i = 0; i < W2; i++) { const a = ((fogH[row + i] + fogH[up + i] + fogH[dn + i]) / 9) | 0, p = (row + i) * 4 + 3;
+        if (a > 3) fogBlk[br + ((i / FOG_B) | 0)] = 1;
+        if (d[p] !== a) { d[p] = a; if (i < mx0) mx0 = i; if (i > mx1) mx1 = i; if (j < my0) my0 = j; if (j > my1) my1 = j; } } }
+    if (mx1 >= 0) { fogCx.putImageData(fogImg, 0, 0, mx0, my0, mx1 - mx0 + 1, my1 - my0 + 1);
+      // the smoothed copy: the dirty rectangle plus 1 px of margin (the filter reads its neighbours)
+      const x0 = Math.max(0, mx0 - 1), y0 = Math.max(0, my0 - 1), x1 = Math.min(W2, mx1 + 2), y1 = Math.min(H2, my1 + 2);
+      fogHx.save(); fogHx.beginPath(); fogHx.rect(x0 * FOG_HI, y0 * FOG_HI, (x1 - x0) * FOG_HI, (y1 - y0) * FOG_HI); fogHx.clip(); fogHx.clearRect(x0 * FOG_HI, y0 * FOG_HI, (x1 - x0) * FOG_HI, (y1 - y0) * FOG_HI);
+      fogHx.imageSmoothingEnabled = true; fogHx.drawImage(fogCv, 0, 0, fogHi.width, fogHi.height); fogHx.restore(); }
+    return true;
+  }
+  // is this point (tiles) in vision now? (false off the board)
+  function fogSee(x, y) { const i = (x * 2) | 0, j = (y * 2) | 0; return i >= 0 && j >= 0 && i < fogW2 && j < fogH2 && fogVis[j * fogW2 + i] === 1; }
+  // a disc (a storm, the black hole) shows if its centre or any of 8 points at 0.7 of its radius is in vision
+  function fogSeeR(x, y, r) { if (fogSee(x, y)) return true; for (let a = 0; a < 8; a++) if (fogSee(x + Math.cos(a * 0.785) * r * 0.7, y + Math.sin(a * 0.785) * r * 0.7)) return true; return false; }
+  function drawFog(x0, y0, x1, y1) { // the view rectangle in world units, clipped to the board
+    if (x1 <= x0 || y1 <= y0) return;
+    const k = 2 * FOG_HI / TILE, bw = TILE / 2 * FOG_B; b.imageSmoothingEnabled = false; // bw: a block in world units
+    // only blocks with any fog in them, merged into runs along each block row (a view in full vision draws nothing)
+    for (let by = Math.max(0, Math.floor(y0 / bw)), by1 = Math.min(fogBY - 1, Math.floor((y1 - 0.01) / bw)); by <= by1; by++) {
+      const ry0 = Math.max(y0, by * bw), ry1 = Math.min(y1, (by + 1) * bw);
+      for (let bx = Math.max(0, Math.floor(x0 / bw)), bx1 = Math.min(fogBX - 1, Math.floor((x1 - 0.01) / bw)); bx <= bx1; bx++) {
+        if (!fogBlk[by * fogBX + bx]) continue;
+        let ex = bx; while (ex < bx1 && fogBlk[by * fogBX + ex + 1]) ex++;
+        const rx0 = Math.max(x0, bx * bw), rx1 = Math.min(x1, (ex + 1) * bw);
+        b.drawImage(fogHi, rx0 * k, ry0 * k, (rx1 - rx0) * k, (ry1 - ry0) * k, rx0, ry0, rx1 - rx0, ry1 - ry0);
+        bx = ex;
+      }
+    }
+  }
+
+  // ---------- 6.5 the Black Hole event (sim.js holeSpawn/holeUpdate, G.hole; HOLE in data.js) ----------
+  // Pre-rendered once: the accretion disk (a dithered spiral, drawn rotating) and the core with its photon ring. Per frame: a
+  // magnified copy of the board under it (lensing, skipped when LITE), the disk, the core, 3 rings closing in (time dilation),
+  // the reach (dashed, violet) and horizon (dashed, red) rings, and a pool of 48 motes spiralling in. No gradients, no shadowBlur
+  let holeSpr = null, holeMotes = null, holeG = null;
+  function holeSprites() {
+    if (holeSpr) return holeSpr;
+    const R1 = 2.4 * TILE, R0 = 0.7 * TILE, S = Math.ceil(R1 * 2 * RES) + 2, c0 = S / 2, cvD = document.createElement('canvas'); cvD.width = cvD.height = S;
+    const g = cvD.getContext('2d'), im = g.createImageData(S, S), D = im.data, BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+    const RAMP = [[70, 26, 120], [140, 44, 150], [226, 84, 60], [255, 160, 64], [255, 226, 160], [255, 255, 240]];
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const dx = (x + 0.5 - c0) / RES, dy = (y + 0.5 - c0) / RES, r = Math.hypot(dx, dy); if (r < R0 || r > R1) continue;
+      const u = (r - R0) / (R1 - R0), th = Math.atan2(dy, dx), arm = 0.5 + 0.5 * Math.sin(2 * th + 6 * Math.log(r / R0)), fine = 0.5 + 0.5 * Math.sin(9 * th + 14 * Math.log(r / R0));
+      let v = Math.pow(1 - u, 1.2) * (0.2 + 0.8 * arm * arm) * (0.8 + 0.2 * fine) + (u < 0.14 ? (1 - u / 0.14) * 0.85 : 0);
+      v = Math.min(1, v * 1.25);
+      const th2 = BAY[(y & 3) * 4 + (x & 3)] / 16; if (v < 0.1 + th2 * 0.25) continue; // dithered gaps between the arms
+      const q = Math.max(0, Math.min(5, Math.round(v * 5 + (th2 - 0.5) * 0.8))), C = RAMP[q], p = (y * S + x) * 4;
+      D[p] = C[0]; D[p + 1] = C[1]; D[p + 2] = C[2]; D[p + 3] = q >= 2 ? 255 : 200;
+    }
+    g.putImageData(im, 0, 0); cvD.u = 1 / RES;
+    const RC = 0.82 * TILE, SC = Math.ceil(RC * 2 * RES) + 6, cc = SC / 2, cvC = document.createElement('canvas'); cvC.width = cvC.height = SC;
+    const h = cvC.getContext('2d'), im2 = h.createImageData(SC, SC), E = im2.data;
+    for (let y = 0; y < SC; y++) for (let x = 0; x < SC; x++) {
+      const r = Math.hypot(x + 0.5 - cc, y + 0.5 - cc) / RES, p = (y * SC + x) * 4;
+      if (r < RC - 1.5) { E[p] = 3; E[p + 1] = 2; E[p + 2] = 8; E[p + 3] = 255; }
+      else if (r < RC) { E[p] = 255; E[p + 1] = 246; E[p + 2] = 222; E[p + 3] = 255; } // the photon ring
+      else if (r < RC + 1 && ((x + y) & 1)) { E[p] = 255; E[p + 1] = 190; E[p + 2] = 100; E[p + 3] = 210; }
+    }
+    h.putImageData(im2, 0, 0); cvC.u = 1 / RES;
+    return (holeSpr = { disk: cvD, core: cvC });
+  }
+  const holeVisible = () => !!(G && G.hole && (!fogLive || fogSeeR(G.hole.x, G.hole.y, 2.5)));
+  function drawHole(vxI, vyI, vw, vh, dt0) {
+    const h = G.hole; if (!h) return;
+    const X = h.x * TILE, Y = h.y * TILE, k = h.ph === 2 ? h.k : 1, RR = HOLE.r * TILE, LR = 2.7 * TILE * k;
+    if (X + RR < vxI || Y + RR < vyI || X - RR > vxI + vw || Y - RR > vyI + vh) return;
+    const S = holeSprites();
+    if (holeG !== G || !holeMotes) { holeG = G; holeMotes = []; for (let i = 0; i < 48; i++) holeMotes.push({ a: Math.random() * 6.283, r: RR * (0.3 + Math.random() * 0.7), c: i % 3 }); }
+    if (!LITE && R_.zfx !== false && LR > 4 && !wipe) { // lensing: the board under the hole (from the map layer, which never changes per frame, so no
+      // copy of the live buffer), magnified ×1.35 inside a circle
+      const m = 1.35, sr = LR / m, sx0 = clamp(X - sr, 0, BW - 2 * sr), sy0 = clamp(Y - sr, 0, BH - 2 * sr);
+      b.save(); b.beginPath(); b.arc(X, Y, LR, 0, 6.283); b.clip(); b.imageSmoothingEnabled = false;
+      b.drawImage(mapLayer, sx0 * RES, sy0 * RES, sr * 2 * RES, sr * 2 * RES, X - LR, Y - LR, LR * 2, LR * 2); b.restore();
+      strokeRing(X, Y, LR, '#c9b6ff', 0.35, 1); // the Einstein ring hides the seam
+    }
+    fillRing(X, Y, 1.5 * TILE * k, '#05030c', 0.45); // the dark around the hole
+    // reach and horizon: where towers speed up and slow down
+    strokeRing(X, Y, RR, '#b86cff', 0.55 * k, 1, [3, 5]); strokeRing(X, Y, HOLE.horizon * TILE, '#ff4d6a', 0.6 * k, 1, [2, 3]);
+    for (let i = 0; i < 3; i++) { const f = ((rt * 0.5 + i / 3) % 1), rr = RR - (RR - HOLE.horizon * TILE) * f; strokeRing(X, Y, rr, '#9a7cff', 0.28 * f * k, 1); } // time dilation: rings closing in
+    // motes spiral in: faster and hotter near the centre
+    const dt = Math.min(0.05, dt0 || 0);
+    for (const p of holeMotes) {
+      p.r -= (14 + 900 / Math.max(6, p.r)) * dt; p.a += (40 / Math.max(8, p.r)) * dt * 3;
+      if (p.r < 0.55 * TILE) { p.r = RR * (0.75 + Math.random() * 0.25); p.a = Math.random() * 6.283; }
+      const u = p.r / RR, col = u < 0.25 ? '#fff0c8' : u < 0.5 ? '#ff9a4a' : p.c ? '#b86cff' : '#7d6cff';
+      R(b, X + Math.cos(p.a) * p.r * k, Y + Math.sin(p.a) * p.r * k, u < 0.4 ? 2 : 1, u < 0.4 ? 2 : 1, col);
+    }
+    // the disk turns (one sprite, rotated), then the core sits on top
+    const dw = S.disk.width * S.disk.u * k; b.save(); b.translate(X, Y); b.rotate(-rt * 0.9); b.drawImage(S.disk, -dw / 2, -dw / 2, dw, dw); b.restore();
+    const cw = S.core.width * S.core.u * Math.max(0.2, k); b.drawImage(S.core, X - cw / 2, Y - cw / 2, cw, cw);
+  }
+
   // ---------- 6.3 zone change wipe, backdrop past the map edge, ambient layer ----------
   function startWipe(copy) {
     if (!oldLayer) oldLayer = document.createElement('canvas');
@@ -11554,6 +12189,9 @@ const RES = 2;
         if (f >= 1) { wipe = null; oldLayer.width = oldLayer.height = 1; }
       } else blitL(mapLayer); }
     drawVeil();
+    // 6.5 fog of war: which enemies are hidden this frame (bosses and Scanned enemies always show; a boss in fog is drawn over it)
+    const FOGON = fogUpdate();
+    for (const e of G.enemies) { const see = !FOGON || fogSee(e.x, e.y); e._fogH = !see && !e.boss && !(e.scanned > 0); e._fogB = !see && !!e.boss; }
     // animated path glow running toward the core
     if (frame % 2 === 0) { const dc = hexA((ZLOOK[mapZone] || ZL0).dot, 0.35); for (const L of G.map.lanes) if (!L.openWave) { const k = (frame >> 1) % L.tiles.length; for (let j = k; j < L.tiles.length; j += 9) { const p = L.tiles[j]; R(b, p.x * TILE + 11, p.y * TILE + 11, 2, 2, dc); } } }
     if (window.__rdbg & 16) { const t0 = performance.now(); zoneAmb(v); zMs += performance.now() - t0; } else zoneAmb(v); // 6.3: the zone's weather and particles, under everything that matters (__rdbg 16: timed for drawbench)
@@ -11564,6 +12202,7 @@ const RES = 2;
       b.beginPath(); b.moveTo(a.x * TILE, a.y * TILE); b.lineTo(c2.x * TILE, c2.y * TILE); b.stroke(); b.setLineDash([]);
     }
     for (const s of G.storms) {
+      if (FOGON && !fogSeeR(s.x, s.y, s.r)) continue; // 6.5: a storm out in the fog is hidden
       const col = s.mael ? '#ff4d6a' : STORMS[s.types[(frame >> 5) % s.types.length]].col;
       ditherDisc(s.x * TILE, s.y * TILE, s.r * TILE, hexA(col, s.mael ? 0.2 : 0.14), s.mael ? 2 : 3, (frame >> 3) % 3);
       const arms = s.mael ? 5 : 3;
@@ -11577,6 +12216,7 @@ const RES = 2;
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
+    if (G.hole && holeVisible()) drawHole(vxI, vyI, vwI, vhI, dt); // 6.5 Black Hole (under the enemies it drags)
     const wfA = G.fr && wormFlashAt ? Math.max(0, Math.min(1, (2.5 - (performance.now() - wormFlashAt) / 1000) / 0.8)) : 0; // shown for 2.5 s after a refused build, fading over the last 0.8 s
     if (wfA > 0) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (FRONTIER.wormBuild - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', (L.openWave ? 0.1 : 0.16) * wfA), 3, 0); strokeRing(X, Y, r, '#ff4d6a', (L.openWave ? 0.4 : 0.7) * wfA, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
@@ -11593,10 +12233,10 @@ const RES = 2;
         b.strokeStyle = 'rgba(89,240,180,0.12)'; b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, R2, a - 0.5, a); b.stroke(); }
     }
     b.strokeStyle = 'rgba(89,240,180,0.45)'; b.lineWidth = 1; b.setLineDash([2, 4]);
-    for (const e of G.enemies) if (e.lureT && !e.netted) { b.beginPath(); b.moveTo(e.x * TILE, e.y * TILE - 7); b.lineTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.stroke(); }
+    for (const e of G.enemies) if (e.lureT && !e.netted && !e._fogH) { b.beginPath(); b.moveTo(e.x * TILE, e.y * TILE - 7); b.lineTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.stroke(); }
     b.setLineDash([]);
     // v5.8: a held flier strains on a taut tether back to its beacon
-    for (const e of G.enemies) if (e.netted && e.netHold > 0 && e.lureT && !e.dead) { const ex = e.x * TILE, ey = e.y * TILE - 7, q = 0.55 + 0.35 * Math.sin(frame / 2 + e.id);
+    for (const e of G.enemies) if (e.netted && e.netHold > 0 && e.lureT && !e.dead && !e._fogH) { const ex = e.x * TILE, ey = e.y * TILE - 7, q = 0.55 + 0.35 * Math.sin(frame / 2 + e.id);
       b.strokeStyle = hexA('#9fffd8', q); b.lineWidth = 1; b.beginPath(); b.moveTo(e.lureT.cx * TILE, e.lureT.cy * TILE); b.lineTo(ex, ey); b.stroke(); R(b, ex - 1, ey - 1, 2, 2, '#e6fff6'); }
     // Power Nodes: a pulsing cyan diamond; with a tower on top, corner brackets show the charge
     for (const q of G.nodes || []) {
@@ -11611,6 +12251,7 @@ const RES = 2;
     }
     // salvage caches: a crate with a beacon that blinks faster as it decays
     for (const cc of G.caches || []) {
+      if (FOGON && !fogSee(cc.x + 0.5, cc.y + 0.5)) continue; // 6.5: salvage in the fog is hidden
       const X = cc.x * TILE + 5, Y = cc.y * TILE + 7, late = cc.t < 6, on = late ? (frame >> 2) % 2 : (frame >> 4) % 2;
       const P2 = CACHE_PAL[cc.kind || 'normal'];
       R(b, X - 1, Y + 1, 16, 12, 'rgba(0,0,0,0.45)');
@@ -11621,6 +12262,7 @@ const RES = 2;
       const f = Math.max(0, cc.t / CACHE_LIFE), rr = 12;
       b.strokeStyle = hexA(late ? '#ff4d6a' : P2[3], 0.8); b.lineWidth = 1.5; b.beginPath(); b.arc(cc.x * TILE + 12, cc.y * TILE + 12, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
     }
+    if (G.sites && G.sites.length) drawSites(v); // 6.5 loot sites
     // Node Links: a jittering cyan beam between linked node towers
     for (const [a, b2] of G.links || []) {
       const ax = a.cx * TILE, ay = a.cy * TILE, bx = b2.cx * TILE, by = b2.cy * TILE, off = a.disabled > 0 || b2.disabled > 0;
@@ -11706,17 +12348,19 @@ const RES = 2;
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
     geneRanks();
-    for (const e of G.enemies) if (!e.fly) drawEnemy(e);
+    for (const e of G.enemies) if (!e.fly && !e._fogH && !e._fogB) drawEnemy(e);
     if (G.capT && G.capT.length) drawCapField(); // 6.4 Rimewall walls (in front of the ground enemies they hold) and Entangler links
-    for (const e of G.enemies) if (e.fly) drawEnemy(e);
+    for (const e of G.enemies) if (e.fly && !e._fogH && !e._fogB) drawEnemy(e);
     // pirate drop ships
     for (const P2 of G.pirates || []) {
+      if (FOGON && !fogSee(P2.x, P2.y)) continue;
       const gold = P2.kind === 'gold', sp = pirateSprite(gold), k = (gold ? 1.5 : 1) * (sp.u || 1), w = sp.width * k, h = sp.height * k, X = P2.x * TILE, Y = P2.y * TILE - 16;
       b.fillStyle = 'rgba(0,0,0,0.3)'; b.fillRect(Math.round(X - w * 0.4), Math.round(P2.y * TILE + 4), Math.round(w * 0.8), 3);
       b.save(); b.translate(Math.round(X), Math.round(Y + Math.sin(frame / 5 + P2.id) * 1.5)); if (P2.vx < 0) b.scale(-1, 1); b.drawImage(sp, -w / 2, -h / 2, w, h); b.restore();
       if (frame % 2 === 0) parts.push({ x: X - Math.sign(P2.vx) * w / 2, y: Y + 2, vx: -P2.vx * 2, vy: (Math.random() - 0.5) * 6, life: 0.3, max: 0.3, col: '#6ae2ff', s: 2 });
       if (!P2.dropped) { const tx = (P2.tx + 0.5) * TILE, ty = (P2.ty + 0.5) * TILE; b.strokeStyle = hexA(CACHE_PAL[P2.kind][3], 0.4 + 0.3 * Math.sin(frame / 3)); b.lineWidth = 1; b.setLineDash([2, 3]); b.strokeRect(tx - 10, ty - 10, 20, 20); b.setLineDash([]); }
     }
+    if (G.probe) drawProbe(v); // 6.5 guards and the probe fly above the swarm
     // projectiles
     for (const p of G.projs) {
       const X = p.x * TILE, Y = p.y * TILE, col = EL[p.el] ? EL[p.el].col : '#fff';
@@ -11797,6 +12441,10 @@ const RES = 2;
     }
     parts = parts.filter(p => p.life > 0);
     if (parts.length > 800) parts.splice(0, parts.length - 800);
+    if (FOGON) { // 6.5: the fog over everything on the board, then any boss under it (a boss at the core ends the run, so it always shows)
+      drawFog(Math.max(0, vxI), Math.max(0, vyI), Math.min(BW, vxI + vwI), Math.min(BH, vyI + vhI));
+      for (const e of G.enemies) if (e._fogB && !e.dead) drawEnemy(e);
+    }
     if (nuke) drawNuke(dt, v.vy, v.vh);
     if (G.aimAbility && aimPos) D(b, aimPos.x * TILE, aimPos.y * TILE, 2, '#ffffff');
 
@@ -11809,20 +12457,24 @@ const RES = 2;
     let np = 0;
     for (const p of G.projs) { if (np++ > 160) break; light(p.x * TILE, p.y * TILE, TILE * (p.k === 'bullet' ? 0.45 : 0.75), EL[p.el] ? EL[p.el].col : '#ffffff', p.k === 'bullet' ? 0.3 : 0.4); }
     for (const e of G.enemies) {
+      if (e._fogH) continue;
       if (e.boss) light(e.x * TILE, e.y * TILE, TILE * (e.gen ? 1.8 : 3.4), BOSS_COL[e.boss] || '#ff3355', 0.22);
       else if (e.elite.length) light(e.x * TILE, e.y * TILE, TILE * 1.1, ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, 0.18);
       if (e.st.burn) light(e.x * TILE, e.y * TILE, TILE * 0.7, EL.T.col, 0.16);
     }
     for (const Rg of rings) { if (Rg.nl || Rg.dl > 0) continue; const k = 1 - Math.max(0, Rg.life / Rg.max); light(Rg.x, Rg.y, (Rg.r0 + (Rg.r1 - Rg.r0) * k) * 1.3 + 6, Rg.col, (1 - k) * (Rg.fill ? 0.5 : 0.3)); }
     for (const L of lines) { if (L.dl > 0) continue; const a = Math.max(0, L.life / L.max), q = L.pts[L.pts.length - 1]; light(q.x, q.y, 16, L.col, a * 0.5); light(L.pts[0].x, L.pts[0].y, 12, L.col, a * 0.35); }
-    for (const s2 of G.storms) light(s2.x * TILE, s2.y * TILE, s2.r * TILE * 1.1, s2.mael ? '#ff4d6a' : STORMS[s2.types[0]].col, 0.13);
+    for (const s2 of G.storms) if (!FOGON || fogSeeR(s2.x, s2.y, s2.r)) light(s2.x * TILE, s2.y * TILE, s2.r * TILE * 1.1, s2.mael ? '#ff4d6a' : STORMS[s2.types[0]].col, 0.13);
     for (const z of G.zones) light(z.x * TILE, z.y * TILE, z.r * TILE * 1.2, '#ff7b39', 0.22);
     for (const q of conduits) light(q.x, q.y, 14, q.col, 0.05 + 0.05 * Math.sin(frame / 20 + q.ph));
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
-    for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
+    for (const cc of G.caches || []) if (!FOGON || fogSee(cc.x + 0.5, cc.y + 0.5)) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
+    if (G.probe) { for (const s2 of G.sites || []) if (!s2.done) light(s2.x * TILE, s2.y * TILE, TILE * (s2.k === 'cloud' ? 2.2 : 1.4), s2.rich ? PR_COL.gold : s2.k === 'cloud' ? PR_COL.cloud : s2.k === 'wreck' ? '#ff9a3c' : PR_COL.site, s2.k === 'cloud' ? 0.2 : 0.16);
+      const Pb = G.probe; if (Pb.alive && !Pb.home) light(Pb.x * TILE, Pb.y * TILE - 8, TILE * 1.3, PR_COL.glow, 0.3); } // 6.5
     if (nuke) { const t = nuke.t; light(nuke.x, nuke.y, TILE * (3 + 3 * Math.min(1, t / 0.4)), t < 0.6 ? '#fff0c0' : '#ff8a2a', Math.max(0, 0.9 - t * 0.3)); light(nuke.x, nuke.y - TILE * 3.5 * Math.min(1, t / 1.5), TILE * 3, '#ff7b29', Math.max(0, 0.45 - t * 0.14)); }
     if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
+    if (G.hole && holeVisible()) light(G.hole.x * TILE, G.hole.y * TILE, TILE * 1.8 * (G.hole.ph === 2 ? G.hole.k : 1), '#ff9a4a', 0.14);
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
 
     // ---------- composite ----------
@@ -11872,6 +12524,20 @@ const RES = 2;
     if (preview) ringS((preview.x + 0.5) * TILE, (preview.y + 0.5) * TILE, preview.range * TILE, preview.col, 0.9, 1.5, 0.09);
     if (G.selCore) ringS(G.core.x * TILE, G.core.y * TILE, (G.core.s ? G.core.s.range : 3) * TILE, PAL.core, 0.75, 1.5, 0.05);
     if (G.aimAbility && aimPos) ringS(aimPos.x * TILE, aimPos.y * TILE, 1.7 * TILE, PAL.amber, 1, 2, 0.12);
+    // 6.5 the probe: its course (dashed, brighter while selected), the selection ring with the Lance's reach, hull and cargo
+    // over it, and a hull bar over a hurt guard. All in screen space, so they stay sharp at any zoom
+    if (G.probe) { const Pb = G.probe, sx = bx2s(Pb.x * TILE), sy = by2s(Pb.y * TILE - 8);
+      if (Pb.alive && !Pb.home) { const st = Pb.task ? (G.sites || []).find(o => o.id === Pb.task) : null, h = G.core, tx = Pb.ret ? h.x + 0.55 : st ? st.x : Pb.tx, ty = Pb.ret ? h.y - 0.55 : st ? st.y : Pb.ty;
+        if (tx != null && Math.hypot(tx - Pb.x, ty - Pb.y) > 0.4) { const ex = bx2s(tx * TILE), ey = by2s(ty * TILE);
+          c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.lineWidth = prSelOn ? 2 : 1.5; c.strokeStyle = hexA(Pb.ret ? PAL.core : PR_COL.probe, prSelOn ? 0.9 : 0.5); c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]);
+          c.strokeStyle = hexA(Pb.ret ? PAL.core : PR_COL.probe, 0.85); c.lineWidth = 1.5; c.beginPath(); c.moveTo(ex - 5, ey - 5); c.lineTo(ex + 5, ey + 5); c.moveTo(ex + 5, ey - 5); c.lineTo(ex - 5, ey + 5); c.stroke(); } }
+      if (Pb.alive && prSelOn) { const ps = prStats(); c.lineWidth = 2; c.strokeStyle = hexA(PR_COL.probe, 0.6 + 0.35 * Math.sin(frame / 5)); c.beginPath(); c.arc(sx, sy, Math.max(10, 0.7 * TILE * ws), 0, 6.283); c.stroke();
+        if (ps.range > 0) ringS(Pb.x * TILE, Pb.y * TILE - 8, ps.range * TILE, PR_COL.glow, 0.5, 1, 0.04); }
+      if (Pb.alive && !Pb.home && sx > -40 && sy > -40 && sx < DW + ox + 40 && sy < DH + oy + 40) { const bw = 22, f = Math.max(0, Pb.hp / Pb.max), n = Math.round(Pb.cargo.cr);
+        c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(sx - bw / 2 - 1, sy - 15, bw + 2, 4); c.fillStyle = f < 0.35 ? PAL.bad : PR_COL.probe; c.fillRect(sx - bw / 2, sy - 14, bw * f, 2);
+        if (n > 0 || Pb.cargo.jp) { c.font = '10px Silkscreen, monospace'; c.textAlign = 'center'; const t = (n > 0 ? fmt(n) : '') + (Pb.cargo.jp ? ' ★' : ''); c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(sx - t.length * 3.5 - 3, sy - 28, t.length * 7 + 6, 11); c.fillStyle = '#ffe14d'; c.fillText(t, sx, sy - 19); } }
+      for (const st of G.sites || []) for (const g of st.g) if (g.hp < g.max) { const gx = bx2s(g.x * TILE), gy = by2s(g.y * TILE - 6); if (gx < -20 || gy < -20 || gx > ox + DW + 20 || gy > oy + DH + 20) continue;
+        c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(gx - 8, gy - 12, 16, 3); c.fillStyle = PR_COL.guard; c.fillRect(gx - 7, gy - 11, 14 * Math.max(0, g.hp / g.max), 1); } }
     // v5.0.1 mouse: the tile under the cursor gets faint corners; a hovered tower shows its range
     if (hoverTile && !(selTile && selTile.x === hoverTile.x && selTile.y === hoverTile.y) && G && !G.over) {
       const x = bx2s(hoverTile.x * TILE), y = by2s(hoverTile.y * TILE), w = TILE * ws, L = Math.max(3, w * 0.22);
@@ -11952,13 +12618,21 @@ const RES = 2;
         th.sort((p, q) => (q.boss ? 1 : 0) - (p.boss ? 1 : 0) || (p.L.len - p.d) - (q.L.len - q.d));
         for (const e of th.slice(0, 6)) list.push({ x: e.x, y: e.y, col: e.boss ? PAL.bad : PAL.amber, big: !!e.boss }); }
       if (!onS(bx2s(G.core.x * TILE), by2s(G.core.y * TILE))) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
+      if (G.hole && (G.hole.ph === 0 || holeVisible())) list.push({ x: G.hole.x, y: G.hole.y, col: '#b86cff', big: G.hole.ph === 0, hole: 1 }); // 6.5: a black hole drifting in always warns, even out in the fog
       // treasure: project each off-screen crate to the edge, merge crates whose arrows would land within 34 px, keep the 3 closest
       const edge = (sx2, sy2) => { const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy))); return { px: cx0 + dx * k, py: cy0 + dy * k }; };
       const tre = [];
-      for (const cc of G.caches || []) { const x = cc.x + 0.5, y = cc.y + 0.5, sx2 = bx2s(x * TILE), sy2 = by2s(y * TILE); if (onS(sx2, sy2)) continue;
+      for (const cc of G.caches || []) { const x = cc.x + 0.5, y = cc.y + 0.5, sx2 = bx2s(x * TILE), sy2 = by2s(y * TILE); if (onS(sx2, sy2) || (fogLive && !fogSee(x, y))) continue;
         const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = tre.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
         if (m) { m.n++; if (d < m.d) Object.assign(m, { x, y, d }); } else tre.push({ x, y, d, px: E.px, py: E.py, n: 1, col: '#ffe14d', tre: 1 }); }
       tre.sort((p, q) => p.d - q.d); for (const A of tre.slice(0, 3)) list.push(A);
+      // 6.5: active loot sites (magenta, merged and capped like treasure) and the probe itself when it is out of view
+      if (G.probe) { const ss = [];
+        for (const st of G.sites || []) { if (st.done) continue; const sx2 = bx2s(st.x * TILE), sy2 = by2s(st.y * TILE); if (onS(sx2, sy2)) continue;
+          const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = ss.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
+          if (m) { m.n++; if (d < m.d) Object.assign(m, { x: st.x, y: st.y, d, sk: st.k }); } else ss.push({ x: st.x, y: st.y, d, px: E.px, py: E.py, n: 1, col: PR_COL.site, site: 1, sk: st.k }); }
+        ss.sort((p, q) => p.d - q.d); for (const A of ss.slice(0, 3)) list.push(A);
+        const Pb = G.probe; if (Pb.alive && !Pb.home) list.push({ x: Pb.x, y: Pb.y, col: PR_COL.probe, prb: 1 }); }
       const ko = keepOut;
       for (const A of list) {
         const sx2 = bx2s(A.x * TILE), sy2 = by2s(A.y * TILE);
@@ -11979,8 +12653,15 @@ const RES = 2;
             break; }
         }
         if (ko.some(q => px > q.l - r - 3 && px < q.r + r + 3 && py > q.t - r - 3 && py < q.b + r + 3)) continue; // no clear spot left: no arrow (it could not be tapped)
-        const an = Math.atan2(sy2 - py, sx2 - px), pl = A.tre ? 1 : 0.75 + 0.25 * Math.sin(frame / 6); // treasure stays solid yellow
-        if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) continue;
+        const an = Math.atan2(sy2 - py, sx2 - px), pl = A.tre || A.site || A.prb ? 1 : 0.75 + 0.25 * Math.sin(frame / 6); // treasure, loot sites and the probe stay solid
+        if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) { // 6.5: a crowded spot: slide along the edge to the nearest free place, or skip
+          let to = null;
+          for (const dd of [20, -20, 40, -40]) { const qx = side ? px : px + dd, qy = side ? py + dd : py;
+            if (qx < ox + pad || qy < oy + pad || qx > ox + DW - pad || qy > oy + DH - pad) continue;
+            if (frArrows.some(o => Math.hypot(o.sx - qx, o.sy - qy) < 18) || ko.some(q => qx > q.l - r - 3 && qx < q.r + r + 3 && qy > q.t - r - 3 && qy < q.b + r + 3)) continue;
+            to = [qx, qy]; break; }
+          if (!to) continue; px = to[0]; py = to[1];
+        }
         c.save(); c.translate(px, py); c.rotate(an);
         c.fillStyle = 'rgba(7,8,15,0.75)'; c.beginPath(); c.moveTo(r + 3, 0); c.lineTo(-r + 1, -r); c.lineTo(-r * 0.4, 0); c.lineTo(-r + 1, r); c.closePath(); c.fill();
         c.fillStyle = hexA(A.col, pl); c.beginPath(); c.moveTo(r, 0); c.lineTo(-r + 3, -r + 2.5); c.lineTo(-r * 0.4 + 1, 0); c.lineTo(-r + 3, r - 2.5); c.closePath(); c.fill();
@@ -11991,7 +12672,16 @@ const RES = 2;
           c.fillStyle = '#b07a20'; c.fillRect(qx - 5, qy - 4, 10, 8); c.fillStyle = '#ffe14d'; c.fillRect(qx - 5, qy - 4, 10, 3); c.fillStyle = '#3a2410'; c.fillRect(qx - 5, qy - 1, 10, 1); c.fillStyle = '#fff6c0'; c.fillRect(qx - 1, qy - 2, 2, 3);
           if (A.n > 1) { c.font = '9px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(7,8,15,0.9)'; c.fillRect(qx + 4, qy - 11, 10, 9); c.fillStyle = '#ffe14d'; c.fillText(String(A.n), qx + 9, qy - 6); c.textBaseline = 'alphabetic'; }
         }
-        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home, tre: !!A.tre });
+        if (A.site || A.prb) { // 6.5: a small mark behind the arrow: the site's kind (and the count when merged), or a probe dot
+          const ux = Math.cos(an), uy = Math.sin(an), qx = Math.round(px - ux * (r + 9)), qy = Math.round(py - uy * (r + 9));
+          c.fillStyle = 'rgba(7,8,15,0.85)'; c.fillRect(qx - 6, qy - 6, 12, 12);
+          if (A.prb) { c.fillStyle = PR_COL.body; c.fillRect(qx - 3, qy - 3, 6, 6); c.fillStyle = PR_COL.trim; c.fillRect(qx - 5, qy - 1, 2, 2); c.fillRect(qx + 3, qy - 1, 2, 2); }
+          else if (A.sk === 'cloud') { c.fillStyle = PR_COL.cloud; c.fillRect(qx - 4, qy - 2, 8, 5); c.fillRect(qx - 2, qy - 4, 5, 2); }
+          else if (A.sk === 'rock') { c.fillStyle = '#8c7a66'; c.fillRect(qx - 4, qy - 3, 8, 7); c.fillStyle = '#4c4038'; c.fillRect(qx - 1, qy, 2, 2); }
+          else { c.fillStyle = '#8a96ad'; c.fillRect(qx - 5, qy - 2, 6, 4); c.fillRect(qx + 1, qy - 1, 4, 3); c.fillStyle = '#ffb03a'; c.fillRect(qx, qy - 1, 1, 2); }
+          if (A.n > 1) { c.font = '9px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(7,8,15,0.9)'; c.fillRect(qx + 4, qy - 12, 10, 9); c.fillStyle = PR_COL.site; c.fillText(String(A.n), qx + 9, qy - 7); c.textBaseline = 'alphabetic'; }
+        }
+        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home, tre: !!A.tre, site: !!A.site, prb: !!A.prb, hole: !!A.hole });
       }
     }
     // the old sector border fades out as the camera pulls back
@@ -12006,7 +12696,7 @@ const RES = 2;
     }
     // v5.8 gene marks, in screen space so they stay readable at phone zoom
     { const u = clamp(Math.round(ws * 1.1), 2, 4);
-      for (const e of G.enemies) if (e._gmOn && !e.dead && !(e.cloaked && !(e.revealed > 0))) {
+      for (const e of G.enemies) if (e._gmOn && !e.dead && !e._fogH && !(e.cloaked && !(e.revealed > 0))) {
         const x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - (e.fly ? 7 : 0))), hw = (e._hw || 6) * ws, hh = (e._hh || 6) * ws;
         if (x < -40 || y < -40 || x > DW + 40 || y > DH + 40) continue;
         for (const g of e._gmOn) geneMark(c, g, x, y, hw, hh, u, e);
@@ -12037,7 +12727,7 @@ const RES = 2;
       }
     }
     // v4.7 elite crowns: gold, one gem per affix, drawn above everything so a crowd can't bury them
-    for (const e of G.enemies) if (e._crown && !e.dead) {
+    for (const e of G.enemies) if (e._crown && !e.dead && !e._fogH) {
       const x = Math.round(bx2s(e.x * TILE)), y = Math.round(by2s(e.y * TILE - (e.fly ? 7 : 0) - (e._hh || 6) - 4)), u = clamp(Math.round(ws * 1.1), 2, 4), n = e._crown.length, cw = (5 + n * 2) * u;
       c.fillStyle = '#090b16'; c.fillRect(x - cw / 2 - u, y - 4 * u, cw + 2 * u, 5 * u);
       c.fillStyle = '#ffd84a'; c.fillRect(x - cw / 2, y - u * 1.5, cw, u * 2); for (const dx of [-cw / 2, -u / 2, cw / 2 - u]) c.fillRect(x + dx, y - 3 * u, u, 2 * u);
@@ -12063,7 +12753,7 @@ const RES = 2;
         c.fillStyle = '#9a96b0'; c.fillText('IDLE', x, y); c.textBaseline = 'alphabetic';
       } }
     // v5.2 pirates: the skiff's flight path ahead of it, its target, and its captain's name
-    for (const e of G.enemies) if (e.pirate && !e.dead) {
+    for (const e of G.enemies) if (e.pirate && !e.dead && !e._fogH) {
       const P = e.pirate, L = e.L, pts = [{ x: e.x, y: e.y }]; for (let i = 0; i < L.pts.length; i++) if (L.cum[i] > e.d) pts.push(L.pts[i]);
       c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.lineWidth = 2; c.strokeStyle = hexA('#ff4d6a', 0.55); c.beginPath();
       pts.forEach((q, i) => { const x = bx2s(q.x * TILE), y = by2s(q.y * TILE - 7); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.setLineDash([]);
@@ -12079,6 +12769,18 @@ const RES = 2;
       for (const t of G.towers) { if (dist2(t.cx, t.cy, st.x, st.y) > r2) continue;
         const boosted = t.s && els.includes(t.s.el), x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
         c.lineWidth = boosted ? 2 : 1; c.strokeStyle = hexA(col, boosted ? 0.9 : 0.45); if (!boosted) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
+    }
+    // 6.5 Black Hole: towers in its ring wear a solid amber frame (+40% Attack Speed), towers inside the horizon a dashed red one
+    // (−50%); the two numbers sit on top of the two rings
+    if (G.hole && holeVisible()) { const h = G.hole, R2 = HOLE.r * HOLE.r, H2 = HOLE.horizon * HOLE.horizon, u = clamp(Math.round(ws * 1.1), 2, 4);
+      for (const t of G.towers) { const d2 = dist2(t.cx, t.cy, h.x, h.y); if (d2 > R2) continue;
+        const inner = d2 < H2, x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
+        c.lineWidth = 2; c.strokeStyle = inner ? 'rgba(255,77,106,0.9)' : 'rgba(255,225,77,0.85)'; if (inner) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
+      if (h.ph !== 2) { c.font = `${Math.max(8, 3.5 * u)}px Silkscreen, monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
+        for (const [rr, txt, col] of [[HOLE.r, `+${Math.round(HOLE.ring * 100)}%`, '#ffe14d'], [HOLE.horizon, `${Math.round(HOLE.inner * 100)}%`.replace('-', '−'), '#ff4d6a']]) {
+          const x = Math.round(bx2s(h.x * TILE)), y = Math.round(by2s((h.y - rr) * TILE)), tw = c.measureText(txt).width;
+          c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), Math.round(y - 2.5 * u), Math.round(tw + 2 * u), Math.round(5 * u)); c.fillStyle = col; c.fillText(txt, x, y); }
+        c.textBaseline = 'alphabetic'; }
     }
     { const u = clamp(Math.round(ws * 1.1), 2, 4);
       for (const t of G.towers) if (t.disabled > 0) {
@@ -12175,7 +12877,8 @@ const RES = 2;
       const mw = 64, mh = mw * reg.h / reg.w, mx = W - mw - 8, my = H - mh - 8;
       c.fillStyle = 'rgba(7,8,15,0.7)'; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
       c.drawImage(mapLayer, reg.x * RES, reg.y * RES, reg.w * RES, reg.h * RES, mx, my, mw, mh);
-      for (const cc of G.caches || []) { c.fillStyle = (frame >> 3) % 2 ? CACHE_PAL[cc.kind || 'normal'][3] : '#3a3020'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
+      if (fogLive) { const q = 2 / TILE; c.drawImage(fogCv, reg.x * q, reg.y * q, reg.w * q, reg.h * q, mx, my, mw, mh); } // 6.5 the fog on the minimap too
+      for (const cc of G.caches || []) if (!fogLive || fogSee(cc.x + 0.5, cc.y + 0.5)) { c.fillStyle = (frame >> 3) % 2 ? CACHE_PAL[cc.kind || 'normal'][3] : '#3a3020'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
     }
     // scanlines: one dark row every 3 px, drawn as plain stripes in one path. v5.3.2: a repeating createPattern fill left three
@@ -12195,6 +12898,9 @@ const RES = 2;
   const K = TILE / 10;
   function fx(type, d) {
     switch (type) {
+      case 'holeEnd': { if (fogLive && !fogSeeR(d.x, d.y, 2.5)) break; const x = T2P(d.x), y = T2P(d.y); // 6.5 the Black Hole collapses: a white pinch, then a ring and sparks thrown out
+        stars.push({ x, y, life: 0.12, max: 0.12, col: '#ffffff', s: TILE * 0.7, disc: 1 }); rings.push({ x, y, r0: 4, r1: HOLE.r * TILE, life: 0.7, max: 0.7, col: '#b86cff', w: 3 });
+        rings.push({ x, y, r0: 2, r1: TILE * 2.2, life: 0.35, max: 0.35, col: '#fff0c8', fill: 1, w: 2 }); burst(x, y, LITE ? 14 : 40, '#ff9a4a', 70 * K, 0.7); kick(3, 0.5); break; }
       case 'build': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 22, life: 0.35, max: 0.35, col: d.col }); burst(T2P(d.x), T2P(d.y), 14, d.col, 30 * K, 0.4); break;
       case 'upgrade': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 22, r1: 4, life: 0.4, max: 0.4, col: d.col }); burst(T2P(d.x), T2P(d.y), 18, d.col, 25 * K, 0.6, -30 * K); break;
       case 'sell': burst(T2P(d.x), T2P(d.y), 16, '#8a8aa6', 20 * K, 0.5, 30 * K); break;
@@ -12310,6 +13016,10 @@ const RES = 2;
       case 'grow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 20, life: 0.5, max: 0.5, col: PAL.core, w: 2 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 12, life: 0.7, max: 0.7, col: '#e6fff6', w: 1 });
         for (let i = 0; i < 10; i++) parts.push({ x: T2P(d.x) + (Math.random() - 0.5) * 16, y: T2P(d.y) + 4, vx: (Math.random() - 0.5) * 6, vy: -22 - Math.random() * 18, life: 0.8, max: 0.8, col: i % 3 ? PAL.core : '#e6fff6', s: 2 });
         text(d.x, d.y - 0.7, 'LV ' + d.lv, PAL.core, 14, 1.2, -0.6, 'Silkscreen, monospace'); break;
+      case 'site': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 34, r1: 6, life: 0.7, max: 0.7, col: PR_COL.site, w: 2 }); break; // 6.5 loot sites
+      case 'siteDone': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 30, life: 0.45, max: 0.45, col: '#ffe14d', w: 2 }); burst(T2P(d.x), T2P(d.y), 18, d.k === 'cloud' ? PR_COL.cloud : d.k === 'rock' ? '#8c7a66' : '#ffe14d', 40 * K, 0.5); break;
+      case 'siteChunk': burst(T2P(d.x), T2P(d.y), 10, '#8c7a66', 45 * K, 0.45); burst(T2P(d.x), T2P(d.y), 4, '#ffe14d', 30 * K, 0.35); break;
+      case 'prBoom': burst(T2P(d.x), T2P(d.y), d.big ? 26 : 12, d.guard ? PR_COL.guard : PR_COL.probe, (d.big ? 45 : 30) * K, 0.5); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 3, r1: d.big ? 26 : 14, life: 0.35, max: 0.35, col: d.guard ? '#ff9a3c' : '#ffffff', w: 2 }); break;
       case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
       case 'cacheClaim': { const cc = CACHE_PAL[d.kind || 'normal'][3]; rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.kind === 'gold' ? 60 : 34, life: 0.5, max: 0.5, col: cc, w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), d.kind === 'gold' ? 50 : 22, cc, 50 * K, 0.6); break; }
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
@@ -12427,7 +13137,9 @@ const RES = 2;
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     flashWorm() { wormFlashAt = performance.now(); },
-    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
+    set prSel(v) { prSelOn = !!v; }, get prSel() { return prSelOn; }, // 6.5 the probe is selected (UI)
+    set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, fogAt(x, y) { if (!fogLive) return -1; const i = (x * 2) | 0, j = (y * 2) | 0, k = j * fogW2 + i; return fogVis[k] ? 0 : fogImg.data[k * 4 + 3] > 200 ? 2 : 1; }, get fogLive() { return fogLive; }, // 6.5 tests
+     set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
     lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
@@ -13012,7 +13724,7 @@ const UI = (() => {
     Render.preview_map($('#mapPrev'), setup.map);
   }
   // the body class and the Lift Off button follow the run's rules (a resumed pre-6.1 run or an old recording plays Classic)
-  function frModeUI() { document.body.classList.toggle('fr', !!(G && G.fr)); const lb = $('#bLift'); if (lb) { lb.hidden = !(G && G.fr); lb.dataset.l = ''; } }
+  function frModeUI() { document.body.classList.toggle('fr', !!(G && G.fr)); const lb = $('#bLift'); if (lb) { lb.hidden = !(G && G.fr); lb.dataset.l = ''; } const pb = $('#bProbe'); if (pb) { pb.hidden = true; pb.dataset.l = ''; document.body.classList.remove('prb'); } } // 6.5: prBtnUI shows the probe button
   function launch(snap, tut) {
     closeModal();
     show('game');
@@ -13060,7 +13772,7 @@ const UI = (() => {
   // busy moment: a tap in the last 2.5 s, aiming, the core picker or flight, enemies at the core, a boss closing in. A card that
   // has to wait is asked again next frame (its seen flag is set only when it shows). UI state only: nothing is written to G.
   const TEACH_GAP = 30;
-  const TEACH_NOW = { boss: 1, wormhole: 1 }; // 6.2: these warn about the next wave, so they never wait behind the 30 s gap
+  const TEACH_NOW = { boss: 1, wormhole: 1, hole: 1 }; // 6.5: the Black Hole card explains the event while it is on the map // 6.2: these warn about the next wave, so they never wait behind the 30 s gap
   let teachG = null, teachAt = -1e9, teachTap = 0, camUser = 0; // camUser: camera moves made by the player (the Training camera step)
   const teachClock = () => { if (teachG !== G) { teachG = G; teachAt = -1e9; } return G ? G.time : 0; };
   function teachBusy() {
@@ -13092,7 +13804,10 @@ const UI = (() => {
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
+    if (G.hole && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the centre. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
+    if (typeof fogOn === 'function' && fogOn() && G.wave >= 2 && G.time > 20 && introCard('fog', 'Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored, but enemies, crates and storms there are hidden. Bosses always show. Wormholes and the Threat Board still warn you.')) return;
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
+    if (G.probe && G.probe.alive && (G.sites || []).some(s => !s.done) && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. Loot rides home and banks when the probe docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
     if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button at the top right to pick each one a mutation.', 'veterans')) return;
     if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.', 'abilities')) return;
@@ -13901,6 +14616,7 @@ const UI = (() => {
     { const rdy = vetsReady().length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} ready</span>`);
       { const lb = $('#bLift'); if (lb) { const on = !!(G.fr && !G.over && !G.watch), lbl = on ? (G.frFly ? 'Flying' : frCanFly() ? 'Lift Off' : `Lift · W${G.frReady}`) : ''; // Frontier
         if (lb.hidden === on) lb.hidden = !on; if (on && lb.dataset.l !== lbl) { lb.dataset.l = lbl; lb.firstChild.textContent = lbl; lb.classList.toggle('fly', !!G.frFly); lb.classList.toggle('cool', !G.frFly && !frCanFly()); lb.classList.add('go'); } } }
+      prBtnUI(); // 6.5
       const rb = $('#bReady'); if (rb) { const was = +rb.dataset.n || 0; if (rdy !== was) { rb.dataset.n = rdy; $('#rdyN').textContent = rdy; rb.hidden = !rdy; if (rdy > was) { rb.classList.remove('pulse'); void rb.offsetWidth; rb.classList.add('pulse'); } } } } // 5.8 Ready button
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap${performance.now() < stormPulse ? ' pulse' : ''}" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
@@ -14028,7 +14744,7 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|NUKE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const ALERT_RE = /^(BOSS HALFWAY|BLACK HOLE|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|NUKE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|NUKE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
   const KEY_RE = /^(BOSS HALFWAY|NEW ENEMY|BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   // v5.1.2 notices in a game go to one slim ticker under the top bar, never over the field. URGENT ones (the run is at stake)
@@ -14192,7 +14908,7 @@ const UI = (() => {
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
-    frEnd();
+    frEnd(); Render.prSel = false;
     document.body.classList.remove('panel-l', 'panel-r');
   }
   function openPanel(p) {
@@ -14221,6 +14937,7 @@ const UI = (() => {
     else if (panel.kind === 'reloc') el.innerHTML = relocPanelHTML();
     else if (panel.kind === 'frland') el.innerHTML = frLandPanelHTML();
     else if (panel.kind === 'frmove') el.innerHTML = frMovePanelHTML();
+    else if (panel.kind === 'probe') el.innerHTML = probePanelHTML(); // 6.5
     else if (panel.kind === 'enemy') el.innerHTML = enemyPanelHTML(panel.e);
     el.classList.remove('framed');
     const nb = frameBox(el, 'ph', 'pfoot', 'pbody');
@@ -14542,6 +15259,99 @@ const UI = (() => {
     openPanel({ kind: 'frmove', x: t.x, y: t.y });
   }
   function frEnd() { if (!frSel) return; frPause(false); frSel = null; Render.frSel = null; }
+  // ---------- 6.5 the probe (sim: "6.5 the probe" in sim.js; drawing: render.js) ----------
+  // Tap the Probe button, the probe or a loot site: the probe panel opens and the probe is selected. While it is open, a tap on
+  // the map sends the probe there (ACTS prGo), a tap on a site sends it to work that site, a tap on the core recalls it.
+  const PR_KIND = { wreck: 'Wreckage', cloud: 'Gas cloud', rock: 'Asteroid', lost: 'Probe wreck' };
+  const PR_HOW = { wreck: 'Quick grab: 2.5 s on top of it', cloud: 'Harvest inside it: 12 s. Static costs 1.5% hull per second', rock: 'Mine it: 3 chunks. It drifts', lost: 'Your cargo. Quick grab' };
+  function prStatus() {
+    const P = G.probe; if (!P) return '';
+    if (!P.alive) return P.rb > 0 ? `Rebuilding · ${Math.ceil(P.rb)} s` : 'Lost';
+    if (P.home) return 'Docked · repairs the core';
+    const fire = G.time - P.hitT < 1 ? ' · under fire' : '';
+    if (P.ret) return 'Returning home' + fire;
+    const s = P.task ? siteById(P.task) : null;
+    if (s) { const d = Math.hypot(P.x - s.x, P.y - s.y); return (d <= siteReach(s) + 0.1 ? { wreck: 'Salvaging', cloud: 'Harvesting', rock: 'Mining', lost: 'Salvaging' }[s.k] : 'Flying to ' + PR_KIND[s.k].toLowerCase()) + fire; }
+    return (P.tx != null && Math.hypot(P.tx - P.x, P.ty - P.y) > 0.05 ? 'Flying' : 'Holding position') + fire;
+  }
+  const prCargoTxt = c => { const a = []; if (c.cr >= 1) a.push(fmt(Math.round(c.cr))); if (c.ent >= 1) a.push(Math.round(c.ent) + ' Entropy'); if (c.ch) a.push(c.ch + ' charge' + (c.ch > 1 ? 's' : '')); if (c.tok) a.push(c.tok + ' token' + (c.tok > 1 ? 's' : '')); if (c.jp) a.push(c.jp + ' jackpot' + (c.jp > 1 ? 's' : '')); return a.join(' · ') || 'Empty'; };
+  function prSiteTxt(s) {
+    const n = s.g.length, cr = Math.round(s.k === 'rock' ? s.val * (3 - (s.chunks || 0)) / 3 : s.k === 'cloud' ? s.val * (1 - s.prog) : s.val) * prStats().assay;
+    return `<b>${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]}</b> · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'unguarded'} · about ${fmt(Math.round(cr))} credits${s.k === 'cloud' ? ` and ${Math.round(s.ent * (1 - s.prog))} Entropy` : ''}${s.k === 'rock' && s.crystal ? ' · crystal: +1 charge, +1 token' : ''}${s.jp ? ` · ${Math.round(s.jp * 100)}% jackpot` : ''} · fades in ${Math.ceil(s.t)} s<br><span class="dim">${PR_HOW[s.k]}</span>`;
+  }
+  function prUpTxt(k) {
+    const P = G.probe, U = PROBE.up[k], lv = P.lv[k], ws = 1 + Math.max(1, G.wave) / PROBE.wS, v = i => U.v[i];
+    if (k === 'gun') return lv >= 3 ? `${fmt(PROBE.dps * ws * v(3))} damage per second · ${U.r[3]} tiles` : `${lv ? fmt(PROBE.dps * ws * v(lv)) : 'No weapon'} → ${fmt(PROBE.dps * ws * v(lv + 1))} damage per second · ${U.r[lv + 1]} tiles`;
+    if (k === 'hull') return lv >= 3 ? `Hull ${fmt(PROBE.hp * ws * v(3))}` : `Hull ${fmt(PROBE.hp * ws * v(lv))} → ${fmt(PROBE.hp * ws * v(lv + 1))}`;
+    if (k === 'eng') return lv >= 3 ? `${v(3)} tiles per second` : `${v(lv)} → ${v(lv + 1)} tiles per second`;
+    if (k === 'rig') return lv >= 3 ? `Harvest and mining ×${v(3)}` : `Harvest and mining ×${v(lv)} → ×${v(lv + 1)}`;
+    return lv >= 3 ? `Vision ${v(3)} tiles · loot +${Math.round(U.loot * 300)}%` : `Vision ${v(lv)} → ${v(lv + 1)} tiles · loot +${Math.round(U.loot * 100 * (lv + 1))}%`;
+  }
+  const PR_UPCOL = { gun: '#7fe8ff', hull: '#9fd8ff', eng: '#59f0b4', rig: '#ffe14d', scan: '#c58cff' };
+  function probePanelHTML() {
+    const P = G.probe; if (!P) return '';
+    const S = prStats(), st = panel.site ? siteById(panel.site) : null;
+    const head = `<div class="ph"><div class="pt"><b>Probe</b><small data-live="prst">${esc(prStatus())}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>`;
+    const site = st ? `<div class="sts prsite">${prSiteTxt(st)}</div>${P.alive ? (P.task === st.id ? '<button class="btn wide" disabled>Probe on its way</button>' : '<button class="btn primary wide" data-act="prsend">Send probe</button>') : ''}` : '';
+    const stats = `<div class="sg mini"><span>Hull<b data-live="prhp">${P.alive ? `${Math.ceil(P.hp)}/${Math.round(P.max)}` : '—'}</b></span><span>Lance<b>${S.dps > 0 ? fmt(S.dps) + '/s' : 'None'}</b></span><span>Speed<b>${S.spd}/s</b></span></div>
+      <div class="sts">Cargo: <b data-live="prcargo">${esc(prCargoTxt(P.cargo))}</b></div>`;
+    const how = !P.alive ? `<div class="sts bad">${P.rb > 0 ? `In the yard: ready in <b data-live="prrb">${Math.ceil(P.rb)}</b> s` : `Lost. Rebuild: ${fmt(prRebuildCost())} credits and ${PROBE.rbT} s. Upgrades stay`}</div>`
+      : st ? '' : `<p class="note">Tap the map to send it. Tap a site to work it.</p>`;
+    const ups = PROBE.upOrder.map(k => { const lv = P.lv[k], c = prUpCost(k), max = lv >= 3;
+      return `<button class="mkt" data-act="prup" data-v="${k}" ${max ? 'disabled' : costBtn(c)} style="--c:${PR_UPCOL[k]}"><b>${PROBE.up[k].name} ${max ? 'MAX' : lv + 1}</b><span>${prUpTxt(k)}</span><em>${max ? 'Max' : fmt(c)}</em></button>`; }).join('');
+    const foot = `<div class="pfoot">${!P.alive ? `<button class="btn primary wide" data-act="prbuild" ${P.rb > 0 ? 'disabled' : costBtn(prRebuildCost())}>${P.rb > 0 ? 'Rebuilding' : `Rebuild · ${fmt(prRebuildCost())}`}</button>`
+      : `<div class="row2"><button class="btn" data-act="prhome" ${P.home || P.ret ? 'disabled' : ''}>Recall</button><button class="btn" data-act="close">Done</button></div>`}</div>`;
+    return `${head}${site}${stats}${how}<div class="lbl">Upgrades</div><div class="mktlist">${ups}</div>${foot}`;
+  }
+  function openProbe(siteId) {
+    if (!G || !G.probe || G.over || G.watch) return;
+    const P = G.probe, s = siteId ? siteById(siteId) : null, at = s || P;
+    closePanel();
+    openPanel({ kind: 'probe', x: clamp(Math.floor(at.x), 0, COLS - 1), y: clamp(Math.floor(at.y), 0, ROWS - 1), site: s ? s.id : 0 });
+    Render.prSel = true;
+  }
+  // a tap with the probe selected sends it; otherwise a tap on the probe or a site selects it. True: the tap is used
+  function probeTap(p) {
+    const P = G.probe, onP = P.alive && Math.hypot(p.x - P.x, p.y - (P.y - 0.33)) < (P.home ? 0.45 : 0.8);
+    if (panel && panel.kind === 'probe') {
+      if (onP) return true;
+      if (!P.alive) { closePanel(); return false; }
+      const x = Math.round(p.x * 10) / 10, y = Math.round(p.y * 10) / 10;
+      if (!window.act('prGo', x, y)) { SFX.play('deny'); return true; }
+      SFX.play('ui'); panel.site = P.task || 0; renderPanel(); return true;
+    }
+    if (onP) { SFX.play('ui'); openProbe(); return true; }
+    let best = null, bd = 1e9;
+    for (const s of G.sites || []) { if (s.done) continue; const d = Math.hypot(s.x - p.x, s.y - p.y); if (d <= (s.k === 'cloud' ? PROBE.cloudR : 1.2) && d < bd) { bd = d; best = s; } }
+    if (best) { SFX.play('ui'); openProbe(best.id); return true; }
+    return false;
+  }
+  function probeAction(act, b) {
+    const P = G.probe; if (!P) return;
+    if (act === 'prup') { const k = b.dataset.v, lv = P.lv[k]; if (!window.act('prUp', k)) SFX.play('deny'); else toast('PROBE UPGRADED', `${PROBE.up[k].name} ${lv + 1}`, '#9fd8ff', false, 'tip'); }
+    else if (act === 'prhome') { if (!window.act('prHome')) SFX.play('deny'); }
+    else if (act === 'prbuild') { if (!window.act('prBuild')) SFX.play('deny'); }
+    else if (act === 'prsend') { const s = siteById(panel.site); if (!s || !window.act('prGo', Math.round(s.x * 10) / 10, Math.round(s.y * 10) / 10)) SFX.play('deny'); }
+    renderPanel(); updateHud();
+  }
+  function probeLive(el) {
+    const P = G.probe; if (!P) return closePanel();
+    const sig = [P.alive ? 1 : 0, P.rb > 0 ? 1 : 0, P.home, P.ret, P.task, Object.values(P.lv).join(''), panel.site && siteById(panel.site) ? 1 : 0, Math.floor(G.wave)].join(':');
+    if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
+    panel.sig = sig;
+    const set = (k, v) => { const n = el.querySelector(`[data-live="${k}"]`); if (n && n.textContent !== v) n.textContent = v; };
+    set('prst', prStatus()); set('prcargo', prCargoTxt(P.cargo)); if (P.alive) set('prhp', `${Math.ceil(P.hp)}/${Math.round(P.max)}`); if (P.rb > 0) set('prrb', String(Math.ceil(P.rb)));
+  }
+  function prBtnUI() {
+    const pb = $('#bProbe'); if (!pb) return;
+    const P = G && G.probe, on = !!(P && !G.over && !G.watch);
+    if (pb.hidden === on) { pb.hidden = !on; document.body.classList.toggle('prb', on); }
+    if (!on) return;
+    const lbl = !P.alive ? (P.rb > 0 ? `Probe ${Math.ceil(P.rb)}s` : 'Rebuild') : P.home ? 'Probe' : `Probe ${Math.round(100 * P.hp / P.max)}%`;
+    const cls = !P.alive ? 'dead' : P.home ? '' : G.time - P.hitT < 1 ? 'hit' : 'away';
+    if (pb.dataset.l !== lbl) { pb.dataset.l = lbl; pb.firstChild.textContent = lbl; }
+    if (pb.dataset.c !== cls) { pb.dataset.c = cls; pb.className = 'probebtn ' + cls; }
+  }
   function frLandPanelHTML() {
     const P = frSel && frSel.plan;
     const head = `<div class="ph"><div class="pt"><b>Lift Off</b><small>Paused while you choose</small></div><button class="x" data-act="frcancel" aria-label="Cancel">✕</button></div>`;
@@ -14627,6 +15437,7 @@ const UI = (() => {
       const pg = el.querySelector('[data-live="eprog"]'); if (pg && e.L && e.L.len) pg.textContent = Math.round(eProg(e) * 100) + '%';
       const sig = [e.st.burn ? 1 : 0, e.st.chill, e.st.frozen > 0 ? 1 : 0, e.st.shock > 0 ? 1 : 0, e.st.mark, e.scanned > 0 ? 1 : 0, e.shield > 0 ? 1 : 0, e.phase || 0].join(':');
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; } panel.sig = sig; return; }
+    if (panel.kind === 'probe') return probeLive(el); // 6.5
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; renderPanel(); } return; }
     if (panel.kind === 'core') {
       const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0) + (G.fr ? ':' + frLiftLabel() + (frDockT() ? 'd' : '') + (G.frLinks || []).length : '');
@@ -14712,6 +15523,7 @@ const UI = (() => {
       else if (act === 'reactor') { if (!window.act('reactor')) SFX.play('deny'); else toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud(); }
       return;
     }
+    if (panel.kind === 'probe') return probeAction(act, b); // 6.5
     if (panel.kind === 'frland' || panel.kind === 'frmove') {
       if (act === 'frcancel') { closePanel(); return; }
       if (act === 'frgo' && frSel && frSel.plan) {
@@ -14758,7 +15570,7 @@ const UI = (() => {
   // ---------- v5.1 Know Your Enemy: tap (or hover) any enemy to see what it is, what it does and what beats it ----------
   function enemyAt(p, rad) {
     let best = null, bd = (rad || 0.6) * (rad || 0.6);
-    for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0)) || e.burrowT > 0) continue; const ey = e.y - (e.fly ? 0.3 : 0), r = e.boss ? 1.4 : 1, d = dist2(e.x, ey, p.x, p.y) / (r * r); if (d < bd) { bd = d; best = e; } }
+    for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0)) || e.burrowT > 0 || e._fogH) continue; const ey = e.y - (e.fly ? 0.3 : 0), r = e.boss ? 1.4 : 1, d = dist2(e.x, ey, p.x, p.y) / (r * r); if (d < bd) { bd = d; best = e; } }
     return best;
   }
   function enemyInfo(e) {
@@ -14902,6 +15714,7 @@ const UI = (() => {
       if (!P) { SFX.play('deny'); toast('NO ROUTE', 'A road cannot reach that tile', '#ff4d6a'); return; }
       SFX.play('ui'); G.reloc.plan = P; Render.sel = { x: tx, y: ty }; renderPanel(); return;
     }
+    if (G.probe && probeTap(p)) return; // 6.5: send the selected probe, or select it (the probe or a loot site)
     const cc = cacheNear(p, tx, ty);
     if (!cc && !inRegion(tx, ty, G.region)) { closePanel(); return; }
     if (cc) { const kind = cc.kind, m = window.act('cache', cc.x, cc.y); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
@@ -15913,6 +16726,7 @@ const UI = (() => {
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan, double-tap to zoom in or back out. Edge arrows point at what is off screen: bosses and enemies near the core, pirate treasure (yellow, with a chest) and the core itself (green). Tap one to look there; the green one brings the camera home.'],
+      ['Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored: you see the land, but not enemies, crates or storms. Bosses always show. Sensor Sweep shows every enemy it Marks.'],
       ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V B abilities, Space pause, 1–3 speed, Esc close.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
@@ -16014,7 +16828,18 @@ const UI = (() => {
       { id: 'storm', name: 'Storms', rows: [...Object.values(STORMS).map(S => [S.name, S.desc + '.', S.col]),
         ...Object.entries(COMBO_STORMS).map(([k, n]) => [n, 'Merged storm: ' + k.split('+').map(x => STORMS[x].name).join(' + ') + '. Both effects.']),
         ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
-      { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
+      { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, (E.long || E.desc) + '.', E.good ? '#59f0b4' : E.id === 'hole' ? '#b86cff' : '#ff8a9c']) },
+      { id: 'probe', name: 'Probe', rows: [ // 6.5
+        ['Probe', `Your scout ship. Tap Probe (or the probe), then tap any spot: it flies there in a straight line at ${PROBE.up.eng.v[0]} tiles per second. Tap the core to recall it. Docked, it repairs the core ${PROBE.repair * 100}% of max hull per second.`, '#9fd8ff'],
+        ['Cargo', 'Loot rides in the probe and banks when it docks at the core. A lost probe leaves its cargo in a wreck you can salvage.', '#ffe14d'],
+        ['Wreckage', `Loot site. Quick grab: ${PROBE.wreckT} s on top of it. Credits, and ${Math.round(PROBE.loot.charge * 100)}% of the time an ability charge.`, '#ff6ad5'],
+        ['Gas cloud', `Loot site. Harvest inside it for ${PROBE.cloudT} s: credits and Entropy as it drains. Static costs ${PROBE.cloudZap * 100}% hull per second.`, '#b98cff'],
+        ['Asteroid', `Loot site. It drifts. Mine it in 3 chunks of credits. Crystal asteroids (${Math.round(PROBE.loot.crystal * 100)}%) add a charge and a token.`, '#8c7a66'],
+        ['Rich site', `Gold trim, from Wave ${PROBE.richFrom}: ×${PROBE.loot.rich} loot, 1 more guard, +${Math.round(PROBE.jack.rich * 100)}% jackpot.`, '#ffd84a'],
+        ['Guard', `Neutral drone or brute (Brutes from Wave ${PROBE.guard.bruteFrom}). It attacks the probe within ${PROBE.guard.aggro} tiles of its site. Guards grow with the wave, and each one adds ${Math.round(PROBE.jack.guard * 100)}% jackpot chance. Out of a fight for ${PROBE.guard.calm} s, they heal.`, '#ff5a7a'],
+        ['Jackpot', `${Math.round(PROBE.jack.base * 100)}% per site, more with guards. It banks as a boon pick or a full Entropy gauge.`, '#ffe14d'],
+        ['Probe upgrades', 'Lance (a weapon for guards), Armour, Engine, Rig (harvest and mining speed) and Scanner (vision, +10% loot per level). 3 levels each. Prices rise with the wave.', '#9fd8ff'],
+        ['Rebuild', `A lost probe costs ${PROBE.rb0} + ${PROBE.rbW} per wave credits, +${Math.round(PROBE.rbLv * 100)}% per upgrade level, then ${PROBE.rbT} s in the yard. Upgrades stay.`, '#ff8a9c'] ] },
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
       { id: 'anom', name: 'Anomalies', rows: [['How cards are made', `Most cards are built at each draw: 1 boon and 1 cost, sized to a fair trade. <span style="color:${ANOM_RARITY[1].col}">Rare</span> and <span style="color:${ANOM_RARITY[2].col}">Exotic</span> cards swing harder. Exotic cards carry 2 boons. Later draws swing harder. Offers favor the elements you field. Each slot has a 1 in 4 chance to hold a Classic card. A Classic card never repeats in a run.`, '#d6a6ff']]
         .concat(ANOMALIES.map(A => [A.name, `Classic. ${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff'])) },
@@ -16340,6 +17165,7 @@ const UI = (() => {
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
     $('#bReady').onclick = () => { SFX.play('ui'); if (!G || G.over) return; vetFlow.ix = 0; openVets(); };
     $('#bLift').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.fr) return; startLift(); }; // Frontier
+    $('#bProbe').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.probe) return; if (panel && panel.kind === 'probe') closePanel(); else openProbe(); }; // 6.5
     $('#bTutH').onclick = () => { SFX.init(); SFX.play('ui'); openTutPick(); }; // 5.8: always on the main menu
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
@@ -16433,7 +17259,7 @@ const UI = (() => {
   let eqT = 0; const eqBuf = new Uint8Array(128);
   // 6.2: the buttons and banners over the battlefield, in stage px, so the edge arrows (Render) never hide under one
   let koT = 0, koCls = '', beamKT = 0, beamK = 1;
-  const KEEP_OUT = '#bLift, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
+  const KEEP_OUT = '#bLift, #bProbe, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
   // koT: wall-clock time of the next read (4 Hz; frame dt is capped, so a slow frame rate would stretch a dt timer).
   // The rects are re-read soon after a log line, toast or banner comes or goes (a MutationObserver flags it; no per-frame work)
   let koObs = null;
@@ -16507,6 +17333,7 @@ const UI = (() => {
     if (pkNow) beamK = nb ? pkS / nb : 1; // 6.2: the hum follows the beams' average distance from the screen centre (4 times a second)
     SFX.beams(nb, rk, nb ? neh / nb : 0, nb ? npr / nb : 0, beamK);
     SFX.flames(nf, nf ? nfi / nf : 0, nf ? nfp / nf : 0);
+    { const h = live && G.hole; SFX.hole(h ? (h.ph === 2 ? h.k : 1) * SFX.proxK(h.x, h.y) : 0, h ? SFX.proxPan(h.x, h.y) : 0); } // 6.5 Black Hole drone (louder and brighter as the camera nears it)
     SFX.danger(live && G.core.hp < G.core.max * 0.35 ? 1 - G.core.hp / (G.core.max * 0.35) : 0, dt);
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
