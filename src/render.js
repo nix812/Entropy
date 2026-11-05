@@ -1585,8 +1585,8 @@ const RES = 2;
   function panBy(dx, dy) { const ws = scale * cam.z; cam.x -= dx / ws; cam.y -= dy / ws; clampCam(); atHome = false; }
 
   // ---------- frame ----------
-  function draw(dt) {
-    frame++; rt += dt;
+  function draw(dt, fs) { // fs: animation steps this frame (6.6: 2 when the veiled field is drawn every other frame)
+    frame += fs || 1; rt += dt;
     ART.frameStart(); ART.idle(dt > 0 ? 3 : 1.5);
     const c = ctx;
     c.setTransform(1, 0, 0, 1, 0, 0);

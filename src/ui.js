@@ -4123,7 +4123,7 @@ function talentsToast(kind) {
   }, 1000);
   // hangar backdrop (v5.5: HangarFX in render.js)
   const bg = $('#bgfx'); const drawBg = dt => HangarFX.draw(bg, dt);
-  let last = performance.now(), acc = 0, wakeT = 2;
+  let last = performance.now(), acc = 0, wakeT = 2, veilOdd = false; const modalEl = $('#modal');
   const STEP = 1 / 30;
   function frame(ts) {
     requestAnimationFrame(frame);
@@ -4139,8 +4139,10 @@ function talentsToast(kind) {
         while (acc >= STEP && n < 10) { simStep(STEP); acc -= STEP; n++; }
         if (n >= 10) acc = 0;
       }
-      // 6.6 (perf66): the opaque Talents screen hides the field, so it isn't drawn
+      // 6.6 (perf66): the opaque Talents screen hides the field, so it isn't drawn; under a full modal (Pause, Settings, a boon or
+      // card pick, a briefing) the halted field sits behind an 80% veil and is drawn every other frame, two animation steps at a time
       if (Tree.isOpen) { ART.frameStart(); ART.idle(1.5); }
+      else if (halted && UI.modalOpen && !modalEl.classList.contains('side')) { veilOdd = !veilOdd; if (veilOdd) Render.draw(0, 2); else { ART.frameStart(); ART.idle(1.5); } }
       else Render.draw(halted ? 0 : dt);
     } else { if (UI.screen === 'hangar') { drawBg(dt); TitleFX.draw(dt); } ART.idle(4); } // menus: pre-render unit art in the background
     if (Tree.isOpen) Tree.draw();
