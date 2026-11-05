@@ -779,6 +779,7 @@ function newRun(opts) {
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
   if (G.fr) { G.frReady = 0; G.frFly = null; G.frN = 0; G.frLinks = []; } // Frontier: lift-off from Wave 1, nothing in the air
+  G.probe = null; G.sites = []; G.siteT = PROBE.site.first; if (G.frV >= 5 && !T) prNew(); // 6.5: the probe (Frontier rules 5; not in Training)
   setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
   G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
@@ -4439,6 +4440,258 @@ function frUpdate(dt) {
   }
 }
 
+// ---------- 6.5 the probe, loot sites and neutral guards (G.frV >= 5; tunables in PROBE, data.js; docs/notes/probe65.md) ----------
+// G.probe = { x, y, alive, vis } is the contract the fog of war reads: tile coordinates (floats), alive, vision radius in tiles. Its
+// other fields belong to this block. The probe flies in a straight line anywhere on the map (tap it, tap a spot: ACTS prGo). Loot
+// rides in its cargo hold and banks when it docks at the core (prHome). Guards are neutral: they never walk a road, never leak, and
+// towers ignore them. Everything here draws from G.r inside the sim, so a recording replays it exactly.
+const prW = () => Math.max(1, G.wave);
+const prWS = () => 1 + prW() / PROBE.wS;
+const prLvN = () => { const L = G.probe.lv; return L.hull + L.eng + L.gun + L.rig + L.scan; };
+function prStats() {
+  const L = G.probe.lv, U = PROBE.up, ws = prWS();
+  return { max: PROBE.hp * ws * U.hull.v[L.hull], spd: U.eng.v[L.eng], dps: PROBE.dps * ws * U.gun.v[L.gun], range: U.gun.r[L.gun], rig: U.rig.v[L.rig], vis: U.scan.v[L.scan], assay: 1 + U.scan.loot * L.scan };
+}
+const prUpCost = k => { const lv = G.probe.lv[k]; return lv >= 3 ? 0 : Math.round(PROBE.cost[lv] * (1 + prW() / 30)); };
+const prRebuildCost = () => Math.round((PROBE.rb0 + PROBE.rbW * prW()) * (1 + PROBE.rbLv * prLvN()));
+const prVal = () => crateCr(prW()) * G.mods.credits * Math.min(1, PROBE.loot.ramp[0] + prW() / PROBE.loot.ramp[1]); // one crate's worth, less in the first waves
+const prHomePt = () => ({ x: G.core.x + 0.55, y: G.core.y - 0.55 });
+const prCargoN = c => Math.round(c.cr) + c.ent + c.ch + c.tok + c.jp;
+const siteById = id => (G.sites || []).find(s => s.id === id) || null;
+// how close the probe has to be to work a site (and where it stops when sent to one)
+const siteReach = s => s.k === 'cloud' ? PROBE.cloudR : s.k === 'rock' ? PROBE.rockR : 0.6;
+function prNew() {
+  const h = prHomePt();
+  const P = { x: h.x, y: h.y, alive: true, vis: PROBE.up.scan.v[0], hp: 0, max: 0, lv: { hull: 0, eng: 0, gun: 0, rig: 0, scan: 0 }, tx: null, ty: null, task: 0, home: 1, ret: 0, rb: 0, cd: 0,
+    cargo: { cr: 0, ent: 0, ch: 0, tok: 0, jp: 0 }, hitT: -9, ang: 0 };
+  G.probe = P; const S = prStats(); P.max = P.hp = S.max; P.vis = S.vis;
+  return P;
+}
+// a new loot site somewhere in the outer map: mostly outside the sector while there is unrevealed ground, never on or beside a road
+function siteSpawn() {
+  const w = prW(), C = PROBE.site, R = G.region, map = G.map, full = R.x1 - R.x0 >= COLS && R.y1 - R.y0 >= ROWS, out = !full && G.r() < C.out;
+  const roadNear = (x, y) => { for (let dy = -C.roadGap; dy <= C.roadGap; dy++) for (let dx = -C.roadGap; dx <= C.roadGap; dx++) { const ux = x + dx, uy = y + dy; if (ux < 0 || uy < 0 || ux >= COLS || uy >= ROWS) continue; const t = map.tiles[tIdx(ux, uy)]; if (t === 1 || t === 4 || t === 5) return true; } return false; };
+  for (let k = 0; k < 60; k++) {
+    const x = rngInt(G.r, 1, COLS - 2), y = rngInt(G.r, 1, ROWS - 2), i = tIdx(x, y), cx = x + 0.5, cy = y + 0.5;
+    if (map.tiles[i] !== 0 || G.towerAt[i] || (G.nodeSet && G.nodeSet.has(i))) continue;
+    if (k < 40 && out === inRegion(x, y, R)) continue;
+    if (Math.hypot(cx - G.core.x, cy - G.core.y) < C.minCore || roadNear(x, y)) continue;
+    if (G.sites.some(s => Math.hypot(s.x - cx, s.y - cy) < C.apart)) continue;
+    const roll = G.r(), k2 = roll < 0.4 ? 'wreck' : roll < 0.7 ? 'cloud' : 'rock', ws = prWS(), Gd = PROBE.guard;
+    const s = { id: G.eid++, k: k2, x: cx, y: cy, t: PROBE.life[k2], life: PROBE.life[k2], val: prVal() * PROBE.loot[k2], rich: 0, prog: 0, g: [], z: G.r() * 6.283 };
+    let n = 0;
+    if (w >= Gd.from && G.r() < Math.min(Gd.pMax, Gd.p0 + w / Gd.pW) * (k2 === 'cloud' ? 0.6 : 1)) n = Math.min(Gd.nMax, 1 + Math.floor(G.r() * (1 + w / Gd.nW)));
+    if (w >= PROBE.richFrom && G.r() < PROBE.rich) { s.rich = 1; s.val *= PROBE.loot.rich; n = Math.min(Gd.nMax, n + 1); }
+    for (let j = 0; j < n; j++) {
+      const brute = w >= Gd.bruteFrom && G.r() < Gd.bruteP, D = brute ? Gd.brute : Gd.drone, a = s.z + j * 6.283 / n, max = D.hp * Math.pow(ws, 1.2);
+      const px = s.x + Math.cos(a) * (brute ? 0.9 : D.orbit), py = s.y + Math.sin(a) * (brute ? 0.9 : D.orbit);
+      s.g.push({ id: G.eid++, k: brute ? 'brute' : 'drone', hp: max, max, a, x: px, y: py, hx: px, hy: py, cd: G.r() * 0.6, calm: 9, hitT: -9 });
+    }
+    s.jp = PROBE.jack.base + PROBE.jack.guard * n + (s.rich ? PROBE.jack.rich : 0);
+    if (k2 === 'rock') { const a = G.r() * 6.283; s.vx = Math.cos(a) * PROBE.rockDrift; s.vy = Math.sin(a) * PROBE.rockDrift; s.max = s.hp = PROBE.rockHp * ws * (s.rich ? 1.6 : 1); s.chunks = 0; s.crystal = G.r() < PROBE.loot.crystal ? 1 : 0; }
+    if (k2 === 'cloud') s.ent = PROBE.loot.cloudEnt * (s.rich ? 2 : 1);
+    G.sites.push(s); G.siteN = (G.siteN || 0) + 1;
+    rlog('site', { k: k2, x, y, g: n, rich: s.rich });
+    Hooks.fx('site', { x: s.x, y: s.y, k: k2 });
+    return s;
+  }
+  return null;
+}
+function sitesUpdate(dt) {
+  const P = G.probe, C = PROBE.site, w = prW();
+  for (const s of G.sites) {
+    const busy = P.alive && P.task === s.id && Math.hypot(P.x - s.x, P.y - s.y) <= siteReach(s) + 0.2;
+    if (!busy) s.t -= dt; // a site the probe is working never fades under it
+    if (s.vx) { s.x += s.vx * dt; s.y += s.vy * dt; for (const g of s.g) { g.x += s.vx * dt; g.y += s.vy * dt; g.hx += s.vx * dt; g.hy += s.vy * dt; } if (s.x < 0.3 || s.y < 0.3 || s.x > COLS - 0.3 || s.y > ROWS - 0.3) s.t = 0; }
+  }
+  if (G.sites.some(s => s.t <= 0)) { G.sites = G.sites.filter(s => s.t > 0); if (P.task && !siteById(P.task)) P.task = 0; }
+  if (w < C.from || G.over) return;
+  G.siteT -= dt;
+  if (G.siteT > 0) return;
+  if (G.sites.filter(s => s.k !== 'lost').length >= Math.min(C.maxCap, C.max + Math.floor(w / C.maxW))) { G.siteT = 5; return; }
+  G.siteT = C.gap[0] + G.r() * (C.gap[1] - C.gap[0]);
+  siteSpawn();
+}
+// loot lands in the cargo hold, never straight in the bank
+function prLoot(cr, ent, ch, tok, x, y) {
+  const c = G.probe.cargo, a = prStats().assay;
+  c.cr += cr * a; c.ent += ent || 0; c.ch += ch || 0; c.tok += tok || 0;
+  if (cr > 0) Hooks.fx('num', { x: x == null ? G.probe.x : x, y: y == null ? G.probe.y : y, v: Math.round(cr * a), col: '#ffe14d', combo: 'LOOT' });
+}
+function siteDone(s) {
+  const P = G.probe; G.sites = G.sites.filter(o => o !== s); if (P.task === s.id) P.task = 0;
+  const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 }); st.sites++;
+  let ch = 0, tok = 0;
+  if (s.k === 'wreck' && G.r() < PROBE.loot.charge) ch = 1;
+  if (s.k === 'rock' && s.crystal) { ch = 1; tok = 1; }
+  if (s.k === 'wreck' || s.k === 'lost') prLoot(s.val, 0, ch, tok, s.x, s.y);
+  else if (s.k === 'rock') prLoot(s.val / 3, 0, ch, tok, s.x, s.y); // the last chunk
+  else prLoot(0, 0, ch, tok);
+  if (s.k !== 'lost' && G.r() < s.jp) { P.cargo.jp++; Hooks.fx('jackpot', { x: s.x, y: s.y }); }
+  if (s.k === 'lost') { const c = P.cargo; c.ent += s.ent || 0; c.ch += s.ch || 0; c.tok += s.tok || 0; c.jp += s.jp2 || 0; } // your own wreck: everything it carried
+  rlog('siteDone', { k: s.k, rich: s.rich });
+  Hooks.fx('siteDone', { x: s.x, y: s.y, k: s.k }); Hooks.sfx('cash', { x: s.x, y: s.y });
+}
+// the cargo banks at the core: credits, Entropy, charges, tokens; each jackpot is a boon pick or a full Entropy gauge
+function prBank() {
+  const P = G.probe, c = P.cargo; if (!prCargoN(c)) return;
+  const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 });
+  const cr = Math.round(c.cr), parts = [];
+  if (cr > 0) { G.credits += cr; st.cr += cr; parts.push(`+${cr} credits`); }
+  if (c.ent > 0) { addEntropy(c.ent); parts.push(`+${Math.round(c.ent)} Entropy`); }
+  for (let i = 0; i < c.ch; i++) { const k = lootCharge(); parts.push(`+${FX('quarter') ? 2 : 1} ${ABILITIES[k].name} charge`); }
+  if (c.tok > 0) { G.tokens += c.tok; parts.push(`+${c.tok} Recalibration token${c.tok > 1 ? 's' : ''}`); }
+  for (let i = 0; i < c.jp; i++) { st.jp++; parts.push(prJackpot()); }
+  st.trips++;
+  rlog('prBank', { cr, ent: Math.round(c.ent), ch: c.ch, tok: c.tok, jp: c.jp });
+  P.cargo = { cr: 0, ent: 0, ch: 0, tok: 0, jp: 0 };
+  Hooks.fx('cacheClaim', { x: G.core.x, y: G.core.y, kind: 'gold' }); Hooks.sfx('cash');
+  Hooks.toast('PROBE HOME', parts.join(' · '), '#ffe14d');
+}
+function prJackpot() {
+  if (G.r() < 0.5 && !G.draft && !G.huntChoice) {
+    const pool = BOONS.slice(), opts = []; for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
+    G.draft = opts; Hooks.onDraft(opts); return 'jackpot: a boon pick';
+  }
+  if (!G.anomOffers) { G.entropy = 100; addEntropy(0); return 'jackpot: the Entropy gauge is full'; }
+  const v = Math.round(prVal()); G.credits += v; return `jackpot: +${v} credits`;
+}
+function prLose() {
+  const P = G.probe, c = P.cargo, st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 });
+  P.alive = false; P.hp = 0; P.task = 0; P.ret = 0; P.home = 0; P.tx = P.ty = null; st.lost++;
+  if (prCargoN(c)) G.sites.push({ id: G.eid++, k: 'lost', x: P.x, y: P.y, t: PROBE.life.lost, life: PROBE.life.lost, val: c.cr / prStats().assay, ent: c.ent, ch: c.ch, tok: c.tok, jp2: c.jp, rich: 0, prog: 0, g: [], z: 0, jp: 0 });
+  P.cargo = { cr: 0, ent: 0, ch: 0, tok: 0, jp: 0 };
+  rlog('prLost', { x: Math.round(P.x), y: Math.round(P.y), lv: prLvN() });
+  Hooks.fx('prBoom', { x: P.x, y: P.y, big: 1 }); Hooks.sfx('boom', { x: P.x, y: P.y });
+  Hooks.toast('PROBE LOST', `Its cargo lies in the wreck for ${PROBE.life.lost} s. Rebuild: ${prRebuildCost()} credits, ${PROBE.rbT} s`, '#ff4d6a', true, 'alert');
+}
+// the guards of every site: drones orbit and shoot, brutes chase within their leash; out of a fight for 5 s, they heal
+function guardsUpdate(dt) {
+  const P = G.probe, Gd = PROBE.guard, ws = prWS(), on = P.alive;
+  for (const s of G.sites) {
+    if (!s.g.length) continue;
+    const near = on && Math.hypot(P.x - s.x, P.y - s.y) <= Gd.aggro;
+    for (const g of s.g) {
+      const D = Gd[g.k], dp = on ? Math.hypot(P.x - g.x, P.y - g.y) : 99, fight = near || (on && dp <= Gd.aggro * 0.75);
+      if (fight) g.calm = 0; else { g.calm += dt; if (g.calm > Gd.calm) g.hp = Math.min(g.max, g.hp + g.max * Gd.heal * dt); }
+      if (g.k === 'drone') {
+        g.a += dt * (fight ? 1.4 : 0.7); g.x = s.x + Math.cos(g.a) * D.orbit; g.y = s.y + Math.sin(g.a) * D.orbit;
+        g.cd -= dt;
+        if (fight && dp <= D.r && g.cd <= 0) { g.cd = D.cd; P.hp -= D.dmg * ws; P.hitT = G.time; Hooks.fx('rail', { x1: g.x, y1: g.y, x2: P.x, y2: P.y, col: '#ff5a7a' }); Hooks.sfx('zap', { x: g.x, y: g.y }); }
+      } else {
+        const chase = fight && Math.hypot(P.x - s.x, P.y - s.y) <= Gd.leash, tx = chase ? P.x : g.hx, ty = chase ? P.y : g.hy, d = Math.hypot(tx - g.x, ty - g.y), stop = chase ? D.r * 0.8 : 0;
+        if (d > stop + 0.01) { const m = Math.min(D.spd * dt, d - stop); g.x += (tx - g.x) / d * m; g.y += (ty - g.y) / d * m; }
+        if (chase && Math.hypot(P.x - g.x, P.y - g.y) <= D.r) { P.hp -= D.dps * ws * dt; P.hitT = G.time; if ((g.cd -= dt) <= 0) { g.cd = 0.5; Hooks.fx('spark', { x: P.x, y: P.y, col: '#ff9a3c' }); } }
+      }
+    }
+  }
+}
+// the Lance (from Armoury level 1): the nearest guard in range, one shot every 0.5 s
+function prFire(dt, S) {
+  const P = G.probe; if (S.dps <= 0) return;
+  P.cd = Math.max(0, P.cd - dt); if (P.cd > 0) return;
+  let best = null, bs = null, bd = S.range * S.range;
+  for (const s of G.sites) for (const g of s.g) { const d = dist2(P.x, P.y, g.x, g.y); if (d <= bd) { bd = d; best = g; bs = s; } }
+  if (!best) return;
+  P.cd = PROBE.fireT; best.hp -= S.dps * PROBE.fireT; best.hitT = G.time; best.calm = 0;
+  Hooks.fx('rail', { x1: P.x, y1: P.y, x2: best.x, y2: best.y, col: '#7fe8ff' }); Hooks.sfx('zap', { x: P.x, y: P.y });
+  if (best.hp <= 0) {
+    bs.g = bs.g.filter(g => g !== best);
+    const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 }); st.kills++;
+    prLoot(prVal() * (best.k === 'brute' ? PROBE.loot.brute : PROBE.loot.guard), 0, 0, 0, best.x, best.y);
+    Hooks.fx('prBoom', { x: best.x, y: best.y, big: best.k === 'brute' ? 1 : 0, guard: 1 }); Hooks.sfx('crack', { x: best.x, y: best.y });
+  }
+}
+// working the site under the probe: salvage a wreck, harvest a cloud (static hurts), mine a rock in 3 chunks
+function prWork(dt, S) {
+  const P = G.probe;
+  for (const s of G.sites.slice()) {
+    const d = Math.hypot(P.x - s.x, P.y - s.y);
+    if (s.k === 'cloud') {
+      if (d > PROBE.cloudR) continue;
+      const k = Math.min(1 - s.prog, dt * S.rig / PROBE.cloudT); s.prog += k;
+      const c = P.cargo, a = S.assay; c.cr += s.val * k * a; c.ent += s.ent * k;
+      s.acc = (s.acc || 0) + s.val * k * a; if (s.acc >= 25 || s.prog >= 1) { Hooks.fx('num', { x: P.x, y: P.y, v: Math.round(s.acc), col: '#c58cff', combo: 'GAS' }); s.acc = 0; }
+      P.hp -= S.max * PROBE.cloudZap * dt;
+      if (s.prog >= 1 - 1e-9) siteDone(s);
+      continue;
+    }
+    if (P.task !== s.id) continue; // wrecks and rocks: only the one it was sent to
+    if (d > siteReach(s) + 0.05) continue;
+    if (s.k === 'rock') {
+      s.hp -= PROBE.mine * prWS() * S.rig * dt;
+      const ch = Math.min(3, Math.floor(3 * (1 - s.hp / s.max)));
+      while (s.chunks < ch && s.chunks < 2) { s.chunks++; prLoot(s.val / 3, 0, 0, 0, s.x, s.y); Hooks.fx('siteChunk', { x: s.x, y: s.y }); Hooks.sfx('crack', { x: s.x, y: s.y }); }
+      if (s.hp <= 0) siteDone(s);
+    } else {
+      s.prog += dt * S.rig / PROBE.wreckT;
+      if (s.prog >= 1) siteDone(s);
+    }
+  }
+}
+function probeUpdate(dt) {
+  const P = G.probe, S = prStats();
+  sitesUpdate(dt);
+  if (!P.alive) {
+    if (P.rb > 0) { P.rb -= dt; if (P.rb <= 0) { const h = prHomePt(); Object.assign(P, { rb: 0, alive: true, home: 1, ret: 0, x: h.x, y: h.y, max: S.max, hp: S.max, cd: 0 }); Hooks.fx('build', { x: P.x, y: P.y, col: '#9fd8ff' }); Hooks.sfx('build', {}); Hooks.log('Probe rebuilt', '#9fd8ff'); } }
+    guardsUpdate(dt);
+    return;
+  }
+  if (P.max !== S.max) { P.hp = P.hp * S.max / (P.max || S.max); P.max = S.max; }
+  P.vis = S.vis;
+  if (P.home) {
+    const h = prHomePt(); P.x = h.x; P.y = h.y;
+    P.hp = Math.min(P.max, P.hp + P.max * PROBE.regen * dt);
+    if (G.core.hp < G.core.max) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * PROBE.repair * dt);
+  } else {
+    const s = P.task ? siteById(P.task) : null; let tx = P.tx, ty = P.ty, stop = 0;
+    if (P.ret) { const h = prHomePt(); tx = h.x; ty = h.y; }
+    else if (s) { tx = s.x; ty = s.y; stop = s.k === 'wreck' || s.k === 'lost' ? 0 : siteReach(s) * 0.55; }
+    if (tx !== null) {
+      const dx = tx - P.x, dy = ty - P.y, d = Math.hypot(dx, dy);
+      if (d > stop + 0.01) { const m = Math.min(S.spd * dt, d - stop); P.x += dx / d * m; P.y += dy / d * m; P.ang = Math.atan2(dy, dx); }
+      if (P.ret && Math.hypot(tx - P.x, ty - P.y) <= PROBE.home) { P.ret = 0; P.home = 1; P.tx = P.ty = null; P.x = tx; P.y = ty; prBank(); }
+    }
+  }
+  guardsUpdate(dt);
+  prFire(dt, S);
+  if (!P.home) prWork(dt, S);
+  if (P.hp <= 0) prLose();
+}
+// ACTS: send the probe to (x, y) in tiles (a tap on a site sends it to work that site; a tap on the core recalls it)
+function probeGo(x, y) {
+  const P = G.probe; if (!P || !P.alive || G.over || !isFinite(x) || !isFinite(y)) return false;
+  x = clamp(+x, 0.3, COLS - 0.3); y = clamp(+y, 0.3, ROWS - 0.3);
+  if (Math.hypot(x - G.core.x, y - G.core.y) <= 1.1) return probeRecall();
+  let best = null, bd = 1e9;
+  for (const s of G.sites) { const d = Math.hypot(s.x - x, s.y - y), r = Math.max(1.3, s.k === 'cloud' ? PROBE.cloudR : 0); if (d <= r && d < bd) { bd = d; best = s; } }
+  P.task = best ? best.id : 0; P.tx = best ? best.x : x; P.ty = best ? best.y : y; P.home = 0; P.ret = 0;
+  return true;
+}
+function probeRecall() {
+  const P = G.probe; if (!P || !P.alive || G.over) return false;
+  if (P.home) return false;
+  P.ret = 1; P.task = 0; P.tx = P.ty = null;
+  return true;
+}
+function probeUpgrade(k) {
+  const P = G.probe, U = PROBE.up[k]; if (!P || !U || G.over || P.lv[k] >= 3) return false;
+  const c = prUpCost(k); if (G.credits < c) return false;
+  G.credits -= c; P.lv[k]++;
+  const S = prStats(); if (P.alive) { P.hp = P.hp * S.max / (P.max || S.max); P.max = S.max; P.vis = S.vis; } else P.max = S.max;
+  rlog('prUp', { k, lv: P.lv[k], c });
+  Hooks.sfx('upgrade', {}); if (P.alive) Hooks.fx('upgrade', { x: P.x, y: P.y, col: '#9fd8ff' });
+  return true;
+}
+function probeRebuild() {
+  const P = G.probe; if (!P || P.alive || P.rb > 0 || G.over) return false;
+  const c = prRebuildCost(); if (G.credits < c) return false;
+  G.credits -= c; P.rb = PROBE.rbT; const h = prHomePt(); P.x = h.x; P.y = h.y;
+  rlog('prBuild', { c });
+  Hooks.sfx('build', {});
+  return true;
+}
+
 // ---------- abilities ----------
 function useAbility(k, x, y) {
   if (!G.charges[k] || G.charges[k] <= 0) return false;
@@ -4500,6 +4753,7 @@ function simStep(dt) {
   updateTowers(dt);
   updateCore(dt);
   if (G.fr) frUpdate(dt);
+  if (G.probe) probeUpdate(dt); // 6.5 (frV 5)
   updateProjs(dt);
   updateZones(dt);
   updateTimers(dt);
@@ -4696,6 +4950,7 @@ const ACTS = {
   reloc: (x, y) => { const P = planRelocation(x, y); return !!P && !P.fail && applyRelocation(P); },
   frFly: (x, y) => frLiftOff(x, y), // Frontier: lift off and land at (x, y) (a tower tile docks it)
   frMove: (fx, fy, x, y) => { const t = twAt(fx, fy); return !!t && frMoveTower(t, x, y); }, // Frontier: move a tower
+  prGo: (x, y) => probeGo(x, y), prHome: () => probeRecall(), prUp: k => probeUpgrade(k), prBuild: () => probeRebuild(), // 6.5 the probe: send, recall, upgrade, rebuild
   extract: () => huntExtract(),
   push: door => huntPush(door == null ? undefined : door), // 5.8: the jump door's index; none (5.7 recordings) pushes on as before
   abandon: () => { abandonRun(); return true; },
@@ -4741,6 +4996,7 @@ function runHash() {
   mix(G.tick | 0); mix(G.wave | 0); mix(Math.round(G.score)); mix(Math.round(G.credits * 10)); mix(G.kills | 0); mix(Math.round(G.core.hp * 100));
   for (const t of G.towers) { mix(t.x * 97 + t.y); mix(t.lvl); mix(Math.round(t.dmgDone)); }
   for (const e of G.enemies) { mix(Math.round(e.hp * 10)); mix(Math.round(e.d * 100)); }
+  if (G.probe) { const P = G.probe; mix(Math.round(P.x * 100)); mix(Math.round(P.y * 100)); mix(Math.round(P.hp * 10)); for (const s of G.sites || []) { mix(s.id); mix(s.g.length); } } // 6.5
   return h.toString(16);
 }
 
@@ -4761,6 +5017,7 @@ function snapshotRun(waveNum) {
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     ascV: G.ascV || 1, mastery: G.mastery || {}, capT: G.capT && G.capT.length ? G.capT.slice() : undefined, // v5.8; 6.4 capT
     fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
+    probe: G.probe ? JSON.parse(JSON.stringify(G.probe)) : null, sites: G.probe ? JSON.parse(JSON.stringify(G.sites || [])) : undefined, siteT: G.probe ? G.siteT : undefined, // 6.5
     rec: G.huntBuild ? { opts: G.recOpts, inputs: G.inputs.slice(), end: G.tick } : null, // a Daily Hunt resumes by replaying its inputs, exactly
     daily: G.daily || null, entropy: G.entropy, anoms: G.anoms.slice(), ganoms: G.ganoms || [], anomOffers: G.anomOffers, stabilized: G.stabilized, stats: G.stats, flux: G.flux,
   };
@@ -4815,6 +5072,7 @@ function resumeRun(S) {
     if (G.frFly) { G.core.shield = 0; frUpdate(0); }
     frRestat();
   }
+  if (G.probe && S.probe) { G.probe = Object.assign(G.probe, JSON.parse(JSON.stringify(S.probe))); G.sites = JSON.parse(JSON.stringify(S.sites || [])); G.siteT = S.siteT || PROBE.site.first; } // 6.5: older saves get a fresh probe
   prepareWave(S.wave);
   Hooks.log(`Run resumed · Wave ${S.wave}`, '#59f0b4');
   return G;

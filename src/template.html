@@ -582,6 +582,14 @@ body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel mo
 .liftbtn.go:not(.cool):not(.fly) { animation: liftp 1.6s steps(4) infinite; } @keyframes liftp { 50% { box-shadow: inset 0 0 0 2px #e6fff6, 0 0 10px rgba(89, 240, 180, 0.6); } }
 body.fr .rdybtn { top: 52px; }
 body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
+/* 6.5 the probe: its button sits under Lift Off (Ready moves down one more slot); it hides with a side panel like Lift Off */
+.probebtn { position: absolute; right: 6px; top: 52px; z-index: 4; height: 34px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; border: 0; cursor: pointer;
+  background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
+.probebtn.away { color: #e6f4ff; } .probebtn.hit { color: #ff8a9c; box-shadow: inset 0 0 0 2px #ff5a7a; animation: pulse 0.6s infinite; }
+.probebtn.dead { color: #ff8a9c; box-shadow: inset 0 0 0 1px #8a3040; background: rgba(30, 10, 16, 0.9); }
+body.prb.fr .rdybtn { top: 92px; }
+body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
+.sts.prsite { box-shadow: inset 3px 0 0 #ff6ad5; line-height: 1.25; } .sts.prsite b { color: #ff6ad5; }
 .note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
 .sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
 .sts.zline { box-shadow: inset 3px 0 0 var(--c); padding-left: 8px; } .sts.zline b { color: var(--c); font-weight: 400; }
@@ -1224,6 +1232,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <canvas id="cv"></canvas>
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
+      <button class="probebtn" id="bProbe" hidden aria-label="Select the probe"><span>Probe</span></button>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>

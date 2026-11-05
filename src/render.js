@@ -784,6 +784,71 @@ const RES = 2;
     b.strokeRect(x0 - 0.5, y0 - 0.5, x1 - x0 + 1, y1 - y0 + 1); b.setLineDash([]);
   }
 
+  // ---------- 6.5 the probe, loot sites and neutral guards (sim in sim.js "6.5 the probe"; all cosmetic here) ----------
+  // Sites sit on the ground layer (after salvage crates); guards and the probe fly (after the flying enemies). A few rects and
+  // arcs each, culled to the camera view (v: buffer px). Sites outside the sector draw over the veil, so they read as beacons.
+  const PR_COL = { site: '#ff6ad5', probe: '#9fd8ff', body: '#d8ecff', trim: '#3f8fe0', glow: '#7fe8ff', guard: '#ff5a7a', cloud: '#b98cff', gold: '#ffd84a' };
+  let prSelOn = false;
+  const prIn = (x, y, m, v) => x * TILE > v.vx - m && x * TILE < v.vx + v.vw + m && y * TILE > v.vy - m && y * TILE < v.vy + v.vh + m;
+  function drawSites(v) {
+    for (const s of G.sites || []) {
+      if (!prIn(s.x, s.y, 60, v)) continue;
+      const X = s.x * TILE, Y = s.y * TILE, fade = s.t < 10 ? ((frame >> 2) % 2 ? 0.45 : 1) : 1, gold = s.rich;
+      if (s.k === 'cloud') {
+        const r = PROBE.cloudR * TILE * (1 - 0.45 * s.prog), col = gold ? PR_COL.gold : PR_COL.cloud;
+        for (let k = 0; k < 3; k++) { const a = s.z + k * 2.1 + frame / 140, rr = r * (0.62 + 0.12 * k);
+          b.fillStyle = hexA(col, (0.1 + 0.05 * k) * fade); b.beginPath(); b.arc(X + Math.cos(a) * r * 0.32, Y + Math.sin(a) * r * 0.25, rr, 0, 6.283); b.fill(); }
+        for (let k = 0; k < 4; k++) { const a = s.z * 3 + k * 1.7 + frame / 60; if ((frame + k * 7) % 24 < 12) P(b, X + Math.cos(a) * r * 0.7, Y + Math.sin(a * 1.3) * r * 0.5, '#f4e8ff'); }
+        if ((frame + (s.id % 40)) % 90 < 3) { b.strokeStyle = hexA('#f4e8ff', 0.8); b.lineWidth = 1; b.beginPath(); b.moveTo(X - r * 0.4, Y - 3); b.lineTo(X - 2, Y + 2); b.lineTo(X + r * 0.3, Y - 1); b.stroke(); } // static
+      } else if (s.k === 'rock') {
+        const r = Math.round(5 + 5 * Math.max(0.25, s.hp / s.max)) + (gold ? 1 : 0), by = Math.round(Math.sin(frame / 30 + s.z) * 1);
+        R(b, X - r, Y + r - 1, r * 2, 2, 'rgba(0,0,0,0.35)');
+        D(b, X, Y + by, r, '#4c4038'); D(b, X - 1, Y + by - 1, r - 1, '#6f6052'); D(b, X - 2, Y + by - 2, Math.max(1, r - 4), '#8c7a66');
+        R(b, X + r * 0.3, Y + by + 1, 2, 2, '#3a302a'); R(b, X - r * 0.5, Y + by + r * 0.3, 2, 1, '#3a302a'); R(b, X - 1, Y + by - r * 0.5, 1, 1, '#b4a28a');
+        if (s.crystal) { R(b, X + r - 3, Y + by - r + 1, 2, 4, '#7ff2ff'); R(b, X + r - 5, Y + by - r + 3, 2, 3, '#bff9ff'); }
+        if (gold) { P(b, X - r + 2, Y + by - 1, PR_COL.gold); P(b, X + 1, Y + by + r - 3, PR_COL.gold); }
+      } else if (s.k === 'wreck') {
+        R(b, X - 11, Y + 4, 22, 3, 'rgba(0,0,0,0.4)');
+        R(b, X - 10, Y - 4, 11, 7, '#4a5468'); R(b, X - 9, Y - 4, 9, 2, '#8a96ad'); R(b, X - 12, Y - 8, 3, 5, '#363e50'); R(b, X - 7, Y - 1, 2, 2, '#2a3040');
+        R(b, X + 2, Y - 2, 8, 5, '#3e4658'); R(b, X + 3, Y - 2, 6, 1, '#76829c'); R(b, X + 9, Y + 1, 3, 2, '#2a3040');
+        R(b, X - 1, Y - 2, 3, 4, '#1a1e28'); R(b, X, Y - 1, 1, 2, (frame >> 3) % 3 ? '#ffb03a' : '#ff6a2a');
+        if (gold) { R(b, X - 9, Y + 2, 9, 1, PR_COL.gold); R(b, X + 3, Y + 2, 6, 1, PR_COL.gold); }
+        if (frame % 50 < 2) P(b, X + 1, Y - 4 - (frame % 50), '#ffe9b0');
+      } else { // lost: your probe's own wreck, a blinking beacon over its debris
+        R(b, X - 6, Y + 2, 12, 2, 'rgba(0,0,0,0.4)'); R(b, X - 5, Y - 2, 4, 3, '#7c8ea8'); R(b, X + 1, Y - 1, 5, 2, '#5b6a82'); R(b, X - 1, Y, 2, 2, PR_COL.trim);
+        R(b, X - 1, Y - 6, 2, 3, (frame >> 3) % 2 ? '#ffffff' : '#ff4d6a');
+      }
+      // the work done (bright) and the time left (dim) as two arcs; a guarded site shows a red tick per guard
+      const rr = s.k === 'cloud' ? PROBE.cloudR * TILE * 0.55 : 15, f = Math.max(0, s.t / s.life);
+      b.lineWidth = 1; b.strokeStyle = hexA(s.t < 10 ? '#ff4d6a' : PR_COL.site, 0.45 * fade); b.beginPath(); b.arc(X, Y, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
+      const pg = s.k === 'rock' ? 1 - s.hp / s.max : s.prog;
+      if (pg > 0) { b.lineWidth = 2; b.strokeStyle = hexA('#ffe14d', 0.9); b.beginPath(); b.arc(X, Y, rr + 2, -1.5708, -1.5708 + 6.2832 * Math.min(1, pg)); b.stroke(); }
+    }
+  }
+  function drawGuard(g) {
+    const X = g.x * TILE, Y = g.y * TILE - 6, hit = G.time - g.hitT < 0.12, bob = Math.round(Math.sin(frame / 8 + g.id) * 1);
+    if (g.k === 'drone') {
+      R(b, X - 3, Y + 9, 6, 1, 'rgba(0,0,0,0.3)');
+      R(b, X - 4, Y - 1 + bob, 8, 3, hit ? '#ffffff' : '#5a1c2a'); R(b, X - 3, Y - 2 + bob, 6, 1, '#8a3040'); R(b, X - 1, Y + bob, 2, 1, (frame >> 2) % 4 ? PR_COL.guard : '#ffd0d8');
+      P(b, X - 5, Y + bob, '#3a1018'); P(b, X + 4, Y + bob, '#3a1018');
+    } else {
+      R(b, X - 6, Y + 11, 12, 2, 'rgba(0,0,0,0.35)');
+      R(b, X - 5, Y - 2 + bob, 10, 7, hit ? '#ffffff' : '#4a1a12'); R(b, X - 4, Y - 3 + bob, 8, 2, '#7a2c1c'); R(b, X - 2, Y + bob, 4, 2, '#ff9a3c'); R(b, X - 1, Y + 1 + bob, 2, 1, '#fff0c0');
+      R(b, X - 7, Y + 3 + bob, 2, 3, '#3a120c'); R(b, X + 5, Y + 3 + bob, 2, 3, '#3a120c');
+    }
+  }
+  function drawProbe(v) {
+    for (const s of G.sites || []) if (s.g.length && prIn(s.x, s.y, 140, v)) for (const g of s.g) drawGuard(g);
+    const Pb = G.probe; if (!Pb || !Pb.alive) return;
+    const X = Pb.x * TILE, Y = Pb.y * TILE - (Pb.home ? 4 : 8), a = Pb.home ? -0.6 : Pb.ang, ca = Math.cos(a), sa = Math.sin(a), hit = G.time - Pb.hitT < 0.12;
+    if (!prIn(Pb.x, Pb.y, 30, v)) return;
+    if (!Pb.home) R(b, X - 4, Pb.y * TILE + 3, 8, 2, 'rgba(0,0,0,0.3)');
+    for (const o of [-1, 1]) R(b, X - sa * 4 * o - 1 - ca * 1, Y + ca * 4 * o - 1 - sa * 1, 3, 3, PR_COL.trim); // side pods
+    D(b, X, Y, 3, hit ? '#ff5a7a' : PR_COL.body); R(b, X - 1 + ca * 2, Y - 1 + sa * 2, 2, 2, PR_COL.glow); // body, cockpit toward its heading
+    if (!Pb.home || frame % 30 < 15) R(b, X - ca * 4 - 1, Y - sa * 4 - 1, 2, 2, frame % 4 < 2 ? '#ffffff' : PR_COL.glow); // engine
+    if (!Pb.home && frame % 3 === 0 && !LITE) parts.push({ x: X - ca * 5, y: Y - sa * 5, vx: -ca * 12, vy: -sa * 12, life: 0.3, max: 0.3, col: PR_COL.glow, s: 1 });
+  }
+
   // ---------- 6.3 zone change wipe, backdrop past the map edge, ambient layer ----------
   function startWipe(copy) {
     if (!oldLayer) oldLayer = document.createElement('canvas');
@@ -1487,6 +1552,7 @@ const RES = 2;
       const f = Math.max(0, cc.t / CACHE_LIFE), rr = 12;
       b.strokeStyle = hexA(late ? '#ff4d6a' : P2[3], 0.8); b.lineWidth = 1.5; b.beginPath(); b.arc(cc.x * TILE + 12, cc.y * TILE + 12, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
     }
+    if (G.sites && G.sites.length) drawSites(v); // 6.5 loot sites
     // Node Links: a jittering cyan beam between linked node towers
     for (const [a, b2] of G.links || []) {
       const ax = a.cx * TILE, ay = a.cy * TILE, bx = b2.cx * TILE, by = b2.cy * TILE, off = a.disabled > 0 || b2.disabled > 0;
@@ -1583,6 +1649,7 @@ const RES = 2;
       if (frame % 2 === 0) parts.push({ x: X - Math.sign(P2.vx) * w / 2, y: Y + 2, vx: -P2.vx * 2, vy: (Math.random() - 0.5) * 6, life: 0.3, max: 0.3, col: '#6ae2ff', s: 2 });
       if (!P2.dropped) { const tx = (P2.tx + 0.5) * TILE, ty = (P2.ty + 0.5) * TILE; b.strokeStyle = hexA(CACHE_PAL[P2.kind][3], 0.4 + 0.3 * Math.sin(frame / 3)); b.lineWidth = 1; b.setLineDash([2, 3]); b.strokeRect(tx - 10, ty - 10, 20, 20); b.setLineDash([]); }
     }
+    if (G.probe) drawProbe(v); // 6.5 guards and the probe fly above the swarm
     // projectiles
     for (const p of G.projs) {
       const X = p.x * TILE, Y = p.y * TILE, col = EL[p.el] ? EL[p.el].col : '#fff';
@@ -1687,6 +1754,8 @@ const RES = 2;
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
     for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
+    if (G.probe) { for (const s2 of G.sites || []) light(s2.x * TILE, s2.y * TILE, TILE * (s2.k === 'cloud' ? 2.2 : 1.4), s2.rich ? PR_COL.gold : s2.k === 'cloud' ? PR_COL.cloud : s2.k === 'wreck' ? '#ff9a3c' : PR_COL.site, s2.k === 'cloud' ? 0.2 : 0.16);
+      const Pb = G.probe; if (Pb.alive && !Pb.home) light(Pb.x * TILE, Pb.y * TILE - 8, TILE * 1.3, PR_COL.glow, 0.3); } // 6.5
     if (nuke) { const t = nuke.t; light(nuke.x, nuke.y, TILE * (3 + 3 * Math.min(1, t / 0.4)), t < 0.6 ? '#fff0c0' : '#ff8a2a', Math.max(0, 0.9 - t * 0.3)); light(nuke.x, nuke.y - TILE * 3.5 * Math.min(1, t / 1.5), TILE * 3, '#ff7b29', Math.max(0, 0.45 - t * 0.14)); }
     if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
     for (const L of G.map.lanes) { const p0 = L.tiles[0]; light((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, TILE * (L.openWave ? 1.4 : 2), L.openWave ? '#b86cff' : '#ff4d6a', (L.openWave ? 0.18 : 0.26) + 0.08 * Math.sin(frame / 7)); }
@@ -1738,6 +1807,20 @@ const RES = 2;
     if (preview) ringS((preview.x + 0.5) * TILE, (preview.y + 0.5) * TILE, preview.range * TILE, preview.col, 0.9, 1.5, 0.09);
     if (G.selCore) ringS(G.core.x * TILE, G.core.y * TILE, (G.core.s ? G.core.s.range : 3) * TILE, PAL.core, 0.75, 1.5, 0.05);
     if (G.aimAbility && aimPos) ringS(aimPos.x * TILE, aimPos.y * TILE, 1.7 * TILE, PAL.amber, 1, 2, 0.12);
+    // 6.5 the probe: its course (dashed, brighter while selected), the selection ring with the Lance's reach, hull and cargo
+    // over it, and a hull bar over a hurt guard. All in screen space, so they stay sharp at any zoom
+    if (G.probe) { const Pb = G.probe, sx = bx2s(Pb.x * TILE), sy = by2s(Pb.y * TILE - 8);
+      if (Pb.alive && !Pb.home) { const st = Pb.task ? (G.sites || []).find(o => o.id === Pb.task) : null, h = G.core, tx = Pb.ret ? h.x + 0.55 : st ? st.x : Pb.tx, ty = Pb.ret ? h.y - 0.55 : st ? st.y : Pb.ty;
+        if (tx != null && Math.hypot(tx - Pb.x, ty - Pb.y) > 0.4) { const ex = bx2s(tx * TILE), ey = by2s(ty * TILE);
+          c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.lineWidth = prSelOn ? 2 : 1.5; c.strokeStyle = hexA(Pb.ret ? PAL.core : PR_COL.probe, prSelOn ? 0.9 : 0.5); c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]);
+          c.strokeStyle = hexA(Pb.ret ? PAL.core : PR_COL.probe, 0.85); c.lineWidth = 1.5; c.beginPath(); c.moveTo(ex - 5, ey - 5); c.lineTo(ex + 5, ey + 5); c.moveTo(ex + 5, ey - 5); c.lineTo(ex - 5, ey + 5); c.stroke(); } }
+      if (Pb.alive && prSelOn) { const ps = prStats(); c.lineWidth = 2; c.strokeStyle = hexA(PR_COL.probe, 0.6 + 0.35 * Math.sin(frame / 5)); c.beginPath(); c.arc(sx, sy, Math.max(10, 0.7 * TILE * ws), 0, 6.283); c.stroke();
+        if (ps.range > 0) ringS(Pb.x * TILE, Pb.y * TILE - 8, ps.range * TILE, PR_COL.glow, 0.5, 1, 0.04); }
+      if (Pb.alive && !Pb.home && sx > -40 && sy > -40 && sx < DW + ox + 40 && sy < DH + oy + 40) { const bw = 22, f = Math.max(0, Pb.hp / Pb.max), n = Math.round(Pb.cargo.cr);
+        c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(sx - bw / 2 - 1, sy - 15, bw + 2, 4); c.fillStyle = f < 0.35 ? PAL.bad : PR_COL.probe; c.fillRect(sx - bw / 2, sy - 14, bw * f, 2);
+        if (n > 0 || Pb.cargo.jp) { c.font = '10px Silkscreen, monospace'; c.textAlign = 'center'; const t = (n > 0 ? fmt(n) : '') + (Pb.cargo.jp ? ' ★' : ''); c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(sx - t.length * 3.5 - 3, sy - 28, t.length * 7 + 6, 11); c.fillStyle = '#ffe14d'; c.fillText(t, sx, sy - 19); } }
+      for (const st of G.sites || []) for (const g of st.g) if (g.hp < g.max) { const gx = bx2s(g.x * TILE), gy = by2s(g.y * TILE - 6); if (gx < -20 || gy < -20 || gx > ox + DW + 20 || gy > oy + DH + 20) continue;
+        c.fillStyle = 'rgba(7,8,15,0.8)'; c.fillRect(gx - 8, gy - 12, 16, 3); c.fillStyle = PR_COL.guard; c.fillRect(gx - 7, gy - 11, 14 * Math.max(0, g.hp / g.max), 1); } }
     // v5.0.1 mouse: the tile under the cursor gets faint corners; a hovered tower shows its range
     if (hoverTile && !(selTile && selTile.x === hoverTile.x && selTile.y === hoverTile.y) && G && !G.over) {
       const x = bx2s(hoverTile.x * TILE), y = by2s(hoverTile.y * TILE), w = TILE * ws, L = Math.max(3, w * 0.22);
@@ -1825,6 +1908,13 @@ const RES = 2;
         const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = tre.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
         if (m) { m.n++; if (d < m.d) Object.assign(m, { x, y, d }); } else tre.push({ x, y, d, px: E.px, py: E.py, n: 1, col: '#ffe14d', tre: 1 }); }
       tre.sort((p, q) => p.d - q.d); for (const A of tre.slice(0, 3)) list.push(A);
+      // 6.5: active loot sites (magenta, merged and capped like treasure) and the probe itself when it is out of view
+      if (G.probe) { const ss = [];
+        for (const st of G.sites || []) { const sx2 = bx2s(st.x * TILE), sy2 = by2s(st.y * TILE); if (onS(sx2, sy2)) continue;
+          const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = ss.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
+          if (m) { m.n++; if (d < m.d) Object.assign(m, { x: st.x, y: st.y, d, sk: st.k }); } else ss.push({ x: st.x, y: st.y, d, px: E.px, py: E.py, n: 1, col: PR_COL.site, site: 1, sk: st.k }); }
+        ss.sort((p, q) => p.d - q.d); for (const A of ss.slice(0, 3)) list.push(A);
+        const Pb = G.probe; if (Pb.alive && !Pb.home) list.push({ x: Pb.x, y: Pb.y, col: PR_COL.probe, prb: 1 }); }
       const ko = keepOut;
       for (const A of list) {
         const sx2 = bx2s(A.x * TILE), sy2 = by2s(A.y * TILE);
@@ -1845,7 +1935,7 @@ const RES = 2;
             break; }
         }
         if (ko.some(q => px > q.l - r - 3 && px < q.r + r + 3 && py > q.t - r - 3 && py < q.b + r + 3)) continue; // no clear spot left: no arrow (it could not be tapped)
-        const an = Math.atan2(sy2 - py, sx2 - px), pl = A.tre ? 1 : 0.75 + 0.25 * Math.sin(frame / 6); // treasure stays solid yellow
+        const an = Math.atan2(sy2 - py, sx2 - px), pl = A.tre || A.site || A.prb ? 1 : 0.75 + 0.25 * Math.sin(frame / 6); // treasure, loot sites and the probe stay solid
         if (frArrows.some(o => Math.hypot(o.sx - px, o.sy - py) < 18)) continue;
         c.save(); c.translate(px, py); c.rotate(an);
         c.fillStyle = 'rgba(7,8,15,0.75)'; c.beginPath(); c.moveTo(r + 3, 0); c.lineTo(-r + 1, -r); c.lineTo(-r * 0.4, 0); c.lineTo(-r + 1, r); c.closePath(); c.fill();
@@ -1857,7 +1947,16 @@ const RES = 2;
           c.fillStyle = '#b07a20'; c.fillRect(qx - 5, qy - 4, 10, 8); c.fillStyle = '#ffe14d'; c.fillRect(qx - 5, qy - 4, 10, 3); c.fillStyle = '#3a2410'; c.fillRect(qx - 5, qy - 1, 10, 1); c.fillStyle = '#fff6c0'; c.fillRect(qx - 1, qy - 2, 2, 3);
           if (A.n > 1) { c.font = '9px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(7,8,15,0.9)'; c.fillRect(qx + 4, qy - 11, 10, 9); c.fillStyle = '#ffe14d'; c.fillText(String(A.n), qx + 9, qy - 6); c.textBaseline = 'alphabetic'; }
         }
-        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home, tre: !!A.tre });
+        if (A.site || A.prb) { // 6.5: a small mark behind the arrow: the site's kind (and the count when merged), or a probe dot
+          const ux = Math.cos(an), uy = Math.sin(an), qx = Math.round(px - ux * (r + 9)), qy = Math.round(py - uy * (r + 9));
+          c.fillStyle = 'rgba(7,8,15,0.85)'; c.fillRect(qx - 6, qy - 6, 12, 12);
+          if (A.prb) { c.fillStyle = PR_COL.body; c.fillRect(qx - 3, qy - 3, 6, 6); c.fillStyle = PR_COL.trim; c.fillRect(qx - 5, qy - 1, 2, 2); c.fillRect(qx + 3, qy - 1, 2, 2); }
+          else if (A.sk === 'cloud') { c.fillStyle = PR_COL.cloud; c.fillRect(qx - 4, qy - 2, 8, 5); c.fillRect(qx - 2, qy - 4, 5, 2); }
+          else if (A.sk === 'rock') { c.fillStyle = '#8c7a66'; c.fillRect(qx - 4, qy - 3, 8, 7); c.fillStyle = '#4c4038'; c.fillRect(qx - 1, qy, 2, 2); }
+          else { c.fillStyle = '#8a96ad'; c.fillRect(qx - 5, qy - 2, 6, 4); c.fillRect(qx + 1, qy - 1, 4, 3); c.fillStyle = '#ffb03a'; c.fillRect(qx, qy - 1, 1, 2); }
+          if (A.n > 1) { c.font = '9px Silkscreen, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(7,8,15,0.9)'; c.fillRect(qx + 4, qy - 12, 10, 9); c.fillStyle = PR_COL.site; c.fillText(String(A.n), qx + 9, qy - 7); c.textBaseline = 'alphabetic'; }
+        }
+        frArrows.push({ sx: px - ox, sy: py - oy, x: A.x, y: A.y, home: !!A.home, tre: !!A.tre, site: !!A.site, prb: !!A.prb });
       }
     }
     // the old sector border fades out as the camera pulls back
@@ -2176,6 +2275,10 @@ const RES = 2;
       case 'grow': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 20, life: 0.5, max: 0.5, col: PAL.core, w: 2 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 12, life: 0.7, max: 0.7, col: '#e6fff6', w: 1 });
         for (let i = 0; i < 10; i++) parts.push({ x: T2P(d.x) + (Math.random() - 0.5) * 16, y: T2P(d.y) + 4, vx: (Math.random() - 0.5) * 6, vy: -22 - Math.random() * 18, life: 0.8, max: 0.8, col: i % 3 ? PAL.core : '#e6fff6', s: 2 });
         text(d.x, d.y - 0.7, 'LV ' + d.lv, PAL.core, 14, 1.2, -0.6, 'Silkscreen, monospace'); break;
+      case 'site': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 34, r1: 6, life: 0.7, max: 0.7, col: PR_COL.site, w: 2 }); break; // 6.5 loot sites
+      case 'siteDone': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 30, life: 0.45, max: 0.45, col: '#ffe14d', w: 2 }); burst(T2P(d.x), T2P(d.y), 18, d.k === 'cloud' ? PR_COL.cloud : d.k === 'rock' ? '#8c7a66' : '#ffe14d', 40 * K, 0.5); break;
+      case 'siteChunk': burst(T2P(d.x), T2P(d.y), 10, '#8c7a66', 45 * K, 0.45); burst(T2P(d.x), T2P(d.y), 4, '#ffe14d', 30 * K, 0.35); break;
+      case 'prBoom': burst(T2P(d.x), T2P(d.y), d.big ? 26 : 12, d.guard ? PR_COL.guard : PR_COL.probe, (d.big ? 45 : 30) * K, 0.5); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 3, r1: d.big ? 26 : 14, life: 0.35, max: 0.35, col: d.guard ? '#ff9a3c' : '#ffffff', w: 2 }); break;
       case 'cache': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 30, r1: 4, life: 0.6, max: 0.6, col: '#ffe14d', w: 2 }); break;
       case 'cacheClaim': { const cc = CACHE_PAL[d.kind || 'normal'][3]; rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.kind === 'gold' ? 60 : 34, life: 0.5, max: 0.5, col: cc, w: 3, fill: 1 }); burst(T2P(d.x), T2P(d.y), d.kind === 'gold' ? 50 : 22, cc, 50 * K, 0.6); break; }
       case 'wormhole': { const p0 = d.lane.tiles[0]; rings.push({ x: (p0.x + 0.5) * TILE, y: (p0.y + 0.5) * TILE, r0: 40, r1: 2, life: 0.8, max: 0.8, col: '#b86cff', w: 3 }); burst((p0.x + 0.5) * TILE, (p0.y + 0.5) * TILE, 30, '#d6a6ff', 40 * K, 0.7); shakeAt(3, 0.25); break; }
@@ -2293,6 +2396,7 @@ const RES = 2;
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     flashWorm() { wormFlashAt = performance.now(); },
+    set prSel(v) { prSelOn = !!v; }, get prSel() { return prSelOn; }, // 6.5 the probe is selected (UI)
     set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
     lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },

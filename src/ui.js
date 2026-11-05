@@ -282,7 +282,7 @@ const UI = (() => {
     Render.preview_map($('#mapPrev'), setup.map);
   }
   // the body class and the Lift Off button follow the run's rules (a resumed pre-6.1 run or an old recording plays Classic)
-  function frModeUI() { document.body.classList.toggle('fr', !!(G && G.fr)); const lb = $('#bLift'); if (lb) { lb.hidden = !(G && G.fr); lb.dataset.l = ''; } }
+  function frModeUI() { document.body.classList.toggle('fr', !!(G && G.fr)); const lb = $('#bLift'); if (lb) { lb.hidden = !(G && G.fr); lb.dataset.l = ''; } const pb = $('#bProbe'); if (pb) { pb.hidden = true; pb.dataset.l = ''; document.body.classList.remove('prb'); } } // 6.5: prBtnUI shows the probe button
   function launch(snap, tut) {
     closeModal();
     show('game');
@@ -363,6 +363,7 @@ const UI = (() => {
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
+    if (G.probe && G.probe.alive && (G.sites || []).length && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. Loot rides home and banks when the probe docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
     if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button at the top right to pick each one a mutation.', 'veterans')) return;
     if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.', 'abilities')) return;
@@ -1171,6 +1172,7 @@ const UI = (() => {
     { const rdy = vetsReady().length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} ready</span>`);
       { const lb = $('#bLift'); if (lb) { const on = !!(G.fr && !G.over && !G.watch), lbl = on ? (G.frFly ? 'Flying' : frCanFly() ? 'Lift Off' : `Lift · W${G.frReady}`) : ''; // Frontier
         if (lb.hidden === on) lb.hidden = !on; if (on && lb.dataset.l !== lbl) { lb.dataset.l = lbl; lb.firstChild.textContent = lbl; lb.classList.toggle('fly', !!G.frFly); lb.classList.toggle('cool', !G.frFly && !frCanFly()); lb.classList.add('go'); } } }
+      prBtnUI(); // 6.5
       const rb = $('#bReady'); if (rb) { const was = +rb.dataset.n || 0; if (rdy !== was) { rb.dataset.n = rdy; $('#rdyN').textContent = rdy; rb.hidden = !rdy; if (rdy > was) { rb.classList.remove('pulse'); void rb.offsetWidth; rb.classList.add('pulse'); } } } } // 5.8 Ready button
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
     for (const s of G.storms) { const I = stormInfo(s); chips.push(`<span class="evchip storm tap${performance.now() < stormPulse ? ' pulse' : ''}" data-storm="${s.id}" style="--c:${s.mael ? '#ff4d6a' : STORMS[s.types[0]].col}">${esc(stormName(s))}${I.n ? ` · boosts ${I.boosted} of ${I.n}` : ''}</span>`); }
@@ -1462,7 +1464,7 @@ const UI = (() => {
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
-    frEnd();
+    frEnd(); Render.prSel = false;
     document.body.classList.remove('panel-l', 'panel-r');
   }
   function openPanel(p) {
@@ -1491,6 +1493,7 @@ const UI = (() => {
     else if (panel.kind === 'reloc') el.innerHTML = relocPanelHTML();
     else if (panel.kind === 'frland') el.innerHTML = frLandPanelHTML();
     else if (panel.kind === 'frmove') el.innerHTML = frMovePanelHTML();
+    else if (panel.kind === 'probe') el.innerHTML = probePanelHTML(); // 6.5
     else if (panel.kind === 'enemy') el.innerHTML = enemyPanelHTML(panel.e);
     el.classList.remove('framed');
     const nb = frameBox(el, 'ph', 'pfoot', 'pbody');
@@ -1812,6 +1815,99 @@ const UI = (() => {
     openPanel({ kind: 'frmove', x: t.x, y: t.y });
   }
   function frEnd() { if (!frSel) return; frPause(false); frSel = null; Render.frSel = null; }
+  // ---------- 6.5 the probe (sim: "6.5 the probe" in sim.js; drawing: render.js) ----------
+  // Tap the Probe button, the probe or a loot site: the probe panel opens and the probe is selected. While it is open, a tap on
+  // the map sends the probe there (ACTS prGo), a tap on a site sends it to work that site, a tap on the core recalls it.
+  const PR_KIND = { wreck: 'Wreckage', cloud: 'Gas cloud', rock: 'Asteroid', lost: 'Probe wreck' };
+  const PR_HOW = { wreck: 'Quick grab: 2.5 s on top of it', cloud: 'Harvest inside it: 12 s. Static costs 1.5% hull per second', rock: 'Mine it: 3 chunks. It drifts', lost: 'Your cargo. Quick grab' };
+  function prStatus() {
+    const P = G.probe; if (!P) return '';
+    if (!P.alive) return P.rb > 0 ? `Rebuilding · ${Math.ceil(P.rb)} s` : 'Lost';
+    if (P.home) return 'Docked · repairs the core';
+    const fire = G.time - P.hitT < 1 ? ' · under fire' : '';
+    if (P.ret) return 'Returning home' + fire;
+    const s = P.task ? siteById(P.task) : null;
+    if (s) { const d = Math.hypot(P.x - s.x, P.y - s.y); return (d <= siteReach(s) + 0.1 ? { wreck: 'Salvaging', cloud: 'Harvesting', rock: 'Mining', lost: 'Salvaging' }[s.k] : 'Flying to ' + PR_KIND[s.k].toLowerCase()) + fire; }
+    return (P.tx != null && Math.hypot(P.tx - P.x, P.ty - P.y) > 0.05 ? 'Flying' : 'Holding position') + fire;
+  }
+  const prCargoTxt = c => { const a = []; if (c.cr >= 1) a.push(fmt(Math.round(c.cr))); if (c.ent >= 1) a.push(Math.round(c.ent) + ' Entropy'); if (c.ch) a.push(c.ch + ' charge' + (c.ch > 1 ? 's' : '')); if (c.tok) a.push(c.tok + ' token' + (c.tok > 1 ? 's' : '')); if (c.jp) a.push(c.jp + ' jackpot' + (c.jp > 1 ? 's' : '')); return a.join(' · ') || 'Empty'; };
+  function prSiteTxt(s) {
+    const n = s.g.length, cr = Math.round(s.k === 'rock' ? s.val * (3 - (s.chunks || 0)) / 3 : s.k === 'cloud' ? s.val * (1 - s.prog) : s.val) * prStats().assay;
+    return `<b>${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]}</b> · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'unguarded'} · about ${fmt(Math.round(cr))} credits${s.k === 'cloud' ? ` and ${Math.round(s.ent * (1 - s.prog))} Entropy` : ''}${s.k === 'rock' && s.crystal ? ' · crystal: +1 charge, +1 token' : ''}${s.jp ? ` · ${Math.round(s.jp * 100)}% jackpot` : ''} · fades in ${Math.ceil(s.t)} s<br><span class="dim">${PR_HOW[s.k]}</span>`;
+  }
+  function prUpTxt(k) {
+    const P = G.probe, U = PROBE.up[k], lv = P.lv[k], ws = 1 + Math.max(1, G.wave) / PROBE.wS, v = i => U.v[i];
+    if (k === 'gun') return lv >= 3 ? `${fmt(PROBE.dps * ws * v(3))} damage per second · ${U.r[3]} tiles` : `${lv ? fmt(PROBE.dps * ws * v(lv)) : 'No weapon'} → ${fmt(PROBE.dps * ws * v(lv + 1))} damage per second · ${U.r[lv + 1]} tiles`;
+    if (k === 'hull') return lv >= 3 ? `Hull ${fmt(PROBE.hp * ws * v(3))}` : `Hull ${fmt(PROBE.hp * ws * v(lv))} → ${fmt(PROBE.hp * ws * v(lv + 1))}`;
+    if (k === 'eng') return lv >= 3 ? `${v(3)} tiles per second` : `${v(lv)} → ${v(lv + 1)} tiles per second`;
+    if (k === 'rig') return lv >= 3 ? `Harvest and mining ×${v(3)}` : `Harvest and mining ×${v(lv)} → ×${v(lv + 1)}`;
+    return lv >= 3 ? `Vision ${v(3)} tiles · loot +${Math.round(U.loot * 300)}%` : `Vision ${v(lv)} → ${v(lv + 1)} tiles · loot +${Math.round(U.loot * 100 * (lv + 1))}%`;
+  }
+  const PR_UPCOL = { gun: '#7fe8ff', hull: '#9fd8ff', eng: '#59f0b4', rig: '#ffe14d', scan: '#c58cff' };
+  function probePanelHTML() {
+    const P = G.probe; if (!P) return '';
+    const S = prStats(), st = panel.site ? siteById(panel.site) : null;
+    const head = `<div class="ph"><div class="pt"><b>Probe</b><small data-live="prst">${esc(prStatus())}</small></div><button class="x" data-act="close" aria-label="Close">✕</button></div>`;
+    const site = st ? `<div class="sts prsite">${prSiteTxt(st)}</div>${P.alive ? `<button class="btn primary wide" data-act="prsend">Send probe</button>` : ''}` : '';
+    const stats = `<div class="sg mini"><span>Hull<b data-live="prhp">${P.alive ? `${Math.ceil(P.hp)}/${Math.round(P.max)}` : '—'}</b></span><span>Lance<b>${S.dps > 0 ? fmt(S.dps) + '/s' : 'None'}</b></span><span>Speed<b>${S.spd}</b></span></div>
+      <div class="sts">Cargo: <b data-live="prcargo">${esc(prCargoTxt(P.cargo))}</b></div>`;
+    const how = !P.alive ? `<div class="sts bad">${P.rb > 0 ? `In the yard: ready in <b data-live="prrb">${Math.ceil(P.rb)}</b> s` : `Lost. Rebuild: ${fmt(prRebuildCost())} credits and ${PROBE.rbT} s. Upgrades stay`}</div>`
+      : st ? '' : `<p class="note">Tap the map to send the probe. Tap a site to work it. Loot banks when it docks at the core.</p>`;
+    const ups = PROBE.upOrder.map(k => { const lv = P.lv[k], c = prUpCost(k), max = lv >= 3;
+      return `<button class="mkt" data-act="prup" data-v="${k}" ${max ? 'disabled' : costBtn(c)} style="--c:${PR_UPCOL[k]}"><b>${PROBE.up[k].name} ${max ? 'MAX' : lv + 1}</b><span>${prUpTxt(k)}</span><em>${max ? 'Max' : fmt(c)}</em></button>`; }).join('');
+    const foot = `<div class="pfoot">${!P.alive ? `<button class="btn primary wide" data-act="prbuild" ${P.rb > 0 ? 'disabled' : costBtn(prRebuildCost())}>${P.rb > 0 ? 'Rebuilding' : `Rebuild · ${fmt(prRebuildCost())}`}</button>`
+      : `<div class="row2"><button class="btn" data-act="prhome" ${P.home || P.ret ? 'disabled' : ''}>Recall</button><button class="btn" data-act="close">Done</button></div>`}</div>`;
+    return `${head}${site}${stats}${how}<div class="lbl">Upgrades</div><div class="mktlist">${ups}</div>${foot}`;
+  }
+  function openProbe(siteId) {
+    if (!G || !G.probe || G.over || G.watch) return;
+    const P = G.probe, s = siteId ? siteById(siteId) : null, at = s || P;
+    closePanel();
+    openPanel({ kind: 'probe', x: clamp(Math.floor(at.x), 0, COLS - 1), y: clamp(Math.floor(at.y), 0, ROWS - 1), site: s ? s.id : 0 });
+    Render.prSel = true;
+  }
+  // a tap with the probe selected sends it; otherwise a tap on the probe or a site selects it. True: the tap is used
+  function probeTap(p) {
+    const P = G.probe, onP = P.alive && Math.hypot(p.x - P.x, p.y - (P.y - 0.33)) < (P.home ? 0.45 : 0.8);
+    if (panel && panel.kind === 'probe') {
+      if (onP) return true;
+      if (!P.alive) { closePanel(); return false; }
+      const x = Math.round(p.x * 10) / 10, y = Math.round(p.y * 10) / 10;
+      if (!window.act('prGo', x, y)) { SFX.play('deny'); return true; }
+      SFX.play('ui'); panel.site = P.task || 0; renderPanel(); return true;
+    }
+    if (onP) { SFX.play('ui'); openProbe(); return true; }
+    let best = null, bd = 1e9;
+    for (const s of G.sites || []) { const d = Math.hypot(s.x - p.x, s.y - p.y); if (d <= (s.k === 'cloud' ? PROBE.cloudR : 1.2) && d < bd) { bd = d; best = s; } }
+    if (best) { SFX.play('ui'); openProbe(best.id); return true; }
+    return false;
+  }
+  function probeAction(act, b) {
+    const P = G.probe; if (!P) return;
+    if (act === 'prup') { const k = b.dataset.v, lv = P.lv[k]; if (!window.act('prUp', k)) SFX.play('deny'); else toast('PROBE UPGRADED', `${PROBE.up[k].name} ${lv + 1}`, '#9fd8ff', false, 'tip'); }
+    else if (act === 'prhome') { if (!window.act('prHome')) SFX.play('deny'); }
+    else if (act === 'prbuild') { if (!window.act('prBuild')) SFX.play('deny'); }
+    else if (act === 'prsend') { const s = siteById(panel.site); if (!s || !window.act('prGo', Math.round(s.x * 10) / 10, Math.round(s.y * 10) / 10)) SFX.play('deny'); }
+    renderPanel(); updateHud();
+  }
+  function probeLive(el) {
+    const P = G.probe; if (!P) return closePanel();
+    const sig = [P.alive ? 1 : 0, P.rb > 0 ? 1 : 0, P.home, P.ret, P.task, Object.values(P.lv).join(''), panel.site && siteById(panel.site) ? 1 : 0, Math.floor(G.wave)].join(':');
+    if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; }
+    panel.sig = sig;
+    const set = (k, v) => { const n = el.querySelector(`[data-live="${k}"]`); if (n && n.textContent !== v) n.textContent = v; };
+    set('prst', prStatus()); set('prcargo', prCargoTxt(P.cargo)); if (P.alive) set('prhp', `${Math.ceil(P.hp)}/${Math.round(P.max)}`); if (P.rb > 0) set('prrb', String(Math.ceil(P.rb)));
+  }
+  function prBtnUI() {
+    const pb = $('#bProbe'); if (!pb) return;
+    const P = G && G.probe, on = !!(P && !G.over && !G.watch);
+    if (pb.hidden === on) { pb.hidden = !on; document.body.classList.toggle('prb', on); }
+    if (!on) return;
+    const lbl = !P.alive ? (P.rb > 0 ? `Probe ${Math.ceil(P.rb)}s` : 'Rebuild') : P.home ? 'Probe' : `Probe ${Math.round(100 * P.hp / P.max)}%`;
+    const cls = !P.alive ? 'dead' : P.home ? '' : G.time - P.hitT < 1 ? 'hit' : 'away';
+    if (pb.dataset.l !== lbl) { pb.dataset.l = lbl; pb.firstChild.textContent = lbl; }
+    if (pb.dataset.c !== cls) { pb.dataset.c = cls; pb.className = 'probebtn ' + cls; }
+  }
   function frLandPanelHTML() {
     const P = frSel && frSel.plan;
     const head = `<div class="ph"><div class="pt"><b>Lift Off</b><small>Paused while you choose</small></div><button class="x" data-act="frcancel" aria-label="Cancel">✕</button></div>`;
@@ -1897,6 +1993,7 @@ const UI = (() => {
       const pg = el.querySelector('[data-live="eprog"]'); if (pg && e.L && e.L.len) pg.textContent = Math.round(eProg(e) * 100) + '%';
       const sig = [e.st.burn ? 1 : 0, e.st.chill, e.st.frozen > 0 ? 1 : 0, e.st.shock > 0 ? 1 : 0, e.st.mark, e.scanned > 0 ? 1 : 0, e.shield > 0 ? 1 : 0, e.phase || 0].join(':');
       if (panel.sig !== undefined && panel.sig !== sig) { panel.sig = sig; renderPanel(); return; } panel.sig = sig; return; }
+    if (panel.kind === 'probe') return probeLive(el); // 6.5
     if (panel.kind === 'cash') { const sig = Math.floor(G.credits) + ':' + G.wave; if (panel.sig !== sig) { panel.sig = sig; renderPanel(); } return; }
     if (panel.kind === 'core') {
       const c = G.core, sig = (canRelocate() ? 1 : 0) + ':' + relocCost() + ':' + c.affixes.length + ':' + (odReady() ? 1 : 0) + (G.fr ? ':' + frLiftLabel() + (frDockT() ? 'd' : '') + (G.frLinks || []).length : '');
@@ -1982,6 +2079,7 @@ const UI = (() => {
       else if (act === 'reactor') { if (!window.act('reactor')) SFX.play('deny'); else toast('REACTOR EXPANDED', `Power ${gridUsed()}/${gridCap()} · next ${fmt(reactorCost())}`, '#59f0b4'); renderPanel(); updateHud(); }
       return;
     }
+    if (panel.kind === 'probe') return probeAction(act, b); // 6.5
     if (panel.kind === 'frland' || panel.kind === 'frmove') {
       if (act === 'frcancel') { closePanel(); return; }
       if (act === 'frgo' && frSel && frSel.plan) {
@@ -2172,6 +2270,7 @@ const UI = (() => {
       if (!P) { SFX.play('deny'); toast('NO ROUTE', 'A road cannot reach that tile', '#ff4d6a'); return; }
       SFX.play('ui'); G.reloc.plan = P; Render.sel = { x: tx, y: ty }; renderPanel(); return;
     }
+    if (G.probe && probeTap(p)) return; // 6.5: send the selected probe, or select it (the probe or a loot site)
     const cc = cacheNear(p, tx, ty);
     if (!cc && !inRegion(tx, ty, G.region)) { closePanel(); return; }
     if (cc) { const kind = cc.kind, m = window.act('cache', cc.x, cc.y); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
@@ -3285,6 +3384,17 @@ const UI = (() => {
         ...Object.entries(COMBO_STORMS).map(([k, n]) => [n, 'Merged storm: ' + k.split('+').map(x => STORMS[x].name).join(' + ') + '. Both effects.']),
         ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
       { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
+      { id: 'probe', name: 'Probe', rows: [ // 6.5
+        ['Probe', `Your scout ship. Tap Probe (or the probe), then tap any spot: it flies there in a straight line at ${PROBE.up.eng.v[0]} tiles per second. Tap the core to recall it. Docked, it repairs the core ${PROBE.repair * 100}% of max hull per second.`, '#9fd8ff'],
+        ['Cargo', 'Loot rides in the probe and banks when it docks at the core. A lost probe leaves its cargo in a wreck you can salvage.', '#ffe14d'],
+        ['Wreckage', `Loot site. Quick grab: ${PROBE.wreckT} s on top of it. Credits, and ${Math.round(PROBE.loot.charge * 100)}% of the time an ability charge.`, '#ff6ad5'],
+        ['Gas cloud', `Loot site. Harvest inside it for ${PROBE.cloudT} s: credits and Entropy as it drains. Static costs ${PROBE.cloudZap * 100}% hull per second.`, '#b98cff'],
+        ['Asteroid', `Loot site. It drifts. Mine it in 3 chunks of credits. Crystal asteroids (${Math.round(PROBE.loot.crystal * 100)}%) add a charge and a token.`, '#8c7a66'],
+        ['Rich site', `Gold trim, from Wave ${PROBE.richFrom}: ×${PROBE.loot.rich} loot, 1 more guard, +${Math.round(PROBE.jack.rich * 100)}% jackpot.`, '#ffd84a'],
+        ['Guard', `Neutral drone or brute (Brutes from Wave ${PROBE.guard.bruteFrom}). It attacks the probe within ${PROBE.guard.aggro} tiles of its site. Guards grow with the wave, and each one adds ${Math.round(PROBE.jack.guard * 100)}% jackpot chance. Out of a fight for ${PROBE.guard.calm} s, they heal.`, '#ff5a7a'],
+        ['Jackpot', `${Math.round(PROBE.jack.base * 100)}% per site, more with guards. It banks as a boon pick or a full Entropy gauge.`, '#ffe14d'],
+        ['Probe upgrades', 'Lance (a weapon for guards), Armour, Engine, Rig (harvest and mining speed) and Scanner (vision, +10% loot per level). 3 levels each. Prices rise with the wave.', '#9fd8ff'],
+        ['Rebuild', `A lost probe costs ${PROBE.rb0} + ${PROBE.rbW} per wave credits, +${Math.round(PROBE.rbLv * 100)}% per upgrade level, then ${PROBE.rbT} s in the yard. Upgrades stay.`, '#ff8a9c'] ] },
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
       { id: 'anom', name: 'Anomalies', rows: [['How cards are made', `Most cards are built at each draw: 1 boon and 1 cost, sized to a fair trade. <span style="color:${ANOM_RARITY[1].col}">Rare</span> and <span style="color:${ANOM_RARITY[2].col}">Exotic</span> cards swing harder. Exotic cards carry 2 boons. Later draws swing harder. Offers favor the elements you field. Each slot has a 1 in 4 chance to hold a Classic card. A Classic card never repeats in a run.`, '#d6a6ff']]
         .concat(ANOMALIES.map(A => [A.name, `Classic. ${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff'])) },
@@ -3610,6 +3720,7 @@ const UI = (() => {
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
     $('#bReady').onclick = () => { SFX.play('ui'); if (!G || G.over) return; vetFlow.ix = 0; openVets(); };
     $('#bLift').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.fr) return; startLift(); }; // Frontier
+    $('#bProbe').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.probe) return; if (panel && panel.kind === 'probe') closePanel(); else openProbe(); }; // 6.5
     $('#bTutH').onclick = () => { SFX.init(); SFX.play('ui'); openTutPick(); }; // 5.8: always on the main menu
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
@@ -3703,7 +3814,7 @@ const UI = (() => {
   let eqT = 0; const eqBuf = new Uint8Array(128);
   // 6.2: the buttons and banners over the battlefield, in stage px, so the edge arrows (Render) never hide under one
   let koT = 0, koCls = '', beamKT = 0, beamK = 1;
-  const KEEP_OUT = '#bLift, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
+  const KEEP_OUT = '#bLift, #bProbe, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
   // koT: wall-clock time of the next read (4 Hz; frame dt is capped, so a slow frame rate would stretch a dt timer).
   // The rects are re-read soon after a log line, toast or banner comes or goes (a MutationObserver flags it; no per-frame work)
   let koObs = null;

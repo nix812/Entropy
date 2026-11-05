@@ -440,7 +440,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 4;
+const FR_VER = 5;
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -468,6 +468,35 @@ const WHATS_NEW = { ver: '6.4.0', title: 'Last Gradient 6.4 · Wild Cards', item
   ['The towers', 'Buzzsaw (Ballistics), Flashover (Combustion), Surge Spire (Voltaic), Rimewall (Cryogenics), Entangler (Singularity), Gatekeeper (Bastion), Wildcard (Command).'],
   ['Daily Hunts', 'Daily Hunts keep the original 12 towers, so the ladder stays fair.'],
 ]};
+// 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
+// spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
+// (mined in 3 chunks, they drift). Some have neutral guards. Loot rides home in the cargo hold and banks at the core; a lost probe
+// drops its cargo as a wreck and costs credits and time to rebuild. Probe and guards both grow with the wave (wS); guards a bit faster.
+const PROBE = {
+  wS: 15,                                         // wave scale: 1 + wave / 15 (Wave 15 = ×2, Wave 60 = ×5)
+  hp: 80, spd: 2.0, vis: 5, dps: 14, fireT: 0.5,  // base hull (× wave scale), tiles/s, vision tiles, lance damage per second (× wave scale), seconds per shot
+  regen: 0.08, repair: 0.001,                     // docked: +8% of its hull per second; repairs the core +0.1% of max hull per second
+  up: { // 3 levels each; the value at levels 0..3. Price: cost[lv] × (1 + wave / 30)
+    hull: { name: 'Armour', v: [1, 1.6, 2.4, 3.5] },     // hull ×
+    eng:  { name: 'Engine', v: [2.0, 2.6, 3.2, 4.0] },   // tiles per second
+    gun:  { name: 'Lance', v: [0, 1, 1.9, 3.2], r: [0, 2.8, 3.2, 3.6] }, // damage × (0: no weapon), range in tiles
+    rig:  { name: 'Rig', v: [1, 1.5, 2, 3] },            // harvest and mining speed ×
+    scan: { name: 'Scanner', v: [5, 7, 9, 12], loot: 0.1 }, // vision tiles; +10% loot per level
+  },
+  upOrder: ['gun', 'hull', 'eng', 'rig', 'scan'],
+  cost: [120, 300, 650],
+  rb0: 120, rbW: 12, rbLv: 0.15, rbT: 40,         // rebuild: (120 + 12 × wave) × (1 + 15% per upgrade level), then 40 s in the yard
+  home: 0.3,                                      // within 0.3 tiles of its dock beside the core: docked, cargo banks
+  site: { from: 2, first: 25, gap: [22, 36], max: 2, maxW: 15, maxCap: 4, minCore: 12, roadGap: 2, apart: 6, out: 0.75 }, // spawns from Wave 2: one every 22–36 s while under 2 (+1 per 15 waves, max 4); 12+ tiles from the core, 2+ from roads, 6+ apart; 75% outside the sector when it can
+  life: { wreck: 150, cloud: 130, rock: 170, lost: 90 }, // seconds before a site fades
+  wreckT: 2.5, cloudT: 12, cloudR: 1.6, cloudZap: 0.015, rockHp: 40, mine: 6, rockR: 1.7, rockDrift: 0.12, // work: salvage time, harvest time and radius, static 1.5% hull/s, rock HP and mining damage per second (× wave scale), mining reach, drift tiles/s
+  loot: { wreck: 0.9, cloud: 0.6, rock: 0.9, ramp: [0.35, 30], rich: 2.5, guard: 0.12, brute: 0.25, cloudEnt: 15, charge: 0.35, crystal: 0.2 }, // × crate value (crateCr), ×(0.35 + wave/30, max 1) early
+  jack: { base: 0.02, guard: 0.04, rich: 0.15, lost: 0 }, // jackpot chance per finished site: a boon pick or a full Entropy gauge
+  richFrom: 8, rich: 0.12,                        // from Wave 8, 12% of sites are rich (×2.5 loot, +1 guard)
+  guard: { from: 3, p0: 0.3, pW: 80, pMax: 0.75, nW: 20, nMax: 4, bruteFrom: 15, bruteP: 0.3, aggro: 4, leash: 5.5, heal: 0.2, calm: 5,
+    drone: { hp: 35, dmg: 5, cd: 1.2, r: 3.5, orbit: 1.3 },  // HP × wS^1.2, damage per shot × wS
+    brute: { hp: 110, dps: 12, spd: 1.7, r: 0.7 } },         // HP × wS^1.2, melee damage per second × wS
+};
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come
 const PIRATE_CAPTAINS = ['Captain Rustbeard', 'Black Static', 'Mad Mags Vortex', 'One-Eye Orrin', 'Calico Jett', 'Nebula Nell', 'Scurvy Quasar', 'Red Ronin Rook', 'Dread Pixel Pete', 'Salty Sal Saturn'];

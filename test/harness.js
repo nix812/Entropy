@@ -17,6 +17,8 @@ this.S = { get G(){return G}, set G(v){G=v}, get PROF(){return PROF}, set PROF(v
   FRONTIER, FR_VER, frNodeFix, frNearWorm, setNodes, supGrow, supTarget, eProg, tutSpec, TUT, frRows, frCols, frPlan, frLiftOff, frCands, frDockT, frCanFly, frCd, frLinkN, frLinksAt, frMoveTower, frMoveOk, frMoveFee, frDockX, planRelocation, ascOffer, claimPerk, perkPool, perkStacks, masteryGains, masteryRanks, masteryRankOf, masteryProf, PERKS, MASTERY, LEGENDARIES, rollAffix, TUT, tutMap, ghostRun, LESSONS };`, ctx);
   // 6.4 cards64: generated Anomalies
   vm.runInContext(`Object.assign(this.S, { ANOM_PART, ANOM_UPS, ANOM_DNS, ANOM_RARITY, ANOM_GEN, anomPartTxt, anomTotals, anomRoom, anomSize, anomBuild, anomGenCard, anomOffersGen, takeGenAnomaly, anomInfo, anomTaken, anomCount, addEntropy, computeAf, anomMods, runHash, replayRun, act, SIM_STEP, rlog })`, ctx);
+  // 6.5 probe65: the probe, loot sites and guards
+  vm.runInContext(`Object.assign(this.S, { PROBE, prStats, prUpCost, prRebuildCost, prVal, prHomePt, prNew, siteSpawn, sitesUpdate, probeUpdate, probeGo, probeRecall, probeUpgrade, probeRebuild, prBank, prLose, siteById, siteReach, crateCr, act, ACTS, replayRun, runHash, BOONS, entropyNeed })`, ctx);
   return ctx.S;
 }
 module.exports = { load };
