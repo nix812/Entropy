@@ -56,7 +56,7 @@ if __name__ == '__main__':  # importable: INIT, SCENE and run() are reused by ot
           a, bb = A[k], B[k]
           if a.size != bb.size: print(f'{W}x{H} {k}: DIFF size {a.size} vs {bb.size}'); bad += 1; continue
           df = ImageChops.difference(a, bb); bbox = df.getbbox()
-          if not bbox: print(f'{W}x{H} {k}: identical ({a.size[0]}x{a.size[1]})'); (root / 'test' / 'out' / 'pixeq').mkdir(parents=True, exist_ok=True); bb.save(root / 'test' / 'out' / 'pixeq' / f'{W}x{H}_{k}.png'); continue
+          if not bbox: print(f'{W}x{H} {k}: identical ({a.size[0]}x{a.size[1]})'); (root / 'test' / 'out' / 'pixeq').mkdir(parents=True, exist_ok=True); bb.save(root / 'test' / 'out' / 'pixeq' / f'{W}x{H}_{k}.png'); a.save(root / 'test' / 'out' / 'pixeq' / f'{W}x{H}_{k}_base.png'); continue
           n = sum(1 for px in df.getdata() if any(px)); mx = max(max(ch) for ch in [df.getextrema()][0])
           out = root / 'test' / 'out' / 'pixeq'; out.mkdir(parents=True, exist_ok=True); a.save(out / f'{W}x{H}_{k}_base.png'); bb.save(out / f'{W}x{H}_{k}_new.png')
           print(f'{W}x{H} {k}: DIFF {n} px in {bbox} (max channel delta {mx})'); bad += 1
