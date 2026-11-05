@@ -1639,6 +1639,7 @@ function rollEvents(w) {
     ev[E.id] = 1; list.push(E);
     chance *= 0.6;
   }
+  if (G.frV >= 5 && w >= 10 && !ev.hole && ENVN('HOLEALL', 0)) { ev.hole = 1; list.push(EVENTS.find(E => E.id === 'hole')); } // 6.5 bot knob: a Black Hole every wave from 10 (balance check only)
   // Gambler: one more roll of the dice every wave
   // a fair coin: good or bad, and always good on a boss wave (a breach ends the run)
   if (G.mods && G.mods.ks.gambler && w >= 2) { const good = w % 10 === 0 || G.r() < 0.5 || list.filter(x => !x.good).length >= 2; const opts = EVENTS.filter(E => !!E.good === good && (good || E.from <= w) && !ev[E.id] && !(E.fr > G.frV)); if (opts.length) { const E = wpick(G.r, opts, e => e.w); ev[E.id] = 1; list.push(E); } }
