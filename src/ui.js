@@ -2030,7 +2030,7 @@ const UI = (() => {
   // ---------- v5.1 Know Your Enemy: tap (or hover) any enemy to see what it is, what it does and what beats it ----------
   function enemyAt(p, rad) {
     let best = null, bd = (rad || 0.6) * (rad || 0.6);
-    for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0)) || e.burrowT > 0) continue; const ey = e.y - (e.fly ? 0.3 : 0), r = e.boss ? 1.4 : 1, d = dist2(e.x, ey, p.x, p.y) / (r * r); if (d < bd) { bd = d; best = e; } }
+    for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0)) || e.burrowT > 0 || e._fogH) continue; const ey = e.y - (e.fly ? 0.3 : 0), r = e.boss ? 1.4 : 1, d = dist2(e.x, ey, p.x, p.y) / (r * r); if (d < bd) { bd = d; best = e; } }
     return best;
   }
   function enemyInfo(e) {

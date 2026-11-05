@@ -39,7 +39,7 @@ with sync_playwright() as p:
         tag = f'{W}x{H}'
         pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=2, has_touch=True)
         pg.on('pageerror', lambda e: errs.append(f'{tag}: {e}'))
-        pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
+        pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_function('() => { try { return !!PROF && !!UI && !!document.querySelector("#bLaunch"); } catch (e) { return false; } }', timeout=60000); pg.wait_for_timeout(400)
         pg.evaluate(PREP)
         pg.click('#bLaunch'); pg.wait_for_timeout(250)
         pg.evaluate('() => { const s = UI._dbg.setup(); s.seed = 4242; s.map = genMap(mulberry32(4242)); UI._dbg.renderSetup(); }')
