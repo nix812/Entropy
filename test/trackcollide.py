@@ -1,4 +1,5 @@
-"""6.3: plus the zone arrival banner stays over the field, clear of every control.
+"""6.5: plus the Black Hole's violet edge arrow (a hole drifting in) joins the arrow checks.
+6.3: plus the zone arrival banner stays over the field, clear of every control.
 5.8: plus the bounty chip with the Bounty Purse stays in the chip row, clear of every control.
 5.5.14 the music deck never sits on anything and the Music tile never overlaps an ability button: with the log and the doctrine list full, the ticker and the assault
 banner up, the full HUD's stats box, toasts, the Map button, and a tower panel open on either side; at four screen sizes
@@ -51,6 +52,7 @@ JS_HITS = '''(over) => {
   if (arr.filter(a => a.site).length > 3) out.push('more than 3 loot site arrows');
   if (window._wantSite && !arr.some(a => a.site)) out.push('no loot site arrow');
   if (window._wantTre && !arr.some(a => a.tre)) out.push('no treasure arrow');
+  if (window._wantHole && G.hole && G.hole.ph === 0 && !/panel-[lr]/.test(document.body.className) && !arr.some(a => a.hole)) { const q = Render.tileToScreen(G.hole.x, G.hole.y); out.push(`no black hole arrow (hole at ${Math.round(q.x)},${Math.round(q.y)} of ${Render.layout.W}x${Render.layout.H}; arrows ${JSON.stringify(arr.map(a => [Math.round(a.sx), Math.round(a.sy)]))})`); }
   for (let i = 0; i < arr.length; i++) { const a = arr[i], x = cvr.left + a.sx * UIS, y = cvr.top + a.sy * UIS, h = 11 * UIS;
     const box = { left: x - h, right: x + h, top: y - h, bottom: y + h };
     for (const o of arr.slice(i + 1)) if (Math.hypot(o.sx - a.sx, o.sy - a.sy) < 18) out.push('arrows overlap');
@@ -61,7 +63,9 @@ TRE = '''() => { // crates all around the sector edges, the camera zoomed in on 
   G.caches = pts.map(([x, y], i) => ({ x, y, t: 999, id: 9000 + i, kind: i % 3 ? 'normal' : 'gold' })); window._wantTre = 1;
   if (G.probe) { G.sites = [[1.5, 1.5], [COLS - 1.5, 1.5], [1.5, ROWS - 1.5], [COLS - 1.5, ROWS - 1.5], [COLS / 2, 1.5], [COLS / 2, ROWS - 1.5], [COLS - 1.5, ROWS / 2]].map(([x, y], i) => ({ id: 9100 + i, k: ['wreck', 'cloud', 'rock'][i % 3], x, y, t: 999, life: 999, val: 100, rich: i % 2, prog: 0, g: [], z: i, jp: 0, hp: 50, max: 50, chunks: 0, ent: 5 }));
     G.probe.home = 0; G.probe.x = 2.5; G.probe.y = ROWS / 2; window._wantSite = 1; } // 6.5: loot sites on every side and the probe off screen
-  const L = Render.layout; Render.resetCam(); Render.zoomAt(L.W / 2, L.H / 2, 2.6); }'''
+  if (typeof fogOn === 'function' && fogOn()) { PROBE.up.scan.v = PROBE.up.scan.v.map(() => 99); if (G.probe) G.probe.vis = 99; window._wantHole = 1; } // 6.5: a probe stub that sees the whole map (crates in fog have no arrow), and a Black Hole drifting in from the left (its violet arrow)
+  const L = Render.layout; Render.resetCam(); Render.zoomAt(L.W / 2, L.H / 2, 2.6);
+  if (window._wantHole) { const q = Render.screenToTile(-400, L.H * 0.45); G.hole = { x: q.x, y: q.y, tx: q.x + 9, ty: q.y, dx: 1, dy: 0, ph: 0, t: 0, k: 1 }; } }'''
 FILL = '''() => {
   document.body.classList.add('hudfull');
   const dps = document.querySelector('#dps'); dps.innerHTML = '<b>DPS</b><br>Pulse 1,234<br>Rail 5,678<br>Cryo 90<br>Lens 1,111<br>Mortar 222';

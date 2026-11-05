@@ -19,6 +19,8 @@ this.S = { get G(){return G}, set G(v){G=v}, get PROF(){return PROF}, set PROF(v
   vm.runInContext(`Object.assign(this.S, { ANOM_PART, ANOM_UPS, ANOM_DNS, ANOM_RARITY, ANOM_GEN, anomPartTxt, anomTotals, anomRoom, anomSize, anomBuild, anomGenCard, anomOffersGen, takeGenAnomaly, anomInfo, anomTaken, anomCount, addEntropy, computeAf, anomMods, runHash, replayRun, act, SIM_STEP, rlog })`, ctx);
   // 6.5 probe65: the probe, loot sites and guards
   vm.runInContext(`Object.assign(this.S, { PROBE, prStats, prUpCost, prRebuildCost, prVal, prHomePt, prNew, siteSpawn, sitesUpdate, probeUpdate, probeGo, probeRecall, probeUpgrade, probeRebuild, prBank, prLose, siteById, siteReach, crateCr, act, ACTS, replayRun, runHash, BOONS, entropyNeed })`, ctx);
+  // 6.5 sky65: fog of war and the Black Hole event
+  vm.runInContext(`Object.assign(this.S, { HOLE, FOG, EVENTS, holeSpawn, holeUpdate, holeEnemy, holeRate, holeZone, fogOn, fogSources, fogMark, fogInit, fogPack, fogUnpack, rollEvents, runHash, replayRun, act })`, ctx);
   return ctx.S;
 }
 module.exports = { load };

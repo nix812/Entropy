@@ -330,7 +330,7 @@ const UI = (() => {
   // busy moment: a tap in the last 2.5 s, aiming, the core picker or flight, enemies at the core, a boss closing in. A card that
   // has to wait is asked again next frame (its seen flag is set only when it shows). UI state only: nothing is written to G.
   const TEACH_GAP = 30;
-  const TEACH_NOW = { boss: 1, wormhole: 1 }; // 6.2: these warn about the next wave, so they never wait behind the 30 s gap
+  const TEACH_NOW = { boss: 1, wormhole: 1, hole: 1 }; // 6.5: the Black Hole card explains the event while it is on the map // 6.2: these warn about the next wave, so they never wait behind the 30 s gap
   let teachG = null, teachAt = -1e9, teachTap = 0, camUser = 0; // camUser: camera moves made by the player (the Training camera step)
   const teachClock = () => { if (teachG !== G) { teachG = G; teachAt = -1e9; } return G ? G.time : 0; };
   function teachBusy() {
@@ -362,6 +362,8 @@ const UI = (() => {
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
+    if (G.hole && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the centre. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
+    if (typeof fogOn === 'function' && fogOn() && G.wave >= 2 && G.time > 20 && introCard('fog', 'Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored, but enemies, crates and storms there are hidden. Bosses always show. Wormholes and the Threat Board still warn you.')) return;
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.probe && G.probe.alive && (G.sites || []).some(s => !s.done) && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. Loot rides home and banks when the probe docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
@@ -1300,7 +1302,7 @@ const UI = (() => {
   //         One at a time, wrapped text, tap to dismiss.
   //  TIP:   instant feedback to something you just tapped (not enough power, reactor expanded). Replaces itself, never queues.
   //  FEED:  everything else (combos, salvage, boons, veterans, boss phases) goes to a small fading list in the corner.
-  const ALERT_RE = /^(BOSS HALFWAY|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|NUKE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
+  const ALERT_RE = /^(BOSS HALFWAY|BLACK HOLE|CREDITS PILING UP|NEW ENEMY|CAPSTONE REFUNDED|[A-Z ]+ ONLINE$|BREACH WARNING|STRAIN|SWARM PRE-ADAPTED|WORMHOLE|PIRATES|CAPTAIN|LOOT STOLEN|THE WORM HUNTS|DIGESTED|MAELSTROM|CHECKPOINT|NUKE ONLINE|TALENTS ARRIVE|UPDATING|GALAXY REBORN|CONSTELLATION|LEVEL UP|NODE BEACON|RED ALERT|MOST WANTED|BOUNTY)/;
   const TIP_RE = /^(NOT ENOUGH|NO ROUTE|RELOCATE|NUKE|OVERDRIVE|OVERCHARGED|SPARE POWER|POWER$|GRID FULL|REACTOR|CORE RELOCATED|CASHED IN|LOG |INVALID|FULL SCREEN|CAN'T|ORBITAL|BIGGER MAPS|ENTROPY$|SPEED BONUS|BOON|ANOMALY|STABILIZED|SAVE |PROFILE|NOTHING|REFIT)/;
   const KEY_RE = /^(BOSS HALFWAY|NEW ENEMY|BREACH WARNING|RED ALERT|WORMHOLE|STRAIN|MAELSTROM|CHECKPOINT|PIRATES|LOOT STOLEN|THE WORM HUNTS|DIGESTED)/;
   // v5.1.2 notices in a game go to one slim ticker under the top bar, never over the field. URGENT ones (the run is at stake)
@@ -2126,7 +2128,7 @@ const UI = (() => {
   // ---------- v5.1 Know Your Enemy: tap (or hover) any enemy to see what it is, what it does and what beats it ----------
   function enemyAt(p, rad) {
     let best = null, bd = (rad || 0.6) * (rad || 0.6);
-    for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0)) || e.burrowT > 0) continue; const ey = e.y - (e.fly ? 0.3 : 0), r = e.boss ? 1.4 : 1, d = dist2(e.x, ey, p.x, p.y) / (r * r); if (d < bd) { bd = d; best = e; } }
+    for (const e of G.enemies) { if (e.dead || (e.cloaked && !(e.revealed > 0)) || e.burrowT > 0 || e._fogH) continue; const ey = e.y - (e.fly ? 0.3 : 0), r = e.boss ? 1.4 : 1, d = dist2(e.x, ey, p.x, p.y) / (r * r); if (d < bd) { bd = d; best = e; } }
     return best;
   }
   function enemyInfo(e) {
@@ -3282,6 +3284,7 @@ const UI = (() => {
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan, double-tap to zoom in or back out. Edge arrows point at what is off screen: bosses and enemies near the core, pirate treasure (yellow, with a chest) and the core itself (green). Tap one to look there; the green one brings the camera home.'],
+      ['Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored: you see the land, but not enemies, crates or storms. Bosses always show. Sensor Sweep shows every enemy it Marks.'],
       ['Mouse & keys', 'Click to tap, drag (any button) to pan, wheel to zoom, right-click to close a panel or cancel an aim. Keys: WASD or arrows pan, + and − zoom, F map/fit, N next wave, T talents, U upgrade the open tower, Z X C V B abilities, Space pause, 1–3 speed, Esc close.'],
     ] },
     { id: 'elements', name: 'Elements', rows: [
@@ -3383,7 +3386,7 @@ const UI = (() => {
       { id: 'storm', name: 'Storms', rows: [...Object.values(STORMS).map(S => [S.name, S.desc + '.', S.col]),
         ...Object.entries(COMBO_STORMS).map(([k, n]) => [n, 'Merged storm: ' + k.split('+').map(x => STORMS[x].name).join(' + ') + '. Both effects.']),
         ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
-      { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, E.desc + '.', E.good ? '#59f0b4' : '#ff8a9c']) },
+      { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, (E.long || E.desc) + '.', E.good ? '#59f0b4' : E.id === 'hole' ? '#b86cff' : '#ff8a9c']) },
       { id: 'probe', name: 'Probe', rows: [ // 6.5
         ['Probe', `Your scout ship. Tap Probe (or the probe), then tap any spot: it flies there in a straight line at ${PROBE.up.eng.v[0]} tiles per second. Tap the core to recall it. Docked, it repairs the core ${PROBE.repair * 100}% of max hull per second.`, '#9fd8ff'],
         ['Cargo', 'Loot rides in the probe and banks when it docks at the core. A lost probe leaves its cargo in a wreck you can salvage.', '#ffe14d'],
@@ -3888,6 +3891,7 @@ const UI = (() => {
     if (pkNow) beamK = nb ? pkS / nb : 1; // 6.2: the hum follows the beams' average distance from the screen centre (4 times a second)
     SFX.beams(nb, rk, nb ? neh / nb : 0, nb ? npr / nb : 0, beamK);
     SFX.flames(nf, nf ? nfi / nf : 0, nf ? nfp / nf : 0);
+    { const h = live && G.hole; SFX.hole(h ? (h.ph === 2 ? h.k : 1) * SFX.proxK(h.x, h.y) : 0, h ? SFX.proxPan(h.x, h.y) : 0); } // 6.5 Black Hole drone (louder and brighter as the camera nears it)
     SFX.danger(live && G.core.hp < G.core.max * 0.35 ? 1 - G.core.hp / (G.core.max * 0.35) : 0, dt);
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }

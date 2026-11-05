@@ -517,6 +517,9 @@ const SFX = (() => {
     // 6.3 (zone63): arriving in a zone: a soft rising whoosh, then two bell notes pitched per zone
     zone(id) { const r = { drift: 0, hive: 3, iron: -2, skies: 5, ghost: -4, salvage: 2, tempest: -5, demo: -3, choir: 4, oddball: 7 }[id] || 0; const c = ev('zone', busE, 0.5, { hall: 0.5, jit: 0, pan: 0, trim: 5 }); // +5 dB lands it in the notice tier (sfxrender: about -23 dB)
       nz(c, { f0: 300, f1: 2400, q: 1.2, d: 0.7, v: 0.16, a: 0.35, curve: 'lin' }); arp(c, [69 + r, 76 + r], 0.16, { v: 0.1, d: 0.5, bell: 1, at: 0.3 }); done(c); },
+    // 6.5 the Black Hole: arrival is a slow sub swell under a falling filtered rush; the collapse a rising suck, then a deep thump
+    hole(p) { duck(-3, 0.3, 0.8, 1.2); const c = ev('hole', busE, 0.6, { hall: 0.55, jit: 0, trim: -1 }, p); /* sfxrender: about -14 dB, under the Maelstrom */ sub(c, 48, 30, 1.6, 0.55); nz(c, { ft: 'lowpass', f0: 1800, f1: 120, d: 1.4, v: 0.22, a: 0.5, curve: 'lin' }); tone(c, { w: 'sine', f0: 62, f1: 41, slide: 1.4, d: 1.6, v: 0.16, a: 0.4 }); done(c); },
+    holeEnd(p) { const c = ev('holeEnd', busE, 0.6, { hall: 0.5, jit: 0, trim: 1 }, p); nz(c, { ft: 'bandpass', f0: 200, f1: 2600, q: 2, d: 0.5, v: 0.2, a: 0.45, curve: 'lin' }); sub(c, 90, 32, 0.5, 0.6, 0.5); click(c, 0.35, 0.5, 2500); done(c); },
     unbreak() { const c = ev('unbreak', busE, 0.6, { hall: 0.4, jit: 0, pan: 0 }); arp(c, [60, 64, 67, 72], 0.05, { v: 0.12, d: 0.4, bell: 1 }); done(c); },
     freeze(e) { if (!allow('freeze', 0.12, 2)) return; const c = ev('freeze', busH, 0.4, { room: 0.35 }, e); fmv(c, { f0: 2794, f1: 1397, r: 3.5, i: 2, d: 0.18, v: 0.15 }); nz(c, { ft: 'highpass', f0: 6000, f1: 3000, d: 0.15, v: 0.25 }); done(c); },
     net(e, t) { if (!allow('net', 0.1, 2)) return; const sp = t && t.spec || 0; const c = ev('net', busH, 0.4, { room: 0.2, tn: sp === 1 ? 'net1' : 'net' }, e);
@@ -652,6 +655,25 @@ const SFX = (() => {
     flameV.bg.gain.setTargetAtTime(on ? 0.03 * (pl || 0) * Math.min(1, 0.5 + 0.25 * n) : 0, t, on ? 0.05 : 0.1);
     flameV.bp.frequency.setTargetAtTime(600 * (pl ? 1 + 0.4 * pl : 1) * (inf ? 1 - 0.2 * inf : 1), t, 0.2);
   }
+  // 6.5 Black Hole drone: two detuned low saws and a sine sub through a lowpass that opens as the camera gets close, on the event
+  // bus (glue compressor, limiter). k = strength × camera proximity (0 = silent; built on first use); pan from its screen position
+  let holeV = null;
+  function hole(k, pan) {
+    if (!ctx || (!offline && ctx.state !== 'running') || !busE) return;
+    if (!holeV) {
+      if (!(k > 0)) return;
+      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), o3 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), p = ctx.createStereoPanner(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      o1.type = 'sawtooth'; o2.type = 'sawtooth'; o3.type = 'sine'; o1.frequency.value = 41; o2.frequency.value = 41.7; o3.frequency.value = 27.5;
+      f.type = 'lowpass'; f.Q.value = 4; f.frequency.value = 160; lfo.frequency.value = 0.35; lg.gain.value = 50; lfo.connect(lg); lg.connect(f.frequency);
+      g.gain.value = 0; o1.connect(f); o2.connect(f); f.connect(g); o3.connect(g); g.connect(p); p.connect(busE);
+      for (const o of [o1, o2, o3, lfo]) o.start(); holeV = { o1, o2, f, g, p };
+    }
+    const t = T(), q = Math.max(0, Math.min(1, k || 0));
+    holeV.g.gain.setTargetAtTime(q * 0.16, t, q > 0 ? 0.4 : 0.25);
+    holeV.f.frequency.setTargetAtTime(140 + 520 * q * q, t, 0.3); // rises as it gets near
+    holeV.o1.frequency.setTargetAtTime(41 * (1 + 0.12 * q), t, 0.5); holeV.o2.frequency.setTargetAtTime(41.7 * (1 + 0.12 * q), t, 0.5);
+    holeV.p.pan.setTargetAtTime(Math.max(-0.6, Math.min(0.6, pan || 0)), t, 0.2);
+  }
   // low core: a soft double heartbeat whose rate climbs as the hull falls (k = 0 healthy … 1 critical)
   function danger(k, dt) {
     if (!ctx || ctx.state !== 'running' || !busE || k <= 0) { dangerT = 0; return; }
@@ -660,7 +682,7 @@ const SFX = (() => {
     const c = ev('heart', busE, 0.25 + 0.3 * k, { jit: 0, pan: 0 }); sub(c, 70, 45, 0.12, 0.5); sub(c, 62, 40, 0.14, 0.4, 0.2); done(c);
   }
   // offline rendering for tests: play(name) into an OfflineAudioContext at time t
-  function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; beamV = null; flameV = null; buildMasterOffline(); }
+  function offlineCtx(oc) { ctx = oc; offline = true; tBase = 0; beamV = null; flameV = null; holeV = null; buildMasterOffline(); }
   function buildMasterOffline() {
     limiter = ctx.createDynamicsCompressor(); limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
     master = ctx.createGain(); master.gain.value = 1; sfxBus = ctx.createGain(); sfxBus.gain.value = 0.8; musBus = ctx.createGain(); musBus.gain.value = musVol;
@@ -1972,7 +1994,7 @@ const SFX = (() => {
     return API;
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------

@@ -17,6 +17,7 @@ NAMES = ['ui', 'deny', 'shot', 'shotT', 'shotC', 'shotA', 'shotV', 'shotG', 'rai
          'mortar1', 'mortar2', 'grav1', 'grav2', 'hitK', 'hitR', 'hitC', 'hitF', 'hitV', 'hitA', 'boomT', 'boomT2', 'pop', 'empboom', 'empboom1',
          'lure', 'lure2', 'net1', 'lock', 'forge', 'forge1', 'pylon',
          'saw', 'flashover', 'surge', 'rime', 'tangle', 'aegis', 'aegisblock', 'joker',  # 6.4 capstone tier towers
+         'hole', 'holeEnd',  # 6.5 the Black Hole
          'nuke']  # 6.2: last, so its 3 s tail runs into the render's end instead of the next sound
 GAP = 1.6
 with sync_playwright() as p:
