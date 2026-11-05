@@ -1085,30 +1085,33 @@ const UI = (() => {
     $('#abils').innerHTML = `<button class="rb od" id="bOD" aria-label="Nuke">${svgIcon('overdrive')}<span>Nuke</span></button>` +
       ABIL_ORDER.slice().reverse().map(k => `<button class="rb abil" data-abil="${k}" aria-label="${esc(ABILITIES[k].name)}">${svgIcon(k)}<span>${esc(ABILITIES[k].short)}</span><em class="cnt"></em><i class="cdf"></i></button>`).join('');
   }
+  // 6.6 (perf66): HUD writes skip values that haven't changed (a text write always replaces the node and dirties layout)
+  const setT = (el, v) => { v = String(v); if (el && el.textContent !== v) el.textContent = v; };
+  const setHid = (el, v) => { v = !!v; if (el && el.hidden !== v) el.hidden = v; };
   function updateHud(force) {
     if (!G) return;
     const c = G.core;
     $('#hpfill').style.width = pct(Math.max(0, c.hp / c.max));
     $('#shfill').style.width = pct(c.smax ? c.shield / c.smax : 0);
-    $('#hptxt').textContent = `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`;
+    setT($('#hptxt'), `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`);
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
     { const lm = $('#leakmark'), P = Math.min(1, G.breachP || 0); if (lm) { lm.style.width = pct(P); lm.classList.toggle('hot', P >= 0.5); } } // v5.4: last wave's leaks against shield + hull
-    $('#cr').textContent = fmt(G.credits);
-    $("#wave").textContent = G.wave || "—";
+    setT($('#cr'), fmt(G.credits));
+    setT($("#wave"), G.wave || "—");
     const cpWait = G.spawningDone && cpPending();
-    $('#nextw').textContent = G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `next in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`;
-    $('#score').textContent = fmt(G.score);
+    setT($('#nextw'), G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `next in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`);
+    setT($('#score'), fmt(G.score));
     const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint && !cpWait;
     const cb = $('#bCall');
     cb.disabled = !canCall && !G.checkpoint;
     cb.classList.toggle('cp', !!G.checkpoint);
-    cb.querySelector('span').textContent = G.checkpoint ? 'Resume' : 'Next';
+    setT(cb.querySelector('span'), G.checkpoint ? 'Resume' : 'Next');
     const cpb = G.checkpoint ? cpBonus() : null;
-    cb.querySelector('b').textContent = G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '';
-    $('#cpBanner').hidden = !G.checkpoint || !!G.reloc;
-    if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); $('#cpBanner').querySelector('span').textContent = cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'; $('#cpFill').style.width = pct(cpb.f); }
+    setT(cb.querySelector('b'), G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '');
+    setHid($('#cpBanner'), !G.checkpoint || !!G.reloc);
+    if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); setT($('#cpBanner').querySelector('span'), cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'); $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
-    const sp = $('#bSpeed'); sp.querySelector('b').textContent = G.speed + '×'; sp.classList.toggle('fast', G.speed > 1);
+    const sp = $('#bSpeed'); setT(sp.querySelector('b'), G.speed + '×'); sp.classList.toggle('fast', G.speed > 1);
     { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Nuke') : 'W' + OD_WAVE;
       ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready); ob.classList.toggle('ghost', !!G.fresh && !ready && !G.odUsed);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
@@ -1139,11 +1142,11 @@ const UI = (() => {
     $('#bStats').classList.toggle('on', hudFull);
     const eb = $('#bEnt');
     $('#entFill').style.height = pct(Math.min(1, G.entropy / 100));
-    $('#entTxt').textContent = G.anomOffers ? 'DRAW' : Math.floor(G.entropy) + '%';
+    setT($('#entTxt'), G.anomOffers ? 'DRAW' : Math.floor(G.entropy) + '%');
     eb.classList.toggle('ready', !!G.anomOffers);
-    $('#entCount').textContent = anomCount() ? '×' + anomCount() : '';
-    $('#webBadge').textContent = free > 0 ? free : '';
-    $('#webBadge').hidden = free <= 0;
+    setT($('#entCount'), anomCount() ? '×' + anomCount() : '');
+    setT($('#webBadge'), free > 0 ? free : '');
+    setHid($('#webBadge'), free <= 0);
     // chips: events + storms
     const chips = [];
     if (G.spawningDone && G.prep) {
