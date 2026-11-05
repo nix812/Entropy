@@ -4770,6 +4770,7 @@ function gameOver() {
   G.over = true;
   bankPurse();
   if (ghostRun()) { Hooks.onGameOver(); return; }
+  if (G.probe) rlog('prEnd', Object.assign({ lv: Object.values(G.probe.lv).join(''), alive: G.probe.alive ? 1 : 0 }, G.stats.pr || {})); // 6.5 probe telemetry for the run log
   { const by = {}; for (const t of G.towers) by[t.type] = (by[t.type] || 0) + Math.round(t.dmgDone);
     rlogWave(); rlog('end', { sc: Math.round(G.score), killer: G.stats.lastLeak || '', leaks: G.stats.leaks, kills: G.kills, el: G.stats.dmgByEl, combos: G.stats.combos, dmgBy: by, boons: G.boonsTaken, anoms: G.anoms, ...(G.ganoms && G.ganoms.length ? { gan: G.ganoms.map(a => a.name) } : {}), reactor: G.reactorN || 0, peakGene: G.stats.peakGene || null, strain: topStrain(), ...(G.fr ? { fr: frSummary() } : {}) }); }
   if (G.score > PROF.bestScore) PROF.bestScore = Math.round(G.score);

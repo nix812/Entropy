@@ -70,11 +70,12 @@ Sim rules gated on `G.frV >= 5` (`FR_VER = 5`, the same one-line edit as sky65).
     `simStep` (`if (G.probe) probeUpdate(dt)` after `frUpdate`), `snapshotRun` (`probe`, `sites`, `siteT`), `resumeRun`
     (restores them; older saves keep the fresh probe from newRun), `runHash` (mixes probe position, hull and site ids
     only when `G.probe` exists, so old hashes are unchanged).
+    `gameOver` (one `prEnd` run-log line: upgrade levels, alive, `G.stats.pr`).
   - Run fields: `G.probe` = `{ x, y, alive, vis }` (the sky65 contract) plus `hp, max, lv{hull,eng,gun,rig,scan}, tx, ty,
     task, home, ret, rb, cd, cargo{cr,ent,ch,tok,jp}, hitT, ang`. `G.sites[]` = `{ id, k: wreck|cloud|rock|lost, x, y, t,
     life, val, rich, prog, g[], z, jp, done?, hp/max/chunks/crystal/vx/vy (rock), ent (cloud) }`; guards `{ id, k:
     drone|brute, hp, max, a, x, y, hx, hy, cd, calm, hitT }`. `G.siteT`, `G.siteN`, `G.stats.pr = { sites, lost, kills, jp,
-    cr, trips }`. Run log: `site`, `siteDone`, `prBank`, `prLost`, `prUp`, `prBuild`.
+    cr, trips }`. Run log: `site`, `siteDone`, `prBank`, `prLost`, `prUp`, `prBuild`, `prEnd`.
 - **render.js**: block "6.5 the probe, loot sites and neutral guards" before the zone wipe block: `PR_COL`, `prSelOn`,
   `prIn` (view cull), `drawSites`, `drawGuard`, `drawProbe`. Calls: `drawSites(v)` after salvage crates, `drawProbe(v)`
   after pirate ships; lights after Node Links; a screen-space overlay after the aim ring (course line, selection ring and
