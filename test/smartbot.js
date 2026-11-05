@@ -141,6 +141,35 @@ function botAnom(G) {
   for (const o of O) { const v = anomVal(o, B); if (v > bv) { bv = v; best = o; } }
   return bv < -5 ? null : best;
 }
+// 6.5 the probe (frV 5): buy upgrades with spare credits (Lance first), send the probe to the site worth the most per second
+// that it can survive (guards' damage over the time it is exposed against 75% of its hull), chain sites while healthy, come home
+// under 40% hull or with a full hold, rebuild when the bank allows. NOPROBE=1 never uses it (the probe stays docked)
+const PR_UP = ['gun', 'hull', 'rig', 'eng', 'gun', 'hull', 'scan', 'rig', 'eng', 'gun', 'hull', 'scan', 'rig', 'eng', 'scan'];
+function botProbe(G, met) {
+  const P = G.probe; if (!P || process.env.NOPROBE) return;
+  const m = met.pr || (met.pr = { sends: 0, ups: 0, builds: 0 });
+  if (!P.alive) { if (!(P.rb > 0) && G.credits > S.prRebuildCost() * 2 && G.wave >= 4) { if (S.probeRebuild()) m.builds++; } return; }
+  { let need = {}; for (const k of PR_UP) { need[k] = (need[k] || 0) + 1; if (P.lv[k] < need[k]) { const c = S.prUpCost(k); if (G.credits > c * (P.lv.gun ? 2.5 : 1.5) && G.wave >= 3) { if (S.probeUpgrade(k)) m.ups++; } break; } } }
+  const st = S.prStats(), hp = P.hp / P.max, c = P.cargo, ws = 1 + Math.max(1, G.wave) / S.PROBE.wS, Gd = S.PROBE.guard;
+  if (P.ret) return;
+  if (!P.home && (hp < 0.4 || c.cr > S.prVal() * 4 || c.jp)) { S.probeRecall(); return; }
+  if (!P.home && P.task) return; // busy
+  if (P.home && hp < 0.85) return; // heal first
+  let best = null, bv = 0;
+  for (const s of G.sites) {
+    if (s.done) continue;
+    const d = Math.hypot(s.x - P.x, s.y - P.y), dh = Math.hypot(s.x - G.core.x, s.y - G.core.y), work = s.k === 'cloud' ? S.PROBE.cloudT / st.rig : s.k === 'rock' ? s.hp / (S.PROBE.mine * ws * st.rig) : S.PROBE.wreckT / st.rig;
+    const t = (d + dh) / st.spd + work; if (t > s.t + dh / st.spd) continue;
+    const gdps = s.g.reduce((a, g) => a + (g.k === 'drone' ? Gd.drone.dmg * ws / Gd.drone.cd : Gd.brute.dps * ws), 0), ghp = s.g.reduce((a, g) => a + g.hp, 0);
+    const expo = st.dps > 0 ? Math.min(ghp / st.dps, work + 2 * Gd.aggro / st.spd) : work + 2 * Gd.aggro / st.spd;
+    const dmg = gdps * expo * (st.dps > 0 ? 0.6 : 1) + (s.k === 'cloud' ? P.max * S.PROBE.cloudZap * work : 0);
+    if (dmg > P.hp * 0.75) continue;
+    const v = (s.val * (s.k === 'rock' ? (3 - (s.chunks || 0)) / 3 : 1 - s.prog) + (s.ent || 0) * 5 + s.jp * S.prVal() * 3) / t;
+    if (v > bv) { bv = v; best = s; }
+  }
+  if (best) { if (S.probeGo(best.x, best.y)) m.sends++; }
+  else if (!P.home) S.probeRecall();
+}
 const agg = [];
 const OFF = +(process.env.SEED || 0);
 for (let run = OFF; run < OFF + runs; run++) {
@@ -190,6 +219,7 @@ for (let run = OFF; run < OFF + runs; run++) {
     act = t + 0.8;
     // anomalies
     if (G.anomOffers) { if (Math.random() < 0.2 || !G.anomOffers.length) { S.stabilize(); met.stab++; } else { const o = botAnom(G); if (!o) { S.stabilize(); met.stab++; } else { const id = o.id || o; S.takeAnomaly(id); met.anoms.push(id); } } }
+    botProbe(G, met); // 6.5
     // v5.8 Techniques
     for (const tw of G.towers) chooseFire(G, tw);
     // veterans
@@ -318,7 +348,8 @@ for (let run = OFF; run < OFF + runs; run++) {
     el: Object.entries(G.stats.dmgByEl).map(([k, v]) => k + Math.round(v / tot * 100)).join(' '),
     capT: (met.capT || []).join('+') || '-', capx: met.capT && met.capT.length ? `stop${G.stats.aegis || 0} held${Math.round(G.stats.held || 0)}` : '-', sec: (met.startSec || '-').slice(0, 5) + (met.doors.length ? '>' + met.doors.join('>') : ''), ext: met.extracted || 0, tw: Object.keys(G.twists || {}).map(k => k.slice(0, 3)).join('+') || '-',
     xp57: Math.round((G.xpRaw || G.xpEarned) * (met.extracted ? 1.5 : 1)), paid: Math.round(G.xpEarned),
-    share: Object.entries(byType).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0).map(([k, v]) => k.slice(0, 4) + ':' + Math.round(v / dmgAll * 100)).join(' ') });
+    share: Object.entries(byType).sort((a, b) => b[1] - a[1]).filter(([, v]) => v > 0).map(([k, v]) => k.slice(0, 4) + ':' + Math.round(v / dmgAll * 100)).join(' '),
+    pr: G.probe ? `s${(G.stats.pr || {}).sites || 0} l${(G.stats.pr || {}).lost || 0} k${(G.stats.pr || {}).kills || 0} j${(G.stats.pr || {}).jp || 0} cr${(G.stats.pr || {}).cr || 0} u${(met.pr || {}).ups || 0}` : '-', });
   if (FR) { const D = met.fr.dockT, T = Object.values(D).reduce((a, b) => a + b, 0) + met.fr.airT || 1;
     console.log(`FRONTIER wave ${G.wave} min ${(t / 60).toFixed(1)} flights ${met.fr.flights} moves ${met.fr.moves} air ${Math.round(met.fr.airT / T * 100)}% core: ${Object.entries(D).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + Math.round(v / T * 100) + '%').join(', ')} killer ${G.stats.lastLeak || '-'}`); }
 }

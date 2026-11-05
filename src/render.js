@@ -792,7 +792,7 @@ const RES = 2;
   const prIn = (x, y, m, v) => x * TILE > v.vx - m && x * TILE < v.vx + v.vw + m && y * TILE > v.vy - m && y * TILE < v.vy + v.vh + m;
   function drawSites(v) {
     for (const s of G.sites || []) {
-      if (!prIn(s.x, s.y, 60, v)) continue;
+      if (s.done || !prIn(s.x, s.y, 60, v)) continue;
       const X = s.x * TILE, Y = s.y * TILE, fade = s.t < 10 ? ((frame >> 2) % 2 ? 0.45 : 1) : 1, gold = s.rich;
       if (s.k === 'cloud') {
         const r = PROBE.cloudR * TILE * (1 - 0.45 * s.prog), col = gold ? PR_COL.gold : PR_COL.cloud;
@@ -1754,7 +1754,7 @@ const RES = 2;
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
     for (const cc of G.caches || []) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
-    if (G.probe) { for (const s2 of G.sites || []) light(s2.x * TILE, s2.y * TILE, TILE * (s2.k === 'cloud' ? 2.2 : 1.4), s2.rich ? PR_COL.gold : s2.k === 'cloud' ? PR_COL.cloud : s2.k === 'wreck' ? '#ff9a3c' : PR_COL.site, s2.k === 'cloud' ? 0.2 : 0.16);
+    if (G.probe) { for (const s2 of G.sites || []) if (!s2.done) light(s2.x * TILE, s2.y * TILE, TILE * (s2.k === 'cloud' ? 2.2 : 1.4), s2.rich ? PR_COL.gold : s2.k === 'cloud' ? PR_COL.cloud : s2.k === 'wreck' ? '#ff9a3c' : PR_COL.site, s2.k === 'cloud' ? 0.2 : 0.16);
       const Pb = G.probe; if (Pb.alive && !Pb.home) light(Pb.x * TILE, Pb.y * TILE - 8, TILE * 1.3, PR_COL.glow, 0.3); } // 6.5
     if (nuke) { const t = nuke.t; light(nuke.x, nuke.y, TILE * (3 + 3 * Math.min(1, t / 0.4)), t < 0.6 ? '#fff0c0' : '#ff8a2a', Math.max(0, 0.9 - t * 0.3)); light(nuke.x, nuke.y - TILE * 3.5 * Math.min(1, t / 1.5), TILE * 3, '#ff7b29', Math.max(0, 0.45 - t * 0.14)); }
     if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
@@ -1910,7 +1910,7 @@ const RES = 2;
       tre.sort((p, q) => p.d - q.d); for (const A of tre.slice(0, 3)) list.push(A);
       // 6.5: active loot sites (magenta, merged and capped like treasure) and the probe itself when it is out of view
       if (G.probe) { const ss = [];
-        for (const st of G.sites || []) { const sx2 = bx2s(st.x * TILE), sy2 = by2s(st.y * TILE); if (onS(sx2, sy2)) continue;
+        for (const st of G.sites || []) { if (st.done) continue; const sx2 = bx2s(st.x * TILE), sy2 = by2s(st.y * TILE); if (onS(sx2, sy2)) continue;
           const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = ss.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
           if (m) { m.n++; if (d < m.d) Object.assign(m, { x: st.x, y: st.y, d, sk: st.k }); } else ss.push({ x: st.x, y: st.y, d, px: E.px, py: E.py, n: 1, col: PR_COL.site, site: 1, sk: st.k }); }
         ss.sort((p, q) => p.d - q.d); for (const A of ss.slice(0, 3)) list.push(A);

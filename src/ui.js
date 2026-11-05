@@ -363,7 +363,7 @@ const UI = (() => {
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
-    if (G.probe && G.probe.alive && (G.sites || []).length && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. Loot rides home and banks when the probe docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
+    if (G.probe && G.probe.alive && (G.sites || []).some(s => !s.done) && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. Loot rides home and banks when the probe docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
     if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button at the top right to pick each one a mutation.', 'veterans')) return;
     if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.', 'abilities')) return;
@@ -1878,7 +1878,7 @@ const UI = (() => {
     }
     if (onP) { SFX.play('ui'); openProbe(); return true; }
     let best = null, bd = 1e9;
-    for (const s of G.sites || []) { const d = Math.hypot(s.x - p.x, s.y - p.y); if (d <= (s.k === 'cloud' ? PROBE.cloudR : 1.2) && d < bd) { bd = d; best = s; } }
+    for (const s of G.sites || []) { if (s.done) continue; const d = Math.hypot(s.x - p.x, s.y - p.y); if (d <= (s.k === 'cloud' ? PROBE.cloudR : 1.2) && d < bd) { bd = d; best = s; } }
     if (best) { SFX.play('ui'); openProbe(best.id); return true; }
     return false;
   }

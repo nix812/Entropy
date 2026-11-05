@@ -484,18 +484,18 @@ const PROBE = {
     scan: { name: 'Scanner', v: [5, 7, 9, 12], loot: 0.1 }, // vision tiles; +10% loot per level
   },
   upOrder: ['gun', 'hull', 'eng', 'rig', 'scan'],
-  cost: [120, 300, 650],
+  cost: [150, 400, 900],
   rb0: 120, rbW: 12, rbLv: 0.15, rbT: 40,         // rebuild: (120 + 12 × wave) × (1 + 15% per upgrade level), then 40 s in the yard
   home: 0.3,                                      // within 0.3 tiles of its dock beside the core: docked, cargo banks
   site: { from: 2, first: 25, gap: [22, 36], max: 2, maxW: 15, maxCap: 4, minCore: 12, roadGap: 2, apart: 6, out: 0.75 }, // spawns from Wave 2: one every 22–36 s while under 2 (+1 per 15 waves, max 4); 12+ tiles from the core, 2+ from roads, 6+ apart; 75% outside the sector when it can
-  life: { wreck: 150, cloud: 130, rock: 170, lost: 90 }, // seconds before a site fades
+  life: { wreck: 120, cloud: 110, rock: 140, lost: 90 }, // seconds before a site fades
   wreckT: 2.5, cloudT: 12, cloudR: 1.6, cloudZap: 0.015, rockHp: 40, mine: 6, rockR: 1.7, rockDrift: 0.12, // work: salvage time, harvest time and radius, static 1.5% hull/s, rock HP and mining damage per second (× wave scale), mining reach, drift tiles/s
-  loot: { wreck: 0.9, cloud: 0.6, rock: 0.9, ramp: [0.35, 30], rich: 2.5, guard: 0.12, brute: 0.25, cloudEnt: 15, charge: 0.35, crystal: 0.2 }, // × crate value (crateCr), ×(0.35 + wave/30, max 1) early
-  jack: { base: 0.02, guard: 0.04, rich: 0.15, lost: 0 }, // jackpot chance per finished site: a boon pick or a full Entropy gauge
+  loot: { wreck: 0.6, cloud: 0.45, rock: 0.6, ramp: [0.35, 30], rich: 2.5, guard: 0.1, brute: 0.2, cloudEnt: 15, charge: 0.35, crystal: 0.2 }, // × crate value (crateCr), ×(0.35 + wave/30, max 1) early
+  jack: { base: 0.02, guard: 0.03, rich: 0.12 }, // jackpot chance per finished site: a boon pick or a full Entropy gauge
   richFrom: 8, rich: 0.12,                        // from Wave 8, 12% of sites are rich (×2.5 loot, +1 guard)
   guard: { from: 3, p0: 0.3, pW: 80, pMax: 0.75, nW: 20, nMax: 4, bruteFrom: 15, bruteP: 0.3, aggro: 4, leash: 5.5, heal: 0.2, calm: 5,
-    drone: { hp: 35, dmg: 5, cd: 1.2, r: 3.5, orbit: 1.3 },  // HP × wS^1.2, damage per shot × wS
-    brute: { hp: 110, dps: 12, spd: 1.7, r: 0.7 } },         // HP × wS^1.2, melee damage per second × wS
+    drone: { hp: 40, dmg: 6, cd: 1.2, r: 3.5, orbit: 1.3 },  // HP × wS^1.2, damage per shot × wS
+    brute: { hp: 130, dps: 15, spd: 1.7, r: 0.7 } },         // HP × wS^1.2, melee damage per second × wS
 };
 // Space pirates deliver the salvage. Lines are rare and varied so they stay funny.
 // v5.2 the skiffs have captains: a name on the hull, a flight path you can see and a jingle when they come

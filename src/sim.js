@@ -4500,6 +4500,7 @@ function siteSpawn() {
 function sitesUpdate(dt) {
   const P = G.probe, C = PROBE.site, w = prW();
   for (const s of G.sites) {
+    if (s.done && (!s.g.length || s.g.every(g => g.calm > PROBE.guard.calm))) { s.t = 0; continue; } // a looted site leaves once its guards settle
     const busy = P.alive && P.task === s.id && Math.hypot(P.x - s.x, P.y - s.y) <= siteReach(s) + 0.2;
     if (!busy) s.t -= dt; // a site the probe is working never fades under it
     if (s.vx) { s.x += s.vx * dt; s.y += s.vy * dt; for (const g of s.g) { g.x += s.vx * dt; g.y += s.vy * dt; g.hx += s.vx * dt; g.hy += s.vy * dt; } if (s.x < 0.3 || s.y < 0.3 || s.x > COLS - 0.3 || s.y > ROWS - 0.3) s.t = 0; }
@@ -4508,7 +4509,7 @@ function sitesUpdate(dt) {
   if (w < C.from || G.over) return;
   G.siteT -= dt;
   if (G.siteT > 0) return;
-  if (G.sites.filter(s => s.k !== 'lost').length >= Math.min(C.maxCap, C.max + Math.floor(w / C.maxW))) { G.siteT = 5; return; }
+  if (G.sites.filter(s => s.k !== 'lost' && !s.done).length >= Math.min(C.maxCap, C.max + Math.floor(w / C.maxW))) { G.siteT = 5; return; }
   G.siteT = C.gap[0] + G.r() * (C.gap[1] - C.gap[0]);
   siteSpawn();
 }
@@ -4519,7 +4520,8 @@ function prLoot(cr, ent, ch, tok, x, y) {
   if (cr > 0) Hooks.fx('num', { x: x == null ? G.probe.x : x, y: y == null ? G.probe.y : y, v: Math.round(cr * a), col: '#ffe14d', combo: 'LOOT' });
 }
 function siteDone(s) {
-  const P = G.probe; G.sites = G.sites.filter(o => o !== s); if (P.task === s.id) P.task = 0;
+  const P = G.probe; if (P.task === s.id) P.task = 0;
+  if (s.g.length) { s.done = 1; s.t = Math.min(s.t, 30); } else G.sites = G.sites.filter(o => o !== s); // the loot is gone; its living guards stay until they calm down
   const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 }); st.sites++;
   let ch = 0, tok = 0;
   if (s.k === 'wreck' && G.r() < PROBE.loot.charge) ch = 1;
@@ -4606,6 +4608,7 @@ function prFire(dt, S) {
 function prWork(dt, S) {
   const P = G.probe;
   for (const s of G.sites.slice()) {
+    if (s.done) continue;
     const d = Math.hypot(P.x - s.x, P.y - s.y);
     if (s.k === 'cloud') {
       if (d > PROBE.cloudR) continue;
@@ -4664,7 +4667,7 @@ function probeGo(x, y) {
   x = clamp(+x, 0.3, COLS - 0.3); y = clamp(+y, 0.3, ROWS - 0.3);
   if (Math.hypot(x - G.core.x, y - G.core.y) <= 1.1) return probeRecall();
   let best = null, bd = 1e9;
-  for (const s of G.sites) { const d = Math.hypot(s.x - x, s.y - y), r = Math.max(1.3, s.k === 'cloud' ? PROBE.cloudR : 0); if (d <= r && d < bd) { bd = d; best = s; } }
+  for (const s of G.sites) { if (s.done) continue; const d = Math.hypot(s.x - x, s.y - y), r = Math.max(1.3, s.k === 'cloud' ? PROBE.cloudR : 0); if (d <= r && d < bd) { bd = d; best = s; } }
   P.task = best ? best.id : 0; P.tx = best ? best.x : x; P.ty = best ? best.y : y; P.home = 0; P.ret = 0;
   return true;
 }
