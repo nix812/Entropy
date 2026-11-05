@@ -893,10 +893,11 @@ const RES = 2;
     if (X + RR < vxI || Y + RR < vyI || X - RR > vxI + vw || Y - RR > vyI + vh) return;
     const S = holeSprites();
     if (holeG !== G || !holeMotes) { holeG = G; holeMotes = []; for (let i = 0; i < 48; i++) holeMotes.push({ a: Math.random() * 6.283, r: RR * (0.3 + Math.random() * 0.7), c: i % 3 }); }
-    if (!LITE && R_.zfx !== false && LR > 4) { // lensing: the ground under the hole, magnified ×1.35 inside a circle
-      const m = 1.35, sr = LR / m;
+    if (!LITE && R_.zfx !== false && LR > 4 && !wipe) { // lensing: the board under the hole (from the map layer, which never changes per frame, so no
+      // copy of the live buffer), magnified ×1.35 inside a circle
+      const m = 1.35, sr = LR / m, sx0 = clamp(X - sr, 0, BW - 2 * sr), sy0 = clamp(Y - sr, 0, BH - 2 * sr);
       b.save(); b.beginPath(); b.arc(X, Y, LR, 0, 6.283); b.clip(); b.imageSmoothingEnabled = false;
-      b.drawImage(buf, (X - sr - vxI) * RES, (Y - sr - vyI) * RES, sr * 2 * RES, sr * 2 * RES, X - LR, Y - LR, LR * 2, LR * 2); b.restore();
+      b.drawImage(mapLayer, sx0 * RES, sy0 * RES, sr * 2 * RES, sr * 2 * RES, X - LR, Y - LR, LR * 2, LR * 2); b.restore();
       strokeRing(X, Y, LR, '#c9b6ff', 0.35, 1); // the Einstein ring hides the seam
     }
     fillRing(X, Y, 1.5 * TILE * k, '#05030c', 0.45); // the dark around the hole
