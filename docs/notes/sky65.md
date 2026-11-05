@@ -125,10 +125,46 @@ bit for bit (replay.js, cards64.js, tower64.js fixtures, and test/sky65.js repla
 - `test/harness.js`: one added `vm.runInContext` line of exports.
 
 ## Performance
-(see numbers below)
+`test/drawbench.py` (852×393 at dpr 3, headless software canvas, 36 towers and 90 enemies; this box was shared with another
+builder, so absolute ms swing ±10 between runs: compare the in-page A/B rows, which interleave fog on and off in one page).
+
+| Run | home | zoomIn | zoomOut |
+|---|---|---|---|
+| v640 before (two runs) | 40.8 / 41.4 | 43.5 / 31.2 | 58.6 / 44.5 |
+| sky65 after (two runs) | 36.4 / 37.6 | 30.1 / 28.2 | 47.2 / 46.0 |
+| In-page A/B, fog on − fog off (two runs) | −1.7 / −5.0 ms | – | +4.2 / +2.7 ms |
+| In-page A/B, Black Hole on screen − none | +0.2 ms | – | +2 to +8 ms (noisy) |
+
+- At home the fog is usually free or cheaper: no fog blocks are in view (nothing is drawn), and hidden enemies skip drawing.
+- Zoomed all the way out: about 3–4 ms for the fog in software (the view is 3072×1728 buffer px). On iPhone Safari's GPU
+  canvas a nearest-neighbour blit of that size is far cheaper.
+- First version blitted the half-tile fog canvas with smoothing over the whole view: +16 ms zoomed out. The 6× pre-smoothed
+  copy (nearest blit) cut it to +6 ms; the fog-block runs cut it to the numbers above.
+- First lensing version drew the live buffer onto itself: +66 ms zoomed out (Chrome copies the whole buffer). It now reads the
+  static map layer: no measurable cost.
+- Fog re-rasterising (only on a change): about 9,200 cells, one blur, one small putImageData. It runs every frame only while
+  the core flies.
 
 ## Balance
-(see numbers below)
+Frontier, smartbot (`FR=1 bash par.sh 8 P 1 1 60`), Normal, 8 seeds, frozen copies (pitfall 26). Median waves (sorted runs).
+
+| Batch | 0 points | 60 points |
+|---|---|---|
+| v640 (before) | **50** (24 30 40 48 52 56 60 64) | – (RULES baseline about 70) |
+| sky65, normal event rates | **52** (30 31 41 52 52 56 63 69) | **82** (41 41 71 81 83 83 83 102) |
+| sky65, `HOLEALL=1` (a Black Hole every wave from 10), first version | 41 (30 31 40 41 41 41 54 55) | 62 (40 62 62 62 62 72 82 125) |
+| `HOLEALL=1`, horizon 2 tiles at −40% (tried, not kept) | 36.5 | – |
+| `HOLEALL=1`, final (ring bonus kept out of boss sizing) | **57** (22 41 41 57 57 61 63 68) | **62.5** (41 41 41 62 63 64 72 92) |
+
+- Normal rates: no change beyond noise (the event is about 1 wave in 20 overall, about 1 in 8 in Ghost Lanes).
+- The stress test found a real interaction: the ring's +40% raised the defence's peak DPS (`G.power`), which sizes bosses,
+  so every boss after a hole came in tougher (scripted run: power 9,425 with holes against 2,604 without). Fixed: while a hole
+  is out, `G.power` counts each tower's DPS divided by its hole factor. With that, a hole every wave is neutral at 0 points.
+- At 60 points a hole every wave still costs about 20 waves for a bot that never reacts (it cannot Move towers out of the
+  horizon or into the ring). At the real rate that is roughly 1 wave per run, and a player who moves one or two towers turns it
+  into a gain. Not a run-ender, not a free win. Knobs if Nic finds it harsh: `HOLE.inner` (−0.5), `HOLE.horizon` (2.5).
+- Smartbot ignores the event (it is passive: the only choice is where towers stand). Teaching it to Move towers into the ring
+  is possible later via its existing idle-tower Move logic.
 
 ## Open issues
 - Probe drawing is probe65's; the screenshots use a stub `G.probe`, so the probe itself does not show in them.
