@@ -84,7 +84,8 @@ bit for bit (replay.js, cards64.js, tower64.js fixtures, and test/sky65.js repla
   - `rollEvents`: `!(E.fr > G.frV)` in both pools; env knob `HOLEALL=1` forces one every wave from 10 (bots only).
   - `updateEnemies`: `hm`/`dtE` per enemy; `e.timer`, `e.dropT`, `e.sapCD` use `dtE`; `spd *= netK * hm`. Without a hole these
     are `dt` and `1` exactly.
-  - `updateTowers`: `if (G.hole) rate *= holeRate(t)`. `towerConditions`: the two lines.
+  - `updateTowers`: `if (G.hole) rate *= holeRate(t)`; the `G.power` sum divides each tower's DPS by `holeRate(t)` while a hole
+    is out (bosses are not sized from the ring bonus). `towerConditions`: the two lines.
   - Fog: `fogOn()`, `fogSources()` (flat `[x, y, r, …]`; reads `G.probe` only), `fogMark(src)` (explored + all road tiles,
     bumps `G.fogRev`), `fogInit()` (end of `newRun`), `fogTick()` (end of `simStep`, every `FOG.every` = 15 ticks),
     `fogPack`/`fogUnpack` (run lengths). `G.fogEx` is a `Uint8Array(COLS*ROWS)` or null. No randomness, never read by rules.
@@ -107,7 +108,7 @@ bit for bit (replay.js, cards64.js, tower64.js fixtures, and test/sky65.js repla
   `hole` and `fog` in `onboardingTick`; Help row "Fog of war"; Dictionary Events uses `E.long`; `enemyAt` skips `e._fogH`.
 
 ## Tests
-- `node test/sky65.js` (47 checks): event gating and identical frV 4 rolls, spawn/drift/hold/collapse timing, dilation and drag
+- `node test/sky65.js` (48 checks): event gating and identical frV 4 rolls, spawn/drift/hold/collapse timing, dilation and drag
   numbers (centre, 3 tiles in/out, floor, outside, boss, collapse), a tank walking through stays on its road and spends longer
   near it, tower rates (horizon, ring, outside, collapse) and the real fire loop (Pulse Blaster 48 → 67 shots in 20 s in the
   ring, 24 inside the horizon), tower panel line, fog sources (core range, probe alive/dead), explored grid and roads, snapshot
