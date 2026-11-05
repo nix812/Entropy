@@ -4561,11 +4561,12 @@ function prJackpot() {
 function prLose() {
   const P = G.probe, c = P.cargo, st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 });
   P.alive = false; P.hp = 0; P.task = 0; P.ret = 0; P.home = 0; P.tx = P.ty = null; st.lost++;
-  if (prCargoN(c)) G.sites.push({ id: G.eid++, k: 'lost', x: P.x, y: P.y, t: PROBE.life.lost, life: PROBE.life.lost, val: c.cr / prStats().assay, ent: c.ent, ch: c.ch, tok: c.tok, jp2: c.jp, rich: 0, prog: 0, g: [], z: 0, jp: 0 });
+  const had = prCargoN(c) > 0;
+  if (had) G.sites.push({ id: G.eid++, k: 'lost', x: P.x, y: P.y, t: PROBE.life.lost, life: PROBE.life.lost, val: c.cr / prStats().assay, ent: c.ent, ch: c.ch, tok: c.tok, jp2: c.jp, rich: 0, prog: 0, g: [], z: 0, jp: 0 });
   P.cargo = { cr: 0, ent: 0, ch: 0, tok: 0, jp: 0 };
   rlog('prLost', { x: Math.round(P.x), y: Math.round(P.y), lv: prLvN() });
   Hooks.fx('prBoom', { x: P.x, y: P.y, big: 1 }); Hooks.sfx('boom', { x: P.x, y: P.y });
-  Hooks.toast('PROBE LOST', `Its cargo lies in the wreck for ${PROBE.life.lost} s. Rebuild: ${prRebuildCost()} credits, ${PROBE.rbT} s`, '#ff4d6a', true, 'alert');
+  Hooks.toast('PROBE LOST', `${had ? `Its cargo lies in the wreck for ${PROBE.life.lost} s. ` : ''}Rebuild: ${prRebuildCost()} credits, ${PROBE.rbT} s`, '#ff4d6a', true, 'alert');
 }
 // the guards of every site: drones orbit and shoot, brutes chase within their leash; out of a fight for 5 s, they heal
 function guardsUpdate(dt) {
