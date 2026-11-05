@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.5.0';
+const VERSION = '6.5.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -458,7 +458,7 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.5.0', title: 'Last Gradient 6.5 · Deep Field', items: [
+const WHATS_NEW = { ver: '6.5.1', title: 'Last Gradient 6.5 · Deep Field', items: [
   ['The probe', 'Every run starts with a free probe docked at the core. Tap Probe, then tap any spot. It flies there in a straight line. Tap the core to call it home.'],
   ['Loot sites', 'Wreckage, gas clouds and drifting asteroids appear across the map from Wave 2. Wreckage takes 2.5 s. A cloud takes 12 s. An asteroid breaks in 3 chunks.'],
   ['Cargo', 'Loot rides in the probe and counts only when it docks. Loot can be credits, Entropy, a boon pick or a full Entropy gauge.'],
@@ -469,6 +469,7 @@ const WHATS_NEW = { ver: '6.5.0', title: 'Last Gradient 6.5 · Deep Field', item
   ['Fair warning', 'Bosses, Sensor Sweep marks, wormholes, wave previews and edge arrows show through fog.'],
   ['Black Hole', 'From Wave 10, a Black Hole can drift in and sit on a road for 30 s. Enemies near it slow down by up to 50%.'],
   ['Pick your spot', 'Towers 2.5 to 6 tiles from a Black Hole fire 40% faster. Towers closer than 2.5 tiles fire 50% slower.'],
+  ['Lighter on battery', 'The top bar updates only what changed. The battlefield stops drawing behind Talents and draws half as often behind full menus.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
