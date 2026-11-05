@@ -86,6 +86,12 @@ const fresh = () => { const S = load(); prof(S); return S; };
     for (let i = 0; i < 30 * 20; i++) { if (G2.hole) G2.hole.t = 0; const before = T.cd; S2.simStep(1 / 30); if (T.cd > before + 0.5) fired++; } return fired; };
   const f0 = shots(null), f1 = shots(4), f2 = shots(1);
   ok(near(f1 / f0, 1.4, 0.08) && near(f2 / f0, 0.5, 0.08), `a Pulse Blaster fires ${f0} shots in 20 s, ${f1} in the ring (×${(f1 / f0).toFixed(2)}), ${f2} inside the horizon (×${(f2 / f0).toFixed(2)})`);
+  // boss sizing: a ring tower's extra damage does not raise the defence's peak (G.power, which sizes bosses)
+  { const S2 = fresh(), G2 = S2.newRun({ seed: 99, chaos: 1, frontier: 1 }); G2.credits = 1e6; const L = G2.map.lanes[0], p = L.tiles[8];
+    let spot = null; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!spot && S2.canBuildAt(p.x + dx, p.y + dy)) spot = [p.x + dx, p.y + dy];
+    S2.act('build', 'pulse', spot[0], spot[1]); const T = G2.towers[0]; G2.hole = { x: T.cx + 4, y: T.cy, ph: 1, k: 1, t: 0, dx: 0, dy: 0, tx: 0, ty: 0 };
+    G2.queue = []; G2.enemies = []; T.dps = 140; T.dpsAcc = 0; G2.power = 0; G2.dpsClock = 0.999; S2.simStep(1 / 30);
+    ok(near(G2.power, 100, 1e-6), `boss sizing ignores the ring bonus (a tower at 140 DPS ×1.4 counts as ${G2.power.toFixed(1)})`); }
 }
 // ---- 5. fog of war: sources, explored grid, snapshots, and no effect on the sim
 {

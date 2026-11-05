@@ -3452,7 +3452,7 @@ function updateTowers(dt) {
   if (dpsTick) {
     G.dpsClock = 0;
     // the defence's recent peak damage output, held between waves and fading slowly (half-life about 2 min): bosses size themselves to it
-    let tot = 0; for (const t of G.towers) tot += t.dps;
+    let tot = 0; for (const t of G.towers) tot += G.hole ? t.dps / holeRate(t) : t.dps; // 6.5: a passing Black Hole's ring bonus does not size the next boss
     G.power = Math.max(tot, (G.power || 0) * 0.995);
   }
   // EMP storm event
