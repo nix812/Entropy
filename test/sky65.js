@@ -96,7 +96,7 @@ const fresh = () => { const S = load(); prof(S); return S; };
 // ---- 5. fog of war: sources, explored grid, snapshots, and no effect on the sim
 {
   const S = fresh(); let G = S.newRun({ seed: 4242, chaos: 1, frontier: 1 });
-  const src = S.fogSources(); ok(src.length === 3 * (1 + G.towers.length) && src[2] >= S.FOG.core, `sources: the core (radius ${src[2]} = its gun range)`);
+  const src = S.fogSources(); ok(src.length === 3 * (1 + G.towers.length + (G.probe && G.probe.alive && G.probe.vis > 0 ? 1 : 0)) && /* 6.5 merge: the real probe is a source too */ src[2] >= S.FOG.core, `sources: the core (radius ${src[2]} = its gun range)`);
   G.probe = { x: 3, y: 3, alive: false, vis: 5 }; ok(S.fogSources().length === 3, 'a dead probe gives no vision');
   G.probe.alive = true; ok(S.fogSources().slice(-3).join() === '3,3,5', 'a live probe gives vision at G.probe.vis');
   const before = G.fogEx.reduce((a, b) => a + b, 0); S.fogMark(S.fogSources()); const after = G.fogEx.reduce((a, b) => a + b, 0);
