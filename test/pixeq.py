@@ -1,19 +1,14 @@
 """6.6 perf66: are two builds pixel-identical? Plays the same busy late-wave scene in both pages with a fake clock
 (requestAnimationFrame, performance.now and Math.random are replaced by deterministic versions), runs the real game loop
 (sim, render, UI.tick) and compares the battlefield canvas at several moments and camera views.
-usage: python3 pixeq.py BASE_PAGE [NEW_PAGE] [WxH ...]   (NEW_PAGE defaults to test/out/page.html after mkpage.mk())
+usage: [DPR=3] python3 pixeq.py BASE_PAGE [NEW_PAGE] [WxH ...]   (NEW_PAGE defaults to test/out/page.html after mkpage.mk())
 Prints the number of differing pixels per checkpoint and 'PIXEQ OK' when every checkpoint matches exactly.
 Scenes: 'late' (Wave 60, 48 towers, 220 enemies, a boss, storms, fog, a Black Hole, the probe out with loot sites),
 then the same with fog off. Views: home, zoomed in, zoomed out, and a pan."""
-import sys, pathlib, base64, io, mkpage
+import os, sys, pathlib, base64, io, mkpage
 from PIL import Image, ImageChops
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent
-args = [a for a in sys.argv[1:] if 'x' not in a or a.endswith('.html')]
-sizes = [tuple(map(int, a.split('x'))) for a in sys.argv[1:] if 'x' in a and not a.endswith('.html')] or [(852, 393)]
-base = args[0]
-new = args[1] if len(args) > 1 else None
-if not new: mkpage.mk(); new = str(root / 'test' / 'out' / 'page.html')
 INIT = '''(() => { let s = 12345; Math.random = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   let T = 1000; performance.now = () => T; window.__q = []; window.requestAnimationFrame = f => { window.__q.push(f); return 1; };
   window.__pump = (n, dt) => { for (let i = 0; i < n; i++) { T += dt || 16.667; const q = window.__q; window.__q = []; for (const f of q) f(T); } }; })()'''
@@ -34,9 +29,9 @@ SIG = '''() => document.getElementById('cv').toDataURL('image/png')'''
 def run(page, W, H):
     shots = {}
     with sync_playwright() as p:
-        b = p.chromium.launch(); pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=3)
+        b = p.chromium.launch(); pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=float(os.environ.get('DPR', 3)))
         pg.add_init_script(INIT); pg.goto('file://' + page); pg.evaluate('() => window.__pump(30)')
-        pg.evaluate('() => { PROF.bestWave = 60; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 5; PROF.seenVer = VERSION; PROF.settings.briefs = false; }')
+        pg.evaluate('() => { PROF.bestWave = 60; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 5; PROF.seenVer = VERSION; PROF.settings.briefings = "off"; }')
         pg.click('#bLaunch'); pg.evaluate('() => window.__pump(10)')
         pg.evaluate('() => { const s = UI._dbg.setup(); s.seed = 4242; UI._dbg.renderSetup(); }')
         pg.click('[data-act=launch]'); pg.evaluate('() => window.__pump(60)')
@@ -48,15 +43,21 @@ def run(page, W, H):
                 d = pg.evaluate(SIG); shots[f'{"fog" if fog else "nofog"}-{view}'] = Image.open(io.BytesIO(base64.b64decode(d.split(',')[1]))).convert('RGBA')
         b.close()
     return shots
-bad = 0
-for W, H in sizes:
-    A, B = run(base, W, H), run(new, W, H)
-    for k in A:
-        a, bb = A[k], B[k]
-        if a.size != bb.size: print(f'{W}x{H} {k}: DIFF size {a.size} vs {bb.size}'); bad += 1; continue
-        df = ImageChops.difference(a, bb); bbox = df.getbbox()
-        if not bbox: print(f'{W}x{H} {k}: identical ({a.size[0]}x{a.size[1]})'); (root / 'test' / 'out' / 'pixeq').mkdir(parents=True, exist_ok=True); bb.save(root / 'test' / 'out' / 'pixeq' / f'{W}x{H}_{k}.png'); continue
-        n = sum(1 for px in df.getdata() if any(px)); mx = max(max(ch) for ch in [df.getextrema()][0])
-        out = root / 'test' / 'out' / 'pixeq'; out.mkdir(parents=True, exist_ok=True); a.save(out / f'{W}x{H}_{k}_base.png'); bb.save(out / f'{W}x{H}_{k}_new.png')
-        print(f'{W}x{H} {k}: DIFF {n} px in {bbox} (max channel delta {mx})'); bad += 1
-print('PIXEQ OK' if not bad else f'PIXEQ FAILED: {bad} checkpoints differ')
+if __name__ == '__main__':  # importable: INIT, SCENE and run() are reused by other scripts
+  args = [a for a in sys.argv[1:] if 'x' not in a or a.endswith('.html')]
+  sizes = [tuple(map(int, a.split('x'))) for a in sys.argv[1:] if 'x' in a and not a.endswith('.html')] or [(852, 393)]
+  base = args[0]
+  new = args[1] if len(args) > 1 else None
+  if not new: mkpage.mk(); new = str(root / 'test' / 'out' / 'page.html')
+  bad = 0
+  for W, H in sizes:
+      A, B = run(base, W, H), run(new, W, H)
+      for k in A:
+          a, bb = A[k], B[k]
+          if a.size != bb.size: print(f'{W}x{H} {k}: DIFF size {a.size} vs {bb.size}'); bad += 1; continue
+          df = ImageChops.difference(a, bb); bbox = df.getbbox()
+          if not bbox: print(f'{W}x{H} {k}: identical ({a.size[0]}x{a.size[1]})'); (root / 'test' / 'out' / 'pixeq').mkdir(parents=True, exist_ok=True); bb.save(root / 'test' / 'out' / 'pixeq' / f'{W}x{H}_{k}.png'); continue
+          n = sum(1 for px in df.getdata() if any(px)); mx = max(max(ch) for ch in [df.getextrema()][0])
+          out = root / 'test' / 'out' / 'pixeq'; out.mkdir(parents=True, exist_ok=True); a.save(out / f'{W}x{H}_{k}_base.png'); bb.save(out / f'{W}x{H}_{k}_new.png')
+          print(f'{W}x{H} {k}: DIFF {n} px in {bbox} (max channel delta {mx})'); bad += 1
+  print('PIXEQ OK' if not bad else f'PIXEQ FAILED: {bad} checkpoints differ')

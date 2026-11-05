@@ -15,7 +15,7 @@ page = sys.argv[1] if len(sys.argv) > 1 else None
 if not page: mkpage.mk(); page = str(root / 'test' / 'out' / 'page.html')
 with sync_playwright() as p:
     b = p.chromium.launch()
-    pg = b.new_page(viewport={'width': 852, 'height': 393}, device_scale_factor=3)
+    pg = b.new_page(viewport={'width': int(os.environ.get('W', 852)), 'height': int(os.environ.get('H', 393))}, device_scale_factor=float(os.environ.get('DPR', 3)))  # perf66: W, H, DPR
     pg.goto('file://' + page); pg.wait_for_timeout(500)
     pg.evaluate('() => { PROF.bestWave = 60; PROF.seenHelp = true; PROF.xp = 900000; PROF.runs = 5; PROF.seenVer = VERSION; }')
     pg.click('#bLaunch'); pg.wait_for_timeout(200)
