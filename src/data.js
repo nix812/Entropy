@@ -449,11 +449,12 @@ const FRONTIER = {
   flySpd: 3, flyMin: 1, cd: 3,                     // flight 3 tiles/s (at least 1 s); lift-off cooldown in waves after landing
   cdUplink: 4,                                     // every 4 Uplink levels: −1 wave of cooldown (never below 1)
   dockDmg: 2, dockRange: 1, dockBat: 0.2,          // a docked tower: ×2 damage, +1 range, +20% damage per Battery level above 1
-  dockBat6: 0.2,                                   // frV 6: the Battery level bonus on the docked tower (the core gun now fires too)
+  dockBat6: 0,                                     // frV 6: no Battery bonus on the docked tower (the core gun fires too; bot at 60 pts: 0.2 → median W101.5, 0 → W72 = the frV 5 baseline)
   links: 3, linkR: 4, linkUplink: 3,               // links: 3 towers within 4 tiles (+1 per 3 Uplink levels)
   linkDmg: 0.1, linkRate: 0.1, linkCore: 0.05,     // linked towers +10% damage and rate; the core +5% damage per link
   moveT: 4, moveFee: 0.1,                          // moving a tower: 4 s offline, 10% of what it cost
   wormBuild: 6,                                    // no towers within 6 tiles of a wormhole (open or opening), so the swarm is seen before it's shot
+  wormBuild6: 4,                                   // frV 6 (Nic, Nov 6): 6 tiles was too much; 4
   wormGap: 10, minRoad: 10,                        // landing spots stay 10 tiles (Manhattan) from every wormhole; no road shorter than 10
 };
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
@@ -696,7 +697,7 @@ const LESSONS = [
     real: 'In a run: build into storms of your element; draw Anomalies that match your towers.',
     run: { start: 8, credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo', 'missile'], pre: [['towers', [['missile', 2], ['pulse', 2]]], ['storm', 'solar'], ['entropy', 100]], waves: [[['drone', 10, 0.9, 0.7]]] } },
   { id: 'wormholes', title: 'Wormholes and checkpoints', blurb: 'New roads, a bigger map, a breather.',
-    what: 'Every so often a wormhole opens a new road and the map grows. Nothing can be built within 6 tiles of a wormhole. The wave before it lands is a checkpoint: full refunds and a free respec until you resume.', when: 'At set waves (Normal: 15, 28, 42…).', todo: 'At a checkpoint, move towers (or sell and rebuild) to cover the new road, then tap Next. Resuming fast pays a bonus.',
+    what: 'Every so often a wormhole opens a new road and the map grows. Nothing can be built within 4 tiles of a wormhole. The wave before it lands is a checkpoint: full refunds and a free respec until you resume.', when: 'At set waves (Normal: 15, 28, 42…).', todo: 'At a checkpoint, move towers (or sell and rebuild) to cover the new road, then tap Next. Resuming fast pays a bonus.',
     real: 'In a run: at a checkpoint, move towers to cover both roads before you resume.',
     run: { credits: 400, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['pulse', 1]]], ['lane', 1]], waves: [[['drone', 6, 1.2, 1]], [['drone', 10, 0.9, 1]]] } },
   { id: 'assault', title: 'Strain Assaults', blurb: 'The swarm commits a whole wave to beat you.',

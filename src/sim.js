@@ -962,7 +962,7 @@ function canBuildAt(x, y) {
 // Frontier: the ground around every wormhole (open or opening) is a no-build zone
 function frNearWorm(x, y) {
   if (!G.fr) return false;
-  const r2 = FRONTIER.wormBuild * FRONTIER.wormBuild;
+  const r2 = frWormR() * frWormR();
   for (const L of G.map.lanes) { const p = L.tiles[0], dx = x - p.x, dy = y - p.y; if (dx * dx + dy * dy < r2) return true; }
   return false;
 }
@@ -4385,6 +4385,7 @@ const frUp = () => (G.core && G.core.uLvl) || 0;
 const frCd = () => Math.max(1, FRONTIER.cd - Math.floor(frUp() / FRONTIER.cdUplink));
 const frLinkN = () => FRONTIER.links + Math.floor(frUp() / FRONTIER.linkUplink);
 const frCanFly = () => !!(G && G.fr && !G.over && !G.frFly && G.wave >= (G.frReady || 0));
+const frWormR = () => (!G || !G.fr || G.frV >= 6) ? FRONTIER.wormBuild6 : FRONTIER.wormBuild; // no-build radius around a wormhole (frV 6: 4 tiles)
 const frDockBat = () => G.frV >= 6 ? FRONTIER.dockBat6 : FRONTIER.dockBat; // Battery bonus per level on the docked tower
 const frTwoGuns = () => G.frV >= 6; // frV 6: docked, the core's own gun keeps firing (the docked tower is a second gun)
 const frDockX = () => FRONTIER.dockDmg * (1 + frDockBat() * ((G.core && G.core.wLvl || 1) - 1));

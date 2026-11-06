@@ -56,8 +56,8 @@ const till = (S, f, cap) => { for (let i = 0; i < (cap || 60000) && !f() && !S.G
 {
   const S = fresh(); const G = S.newRun({ seed: 7, chaos: 1, frontier: 1 }); G.credits = 1e6;
   const p = G.map.lanes[0].tiles[0]; let bad = 0, ok2 = 0;
-  for (let y = 0; y < S.ROWS; y++) for (let x = 0; x < S.COLS; x++) if (S.canBuildAt(x, y)) { for (const L of G.map.lanes) { const q = L.tiles[0]; if (Math.hypot(x - q.x, y - q.y) < S.FRONTIER.wormBuild) bad++; } ok2++; }
-  ok(bad === 0 && ok2 > 50, `no buildable tile within ${S.FRONTIER.wormBuild} of a wormhole (${ok2} buildable)`);
+  for (let y = 0; y < S.ROWS; y++) for (let x = 0; x < S.COLS; x++) if (S.canBuildAt(x, y)) { for (const L of G.map.lanes) { const q = L.tiles[0]; if (Math.hypot(x - q.x, y - q.y) < S.frWormR()) bad++; } ok2++; }
+  ok(bad === 0 && ok2 > 50, `no buildable tile within ${S.frWormR()} of a wormhole (${ok2} buildable)`);
   const c = S.newRun({ seed: 7, chaos: 1 }); let near = 0; for (const L of c.map.lanes) { const q = L.tiles[0]; for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (S.canBuildAt(q.x + dx, q.y + dy)) near++; }
   ok(near > 0, 'Classic can still build beside a wormhole');
 }
@@ -99,9 +99,13 @@ const till = (S, f, cap) => { for (let i = 0; i < (cap || 60000) && !f() && !S.G
   ok(G.frLinks.length >= 1 && G.frLinks.every(t => t.buff.dmg >= 0.1 - 1e-9 && t.buff.rate >= 0.1 - 1e-9), `${G.frLinks.length} linked towers get +10% damage and rate`);
   ok(rail.buff.dmg >= 0.05 * G.frLinks.length - 1e-9, 'the docked weapon gets +5% per link');
   ok(!S.frCanFly() && G.frReady === G.wave + 3, `cooldown: next lift-off on Wave ${G.frReady}`);
-  step(S, 60); ok(!G.projs.some(p => p.src === G.core), 'docked: the plain core gun stays quiet');
+  if (S.frTwoGuns()) { // frV 6 (Nic, Nov 6): docked, the core's own gun keeps firing; the docked tower is a second gun
+    const k0 = G.core.dmgDone || 0; const L0 = G.map.lanes[0], e = S.spawnEnemy('tank', { d: 1 }); e.L = L0; e.d = L0.len - 1.5; S.lanePos(L0, e.d, e); e.hp = e.max = 1e7; e.st.stun = 99;
+    let seen = 0; for (let i = 0; i < 90 && !seen; i++) { step(S, 1); if (G.projs.some(p => p.src === G.core) || (G.core.dmgDone || 0) > k0) seen = 1; }
+    ok(seen, "frV 6 docked: the core's own gun keeps firing"); e.dead = true; e.hp = 0; G.enemies = G.enemies.filter(x => x !== e);
+  } else { step(S, 60); ok(!G.projs.some(p => p.src === G.core), 'docked: the plain core gun stays quiet'); }
   // Battery scales the docked weapon
-  const d0 = rail.s.dmg; S.act('core', 'weapon'); ok(Math.abs(rail.s.dmg / d0 - 1.2) < 1e-6, `Battery LV ${G.core.wLvl} raises the docked weapon ×${(rail.s.dmg / d0).toFixed(2)}`);
+  const d0 = rail.s.dmg, want = 1 + S.frDockBat(); S.act('core', 'weapon'); ok(Math.abs(rail.s.dmg / d0 - want) < 1e-6, `Battery LV ${G.core.wLvl} changes the docked weapon ×${(rail.s.dmg / d0).toFixed(2)} (frV ${G.frV}: want ×${want.toFixed(2)})`);
   // moving a tower
   const pt = G.frLinks[0], fee = S.frMoveFee(pt), cr0 = G.credits, from = [pt.x, pt.y];
   const dest = spots(S, G).find(([a, b]) => Math.hypot(a + 0.5 - G.core.x, b + 0.5 - G.core.y) > 6);
@@ -206,12 +210,12 @@ function playDaily(S, seed, maxw, mark) {
   }
   return { G, flights, docks, moves, doors };
 }
-for (const seed of [2, 6]) { // 6.5.2: seed 2 (frV 6 reshuffles the dice; seed 4 now dies at Wave 11)
+for (const seed of [4, 6]) { // 6.5.2: frV 6 reshuffles the dice; seed 4 passes again with dockBat6 0 (seeds 1, 4, 7, 10, 11 claim the bounty)
   const S = fresh(); boost(S); const mark = {};
   const { G, flights, docks, moves, doors } = playDaily(S, seed, Math.max(MAXW, 24), mark);
   const end = { tick: G.tick, wave: G.wave, score: Math.round(G.score), hash: S.runHash() };
   ok(G.fr === 1 && G.daily && flights >= 2 && docks >= 2 && moves >= 2, `daily ${seed}: Frontier Daily Hunt to Wave ${G.wave} with ${flights} lift-offs (${docks} docks), ${moves} moves, ${G.bounties.length} bounties, ${doors} doors`);
-  if (seed === 2) ok(G.bounties.length >= 1 && doors >= 1, `daily ${seed}: claimed the bounty and pushed through a jump door`); else ok(true, `daily ${seed}: ${G.over ? 'the run ended (the replay covers game over)' : 'still running'}`);
+  if (seed === 4) ok(G.bounties.length >= 1 && doors >= 1, `daily ${seed}: claimed the bounty and pushed through a jump door`); else ok(true, `daily ${seed}: ${G.over ? 'the run ended (the replay covers game over)' : 'still running'}`);
   // a hunt code is the recording as JSON
   const rec = JSON.parse(JSON.stringify({ opts: G.recOpts, inputs: G.inputs, end: G.tick }));
   ok(rec.opts.frontier === 1 && rec.opts.daily && rec.opts.rows === S.frRows(2) && rec.opts.frV === S.FR_VER, 'the recording carries the Daily, the Frontier flag, its version and the board');

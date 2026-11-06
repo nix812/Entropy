@@ -358,7 +358,7 @@ const UI = (() => {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
     if (!PROF.seenHelp && G.time > 1) { if (!teachOK()) return; PROF.seenHelp = true; Save.save(); teachMark(); toast('WELCOME', 'Enemies walk the road to your core. Tap a glowing tile beside it to build a tower. How to Play is in the pause menu', '#59f0b4', true, 'alert'); return; }
-    if (G.fr && G.time > 1 && introCard('frontier', 'Lift Off', `Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. Towers near the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slow but tough. No building within ${FRONTIER.wormBuild} tiles of a wormhole.`, 'lift')) return;
+    if (G.fr && G.time > 1 && introCard('frontier', 'Lift Off', `Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. Towers near the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slow but tough. No building within ${frWormR()} tiles of a wormhole.`, 'lift')) return;
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
@@ -645,7 +645,7 @@ const UI = (() => {
         { id: 'core', ls: 'start', hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Your core', b: 'Enemies walk the road to it. If its health runs out, the run is over.' },
         info('hp', sel('#hud .corebox'), 'Core health', () => `${Math.round(G.core.hp)} health plus ${Math.round(G.core.shield)} shield. Leaks hit the shield first; it recharges between hits.`, { ok: 'Next' }),
         { id: 'road', hold: 1, ok: 'Next', at: () => { const p = G.map.lanes[0].pts[0]; return worldR(p.x, p.y, 1); }, t: 'The road', b: 'Enemies come out of the wormhole and follow the road. Towers beside it shoot them.' },
-        { id: 'spots', hold: 1, nodim: 1, ok: 'Next', t: 'Build spots', b: () => `Every green tile is a build spot: a tower fits on any of them. Beside the road is best.${G.fr ? ` Nothing can be built within ${FRONTIER.wormBuild} tiles of a wormhole.` : ''}`, enter: () => { Render.spots = allSpots(); }, leave: () => { Render.spots = null; } },
+        { id: 'spots', hold: 1, nodim: 1, ok: 'Next', t: 'Build spots', b: () => `Every green tile is a build spot: a tower fits on any of them. Beside the road is best.${G.fr ? ` Nothing can be built within ${frWormR()} tiles of a wormhole.` : ''}`, enter: () => { Render.spots = allSpots(); }, leave: () => { Render.spots = null; } },
         build('build1', 'pulse', 'a', 'Build a tower', 'Tap the marked tile beside the road.', { hold: 1 }),
         { id: 'call1', hold: 1, at: sel('#bCall'), t: 'Start the wave', b: 'The top bar counts down to each wave; at zero it starts on its own. Tap Next to send Wave 1 now: calling early pays bonus credits.', done: () => G.wave >= 1 || G.next <= 0 },
         // the camera (6.2), once the first wave is under way
@@ -850,7 +850,7 @@ const UI = (() => {
       ],
       wormholes: [
         intro('in', 'Wormholes', 'Every so often a new road opens and the map grows.'),
-        info('hole', () => { const L = G.map.lanes[1]; return L ? worldR(L.pts[0].x, L.pts[0].y, 1) : null; }, 'A wormhole', () => `A new road opens here at Wave 2. The map just grew to make room.${G.fr ? ` Nothing can be built within ${FRONTIER.wormBuild} tiles of it.` : ''}`),
+        info('hole', () => { const L = G.map.lanes[1]; return L ? worldR(L.pts[0].x, L.pts[0].y, 1) : null; }, 'A wormhole', () => `A new road opens here at Wave 2. The map just grew to make room.${G.fr ? ` Nothing can be built within ${frWormR()} tiles of it.` : ''}`),
         call('c1', 1),
         info('cp', sel('#cpBanner'), 'Checkpoint', 'The wave before a wormhole lands is a checkpoint: selling refunds 100%, talents respec free.', { when: () => !!G.checkpoint }),
         build('cover', 'pulse', 'n', 'Cover the new road', 'Tap the marked tile.', { when: () => !!G.checkpoint, at: () => flowAt('pulse', 'n', G.map.lanes[1]), done: () => G.towers.length >= 3 }),
@@ -2264,7 +2264,7 @@ const UI = (() => {
     }
     if (frSel) { // Frontier picker: a landing spot (preview) or a tower's new tile
       const i = tIdx(tx, ty);
-      if (!frSel.cands.has(i)) { SFX.play('deny'); if (frSel.kind === 'move' && frNearWorm(tx, ty)) { Render.flashWorm(); toast('TOO CLOSE', `No towers within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); } return; }
+      if (!frSel.cands.has(i)) { SFX.play('deny'); if (frSel.kind === 'move' && frNearWorm(tx, ty)) { Render.flashWorm(); toast('TOO CLOSE', `No towers within ${frWormR()} tiles of a wormhole`, '#ff4d6a', true, 'tip'); } return; }
       if (frSel.kind === 'land') { const P = frPlan(tx, ty); if (!P) { const Q = planRelocation(tx, ty, true); SFX.play('deny'); toast('NO ROUTE', Q ? `Too close: a road from a wormhole would be under ${FRONTIER.minRoad} tiles` : 'A road cannot reach that tile', '#ff4d6a', true, 'tip'); return; } frSel.plan = P; }
       else frSel.dest = { x: tx, y: ty };
       SFX.play('ui'); Render.sel = { x: tx, y: ty }; renderPanel(); return;
@@ -2292,7 +2292,7 @@ const UI = (() => {
     if (isCore) return openCore();
     if (t) return openTower(t);
     if (canBuildAt(tx, ty)) return openBuild(tx, ty);
-    if (G.fr && frNearWorm(tx, ty) && G.map.tiles[tIdx(tx, ty)] === 0 && !G.towerAt[tIdx(tx, ty)]) { SFX.play('deny'); Render.flashWorm(); toast('TOO CLOSE', `No building within ${FRONTIER.wormBuild} tiles of a wormhole`, '#ff4d6a', true, 'tip'); }
+    if (G.fr && frNearWorm(tx, ty) && G.map.tiles[tIdx(tx, ty)] === 0 && !G.towerAt[tIdx(tx, ty)]) { SFX.play('deny'); Render.flashWorm(); toast('TOO CLOSE', `No building within ${frWormR()} tiles of a wormhole`, '#ff4d6a', true, 'tip'); }
     closePanel();
   }
   function canvasWheel(e) {
@@ -2738,6 +2738,7 @@ const UI = (() => {
         + sec('Music')
         + row('Music Studio', 'Genres, mixer, your tracks and the composer', '<button class="btn small" data-act="studioS">Open</button>')
         + row('Music tempo', 'Average tempo of the default mix. Each genre in the Studio has its own', rng('setBpm', S.bpm || 72, 56, 100, 2, (S.bpm || 72) + ' BPM', 'bpmV'))
+        + row('Boss music', 'Each boss plays its own theme. Off: your song keeps playing', sw(SFX.music.config.bossThemes !== false, 'bossMus'))
         + row('Mono audio', 'One earbud or one speaker', sw(!!S.mono, 'mono'))
         + sec('Troubleshooting')
         + row('Sound', `<em id="sndStat">${esc(soundStatus())}</em>`, '<button class="btn small" data-act="sndFix">Restart sound</button>'),
@@ -3283,7 +3284,7 @@ const UI = (() => {
       ['Lift Off', `The core flies. Tap Lift Off (top right, or in the core panel), then a tile to land on: the preview shows the new roads, what the core will fire and the towers it will link. Every road swings to the landing spot. In the air the gun is offline and the shield is down. After landing it recharges for ${FRONTIER.cd} waves.`],
       ['Dock', `Land the core on an attack tower and it becomes a second gun: ×${FRONTIER.dockDmg} Damage, +${FRONTIER.dockRange} Range${FRONTIER.dockBat6 ? `, +${pct(FRONTIER.dockBat6)} per Battery level` : ''}. The core's own gun keeps firing. Lift off again and the tower is set back down, intact.`],
       ['Links', `The landed core links its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate each, and the core +${pct(FRONTIER.linkCore)} per link. Flying breaks them.`],
-      ['Move', `Tap a tower, then Move, then a new tile. It is offline for ${FRONTIER.moveT} s and costs ${pct(FRONTIER.moveFee)} of what it cost. No towers within ${FRONTIER.wormBuild} tiles of a wormhole.`],
+      ['Move', `Tap a tower, then Move, then a new tile. It is offline for ${FRONTIER.moveT} s and costs ${pct(FRONTIER.moveFee)} of what it cost. No towers within ${frWormR()} tiles of a wormhole.`],
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan, double-tap to zoom in or back out. Edge arrows point at what is off screen: bosses and enemies near the core, pirate treasure (yellow, with a chest) and the core itself (green). Tap one to look there; the green one brings the camera home.'],
@@ -3351,7 +3352,7 @@ const UI = (() => {
         ['Ascend', `Upgrade past max level: ×${ASC_DMG} Damage (Void Lens ×${ASC_DMG_T.lens}), a new affix and a perk you choose from 3 (4 at Mastery 4).`], ['Mastery', 'Each tower type ranks up from its share of your runs. Towers that are not your top damage dealer earn nearly as much. Ranks 1 to 5: badge, +5% stat, trim, a fourth perk choice, its own legendary.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
         ['Milestone', 'Score threshold. Grants an extra ability charge and a small bonus.'], ['Conditions', 'In a tower\'s panel: every live modifier on it (storms, events, Frenzy, outages) with numbers.'], ['Headline', 'The enemy a wave leans on. Amber chip in the top bar; tap it for what beats it.'], ['IDLE', 'Tag on a tower that hasn\'t fired for three waves. Move it to where the enemies are.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
-        ['Wormhole', `Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. Nothing can be built within ${FRONTIER.wormBuild} tiles of one, and the core lands at least ${FRONTIER.wormGap} tiles away. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.`],
+        ['Wormhole', `Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. Nothing can be built within ${frWormR()} tiles of one, and the core lands at least ${FRONTIER.wormGap} tiles away. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.`],
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds and a free respec; a lift-off lands at once. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
         ['Power', `Every tower draws 1 power from your grid; capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes draw none. When it's full, make towers better instead of adding more.`],
         ['Overcharge', `Spend spare power on one tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Free to change at any time, so shift it to whatever the wave needs.`],
@@ -3375,7 +3376,7 @@ const UI = (() => {
         ['Lift Off', `The core flies to any open tile in the sector, or onto an attack tower (docking). Every road re-routes to the landing spot and enemies already walking turn toward it. Gun offline and shield down in the air; ${FRONTIER.cd} waves to recharge after landing (Uplink shortens it).`],
         ['Docking', `The landed core docks the attack tower under it as a second gun: its element, affixes, spec, perks and Technique, at ×${FRONTIER.dockDmg} Damage and +${FRONTIER.dockRange} Range. The core's own gun keeps firing. Support towers can't be docked.`],
         ['Core link', `A green line from the landed core to one of its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate for the tower, +${pct(FRONTIER.linkCore)} Damage for the core.`],
-        ['No-build zone', `The ground within ${FRONTIER.wormBuild} tiles of a wormhole: no towers, so the swarm is seen before it is shot.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
+        ['No-build zone', `The ground within ${frWormR()} tiles of a wormhole: no towers, so the swarm is seen before it is shot.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
         ['Common', 'Base value.', RARITY[0].col], ['Magic', '×1.7 value.', RARITY[1].col], ['Rare', '×2.6 value.', RARITY[2].col], ['Legendary', 'Unique effect. See Legendaries.', RARITY[3].col], ['Curse', 'Negative affix. See Curses.', RARITY[4].col],
@@ -3643,6 +3644,7 @@ const UI = (() => {
         setTimeout(() => { const el = $('#sndStat'); if (el) el.textContent = soundStatus(); }, 700);
         toast('SOUND RESTARTED', soundStatus(), '#59f0b4'); break; }
       case 'mono': PROF.settings.mono = !PROF.settings.mono; SFX.setMono(PROF.settings.mono); Save.save(); openSettings(); break;
+      case 'bossMus': { const c = SFX.music.config; c.bossThemes = c.bossThemes === false; if (!c.bossThemes) SFX.music.setBoss(null, 0, false); PROF.settings.studio = c; Save.save(); openSettings(); break; } // 6.5.2: also in Settings › Sound (Nic)
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;
       case 'wipe': if (!confirmReset) { confirmReset = true; openSettings(); return; } PROF = defaultProfile(); Save.save(); closeModal(); renderHangar(); toast('PROGRESS RESET', 'All progress erased', '#ff4d6a'); break;
     }

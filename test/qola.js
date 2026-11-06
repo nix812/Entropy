@@ -5,7 +5,7 @@ const { load } = require('./harness.js'), fs = require('fs');
 let fails = 0, n = 0;
 const ok = (c, msg) => { n++; if (!c) { fails++; console.log('FAIL ' + msg); } else if (process.env.V) console.log('ok   ' + msg); };
 const fresh = () => { const S = load(); S.PROF = S.defaultProfile(); S.PROF.bestWave = 80; S.PROF.xp = 4e6; return S; };
-const inZone = (S, G, q) => G.map.lanes.some(L => { const p = L.tiles[0]; return (q.x - p.x) ** 2 + (q.y - p.y) ** 2 < S.FRONTIER.wormBuild ** 2; });
+const inZone = (S, G, q) => G.map.lanes.some(L => { const p = L.tiles[0]; return (q.x - p.x) ** 2 + (q.y - p.y) ** 2 < S.frWormR() ** 2; });
 // open every wormhole the run will get (prepareWave grows the sector, adds the lane and places nodes)
 const openAll = (S, G, upto) => { for (let w = 1; w <= upto; w++) { G.wave = w; S.prepareWave(w); } };
 
