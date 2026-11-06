@@ -130,10 +130,11 @@ the thing and the card moves on. Read-only notes are coach lines while the game 
 | 514 / 502 | 8 | Bounty | 1 | 0 | Extract banks the purse (jump doors in real runs; you keep 30% if you fall later) |
 | end | | **What's next** | end card | | XP, level, talent points; Real runs (endless, the first bounty on Wave 20), Talents (16 points in one tree unlock a new tower), Daily Hunt, Field Manual |
 
-Totals (test/tut66.py, scripted new player, 4 s to read each held card): **18 lessons, 52 coach cards (44 held, 8 lines),
-4 modals**; 514 / 502 s of play; **estimated 11.5 / 11.3 minutes** at 1×. Gap between lessons: **min 12.1 / 12.0 s, median
-22.4 / 22.6 s**; between dialogs (first held card of a lesson, or a modal the coach did not open): min 12.1 / 12.0 s,
-median 33.2 s. 6.5.2 for comparison: 20 lessons, 63 cards (60 held), 15.4 minutes, min gap 0 s, median 22 s.
+Totals (final run on the 6.5.4 merge, test/tut66.py, scripted new player, 4 s to read each held card): **18 lessons, 53
+coach cards (44 held, 9 lines), 4 modals**; 508 s of play at both sizes; **estimated 11.4 minutes** at 1× at both sizes.
+Gap between lessons: **min 12.1 s, median 22.5 / 22.8 s**; between dialogs (first held card of a lesson, or a modal the
+coach did not open): min 12.1 s, median 33.3 / 33.2 s. tutcadence at 852×393 (3 s per card): 18 lessons, 495 s of play,
+about 10.3 minutes, shortest gap between lessons 10.1 s, median 22.2 s. 6.5.2 for comparison: 20 lessons, 63 cards (60 held), 15.4 minutes, min gap 0 s, median 22 s.
 
 **Checklist (17 lines, in lesson order):** Place a tower · Call a wave early · Upgrade a tower · Read its bonus · Core:
 upgrade the Battery · Counter it: a Rail Lance · Lift Off: dock on a tower · Link towers to the core · Move a tower ·
@@ -246,3 +247,32 @@ real runs. The coach line says the same thing, so nothing depends on the hint.
 6.5.4 rule (no emoji): the Training text uses words only. The checklist's ▸/▾ became "list"/"hide", the end card's
 level-up ▲ is the pixel `up` icon. Still in the game outside Training (not changed here): ▲ in the Threat Board Arms Race
 rows, the Archive evolution rows and the Talents tier row/tabs.
+
+## 5. Results (final code: 6.5.4 merged, this branch's head)
+
+- `python3 build.py` ok. `audit.py n` and `audit.py ipadA 1180 820 0,0,20`: `ERRORS: []`.
+- `uiaudit.py`: only flags outside Training (hangar version label, setup zone lines, Dictionary clipping, Archive/Hall
+  "Bosses" under the close button at 1180×820). Same list before this branch's changes.
+- `trackcollide.py`, `splashshot.py`, `probe65shot.py`: `FAILED: []`.
+- `node test/replay.js`: all replays match. qola 28/28, cards64 28/28, tower64 41/41, probe65 53/53, sky65 48/48,
+  frontier 92/0, hookcompat match, tut66.js 20/20.
+- `tut66.py 667x375,1180x820`: `FAILED: []` (numbers above; screenshots per lesson in `test/out/tut66/final_*`).
+- `tutcheck.py`: 667×375 perfect, human and skip, 1180×820 human: `FAILED: []` (17/17, skip 16/17 with the missed line).
+- `tutorialshot.py 667x375,1180x820 basic`: all 53 steps shown, `FAILED: []`; every Field Manual lesson at 852×393: `FAILED: []`.
+- `tutcadence.py 852x393`: numbers above.
+
+## 6. Open issues and risks
+
+- **Not played on a real iPhone.** Timings are play seconds from a scripted player; a real new player reads slower or
+  faster. 4 s per held card gives 11.4 minutes.
+- The core gun does most of the killing on this small board (towers often read IDLE). Training gives the Veteran rank to
+  the highest-level attack tower when none earned it. Real runs are bigger, so this is a Training-only effect.
+- The Hasted Behemoth still walks the first half of the road before anything reaches it ("BOSS HALFWAY … 100% HP" shows);
+  the fight is about 80 s.
+- The "SPEED 1×" tip can sit over the bottom of the boss card for about 3 s on iPad (it lets taps through; as in 6.5.2).
+- The Entropy draw's cards are generated from the run, so the exact boons differ per player; only the rarities are fixed.
+- Test bots now tap the Veteran pick button itself: a tap on a glossary word inside a pick button opens its tooltip instead
+  of picking (that was the old "stuck on vpick" flake). Real players can hit the same thing if they tap the underlined word.
+- `node test/tutorial.js`: the Lift Off lesson line "moved 0" fails, the same on 6.5.2 (bfffd7e); a test-bot issue, not
+  changed here. The v2 Basic Training replay in it passes.
+- ▲ remains in the Threat Board Arms Race rows, Archive evolution rows and Talents (outside Training; 6.5.4's call).
