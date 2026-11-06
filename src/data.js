@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.5.1';
+const VERSION = '6.5.2';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -460,19 +460,15 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.5.1', title: 'Last Gradient 6.5 · Deep Field', items: [
-  ['Boss themes', 'All 13 bosses have their own theme song. A kill plays a victory sting, then your song comes back. Studio › Listen lists the themes you have beaten.'],
-  ['More music', 'Every genre now has 4 styles. Each new song picks its own drums, bass, lead, tempo and key. Your saved tracks sound exactly as before.'],
-  ['Zones look different', 'Each of the 10 zones has its own ground, roads and weather. A banner names the zone when you enter it.'],
-  ['New cards every draw', 'Entropy cards are now built fresh each draw: 1 boon and 1 cost. They come as Common, Rare or Exotic, and lean toward the towers you field. The 21 old cards still appear.'],
-  ['Capstone tier', 'Each talent tree has a new gold tile under its Capstones. It opens at 16 points in that tree and costs 1 point. It takes no Capstone slot.'],
-  ['7 new towers', 'Buzzsaw, Flashover, Surge Spire, Rimewall, Entangler, Gatekeeper and Wildcard. Each Capstone tier tile unlocks one. Daily Hunts keep the original 12 towers.'],
-  ['The probe', 'Every run starts with a free probe at the core. Tap Probe, then tap any spot to send it. Tap the core to call it home.'],
-  ['Loot sites', 'Wreckage, gas clouds and asteroids appear from Wave 2. Some have guards. Loot counts only when the probe docks.'],
-  ['Probe upgrades', 'Lance, Armour, Engine, Rig and Scanner, 3 levels each. A lost probe drops its cargo. Rebuilding costs credits and takes 40 s.'],
-  ['Fog of war', 'You see what your core, towers and probe see. Bosses, wave previews and edge arrows always show through the fog.'],
-  ['Black Hole', 'From Wave 10, a Black Hole can sit on a road for 30 s. It slows enemies by up to 50%. Towers 2.5 to 6 tiles away fire 40% faster. Closer towers fire 50% slower.'],
-  ['Lighter on battery', 'The game does less work behind menus and on the top bar. Nothing looks different.'],
+const WHATS_NEW = { ver: '6.5.2', title: 'Last Gradient 6.5.2 · Field Notes', items: [
+  ['Two guns when docked', 'The core\'s own gun now keeps firing when it docks. The docked tower is a second gun at ×2 damage and +1 range. Battery upgrades power the core\'s gun.'],
+  ['Wormholes', 'The no-build ring around a wormhole is now 4 tiles, down from 6.'],
+  ['Probe controls', 'Tap Probe, the probe or a site to select it. A small bar shows what the next tap does. Every map tap sends the probe. Upgrades opens the full panel.'],
+  ['Easier to tap', 'Top bar items, panel tabs, chips and the pause menu have bigger tap areas.'],
+  ['Training checklist', 'The checklist follows the lessons in order and ticks each step as you do it.'],
+  ['Tape & Vinyl', 'The Tape & Vinyl effect is now off by default. Turn it up in Studio › Shape.'],
+  ['Boss music switch', 'Settings › Sound › Boss music turns the boss themes off. Your own song keeps playing.'],
+  ['Updates', 'The app now loads a new version reliably when one comes out.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -658,7 +654,7 @@ const LESSONS = [
     real: 'In a run: a full grid means upgrade. Spare credits late go into the reactor and the core’s Hull.',
     run: { credits: 1600, grid: 3, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['rail', 1], ['cryo', 1]]]], waves: [[['drone', 10, 1, 1.2]]] } },
   { id: 'lift', title: 'Lift Off and docking', blurb: 'Fly the core, dock it on a tower, link and move towers.',
-    what: 'Your core can fly. Tap Lift Off, pick a landing spot and read the preview. Land on an attack tower to dock it: the core fires that tower’s weapon at ×2 damage and +1 range. The landed core links its 3 nearest attack towers within 4 tiles (+10% damage and rate each). Any tower can Move from its panel.', when: 'Whenever the swarm shifts: a new road, a strain warded against your main element, a boss on the way. After a landing, Lift Off recharges for 3 waves.', todo: 'Dock on the tower that answers the next wave. Read the road line in the preview: a shorter road means enemies arrive sooner. Move stranded towers instead of selling them.',
+    what: 'Your core can fly. Tap Lift Off, pick a landing spot and read the preview. Land on an attack tower to dock it as a second gun at ×2 damage and +1 range. The core’s own gun keeps firing. The landed core links its 3 nearest attack towers within 4 tiles (+10% damage and rate each). Any tower can Move from its panel.', when: 'Whenever the swarm shifts: a new road, a strain warded against your main element, a boss on the way. After a landing, Lift Off recharges for 3 waves.', todo: 'Dock on the tower that answers the next wave. Read the road line in the preview: a shorter road means enemies arrive sooner. Move stranded towers instead of selling them.',
     real: 'In a run: dock where the next wave hurts most, then move towers into link reach.',
     run: { credits: 260, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['road', [['rail', 3, 0.78, 1], ['pulse', 2, 0.66], ['pulse', 2, 0.42]]]], waves: [[['drone', 6, 1.6, 1.4], ['tank', 2, 3.2, 1.2]]] } },
   { id: 'overcharge', title: 'Overcharge', blurb: 'Put spare power into one tower.',

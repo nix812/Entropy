@@ -358,7 +358,7 @@ const UI = (() => {
     if (!G || G.over || screen !== 'game' || modalOpen || G.tut) return; // 5.8: Training has its coach instead
     if (G.hints &&(G.towers.length || G.wave >= 3)) { G.hints = null; Render.hints = null; }
     if (!PROF.seenHelp && G.time > 1) { if (!teachOK()) return; PROF.seenHelp = true; Save.save(); teachMark(); toast('WELCOME', 'Enemies walk the road to your core. Tap a glowing tile beside it to build a tower. How to Play is in the pause menu', '#59f0b4', true, 'alert'); return; }
-    if (G.fr && G.time > 1 && introCard('frontier', 'Lift Off', `Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it: the core fires that weapon, twice as hard. Towers near the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slow but tough. No building within ${frWormR()} tiles of a wormhole.`, 'lift')) return;
+    if (G.fr && G.time > 1 && introCard('frontier', 'Lift Off', `Your core can fly. Tap Lift Off, then a tile to land on: every road swings to follow. Land on a tower to dock it as a second gun at twice the damage. The core's own gun keeps firing. Towers near the landed core link up (+10% Damage and Rate). Towers can Move too (tower panel). The swarm is slow but tough. No building within ${frWormR()} tiles of a wormhole.`, 'lift')) return;
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
@@ -773,7 +773,7 @@ const UI = (() => {
         end(),
       ],
       lift: [ // 6.1
-        intro('in', 'Lift Off and docking', 'Your core can fly. Wherever it lands, the roads follow it; on a tower, it fires that tower’s weapon.'),
+        intro('in', 'Lift Off and docking', 'Your core can fly. Wherever it lands, the roads follow it; on a tower, that tower becomes a second gun.'),
         ...frSteps(() => true, () => W() >= 1),
         call('c1', 1, 'Send the wave. The docked core fights alongside the towers it links.'),
         info('wrap', sel('#bLift'), 'Recharging', () => `Lift Off recharges for ${frCd()} waves after a landing. The button shows the wave it is ready again.`, { when: () => after(1) }),
