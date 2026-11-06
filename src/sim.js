@@ -4239,7 +4239,7 @@ function updateCore(dt) {
   if (c.sinceHit > 4 && c.shield < c.smax && !(G.fr && G.frFly)) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
   const s = coreStats();
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
-  if (G.fr && (G.frFly || frDockT())) { c.cd = 0; return; } // Frontier: no gun in the air; docked, the tower is the gun
+  if (G.fr && (G.frFly || (G.frV < 6 && frDockT()))) { c.cd = 0; return; } // Frontier: no gun in the air; frV < 6: docked, the tower was the gun (frV 6: both fire)
   c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1) * (G.redAlert ? RED_ALERT.coreRate : 1);
   if (c.cd > 0) return;
   // last line of defence: shells go to whatever is closest to reaching the core along its route, anywhere in range
@@ -4385,7 +4385,7 @@ const frUp = () => (G.core && G.core.uLvl) || 0;
 const frCd = () => Math.max(1, FRONTIER.cd - Math.floor(frUp() / FRONTIER.cdUplink));
 const frLinkN = () => FRONTIER.links + Math.floor(frUp() / FRONTIER.linkUplink);
 const frCanFly = () => !!(G && G.fr && !G.over && !G.frFly && G.wave >= (G.frReady || 0));
-const frDockX = () => FRONTIER.dockDmg * (1 + FRONTIER.dockBat * ((G.core && G.core.wLvl || 1) - 1));
+const frDockX = () => FRONTIER.dockDmg * (1 + (G.frV >= 6 ? FRONTIER.dockBat6 : FRONTIER.dockBat) * ((G.core && G.core.wLvl || 1) - 1));
 // landing spots: open ground or an attack tower, inside the sector (1-tile margin), clear of every wormhole
 function frCands() {
   const R = G.region, c = G.map.core, out = [], starts = G.map.lanes.map(L => L.tiles[0]);

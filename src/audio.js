@@ -1046,7 +1046,7 @@ const SFX = (() => {
     // the Studio settings (Default mode ignores everything except the calm genres' tempo scale)
     const DEF_BPM = {}; for (const g of GENRE_IDS) DEF_BPM[g] = GENRES[g].bpm[1];
     const DEF = { custom: false, length: 'standard', genres: ['ambient', 'lofi', 'downtempo'], energy: 0.4, follow: 1, bpm: DEF_BPM, mix: { pads: 1, keys: 1, arp: 1, bass: 1, drums: 1, lead: 1 },
-      mute: {}, fx: { reverb: 0.5, echo: 0.5, tone: 0.5, tape: 0.5, pump: 0.5 }, favs: [], favOnly: false, calmBpm: 72, bossThemes: true };
+      mute: {}, fx: { reverb: 0.5, echo: 0.5, tone: 0.5, tape: 0, pump: 0.5 }, favs: [], favOnly: false, calmBpm: 72, bossThemes: true, tape0: 1 }; // 6.5.2: Tape & Vinyl off by default (Nic)
     const CHN = ['pads', 'keys', 'arp', 'bass', 'drums', 'lead'];
     let cfg = JSON.parse(JSON.stringify(DEF));
     const VCUR = 2; // 6.3: the generator version new pieces get (saved tracks without a v are version 1 and keep the old path)
@@ -1933,6 +1933,7 @@ const SFX = (() => {
         cfg.genres = (cfg.genres || []).map(g => GENRES[g] ? g : OLD[g]).filter((g, i, a) => g && a.indexOf(g) === i); if (!cfg.genres.length) cfg.genres = d.genres.slice();
         if (c.fx && c.fx.warmth !== undefined && c.fx.tone === undefined) cfg.fx.tone = 1 - c.fx.warmth;
         if (c.fx && c.fx.vinyl !== undefined && c.fx.tape === undefined) cfg.fx.tape = c.fx.vinyl;
+        if (!c.tape0 && Math.abs(cfg.fx.tape - 0.5) < 0.01) cfg.fx.tape = 0; // 6.5.2: a Tape & Vinyl still at the old default (Genre) moves to the new one (Off)
         if (cfg.bpm.chill && !c.calmBpm) cfg.calmBpm = cfg.bpm.chill;
         for (const k of ['warmth', 'vinyl']) delete cfg.fx[k]; delete cfg.bpm.chill;
         cfg.mute = c.mute || {}; cfg.favs = (c.favs || []).filter(f => f.flav && GENRES[f.genre]);

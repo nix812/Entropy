@@ -12,7 +12,7 @@ const fresh = () => { const S = load(); prof(S); return S; };
   const S = fresh();
   const E = S.EVENTS.find(e => e.id === 'hole');
   ok(!!E && E.fr === 5 && E.from === 10, 'Black Hole is an event from Wave 10, gated on fr 5');
-  ok(S.FR_VER === 5, 'FR_VER is 5');
+  ok(S.FR_VER >= 5, 'FR_VER is 5 or later');
   const rolls = (frV, strip) => { const S2 = fresh(); let G = S2.newRun({ seed: 77, chaos: 2, frontier: 1, v: '6.4.0', frV, hk: S2.HOOK_VER, sector: 'ghost' });
     if (strip) { const i = S2.EVENTS.findIndex(e => e.id === 'hole'); S2.EVENTS.splice(i, 1); }
     const out = []; for (let w = 5; w < 400; w++) out.push(S2.rollEvents(w).list.map(e => e.id).join('+')); return out; };
@@ -24,7 +24,7 @@ const fresh = () => { const S = load(); prof(S); return S; };
   let G = S.newRun({ seed: 7, chaos: 1, frontier: 1, v: '6.4.0', frV: 4, hk: S.HOOK_VER });
   ok(G.fogEx === null && !G.hole, 'a frV 4 run has no fog grid and no hole');
   G = S.newRun({ seed: 7, chaos: 1, cols: 44 }); ok(G.fogEx === null, 'a Classic run has no fog grid');
-  G = S.newRun({ tut: S.TUT ? undefined : undefined, seed: 7, chaos: 1, frontier: 1 }); ok(!!G.fogEx && G.frV === 5, 'a new Frontier run is frV 5 with a fog grid');
+  G = S.newRun({ tut: S.TUT ? undefined : undefined, seed: 7, chaos: 1, frontier: 1 }); ok(!!G.fogEx && G.frV >= 5, 'a new Frontier run is frV 5+ with a fog grid');
 }
 // ---- 2. spawn, drift, hold, collapse
 {

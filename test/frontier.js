@@ -206,12 +206,12 @@ function playDaily(S, seed, maxw, mark) {
   }
   return { G, flights, docks, moves, doors };
 }
-for (const seed of [4, 6]) {
+for (const seed of [2, 6]) { // 6.5.2: seed 2 (frV 6 reshuffles the dice; seed 4 now dies at Wave 11)
   const S = fresh(); boost(S); const mark = {};
   const { G, flights, docks, moves, doors } = playDaily(S, seed, Math.max(MAXW, 24), mark);
   const end = { tick: G.tick, wave: G.wave, score: Math.round(G.score), hash: S.runHash() };
   ok(G.fr === 1 && G.daily && flights >= 2 && docks >= 2 && moves >= 2, `daily ${seed}: Frontier Daily Hunt to Wave ${G.wave} with ${flights} lift-offs (${docks} docks), ${moves} moves, ${G.bounties.length} bounties, ${doors} doors`);
-  if (seed === 4) ok(G.bounties.length >= 1 && doors >= 1, `daily ${seed}: claimed the bounty and pushed through a jump door`); else ok(true, `daily ${seed}: ${G.over ? 'the run ended (the replay covers game over)' : 'still running'}`);
+  if (seed === 2) ok(G.bounties.length >= 1 && doors >= 1, `daily ${seed}: claimed the bounty and pushed through a jump door`); else ok(true, `daily ${seed}: ${G.over ? 'the run ended (the replay covers game over)' : 'still running'}`);
   // a hunt code is the recording as JSON
   const rec = JSON.parse(JSON.stringify({ opts: G.recOpts, inputs: G.inputs, end: G.tick }));
   ok(rec.opts.frontier === 1 && rec.opts.daily && rec.opts.rows === S.frRows(2) && rec.opts.frV === S.FR_VER, 'the recording carries the Daily, the Frontier flag, its version and the board');

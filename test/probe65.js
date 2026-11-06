@@ -26,7 +26,7 @@ function site(S, k, x, y, guards) {
 // ---- 1. who gets a probe
 {
   const S = fresh(); S.newRun({ seed: 1, chaos: 1, frontier: 1 }); const P = S.G.probe;
-  ok(S.G.frV === 5 && P && typeof P.x === 'number' && typeof P.y === 'number' && P.alive === true && typeof P.vis === 'number' && P.vis === 5 && Array.isArray(S.G.sites), 'a new Frontier run has G.probe { x, y, alive, vis } (vision 5 tiles), docked, and a site list');
+  ok(S.G.frV >= 5 && P && typeof P.x === 'number' && typeof P.y === 'number' && P.alive === true && typeof P.vis === 'number' && P.vis === 5 && Array.isArray(S.G.sites), 'a new Frontier run has G.probe { x, y, alive, vis } (vision 5 tiles), docked, and a site list');
   S.newRun({ seed: 1, chaos: 1, frontier: 1, frV: 4, v: '6.4.0' }); ok(S.G.probe === null && !S.G.sites.length, 'a frV 4 recording has no probe and no sites');
   S.newRun({ seed: 1, chaos: 1, cols: 44 }); ok(S.G.probe === null, 'a Classic run has no probe');
   S.newRun({ seed: 1, chaos: 1, frontier: 1, tut: 1 }); ok(S.G.probe === null, 'Basic Training has no probe');
