@@ -32,6 +32,10 @@ const ICONS = {
   speaker: ['....#....', '...##.#..', '..#.#..#.', '###.#.#.#', '#...#.#.#', '###.#.#.#', '..#.#..#.', '...##.#..', '....#....'], // 6.2 Settings tabs
   screen: ['#########', '#.......#', '#.......#', '#.......#', '#.......#', '#########', '....#....', '...###...', '.........'],
   sliders: ['.##......', '#########', '.##......', '......##.', '#########', '......##.', '...##....', '#########', '...##....'],
+  home: ['....#....', '...###...', '..#####..', '.#######.', '#########', '.##...##.', '.##...##.', '.##...##.', '.#######.'], // 6.5.3: no emoji (Nic): probe Home
+  up: ['....#....', '...###...', '..#####..', '.#######.', '....#....', '....#....', '....#....', '....#....', '....#....'], // probe Upgrades
+  left: ['.....#...', '....##...', '...###...', '..####...', '.#####...', '..####...', '...###...', '....##...', '.....#...'],
+  right: ['...#.....', '...##....', '...###...', '...####..', '...#####.', '...####..', '...###...', '...##....', '...#.....'],
   dice: ['#########', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#.##.##.#', '#.##.##.#', '#.......#', '#########'],
 };
 function svgIcon(name, size) {
@@ -372,7 +376,7 @@ const UI = (() => {
     // 5.8: one card for every other system, the first time it matters in a real run
     if (G.wave >= 2 && G.towers.length && !G.towers.some(t => t.lvl >= 2) && G.towers.some(t => G.credits >= upgradeCost(t)) && introCard('upg', 'Upgrades', 'Tap a tower to upgrade it: more damage and a random bonus. The arrow over a tower means you can afford it.', 'upgrades')) return;
     if (G.towers.length >= 3 && gridFree() < 1 && introCard('power', 'Power full', 'Every tower draws 1 power. Upgrade towers instead, or expand the reactor from the build menu.', 'power')) return;
-    if (G.wave >= 6 && G.towers.length >= 3 && gridFree() >= 2 && introCard('spare', 'Spare power', 'Overcharge your best tower: open it and tap +1, or tap the ⚡ readout.', 'overcharge')) return;
+    if (G.wave >= 6 && G.towers.length >= 3 && gridFree() >= 2 && introCard('spare', 'Spare power', 'Overcharge your best tower: open it and tap +1, or tap the power readout.', 'overcharge')) return;
     if (G.map.lanes.some(L => L.openWave && L.openWave > G.wave) && introCard('wormhole', 'Wormhole', 'A new road opens soon. The wave before it is a checkpoint: sell for full refunds and move towers to cover it.', 'wormholes')) return;
     if (G.anomOffers && introCard('anomaly', 'Entropy full', 'Tap the gauge on the right to draw an Anomaly: an upside and a downside for the rest of the run.', 'storms')) return;
     if (G.spawningDone && G.prep && G.prep.boss && introCard('boss', 'Boss next wave', 'Save Strike and Stasis for it. If it reaches the core, the run ends.', 'bosses')) return;
@@ -666,7 +670,7 @@ const UI = (() => {
         info('score', sel('#bCash'), 'Score', 'Kills and waves raise your score. It turns into XP: levels and talent points.', { skip: () => W() >= 3 }),
         build('build2', 'pulse', 'b', 'A second tower', 'Build another one on the marked tile.', { ls: 'power', when: () => after(1), skip: () => W() >= 2, done: () => G.towers.length >= 2,
           at: () => flowAt(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'b'), b: () => afford('pulse') ? flowText(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'Build another one on the marked tile. Any tower works.') : `Towers start at ${towerCost('pulse')} credits. Kills pay.` }),
-        info('power', sel('#hud .hs.pwr'), 'Power', () => `⚡ ${gridUsed()}/${gridCap()}: full. Each tower draws 1 power, and capacity grows as waves pass. In real runs, towers on Power Nodes (diamond tiles) use none.`, { when: () => after(1), skip: () => W() >= 2 }),
+        info('power', sel('#hud .hs.pwr'), 'Power', () => `Power ${gridUsed()}/${gridCap()}: full. Each tower draws 1 power, and capacity grows as waves pass. In real runs, towers on Power Nodes (diamond tiles) use none.`, { when: () => after(1), skip: () => W() >= 2 }),
         call('call2', 2, 'Tap Next, or let the timer run. Power is full, so the next credits go into upgrades.', { when: () => after(1) }),
         // upgrading, step by step (Nic's brother: "didn't understand how to upgrade towers or what that meant")
         tapTw('tapTower', tw, 'Upgrade', 'Towers you built can be tapped. Tap your first tower to open its panel.', { ls: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: () => G.credits >= upgradeCost(tw()),
@@ -784,7 +788,7 @@ const UI = (() => {
         info('pw', sel('#hud .hs.pwr'), 'Spare power', () => `${gridUsed()} of ${gridCap()} used: ${gridFree()} spare.`),
         tapTw('tapR', () => G.towers.find(t => t.type === 'rail'), 'Your best tower', 'Tap the Rail Lance.'),
         { id: 'oc', hold: 1, at: sel('#panel [data-act=oc][data-v="1"]'), t: 'Overcharge +1', b: `Each step: +${Math.round(OVERCHARGE.dmg * 100)}% damage for 1 power. Tap +1.`, done: () => G.towers.some(t => t.type === 'rail' && t.oc >= 1), back: () => !panT() && 'tapR' },
-        info('ocDone', sel('#hud .hs.pwr'), 'Power spent', () => `${gridUsed()} of ${gridCap()} now. Tap ⚡ any time to put all spare power into your top tower.`, { leave: shut }),
+        info('ocDone', sel('#hud .hs.pwr'), 'Power spent', () => `${gridUsed()} of ${gridCap()} now. Tap the power readout any time to put all spare power into your top tower.`, { leave: shut }),
         call('c1', 1),
         end(),
       ],
@@ -2339,8 +2343,8 @@ const UI = (() => {
       if (!P) { SFX.play('deny'); toast('NO ROUTE', 'A road cannot reach that tile', '#ff4d6a'); return; }
       SFX.play('ui'); G.reloc.plan = P; Render.sel = { x: tx, y: ty }; renderPanel(); return;
     }
-    if (G.probe && probeTap(p)) return; // 6.5: send the selected probe, or select it (the probe or a loot site)
-    const cc = cacheNear(p, tx, ty);
+    const cc = cacheNear(p, tx, ty); // 6.5.3 (Nic): a tap on a crate or pirate chest claims it, even with the probe selected
+    if (!cc && G.probe && probeTap(p)) return; // 6.5: send the selected probe, or select it (the probe or a loot site)
     if (!cc && !inRegion(tx, ty, G.region)) { closePanel(); return; }
     if (cc) { const kind = cc.kind, m = window.act('cache', cc.x, cc.y); if (m) { toast(kind === 'gold' ? 'GOLDEN SALVAGE' : kind === 'cursed' ? 'CURSED SALVAGE' : 'SALVAGE', m, kind === 'gold' ? '#ffd84a' : kind === 'cursed' ? '#ff4d6a' : '#ffe14d'); updateHud(); if (panel) renderPanel(); } return; }
     const isCore = tx === G.map.core.x && ty === G.map.core.y;
@@ -2913,7 +2917,7 @@ const UI = (() => {
       <div class="stcol">
         <div class="lbl stl">Vibe</div>
         <div class="stvibe">${ST_VIBES.map(v => `<button class="chip ${vibeOn(v) ? 'on' : ''}" data-act="stVibe" data-v="${v[0]}">${v[1]}</button>`).join('')}</div>
-        <div class="lbl stl">Genres <em class="dim">tap to add or remove · ▶ plays one now</em></div>
+        <div class="lbl stl">Genres <em class="dim">tap to add or remove · Play plays one now</em></div>
         <div class="stgen">${M.GENRE_IDS.map(g => `<div class="gw ${sel.includes(g) ? 'on' : ''}" style="--c:${G5[g].col}"><button class="gch" data-act="stGenre" data-v="${g}">${esc(G5[g].short || G5[g].name)}</button><button class="gpl" data-act="stPlayG" data-v="${g}" aria-label="Play ${esc(G5[g].name)} now" data-svg="play"></button></div>`).join('')}</div>
         <p class="note stblurb" id="stBlurb"><span style="color:${G5[tg].col}">${esc(G5[tg].name)}</span> ${esc(G5[tg].blurb.toLowerCase())}.</p>
         ${stBossHTML()}
@@ -2998,7 +3002,7 @@ const UI = (() => {
       ${stRadio ? `<div class="strow"><button class="btn small" data-act="cpFrom">Or remix the last radio song (${esc(stRadio.name)})</button></div>` : ''}</div>`;
     const G0 = G5[d.genre];
     const mood = M.MOODS.find(m => m[0] === d.mode) || M.MOODS[4], bass = M.BASSES.find(b => d.bass && b[0] === d.bass[0] && b[1] === d.bass[1]), lead = M.LEADS.find(l => l[0] === d.lead) || M.LEADS[0];
-    const st = (k, lab, val, col) => `<div class="cpst"><span class="lbl">${lab}</span><button class="stb" data-act="cpStep" data-k="${k}" data-v="-1" aria-label="Previous ${lab}">◀</button><b ${col ? `style="color:${col}"` : ''}>${val}</b><button class="stb" data-act="cpStep" data-k="${k}" data-v="1" aria-label="Next ${lab}">▶</button></div>`;
+    const st = (k, lab, val, col) => `<div class="cpst"><span class="lbl">${lab}</span><button class="stb" data-act="cpStep" data-k="${k}" data-v="-1" aria-label="Previous ${lab}">${svgIcon('left', 14)}</button><b ${col ? `style="color:${col}"` : ''}>${val}</b><button class="stb" data-act="cpStep" data-k="${k}" data-v="1" aria-label="Next ${lab}">${svgIcon('right', 14)}</button></div>`;
     return `<div class="stcompose">
       <div class="cpleft">
         <button class="cpnamebtn" data-act="cpRename" aria-label="Rename song"><b>${esc(d.name || 'My Track')}</b><i data-svg="edit"></i></button>
@@ -3016,7 +3020,7 @@ const UI = (() => {
       <div class="cpright">
         <div class="strow cpgt"><button class="chip ${stGrid === 'drums' ? 'on' : ''}" data-act="cpGrid" data-v="drums">Drums</button><button class="chip ${stGrid === 'melody' ? 'on' : ''}" data-act="cpGrid" data-v="melody">Melody</button>
           ${stGrid === 'melody' ? `<button class="chip ${d.melAbs ? 'on' : ''}" data-act="cpMelAbs">${d.melAbs ? 'Fixed notes' : 'Follow chords'}</button><button class="chip" data-act="cpDice"><i data-svg="dice"></i>Roll</button>${d.mel && d.mel.some(x => x !== null) ? '<button class="chip" data-act="cpMelClr">Clear</button>' : ''}` : '<button class="chip" data-act="cpDrumReset">Reset</button><button class="chip" data-act="cpDrumClr">Clear</button>'}
-          <button class="btn small ${SFX.music.held ? 'primary' : ''} cpplay" id="cpPlayB" data-act="stPause">${SFX.music.held ? '▶ Play' : '■ Stop'}</button><button class="btn small cpsave" data-act="cpSave">Save</button></div>
+          <button class="btn small ${SFX.music.held ? 'primary' : ''} cpplay" id="cpPlayB" data-act="stPause">${SFX.music.held ? 'Play' : 'Stop'}</button><button class="btn small cpsave" data-act="cpSave">Save</button></div>
         <div id="cpGridBox">${cpGridHTML()}</div>
         <p class="note sthint">${stGrid === 'melody' ? (d.melAbs ? 'Fixed notes: each row is a note of the key (named on the left) and stays put while the chords move, the way a songwriter writes a hook. Tap to place, tap again to remove.' : d.mel === null ? 'The faint notes are a rolled melody. Tap the grid to make it yours, or roll again.' : d.mel.some(x => x !== null) ? 'Your melody, one bar looping. Higher rows are higher notes; they move with the chords, so every note fits. Tap a lit square to remove it.' : 'No melody yet. Tap the grid to write one (it always fits the chords), or Roll one.') : 'One bar, looping. Each column is a step; the white column is where the song is right now. Every lit square plays: tap one to switch it on or off.'}</p>
       </div>
@@ -3066,15 +3070,15 @@ const UI = (() => {
   const ST_HELP = {
     listen: { rows: [
       ['Now playing', 'The bar at the top stays put on every tab: song name, genre and style, key, tempo, the section it is in (intro, groove, drop) and how far through it is.'],
-      ['⏮ Back', 'The previous song. The Studio remembers the last 40 this session.'],
-      ['⏸ Pause', 'Silences the music. Game sounds keep playing.'],
-      ['⏭ Skip', 'A new song now, from the genres you have on.'],
+      ['Back', 'The previous song. The Studio remembers the last 40 this session.'],
+      ['Pause', 'Silences the music. Game sounds keep playing.'],
+      ['Skip', 'A new song now, from the genres you have on.'],
       ['Repeat', 'This song plays again when it ends instead of moving on. Lasts until you close the game.'],
-      ['♥ Keep', 'Adds the song to My Tracks with your current sound. Tap again to take it out.'],
+      ['Keep (the heart)', 'Adds the song to My Tracks with your current sound. Tap again to take it out.'],
       ['Share', 'Copies a track code for the song playing.'],
       ['Vibe', 'Sets the genre list in one tap. Calm: Ambient, Lo-fi, Trip Hop. Club: House, Techno, Trance, Drum & Bass. Retro: Synthwave, Chiptune. Everything: all ten.'],
-      ['Genres', 'Tap one to add it to the rotation or take it out (one always stays on). A genre you add plays at once. ▶ plays one song of that genre now without changing the list.'],
-      ['My Tracks', 'Every song you keep. ▶ plays it, the pencil opens a composed song in Compose, share copies its code, ✕ deletes it (tap twice). Tap a name to rename it.'],
+      ['Genres', 'Tap one to add it to the rotation or take it out (one always stays on). A genre you add plays at once. Its play button plays one song of that genre now without changing the list.'],
+      ['My Tracks', 'Every song you keep. The play button plays it, the pencil opens a composed song in Compose, share copies its code, ✕ deletes it (tap twice). Tap a name to rename it.'],
       ['Only my tracks', 'The radio plays your kept songs in turn instead of new ones.'],
       ['Paste a code', 'Adds a friend’s TRACK code to My Tracks and plays it.'],
       ['Boss themes', 'Each of the 13 bosses has its own theme. Beat a boss to unlock its theme here. Tap a theme to play it.'],
@@ -3083,12 +3087,12 @@ const UI = (() => {
       ['Seeds', 'Every song grows from a seed. The same seed, genre and style always give the same chords, melody and drums, on any device. A kept song or a code is that seed plus a name, so it plays back exactly.'],
       ['Variety', 'Each genre has 4 styles. Each new song also picks its own drums, instruments, tempo, key and arrangement. Its melody grows from a short hook that repeats. Songs kept before version 6.3 play exactly as before.'],
       ['Likes keep the sound', 'Keeping a song also stores your sound: Energy, Follow, the mixer, mutes, effects and that genre’s tempo. Playing it brings that sound back, so your Shape sliders move to match.'],
-      ['Likes on the battlefield', 'The ♥ on the Music deck (tap the Music tile at the top of the left rail) keeps the song playing into the same My Tracks list.'],
+      ['Likes on the battlefield', 'The heart on the Music deck (tap the Music tile at the top of the left rail) keeps the song playing into the same My Tracks list.'],
       ['Build a playlist', 'Keep songs as they come up, rename and delete to taste, then turn on Only my tracks. My Tracks holds 80; past that the oldest drops off.'],
       ['Default mix', 'Until you change something, the Studio plays the default mix: the Calm genres, steered by the battle, at the tempo in Settings › Sound. Your first change switches to your own settings. Shape › Reset sound goes back.'],
       ['Boss fights', 'With Play in boss fights on, the theme of the first boss on the field plays. A new boss phase moves the theme to its Final section, 1 semitone higher. After the kill, your song continues from the section it was in. If it was near its end, a new song starts.'],
       ['Boss fights, switch off', 'During a boss, new songs avoid major keys. The default mix also switches to Trip Hop.'],
-      ['Keep a boss theme', 'The ♥ works on a boss theme too. The theme then plays in My Tracks like any song. In Compose, boss themes do not stop your song.'],
+      ['Keep a boss theme', 'The heart works on a boss theme too. The theme then plays in My Tracks like any song. In Compose, boss themes do not stop your song.'],
     ] },
     shape: { rows: [
       ['Energy', 'How full the music is: Still, Chill, Groove, Peak. Low energy thins the music to its core; high energy brings in more parts and picks the harder styles of each genre.'],
@@ -3103,7 +3107,7 @@ const UI = (() => {
       ['Composed songs', 'A composed song always plays every part you wrote. Energy and Follow shape the radio’s songs, not yours.'],
       ['Boss themes', 'A boss theme never plays below Groove. Energy and Follow push it higher. Each boss phase adds more.'],
       ['Mute to compare', 'A muted part comes back at its old level, so muting is quicker than dragging a fader down and back.'],
-      ['Keep after shaping', 'A kept song saves this whole panel. Set the sound first, then press ♥.'],
+      ['Keep after shaping', 'A kept song saves this whole panel. Set the sound first, then press the heart.'],
       ['Settings tempo', 'Settings › Sound › Music tempo moves only the default mix. After your first change here, each genre uses its own Tempo slider.'],
     ], recipes: [
       ['Focus', 'Calm vibe, Energy at Chill, Follow 0%, Reverb and Tape & Vinyl right of middle, Pump off.'],
@@ -3202,7 +3206,7 @@ const UI = (() => {
           $('#stName').textContent = dr ? dr.name : 'New song';
           $('#stGen').textContent = dr ? `Your song · ${M.held ? 'stopped: press play' : 'playing'}` : 'Pick a style to begin';
           $('#stKey').textContent = dr ? `${(G1.short || G1.name)} · ${M.NOTE[dr.key % 12]} ${md} · ${dr.bpm} BPM` : 'The radio is off while you compose';
-          const cb = $('#cpPlayB'); if (cb) { cb.textContent = M.held ? '▶ Play' : '■ Stop'; cb.classList.toggle('primary', M.held); }
+          const cb = $('#cpPlayB'); if (cb) { cb.textContent = M.held ? 'Play' : 'Stop'; cb.classList.toggle('primary', M.held); }
         } else { $('#stName').textContent = p.name; $('#stGen').textContent = p.genreName + ' · ' + p.flavName + (p.comp ? ' · composed' : ''); }
         const kb = $('#stKeepB'); if (kb) { kb.classList.toggle('on', p.saved); kb.innerHTML = svgIcon(p.saved ? 'heart' : 'heartO'); }
         const quiet = stInCompose ? M.held : M.paused;
@@ -3757,7 +3761,7 @@ const UI = (() => {
     // 6.2 (Nic: "let people like songs to their playlist there while they're on the battle field"): Keep, as in the Studio
     $('#bTrkLike').onclick = () => {
       SFX.init(); const M = SFX.music; if (!M.piece) return; let line = '';
-      if (M.isSaved()) { M.unsave(); line = 'Removed from My Tracks'; } else if (M.save()) line = '♥ Kept in My Tracks';
+      if (M.isSaved()) { M.unsave(); line = 'Removed from My Tracks'; } else if (M.save()) line = 'Kept in My Tracks';
       studioSave(); SFX.play('ui'); deckShow(true);
       const d = $('#mdeck'), sp = d && d.querySelector('.mdname span'), lk = $('#bTrkLike');
       deckFill(); if (sp && line) { sp.textContent = line; sp.classList.add('liked'); deckNoteT = performance.now() + 1800; }
@@ -3793,6 +3797,7 @@ const UI = (() => {
     $('#bReady').onclick = () => { SFX.play('ui'); if (!G || G.over) return; vetFlow.ix = 0; openVets(); };
     $('#bLift').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.fr) return; startLift(); }; // Frontier
     $('#bProbe').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.probe) return; if (panel && panel.kind === 'probe') { closePanel(); probeEnd(); } else if (prCmd) probeEnd(); else selectProbe(); }; // 6.5; 6.5.2 command mode
+    for (const b of document.querySelectorAll('#prbar [data-ico]')) b.insertAdjacentHTML('afterbegin', svgIcon(b.dataset.ico, 16)); // 6.5.3: pixel icons, no emoji
     $('#prbar').addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if (b && !b.disabled) prBarAction(b.dataset.pr); }); // 6.5.2
     $('#bTutH').onclick = () => { SFX.init(); SFX.play('ui'); openTutPick(); }; // 5.8: always on the main menu
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
