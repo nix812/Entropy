@@ -437,7 +437,7 @@ const UI = (() => {
       <div class="lwhat tnext"><b>Real runs</b><span>Endless. The first bounty boss: Wave 20.</span>
         <b>Talents</b><span>${pts > 0 ? `Spend your ${pts} point${pts > 1 ? 's' : ''}. ` : ''}${TTOP} points in one tree unlock a new tower.</span>
         <b>Daily Hunt</b><span>One run a day, the same for everyone.</span>
-        <b>Field Manual</b><span>The ? button. A lesson for every system.</span></div>
+        <b>Field Manual</b><span>The ? button: a lesson per system.</span></div>
       <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Talents</button><button class="btn primary" data-act="again">First Run</button></div></div>`, 'over');
     Coach.stop();
   }
