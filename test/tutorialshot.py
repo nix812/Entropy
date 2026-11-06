@@ -17,7 +17,7 @@ CARD = '''() => { const c = document.querySelector('#coach'); if (!c || c.hidden
   const rr = r.hidden ? null : r.getBoundingClientRect(), ok = c.querySelector('.cok');
   return { step: UI.coach.step, miss: UI.coach.miss, held: UI.coachHold, card: [k.left, k.top, k.width, k.height], ring: rr ? [rr.left, rr.top, rr.width, rr.height] : null, ok: !ok.hidden, title: c.querySelector('.ct').textContent, vw: innerWidth, vh: innerHeight }; }'''
 # where the driver taps when the ring covers a group (the coach points at the group; a player taps one of its buttons)
-TAPS = { 'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]', 'pick': '#modal [data-act=vpick]', 'boon': '#modal .boons [data-act]', 'anom': '#modal [data-act=anom]', 'fire': '#panel .firerow [data-act=fire]:not(.on)', 'perk': '#panel [data-act=perk]' }
+TAPS = { 'cards': '#modal .boon.ar-rare', 'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]', 'pick': '#modal [data-act=vpick]', 'boon': '#modal .boons [data-act]', 'anom': '#modal [data-act=anom]', 'fire': '#panel .firerow [data-act=fire]:not(.on)', 'perk': '#panel [data-act=perk]' }
 def fresh(pg, extra=''):
     pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
     pg.evaluate('() => { window.tutOfferTest = 1; PROF = Save.merge({}); PROF.seenVer = VERSION; ' + extra + ' Save.save(); UI.renderHangar(); }')
@@ -46,7 +46,7 @@ def drive(pg, tag, prefix, finished, limit=420):
                     rb = pg.evaluate("() => { const r = document.querySelector('#bReady').getBoundingClientRect(); return ['#bZoom', '#railR', '#chips', '#bPause', '#ticker'].filter(q => { const e = document.querySelector(q); if (!e || e.offsetParent === null || e.hidden) return false; const o = e.getBoundingClientRect(); return !(o.right <= r.left || o.left >= r.right || o.bottom <= r.top || o.top >= r.bottom); }); }")
                     check(not rb, f'{tag}: Ready button collides with {rb}')
                 if c['step'] == 'vpick': pg.screenshot(path=str(out / f'{prefix}_ready_walkthrough.png'))
-                if c['step'] == 'upWhy' and tl:
+                if c['step'] == 'credits' and tl:  # 6.6: was upWhy (merged into upDone); credits is a read line with Got it and no panel open
                     pg.click('#tutlist'); pg.wait_for_timeout(200); pg.screenshot(path=str(out / f'{prefix}_checklist_strip.png'))
                     pg.click('#coach .cok'); pg.wait_for_timeout(250); pg.screenshot(path=str(out / f'{prefix}_checklist.png'))
                     lr = pg.evaluate("() => { const r = document.querySelector('#tutlist').getBoundingClientRect(), s = document.querySelector('#stage').getBoundingClientRect(), bad = ['#bCall', '#bZoom', '#abils [data-abil=strike]', '#chips'].filter(q => { const e = document.querySelector(q); if (!e || e.offsetParent === null) return false; const o = e.getBoundingClientRect(); return !(o.right <= r.left || o.left >= r.right || o.bottom <= r.top || o.top >= r.bottom); }); return { inside: r.left >= s.left - 1 && r.bottom <= s.bottom + 1 && r.top >= s.top - 1, bad }; }")
@@ -57,7 +57,9 @@ def drive(pg, tag, prefix, finished, limit=420):
                     r = c['ring']; ox = max(0, min(k[0] + k[2], r[0] + r[2]) - max(k[0], r[0])); oy = max(0, min(k[1] + k[3], r[1] + r[3]) - max(k[1], r[1]))
                     check(ox * oy < 1, f'{tag}: {c["step"]} card covers its target')
         stuck += 1
-        if stuck > 40: check(False, f'{tag}: stuck on {c["step"]}'); break
+        if stuck > 40:
+            check(False, f'{tag}: stuck on {c["step"]}')
+            print('  state:', pg.evaluate("() => JSON.stringify({ m: UI.modalOpen, w: G && G.wave, inputs: G && G.inputs.slice(-4), ready: G && G.towers.filter(t => t.pending > 0 || t.ascPend > 0 || t.grow > 0).map(t => [t.type, t.x, t.y, t.pending, t.ascPend, t.grow, t.mvT]), vp: [...document.querySelectorAll('#modal [data-act=vpick]')].map(b => b.dataset.v) })"), flush=True); break
         if c['ok']: pg.click('#coach .cok'); pg.wait_for_timeout(220); continue
         if c['ring'] and (c['held'] or c['step'] in ('resume',) or 'call' in c['step'] or c['step'].startswith('c') and c['step'][1:].isdigit()):
             if c['step'] in TAPS and pg.evaluate(f"() => !!document.querySelector('{TAPS[c['step']]}')"): pg.click(TAPS[c['step']])
@@ -77,7 +79,7 @@ def basic(pg, tag):
     nl, tot = pg.evaluate("() => { const t = document.querySelector('#tutlist'); return t ? [+t.dataset.n || 0, +((t.querySelector('.tlh').textContent.match(/\\/(\\d+)/) || [0, 0])[1])] : [0, 0]; }")
     pg.wait_for_timeout(1400)
     check(tot >= 11 and nl == tot, f'{tag}: checklist ticked {nl}/{tot} by the end')
-    optional = {'arrow', 'up2', 'up2Done', 'tapLv3', 'toLv3', 'spec', 'ascend', 'sell', 'recharge', 'free', 'mark', 'inspect', 'inspected'}
+    optional = {'arrow', 'up2', 'up2Done', 'tapLv3', 'toLv3', 'spec', 'ascend', 'sell', 'recharge', 'free', 'mark', 'inspect', 'inspected', 'prLost'}  # 6.6: prLost only shows when the probe dies
     missing = [s for s in steps if s not in seen and s not in optional]
     check(not missing, f'{tag}: steps never shown: {missing}')
     print(tag, 'basic steps', len(seen), 'skipped optional:', [s for s in steps if s not in seen and s in optional], flush=True)

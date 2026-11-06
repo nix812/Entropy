@@ -31,12 +31,13 @@ CARD = '''() => { const c = document.querySelector('#coach'); if (!c || c.hidden
 LIST = '''() => { const t = document.querySelector('#tutlist'); if (!t) return null; const li = [...t.querySelectorAll('ol li')];
   return { n: +t.dataset.n || 0, cur: (t.querySelector('.tlcur') || {}).textContent || '', ticks: li.map(l => l.classList.contains('ok')), miss: li.map(l => l.classList.contains('miss')), now: li.findIndex(l => l.classList.contains('now')),
     names: li.map(l => l.textContent.replace(/^[✓\\d]+/, '')), vis: !t.hidden && t.offsetParent !== null, state: UI.coach.checks ? UI.coach.checks() : null }; }'''
-TAPS = {'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]', 'boon': '#modal .boons [data-act]'}
+TAPS = {'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]', 'boon': '#modal .boons [data-act]', 'cards': '#modal .boon.ar-rare'}
 # the coach step that teaches each checklist line (by line name); the line must tick within 2 steps after it
 CHECK_STEP = {'Place a tower': 'build1', 'Call a wave early': 'call1', 'Upgrade a tower': 'upgrade', 'Read its bonus': 'affixes',
+              'Core: upgrade the Battery': 'battery', 'Counter it: a Rail Lance': 'rail',
               'Lift Off: dock on a tower': 'land', 'Link towers to the core': 'links', 'Move a tower': 'mvGo', 'Upgrade again': 'up2',
-              'Core: Shield': 'shield', 'Core: Battery': 'battery', 'Veteran: tap Ready, pick': 'vpick', 'Use Strike': 'aim',
-              'Pick a specialty (LV 3)': 'spec', 'Beat the bounty boss': None, 'Extract': None}
+              'Veteran: tap Ready, pick': 'vpick', 'Use Strike': 'aim', 'Probe: loot a site, bank it': 'prBank', 'Probe: a guarded site in the fog': 'prOut',
+              'Entropy: take a card': 'cards', 'Pick a specialty (LV 3)': 'spec', 'Beat the bounty boss': None, 'Extract': None}  # 6.6 tut66: the new lesson list
 def run(pg, tag, style, limit=600):
     pg.goto('file://' + page); pg.wait_for_timeout(400)
     pg.evaluate('() => { window.tutOfferTest = 1; PROF = Save.merge({}); PROF.seenVer = VERSION; Save.save(); UI.renderHangar(); try { localStorage.setItem("entropy.tutlist", "0"); } catch (e) {} }')

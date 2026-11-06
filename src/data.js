@@ -599,7 +599,7 @@ const TWIN_HP = 0.65;
 // waves: groups of [enemy, count, gap s, hp ×, extra]; hp × multiplies the normal hpMult(w). extra.genes/gel give scripted genes
 // (gel 'top' = the element doing most of your damage); extra.share = the fraction of the group that carries them
 const TUT = {
-  v: 1, seed: 52801, rows: 22, credits: 100, coreHp: 150, reward: 800,
+  v: 2, seed: 52801, rows: 22, credits: 100, coreHp: 150, reward: 800, // v: what the UI starts (6.6: 2 = the b2 script below; tut 1 recordings keep TUT.fr)
   CH: { name: 'Training', ev: 0, storm: 0, elite: 0, score: 1, hp: 1, rows: 22, lanes: [99], evo: { start: 5, press: 0, first: 999, every: 999, desc: '' } },
   grid: [2, 2, 3, 3, 3, 4, 4, 4, 5, 5],   // power capacity by G.wave (index), so the grid fills up once and the upgrade lesson follows
   towers: ['pulse', 'rail', 'cryo'],     // what the coach offers in the build menu
@@ -630,6 +630,23 @@ const TUT = {
       [['drone', 6, 1.6, 1.6, { genes: ['ward'], gel: 'top', share: 0.6 }], ['swarmer', 4, 0.5, 1.6, { genes: ['haste'], share: 0.5 }]],
       [['drone', 5, 1.5, 1.6, { genes: ['ward'], gel: 'top', share: 0.5 }], ['tank', 2, 3.4, 1.4], ['swarmer', 5, 0.4, 1.6]],
       [['swarmer', 5, 0.4, 1.6], ['drone', 6, 1.3, 1.6, { genes: ['ward'], gel: 'top', share: 0.4 }], ['tank', 2, 3.2, 1.5]],
+      [['drone', 3, 1.8, 1.4], ['boss', 1, 3, 1], ['drone', 3, 2.4, 1.4]],
+    ] },
+  // 6.6 Basic Training v2 (newRun({ tut: 2, frontier: 1 }), on top of fr): the probe and two scripted loot sites, fog of war, one
+  // scripted Entropy draw (a Common, a Rare and an Exotic), 8 waves (the boss on Wave 8), a quicker boss. Lessons (Field Manual) never get these fields.
+  // sites: [script wave it appears as the wave before ends, kind, tiles from the core, credits it holds, drone guards]; no jackpot
+  // ent: the gauge fills as that script wave's previous wave ends, with these rarities (ANOM_RARITY index) in the 3 slots
+  b2: { probe: 1, fog: 1, grant: { 3: 140, 4: 120 }, vetAt: 5, ent: { w: 8, r: [0, 1, 2] },
+    sites: [{ n: 1, w: 6, k: 'wreck', dx: 6, dy: 6, val: 160, g: 0 }, { n: 2, w: 7, k: 'wreck', dx: -27, dy: -10, val: 220, g: 1 }],
+    boss: { id: 'behemoth', mod: 'hasted', hp: 700 }, // Hasted: it reaches the towers sooner, so the fight takes about a minute, not three
+    waves: [
+      [['drone', 5, 2.2, 1.3]],
+      [['drone', 3, 2.2, 1.4], ['swarmer', 8, 0.45, 1.2]],
+      [['drone', 4, 1.9, 1.5], ['swarmer', 10, 0.4, 1.3]],
+      [['drone', 4, 1.6, 1.4], ['tank', 2, 3.6, 1.4], ['drone', 4, 1.6, 1.4]],
+      [['drone', 2, 1.8, 1.6], ['swarmer', 11, 0.24, 1.6]],
+      [['drone', 6, 1.6, 1.6], ['swarmer', 4, 0.5, 1.6]],
+      [['drone', 5, 1.5, 1.6], ['tank', 2, 3.4, 1.4], ['swarmer', 5, 0.4, 1.6]],
       [['drone', 3, 1.8, 1.4], ['boss', 1, 3, 1], ['drone', 3, 2.4, 1.4]],
     ] },
 };

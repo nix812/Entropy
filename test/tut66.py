@@ -29,7 +29,7 @@ CARD = '''() => { const c = document.querySelector('#coach'); if (!c || c.hidden
     t: G ? +G.time.toFixed(1) : 0, w: G ? G.wave : 0, chain: UI.coach.chain || null }; }'''
 WATCH = '''() => { window._cad = []; const log = (k, el) => { const s = el.textContent.trim(); if (s && G) window._cad.push({ k, s: s.slice(0, 120), t: +G.time.toFixed(1), w: G.wave }); };
   for (const id of ['ticker', 'tip']) { const el = document.getElementById(id); if (el) new MutationObserver(() => log(id, el)).observe(el, { childList: true, subtree: true, characterData: true }); } }'''
-TAPS = {'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]'}
+TAPS = {'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]', 'cards': '#modal .boon.ar-rare'}
 def run(pg, W, H):
     tg = f'{tag}{W}x{H}'
     pg.goto('file://' + page); pg.wait_for_timeout(400)
@@ -91,7 +91,9 @@ def run(pg, W, H):
     for m in msgs: print(f"{m['t']:7.1f}s W{m['w']:<2} {m['k']:<6} {m['s']}")
     les = [c['t'] for c in cards if c['new']]
     lg = [round(b - a, 1) for a, b in zip(les, les[1:])]
-    dl = sorted([c['t'] for c in cards if c['held'] and c['new']] + [m['t'] for m in modals if m['m'] not in ('vets', 'hunt', 'evo', 'over')])
+    # a dialog = the first held card of a lesson, or a modal the coach did not open itself (none within 1.5 s of a held card)
+    hc = [c['t'] for c in cards if c['held']]
+    dl = sorted([c['t'] for c in cards if c['held'] and c['new']] + [m['t'] for m in modals if m['m'] != 'over' and not any(abs(m['t'] - t) <= 1.5 for t in hc)])
     dg = [round(b - a, 1) for a, b in zip(dl, dl[1:])]
     held = sum(1 for c in cards if c['held']) + sum(1 for m in modals if m['m'] not in ('over',))
     wall = fin['t'] + READ * held

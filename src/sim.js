@@ -738,7 +738,7 @@ function newRun(opts) {
   const ascV = opts.ascV || (opts.v ? 1 : ASC_V); // v5.8: a recording from before Ascension perks (it carries v, no ascV) keeps the old rules
   opts = Object.assign({}, opts, { seed, ascV });
   const r = mulberry32(seed);
-  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson, opts.frontier) : null; // 5.8 Training and lessons: own map, rules and wave script (Frontier: TUT.fr)
+  const chaos = clamp(opts.chaos ?? 1, 0, 3), T = opts.tut ? tutSpec(opts.lesson, opts.frontier, opts.tut) : null; // 5.8 Training and lessons: own map, rules and wave script (Frontier: TUT.fr)
   setRows(T ? T.rows : opts.rows || (opts.frontier ? frRows(chaos) : CHAOS_LEVELS[chaos].rows));
   if (opts.frontier && !opts.cols) setCols(frCols(ROWS)); // Frontier: the bigger board (the UI passes both; tests may not)
   G = {
@@ -779,7 +779,7 @@ function newRun(opts) {
   coreAffSum(G.core);
   G.anchor = { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = 0;
   if (G.fr) { G.frReady = 0; G.frFly = null; G.frN = 0; G.frLinks = []; } // Frontier: lift-off from Wave 1, nothing in the air
-  G.probe = null; G.sites = []; G.siteT = PROBE.site.first; if (G.frV >= 5 && !T) prNew(); // 6.5: the probe (Frontier rules 5; not in Training)
+  G.probe = null; G.sites = []; G.siteT = PROBE.site.first; if (G.frV >= 5 && (!T || T.probe)) prNew(); // 6.5: the probe (Frontier rules 5; not in Training before 6.6's v2)
   setNodes([]); G.caches = []; G.pirates = []; G.cacheT = 20;
   G.credits = Math.round(320 + M.startCredits + (sw > 1 ? 70 * (sw - 1) * (1 + 0.045 * (sw - 1)) : 0));
   G.wave = sw - 1;
@@ -1599,7 +1599,7 @@ const holeZone = t => { const h = G && G.hole; if (!h || !t) return 0; const d2 
 // Presentation only: the sim never reads vision or G.fogEx to decide anything. G.fogEx (Uint8Array, one byte per tile, 1 =
 // explored) is updated every FOG.every ticks from the vision sources and the roads (always known), with no randomness, so a
 // replay rebuilds it exactly. Render.js keeps the live vision at half-tile resolution and draws the fog
-const fogOn = () => !!(G && G.fr && G.frV >= 5 && !G.tut);
+const fogOn = () => !!(G && G.fr && G.frV >= 5 && (!G.tut || G.tutS.fog)); // 6.6: Basic Training v2 has fog (lessons don't)
 function fogSources() { // flat [x, y, r, ...] in tiles: the core (gun range), towers (range + pad), the probe
   const out = [], cr = G.core ? Math.max(FOG.core, coreStats().range) : FOG.core;
   out.push(G.core.x, G.core.y, cr);
@@ -1674,7 +1674,8 @@ function prepareWave(w) {
   }
   if (G.wanted && !G.wanted.done && !G.wanted.spawned && w > G.wanted.w) planWanted(Math.ceil((w + 10) / 10) * 10); // its boss never showed: post it again
   assaultTick(w);
-  if (G.tut && G.tutS.vetAt === tutIdx(w) && w > G.wave && !G.lesson && !G.towers.some(t => t.rank > 0)) { const t = topTower(); if (t) grantVxp(t, Math.max(0, vetThreshold(1) - t.vxp)); } // Frontier Training: fewer kills, so the busiest tower is a Veteran by Wave 5 (the Ready step)
+  if (G.tut && G.tutS.vetAt === tutIdx(w) && w > G.wave && !G.lesson && !G.towers.some(t => t.rank > 0)) { const t = topTower() || (G.tut >= 2 ? G.towers.filter(canOvercharge).sort((a, b) => b.lvl - a.lvl || a.id - b.id)[0] : null); if (t) grantVxp(t, Math.max(0, vetThreshold(1) - t.vxp)); } // Frontier Training: fewer kills, so the busiest tower is a Veteran by Wave 5 (the Ready step; 6.6 v2: the core gun can do every kill, so any attack tower)
+  if (G.tut && w > G.wave && (G.tutS.sites || G.tutS.ent)) tutScript(tutIdx(w)); // 6.6 v2: scripted loot sites and the Entropy draw
   if (G.tut && G.tutS.grant && G.tutS.grant[tutIdx(w)] && w > G.wave) { const cr = G.tutS.grant[tutIdx(w)]; G.credits += cr; Hooks.toast('SUPPLY DROP', `+${cr} credits for Training`, '#ffb03a'); Hooks.fx('coin', { x: G.core.x, y: G.core.y - 0.6, v: cr }); }
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
@@ -1889,7 +1890,7 @@ function genWave(w, ev) {
 }
 // 5.8 Training: the run's rules (called once from newRun) and its scripted waves (from genWave)
 // a lesson's run is TUT with the lesson's own fields on top (LESSONS[i].run): its waves, credits, towers, presets
-function tutSpec(id, fr) { const L = id && LESSON_BY[id], B = fr ? Object.assign({}, TUT, TUT.fr) : TUT; return L && L.run ? Object.assign({}, B, { boss: null, charge: null, grant: null, abil: null, build: null, pre: null }, L.run, { id }) : B; } // fr: Frontier Training (TUT.fr: its board and wave script)
+function tutSpec(id, fr, v) { const L = id && LESSON_BY[id], B = fr ? Object.assign({}, TUT, TUT.fr, !id && v >= 2 ? TUT.b2 : null, { v: !id && v >= 2 ? 2 : 1 }) : Object.assign({}, TUT, { v: 1 }); return L && L.run ? Object.assign({}, B, { boss: null, charge: null, grant: null, abil: null, build: null, pre: null }, L.run, { id }) : B; } // fr: Frontier Training (TUT.fr: its board and wave script); v 2 (6.6): Basic Training's b2 script (lessons and tut 1 recordings: v 1)
 const tutIdx = w => w - (G.startWave || 1) + 1; // the script's wave number (1 = the first scripted wave)
 // the free tiles beside the road that cover the most of it, none touching another (deterministic, no G.r): lesson presets and the coach
 function tutSpots(n, avoid) {
@@ -1902,6 +1903,7 @@ function tutSpots(n, avoid) {
 function tutSetup(T) {
   G.credits = T.credits; G.core.hp = G.core.max = T.coreHp;
   G.stormT = G.cacheT = 1e9; G.nextMs = 1e12; // no storms, salvage or milestones: one idea at a time
+  if (T.probe) G.siteT = 1e9; // 6.6 v2: loot sites come only from the script (tutScript)
   if (T.boss && T.boss.mod) { // the script's Most Wanted (Basic Training's last wave, the Bounties lesson)
     const B = BOSSES.find(b => b.id === T.boss.id), M = WANTED_MODS.find(m => m.id === T.boss.mod), w = G.startWave - 1 + (T.boss.w || T.waves.length);
     G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w) };
@@ -1964,6 +1966,27 @@ function tutLeak(e) {
 function tutHold() {
   G.core.hp = 1;
   if (!G.tutHeld) { G.tutHeld = 1; Hooks.toast('CORE HELD', 'Training keeps your core alive. In a real run, this would end it', '#ff4d6a', true); }
+}
+// 6.6 Basic Training v2: as script wave k's previous wave ends, its loot sites appear and the Entropy gauge fills (no G.r here;
+// the draw itself uses G.r like any draw, with the rarities fixed so every player sees a Common, a Rare and an Exotic)
+function tutScript(k) {
+  const T = G.tutS;
+  for (const sp of T.sites || []) if (sp.w === k && !((G.tutSites | 0) & (1 << sp.n))) tutSite(sp);
+  if (T.ent && T.ent.w === k && !G.tutEnt && !G.anomOffers) { G.tutEnt = 1; G.entropy = 100; addEntropy(0); }
+}
+// a loot site at a set spot (tiles from the core, nudged off roads and towers), a set value, drone guards, no jackpot
+function tutSite(sp) {
+  const cx = G.map.core.x, cy = G.map.core.y, free = (x, y) => x >= 1 && y >= 1 && x < COLS - 1 && y < ROWS - 1 && G.map.tiles[tIdx(x, y)] === 0 && !G.towerAt[tIdx(x, y)];
+  let x = clamp(cx + sp.dx, 1, COLS - 2), y = clamp(cy + sp.dy, 1, ROWS - 2);
+  for (let d = 0; d < 6 && !free(x, y); d++) { const c = [[d, 0], [0, d], [-d, 0], [0, -d], [d, d], [-d, -d]].find(([a, b]) => free(x + a, y + b)); if (c) { x += c[0]; y += c[1]; } }
+  const s = { id: G.eid++, k: sp.k, x: x + 0.5, y: y + 0.5, t: 900, life: 900, val: sp.val, rich: 0, prog: 0, g: [], z: 0, jp: 0, tut: sp.n };
+  const D = PROBE.guard.drone, max = D.hp * Math.pow(prWS(), 1.2);
+  for (let j = 0; j < (sp.g || 0); j++) { const a = j * 6.283 / sp.g, px = s.x + Math.cos(a) * D.orbit, py = s.y + Math.sin(a) * D.orbit; s.g.push({ id: G.eid++, k: 'drone', hp: max, max, a, x: px, y: py, hx: px, hy: py, cd: 0.6, calm: 9, hitT: -9 }); }
+  G.sites.push(s); G.siteN = (G.siteN || 0) + 1; G.tutSites = (G.tutSites | 0) | (1 << sp.n);
+  if (G.fogEx) fogMark([s.x, s.y, 2.6]); // a known wreck: its patch shows explored (dim), so the wreck and its guard can be seen from home
+  rlog('site', { k: s.k, x, y, g: s.g.length, rich: 0, tut: sp.n });
+  Hooks.fx('site', { x: s.x, y: s.y, k: s.k });
+  return s;
 }
 // ===================== v4.0: STRAIN ASSAULTS (the swarm's move) =====================
 // Every few waves the swarm reads your defence (whose damage killed it these last waves), picks the genes that beat it,
@@ -2330,7 +2353,7 @@ function addEntropy(v) {
   // the gauge shows percent of the current threshold; each draw raises the threshold
   G.entropy = Math.min(100, G.entropy + 100 * v / entropyNeed() * (G.af.fill ? 2 : 1) * (G.mods.ks.singular ? 2 : 1) * Math.sqrt(G.CH.ev));
   if (G.entropy >= 100) {
-    if (G.frV >= 4) G.anomOffers = anomOffersGen(); // 6.4: generated cards plus classics
+    if (G.frV >= 4) G.anomOffers = anomOffersGen(G.tut && G.tutS.ent ? G.tutS.ent.r : null); // 6.4: generated cards plus classics (6.6 Training v2: set rarities)
     else {
       const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id));
       const offers = [];
@@ -2349,7 +2372,7 @@ function takeAnomaly(id) {
   if (!G.anomOffers.includes(id)) return false;
   const A = ANOMALIES.find(a => a.id === id);
   G.anoms.push(id); G.anomOffers = null; G.entropy = 0; rlog('anom', { id });
-  PROF.codex.anomalies[id] = (PROF.codex.anomalies[id] || 0) + 1;
+  if (!G.tut) PROF.codex.anomalies[id] = (PROF.codex.anomalies[id] || 0) + 1; // (6.6: Training never touches the profile)
   if (A.special === 'legendAll') for (const t of G.towers) if (towerPool(t.type) !== 'eco') t.affixes.push(rollAffix(t, 3));
   if (A.af && A.af.flux) G.flux = { el: pick(G.r, ELS), t: 20 };
   recomputeAll();
@@ -2422,8 +2445,8 @@ function anomWeight(P, B) {
   return w;
 }
 // one generated card, or null when the caps leave no fair trade. used: boon and drawback keys and names already in this offer
-function anomGenCard(r, n, slot, B, T, used) {
-  const ri = wpickI(r, ANOM_RARITY, x => x.w * (x.id === 'common' ? 1 : 1 + 0.1 * Math.min(n, 6)));
+function anomGenCard(r, n, slot, B, T, used, ri0) {
+  const ri = ri0 !== undefined ? ri0 : wpickI(r, ANOM_RARITY, x => x.w * (x.id === 'common' ? 1 : 1 + 0.1 * Math.min(n, 6)));
   const bud = ANOM_RARITY[ri].b * (1 + ANOM_GEN.grow * Math.min(n, ANOM_GEN.growN) + Math.min(G.wave, ANOM_GEN.waveMax) / ANOM_GEN.waveDiv);
   const up = [], dn = [], keys = new Set(), grps = new Set();
   const free = P => !keys.has(P.k) && !(P.grp && grps.has(P.grp)) && anomSize(P, P.sp ? P.p : P.lo * P.p, anomRoom(P, T)) > 0;
@@ -2460,15 +2483,15 @@ function anomGenCard(r, n, slot, B, T, used) {
 }
 // a full draw at frV 4: 3 slots, each a classic (ANOM_GEN.classic of the time, never repeated) or a generated card. Cards in one
 // offer never share a boon key or a drawback key
-function anomOffersGen() {
+function anomOffersGen(rar) { // rar (6.6 Training v2 only): the rarity of each slot, and no classics
   const n = anomCount() + G.stabilized, B = anomBuild(), T = anomTotals();
   const used = { up: new Set(), dn: new Set(), names: new Set((G.ganoms || []).map(a => a.name)) };
   const pool = ANOMALIES.filter(a => !G.anoms.includes(a.id)), offers = [];
   const classic = () => offers.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0].id);
   for (let s = 0; s < 3; s++) {
-    if (pool.length && G.r() < ANOM_GEN.classic) { classic(); continue; }
+    if (!rar && pool.length && G.r() < ANOM_GEN.classic) { classic(); continue; }
     let c = null;
-    for (let i = 0; i < 4 && !c; i++) c = anomGenCard(G.r, n, s, B, T, used);
+    for (let i = 0; i < 4 && !c; i++) c = anomGenCard(G.r, n, s, B, T, used, rar ? rar[s] : undefined);
     if (!c) { if (pool.length) classic(); continue; }
     for (const [id] of c.up) used.up.add(ANOM_PART[id].k);
     for (const [id] of c.dn) used.dn.add(ANOM_PART[id].k);
@@ -2480,7 +2503,7 @@ function takeGenAnomaly(o) {
   const A = JSON.parse(JSON.stringify(o));
   G.ganoms.push(A); G.anomOffers = null; G.entropy = 0;
   rlog('anom', { id: A.id, g: { name: A.name, r: A.r, up: A.up, dn: A.dn } });
-  const C = PROF.codex.gen || (PROF.codex.gen = { n: 0, r: [0, 0, 0], parts: {} }); // codex: counts per rarity and per part, not per name
+  const C = G.tut ? { r: [], parts: {} } : PROF.codex.gen || (PROF.codex.gen = { n: 0, r: [0, 0, 0], parts: {} }); // codex: counts per rarity and per part, not per name (6.6: not from Training)
   C.n = (C.n || 0) + 1; C.r[A.r] = (C.r[A.r] || 0) + 1; for (const [id] of A.up.concat(A.dn)) C.parts[id] = (C.parts[id] || 0) + 1;
   recomputeAll();
   Hooks.log(`Anomaly: ${A.name}`, ANOM_RARITY[A.r].col);
@@ -4612,6 +4635,7 @@ function prLoot(cr, ent, ch, tok, x, y) {
 }
 function siteDone(s) {
   const P = G.probe; if (P.task === s.id) P.task = 0;
+  if (s.tut) G.tutLoot = (G.tutLoot | 0) | (1 << s.tut); // 6.6 Training v2: the coach's checklist
   if (s.g.length) { s.done = 1; s.t = Math.min(s.t, 30); } else G.sites = G.sites.filter(o => o !== s); // the loot is gone; its living guards stay until they calm down
   const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 }); st.sites++;
   let ch = 0, tok = 0;
