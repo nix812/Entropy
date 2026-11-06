@@ -21,8 +21,9 @@ const SFX = (() => {
   // v5.5.4 iOS: an audio-route change (an AirPod in or out, a call, Siri) can leave the context 'interrupted', not 'suspended'.
   // Anything but 'running' gets a resume: on every tap, when the page comes back, and shortly after the state changes.
   function wake() { if (!ctx || offline || ctx.state === 'running' || ctx.state === 'closed') return; try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
-  let lastErr = null, errN = 0;
-  function noteErr(e, where) { errN++; lastErr = { msg: String((e && e.message) || e).slice(0, 120), where, at: Date.now() }; try { console.error('[Entropy audio]', where, e); } catch (x) {} }
+  let lastErr = null, errN = 0, onEv = null, ana = null, anaBuf = null;
+  const emit = (k, d) => { try { onEv && onEv(k, d); } catch (x) {} }; // 6.5.5: sound health into the run log (UI side, never the sim)
+  function noteErr(e, where) { errN++; lastErr = { msg: String((e && e.message) || e).slice(0, 120), where, at: Date.now() }; try { console.error('[Entropy audio]', where, e); } catch (x) {} emit('err', { where, msg: lastErr.msg }); }
   const revCache = {};
   const last = {};
   let recent = [];
@@ -40,8 +41,9 @@ const SFX = (() => {
     sfxBus = ctx.createGain(); sfxBus.gain.value = sfxVol;
     musBus = ctx.createGain(); musBus.gain.value = musVol;
     sfxBus.connect(limiter); limiter.connect(master); buildOut(master, ctx.destination);
+    try { ana = ctx.createAnalyser(); ana.fftSize = 1024; anaBuf = new Float32Array(ana.fftSize); const z = ctx.createGain(); z.gain.value = 0; master.connect(ana); ana.connect(z); z.connect(ctx.destination); } catch (e) { ana = null; } // 6.5.5: an output meter (read every 2 s) to catch 'running but silent'
     makeNoise(); buildBuses(); hookMusic();
-    ctx.onstatechange = () => { if (ctx.state !== 'running' && !document.hidden) setTimeout(wake, 300); };
+    ctx.onstatechange = () => { emit('state', { to: ctx.state, hidden: document.hidden ? 1 : 0 }); if (ctx.state !== 'running' && !document.hidden) setTimeout(wake, 300); };
     // iOS: play one silent buffer inside the unlocking gesture
     try { const sb = ctx.createBufferSource(); sb.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); sb.connect(ctx.destination); sb.start(0); } catch (e) {}
     try { Music.start(); } catch (e) { noteErr(e, 'start'); }
@@ -1946,6 +1948,7 @@ const SFX = (() => {
       get canBack() { return hist.length >= 2; },
       get repeat() { return rep; }, set repeat(v) { rep = !!v; },
       get paused() { return paused; },
+      isRunning() { return running && !!timer; }, // 6.5.5 sound health
       setPaused(v) { paused = !!v; if (pauseG && ctx) pauseG.gain.setTargetAtTime(paused || held ? 0 : 1, ctx.currentTime, 0.06); },
       get held() { return held; },
       setHold(v) { held = !!v; if (pauseG && ctx) pauseG.gain.setTargetAtTime(paused || held ? 0 : 1, ctx.currentTime, 0.04); if (!held && ctx) nextT = Math.max(nextT, ctx.currentTime + 0.05); },
@@ -1995,7 +1998,13 @@ const SFX = (() => {
     return API;
   })();
 
-  return { stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  function health() {
+    if (!ctx) return { st: 'none' };
+    let rms = -1; if (ana && anaBuf) { try { ana.getFloatTimeDomainData(anaBuf); let s = 0; for (let i = 0; i < anaBuf.length; i++) s += anaBuf[i] * anaBuf[i]; rms = Math.sqrt(s / anaBuf.length); } catch (e) { rms = -2; } }
+    const M = Music;
+    return { st: ctx.state, ct: ctx.currentTime, rms, played, inFlight, errN, sfxV: sfxVol, musV: musVol, mRun: M.isRunning ? (M.isRunning() ? 1 : 0) : -1, mPause: M.paused ? 1 : 0, mHeld: M.held ? 1 : 0, sr: ctx.sampleRate };
+  }
+  return { health, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------

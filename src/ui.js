@@ -4195,6 +4195,37 @@ function talentsToast(kind) {
   }, 1000);
   // hangar backdrop (v5.5: HangarFX in render.js)
   const bg = $('#bgfx'); const drawBg = dt => HangarFX.draw(bg, dt);
+  // 6.5.5 (Nic: "the sound engine appeared to stop working" late in a long run): a sound watchdog every 2 s writes into the run log.
+  // UI side only (rlog is not in the run hash). Logged: the device once, every audio state change and error as it happens, page
+  // hide/show, a clock that stops ('audStall'), output that goes silent while music is meant to play ('audSilent', then 'audBack'),
+  // wake attempts until sound returns, and a short health line every 5 waves ('aud').
+  const AudWatch = (() => {
+    let lastCt = -1, lastW = 0, stall = 0, silN = 0, silAt = 0, wakeN = 0, wakeAt = 0, runG = null, lastWave = -1, lastPlayed = 0;
+    const on = () => G && G.rlog && !G.over && !G.watch;
+    const r3 = v => Math.round(v * 1000) / 1000;
+    SFX.onEvent && SFX.onEvent((k, d) => { if (on()) rlog('aud_' + k, d); });
+    document.addEventListener('visibilitychange', () => { if (on()) rlog('vis', { hidden: document.hidden ? 1 : 0, st: SFX.state }); lastCt = -1; });
+    function check() {
+      if (!SFX.health || document.hidden) return;
+      const h = SFX.health(); if (h.st === 'none') return;
+      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st }); }
+      if (!on()) return;
+      const w = performance.now() / 1000;
+      if (lastCt >= 0) {
+        const dw = w - lastW, dc = h.ct - lastCt;
+        if (h.st === 'running' && dw > 1.5 && dc < 0.1 * dw) { if (!stall) rlog('audStall', { dw: r3(dw), dc: r3(dc) }); stall++; } // the clock stopped though the state says running
+        else if (stall) { rlog('audStallEnd', { n: stall }); stall = 0; }
+      }
+      lastCt = h.ct; lastW = w;
+      if (h.st !== 'running') { if (!wakeN) wakeAt = w; wakeN++; } // SFX.wake() runs every 2 s in the loop below; count the tries
+      else if (wakeN) { rlog('audWoke', { tries: wakeN, secs: Math.round(w - wakeAt) }); wakeN = 0; }
+      const expect = h.st === 'running' && h.musV > 0.01 && h.mRun === 1 && !h.mPause && !h.mHeld;
+      if (expect && h.rms >= 0 && h.rms < 1e-4) { if (++silN === 3) { silAt = w; rlog('audSilent', { rms: h.rms, musV: r3(h.musV), sfxV: r3(h.sfxV), played: h.played, inF: h.inFlight, err: h.errN, last: SFX.lastError ? SFX.lastError.where + ': ' + SFX.lastError.msg : '' }); } }
+      else { if (silN >= 3) rlog('audBack', { secs: Math.round(w - silAt) + 6 }); silN = 0; }
+      if (G.wave !== lastWave && G.wave % 5 === 0) { lastWave = G.wave; rlog('aud', { st: h.st, rms: r3(Math.max(h.rms, 0)), sfx: h.played - lastPlayed, inF: h.inFlight, err: h.errN, mus: h.mRun, p: h.mPause, hd: h.mHeld }); lastPlayed = h.played; }
+    }
+    return { check };
+  })();
   let last = performance.now(), acc = 0, wakeT = 2, veilOdd = false; const modalEl = $('#modal');
   const STEP = 1 / 30;
   function frame(ts) {
@@ -4218,7 +4249,7 @@ function talentsToast(kind) {
       else Render.draw(halted ? 0 : dt);
     } else { if (UI.screen === 'hangar') { drawBg(dt); TitleFX.draw(dt); } ART.idle(4); } // menus: pre-render unit art in the background
     if (Tree.isOpen) Tree.draw();
-    wakeT -= dt; if (wakeT <= 0) { wakeT = 2; if (!document.hidden) SFX.wake(); } // iOS can leave the sound 'interrupted'
+    wakeT -= dt; if (wakeT <= 0) { wakeT = 2; if (!document.hidden) SFX.wake(); try { AudWatch.check(); } catch (e) {} } // iOS can leave the sound 'interrupted'; 6.5.5 the sound watchdog
     UI.tick(dt);
   }
   setTimeout(() => UNITS.warmEnemies(), 1500);
