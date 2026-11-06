@@ -74,7 +74,7 @@ def run(pg, W, H):
         if stuck > 50: check(False, f'{tg}: stuck on {c["step"]}'); break
         if c['ok']: pg.click('#coach .cok'); pg.wait_for_timeout(220); continue
         if c['ring'] and (c['held'] or 'call' in (c['step'] or '')):
-            if c['step'] in TAPS and pg.evaluate(f"() => !!document.querySelector('{TAPS[c['step']]}')"): pg.click(TAPS[c['step']])
+            if c['step'] in TAPS and pg.evaluate(f"() => !!document.querySelector('{TAPS[c['step']]}')"): pg.evaluate(f"() => document.querySelector('{TAPS[c['step']]}').click()")  # (6.6: the button itself: a tap on a glossary word inside it opens the tooltip instead)
             else: r = c['ring']; pg.touchscreen.tap(r[0] + r[2] / 2, r[1] + r[3] / 2)
             pg.wait_for_timeout(380); continue
         pg.evaluate('() => { if (G && !G.over) G.speed = 6; }'); pg.wait_for_timeout(130)

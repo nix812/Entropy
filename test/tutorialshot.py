@@ -64,7 +64,7 @@ def drive(pg, tag, prefix, finished, limit=420):
             print('  state:', pg.evaluate("() => JSON.stringify({ m: UI.modalOpen, w: G && G.wave, inputs: G && G.inputs.slice(-4), ready: G && G.towers.filter(t => t.pending > 0 || t.ascPend > 0 || t.grow > 0).map(t => [t.type, t.x, t.y, t.pending, t.ascPend, t.grow, t.mvT]), vp: [...document.querySelectorAll('#modal [data-act=vpick]')].map(b => b.dataset.v) })"), flush=True); break
         if c['ok']: pg.click('#coach .cok'); pg.wait_for_timeout(220); continue
         if c['ring'] and (c['held'] or c['step'] in ('resume',) or 'call' in c['step'] or c['step'].startswith('c') and c['step'][1:].isdigit()):
-            if c['step'] in TAPS and pg.evaluate(f"() => !!document.querySelector('{TAPS[c['step']]}')"): pg.click(TAPS[c['step']])
+            if c['step'] in TAPS and pg.evaluate(f"() => !!document.querySelector('{TAPS[c['step']]}')"): pg.evaluate(f"() => document.querySelector('{TAPS[c['step']]}').click()")  # (6.6: the button itself: a tap on a glossary word inside it opens the tooltip instead)
             else: r = c['ring']; pg.touchscreen.tap(r[0] + r[2] / 2, r[1] + r[3] / 2)
             pg.wait_for_timeout(380); continue
         pg.evaluate('() => { if (G && !G.over) G.speed = 6; }'); pg.wait_for_timeout(150)

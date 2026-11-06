@@ -121,8 +121,8 @@ the thing and the card moves on. Read-only notes are coach lines while the game 
 | 205 / 205 | 4 | Move | 4 | 0 | move a tower into link reach (10% fee, cheaper than selling) |
 | 240 / 240 | 4 end | Veterans | 2 | 1 | the Ready button, pick a mutation |
 | 252 / 252 | 5 | Strike | 2 | 1 | Strike a tight pack, aim; the cooldown bar as a line |
-| 265 / 265 | 5 | **Probe** | 3 | 2 | tap Probe (the command bar shows), tap the wreck to send it, it salvages 2.5 s into its hold (line), Recall, banked at the core (+160, line: it repairs the core; a lost probe drops its cargo) |
-| 298 / 298 | 6 | **Fog of war** | 3 | 1 | a guarded wreck far out (one red drone): send the probe. On the way: Fog of war (black = unexplored; on dim ground enemies are hidden); Fair warnings as a line (bosses, roads, edge arrows, Threat Board). Get out: Recall (the drone shoots while it stays; Upgrades › Lance shoots back) |
+| 265 / 265 | 5 | **Probe** | 3 | 2 | tap Probe (selected: every map tap sends it; Probe again lets it go; Home ↩ and Upgrades ⬆ show under it), tap the wreck to send it, it salvages 2.5 s into its hold (line), Home, banked at the core (+160, line: it repairs the core; a lost probe drops its cargo) |
+| 298 / 298 | 6 | **Fog of war** | 3 | 1 | a guarded wreck far out (one red drone): send the probe. On the way: Fog of war (black = unexplored; on dim ground enemies are hidden); Fair warnings as a line (bosses, roads, edge arrows, Threat Board). Get out: Home (the drone shoots while it stays; Upgrades ⬆ buys a Lance that shoots back) |
 | 341 / 341 | 7 | **Entropy** | 1 | 1 | the gauge is full: tap it. In Training the draw's header line teaches boon (green), cost (red) and rarity (frame: Common, Rare, Exotic); Stabilize explains itself. Then a line: it lasts the run, the next gauge is 30% longer, Pause lists them |
 | 363 / 363 | 7 | Specialty | 3 | 0 | the strongest tower to LV 3, pick a spec |
 | 385 / 386 | 7 | Most Wanted | 0 | 1 | the bounty chip: a boss on Wave 8 |
@@ -234,4 +234,11 @@ cards64, tower64, probe65, sky65, frontier fixtures all match). No `FR_VER` bump
   replays exactly, and the profile (runs, XP, best wave, kills, codex) is untouched.
 - Changed: `test/tutorial.js` also plays and replays a v2 run (the bot sends the probe and takes a generated card);
   `test/tutcheck.py` and `test/tutorialshot.py` know the new steps and checklist (`credits` replaces `upWhy` for the open
-  checklist screenshot; `prLost` is optional); tutorialshot prints the state when the coach stalls.
+  checklist screenshot; `prLost` is optional); tutorialshot prints the state when the coach stalls. Both bots now pick a
+  card at the Training draw (no coach card sits on it).
+
+### Merged 6.5.3 (compact probe controls)
+`release` (6.5.3) is merged into tut66. The probe lesson names the new controls: Home (↩) and Upgrades (⬆) under Probe,
+Probe again to let it go. The fading hint ("Tap the map to send it.") always shows in Training, and Training selections
+do not count toward the 5-selection limit (`PROF.settings.prHints`), so a player who trains first still gets 5 hints in
+real runs. The coach line says the same thing, so nothing depends on the hint.
