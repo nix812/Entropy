@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.5.2';
+const VERSION = '6.5.3';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -460,15 +460,15 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.5.2', title: 'Last Gradient 6.5.2 · Field Notes', items: [
-  ['Two guns when docked', 'The core\'s own gun now keeps firing when it docks. The docked tower is a second gun at ×2 damage and +1 range. Battery upgrades power the core\'s gun.'],
+const WHATS_NEW = { ver: '6.5.3', title: 'Last Gradient 6.5.3 · Field Notes', items: [
+  ['Cleaner probe controls', 'Selecting the probe now shows 2 small buttons under Probe: Home and Upgrades. Tap Probe again to let it go.'],
+  ['Short hints', 'One short line says what the next tap does, then fades. A loot site shows its guards and credits.'],
+  ['Upgrades panel', 'A tap on the map now closes the probe Upgrades panel.'],
+  ['Two guns when docked', 'The core\'s own gun keeps firing when it docks. The docked tower is a second gun at ×2 damage and +1 range.'],
   ['Wormholes', 'The no-build ring around a wormhole is now 4 tiles, down from 6.'],
-  ['Probe controls', 'Tap Probe, the probe or a site to select it. A small bar shows what the next tap does. Every map tap sends the probe. Upgrades opens the full panel.'],
   ['Easier to tap', 'Top bar items, panel tabs, chips and the pause menu have bigger tap areas.'],
   ['Training checklist', 'The checklist follows the lessons in order and ticks each step as you do it.'],
-  ['Tape & Vinyl', 'The Tape & Vinyl effect is now off by default. Turn it up in Studio › Shape.'],
-  ['Boss music switch', 'Settings › Sound › Boss music turns the boss themes off. Your own song keeps playing.'],
-  ['Updates', 'The app now loads a new version reliably when one comes out.'],
+  ['Sound', 'Tape & Vinyl is off by default. Settings › Sound › Boss music turns the boss themes off.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids

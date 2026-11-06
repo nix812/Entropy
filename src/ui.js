@@ -1900,6 +1900,7 @@ const UI = (() => {
   // a tap with the probe selected sends it; otherwise a tap on the probe or a site selects it. True: the tap is used
   function probeTap(p) {
     const P = G.probe, onP = P.alive && Math.hypot(p.x - P.x, p.y - (P.y - 0.33)) < (P.home ? 0.45 : 0.8), inPanel = !!(panel && panel.kind === 'probe');
+    if (inPanel) { SFX.play('ui'); closePanel(); prBarUI(); return true; } // 6.5.3 (Nic): a map tap closes the Upgrades panel
     if (prCmd || inPanel) {
       // a tap on the selected probe lets it go; near the core a tap means recall (a returning probe flies right beside it)
       if (onP && (P.home || Math.hypot(p.x - G.core.x, p.y - G.core.y) > 1.1)) { if (!inPanel) { SFX.play('ui'); probeEnd(); } return true; }
@@ -1917,12 +1918,15 @@ const UI = (() => {
     if (best) { SFX.play('ui'); selectProbe(best.id); return true; }
     return false;
   }
-  // the bar's lines: what the next tap does, then the probe's state (or the site in focus, before it is sent there)
+  // 6.5.3 (Nic): no status bar. The Probe button shows health; the hint is one short line that fades.
+  // A site in focus shows its loot (always). "Tap the map to send it" shows for the first 5 selections only.
+  let prHintKey = '', prHintT = 0;
   function prBarTxt() {
-    const P = G.probe, s = prCmd.site ? siteById(prCmd.site) : null, hp = `${Math.round(100 * P.hp / P.max)}%`, cr = P.cargo.cr >= 1 ? ` · ${fmt(Math.round(P.cargo.cr))} cargo` : '', jp = P.cargo.jp ? ' ★' : '';
+    const P = G.probe, s = prCmd.site ? siteById(prCmd.site) : null;
     if (s && !s.done && P.task !== s.id) { const n = s.g.length, v = Math.round((s.k === 'rock' ? s.val * (3 - (s.chunks || 0)) / 3 : s.k === 'cloud' ? s.val * (1 - s.prog) : s.val) * prStats().assay);
-      return ['Tap the site again to send', `${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]} · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'unguarded'} · ${fmt(v)} credits · ${Math.ceil(s.t)} s`]; }
-    return ['Tap the map to send it', `${prStatus()} · ${hp}${cr}${jp}`];
+      return [`site${s.id}`, `${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]} · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'no guards'} · ${fmt(v)} cr. Tap it again to send.`]; }
+    const st = PROF.settings; if ((st.prHints || 0) >= 5) return ['', ''];
+    return ['map', 'Tap the map to send it.'];
   }
   function prBarUI() {
     const bar = $('#prbar'); if (!bar) return;
@@ -1931,15 +1935,19 @@ const UI = (() => {
     const on = !!prCmd; document.body.classList.toggle('prcmd', on);
     if (bar.hidden === on) bar.hidden = !on;
     const pb = $('#bProbe'); if (pb) { pb.classList.toggle('sel', on); pb.setAttribute('aria-pressed', on); }
-    if (!on) return;
-    const [a, b] = prBarTxt(), A = bar.querySelector('.prt b'), B = bar.querySelector('.prt span'), h = bar.querySelector('[data-pr=home]'), hd = !!(P.home || P.ret);
-    if (A.textContent !== a) A.textContent = a; if (B.textContent !== b) B.textContent = b; if (h.disabled !== hd) h.disabled = hd; // patched in place: a re-render under a finger loses the tap
+    if (!on) { prHintKey = ''; return; }
+    const [k, t] = prBarTxt(), box = bar.querySelector('.prt'), B = box.querySelector('span'), h = bar.querySelector('[data-pr=home]'), hd = !!(P.home || P.ret);
+    if (h.disabled !== hd) h.disabled = hd; // patched in place: a re-render under a finger loses the tap
+    const now = performance.now();
+    if (k !== prHintKey) { prHintKey = k; prHintT = now; if (k === 'map') { PROF.settings.prHints = (PROF.settings.prHints || 0) + 1; Save.save(); } }
+    const show = !!k && now - prHintT < (k === 'map' ? 3000 : 4500);
+    if (box.hidden !== !k) box.hidden = !k; if (B.textContent !== t) B.textContent = t;
+    box.classList.toggle('out', !show);
   }
   function prBarAction(k) {
     if (!prCmd || !G || !G.probe) return;
     if (k === 'home') { if (!window.act('prHome')) SFX.play('deny'); else SFX.play('ui'); }
     else if (k === 'ups') { SFX.play('ui'); openProbe(prCmd.site && siteById(prCmd.site) ? prCmd.site : 0); }
-    else if (k === 'x') { SFX.play('ui'); probeEnd(); }
     prBarUI(); updateHud();
   }
   function probeAction(act, b) {
