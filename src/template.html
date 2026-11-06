@@ -575,20 +575,34 @@ body.panel-l #dps { display: none; }
 .rdybtn.pulse { animation: rdyp 0.5s steps(3) 3; } @keyframes rdyp { 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 14px rgba(255, 216, 74, 0.8); transform: scale(1.06); } }
 body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves the ticker and the music deck: Ready waits until it closes */
 /* Frontier: Lift Off tops the right column (Ready moves down one slot); it waits while a side panel is open, like Ready */
-.liftbtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 40px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
+.liftbtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 44px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
   background: rgba(6, 34, 26, 0.92); box-shadow: inset 0 0 0 2px var(--core); color: var(--core); font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
 .liftbtn.cool { color: #6f9c8c; box-shadow: inset 0 0 0 1px #3d6a5a; background: rgba(12, 22, 20, 0.88); }
 .liftbtn.fly { color: #e6fff6; animation: pulse 0.8s infinite; }
 .liftbtn.go:not(.cool):not(.fly) { animation: liftp 1.6s steps(4) infinite; } @keyframes liftp { 50% { box-shadow: inset 0 0 0 2px #e6fff6, 0 0 10px rgba(89, 240, 180, 0.6); } }
-body.fr .rdybtn { top: 52px; }
+body.fr .rdybtn { top: 54px; }
 body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
 /* 6.5 the probe: its button sits under Lift Off (Ready moves down one more slot); it hides with a side panel like Lift Off */
-.probebtn { position: absolute; right: 6px; top: 52px; z-index: 4; height: 34px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; border: 0; cursor: pointer;
+.probebtn { position: absolute; right: 6px; top: 54px; z-index: 4; height: 44px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; border: 0; cursor: pointer;
   background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
 .probebtn.away { color: #e6f4ff; } .probebtn.hit { color: #ff8a9c; box-shadow: inset 0 0 0 2px #ff5a7a; animation: pulse 0.6s infinite; }
 .probebtn.dead { color: #ff8a9c; box-shadow: inset 0 0 0 1px #8a3040; background: rgba(30, 10, 16, 0.9); }
-body.prb.fr .rdybtn { top: 92px; }
+body.prb.fr .rdybtn { top: 102px; }
 body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
+/* 6.5.2 probe command mode: the Probe button reads as pressed, and a bar under it (in Ready's slot; Ready waits, as it does for a
+   side panel) says what the next map tap does, shows the probe's state, and holds Recall, Upgrades (the full panel) and ✕ */
+.probebtn.sel { background: #9fd8ff; color: #08162a; box-shadow: inset 0 0 0 2px #e6f4ff; animation: none; }
+#prbar { position: absolute; right: 6px; top: 102px; z-index: 4; display: flex; gap: 4px; height: 44px; max-width: calc(100% - 12px); }
+#prbar[hidden] { display: none; }
+#prbar .prt { flex: 0 1 auto; min-width: 0; max-width: 270px; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 0 10px; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 1px #3d6a8a, inset 3px 0 0 #9fd8ff; }
+#prbar .prt b { font-family: var(--f-pix); font-weight: 400; font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; color: #9fd8ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#prbar .prt span { font-size: 15px; line-height: 1; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#prbar button { flex: 0 0 auto; min-width: 44px; padding: 0 10px; border: 0; cursor: pointer; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; }
+#prbar button:disabled { color: #4f6a80; box-shadow: inset 0 0 0 1px #3d5a70; cursor: default; }
+#prbar button:active:not(:disabled) { filter: brightness(1.3); }
+#prbar .prx { font-family: inherit; font-size: 20px; padding: 0; }
+body.prcmd .rdybtn, body.panel-r #prbar, body.panel-l #prbar { display: none; }
+body.prcmd #zoneBan { top: 64%; }
 .sts.prsite { box-shadow: inset 3px 0 0 #ff6ad5; line-height: 1.25; padding-left: 10px; } .sts.prsite b { color: #ff6ad5; }
 .note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
 .sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
@@ -1233,6 +1247,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
       <button class="probebtn" id="bProbe" hidden aria-label="Select the probe"><span>Probe</span></button>
+      <div id="prbar" hidden role="toolbar" aria-label="Probe commands"><div class="prt"><b></b><span></span></div><button data-pr="home">Recall</button><button data-pr="ups">Upgrades</button><button class="prx" data-pr="x" aria-label="Done">✕</button></div>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>

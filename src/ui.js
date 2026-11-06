@@ -1469,7 +1469,7 @@ const UI = (() => {
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
-    frEnd(); Render.prSel = false;
+    frEnd(); Render.prSel = !!prCmd; // 6.5.2: with the probe selected, closing its panel returns to the bar
     document.body.classList.remove('panel-l', 'panel-r');
   }
   function openPanel(p) {
@@ -1821,8 +1821,13 @@ const UI = (() => {
   }
   function frEnd() { if (!frSel) return; frPause(false); frSel = null; Render.frSel = null; }
   // ---------- 6.5 the probe (sim: "6.5 the probe" in sim.js; drawing: render.js) ----------
-  // Tap the Probe button, the probe or a loot site: the probe panel opens and the probe is selected. While it is open, a tap on
-  // the map sends the probe there (ACTS prGo), a tap on a site sends it to work that site, a tap on the core recalls it.
+  // 6.5.2 (Nic: "the fly out is intrusive when trying to use/move the probe"): command mode. Tap the Probe button, the probe or a
+  // loot site: the probe is selected and a small bar (#prbar: what the next tap does, its status, Recall, Upgrades, ✕) sits under
+  // the Probe button; the side panel stays shut. While selected, every map tap sends the probe there (ACTS prGo), a tap on a site
+  // sends it to work that site, a tap on the core recalls it. A tap on a site when nothing is selected shows that site in the bar
+  // (a second tap sends). Upgrades opens the full panel (upgrades, cargo, the site); closing it returns to the bar. Leave with ✕,
+  // the Probe button, a tap on the probe or Escape. A lost probe has no bar: the Probe button opens the panel (rebuild).
+  let prCmd = null; // { site, g } while the probe is selected
   const PR_KIND = { wreck: 'Wreckage', cloud: 'Gas cloud', rock: 'Asteroid', lost: 'Probe wreck' };
   const PR_HOW = { wreck: 'Quick grab: 2.5 s on top of it', cloud: 'Harvest inside it: 12 s. Static costs 1.5% hull per second', rock: 'Mine it: 3 chunks. It drifts', lost: 'Your cargo. Quick grab' };
   function prStatus() {
@@ -1864,6 +1869,7 @@ const UI = (() => {
       : `<div class="row2"><button class="btn" data-act="prhome" ${P.home || P.ret ? 'disabled' : ''}>Recall</button><button class="btn" data-act="close">Done</button></div>`}</div>`;
     return `${head}${site}${stats}${how}<div class="lbl">Upgrades</div><div class="mktlist">${ups}</div>${foot}`;
   }
+  // the full panel: upgrades, cargo, the site in focus, rebuild. With the probe selected, closing it returns to the bar
   function openProbe(siteId) {
     if (!G || !G.probe || G.over || G.watch) return;
     const P = G.probe, s = siteId ? siteById(siteId) : null, at = s || P;
@@ -1871,21 +1877,57 @@ const UI = (() => {
     openPanel({ kind: 'probe', x: clamp(Math.floor(at.x), 0, COLS - 1), y: clamp(Math.floor(at.y), 0, ROWS - 1), site: s ? s.id : 0 });
     Render.prSel = true;
   }
+  // command mode on (a live probe) or, for a lost probe, the panel with the rebuild
+  function selectProbe(siteId) {
+    if (!G || !G.probe || G.over || G.watch) return;
+    if (!G.probe.alive) { prCmd = null; return openProbe(); }
+    if (panel) closePanel();
+    prCmd = { site: siteId || 0, g: G }; Render.prSel = true; prBarUI();
+  }
+  function probeEnd() { if (!prCmd) return; prCmd = null; if (!(panel && panel.kind === 'probe')) Render.prSel = false; prBarUI(); }
   // a tap with the probe selected sends it; otherwise a tap on the probe or a site selects it. True: the tap is used
   function probeTap(p) {
-    const P = G.probe, onP = P.alive && Math.hypot(p.x - P.x, p.y - (P.y - 0.33)) < (P.home ? 0.45 : 0.8);
-    if (panel && panel.kind === 'probe') {
-      if (onP) return true;
-      if (!P.alive) { closePanel(); return false; }
+    const P = G.probe, onP = P.alive && Math.hypot(p.x - P.x, p.y - (P.y - 0.33)) < (P.home ? 0.45 : 0.8), inPanel = !!(panel && panel.kind === 'probe');
+    if (prCmd || inPanel) {
+      if (onP) { if (!inPanel) { SFX.play('ui'); probeEnd(); } return true; } // a tap on the selected probe lets it go
+      if (!P.alive) { closePanel(); probeEnd(); return false; }
       const x = Math.round(p.x * 10) / 10, y = Math.round(p.y * 10) / 10;
       if (!window.act('prGo', x, y)) { SFX.play('deny'); return true; }
-      SFX.play('ui'); panel.site = P.task || 0; renderPanel(); return true;
+      SFX.play('ui');
+      if (prCmd) prCmd.site = P.task || 0;
+      if (inPanel) { panel.site = P.task || 0; renderPanel(); }
+      prBarUI(); return true;
     }
-    if (onP) { SFX.play('ui'); openProbe(); return true; }
+    if (onP) { SFX.play('ui'); selectProbe(); return true; }
     let best = null, bd = 1e9;
     for (const s of G.sites || []) { if (s.done) continue; const d = Math.hypot(s.x - p.x, s.y - p.y); if (d <= (s.k === 'cloud' ? PROBE.cloudR : 1.2) && d < bd) { bd = d; best = s; } }
-    if (best) { SFX.play('ui'); openProbe(best.id); return true; }
+    if (best) { SFX.play('ui'); selectProbe(best.id); return true; }
     return false;
+  }
+  // the bar's lines: what the next tap does, then the probe's state (or the site in focus, before it is sent there)
+  function prBarTxt() {
+    const P = G.probe, s = prCmd.site ? siteById(prCmd.site) : null, hp = `${Math.round(100 * P.hp / P.max)}%`, cr = P.cargo.cr >= 1 ? ` · ${fmt(Math.round(P.cargo.cr))} cargo` : '', jp = P.cargo.jp ? ' ★' : '';
+    if (s && !s.done && P.task !== s.id) { const n = s.g.length, v = Math.round((s.k === 'rock' ? s.val * (3 - (s.chunks || 0)) / 3 : s.k === 'cloud' ? s.val * (1 - s.prog) : s.val) * prStats().assay);
+      return ['Tap the site again to send', `${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]} · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'unguarded'} · ${fmt(v)} credits · ${Math.ceil(s.t)} s`]; }
+    return ['Tap the map to send it', `${prStatus()} · ${hp}${cr}${jp}`];
+  }
+  function prBarUI() {
+    const bar = $('#prbar'); if (!bar) return;
+    const P = G && G.probe;
+    if (prCmd && (prCmd.g !== G || !P || !P.alive || G.over || G.watch || frSel || G.reloc || G.placing || (panel && panel.kind !== 'probe'))) { prCmd = null; if (!(panel && panel.kind === 'probe')) Render.prSel = false; }
+    const on = !!prCmd; document.body.classList.toggle('prcmd', on);
+    if (bar.hidden === on) bar.hidden = !on;
+    const pb = $('#bProbe'); if (pb) { pb.classList.toggle('sel', on); pb.setAttribute('aria-pressed', on); }
+    if (!on) return;
+    const [a, b] = prBarTxt(), A = bar.querySelector('.prt b'), B = bar.querySelector('.prt span'), h = bar.querySelector('[data-pr=home]'), hd = !!(P.home || P.ret);
+    if (A.textContent !== a) A.textContent = a; if (B.textContent !== b) B.textContent = b; if (h.disabled !== hd) h.disabled = hd; // patched in place: a re-render under a finger loses the tap
+  }
+  function prBarAction(k) {
+    if (!prCmd || !G || !G.probe) return;
+    if (k === 'home') { if (!window.act('prHome')) SFX.play('deny'); else SFX.play('ui'); }
+    else if (k === 'ups') { SFX.play('ui'); openProbe(prCmd.site && siteById(prCmd.site) ? prCmd.site : 0); }
+    else if (k === 'x') { SFX.play('ui'); probeEnd(); }
+    prBarUI(); updateHud();
   }
   function probeAction(act, b) {
     const P = G.probe; if (!P) return;
@@ -1907,11 +1949,12 @@ const UI = (() => {
     const pb = $('#bProbe'); if (!pb) return;
     const P = G && G.probe, on = !!(P && !G.over && !G.watch);
     if (pb.hidden === on) { pb.hidden = !on; document.body.classList.toggle('prb', on); }
+    prBarUI(); // 6.5.2
     if (!on) return;
     const lbl = !P.alive ? (P.rb > 0 ? `Probe ${Math.ceil(P.rb)}s` : 'Rebuild') : P.home ? 'Probe' : `Probe ${Math.round(100 * P.hp / P.max)}%`;
     const cls = !P.alive ? 'dead' : P.home ? '' : G.time - P.hitT < 1 ? 'hit' : 'away';
     if (pb.dataset.l !== lbl) { pb.dataset.l = lbl; pb.firstChild.textContent = lbl; }
-    if (pb.dataset.c !== cls) { pb.dataset.c = cls; pb.className = 'probebtn ' + cls; }
+    if (pb.dataset.c !== cls) { pb.dataset.c = cls; pb.className = 'probebtn ' + cls + (prCmd ? ' sel' : ''); }
   }
   function frLandPanelHTML() {
     const P = frSel && frSel.plan;
@@ -3726,7 +3769,8 @@ const UI = (() => {
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
     $('#bReady').onclick = () => { SFX.play('ui'); if (!G || G.over) return; vetFlow.ix = 0; openVets(); };
     $('#bLift').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.fr) return; startLift(); }; // Frontier
-    $('#bProbe').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.probe) return; if (panel && panel.kind === 'probe') closePanel(); else openProbe(); }; // 6.5
+    $('#bProbe').onclick = () => { SFX.play('ui'); if (!G || G.over || !G.probe) return; if (panel && panel.kind === 'probe') { closePanel(); probeEnd(); } else if (prCmd) probeEnd(); else selectProbe(); }; // 6.5; 6.5.2 command mode
+    $('#prbar').addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if (b && !b.disabled) prBarAction(b.dataset.pr); }); // 6.5.2
     $('#bTutH').onclick = () => { SFX.init(); SFX.play('ui'); openTutPick(); }; // 5.8: always on the main menu
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
@@ -3760,7 +3804,7 @@ const UI = (() => {
       if (screen !== 'game' || !G) return;
       if (e.key === ' ') { e.preventDefault(); if (modalOpen === 'pause') modalAction('resume'); else if (!modalOpen) openPause(); }
       if (e.key >= '1' && e.key <= '3') { G.speed = +e.key; G.speedWas = 0; updateHud(); }
-      if (e.key === 'Escape') { if (G.aimAbility) mouseCancel(); else closePanel(); }
+      if (e.key === 'Escape') { if (G.aimAbility) mouseCancel(); else if (prCmd && !panel) probeEnd(); else closePanel(); }
       // v5.0.1 keyboard for mouse players: pan, zoom, map, next wave, talents, upgrade, abilities
       if (modalOpen || Tree.isOpen || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase(), P = 70;
@@ -3820,7 +3864,7 @@ const UI = (() => {
   let eqT = 0; const eqBuf = new Uint8Array(128);
   // 6.2: the buttons and banners over the battlefield, in stage px, so the edge arrows (Render) never hide under one
   let koT = 0, koCls = '', beamKT = 0, beamK = 1;
-  const KEEP_OUT = '#bLift, #bProbe, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
+  const KEEP_OUT = '#bLift, #bProbe, #prbar, #bReady, #ticker, #asbar, #docbar, #mdeck, #panel, #dps, #cpBanner, #watchbar, #log > *, #toasts > *, #tip, #coach, #tutlist';
   // koT: wall-clock time of the next read (4 Hz; frame dt is capped, so a slow frame rate would stretch a dt timer).
   // The rects are re-read soon after a log line, toast or banner comes or goes (a MutationObserver flags it; no per-frame work)
   let koObs = null;
@@ -3903,7 +3947,7 @@ const UI = (() => {
     zoneBanner, // 6.3 test hook
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
-    _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal },
+    _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
   };
 })();
 
