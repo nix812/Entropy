@@ -87,6 +87,9 @@ Two environments, always deployed together so they can't drift. Nic: "When we ma
 - **Late-game testing:** the lab save starts fresh. Nic can copy his save code from the live game's Settings and paste it into the lab to test with his real level and talents.
 - **Bigger projects get their own branch** (like `frontier`) and their own builder clone, so half-done work can sit in the lab while small fixes keep shipping.
 - The live game and the lab both auto-update from the main menu (each checks its own path).
+- **"Push to production" (Nic, Nov 6) means the whole lab build goes live and the lab is reset to match.** Merge the lab branch into `release`, run the gate, `deploy.py --live`, push `source`.
+- **Verify after every push:** `deploy.py` waits for the GitHub Pages run and prints `PAGES: success`. Anything else means the site did NOT update, even though the push worked (Nov 6: the 6.5.1 Pages deploy timed out on GitHub's side and the site stayed on 6.2.0 for 2 hours). It retries once with an empty commit. Also: `git -C <site> show origin/main:index.html` and `origin/main:lab/index.html` must hold the new `VERSION`. Grep each for one marker per shipped feature, for example `prGo` (probe) or `CAP_TOWERS`. Report the live and lab versions to Nic in the ship message. The shell can't fetch github.io, so check the pushed files.
+- **Auto-update (6.5.2):** the app reloads onto `?v=<new version>` instead of `location.reload()`. A plain reload could get the cached old page, and the once-per-session guard then stopped trying, (a hardening; the real cause on Nov 6 was the failed Pages deploy).
 
 ### Publish the artifact
 Publish `dist/entropy.html` to the existing URL above.

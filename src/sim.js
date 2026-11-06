@@ -4385,7 +4385,9 @@ const frUp = () => (G.core && G.core.uLvl) || 0;
 const frCd = () => Math.max(1, FRONTIER.cd - Math.floor(frUp() / FRONTIER.cdUplink));
 const frLinkN = () => FRONTIER.links + Math.floor(frUp() / FRONTIER.linkUplink);
 const frCanFly = () => !!(G && G.fr && !G.over && !G.frFly && G.wave >= (G.frReady || 0));
-const frDockX = () => FRONTIER.dockDmg * (1 + (G.frV >= 6 ? FRONTIER.dockBat6 : FRONTIER.dockBat) * ((G.core && G.core.wLvl || 1) - 1));
+const frDockBat = () => G.frV >= 6 ? FRONTIER.dockBat6 : FRONTIER.dockBat; // Battery bonus per level on the docked tower
+const frTwoGuns = () => G.frV >= 6; // frV 6: docked, the core's own gun keeps firing (the docked tower is a second gun)
+const frDockX = () => FRONTIER.dockDmg * (1 + frDockBat() * ((G.core && G.core.wLvl || 1) - 1));
 // landing spots: open ground or an attack tower, inside the sector (1-tile margin), clear of every wormhole
 function frCands() {
   const R = G.region, c = G.map.core, out = [], starts = G.map.lanes.map(L => L.tiles[0]);

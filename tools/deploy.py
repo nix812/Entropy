@@ -45,3 +45,28 @@ if not sh(['git', 'status', '--porcelain'], site): print('nothing to deploy'); s
 sh(['git', '-c', 'user.name=Claude', '-c', 'user.email=noreply@anthropic.com', 'commit', '-q', '-m', ', '.join(msg) + trailer], site)
 sh(['git', 'push', '-q', 'origin', 'HEAD:main'], site)
 print(', '.join(msg), '|', out.splitlines()[-1], '|', sh(['git', 'log', '--oneline', '-1'], site))
+
+# 6.5.2: wait for GitHub Pages to publish it. On Nov 6 the deploy of 6.5.1 timed out on GitHub's side, the push looked fine,
+# and the site stayed on 6.2.0. Watch the Pages run for this commit; on a failure push an empty commit once to retry.
+import json, time
+def pages_run(sha):
+    try: runs = json.loads(sh(['gh', 'api', 'repos/nix812/Entropy/actions/runs?per_page=5'], site)).get('workflow_runs', [])
+    except Exception as e: return ('unknown', str(e)[:80])
+    for r in runs:
+        if r.get('head_sha') == sha: return (r.get('status'), r.get('conclusion'))
+    return ('queued', None)
+def wait_pages(sha, limit=900):
+    t0 = time.time()
+    while time.time() - t0 < limit:
+        st, co = pages_run(sha)
+        if st == 'unknown': return 'unknown (' + str(co) + ')'
+        if st == 'completed': return co
+        time.sleep(20)
+    return 'timeout'
+sha = sh(['git', 'rev-parse', 'HEAD'], site)
+res = wait_pages(sha)
+if res == 'failure':
+    sh(['git', '-c', 'user.name=Claude', '-c', 'user.email=noreply@anthropic.com', 'commit', '-q', '--allow-empty', '-m', f'Redeploy (the Pages deploy of {sha[:7]} failed)'], site)
+    sh(['git', 'push', '-q', 'origin', 'HEAD:main'], site)
+    sha = sh(['git', 'rev-parse', 'HEAD'], site); res = wait_pages(sha)
+print(f'PAGES: {res} ({sha[:7]})' + ('' if res == 'success' else '  <-- NOT LIVE: check the Pages run on GitHub before telling Nic it shipped'))

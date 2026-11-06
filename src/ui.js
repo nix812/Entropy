@@ -626,7 +626,7 @@ const UI = (() => {
         { id: 'land', hold: 1, at: sel('#panel [data-act=frgo]'), t: () => frSel && frSel.plan && frSel.plan.dock ? 'Land and dock' : 'Land here',
           b: 'Tap it. Every road swings to the landing spot at once. In the air the core’s gun is off and its shield is down.', done: () => flew(), skip: () => off() || !lifting(), back },
         { id: 'docked', when: () => !G.frFly, hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: () => frDockT() ? 'Docked' : 'Landed', skip: () => off() || !flew(),
-          b: () => { const d = frDockT(); return d ? `The core fires the ${TOWERS[d.type].name} now: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range, and Battery upgrades raise it. Lift off again later and the tower is set back down, intact.` : 'Here the core fires its plain cannon. Land on an attack tower to dock it.'; } },
+          b: () => { const d = frDockT(); return d ? (frTwoGuns() ? `The core's own gun keeps firing. The ${TOWERS[d.type].name} is now a second gun: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range${frDockBat() ? ', and Battery upgrades raise it' : ''}. Lift off again later and the tower is set back down, intact.` : `The core fires the ${TOWERS[d.type].name} now: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range, and Battery upgrades raise it. Lift off again later and the tower is set back down, intact.`) : 'Here the core fires its plain cannon. Land on an attack tower to dock it.'; } },
         { id: 'links', when: () => !G.frFly, hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Links', skip: off,
           b: () => { const n = (G.frLinks || []).length; return `${n ? `The green lines link ${n} tower${n === 1 ? '' : 's'} to the core` : 'No tower is linked yet'}. The landed core links the ${frLinkN()} nearest attack towers within ${FRONTIER.linkR} tiles: each gets +${pct(FRONTIER.linkDmg)} damage and rate, and the core +${pct(FRONTIER.linkCore)} per link.`; } },
         tapTw('mvTap', mvT, 'Move a tower', () => `${mem.mvL ? `Towers can move too. Your ${TOWERS[mvT().type].name} can cover more road` : roadIn(mvT().x, mvT().y, mvT().s.range) ? `Your ${TOWERS[mvT().type].name} is out of link reach` : `Your ${TOWERS[mvT().type].name} guards empty ground now`}. Tap it.`,
@@ -704,7 +704,7 @@ const UI = (() => {
         { id: 'shield', when: () => W() >= 6, skip: () => W() >= 8 || G.core.sLvl >= 2, hold: () => G.credits >= coreShieldCost(), enter: scrollTo('#panel [data-act=cs]'), at: sel('#panel [data-act=cs]'), t: 'Shield',
           b: () => G.credits >= coreShieldCost() ? `Tap Shield (${fmt(coreShieldCost())}). A bigger shield soaks more leaks before the core loses health.` : `Shield costs ${fmt(coreShieldCost())} credits.`, done: () => G.core.sLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
         { id: 'battery', when: () => W() >= 6, skip: () => W() >= 8 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
-          b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). ${G.fr && frDockT() ? `The docked ${TOWERS[frDockT().type].name} hits ${pct(FRONTIER.dockBat)} harder per level, and so does the plain cannon.` : "The core's own gun hits harder; some levels add a module."}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
+          b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). ${G.fr && frDockT() && frDockBat() ? `The core's gun hits harder, and the docked ${TOWERS[frDockT().type].name} hits ${pct(frDockBat())} harder per level.` : "The core's own gun hits harder. Some levels add a module."}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
         info('coreMore', sel('#panel [data-act=ch]'), 'Hull and Uplink', () => G.fr ? `Later: Hull adds core health. Uplink makes abilities recharge faster, adds a link every ${FRONTIER.linkUplink} levels and shortens the lift-off wait every ${FRONTIER.cdUplink}.` : 'Later: Hull adds core health, Uplink makes abilities recharge faster.', { when: () => panel && panel.kind === 'core', skip: () => W() >= 8 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
         info('mark', () => enemyR(mem.we), 'Gene marks', () => `The ring is Ward: this one shrugs off half your ${EL[(mem.we && mem.we.gel) || 'K'].name} damage. Marks show what each enemy evolved.`,
           { ls: 'mark', when: () => W() === 6 && !!geneEnemy('ward'), skip: () => W() >= 7 || !geneEnemy('ward'), enter: () => { mem.we = geneEnemy('ward'); } }),
@@ -1764,12 +1764,12 @@ const UI = (() => {
       ${G.af.lastStand ? '<div class="sts bad">Last Stand: repairs disabled</div>' : ''}
       ${foot}`;
     // 6.1 Frontier: docked, the core's gun is the docked tower (its stats, kills and element); in the air it is offline
-    const dk = G.fr ? frDockT() : null, dS = dk && dk.s, air = G.fr && G.frFly;
+    const dk0 = G.fr ? frDockT() : null, two = !!dk0 && frTwoGuns(), dk = two ? null : dk0, dS = dk && dk.s, air = G.fr && G.frFly; // frV 6: two guns, the panel shows the core's own
     const gunSg = dk ? `<span>Damage<b>${fmt(dS.dmg * (1 + dk.buff.dmg))}</b></span><span>Rate<b>${num1(dS.rate * (1 + dk.buff.rate))}/s</b></span><span>Range<b>${num1(dk.effRange || dS.range)}</b></span><span>Kills<b>${dk.kills}</b></span>`
       : `<span>Damage<b>${air ? '—' : fmt(s.dmg)}</b></span><span>Rate<b>${air ? '—' : num1(s.rate) + '/s'}</b></span><span>Range<b>${num1(s.range)}</b></span><span>Kills<b data-live="ckills">${c.kills || 0}</b></span>`;
     const gunSts = dk ? `<div class="sts frdock" style="--c:${EL[dS.el].col}">Docked: <b>${esc(towerLabel(dk))}</b> LV ${towerLevel(dk)} · ${EL[dS.el].name} · ×${num1(frDockX())} Damage (Battery +${pct(FRONTIER.dockBat)} per level), +${FRONTIER.dockRange} Range</div><div class="sts dim">${tipify('Battery modules fire with the plain cannon, not while docked')}</div>`
       : air ? `<div class="sts">${tipify('In the air: the gun is offline and the shield is down until it lands')}</div>`
-      : `<div class="sts">${tipify(`Shells hit whatever is closest to reaching the core · Blast ${num1(s.splash)}`)}</div>`;
+      : `<div class="sts">${tipify(`Shells hit whatever is closest to reaching the core · Blast ${num1(s.splash)}`)}</div>${two ? `<div class="sts frdock" style="--c:${EL[dk0.s.el].col}">Second gun: <b>${esc(towerLabel(dk0))}</b> LV ${towerLevel(dk0)} · ${EL[dk0.s.el].name} · ×${num1(frDockX())} Damage${frDockBat() ? ` (Battery +${pct(frDockBat())} per level)` : ''}, +${FRONTIER.dockRange} Range</div>` : ''}`;
     const zS = SECTOR_BY[G.sector]; // 6.3: the zone, in its colour
     return `${head}
       <div class="sg"><span>Hull<b data-live="chp">${Math.ceil(c.hp)}/${Math.round(c.max)}</b></span><span>Shield<b data-live="csh">${Math.floor(c.shield)}/${Math.round(c.smax)}</b></span>${gunSg}</div>
@@ -1794,8 +1794,8 @@ const UI = (() => {
   function frCoreHTML() {
     const d = frDockT(), n = (G.frLinks || []).length;
     const gun = G.frFly ? `<div class="sts">${tipify('In the air: the gun is offline and the shield is down until it lands')}</div>`
-      : d ? `<div class="sts frdock" style="--c:${EL[d.s.el].col}">Docked: <b>${esc(TOWERS[d.type].name)}</b> LV ${towerLevel(d)} · ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range</div>`
-      : `<div class="sts">${tipify('Plain cannon. Land on an attack tower to dock it: the core fires its weapon')}</div>`;
+      : d ? `<div class="sts frdock" style="--c:${EL[d.s.el].col}">${frTwoGuns() ? 'Second gun' : 'Docked'}: <b>${esc(TOWERS[d.type].name)}</b> LV ${towerLevel(d)} · ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range</div>`
+      : `<div class="sts">${tipify(frTwoGuns() ? 'Core gun only. Land on an attack tower to dock it as a second gun' : 'Plain cannon. Land on an attack tower to dock it: the core fires its weapon')}</div>`;
     return `<div class="lbl">Flight</div>${gun}
       <div class="sts ${n ? 'good' : 'dim'}">${G.frFly ? 'Links break while flying' : `Links ${n}/${frLinkN()} · linked towers +${pct(FRONTIER.linkDmg)} Damage and Rate · core +${pct(FRONTIER.linkCore * n)}`}</div>
       <div class="row2"><button class="btn frlift" data-act="frlift" ${frCanFly() ? '' : 'disabled'}>${G.frFly ? 'In flight' : 'Lift Off'}<small>${frCanFly() ? 'Land anywhere · on a tower to dock' : G.frFly ? 'Landing' : `Ready on Wave ${G.frReady}`}</small></button>${d ? '<button class="btn" data-act="frtower">Docked tower<small>Upgrade, Fire, Aim</small></button>' : ''}</div>`;
@@ -1916,7 +1916,7 @@ const UI = (() => {
   function frLandPanelHTML() {
     const P = frSel && frSel.plan;
     const head = `<div class="ph"><div class="pt"><b>Lift Off</b><small>Paused while you choose</small></div><button class="x" data-act="frcancel" aria-label="Cancel">✕</button></div>`;
-    if (!P) return head + `<p class="note">Tap a highlighted tile to land there. A framed tower docks: the core fires its weapon at ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range.</p>
+    if (!P) return head + `<p class="note">Tap a highlighted tile to land there. A framed tower docks as a second gun: ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range. The core's own gun keeps firing.</p>
       <p class="note">Every road swings to the landing spot, and enemies already walking turn toward it. In the air the gun is offline and the shield is down. Flight: about 1 s per ${FRONTIER.flySpd} tiles.</p>
       <div class="pfoot"><button class="btn" data-act="frcancel">Cancel</button></div>`;
     const tot = a => a.reduce((x, y) => x + y, 0), dd = tot(P.after) - tot(P.before);
@@ -3281,7 +3281,7 @@ const UI = (() => {
       ['Specialize', 'At LV 3, choose one of two specializations.'],
       ['Core Battery', 'The core is a long-range gun that shells whatever is closest to reaching it, almost anywhere on the map. It starts as light support; Battery upgrades are expensive but make it a real weapon, with Twin Battery at LV 4, Siege Shells at LV 8 and Orbital Uplink at LV 12. Tap the core to upgrade, repair or reroll it.'],
       ['Lift Off', `The core flies. Tap Lift Off (top right, or in the core panel), then a tile to land on: the preview shows the new roads, what the core will fire and the towers it will link. Every road swings to the landing spot. In the air the gun is offline and the shield is down. After landing it recharges for ${FRONTIER.cd} waves.`],
-      ['Dock', `Land the core on an attack tower and the core fires that tower's weapon: ×${FRONTIER.dockDmg} Damage, +${FRONTIER.dockRange} Range, +${pct(FRONTIER.dockBat)} per Battery level. Lift off again and the tower is set back down, intact.`],
+      ['Dock', `Land the core on an attack tower and it becomes a second gun: ×${FRONTIER.dockDmg} Damage, +${FRONTIER.dockRange} Range${FRONTIER.dockBat6 ? `, +${pct(FRONTIER.dockBat6)} per Battery level` : ''}. The core's own gun keeps firing. Lift off again and the tower is set back down, intact.`],
       ['Links', `The landed core links its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate each, and the core +${pct(FRONTIER.linkCore)} per link. Flying breaks them.`],
       ['Move', `Tap a tower, then Move, then a new tile. It is offline for ${FRONTIER.moveT} s and costs ${pct(FRONTIER.moveFee)} of what it cost. No towers within ${FRONTIER.wormBuild} tiles of a wormhole.`],
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
@@ -3373,7 +3373,7 @@ const UI = (() => {
         ['Node Beacon', 'Black Market item: tap an empty tile and it becomes a Power Node. Two per run.'], ['Boss Bribe', 'Black Market item: the next boss arrives at 70% health.'],
         ['Stolen Blueprint', 'Black Market item: your next locked tower is unlocked for the rest of this run.'],
         ['Lift Off', `The core flies to any open tile in the sector, or onto an attack tower (docking). Every road re-routes to the landing spot and enemies already walking turn toward it. Gun offline and shield down in the air; ${FRONTIER.cd} waves to recharge after landing (Uplink shortens it).`],
-        ['Docking', `The landed core fires the attack tower under it: its element, affixes, spec, perks and Technique, at ×${FRONTIER.dockDmg} Damage and +${FRONTIER.dockRange} Range. Support towers can't be docked.`],
+        ['Docking', `The landed core docks the attack tower under it as a second gun: its element, affixes, spec, perks and Technique, at ×${FRONTIER.dockDmg} Damage and +${FRONTIER.dockRange} Range. The core's own gun keeps firing. Support towers can't be docked.`],
         ['Core link', `A green line from the landed core to one of its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate for the tower, +${pct(FRONTIER.linkCore)} Damage for the core.`],
         ['No-build zone', `The ground within ${FRONTIER.wormBuild} tiles of a wormhole: no towers, so the swarm is seen before it is shot.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
@@ -3787,7 +3787,7 @@ const UI = (() => {
     Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && screen === 'game') evoWait = true; }; // 6.2: shown by tick when the teaching gate allows
     Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) { teachMark(); openAssault(true); } }, 700); }; // (an assault can't wait: it is this wave)
     Hooks.frLanded = d => { if (!G || G.replaying) return; const n = (G.frLinks || []).length; // Frontier
-      toast(d ? 'DOCKED' : 'LANDED', `${d ? `The core fires the ${TOWERS[d.type].name}: ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range` : 'Plain cannon'} · ${n} link${n === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, d ? EL[d.s.el].col : '#59f0b4');
+      toast(d ? 'DOCKED' : 'LANDED', `${d ? (frTwoGuns() ? `${TOWERS[d.type].name} is a second gun: ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range` : `The core fires the ${TOWERS[d.type].name}: ×${num1(frDockX())} Damage, +${FRONTIER.dockRange} Range`) : 'Core gun only'} · ${n} link${n === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, d ? EL[d.s.el].col : '#59f0b4');
       if (panel && (panel.kind === 'core' || panel.kind === 'tower')) renderPanel(); updateHud(true); };
     Hooks.gridFull = () => { const T = topTower(); toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Build on a Power Node (free), sell an idle tower, or expand the reactor${T ? `. Or Overcharge your best: ${TOWERS[T.type].name}` : ''}`, '#ffb03a'); };
     Hooks.log = log;
@@ -4119,7 +4119,7 @@ function talentsToast(kind) {
     try { sessionStorage.setItem('entropy.upd', updTo); } catch (e) {}
     UI.toast('UPDATING', 'Version ' + updTo, '#59f0b4', true);
     Save.save(); if (Save.flushNow) Save.flushNow();
-    updTo = null; setTimeout(() => location.reload(), 900);
+    const to = updTo; updTo = null; setTimeout(() => location.replace(location.pathname + '?v=' + to + location.hash), 900); // 6.5.2: a new URL, so the phone can't hand back its cached old page
   }, 1000);
   // hangar backdrop (v5.5: HangarFX in render.js)
   const bg = $('#bgfx'); const drawBg = dt => HangarFX.draw(bg, dt);
