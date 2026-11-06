@@ -434,11 +434,10 @@ const UI = (() => {
     const L = profLevel(), pts = pointsFree();
     modal(`<div class="card narrow tutdone"><div class="ch"><h2 class="good">Training Complete</h2><span class="note">Extracted · Wave ${G.wave}</span></div>
       ${first ? `<div class="bigstats"><span>XP<b>+${fmt(tutReward())}</b></span><span>Level<b>${L.level}${L.level > before ? ' ▲' : ''}</b></span><span>Talent points<b>${pts}</b></span></div>` : '<p class="note">Reward already claimed. This one was practice.</p>'}
-      <p>That's the loop: build, upgrade, dock the core, scout with the probe, claim the bounty and get out.</p>
-      <div class="lwhat tnext"><b>Real runs</b><span>Endless and random. The first bounty boss lands on Wave 20. New systems explain themselves once.</span>
-        <b>Talents</b><span>${pts > 0 ? `You have ${pts} point${pts > 1 ? 's' : ''} to spend. ` : ''}Each level adds a point. ${TTOP} points in one tree open its capstone tier: a new tower.</span>
+      <div class="lwhat tnext"><b>Real runs</b><span>Endless. The first bounty boss: Wave 20.</span>
+        <b>Talents</b><span>${pts > 0 ? `Spend your ${pts} point${pts > 1 ? 's' : ''}. ` : ''}${TTOP} points in one tree unlock a new tower.</span>
         <b>Daily Hunt</b><span>One run a day, the same for everyone.</span>
-        <b>Field Manual</b><span>The ? button. A short lesson for every system.</span></div>
+        <b>Field Manual</b><span>The ? button. A lesson for every system.</span></div>
       <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Talents</button><button class="btn primary" data-act="again">First Run</button></div></div>`, 'over');
     Coach.stop();
   }
@@ -556,7 +555,7 @@ const UI = (() => {
       ['Read its bonus', () => (ck.affix = ck.affix || !!mem.affix || !!(panel && panel.kind === 'tower' && panel.tab === 'info' && panel.t && panel.t.affixes.length)), 'affixes'],
       ['Core: upgrade the Battery', () => G.core.wLvl >= 2, 'battery'], ['Counter it: a Rail Lance', () => has('rail'), 'rail'],
       ['Lift Off: dock on a tower', () => (ck.dk = ck.dk || !!(G.fr && frDockT())), 'docked'], ['Link towers to the core', () => (ck.lk = ck.lk || (G.frLinks || []).length > 0), 'links'], ['Move a tower', () => used('frMove'), 'mvGo'], // 6.1 Frontier
-      ['Veteran: tap Ready, pick', () => used('vet') || used('ascPick'), 'vpick'], ['Use Strike', () => used('abil'), 'recharge'], ['Upgrade again', () => lvls() >= 2, 'up2'],
+      ['Veteran: tap Ready, pick', () => used('vet') || used('ascPick'), 'vpick'], ['Use Strike', () => used('abil'), 'recharge'],
       ['Probe: loot a site, bank it', () => looted(1) && ((G.stats.pr || {}).trips || 0) >= 1, 'prBank'], ['Probe: a guarded site in the fog', () => looted(2), 'prOut'],
       ['Entropy: take a card', () => used('anom') || used('stab'), 'cards'],
       ['Pick a specialty (LV 3)', () => G.towers.some(t => t.spec), 'spec'], ['Beat the bounty boss', () => G.bounties.length > 0, 'bounty'], ['Extract', () => !!G.extracted, null]];
@@ -633,6 +632,7 @@ const UI = (() => {
     const flew = () => (G.frN || 0) > (mem.fn0 ?? 1e9), lifting = () => mem.fn0 !== undefined; // (the Lift Off step ran)
     // 6.6 the probe in Basic Training: the scripted sites (sim: tutSite, s.tut = 1 or 2) and whether each was looted (G.tutLoot)
     const site = n => (G.sites || []).find(s => s.tut === n && !s.done), looted = n => !!((G.tutLoot | 0) & (1 << n)), prOK = () => !!(G.probe && G.probe.alive);
+    const gone = n => !!((G.tutSites | 0) & (1 << n)) && !site(n); // it spawned, and is looted or faded (before it spawns, its lesson waits)
     function frSteps(when, gone) { // when: the steps may start; gone: the moment has passed (the next wave began)
       const off = () => !frOn() || gone(), back = () => !inPick('land') && !flew() && frCanFly() && 'lift', mvBack = () => !panT() && !inPick('move') && !used('frMove') && 'mvTap';
       return [
@@ -683,7 +683,7 @@ const UI = (() => {
           done: () => mem.ut && towerLevel(mem.ut) > mem.b4.lvl, back: () => !panT() && 'tapTower' },
         info('upDone', sel('#panel .lvtag'), 'Upgraded', () => upLine(mem.ut, mem.b4) + ' Upgrades cost credits, not power.', { when: () => !!panT(), skip: () => W() >= 3 || !panT(), ok: 'Next' }),
         { id: 'affix', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Its bonus', b: 'Every upgrade rolls a random bonus: an affix. Tap Details to see them.', skip: () => W() >= 3 || !panT(), done: () => panel && panel.tab === 'info' },
-        info('affixes', () => appR(q('#panel .affs')) || appR(q('#panel .pbody')), 'Affixes', 'Rare affixes are gold or purple. Reroll swaps them for credits.', { hold: 0, skip: () => W() >= 3 || !panT(), okFn: () => { mem.affix = 1; if (panel) { panel.tab = 'act'; renderPanel(); } }, enter: scrollTo('#panel .affs'), leave: shut }),
+        info('affixes', () => appR(q('#panel .affs')) || appR(q('#panel .pbody')), 'Affixes', 'Rare affixes are gold or purple. An arrow over a tower means you can afford its next upgrade.', { hold: 0, skip: () => W() >= 3 || !panT(), okFn: () => { mem.affix = 1; if (panel) { panel.tab = 'act'; renderPanel(); } }, enter: scrollTo('#panel .affs'), leave: shut }),
         // the core and its Battery (6.6: before Lift Off, which docks a second gun beside it)
         { id: 'tapCore', ls: 'core', enter: () => { shut(); probeEnd(); }, when: () => W() >= 3 && !G.frFly, skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core',
           b: () => G.credits >= coreWeaponCost() ? 'The core has its own upgrades. Tap it.' : `The core's Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => panel && panel.kind === 'core' },
@@ -706,16 +706,13 @@ const UI = (() => {
         { id: 'aim', when: () => W() === 5, skip: () => W() >= 6, hold: 1, enter: () => { mem.pk = pack(); },
           at: () => packAt(), t: 'Aim', b: 'Tap the middle of the pack.', done: () => (G.charges.strike || 0) < mem.c0, back: () => G.aimAbility !== 'strike' && (G.charges.strike || 0) >= mem.c0 && 'strike' },
         info('recharge', sel('#abils [data-abil=strike]'), 'Recharging', 'The bar on the button refills over time. Then Strike is ready again.', { when: () => W() === 5, skip: () => W() >= 6, hold: 0 }),
-        // the second upgrade: the arrow cue (6.6: as Wave 5 ends)
-        tapTw('arrow', () => mem.au, 'The upgrade arrow', 'An arrow over a tower means you can afford its upgrade. Tap that tower.', { ls: 'arrow', when: () => after(5) && !!bestUp(1), skip: () => W() >= 6, enter: () => { mem.au = bestUp(1); } }),
-        { id: 'up2', when: () => after(5), skip: () => W() >= 6 || !mem.au, hold: 1, at: sel('#panel [data-act=up]'), t: 'Upgrade it', enter: () => { mem.b4 = stat(mem.au); },
-          b: () => `${fmt(upgradeCost(mem.au))} credits. Tap Upgrade.`, done: () => towerLevel(mem.au) > mem.b4.lvl, back: () => panT() !== mem.au && 'arrow', leave: shut },
+        // (6.6: no separate second-upgrade lesson: the arrow is one line in Affixes, and the specialty lesson upgrades again)
         // 6.6 the probe: a guard-free wreck near the core (TUT.b2.sites[0]), sent, salvaged, recalled, banked
         { id: 'prBtn', ls: 'probe', when: () => !!site(1) && prOK() && !panel, skip: () => looted(1) || !prOK() || !!site(1) && G.probe.task === site(1).id || W() >= 8, hold: 1, at: sel('#bProbe'), t: 'Your probe',
           b: 'It flies anywhere on the map and loots sites. A wreck just appeared. Tap Probe.', done: () => !!prCmd },
-        { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || !site(1),
+        { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1),
           b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'The bar under Probe says what a tap does. Tap the wreck: the probe flies there.',
-          done: () => G.probe.task === site(1).id, back: () => !prCmd && G.probe.task !== site(1).id && 'prBtn' },
+          done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && G.probe.task !== site(1).id && 'prBtn' },
         { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'It flies over anything. On the wreck it salvages for 2.5 s. Loot goes into its hold.',
           done: () => looted(1), skip: () => !prOK(), back: () => !looted(1) && site(1) && G.probe.task !== site(1).id && 'prSend' },
         { id: 'prHome', hold: 1, when: () => looted(1), skip: () => !prOK() || G.probe.home, at: () => appR(q('#prbar [data-pr=home]')) || appR(q('#bProbe')), t: 'Bring it home',
@@ -723,10 +720,10 @@ const UI = (() => {
         info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits. Docked, the probe repairs the core. A lost probe drops its cargo and costs credits to rebuild.`,
           { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() && !((G.stats.pr || {}).trips) || W() >= 8, enter: probeEnd }),
         // 6.6 fog of war, on the way to a guarded wreck far out (TUT.b2.sites[1])
-        { id: 'guard', ls: 'fog', when: () => !!site(2) && prOK() && G.probe.home && !panel, skip: () => looted(2) || !site(2) || !prOK() || W() >= 8, hold: 1, at: () => worldR(site(2).x, site(2).y, 1.7), t: 'A guarded site',
+        { id: 'guard', ls: 'fog', when: () => !!site(2) && prOK() && G.probe.home && !panel, skip: () => looted(2) || gone(2) || !prOK() || W() >= 8, hold: 1, at: () => worldR(site(2).x, site(2).y, 1.7), t: 'A guarded site',
           b: () => prCmd && prCmd.site === site(2).id ? 'Tap the wreck again to send the probe.' : `A red drone guards this wreck. It shoots the probe when it comes near. ${prCmd ? 'Tap the wreck to send the probe.' : 'Tap the wreck twice: select, then send.'}`,
-          done: () => G.probe.task === site(2).id },
-        { id: 'fog', when: () => prOK() && !!site(2) && Math.hypot(G.probe.x - site(2).x, G.probe.y - site(2).y) < 9, skip: () => looted(2) || !prOK() || !site(2) || G.probe.task !== site(2).id, hold: 1, ok: 'Next',
+          done: () => !site(2) || G.probe.task === site(2).id },
+        { id: 'fog', when: () => prOK() && !!site(2) && Math.hypot(G.probe.x - site(2).x, G.probe.y - site(2).y) < 9, skip: () => looted(2) || !prOK() || gone(2) || !!site(2) && G.probe.task !== site(2).id, hold: 1, ok: 'Next',
           at: () => worldR(G.probe.x, G.probe.y, 2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dim ground, enemies are hidden.' },
         info('fogFair', () => appR(q('#chips [data-threat]')), 'Fair warnings', 'Bosses always show. Roads stay on the map. Edge arrows mark enemies near your core. The Threat Board lists each wave.', { hold: 0, skip: () => looted(2) || !prOK() }),
         { id: 'prOut', hold: 1, when: () => looted(2) || !prOK(), skip: () => !prOK() || G.probe.home || G.probe.ret, at: () => appR(q('#prbar [data-pr=home]')) || appR(q('#bProbe')), t: 'Get out',
@@ -985,7 +982,7 @@ const UI = (() => {
     function paced(S) {
       if (plan !== 'basic' || S.free || mem.gapT === undefined || !G || lessonOf(i) === mem.lastLs) return true;
       const gap = S.gap !== undefined ? S.gap : PACE_GAP, quiet = G.time - mem.gapT;
-      const waveEnd = cleared() && (W() > mem.gapW || !mem.gapC) && quiet >= 10, late = cleared() && G.next < 5 && W() < G.tutS.waves.length && quiet >= 8; // (6.6: never two lessons back to back)
+      const waveEnd = cleared() && (W() > mem.gapW || !mem.gapC) && quiet >= 10, late = cleared() && G.next < 5 && W() < G.tutS.waves.length && quiet >= 12; // (6.6: never two lessons back to back)
       if (!(quiet >= gap || waveEnd || late)) return false;
       if (S.busyOK || late) return true;
       if (!teachBusy()) { mem.busyT = undefined; return true; }

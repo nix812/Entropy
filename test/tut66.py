@@ -29,7 +29,7 @@ CARD = '''() => { const c = document.querySelector('#coach'); if (!c || c.hidden
     t: G ? +G.time.toFixed(1) : 0, w: G ? G.wave : 0, chain: UI.coach.chain || null }; }'''
 WATCH = '''() => { window._cad = []; const log = (k, el) => { const s = el.textContent.trim(); if (s && G) window._cad.push({ k, s: s.slice(0, 120), t: +G.time.toFixed(1), w: G.wave }); };
   for (const id of ['ticker', 'tip']) { const el = document.getElementById(id); if (el) new MutationObserver(() => log(id, el)).observe(el, { childList: true, subtree: true, characterData: true }); } }'''
-TAPS = {'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]', 'cards': '#modal .boon.ar-rare'}
+TAPS = {'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]'}
 def run(pg, W, H):
     tg = f'{tag}{W}x{H}'
     pg.goto('file://' + page); pg.wait_for_timeout(400)
@@ -57,7 +57,7 @@ def run(pg, W, H):
             m = st['m']
             if m and m not in ('vets', 'hunt', 'evo'):
                 pg.wait_for_timeout(200)
-                pg.evaluate('''() => { const b = document.querySelector('#modal [data-act=brief]') || document.querySelector('#modal .boons [data-act]') || document.querySelector('#modal [data-act=anom]') || document.querySelector('#modal [data-act=close2]');
+                pg.evaluate('''() => { const b = document.querySelector('#modal [data-act=brief]') || document.querySelector('#modal .boon.ar-rare') || document.querySelector('#modal .boons [data-act]') || document.querySelector('#modal [data-act=close2]');
                   b && b.click(); }'''); pg.wait_for_timeout(250); continue
             pg.evaluate('() => { if (G && !G.over) G.speed = 6; }'); pg.wait_for_timeout(110); continue
         pg.evaluate('() => { if (G && !G.over && G.speed > 1) G.speed = 1; }')
@@ -102,6 +102,11 @@ def run(pg, W, H):
          'dialog_gap_min': min(dg) if dg else 0, 'dialog_gap_median': statistics.median(dg) if dg else 0,
          'chains': chains, 'ticked': sum(fin['ck'] or []), 'lines': len(names), 'extracted': fin['ext']}
     print('SUMMARY', json.dumps(S))
+    LESSONS = ['start', 'camera', 'money', 'power', 'upgrade', 'core', 'threat', 'lift', 'move', 'vets', 'strike', 'probe', 'fog', 'ent', 'spec', 'wanted', 'boss', 'bounty']
+    check(chains == LESSONS, f'{tg}: every lesson shows, in order ({len(chains)}/{len(LESSONS)}; missing {[x for x in LESSONS if x not in chains]})')
+    steps = [c['step'] for c in cards]
+    need = ['prBtn', 'prSend', 'prHome', 'guard', 'fog', 'prOut', 'gauge', 'boss', 'bounty']
+    check(all(x in steps for x in need), f'{tg}: the probe, fog, Entropy and boss steps all show (missing {[x for x in need if x not in steps]})')
     left = [n for n, v in zip(names, fin['ck'] or []) if not v]
     check(fin['ext'], f'{tg}: Training finished (extracted)')
     check(not left, f'{tg}: every checklist line ticked ({S["ticked"]}/{len(names)}), open: {left}')
@@ -110,7 +115,7 @@ def run(pg, W, H):
     check(not late, f'{tg}: lines tick in list order (none more than 30 s before an earlier line): {late}')
     if not audit:
         check(8 * 60 <= wall <= 12.5 * 60, f'{tg}: estimated length {S["wall_est_min"]} min (target 8-12)')
-        check(S['lesson_gap_min'] >= 8, f'{tg}: shortest gap between lessons {S["lesson_gap_min"]} s (>= 8)')
+        check(S['lesson_gap_min'] >= 10, f'{tg}: shortest gap between lessons {S["lesson_gap_min"]} s (>= 10)')
         check(S['lesson_gap_median'] >= 18, f'{tg}: median gap between lessons {S["lesson_gap_median"]} s (>= 18)')
     (out / f'{tg}.json').write_text(json.dumps({'summary': S, 'cards': cards, 'modals': modals, 'msgs': msgs, 'ticks': {names[i]: tickAt.get(i) for i in range(len(names))}}, indent=1))
     return S

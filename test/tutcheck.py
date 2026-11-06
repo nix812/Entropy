@@ -35,7 +35,7 @@ TAPS = {'vpick': '#modal [data-act=vpick]', 'spec': '#panel [data-act=spec]', 'b
 # the coach step that teaches each checklist line (by line name); the line must tick within 2 steps after it
 CHECK_STEP = {'Place a tower': 'build1', 'Call a wave early': 'call1', 'Upgrade a tower': 'upgrade', 'Read its bonus': 'affixes',
               'Core: upgrade the Battery': 'battery', 'Counter it: a Rail Lance': 'rail',
-              'Lift Off: dock on a tower': 'land', 'Link towers to the core': 'links', 'Move a tower': 'mvGo', 'Upgrade again': 'up2',
+              'Lift Off: dock on a tower': 'land', 'Link towers to the core': 'links', 'Move a tower': 'mvGo',
               'Veteran: tap Ready, pick': 'vpick', 'Use Strike': 'aim', 'Probe: loot a site, bank it': 'prBank', 'Probe: a guarded site in the fog': 'prOut',
               'Entropy: take a card': 'cards', 'Pick a specialty (LV 3)': 'spec', 'Beat the bounty boss': None, 'Extract': None}  # 6.6 tut66: the new lesson list
 def run(pg, tag, style, limit=600):
