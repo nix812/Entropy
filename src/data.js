@@ -459,17 +459,18 @@ const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
 const WHATS_NEW = { ver: '6.5.1', title: 'Last Gradient 6.5 · Deep Field', items: [
-  ['The probe', 'Every run starts with a free probe docked at the core. Tap Probe, then tap any spot. It flies there in a straight line. Tap the core to call it home.'],
-  ['Loot sites', 'Wreckage, gas clouds and drifting asteroids appear across the map from Wave 2. Wreckage takes 2.5 s. A cloud takes 12 s. An asteroid breaks in 3 chunks.'],
-  ['Cargo', 'Loot rides in the probe and counts only when it docks. Loot can be credits, Entropy, a boon pick or a full Entropy gauge.'],
-  ['Guards', 'Some sites have guards. Guards and loot both grow with the wave. Gold-trimmed sites pay 2.5× loot.'],
-  ['Probe upgrades', 'Lance, Armour, Engine, Rig and Scanner, 3 levels each. The Lance lets the probe fight guards.'],
-  ['Losing the probe', 'A lost probe drops its cargo as a wreck. Rebuilding costs credits and takes 40 s. You keep your upgrades.'],
-  ['Fog of war', 'You see what your core, towers and probe see. Ground you have never seen is dark. Ground you have seen is dim, and enemies there are hidden.'],
-  ['Fair warning', 'Bosses, Sensor Sweep marks, wormholes, wave previews and edge arrows show through fog.'],
-  ['Black Hole', 'From Wave 10, a Black Hole can drift in and sit on a road for 30 s. Enemies near it slow down by up to 50%.'],
-  ['Pick your spot', 'Towers 2.5 to 6 tiles from a Black Hole fire 40% faster. Towers closer than 2.5 tiles fire 50% slower.'],
-  ['Lighter on battery', 'The top bar updates only what changed. The battlefield stops drawing behind Talents and draws half as often behind full menus.'],
+  ['Boss themes', 'All 13 bosses have their own theme song. A kill plays a victory sting, then your song comes back. Studio › Listen lists the themes you have beaten.'],
+  ['More music', 'Every genre now has 4 styles. Each new song picks its own drums, bass, lead, tempo and key. Your saved tracks sound exactly as before.'],
+  ['Zones look different', 'Each of the 10 zones has its own ground, roads and weather. A banner names the zone when you enter it.'],
+  ['New cards every draw', 'Entropy cards are now built fresh each draw: 1 boon and 1 cost. They come as Common, Rare or Exotic, and lean toward the towers you field. The 21 old cards still appear.'],
+  ['Capstone tier', 'Each talent tree has a new gold tile under its Capstones. It opens at 16 points in that tree and costs 1 point. It takes no Capstone slot.'],
+  ['7 new towers', 'Buzzsaw, Flashover, Surge Spire, Rimewall, Entangler, Gatekeeper and Wildcard. Each Capstone tier tile unlocks one. Daily Hunts keep the original 12 towers.'],
+  ['The probe', 'Every run starts with a free probe at the core. Tap Probe, then tap any spot to send it. Tap the core to call it home.'],
+  ['Loot sites', 'Wreckage, gas clouds and asteroids appear from Wave 2. Some have guards. Loot counts only when the probe docks.'],
+  ['Probe upgrades', 'Lance, Armour, Engine, Rig and Scanner, 3 levels each. A lost probe drops its cargo. Rebuilding costs credits and takes 40 s.'],
+  ['Fog of war', 'You see what your core, towers and probe see. Bosses, wave previews and edge arrows always show through the fog.'],
+  ['Black Hole', 'From Wave 10, a Black Hole can sit on a road for 30 s. It slows enemies by up to 50%. Towers 2.5 to 6 tiles away fire 40% faster. Closer towers fire 50% slower.'],
+  ['Lighter on battery', 'The game does less work behind menus and on the top bar. Nothing looks different.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
