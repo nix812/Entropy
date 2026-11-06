@@ -727,7 +727,8 @@ body.rdy #tutlist { bottom: 6px; }
    into the space around them (2 px into each side gap) */
 .ptabs .chip, .modes .chip, .firerow .chip { position: relative; }
 .panel .ph .x, .card .ch .x, .card.studio > .ch .sthq { position: relative; z-index: 1; } /* the tabs' hit boxes reach up beside it: the close button stays on top */
-.panel .ph .x::after, .card .ch .x::after, .card.studio > .ch .sthq::after { content: ''; position: absolute; inset: -4px; } /* 6.5.2: 36-40 px close and ? buttons: a 44-48 px hit box */
+.panel .ph .x::after, .card .ch .x::after, .card.studio > .ch .sthq::after { content: ''; position: absolute; inset: -4px; }
+.card .ch .x::after, .card.studio > .ch .sthq::after { inset: -4px 0 -4px -4px; } /* 6.5.4: never past the card's right edge (a 2 px sideways scroll in the Studio) */ /* 6.5.2: 36-40 px close and ? buttons: a 44-48 px hit box */
 .ptabs .chip::after, .modes .chip::after, .firerow .chip::after { content: ''; position: absolute; left: -2px; right: -2px; top: calc(50% - 22px); height: 44px; }
 .specs { display: flex; flex-direction: column; gap: 5px; }
 .elgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
@@ -1161,7 +1162,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .mdname b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mdname span { font-size: 14px; color: var(--mc, var(--dim)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.watching #mdeck { display: none; }
-/* 6.2 like from the battlefield: the same ♥ as the Studio's Keep; filled when the song is in My Tracks, a short pop and a line to confirm */
+/* 6.2 like from the battlefield: the same heart as the Studio's Keep; filled when the song is in My Tracks, a short pop and a line to confirm */
 .mdb.mdlike { color: #c9c6dc; } .mdb.mdlike.on { color: #ff5fa8; box-shadow: inset 0 0 0 2px #ff5fa8; }
 .mdb.mdlike.pop .svgi { animation: mdpop 0.36s steps(3); }
 @keyframes mdpop { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
@@ -1285,7 +1286,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
       <button class="probebtn" id="bProbe" hidden aria-label="Select the probe"><span>Probe</span></button>
-      <div id="prbar" hidden role="toolbar" aria-label="Probe commands"><button data-pr="home" aria-label="Recall the probe">↩<i>Home</i></button><button data-pr="ups" aria-label="Probe upgrades">⬆<i>Upgr</i></button><div class="prt" hidden><span></span></div></div>
+      <div id="prbar" hidden role="toolbar" aria-label="Probe commands"><button data-pr="home" aria-label="Recall the probe" data-ico="home"><i>Home</i></button><button data-pr="ups" aria-label="Probe upgrades" data-ico="up"><i>Upgr</i></button><div class="prt" hidden><span></span></div></div>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>

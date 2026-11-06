@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.5.3';
+const VERSION = '6.5.4';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -460,7 +460,9 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.5.3', title: 'Last Gradient 6.5.3 · Field Notes', items: [
+const WHATS_NEW = { ver: '6.5.4', title: 'Last Gradient 6.5.4 · Field Notes', items: [
+  ['Chests first', 'A tap on a pirate chest or crate claims it, even with the probe selected.'],
+  ['Pixel icons only', 'Every symbol in the game is now pixel art. Phones no longer swap in emoji.'],
   ['Cleaner probe controls', 'Selecting the probe now shows 2 small buttons under Probe: Home and Upgrades. Tap Probe again to let it go.'],
   ['Short hints', 'One short line says what the next tap does, then fades. A loot site shows its guards and credits.'],
   ['Upgrades panel', 'A tap on the map now closes the probe Upgrades panel.'],
@@ -667,7 +669,7 @@ const LESSONS = [
     real: 'In a run: follow the arrow. When power is full, upgrade instead of building.',
     run: { credits: 1400, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 3], ['rail', 5, 1], ['cryo', 1]]]], waves: [[['drone', 8, 1, 1.2], ['tank', 2, 2, 1]]] } },
   { id: 'power', title: 'Power, reactor and core', blurb: 'The power grid, expanding it, and upgrading the core.',
-    what: 'Each tower draws 1 power. Capacity grows by 1 every 3 waves; the reactor adds more for credits. The core has its own upgrades: Battery (its gun, and a docked tower), Shield, Hull and Uplink.', when: 'When the ⚡ readout is full and you still have credits.', todo: 'Upgrade towers first. Expand the reactor when you have credits to spare. Hull makes the core sturdier, Uplink recharges abilities faster.',
+    what: 'Each tower draws 1 power. Capacity grows by 1 every 3 waves; the reactor adds more for credits. The core has its own upgrades: Battery (its gun, and a docked tower), Shield, Hull and Uplink.', when: 'When the power readout is full and you still have credits.', todo: 'Upgrade towers first. Expand the reactor when you have credits to spare. Hull makes the core sturdier, Uplink recharges abilities faster.',
     real: 'In a run: a full grid means upgrade. Spare credits late go into the reactor and the core’s Hull.',
     run: { credits: 1600, grid: 3, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['rail', 1], ['cryo', 1]]]], waves: [[['drone', 10, 1, 1.2]]] } },
   { id: 'lift', title: 'Lift Off and docking', blurb: 'Fly the core, dock it on a tower, link and move towers.',
@@ -675,7 +677,7 @@ const LESSONS = [
     real: 'In a run: dock where the next wave hurts most, then move towers into link reach.',
     run: { credits: 260, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['road', [['rail', 3, 0.78, 1], ['pulse', 2, 0.66], ['pulse', 2, 0.42]]]], waves: [[['drone', 6, 1.6, 1.4], ['tank', 2, 3.2, 1.2]]] } },
   { id: 'overcharge', title: 'Overcharge', blurb: 'Put spare power into one tower.',
-    what: 'Overcharge spends spare power on a tower: +35% damage per step, 1 power per step.', when: 'When you have power left over and one tower doing most of the work.', todo: 'Open the tower panel and tap +1, +2 or +3. Tap the ⚡ readout to Overcharge your top tower in one go.',
+    what: 'Overcharge spends spare power on a tower: +35% damage per step, 1 power per step.', when: 'When you have power left over and one tower doing most of the work.', todo: 'Open the tower panel and tap +1, +2 or +3. Tap the power readout to Overcharge your top tower in one go.',
     real: 'In a run: never leave power unused. Overcharge your best tower.',
     run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 2], ['pulse', 1]]]], waves: [[['drone', 10, 0.9, 1.4], ['tank', 2, 2, 1]]] } },
   { id: 'abilities', title: 'Abilities and charges', blurb: 'Strike, Stasis, Frenzy, Nova and Scan.',

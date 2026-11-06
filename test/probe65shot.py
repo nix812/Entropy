@@ -57,6 +57,12 @@ with sync_playwright() as p:
         check(st[3] == 1 and st[2] == 0 and abs(st[0] - dest[0]) < 0.2 and abs(st[1] - dest[1]) < 0.2 and st[4], f'a tap on the map sends it (prGo recorded); the bar stays {st}', tag)
         tap_at(pg, dest[0] + side * 2, dest[1] - 1)
         check(pg.evaluate('() => G.inputs.filter(i => i[1] === "prGo").length') == 2, 'a second tap sends it again (still selected)', tag)
+        # 6.5.3 (Nic): a pirate chest tapped while the probe is selected is claimed; the probe is not sent there
+        cx, cy = int(dest[0]) - side * 3, int(dest[1]) - 2
+        pg.evaluate(f'() => {{ G.caches.push({{ x: {cx}, y: {cy}, t: 30, id: G.eid++, kind: "gold" }}); }}')
+        n2 = pg.evaluate('() => G.inputs.filter(i => i[1] === "prGo").length'); tap_at(pg, cx + 0.5, cy + 0.5)
+        check(pg.evaluate(f'() => !G.caches.some(c => c.x === {cx} && c.y === {cy}) && G.inputs.some(i => i[1] === "cache")') and pg.evaluate('() => G.inputs.filter(i => i[1] === "prGo").length') == n2 and pg.evaluate('() => !document.querySelector("#prbar").hidden'),
+              'a pirate chest tapped with the probe selected is claimed (no prGo); the probe stays selected', tag)
         pg.wait_for_timeout(900)
         pg.screenshot(path=str(out / f'p02_selected_path_{tag}.png'))
         # 3. Recall in the bar, then a tap on the core also recalls
