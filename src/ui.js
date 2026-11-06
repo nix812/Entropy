@@ -538,12 +538,22 @@ const UI = (() => {
       return best;
     }
     const tw = () => G.towers[0], noTw = () => !G.towers.length;
-    // the Basic Training checklist, in the order the coach teaches it; each line ticks from game state, so doing things early still counts
+    // the Basic Training checklist, in the order the coach teaches it; each line ticks from game state, so doing things early still counts.
+    // 6.5.2 (Nic: "The tutorial list doesn't seem to update"): the order follows the 6.2 lessons again (Strike and Veterans come before
+    // the core); "Read its bonus" ticks once any tower's Details tab shows an affix (it used to need that card's Got it: closing the panel
+    // instead left it unticked, and the strip showed "4. Read its bonus" for the rest of Training); the flags live per run (ck), not
+    // in the coach's step memory, which a restart clears. Each line names the step that teaches it: once the coach is past that step,
+    // an unticked line is missed (dim in the list; doing it later still ticks it) and the strip moves on to the next line.
     const used = n => (G.inputs || []).some(x => x[1] === n), lvls = () => G.towers.reduce((a, t) => a + t.lvl - 1 + (t.asc || 0), 0);
-    const CHECK = [['Place a tower', () => G.towers.length >= 1], ['Call a wave early', () => used('call')], ['Upgrade a tower', () => lvls() >= 1], ['Read its bonus', () => !!mem.affix],
-      ['Lift Off: dock on a tower', () => (mem.dk = mem.dk || !!(G.fr && frDockT()))], ['Link towers to the core', () => (mem.lk = mem.lk || (G.frLinks || []).length > 0)], ['Move a tower', () => used('frMove')], // 6.1 Frontier
-      ['Upgrade again', () => lvls() >= 2], ['Core: Shield', () => G.core.sLvl >= 2], ['Core: Battery', () => G.core.wLvl >= 2], ['Veteran: tap Ready, pick', () => used('vet') || used('ascPick')], ['Use Strike', () => used('abil')],
-      ['Pick a specialty (LV 3)', () => G.towers.some(t => t.spec)], ['Beat the bounty boss', () => G.bounties.length > 0], ['Extract', () => !!G.extracted]];
+    let ck = { g: null };
+    const CHECK = [['Place a tower', () => G.towers.length >= 1, 'build1'], ['Call a wave early', () => used('call'), 'call1'], ['Upgrade a tower', () => lvls() >= 1, 'upgrade'],
+      ['Read its bonus', () => (ck.affix = ck.affix || !!mem.affix || !!(panel && panel.kind === 'tower' && panel.tab === 'info' && panel.t && panel.t.affixes.length)), 'affixes'],
+      ['Lift Off: dock on a tower', () => (ck.dk = ck.dk || !!(G.fr && frDockT())), 'docked'], ['Link towers to the core', () => (ck.lk = ck.lk || (G.frLinks || []).length > 0), 'links'], ['Move a tower', () => used('frMove'), 'moved'], // 6.1 Frontier
+      ['Upgrade again', () => lvls() >= 2, 'up2Done'], ['Use Strike', () => used('abil'), 'recharge'], ['Veteran: tap Ready, pick', () => used('vet') || used('ascPick'), 'vpick'],
+      ['Core: Shield', () => G.core.sLvl >= 2, 'shield'], ['Core: Battery', () => G.core.wLvl >= 2, 'battery'],
+      ['Pick a specialty (LV 3)', () => G.towers.some(t => t.spec), 'spec'], ['Beat the bounty boss', () => G.bounties.length > 0, 'bounty'], ['Extract', () => !!G.extracted, null]];
+    const ckState = () => { if (ck.g !== G) ck = { g: G }; return CHECK.map(c => !!c[1]()); };
+    const ckPassed = k => { if (plan !== 'basic' || !CHECK[k][2]) return false; const j = STEPS().findIndex(S => S.id === CHECK[k][2]); return j >= 0 && i > j; };
     let listEl = null, listSig = '', listOpen = false, flashT = 0;
     try { listOpen = localStorage.getItem('entropy.tutlist') === '1'; } catch (e) { /* private mode: closed by default */ }
     function list() {
@@ -554,13 +564,14 @@ const UI = (() => {
         $('#stage').appendChild(listEl);
       }
       // the full list shows while nothing waits on the player; during a held step it folds to its strip (the current task) so the coach card has room
-      const open = listOpen && !held, ok = CHECK.map(c => !!c[1]()), n = ok.filter(Boolean).length, now = ok.indexOf(false), key = ok.join('') + open + listOpen;
+      const open = listOpen && !held, ok = ckState(), n = ok.filter(Boolean).length, miss = ok.map((v, k) => !v && ckPassed(k)), nx = ok.findIndex((v, k) => !v && !miss[k]),
+        now = nx >= 0 ? nx : ok.indexOf(false), key = ok.join('') + miss.join('') + open + listOpen;
       listEl.hidden = !!modalOpen && modalOpen !== 'hunt';
       if (key === listSig) return;
       if (listSig && n > (+listEl.dataset.n || 0)) { listEl.classList.add('flash'); clearTimeout(flashT); flashT = setTimeout(() => listEl && listEl.classList.remove('flash'), 1200); }
       listSig = key; listEl.dataset.n = n; listEl.classList.toggle('open', open);
       listEl.innerHTML = `<span class="tlh">Training ${n}/${CHECK.length}<i>${listOpen ? '▾ hide' : '▸ list'}</i></span><span class="tlcur">${now < 0 ? 'All done' : `${now + 1}. ${esc(CHECK[now][0])}`}</span>
-        <ol>${CHECK.map((c, k) => `<li class="${ok[k] ? 'ok' : k === now ? 'now' : ''}"><b>${ok[k] ? '✓' : k + 1}</b>${esc(c[0])}</li>`).join('')}</ol>`;
+        <ol>${CHECK.map((c, k) => `<li class="${ok[k] ? 'ok' : k === now ? 'now' : miss[k] ? 'miss' : ''}"><b>${ok[k] ? '✓' : k + 1}</b>${esc(c[0])}</li>`).join('')}</ol>`;
     }
     const allSpots = () => { const R = G.region, out = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) out.push({ x, y }); return out; };
     const packAt = () => { if (!mem.pk) mem.pk = pack(); if (!mem.pk) { const e = G.enemies.find(x => !x.dead); if (e) mem.pk = [e.x, e.y, 1]; } return mem.pk ? worldR(mem.pk[0], mem.pk[1], 1.7) : null; };
@@ -1046,7 +1057,8 @@ const UI = (() => {
     }
     return { start, stop, tick, get hold() { return on && held; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
       get chain() { return on && cur ? lessonOf(i) : null; }, // 6.2: the lesson the current step belongs to (test/tutcadence.py)
-      steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS) };
+      steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS),
+      checks: () => (G && G.tut && plan === 'basic' ? ckState() : null), checkNames: () => CHECK.map(c => c[0]) }; // 6.5.2: test/tutcheck.py
   })();
 
   // v4.4 Most Wanted: the run's bounty poster
@@ -1367,9 +1379,9 @@ const UI = (() => {
     noteKeep(t.title, t.body, t.col);
     el.style.setProperty('--c', urgent ? '#ff4d6a' : t.col || '#ffb03a');
     el.classList.toggle('urgent', urgent); el.classList.remove('out', 'scroll');
-    el.innerHTML = `<div class="tkl"><b>${esc(t.title)}</b><span>${esc(t.body || '')}</span></div><button class="tkb" aria-label="Notice log">LOG</button>`;
+    el.innerHTML = `<div class="tkw"><div class="tkl"><b>${esc(t.title)}</b><span>${esc(t.body || '')}</span></div></div><button class="tkb" aria-label="Notice log">LOG</button>`;
     el.hidden = false;
-    const line = el.firstChild, over = line.scrollWidth - el.clientWidth + 56;
+    const line = el.firstChild.firstChild, over = line.scrollWidth - el.clientWidth + 56;
     let dur = urgent ? 6500 : Math.min(6000, 2800 + (t.body || '').length * 30);
     // too long for one line: it slides across once instead of being cut off
     if (over > 0) { const secs = Math.max(2.5, over / 45); line.style.setProperty('--shift', -over + 'px'); line.style.setProperty('--dur', secs + 's'); el.classList.add('scroll'); dur = Math.max(dur, 1200 + secs * 1000 + 1600); }

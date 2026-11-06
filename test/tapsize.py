@@ -8,7 +8,7 @@ Anomaly draw) and measures every visible tappable element:
     hit area must never do that).
 Prints every element whose hit area is under 44 px (Apple's guideline) in either direction, per screen and size, and a
 summary line. With --json FILE it writes all rows. Fails (FAIL lines) when a target steals a neighbour's taps, or when an
-element listed in MUST44 is under 44 px.
+element listed in MUST44 (the top bar, Lift Off, Probe, Ready, the probe bar, LOG) is under 44 px with no side panel open.
 usage: python3 tapsize.py [WxH ...] [--json FILE] [--page PATH]   (default 667x375 1180x820)"""
 import json, pathlib, sys
 from playwright.sync_api import sync_playwright
@@ -44,7 +44,10 @@ MEASURE = '''([taps, mustSel]) => {
   const out = [];
   for (const el of all) {
     // only the top-most tappable: a tappable inside another tappable counts as its own target
-    const r = el.getBoundingClientRect(), c0 = clip(el), cx = Math.min(innerWidth - 1, Math.max(0, (c0.l + c0.r) / 2)), cy = Math.min(innerHeight - 1, Math.max(0, (c0.t + c0.b) / 2));
+    // the look: the border box minus a transparent border (a hit-box border, 6.5.2), and #bCash's 30 px face (its ::before)
+    let r = el.getBoundingClientRect(); { const cs = getComputedStyle(el), tr = c => /rgba\(0, 0, 0, 0\)|transparent/.test(c), bw = k => tr(cs['border' + k + 'Color']) ? parseFloat(cs['border' + k + 'Width']) * UIS : 0;
+      r = { left: r.left + bw('Left'), right: r.right - bw('Right'), top: r.top + bw('Top'), bottom: r.bottom - bw('Bottom') }; if (el.id === 'bCash') r.bottom = r.top + 31 * UIS; r.width = r.right - r.left; r.height = r.bottom - r.top; }
+    const c0 = clip(el), cx = Math.min(innerWidth - 1, Math.max(0, (c0.l + c0.r) / 2)), cy = Math.min(innerHeight - 1, Math.max(0, (c0.t + c0.b) / 2));
     let hw = 0, hh = 0, covered = !mine(el, cx, cy);
     if (!covered) {
       let a = cx, b = cx, c = cy, d = cy;
@@ -53,7 +56,9 @@ MEASURE = '''([taps, mustSel]) => {
       hw = b - a + 1; hh = d - c + 1;
     }
     let stolen = 0, by = '';
-    if (!covered) for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) { const x = c0.l + 1 + (c0.r - c0.l - 2) * i / 4, y = c0.t + 1 + (c0.b - c0.t - 2) * j / 4; if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
+    // sample the look, 7 px in from its edges (a cut corner is not part of the button); clipped to scrolling ancestors
+    const v = { l: Math.max(r.left, c0.l), t: Math.max(r.top, c0.t), r: Math.min(r.right, c0.r), b: Math.min(r.bottom, c0.b) }, ix = Math.min(7, (v.r - v.l) / 2 - 1), iy = Math.min(7, (v.b - v.t) / 2 - 1);
+    if (!covered) for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) { const x = v.l + ix + (v.r - v.l - 2 * ix) * i / 4, y = v.t + iy + (v.b - v.t - 2 * iy) * j / 4; if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
       const h = document.elementFromPoint(x, y), o = h && owner(h); if (o && o !== el && !el.contains(o) && !o.contains(el)) { stolen++; by = name(o); } }
     const must = mustSel.some(s => el.matches(s));
     out.push({ name: name(el), w: Math.round(r.width), h: Math.round(r.height), hw, hh, covered, stolen, by, must });
@@ -68,7 +73,8 @@ def measure(pg, scene, tag):
     for r in small: print(f'    {r["w"]:>4}x{r["h"]:<4} hit {r["hw"]:>4}x{r["hh"]:<4}{" COVERED" if r["covered"] else ""}{" MUST" if r["must"] else ""}  {r["name"]}')
     for r in R:
         if r['stolen']: check(False, f'{tag} {scene}: {r["name"]} loses {r["stolen"]}/25 points to {r["by"]}')
-        if r['must'] and not r['covered'] and (r['hw'] < 44 or r['hh'] < 44): check(False, f'{tag} {scene}: {r["name"]} hit area {r["hw"]}x{r["hh"]} under 44')
+        # the 44 px rule applies with no side panel open (an open panel rightly covers part of a top-bar hit box)
+        if r['must'] and scene in ('game', 'probe_select') and not r['covered'] and (r['hw'] < 44 or r['hh'] < 44): check(False, f'{tag} {scene}: {r["name"]} hit area {r["hw"]}x{r["hh"]} under 44')
 with sync_playwright() as p:
     b = p.chromium.launch()
     for W, H in sizes:
