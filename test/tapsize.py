@@ -8,7 +8,8 @@ Anomaly draw) and measures every visible tappable element:
     hit area must never do that).
 Prints every element whose hit area is under 44 px (Apple's guideline) in either direction, per screen and size, and a
 summary line. With --json FILE it writes all rows. Fails (FAIL lines) when a target steals a neighbour's taps, or when an
-element listed in MUST44 (the top bar, Lift Off, Probe, Ready, the probe bar, LOG) is under 44 px with no side panel open.
+element listed in MUST44 (the top bar, Lift Off, Probe, Ready, the probe bar, LOG) is under 44 px with no side panel open,
+unless it stops where it meets another target (that neighbour keeps its own taps: "meets" in the listing).
 usage: python3 tapsize.py [WxH ...] [--json FILE] [--page PATH]   (default 667x375 1180x820)"""
 import json, pathlib, sys
 from playwright.sync_api import sync_playwright
@@ -54,6 +55,9 @@ MEASURE = '''([taps, mustSel]) => {
       while (a > 0 && mine(el, a - 1, cy)) a--; while (b < innerWidth - 1 && mine(el, b + 1, cy)) b++;
       while (c > 0 && mine(el, cx, c - 1)) c--; while (d < innerHeight - 1 && mine(el, cx, d + 1)) d++;
       hw = b - a + 1; hh = d - c + 1;
+      // where the hit area stops at another target (it meets a neighbour, which keeps its own taps), name it
+      const nb = (x, y) => { if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return ''; const h = document.elementFromPoint(x, y), o = h && owner(h); return o && o !== el ? name(o) : ''; };
+      var meets = [nb(a - 1, cy), nb(b + 1, cy), nb(cx, c - 1), nb(cx, d + 1)].filter(Boolean).join(', ');
     }
     let stolen = 0, by = '';
     // sample the look, 7 px in from its edges (a cut corner is not part of the button); clipped to scrolling ancestors
@@ -61,7 +65,7 @@ MEASURE = '''([taps, mustSel]) => {
     if (!covered) for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) { const x = v.l + ix + (v.r - v.l - 2 * ix) * i / 4, y = v.t + iy + (v.b - v.t - 2 * iy) * j / 4; if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
       const h = document.elementFromPoint(x, y), o = h && owner(h); if (o && o !== el && !el.contains(o) && !o.contains(el)) { stolen++; by = name(o); } }
     const must = mustSel.some(s => el.matches(s));
-    out.push({ name: name(el), w: Math.round(r.width), h: Math.round(r.height), hw, hh, covered, stolen, by, must });
+    out.push({ name: name(el), w: Math.round(r.width), h: Math.round(r.height), hw, hh, covered, stolen, by, must, meets: typeof meets === 'string' ? meets : '' });
   }
   return out; }'''
 SEEN = '{v58:1,storm:1,crate:1,vet:1,abil:1,upg:1,power:1,spare:1,wormhole:1,anomaly:1,boss:1,market:1,support:1,tech:1,frontier:1,probe:1,fog:1}'
@@ -70,11 +74,11 @@ def measure(pg, scene, tag):
     for r in R: r['scene'] = scene; r['size'] = tag; rows.append(r)
     small = [r for r in R if r['hw'] < 44 or r['hh'] < 44]
     print(f'--- {tag} {scene}: {len(R)} targets, {len(small)} under 44 px')
-    for r in small: print(f'    {r["w"]:>4}x{r["h"]:<4} hit {r["hw"]:>4}x{r["hh"]:<4}{" COVERED" if r["covered"] else ""}{" MUST" if r["must"] else ""}  {r["name"]}')
+    for r in small: print(f'    {r["w"]:>4}x{r["h"]:<4} hit {r["hw"]:>4}x{r["hh"]:<4}{" COVERED" if r["covered"] else ""}{" MUST" if r["must"] else ""}  {r["name"]}{"  (meets " + r["meets"] + ")" if r.get("meets") else ""}')
     for r in R:
         if r['stolen']: check(False, f'{tag} {scene}: {r["name"]} loses {r["stolen"]}/25 points to {r["by"]}')
         # the 44 px rule applies with no side panel open (an open panel rightly covers part of a top-bar hit box)
-        if r['must'] and scene in ('game', 'probe_select') and not r['covered'] and (r['hw'] < 44 or r['hh'] < 44): check(False, f'{tag} {scene}: {r["name"]} hit area {r["hw"]}x{r["hh"]} under 44')
+        if r['must'] and scene in ('game', 'probe_select') and not r['covered'] and (r['hw'] < 44 or r['hh'] < 44) and not r['meets']: check(False, f'{tag} {scene}: {r["name"]} hit area {r["hw"]}x{r["hh"]} under 44')
 with sync_playwright() as p:
     b = p.chromium.launch()
     for W, H in sizes:

@@ -7,13 +7,20 @@ banner up, the full HUD's stats box, toasts, the Map button, and a tower panel o
 6.2: the Home/Map button is gone (Lift Off, then Ready, top the right column); the edge arrows (yellow treasure arrows with a
 chest, the green core arrow) never sit under a control or banner, never overlap each other, and at most 3 treasure arrows show.
 6.5: the Probe button (under Lift Off) clears every control and banner; loot site arrows (at most 3) and the probe arrow too.
+6.5.2: the probe command bar (probe selected) clears every control and banner.
 usage: python3 trackcollide.py"""
 import pathlib, mkpage
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent; mkpage.mk(); errs = []; fails = []
 OVER = ['#log', '#docbar', '#panel', '#watchbar', '#cpBanner']  # the deck is a popover: it may cover the banners while open, never a control
 JS_HITS = '''(over) => {
-  const vis = el => { if (!el) return null; const cs = getComputedStyle(el); if (el.hidden || cs.display === 'none' || cs.visibility === 'hidden') return null; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 ? r : null; };
+  // what shows: a transparent border is a hit box, not the look (6.5.2 chips), and the chip row is the top bar's row (its box reaches
+  // below the bar as an invisible hit strip that sits under every field control)
+  const vis = el => { if (!el) return null; const cs = getComputedStyle(el); if (el.hidden || cs.display === 'none' || cs.visibility === 'hidden') return null; let r = el.getBoundingClientRect();
+    const tr = c => /rgba\(0, 0, 0, 0\)|transparent/.test(c), bw = k => tr(cs['border' + k + 'Color']) ? parseFloat(cs['border' + k + 'Width']) * UIS : 0;
+    r = { left: r.left + bw('Left'), right: r.right - bw('Right'), top: r.top + bw('Top'), bottom: r.bottom - bw('Bottom') };
+    if (el.id === 'chips') r.bottom = Math.min(r.bottom, document.querySelector('#hud').getBoundingClientRect().bottom);
+    r.width = r.right - r.left; r.height = r.bottom - r.top; return r.width > 2 && r.height > 2 ? r : null; };
   const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
   const out = [];
   const t = vis(document.querySelector('#bMusic')); if (!t) out.push('Music tile missing');
@@ -29,7 +36,7 @@ JS_HITS = '''(over) => {
     for (const s of ['#bLift', '#railL', '#railR', '#abils', '#log', '#docbar', '#panel', '#mdeck']) { const q = vis(document.querySelector(s)); if (q && hit(wc, q)) out.push('bounty chip x ' + s); } }
   // 5.8: the Ready button sits at the top right (under Lift Off on Frontier), clear of every control and banner (it hides while a right-hand panel is open)
   const rb = vis(document.querySelector('#bReady'));
-  if (!rb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Ready button missing');
+  if (!rb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l') && !document.body.classList.contains('prcmd')) out.push('Ready button missing'); // 6.5.2: it waits while the probe is selected
   if (rb) for (const s of ['#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#bLift', '#bProbe']) { const q = vis(document.querySelector(s)); if (q && hit(rb, q)) out.push('Ready button x ' + s); }
   // Frontier: Lift Off tops the right column, above Ready, clear of every control and banner (it hides while a side panel is open)
   if (G && G.fr) { const lb = vis(document.querySelector('#bLift'));
@@ -39,6 +46,10 @@ JS_HITS = '''(over) => {
   if (G && G.probe) { const pb = vis(document.querySelector('#bProbe'));
     if (!pb && !document.body.classList.contains('panel-r') && !document.body.classList.contains('panel-l')) out.push('Probe button missing');
     if (pb) for (const s of ['#bLift', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(pb, q)) out.push('Probe button x ' + s); } } }
+  // 6.5.2: the probe command bar (in Ready's slot, under the Probe button) clears every control and banner
+  { const pr = vis(document.querySelector('#prbar'));
+    if (window._wantBar && !pr && !/panel-[lr]/.test(document.body.className)) out.push('probe bar missing');
+    if (pr) for (const s of ['#bLift', '#bProbe', '#bReady', '#railR', '#railL', '#chips', '#ticker', '#asbar', '#mdeck', '#panel', '#docbar', '#hud', '#log', '#zoneBan', '#cpBanner']) { const el = document.querySelector(s); const kids = s === '#log' ? [...(el ? el.children : [])] : [el]; for (const k of kids) { const q = vis(k); if (q && hit(pr, q)) out.push('probe bar x ' + (s === '#log' ? '#log line' : s)); } } }
   // 6.3: the zone arrival banner ("Entering <zone>") sits over the field only, clear of every control (it lets taps through)
   { const zb = vis(document.querySelector('#zoneBan')); if (!zb) out.push('zone banner missing');
     else for (const s of ['#bLift', '#bProbe', '#bReady', '#railL', '#railR', '#abils', '#hud', '#chips', '#panel', '#cpBanner', '#docbar']) { const q = vis(document.querySelector(s)); if (q && hit(zb, q)) out.push('zone banner x ' + s); } } // the music deck is a popover: it may cover banners
@@ -71,7 +82,7 @@ FILL = '''() => {
   const dps = document.querySelector('#dps'); dps.innerHTML = '<b>DPS</b><br>Pulse 1,234<br>Rail 5,678<br>Cryo 90<br>Lens 1,111<br>Mortar 222';
   const log = document.querySelector('#log'); log.innerHTML = Array.from({ length: 6 }, (_, i) => `<div class="fl" style="--c:#6ae2ff"><b>Now Playing</b> Analog Corridor · Techno ${i}</div>`).join('');
   const db = document.querySelector('#docbar'); db.hidden = false; db.innerHTML = '<span class="heat">Road heat <b>40%</b><i>/100%</i></span><span class="chest">War chest <b>3/8</b><i>next at 2,400</i></span><span class="ice">Ice jam <b>2</b><i>held</i></span>';
-  const tk = document.querySelector('#ticker'); tk.hidden = false; tk.style.setProperty('--c', '#ffb03a'); tk.innerHTML = '<div class="tkl"><b>SURGE</b><span>The swarm surges: +40% enemies this wave, and they come faster than before</span></div><button class="tkb">LOG</button>';
+  const tk = document.querySelector('#ticker'); tk.hidden = false; tk.style.setProperty('--c', '#ffb03a'); tk.innerHTML = '<div class="tkw"><div class="tkl"><b>SURGE</b><span>The swarm surges: +40% enemies this wave, and they come faster than before</span></div></div><button class="tkb">LOG</button>';
   const as = document.querySelector('#asbar'); as.hidden = false; as.innerHTML = '<b>STRAIN ASSAULT</b><span>Wave 15 · Plating · Haste</span>'; document.body.classList.add('asbar');
   UI.toast('NOW PLAYING', 'Analog Corridor · Techno', '#6ae2ff');
   G.wantedTold = 1; G.purse = 1234567; for (const t of G.towers) t.pending = 1; UI._dbg.updateHud(true);
@@ -98,6 +109,11 @@ with sync_playwright() as p:
         states = {}
         states['field, everything up'] = pg.evaluate(JS_HITS, OVER)
         pg.screenshot(path=str(root / 'test' / 'out' / f'trk_all_{W}{"_cls" if MODE == "cls" else ""}.png'))
+        if MODE == 'fr':  # 6.5.2: the probe selected: its bar under the Probe button
+            pg.evaluate('() => { window._wantBar = 1; UI._dbg.selectProbe(); }'); pg.wait_for_timeout(200); pg.evaluate(FILL); pg.evaluate('() => UI.zoneBanner("tempest")'); pg.wait_for_timeout(400)
+            states['probe selected (bar)'] = pg.evaluate(JS_HITS, OVER)
+            pg.screenshot(path=str(root / 'test' / 'out' / f'trk_probebar_{W}.png'))
+            pg.evaluate('() => { window._wantBar = 0; UI._dbg.probeEnd(); }'); pg.wait_for_timeout(150)
         for side, t in [('left', '_L'), ('right', '_R')]:
             pg.evaluate(f'() => {{ UI._dbg.openTower(window.{t}); }}'); pg.wait_for_timeout(300); pg.evaluate(FILL); pg.evaluate('() => UI.zoneBanner("tempest")'); pg.evaluate('() => { if (document.querySelector("#mdeck").hidden) document.querySelector("#bMusic").click(); }'); pg.wait_for_timeout(800)
             cls = pg.evaluate('() => document.body.className')

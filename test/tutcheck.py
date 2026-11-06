@@ -11,13 +11,18 @@ After every coach step it reads the checklist (#tutlist): the count, the current
   - the strip's current line is never a line whose lesson is already over (the list never hangs on an old task);
   - the visible list (open, then folded) shows the same ticks as the game state.
 Screenshots of the strip and the open list ticking: test/out/tutcheck/<size>_<style>_*.png.
-usage: python3 tutcheck.py [WxH,...] [perfect|human|skip|both|all]   (default 667x375 both = perfect,human)"""
+usage: python3 tutcheck.py [WxH,...] [perfect|human|skip|both|all] [--page PATH --tag PREFIX]   (default 667x375 both)"""
 import json, pathlib, sys, time, mkpage
 from playwright.sync_api import sync_playwright
 root = pathlib.Path(__file__).parent.parent; out = root / 'test' / 'out' / 'tutcheck'; out.mkdir(parents=True, exist_ok=True)
-sizes = [tuple(map(int, s.split('x'))) for s in (sys.argv[1] if len(sys.argv) > 1 else '667x375').split(',')]
-styles = {'both': ['perfect', 'human'], 'all': ['perfect', 'human', 'skip']}.get(sys.argv[2] if len(sys.argv) > 2 else 'both', [sys.argv[2] if len(sys.argv) > 2 else 'perfect'])
-mkpage.mk(); errs = []; fails = []
+A = [a for a in sys.argv[1:] if not a.startswith('--')]; page = sys.argv[sys.argv.index('--page') + 1] if '--page' in sys.argv else None
+if page: A = [a for a in A if a != page]
+sizes = [tuple(map(int, s.split('x'))) for s in (A[0] if A else '667x375').split(',')]
+styles = {'both': ['perfect', 'human'], 'all': ['perfect', 'human', 'skip']}.get(A[1] if len(A) > 1 else 'both', [A[1] if len(A) > 1 else 'perfect'])
+pre = sys.argv[sys.argv.index('--tag') + 1] if '--tag' in sys.argv else ''
+if pre: A = [a for a in A if a != pre]
+if not page: mkpage.mk(); page = str(root / 'test' / 'out' / 'page.html')
+errs = []; fails = []
 def check(ok, msg):
     print(('ok   ' if ok else 'FAIL ') + msg, flush=True)
     if not ok: fails.append(msg)
@@ -33,7 +38,7 @@ CHECK_STEP = {'Place a tower': 'build1', 'Call a wave early': 'call1', 'Upgrade 
               'Core: Shield': 'shield', 'Core: Battery': 'battery', 'Veteran: tap Ready, pick': 'vpick', 'Use Strike': 'aim',
               'Pick a specialty (LV 3)': 'spec', 'Beat the bounty boss': None, 'Extract': None}
 def run(pg, tag, style, limit=600):
-    pg.goto('file://' + str(root / 'test' / 'out' / 'page.html')); pg.wait_for_timeout(400)
+    pg.goto('file://' + page); pg.wait_for_timeout(400)
     pg.evaluate('() => { window.tutOfferTest = 1; PROF = Save.merge({}); PROF.seenVer = VERSION; Save.save(); UI.renderHangar(); try { localStorage.setItem("entropy.tutlist", "0"); } catch (e) {} }')
     pg.click('#bLaunch'); pg.wait_for_timeout(400)
     pg.evaluate('() => { const b = document.querySelector("#modal [data-act=tutStart]") || document.querySelector("#modal [data-act=tutGo]"); b && b.click(); }'); pg.wait_for_timeout(1200)
@@ -47,7 +52,7 @@ def run(pg, tag, style, limit=600):
         if L and (not log or log[-1]['ticks'] != L['ticks']):
             log.append({'step': c['step'] if c else (seen[-1] if seen else ''), 'k': len(seen), **L})
             if shots < 40 and log[-1]['n'] > (log[-2]['n'] if len(log) > 1 else 0):
-                shots += 1; pg.screenshot(path=str(out / f'{tag}_{style}_{shots:02d}_tick{L["n"]}.png'))
+                shots += 1; pg.screenshot(path=str(out / f'{pre}{tag}_{style}_{shots:02d}_tick{L["n"]}.png'))
         if not c:
             pg.evaluate('() => { if (G && !G.over) G.speed = 6; }'); pg.wait_for_timeout(120); continue
         pg.evaluate('() => { if (G && !G.over && G.speed > 1) G.speed = 1; }')

@@ -625,6 +625,7 @@ body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
 #prbar .prx { font-family: inherit; font-size: 20px; padding: 0; }
 body.prcmd .rdybtn, body.panel-r #prbar, body.panel-l #prbar { display: none; }
 body.prcmd #zoneBan { top: 64%; }
+body.prcmd #log .fl:nth-last-child(n+4) { display: none; } /* the corner feed keeps its 3 newest lines while the bar is up, so it never reaches it */
 .sts.prsite { box-shadow: inset 3px 0 0 #ff6ad5; line-height: 1.25; padding-left: 10px; } .sts.prsite b { color: #ff6ad5; }
 .note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
 .sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
@@ -723,7 +724,8 @@ body.rdy #tutlist { bottom: 6px; }
 /* 6.5.2 ui652: the panel's small chips (tabs, Overcharge, Aim, Technique) keep their look and get a 44 px tall hit box that reaches
    into the space around them (2 px into each side gap) */
 .ptabs .chip, .modes .chip, .firerow .chip { position: relative; }
-.panel .ph .x { position: relative; z-index: 1; } /* the tabs' hit boxes reach up beside it: the close button stays on top */
+.panel .ph .x, .card .ch .x, .card.studio > .ch .sthq { position: relative; z-index: 1; } /* the tabs' hit boxes reach up beside it: the close button stays on top */
+.panel .ph .x::after, .card .ch .x::after, .card.studio > .ch .sthq::after { content: ''; position: absolute; inset: -4px; } /* 6.5.2: 36-40 px close and ? buttons: a 44-48 px hit box */
 .ptabs .chip::after, .modes .chip::after, .firerow .chip::after { content: ''; position: absolute; left: -2px; right: -2px; top: calc(50% - 22px); height: 44px; }
 .specs { display: flex; flex-direction: column; gap: 5px; }
 .elgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }

@@ -1901,7 +1901,8 @@ const UI = (() => {
   function probeTap(p) {
     const P = G.probe, onP = P.alive && Math.hypot(p.x - P.x, p.y - (P.y - 0.33)) < (P.home ? 0.45 : 0.8), inPanel = !!(panel && panel.kind === 'probe');
     if (prCmd || inPanel) {
-      if (onP) { if (!inPanel) { SFX.play('ui'); probeEnd(); } return true; } // a tap on the selected probe lets it go
+      // a tap on the selected probe lets it go; near the core a tap means recall (a returning probe flies right beside it)
+      if (onP && (P.home || Math.hypot(p.x - G.core.x, p.y - G.core.y) > 1.1)) { if (!inPanel) { SFX.play('ui'); probeEnd(); } return true; }
       if (!P.alive) { closePanel(); probeEnd(); return false; }
       const x = Math.round(p.x * 10) / 10, y = Math.round(p.y * 10) / 10;
       if (!window.act('prGo', x, y)) { SFX.play('deny'); return true; }

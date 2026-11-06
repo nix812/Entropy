@@ -62,7 +62,7 @@ with sync_playwright() as p:
         # 3. Recall in the bar, then a tap on the core also recalls
         pg.evaluate('() => document.querySelector("#prbar [data-pr=home]").click()'); pg.wait_for_timeout(200)
         check(pg.evaluate('() => (G.probe.ret === 1 || G.probe.home === 1) && G.inputs.some(i => i[1] === "prHome") && document.querySelector("#prbar [data-pr=home]").disabled'), 'Recall in the bar brings it home (prHome recorded; Recall dims)', tag)
-        tap_at(pg, dest[0], dest[1]); tap_at(pg, P0[2], P0[3])
+        tap_at(pg, dest[0], dest[1]); pg.wait_for_timeout(700); tap_at(pg, P0[2], P0[3])  # spaced: two quick taps read as a double tap
         check(pg.evaluate('() => G.probe.ret === 1 || G.probe.home === 1'), 'a tap on the core recalls it', tag)
         # ✕ lets it go: the bar hides, Ready may return, map taps work as before
         pg.evaluate('() => document.querySelector("#prbar [data-pr=x]").click()'); pg.wait_for_timeout(200)
