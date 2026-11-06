@@ -142,6 +142,24 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .cashbtn:active { filter: brightness(1.3); }
 .cashtag { font-style: normal; font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; color: var(--amber); letter-spacing: 0.06em; margin-left: 4px; }
 .cashbtn.on { box-shadow: inset 0 0 0 2px var(--amber); }
+/* 6.5.2 ui652 bigger tap areas in the top bar (Nic: "hard to press ... especially the tickers in the top menu"). Each target keeps
+   its look and gets an invisible hit box: the full bar height plus --hx into the field below, so it is 44 px tall on screen
+   (32 px bar + 12 px at UIS 1; nothing extra on an iPad, where the bar is already 46 px), and at least 44 px wide. The hit boxes
+   sit at z 3: above the map (a tap just under a chip is meant for the chip), under the rails (z 4) and every field control and
+   banner (Lift Off, Probe, Ready 4, ticker 6, panels 6, deck 8), so they never take a tap meant for one of those. */
+#game { --hx: max(0px, calc(44px / var(--ui, 1) - 32px)); }
+.rail { position: relative; z-index: 4; }
+#hud .hs.pwr { position: relative; }
+#hud .hs.pwr::after { content: ''; position: absolute; left: 50%; width: max(100%, 44px); transform: translateX(-50%); top: calc(50% - 16px); height: calc(32px + var(--hx)); z-index: 3; }
+#chips { align-self: stretch; align-items: center; padding-bottom: var(--hx); margin-bottom: calc(-1 * var(--hx)); pointer-events: none; }
+/* a chip's hit box is a transparent border (a ::after would be cut by the threat chip's own overflow): 6 px up to the bar's top,
+   6 px + --hx down, 2 px into each gap; negative margins keep the layout, background-clip keeps the look */
+#chips > [data-threat], #chips > [data-wanted], #chips > [data-more], #chips > [data-ready], #chips > [data-evo], #chips > .storm.tap { position: relative; z-index: 3; pointer-events: auto;
+  border: solid transparent; border-width: 6px 2px calc(6px + var(--hx)); margin: -6px -2px calc(-6px - var(--hx)); background-clip: padding-box; }
+#chips > [data-more] { min-width: 48px; text-align: center; } /* 44 px to see, 48 with its side borders (2 px of each fall in the gaps) */
+#bCash { position: relative; z-index: 3; align-self: flex-start; height: calc(32px + var(--hx)); padding-bottom: var(--hx); clip-path: none; background: none; box-shadow: none; }
+#bCash::before { content: ''; position: absolute; left: 0; right: 0; top: 1px; height: 30px; z-index: -1; background: var(--panel2); clip-path: var(--cut); box-shadow: inset 0 0 0 1px #6a4a18; }
+#bCash.on::before { box-shadow: inset 0 0 0 2px var(--amber); }
 .cashrate { display: flex; align-items: baseline; gap: 8px; background: var(--panel); padding: 8px 10px; box-shadow: inset 0 0 0 1px var(--line); }
 .cashrate b { font-weight: 400; font-size: 26px; color: var(--amber); line-height: 1; }
 .cashrate span { font-size: 16px; color: var(--dim); }
@@ -319,6 +337,7 @@ body.tut #bWeb, body.tut #bStats, body.tut:not(.tutent) #bEnt { visibility: hidd
 #tutlist li { font-size: 14px; line-height: 1.12; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #tutlist li b { display: inline-block; width: 18px; font-weight: 400; font-family: var(--f-pix); font-size: 8px; }
 #tutlist li.ok { color: var(--good); } #tutlist li.now { color: var(--ink); } #tutlist li.now b { color: var(--amber); }
+#tutlist li.miss { opacity: 0.55; } /* 6.5.2: its lesson passed without it; doing it later still ticks it */
 #tutlist.flash { box-shadow: inset 0 0 0 2px var(--good); }
 body.panel-l #tutlist { visibility: hidden; }
 #chips::-webkit-scrollbar { display: none; }
@@ -497,8 +516,10 @@ body.bossbar #toasts { top: 58px; } body.asbar #toasts { top: 84px; }
 #asbar em { font-style: normal; font-size: 15px; color: #ffd0d8; } #asbar em.lost { color: #fff; background: #ff4d6a; padding: 0 4px; }
 body.panel-l #asbar { left: calc(min(270px, 46%) + 10px); top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); } body.panel-r #asbar { left: 6px; top: 48px; max-width: calc(100% - min(270px, 46%) - 20px); }
 /* v5.1.2 the ticker: one line under the top bar, left of the Map button, never over the middle of the field */
-#ticker { position: absolute; top: 6px; left: 6px; max-width: calc(100% - 150px); z-index: 6; overflow: hidden; background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c); padding: 3px 10px 3px 12px; pointer-events: none; padding-right: 50px; animation: tin 0.2s; transition: opacity 0.25s; }
+#ticker { position: absolute; top: 6px; left: 6px; max-width: calc(100% - 150px); z-index: 6; overflow: visible; background: rgba(7, 8, 15, 0.9); box-shadow: inset 0 0 0 1px var(--c), inset 3px 0 0 var(--c); padding: 3px 10px 3px 12px; pointer-events: none; padding-right: 50px; animation: tin 0.2s; transition: opacity 0.25s; }
 /* the line itself lets taps through to the field; only its LOG button is a target */
+#ticker .tkw { overflow: hidden; } /* 6.5.2: the line clips here, not on #ticker, so LOG's hit box can reach below */
+#ticker .tkb::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: max(100%, calc(44px / var(--ui, 1))); }
 #ticker .tkb { position: absolute; right: 0; top: 0; bottom: 0; width: 44px; pointer-events: auto; cursor: pointer; border: 0; background: rgba(7, 8, 15, 0.96); box-shadow: inset 1px 0 0 var(--c); color: var(--c); font-family: var(--f-pix); font-size: 8px; letter-spacing: 0.06em; }
 #ticker[hidden] { display: none; }
 #ticker.out { opacity: 0; }
@@ -571,24 +592,40 @@ body.panel-l #dps { display: none; }
 /* 5.8 Ready: towers with a veteran pick or an Ascend perk waiting. A fixed spot at the top right, hidden at zero, a pulse when the count rises */
 .rdybtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 40px; padding: 0 6px 0 10px; display: flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
   background: rgba(40, 32, 6, 0.92); box-shadow: inset 0 0 0 2px #ffd84a; color: #ffd84a; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+.rdybtn::after { content: ''; position: absolute; left: 0; right: 0; top: -2px; bottom: -2px; } /* 6.5.2: a 44 px hit box */
 .rdybtn b { min-width: 26px; height: 26px; padding: 0 5px; display: grid; place-items: center; background: #ffd84a; color: #1a1004; font-weight: 400; font-size: 13px; }
 .rdybtn.pulse { animation: rdyp 0.5s steps(3) 3; } @keyframes rdyp { 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 14px rgba(255, 216, 74, 0.8); transform: scale(1.06); } }
 body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves the ticker and the music deck: Ready waits until it closes */
 /* Frontier: Lift Off tops the right column (Ready moves down one slot); it waits while a side panel is open, like Ready */
-.liftbtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 40px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
+.liftbtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 44px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
   background: rgba(6, 34, 26, 0.92); box-shadow: inset 0 0 0 2px var(--core); color: var(--core); font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
 .liftbtn.cool { color: #6f9c8c; box-shadow: inset 0 0 0 1px #3d6a5a; background: rgba(12, 22, 20, 0.88); }
 .liftbtn.fly { color: #e6fff6; animation: pulse 0.8s infinite; }
 .liftbtn.go:not(.cool):not(.fly) { animation: liftp 1.6s steps(4) infinite; } @keyframes liftp { 50% { box-shadow: inset 0 0 0 2px #e6fff6, 0 0 10px rgba(89, 240, 180, 0.6); } }
-body.fr .rdybtn { top: 52px; }
+body.fr .rdybtn { top: 54px; }
 body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
 /* 6.5 the probe: its button sits under Lift Off (Ready moves down one more slot); it hides with a side panel like Lift Off */
-.probebtn { position: absolute; right: 6px; top: 52px; z-index: 4; height: 34px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; border: 0; cursor: pointer;
+.probebtn { position: absolute; right: 6px; top: 54px; z-index: 4; height: 44px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; border: 0; cursor: pointer;
   background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
 .probebtn.away { color: #e6f4ff; } .probebtn.hit { color: #ff8a9c; box-shadow: inset 0 0 0 2px #ff5a7a; animation: pulse 0.6s infinite; }
 .probebtn.dead { color: #ff8a9c; box-shadow: inset 0 0 0 1px #8a3040; background: rgba(30, 10, 16, 0.9); }
-body.prb.fr .rdybtn { top: 92px; }
+body.prb.fr .rdybtn { top: 102px; }
 body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
+/* 6.5.2 probe command mode: the Probe button reads as pressed, and a bar under it (in Ready's slot; Ready waits, as it does for a
+   side panel) says what the next map tap does, shows the probe's state, and holds Recall, Upgrades (the full panel) and ✕ */
+.probebtn.sel { background: #9fd8ff; color: #08162a; box-shadow: inset 0 0 0 2px #e6f4ff; animation: none; }
+#prbar { position: absolute; right: 6px; top: 102px; z-index: 4; display: flex; gap: 4px; height: 44px; max-width: calc(100% - 12px); }
+#prbar[hidden] { display: none; }
+#prbar .prt { flex: 0 1 auto; min-width: 0; max-width: 270px; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 0 10px; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 1px #3d6a8a, inset 3px 0 0 #9fd8ff; }
+#prbar .prt b { font-family: var(--f-pix); font-weight: 400; font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; color: #9fd8ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#prbar .prt span { font-size: 15px; line-height: 1; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#prbar button { flex: 0 0 auto; min-width: 44px; padding: 0 10px; border: 0; cursor: pointer; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; }
+#prbar button:disabled { color: #4f6a80; box-shadow: inset 0 0 0 1px #3d5a70; cursor: default; }
+#prbar button:active:not(:disabled) { filter: brightness(1.3); }
+#prbar .prx { font-family: inherit; font-size: 20px; padding: 0; }
+body.prcmd .rdybtn, body.panel-r #prbar, body.panel-l #prbar { display: none; }
+body.prcmd #zoneBan { top: 64%; }
+body.prcmd #log .fl:nth-last-child(n+4) { display: none; } /* the corner feed keeps its 3 newest lines while the bar is up, so it never reaches it */
 .sts.prsite { box-shadow: inset 3px 0 0 #ff6ad5; line-height: 1.25; padding-left: 10px; } .sts.prsite b { color: #ff6ad5; }
 .note.frpitch { margin: 0 0 6px; color: #bfeee0; } .note.frpitch b { color: var(--core); }
 .sts.frdock { box-shadow: inset 3px 0 0 var(--c); } .sts.frdock b { color: var(--c); }
@@ -684,6 +721,12 @@ body.rdy #tutlist { bottom: 6px; }
 .firerow .chip.lock { opacity: 0.45; box-shadow: inset 0 0 0 1px var(--line2); background: transparent; border: 1px dashed var(--line2); }
 .firedesc { font-family: var(--f-term); font-size: 14px; line-height: 1.05; color: var(--dim); margin: 3px 0 2px; }
 .modes .chip { flex: 1; padding: 0 2px; min-height: 34px; font-size: 9px; }
+/* 6.5.2 ui652: the panel's small chips (tabs, Overcharge, Aim, Technique) keep their look and get a 44 px tall hit box that reaches
+   into the space around them (2 px into each side gap) */
+.ptabs .chip, .modes .chip, .firerow .chip { position: relative; }
+.panel .ph .x, .card .ch .x, .card.studio > .ch .sthq { position: relative; z-index: 1; } /* the tabs' hit boxes reach up beside it: the close button stays on top */
+.panel .ph .x::after, .card .ch .x::after, .card.studio > .ch .sthq::after { content: ''; position: absolute; inset: -4px; } /* 6.5.2: 36-40 px close and ? buttons: a 44-48 px hit box */
+.ptabs .chip::after, .modes .chip::after, .firerow .chip::after { content: ''; position: absolute; left: -2px; right: -2px; top: calc(50% - 22px); height: 44px; }
 .specs { display: flex; flex-direction: column; gap: 5px; }
 .elgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
 .elgrid .chip { padding: 0 1px; min-height: 34px; font-size: 8px; }
@@ -1174,6 +1217,13 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
   .stb { width: 36px; height: 36px; } .sttr { gap: 4px; }
   .stcompose { grid-template-columns: minmax(0, 1fr); } .cpright { order: -1; } /* the grid first on small phones */
 }
+/* 6.5.2 ui652: bigger tap areas in the Music Studio and the pause menu. Invisible hit boxes reach into the gaps around each control
+   (half the gap, so neighbours never overlap); the look does not change, except pause menu buttons 44 px tall on phones (were 33) */
+.sttabs .chip, .stvibe .chip, .sttr .stb, .gpl { position: relative; }
+.sttabs .chip::after, .sttr .stb::after { content: ''; position: absolute; left: -2px; right: -2px; top: -4px; bottom: -4px; }
+.stvibe .chip::after { content: ''; position: absolute; left: -3px; right: -3px; top: -3px; bottom: -3px; }
+.gpl::after { content: ''; position: absolute; left: 0; right: -3px; top: -3px; bottom: -3px; } /* the genre name beside it clips its own overflow: no hit box there */
+.card .stack > .btn { min-height: 44px; } /* .btn's cut corners clip any hit box: the menu buttons are simply 44 px tall */
 @media (prefers-reduced-motion: reduce) { .brand h1, .entg.ready, #rotate .ph-icon { animation: none; } }
 /* v5.7 studio splash (outside #app, so sized in viewport units) */
 #splash { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 55%, #1b1530 0%, #07080f 70%); transition: opacity 0.5s; touch-action: none; }
@@ -1233,6 +1283,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
       <button class="probebtn" id="bProbe" hidden aria-label="Select the probe"><span>Probe</span></button>
+      <div id="prbar" hidden role="toolbar" aria-label="Probe commands"><div class="prt"><b></b><span></span></div><button data-pr="home">Recall</button><button data-pr="ups">Upgrades</button><button class="prx" data-pr="x" aria-label="Done">✕</button></div>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>
