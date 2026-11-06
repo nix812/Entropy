@@ -711,12 +711,12 @@ const UI = (() => {
         { id: 'prBtn', ls: 'probe', when: () => !!site(1) && prOK() && !panel, skip: () => looted(1) || !prOK() || !!site(1) && G.probe.task === site(1).id || W() >= 8, hold: 1, at: sel('#bProbe'), t: 'Your probe',
           b: 'It flies anywhere on the map and loots sites. A wreck just appeared. Tap Probe.', done: () => !!prCmd },
         { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1),
-          b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'The bar under Probe says what a tap does. Tap the wreck: the probe flies there.',
+          b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'Selected, every map tap sends the probe. Tap Probe again to let it go. Tap the wreck now.',
           done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && G.probe.task !== site(1).id && 'prBtn' },
         { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'It flies over anything. On the wreck it salvages for 2.5 s. Loot goes into its hold.',
           done: () => looted(1), skip: () => !prOK(), back: () => !looted(1) && site(1) && G.probe.task !== site(1).id && 'prSend' },
         { id: 'prHome', hold: 1, when: () => looted(1), skip: () => !prOK() || G.probe.home, at: () => appR(q('#prbar [data-pr=home]')) || appR(q('#bProbe')), t: 'Bring it home',
-          b: () => `Cargo banks only when the probe docks at the core. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Recall.' : 'Tap Probe, then Recall.'}`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
+          b: () => `Cargo banks only when the probe docks at the core. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Home (↩) under Probe.' : 'Tap Probe, then Home (↩).'}`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
         info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits. Docked, the probe repairs the core. A lost probe drops its cargo and costs credits to rebuild.`,
           { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() && !((G.stats.pr || {}).trips) || W() >= 8, enter: probeEnd }),
         // 6.6 fog of war, on the way to a guarded wreck far out (TUT.b2.sites[1])
@@ -727,7 +727,7 @@ const UI = (() => {
           at: () => worldR(G.probe.x, G.probe.y, 2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dim ground, enemies are hidden.' },
         info('fogFair', () => appR(q('#chips [data-threat]')), 'Fair warnings', 'Bosses always show. Roads stay on the map. Edge arrows mark enemies near your core. The Threat Board lists each wave.', { hold: 0, skip: () => looted(2) || !prOK() }),
         { id: 'prOut', hold: 1, when: () => looted(2) || !prOK(), skip: () => !prOK() || G.probe.home || G.probe.ret, at: () => appR(q('#prbar [data-pr=home]')) || appR(q('#bProbe')), t: 'Get out',
-          b: () => `The loot is in the hold. The drone shoots while the probe stays. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Recall.' : 'Tap Probe, then Recall.'} Later, Upgrades › Lance lets it shoot back.`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
+          b: () => `The loot is in the hold. The drone shoots while the probe stays. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Home (↩).' : 'Tap Probe, then Home (↩).'} Later, Upgrades (⬆) buys a Lance: then it shoots back.`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
         info('prLost', sel('#bProbe'), 'Probe lost', () => `Its cargo lies in its wreck for ${PROBE.life.lost} s. Rebuild it from the Probe button: ${fmt(prRebuildCost())} credits, ${PROBE.rbT} s.`, { hold: 0, when: () => !!G.probe && !G.probe.alive, skip: () => !G.probe || G.probe.alive }),
         // 6.6 one Entropy draw (scripted: a Common, a Rare and an Exotic)
         { id: 'gauge', ls: 'ent', when: () => !!G.anomOffers && !panel, skip: () => !G.anomOffers && (used('anom') || used('stab')), hold: 1, at: sel('#bEnt'), t: 'Entropy',
@@ -1948,7 +1948,7 @@ const UI = (() => {
     const P = G.probe, s = prCmd.site ? siteById(prCmd.site) : null;
     if (s && !s.done && P.task !== s.id) { const n = s.g.length, v = Math.round((s.k === 'rock' ? s.val * (3 - (s.chunks || 0)) / 3 : s.k === 'cloud' ? s.val * (1 - s.prog) : s.val) * prStats().assay);
       return [`site${s.id}`, `${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]} · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'no guards'} · ${fmt(v)} cr. Tap it again to send.`]; }
-    const st = PROF.settings; if ((st.prHints || 0) >= 5) return ['', ''];
+    const st = PROF.settings; if ((st.prHints || 0) >= 5 && !(G && G.tut)) return ['', '']; // (6.6: Training always shows it)
     return ['map', 'Tap the map to send it.'];
   }
   function prBarUI() {
@@ -1962,7 +1962,7 @@ const UI = (() => {
     const [k, t] = prBarTxt(), box = bar.querySelector('.prt'), B = box.querySelector('span'), h = bar.querySelector('[data-pr=home]'), hd = !!(P.home || P.ret);
     if (h.disabled !== hd) h.disabled = hd; // patched in place: a re-render under a finger loses the tap
     const now = performance.now();
-    if (k !== prHintKey) { prHintKey = k; prHintT = now; if (k === 'map') { PROF.settings.prHints = (PROF.settings.prHints || 0) + 1; Save.save(); } }
+    if (k !== prHintKey) { prHintKey = k; prHintT = now; if (k === 'map' && !G.tut) { PROF.settings.prHints = (PROF.settings.prHints || 0) + 1; Save.save(); } } // (6.6: Training does not count)
     const show = !!k && now - prHintT < (k === 'map' ? 3000 : 4500);
     if (box.hidden !== !k) box.hidden = !k; if (B.textContent !== t) B.textContent = t;
     box.classList.toggle('out', !show);
