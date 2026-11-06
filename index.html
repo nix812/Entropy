@@ -627,15 +627,15 @@ body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
 /* 6.5.2 probe command mode: the Probe button reads as pressed, and a bar under it (in Ready's slot; Ready waits, as it does for a
    side panel) says what the next map tap does, shows the probe's state, and holds Recall, Upgrades (the full panel) and ✕ */
 .probebtn.sel { background: #9fd8ff; color: #08162a; box-shadow: inset 0 0 0 2px #e6f4ff; animation: none; }
-#prbar { position: absolute; right: 6px; top: 102px; z-index: 4; display: flex; gap: 4px; height: 44px; max-width: calc(100% - 12px); }
+#prbar { position: absolute; right: 6px; top: 102px; z-index: 4; width: 92px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: space-between; pointer-events: none; } /* 6.5.3 (Nic): two small buttons under Probe, no long bar */
 #prbar[hidden] { display: none; }
-#prbar .prt { flex: 0 1 auto; min-width: 0; max-width: 270px; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 0 10px; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 1px #3d6a8a, inset 3px 0 0 #9fd8ff; }
-#prbar .prt b { font-family: var(--f-pix); font-weight: 400; font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; color: #9fd8ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#prbar .prt span { font-size: 15px; line-height: 1; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#prbar button { flex: 0 0 auto; min-width: 44px; padding: 0 10px; border: 0; cursor: pointer; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; }
+#prbar button { pointer-events: auto; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 0; cursor: pointer; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-size: 18px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+#prbar button i { font-style: normal; font-family: var(--f-pix); font-size: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
 #prbar button:disabled { color: #4f6a80; box-shadow: inset 0 0 0 1px #3d5a70; cursor: default; }
 #prbar button:active:not(:disabled) { filter: brightness(1.3); }
-#prbar .prx { font-family: inherit; font-size: 20px; padding: 0; }
+#prbar .prt { position: absolute; right: 0; top: 48px; width: max-content; max-width: 200px; padding: 3px 7px; background: rgba(8, 22, 38, 0.88); box-shadow: inset 2px 0 0 #9fd8ff; transition: opacity 0.4s; }
+#prbar .prt span { display: block; font-size: 14px; line-height: 1.1; color: var(--ink); }
+#prbar .prt.out { opacity: 0; }
 body.prcmd .rdybtn, body.panel-r #prbar, body.panel-l #prbar { display: none; }
 body.prcmd #zoneBan { top: 64%; }
 body.prcmd #log .fl:nth-last-child(n+4) { display: none; } /* the corner feed keeps its 3 newest lines while the bar is up, so it never reaches it */
@@ -1299,7 +1299,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
       <button class="probebtn" id="bProbe" hidden aria-label="Select the probe"><span>Probe</span></button>
-      <div id="prbar" hidden role="toolbar" aria-label="Probe commands"><div class="prt"><b></b><span></span></div><button data-pr="home">Recall</button><button data-pr="ups">Upgrades</button><button class="prx" data-pr="x" aria-label="Done">✕</button></div>
+      <div id="prbar" hidden role="toolbar" aria-label="Probe commands"><button data-pr="home" aria-label="Recall the probe">↩<i>Home</i></button><button data-pr="ups" aria-label="Probe upgrades">⬆<i>Upgr</i></button><div class="prt" hidden><span></span></div></div>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>
@@ -1346,7 +1346,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.5.2';
+const VERSION = '6.5.3';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1806,15 +1806,15 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.5.2', title: 'Last Gradient 6.5.2 · Field Notes', items: [
-  ['Two guns when docked', 'The core\'s own gun now keeps firing when it docks. The docked tower is a second gun at ×2 damage and +1 range. Battery upgrades power the core\'s gun.'],
+const WHATS_NEW = { ver: '6.5.3', title: 'Last Gradient 6.5.3 · Field Notes', items: [
+  ['Cleaner probe controls', 'Selecting the probe now shows 2 small buttons under Probe: Home and Upgrades. Tap Probe again to let it go.'],
+  ['Short hints', 'One short line says what the next tap does, then fades. A loot site shows its guards and credits.'],
+  ['Upgrades panel', 'A tap on the map now closes the probe Upgrades panel.'],
+  ['Two guns when docked', 'The core\'s own gun keeps firing when it docks. The docked tower is a second gun at ×2 damage and +1 range.'],
   ['Wormholes', 'The no-build ring around a wormhole is now 4 tiles, down from 6.'],
-  ['Probe controls', 'Tap Probe, the probe or a site to select it. A small bar shows what the next tap does. Every map tap sends the probe. Upgrades opens the full panel.'],
   ['Easier to tap', 'Top bar items, panel tabs, chips and the pause menu have bigger tap areas.'],
   ['Training checklist', 'The checklist follows the lessons in order and ticks each step as you do it.'],
-  ['Tape & Vinyl', 'The Tape & Vinyl effect is now off by default. Turn it up in Studio › Shape.'],
-  ['Boss music switch', 'Settings › Sound › Boss music turns the boss themes off. Your own song keeps playing.'],
-  ['Updates', 'The app now loads a new version reliably when one comes out.'],
+  ['Sound', 'Tape & Vinyl is off by default. Settings › Sound › Boss music turns the boss themes off.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -15397,6 +15397,7 @@ const UI = (() => {
   // a tap with the probe selected sends it; otherwise a tap on the probe or a site selects it. True: the tap is used
   function probeTap(p) {
     const P = G.probe, onP = P.alive && Math.hypot(p.x - P.x, p.y - (P.y - 0.33)) < (P.home ? 0.45 : 0.8), inPanel = !!(panel && panel.kind === 'probe');
+    if (inPanel) { SFX.play('ui'); closePanel(); prBarUI(); return true; } // 6.5.3 (Nic): a map tap closes the Upgrades panel
     if (prCmd || inPanel) {
       // a tap on the selected probe lets it go; near the core a tap means recall (a returning probe flies right beside it)
       if (onP && (P.home || Math.hypot(p.x - G.core.x, p.y - G.core.y) > 1.1)) { if (!inPanel) { SFX.play('ui'); probeEnd(); } return true; }
@@ -15414,12 +15415,15 @@ const UI = (() => {
     if (best) { SFX.play('ui'); selectProbe(best.id); return true; }
     return false;
   }
-  // the bar's lines: what the next tap does, then the probe's state (or the site in focus, before it is sent there)
+  // 6.5.3 (Nic): no status bar. The Probe button shows health; the hint is one short line that fades.
+  // A site in focus shows its loot (always). "Tap the map to send it" shows for the first 5 selections only.
+  let prHintKey = '', prHintT = 0;
   function prBarTxt() {
-    const P = G.probe, s = prCmd.site ? siteById(prCmd.site) : null, hp = `${Math.round(100 * P.hp / P.max)}%`, cr = P.cargo.cr >= 1 ? ` · ${fmt(Math.round(P.cargo.cr))} cargo` : '', jp = P.cargo.jp ? ' ★' : '';
+    const P = G.probe, s = prCmd.site ? siteById(prCmd.site) : null;
     if (s && !s.done && P.task !== s.id) { const n = s.g.length, v = Math.round((s.k === 'rock' ? s.val * (3 - (s.chunks || 0)) / 3 : s.k === 'cloud' ? s.val * (1 - s.prog) : s.val) * prStats().assay);
-      return ['Tap the site again to send', `${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]} · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'unguarded'} · ${fmt(v)} credits · ${Math.ceil(s.t)} s`]; }
-    return ['Tap the map to send it', `${prStatus()} · ${hp}${cr}${jp}`];
+      return [`site${s.id}`, `${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]} · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'no guards'} · ${fmt(v)} cr. Tap it again to send.`]; }
+    const st = PROF.settings; if ((st.prHints || 0) >= 5) return ['', ''];
+    return ['map', 'Tap the map to send it.'];
   }
   function prBarUI() {
     const bar = $('#prbar'); if (!bar) return;
@@ -15428,15 +15432,19 @@ const UI = (() => {
     const on = !!prCmd; document.body.classList.toggle('prcmd', on);
     if (bar.hidden === on) bar.hidden = !on;
     const pb = $('#bProbe'); if (pb) { pb.classList.toggle('sel', on); pb.setAttribute('aria-pressed', on); }
-    if (!on) return;
-    const [a, b] = prBarTxt(), A = bar.querySelector('.prt b'), B = bar.querySelector('.prt span'), h = bar.querySelector('[data-pr=home]'), hd = !!(P.home || P.ret);
-    if (A.textContent !== a) A.textContent = a; if (B.textContent !== b) B.textContent = b; if (h.disabled !== hd) h.disabled = hd; // patched in place: a re-render under a finger loses the tap
+    if (!on) { prHintKey = ''; return; }
+    const [k, t] = prBarTxt(), box = bar.querySelector('.prt'), B = box.querySelector('span'), h = bar.querySelector('[data-pr=home]'), hd = !!(P.home || P.ret);
+    if (h.disabled !== hd) h.disabled = hd; // patched in place: a re-render under a finger loses the tap
+    const now = performance.now();
+    if (k !== prHintKey) { prHintKey = k; prHintT = now; if (k === 'map') { PROF.settings.prHints = (PROF.settings.prHints || 0) + 1; Save.save(); } }
+    const show = !!k && now - prHintT < (k === 'map' ? 3000 : 4500);
+    if (box.hidden !== !k) box.hidden = !k; if (B.textContent !== t) B.textContent = t;
+    box.classList.toggle('out', !show);
   }
   function prBarAction(k) {
     if (!prCmd || !G || !G.probe) return;
     if (k === 'home') { if (!window.act('prHome')) SFX.play('deny'); else SFX.play('ui'); }
     else if (k === 'ups') { SFX.play('ui'); openProbe(prCmd.site && siteById(prCmd.site) ? prCmd.site : 0); }
-    else if (k === 'x') { SFX.play('ui'); probeEnd(); }
     prBarUI(); updateHud();
   }
   function probeAction(act, b) {
