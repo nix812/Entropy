@@ -64,9 +64,9 @@ with sync_playwright() as p:
         check(pg.evaluate('() => (G.probe.ret === 1 || G.probe.home === 1) && G.inputs.some(i => i[1] === "prHome") && document.querySelector("#prbar [data-pr=home]").disabled'), 'Recall in the bar brings it home (prHome recorded; Recall dims)', tag)
         tap_at(pg, dest[0], dest[1]); pg.wait_for_timeout(700); tap_at(pg, P0[2], P0[3])  # spaced: two quick taps read as a double tap
         check(pg.evaluate('() => G.probe.ret === 1 || G.probe.home === 1'), 'a tap on the core recalls it', tag)
-        # ✕ lets it go: the bar hides, Ready may return, map taps work as before
-        pg.evaluate('() => document.querySelector("#prbar [data-pr=x]").click()'); pg.wait_for_timeout(200)
-        check(pg.evaluate('() => Render.prSel === false && document.querySelector("#prbar").hidden && !document.querySelector("#bProbe").classList.contains("sel")'), '✕ deselects it', tag)
+        # 6.5.3: no ✕. The Probe button lets it go: the buttons hide, Ready may return, map taps work as before
+        pg.click('#bProbe'); pg.wait_for_timeout(200)
+        check(pg.evaluate('() => Render.prSel === false && document.querySelector("#prbar").hidden && !document.querySelector("#bProbe").classList.contains("sel")'), 'the Probe button deselects it', tag)
         n0 = pg.evaluate('() => G.inputs.filter(i => i[1] === "prGo").length'); tap_at(pg, dest[0], dest[1])
         check(pg.evaluate('() => G.inputs.filter(i => i[1] === "prGo").length') == n0, 'deselected: a map tap no longer sends it', tag)
         pg.evaluate('() => UI.closePanel()')
@@ -83,7 +83,7 @@ with sync_playwright() as p:
         check(pg.evaluate('() => !document.querySelector("#prbar").hidden && document.querySelector("#panel").hidden') and 'again' in txt.lower() and pg.evaluate(f'() => G.probe.task !== {s0[2]}'), f'a tap on a loot site selects the probe and shows the site in the bar: {txt!r}', tag)
         pg.screenshot(path=str(out / f'p03_site_card_{tag}.png'))
         tap_at(pg, s0[0], s0[1])
-        check(pg.evaluate(f'() => G.probe.task === {s0[2]}') and 'tap the map' in pg.evaluate('() => document.querySelector("#prbar").innerText').lower(), 'a second tap on the site sends it there', tag)
+        check(pg.evaluate(f'() => G.probe.task === {s0[2]}'), 'a second tap on the site sends it there', tag)
         # 5. Upgrades: the full panel (the site, cargo, upgrades); a purchase; closing it returns to the bar
         pg.evaluate('() => document.querySelector("#prbar [data-pr=ups]").click()'); pg.wait_for_timeout(300)
         txt = pg.evaluate('() => document.querySelector("#panel").hidden ? "" : document.querySelector("#panel").innerText')
@@ -93,9 +93,12 @@ with sync_playwright() as p:
         cr0 = pg.evaluate('() => G.credits')
         pg.evaluate('() => document.querySelector("#panel [data-act=prup][data-v=gun]").click()'); pg.wait_for_timeout(250)
         check(pg.evaluate(f'() => G.probe.lv.gun === 1 && G.credits < {cr0} && G.inputs.some(i => i[1] === "prUp" && i[2] === "gun") && /Lance 2/i.test(document.querySelector("#panel").innerText)'), 'buying Lance 1 (prUp recorded, the row now offers Lance 2)', tag)
-        pg.evaluate('() => document.querySelector("#panel [data-act=close]").click()'); pg.wait_for_timeout(200)
-        check(pg.evaluate('() => document.querySelector("#panel").hidden && !document.querySelector("#prbar").hidden && Render.prSel === true'), 'closing the panel returns to the bar', tag)
-        pg.evaluate('() => document.querySelector("#prbar [data-pr=x]").click()'); pg.wait_for_timeout(150)
+        n1 = pg.evaluate('() => G.inputs.filter(i => i[1] === "prGo").length')
+        fx = pg.evaluate('() => { const r = document.querySelector("#panel").getBoundingClientRect(), c = document.querySelector("#cv").getBoundingClientRect(); const x = r.left > c.left + c.width / 2 ? c.left + c.width * 0.25 : c.right - c.width * 0.25; return [x, c.top + c.height * 0.55]; }')
+        pg.mouse.click(fx[0], fx[1]); pg.wait_for_timeout(300)
+        check(pg.evaluate('() => document.querySelector("#panel").hidden && !document.querySelector("#prbar").hidden && Render.prSel === true') and pg.evaluate('() => G.inputs.filter(i => i[1] === "prGo").length') == n1, '6.5.3: a map tap closes the Upgrades panel (and sends nothing); the two buttons return', tag)
+        pg.screenshot(path=str(out / f'p04b_buttons_{tag}.png'))
+        pg.click('#bProbe'); pg.wait_for_timeout(150)
         # 6. every site kind up close
         pg.evaluate(GALLERY, [max(8, min(P0[4] - 8, P0[0] + side * 9)), max(8, min(P0[5] - 8, P0[1]))]); pg.wait_for_timeout(500)
         pg.screenshot(path=str(out / f'p05_sites_{tag}.png'))

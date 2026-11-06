@@ -616,15 +616,15 @@ body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
 /* 6.5.2 probe command mode: the Probe button reads as pressed, and a bar under it (in Ready's slot; Ready waits, as it does for a
    side panel) says what the next map tap does, shows the probe's state, and holds Recall, Upgrades (the full panel) and ✕ */
 .probebtn.sel { background: #9fd8ff; color: #08162a; box-shadow: inset 0 0 0 2px #e6f4ff; animation: none; }
-#prbar { position: absolute; right: 6px; top: 102px; z-index: 4; display: flex; gap: 4px; height: 44px; max-width: calc(100% - 12px); }
+#prbar { position: absolute; right: 6px; top: 102px; z-index: 4; width: 92px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: space-between; pointer-events: none; } /* 6.5.3 (Nic): two small buttons under Probe, no long bar */
 #prbar[hidden] { display: none; }
-#prbar .prt { flex: 0 1 auto; min-width: 0; max-width: 270px; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 0 10px; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 1px #3d6a8a, inset 3px 0 0 #9fd8ff; }
-#prbar .prt b { font-family: var(--f-pix); font-weight: 400; font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; color: #9fd8ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#prbar .prt span { font-size: 15px; line-height: 1; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#prbar button { flex: 0 0 auto; min-width: 44px; padding: 0 10px; border: 0; cursor: pointer; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; }
+#prbar button { pointer-events: auto; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 0; cursor: pointer; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-size: 18px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+#prbar button i { font-style: normal; font-family: var(--f-pix); font-size: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
 #prbar button:disabled { color: #4f6a80; box-shadow: inset 0 0 0 1px #3d5a70; cursor: default; }
 #prbar button:active:not(:disabled) { filter: brightness(1.3); }
-#prbar .prx { font-family: inherit; font-size: 20px; padding: 0; }
+#prbar .prt { position: absolute; right: 0; top: 48px; width: max-content; max-width: 200px; padding: 3px 7px; background: rgba(8, 22, 38, 0.88); box-shadow: inset 2px 0 0 #9fd8ff; transition: opacity 0.4s; }
+#prbar .prt span { display: block; font-size: 14px; line-height: 1.1; color: var(--ink); }
+#prbar .prt.out { opacity: 0; }
 body.prcmd .rdybtn, body.panel-r #prbar, body.panel-l #prbar { display: none; }
 body.prcmd #zoneBan { top: 64%; }
 body.prcmd #log .fl:nth-last-child(n+4) { display: none; } /* the corner feed keeps its 3 newest lines while the bar is up, so it never reaches it */
@@ -1285,7 +1285,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
       <button class="rdybtn" id="bReady" hidden aria-label="Towers with a pick waiting"><span>Ready</span><b id="rdyN">0</b></button>
       <button class="liftbtn" id="bLift" hidden aria-label="Lift off the core"><span>Lift Off</span></button>
       <button class="probebtn" id="bProbe" hidden aria-label="Select the probe"><span>Probe</span></button>
-      <div id="prbar" hidden role="toolbar" aria-label="Probe commands"><div class="prt"><b></b><span></span></div><button data-pr="home">Recall</button><button data-pr="ups">Upgrades</button><button class="prx" data-pr="x" aria-label="Done">✕</button></div>
+      <div id="prbar" hidden role="toolbar" aria-label="Probe commands"><button data-pr="home" aria-label="Recall the probe">↩<i>Home</i></button><button data-pr="ups" aria-label="Probe upgrades">⬆<i>Upgr</i></button><div class="prt" hidden><span></span></div></div>
       <div id="log"></div>
       <div id="asbar" hidden></div>
       <div id="docbar" hidden></div>
