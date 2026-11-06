@@ -102,3 +102,136 @@ let a second lesson go at once), median 22 s, 6 lessons less than 15 s after the
 - Stacking: three lessons at 258 s (vets, then the swarm adapts, with the Threat Board opened a second time).
 - The boss walks half the road untouched, then the fight drags (140 s).
 - The core comes late (W6), after Lift Off already said "Battery".
+
+## 2. The new Basic Training (6.6, "v2")
+
+One guided first run, in the order a player meets things. A lesson is one idea: a short chain of cards where the player does
+the thing and the card moves on. Read-only notes are coach lines while the game runs (no pause, a Got it button).
+
+| s 667×375 / 1180×820 | Wave | Lesson | Held | Lines | What the player does / learns |
+|---|---|---|---|---|---|
+| 0 / 0 | 0 | Start | 4 | 0 | Your core (health, shield, losing) · Road and build spots (green tiles, wormhole radius) · build a Pulse Blaster · tap Next (early-call bonus) |
+| 22 / 22 | 1 | Look around | 1 | 0 | pan, pinch, edge arrows, the core arrow (ends on a drag) |
+| 44 / 44 | 1 | Credits | 0 | 1 | kills pay; score becomes XP |
+| 57 / 57 | 1 end | Power | 2 | 1 | a second tower; ⚡ full; Power Nodes in real runs |
+| 103 / 102 | 2 end | Upgrade | 4 | 1 | tap a tower, Upgrade, what changed (credits, not power), Details: affixes; the upgrade arrow |
+| 125 / 125 | 3 | The core | 2 | 1 | tap the core, upgrade the Battery (its gun hits harder and sees farther); Shield, Hull, Uplink in one line |
+| 158 / 158 | 3 end | Threat Board | 3 | 1 | the chip, Juggernaut is Plated, build the counter: a Rail Lance |
+| 180 / 180 | 4 | Lift Off | 4 | 1 | Lift Off, pick the Rail Lance, the new road, land. 6.5.2 rule: the core's own gun keeps firing; the docked Rail Lance is a second gun (×2 damage, +1 range). Links (+10% damage and rate) as a line |
+| 205 / 205 | 4 | Move | 4 | 0 | move a tower into link reach (10% fee, cheaper than selling) |
+| 240 / 240 | 4 end | Veterans | 2 | 1 | the Ready button, pick a mutation |
+| 252 / 252 | 5 | Strike | 2 | 1 | Strike a tight pack, aim; the cooldown bar as a line |
+| 265 / 265 | 5 | **Probe** | 3 | 2 | tap Probe (the command bar shows), tap the wreck to send it, it salvages 2.5 s into its hold (line), Recall, banked at the core (+160, line: it repairs the core; a lost probe drops its cargo) |
+| 298 / 298 | 6 | **Fog of war** | 3 | 1 | a guarded wreck far out (one red drone): send the probe. On the way: Fog of war (black = unexplored; on dim ground enemies are hidden); Fair warnings as a line (bosses, roads, edge arrows, Threat Board). Get out: Recall (the drone shoots while it stays; Upgrades › Lance shoots back) |
+| 341 / 341 | 7 | **Entropy** | 1 | 1 | the gauge is full: tap it. In Training the draw's header line teaches boon (green), cost (red) and rarity (frame: Common, Rare, Exotic); Stabilize explains itself. Then a line: it lasts the run, the next gauge is 30% longer, Pause lists them |
+| 363 / 363 | 7 | Specialty | 3 | 0 | the strongest tower to LV 3, pick a spec |
+| 385 / 386 | 7 | Most Wanted | 0 | 1 | the bounty chip: a boss on Wave 8 |
+| 433 / 431 | 8 | **Boss** | 1 | 0 | the Most Wanted (Hasted) Behemoth: Plated, huge health; every boss has its own theme music; bosses always show, even in fog |
+| 514 / 502 | 8 | Bounty | 1 | 0 | Extract banks the purse (jump doors in real runs; you keep 30% if you fall later) |
+| end | | **What's next** | end card | | XP, level, talent points; Real runs (endless, the first bounty on Wave 20), Talents (16 points in one tree unlock a new tower), Daily Hunt, Field Manual |
+
+Totals (test/tut66.py, scripted new player, 4 s to read each held card): **18 lessons, 52 coach cards (44 held, 8 lines),
+4 modals**; 514 / 502 s of play; **estimated 11.5 / 11.3 minutes** at 1×. Gap between lessons: **min 12.1 / 12.0 s, median
+22.4 / 22.6 s**; between dialogs (first held card of a lesson, or a modal the coach did not open): min 12.1 / 12.0 s,
+median 33.2 s. 6.5.2 for comparison: 20 lessons, 63 cards (60 held), 15.4 minutes, min gap 0 s, median 22 s.
+
+**Checklist (17 lines, in lesson order):** Place a tower · Call a wave early · Upgrade a tower · Read its bonus · Core:
+upgrade the Battery · Counter it: a Rail Lance · Lift Off: dock on a tower · Link towers to the core · Move a tower ·
+Veteran: tap Ready, pick · Use Strike · Probe: loot a site, bank it · Probe: a guarded site in the fog · Entropy: take a
+card · Pick a specialty (LV 3) · Beat the bounty boss · Extract. Every line ticked at both sizes, each on its own lesson.
+
+### Design choices
+- **Order.** The core and its Battery now come before Lift Off (6.5.2's rule makes the docked tower a *second* gun beside
+  the core's own, so the core's gun should be known first). Veterans moved to the end of Wave 4, before Strike, so no two
+  lessons share one break (6.5.2 had vets and "the swarm adapts" at the same second). The separate second-upgrade lesson
+  (the upgrade arrow) is gone: it landed 9 s after Strike. The arrow is one line in Affixes, and the specialty lesson
+  upgrades again.
+- **Cut or folded** (each is still taught where it matters in a real run): Score (folded into Credits), Core health (into
+  Your core), Build spots (into Road), the preview card (into Land), Ranking up and Why upgrade? (into Upgraded), Shield (no
+  longer an action: one line), Inspect (the idle line says "Tap an enemy to inspect it"), the swarm adapts / Arms Race /
+  counter / gene marks (the real-run evolution intro now shows, since Training no longer marks `seenEvo`), LV 5 and Ascend,
+  Sell (Move says it is cheaper), Moved/Linked (into Move), the second upgrade (arrow line in Affixes).
+- **Pacing.** Same rules as 6.2 (`PACE_GAP` 22 s of play, or a wave end with 10 s since the last card, a calm moment, the
+  Strike pack waits 12 s). One fix: the "countdown almost out" rule now also needs 12 s of play since the last card, so two
+  lessons never land back to back. Read-only notes (Credits, Affixes, Shield/Hull/Uplink, Links, Recharging, Salvage,
+  Banked, Fair warnings, Anomaly taken, Most Wanted) are coach lines while the game runs, not held cards.
+- **Shorter.** 8 waves instead of 9 (the old Wave 8 taught nothing). The Most Wanted is now **Hasted** (35% faster) with
+  700 health: the old Colossal crawled half the road out of every tower's reach and the fight took 140 s; now about 80 s.
+- **The probe first site is guard-free and close** (8.5 tiles from the core, visible), the second is far out in the fog with
+  one drone. The script marks a small patch around the second site as explored (dim), so the wreck and its drone are
+  visible from home; the rest of the way is black fog. Site values are set (160 and 220 credits, no jackpot), so the
+  specialty is affordable for everyone.
+- **The Entropy draw is fixed in rarity** (Common, Rare, Exotic, no Classic), so every player sees all three frames. The
+  cards themselves are still generated from the run (they lean toward your towers). On a phone the draw fills the screen,
+  so the draw's own header line teaches it in Training instead of a coach card on top.
+- **Black Hole: no scripted moment.** It is rare (from Wave 10, about 1 wave in 20), it lasts 40–50 s, and the only answer
+  is moving towers, which Training already teaches. Its own intro card skips the 30 s queue, shows every number and comes
+  with an alert and an edge arrow. Scripting one would add about a minute and push Training past 12 minutes.
+- **Boss music.** The Training boss already plays its theme (the music module runs in Training). The boss card now says
+  every boss has one.
+- **Fog in Training** is on from the start, as in real runs. The core sees 16 tiles, so the home area is clear; only the
+  far ground and the first tiles of the road are in fog.
+- **Skip and replay.** Skip Training (two taps) and Basic Training from the Tutorial button and the Field Manual work as
+  before. The offer, the chooser and the manual now say "about 10 minutes".
+
+### Intro cards in the first real run
+`openTutDone` and Skip call `markTaught(Coach.taught())`: every lesson the player passed marks its first-time card seen.
+- Taught → no card: WELCOME (`seenHelp`), LOOK AROUND (`zoomHint`), Upgrades (`upg`), Power full (`power`), Lift Off
+  (`frontier`), Abilities (`abil`), Veterans (`vet`), Probe (`probe`), Fog of war (`fog`), Entropy full (`anomaly`), Boss
+  next wave (`boss`).
+- Not taught → still one card each: the swarm evolution intro (`seenEvo` is no longer set by Training), storms, salvage
+  crates, spare power / Overcharge, wormholes and checkpoints, the Exchange, support towers, the Black Hole, Strain Assaults,
+  capstone tier towers, Techniques, new enemies and each boss's first-encounter card.
+- Skip marks only the lessons passed so far.
+
+## 3. Code map
+
+Rules gate: **Training only.** The new sim behaviour lives in `TUT.b2` (data.js) and is used only by Basic Training started
+with `newRun({ tut: 2, frontier: 1 })` (what the UI starts now: `TUT.v = 2`). Field Manual lessons and `tut: 1` recordings
+get the old spec (`v: 1`). Normal runs, Daily Hunts and old recordings are unchanged (`node test/replay.js`, hookcompat,
+cards64, tower64, probe65, sky65, frontier fixtures all match). No `FR_VER` bump.
+
+- **data.js** (Training block): `TUT.v` 1 → 2. `TUT.b2` (on top of `TUT.fr`): `probe`, `fog`, `grant { 3: 140, 4: 120 }`,
+  `vetAt 5`, `ent { w: 8, r: [0, 1, 2] }`, `sites` (2 entries: `n, w, k, dx, dy, val, g`), `boss { behemoth, hasted, 700 }`,
+  8 `waves` (TUT.fr's script without the gene groups and without its filler Wave 8).
+- **sim.js**
+  - `tutSpec(id, fr, v)`: merges `TUT.b2` for Basic Training at v ≥ 2 and sets `T.v`. `newRun` passes `opts.tut` (**hotspot,
+    one argument**). `newRun` probe line: `(!T || T.probe)` (**hotspot, one condition**).
+  - `fogOn()`: `(!G.tut || G.tutS.fog)`.
+  - `tutSetup`: `G.siteT = 1e9` when `T.probe` (no random sites).
+  - `prepareWave`: one line calls `tutScript(tutIdx(w))`; the Veteran grant line falls back to the highest-level attack
+    tower at `G.tut >= 2` (the core gun can do every kill on this small board, so `topTower()` can be empty).
+  - New, after `tutHold`: `tutScript(k)` (spawns scripted sites, fills the gauge once: `G.tutEnt`), `tutSite(sp)` (a site at
+    a set spot, set value, drone guards, `jp: 0`, `s.tut = n`; marks a 2.6-tile patch explored; flags `G.tutSites`).
+  - `siteDone`: one line sets `G.tutLoot` bit `s.tut`.
+  - `addEntropy` → `anomOffersGen(rar)`; `anomOffersGen(rar)` skips classics when `rar` is given; `anomGenCard(..., ri0)`
+    takes a forced rarity (no `G.r` draw for it). Without the argument (every normal run) the draws are identical.
+  - `takeAnomaly` / `takeGenAnomaly`: no profile codex writes in Training (also true now for the Storms lesson).
+  - New run fields (Training only, never in snapshots since Training never snapshots): `G.tutSites`, `G.tutLoot`, `G.tutEnt`.
+- **ui.js**
+  - Coach `PLANS.basic` rewritten (lesson tags `start camera money power upgrade core threat lift move vets strike probe fog ent
+    spec wanted boss bounty`). New helpers `site(n)`, `looted(n)`, `gone(n)`, `prOK()`; `bestUp(free)` skips the docked tower.
+    `tapTw` ends the probe's command mode first (a map tap would send the probe).
+  - `frSteps` (shared with the Lift Off lesson): no `preview` step (its line is in `land`), `links` is a line, no `moved` step
+    (its line is in `mvBtn`), texts for the 6.5.2 rule.
+  - `CHECK` (17 lines, new order and probe/Entropy lines). `paced`: the late rule needs 12 s of play.
+  - `TAUGHT` + `taught()` (lessons passed) and `markTaught(keys)`; `openTutDone` and Skip use them (**openGameOver path,
+    via openTutDone**). The `tutent` body class shows the Entropy gauge from the Training draw on.
+  - `openAnomaly`: in Basic Training v2 the header note teaches the card (green boon, red cost, rarity).
+  - `openTutDone`: the "What's next" block (`.lwhat.tnext`). Offer, chooser and manual say "about 10 minutes".
+- **template.html**: `.card.tutdone .tnext`, `.card.anom .ch .note.tutn`.
+
+## 4. Tests
+
+- **New `test/tut66.py [WxH,…] [--audit] [--tag T]`** (Playwright): plays the whole Basic Training as a scripted new player.
+  Logs every coach card, modal, alert and tip with its play second; checks Training finishes, every lesson shows in order,
+  the probe / fog / Entropy / boss steps show, every checklist line ticks and in list order, the estimated length is
+  8–12.5 minutes, the shortest gap between lessons is at least 10 s and the median at least 18 s. One screenshot per lesson
+  in `test/out/tut66/<size>_<nn>_<lesson>.png` and the end card. `--audit` only logs (used for section 1).
+- **New `test/tut66.js`** (node, 20 checks): v2 is Basic Training only (lessons, `tut: 1`, normal runs unchanged), probe and
+  fog on, no random sites, sites on their waves and spots with their guards and no jackpot, the draw is Common/Rare/Exotic
+  with no Classic, one draw only, the probe loots and banks both sites (the second under fire, through fog), the v2 run
+  replays exactly, and the profile (runs, XP, best wave, kills, codex) is untouched.
+- Changed: `test/tutorial.js` also plays and replays a v2 run (the bot sends the probe and takes a generated card);
+  `test/tutcheck.py` and `test/tutorialshot.py` know the new steps and checklist (`credits` replaces `upWhy` for the open
+  checklist screenshot; `prLost` is optional); tutorialshot prints the state when the coach stalls.

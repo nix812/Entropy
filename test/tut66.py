@@ -78,6 +78,7 @@ def run(pg, W, H):
             else: r = c['ring']; pg.touchscreen.tap(r[0] + r[2] / 2, r[1] + r[3] / 2)
             pg.wait_for_timeout(380); continue
         pg.evaluate('() => { if (G && !G.over) G.speed = 6; }'); pg.wait_for_timeout(130)
+    pg.wait_for_timeout(1500)  # the end card opens after the extract animation
     fin = pg.evaluate('() => ({ ck: UI.coach.checks ? UI.coach.checks() : null, t: G ? +G.time.toFixed(1) : 0, ext: !!(G && G.extracted), m: UI.modalOpen, w: G ? G.wave : 0 })')
     if fin['m'] == 'over': pg.screenshot(path=str(out / f'{tg}_{shots + 1:02d}_done.png'))
     msgs = pg.evaluate('() => window._cad || []')
