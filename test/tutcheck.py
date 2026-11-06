@@ -54,6 +54,8 @@ def run(pg, tag, style, limit=600):
             log.append({'step': c['step'] if c else (seen[-1] if seen else ''), 'k': len(seen), **L})
             if shots < 40 and log[-1]['n'] > (log[-2]['n'] if len(log) > 1 else 0):
                 shots += 1; pg.screenshot(path=str(out / f'{pre}{tag}_{style}_{shots:02d}_tick{L["n"]}.png'))
+        if not c and pg.evaluate("() => UI.modalOpen === 'anomaly'"):  # 6.6: the Training draw teaches itself (no coach card): a player picks a card
+            pg.wait_for_timeout(300); pg.evaluate("() => { const b = document.querySelector('#modal .boon.ar-rare') || document.querySelector('#modal [data-act=anom]'); b && b.click(); }"); pg.wait_for_timeout(300); continue
         if not c:
             pg.evaluate('() => { if (G && !G.over) G.speed = 6; }'); pg.wait_for_timeout(120); continue
         pg.evaluate('() => { if (G && !G.over && G.speed > 1) G.speed = 1; }')

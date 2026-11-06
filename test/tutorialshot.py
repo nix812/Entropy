@@ -27,6 +27,8 @@ def drive(pg, tag, prefix, finished, limit=420):
     while time.time() - t0 < limit:
         if pg.evaluate(finished): break
         c = pg.evaluate(CARD)
+        if not c and pg.evaluate("() => UI.modalOpen === 'anomaly'"):  # 6.6: the Training draw teaches itself (no coach card): a player picks a card
+            pg.wait_for_timeout(300); pg.evaluate("() => { const b = document.querySelector('#modal .boon.ar-rare') || document.querySelector('#modal [data-act=anom]'); b && b.click(); }"); pg.wait_for_timeout(300); continue
         if not c:
             pg.evaluate('() => { if (G && !G.over) G.speed = 6; }'); pg.wait_for_timeout(120); continue
         pg.evaluate('() => { if (G && !G.over && G.speed > 1) G.speed = 1; }')
