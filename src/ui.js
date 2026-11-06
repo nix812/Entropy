@@ -675,9 +675,9 @@ const UI = (() => {
         { id: 'camera', ls: 'camera', hold: 1, nodim: 1, ok: 'Got it', when: () => W() >= 1, skip: () => W() >= 3, enter: () => { mem.cu0 = camUser; }, done: () => camUser - mem.cu0 > 12, t: 'Look around',
           b: 'Drag to pan. Pinch to zoom. Edge arrows point at things off screen: tap one to look. The core arrow brings you home.' },
         info('credits', sel('#hud .hs.cr'), 'Credits', 'Every kill pays credits. Spend them on towers and upgrades. Score turns into XP after the run.', { ls: 'money', hold: 0, when: () => G.kills >= 1, skip: () => W() >= 3 }),
-        build('build2', 'pulse', 'b', 'A second tower', 'Build another one on the marked tile.', { ls: 'power', when: () => after(1), skip: () => W() >= 2, done: () => G.towers.length >= 2,
+        build('build2', 'pulse', 'b', 'A second tower', 'Build another one on the marked tile.', { ls: 'power', when: () => after(1) || W() >= 2, skip: () => W() >= 3, done: () => G.towers.length >= 2,
           at: () => flowAt(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'b'), b: () => afford('pulse') ? flowText(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'Build another one on the marked tile. Any tower works.') : `Towers start at ${towerCost('pulse')} credits. Kills pay.` }),
-        info('power', sel('#hud .hs.pwr'), 'Power', () => `Power ${gridUsed()}/${gridCap()}: full. Each tower draws 1 power. Capacity grows as waves pass. In real runs, towers on Power Nodes (diamond tiles) use none.`, { when: () => after(1), skip: () => W() >= 2 }),
+        info('power', sel('#hud .hs.pwr'), 'Power', () => `Power ${gridUsed()}/${gridCap()}: full. Each tower draws 1 power. Capacity grows as waves pass. In real runs, towers on Power Nodes (diamond tiles) use none.`, { when: () => after(1) || W() >= 2, skip: () => W() >= 3 }),
         call('call2', 2, 'Power is full. Spend the next credits on upgrades.', { when: () => after(1) }),
         // upgrading, step by step (Nic's brother: "didn't understand how to upgrade towers or what that meant")
         tapTw('tapTower', tw, 'Upgrade', 'Tap your first tower to open its panel.', { ls: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: () => G.credits >= upgradeCost(tw()),
@@ -736,7 +736,7 @@ const UI = (() => {
         // 6.6 one Entropy draw (scripted: a Common, a Rare and an Exotic)
         { id: 'gauge', ls: 'ent', when: () => !!G.anomOffers && !panel, skip: () => !G.anomOffers && (used('anom') || used('stab')), hold: 1, at: sel('#bEnt'), t: 'Entropy',
           b: 'Kills fill this gauge. When it is full, you draw an Anomaly. It is full now: tap it.', done: () => modalOpen === 'anomaly' || !G.anomOffers },
-        { id: 'cards', hold: 0, when: () => !G.anomOffers, skip: () => !(used('anom') || used('stab')), at: sel('#bEnt'), t: () => used('stab') ? 'Stabilized' : 'Anomaly taken', ok: 'Got it',
+        { id: 'cards', hold: 0, when: () => !G.anomOffers, skip: () => !G.anomOffers && !(used('anom') || used('stab')), at: sel('#bEnt'), t: () => used('stab') ? 'Stabilized' : 'Anomaly taken', ok: 'Got it',
           b: () => `${used('stab') ? 'Stabilize skips the cards for score and a token.' : 'It lasts the rest of the run.'} Each draw makes the next gauge 30% longer. Pause lists your Anomalies.` }, // (the draw's header line teaches the card itself)
         // the spec: a permanent branch at LV 3
         tapTw('tapLv3', () => mem.st, 'Specialize', () => G.credits >= upgradeCost(mem.st) ? 'Get your strongest tower to LV 3. Tap it.' : `Next upgrade: ${fmt(upgradeCost(mem.st))} credits. Kills pay.`,
