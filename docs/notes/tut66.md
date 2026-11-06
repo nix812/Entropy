@@ -24,7 +24,7 @@ game). "held" = the card pauses the game; "line" = a coach line while the game r
 | 44 | 1 | money | credits | held | Credits | kills pay |
 | 44 | 1 |  | score | held | Score | score → XP |
 | 55 | 1 | power | build2 | held | A second tower | building again |
-| 55 | 1 |  | power | held | Power | ⚡ cap |
+| 55 | 1 |  | power | held | Power | power cap |
 | 56 | 1 |  | call2 | line | Wave 2 | |
 | 101 | 2 | upgrade | tapTower | held | Upgrade | tap a tower |
 | 101 | 2 |  | upgrade | held | The Upgrade button | price, tap |
@@ -113,7 +113,7 @@ the thing and the card moves on. Read-only notes are coach lines while the game 
 | 0 / 0 | 0 | Start | 4 | 0 | Your core (health, shield, losing) · Road and build spots (green tiles, wormhole radius) · build a Pulse Blaster · tap Next (early-call bonus) |
 | 22 / 22 | 1 | Look around | 1 | 0 | pan, pinch, edge arrows, the core arrow (ends on a drag) |
 | 44 / 44 | 1 | Credits | 0 | 1 | kills pay; score becomes XP |
-| 57 / 57 | 1 end | Power | 2 | 1 | a second tower; ⚡ full; Power Nodes in real runs |
+| 57 / 57 | 1 end | Power | 2 | 1 | a second tower; power full; Power Nodes in real runs |
 | 103 / 102 | 2 end | Upgrade | 4 | 1 | tap a tower, Upgrade, what changed (credits, not power), Details: affixes; the upgrade arrow |
 | 125 / 125 | 3 | The core | 2 | 1 | tap the core, upgrade the Battery (its gun hits harder and sees farther); Shield, Hull, Uplink in one line |
 | 158 / 158 | 3 end | Threat Board | 3 | 1 | the chip, Juggernaut is Plated, build the counter: a Rail Lance |
