@@ -98,6 +98,45 @@ Target: every tap does what the player expects, the map stays clear while playin
 7. **A human read.** Before it ships, a fresh player (Nic's brother or a friend) plays Training and reads the cards. Note anything that sounds off.
 8. **Ship to the lab first**, then live when Nic says.
 
+### The voice guide (Nic picked A with jokes, Nov 7)
+
+Samples: Claude Doc "Last Gradient · Voice samples" (https://claude.ai/artifact/EYtdXmWD8hiP1sgZ9JAMKe). Nic: "I agree with the A voice type. With some jokes thrown in."
+
+**Who is talking.** Mission Control: a flight controller in the pilot's ear. Calm because they have seen worse. Dry, warm, on your side. They don't oversell anything, and they notice when something is funny. No name and no backstory yet (that is a day-two idea, section 8).
+
+**Who she talks to.** The pilot of the core, as "you". "We" is fine for the two of you as a team ("let's see what's in it"). Never "players" or "the user".
+
+**Jokes by tier.**
+- Flavour (bosses, enemies, zones, events, pirates, death screen): jokes welcome. One per line is plenty. The Auditor, Leia, Quackzilla and the Snail already set the level.
+- Coaching (Training, intro cards, hints): an aside at most once per card, and only after the instruction.
+- Rules text (stats, perks, cards, tooltips): no jokes that hide a number. A short dry tag after the rule is allowed ("Finish what you start.").
+- UI labels and system messages: no jokes. Plain and clear.
+
+**Do.**
+1. Say the number and the game term exactly (+35% Damage, Wave 13, Plating, Overcharge).
+2. Mix sentence lengths. A short line after a long one lands. Read it aloud.
+3. Give the reason in a few words when it helps ("Burning enemies can't be healed").
+
+**Don't.**
+1. No brochure voice: no hype, no "epic", no exclamation marks in rules or coaching.
+2. No fragment lists that read like a spec sheet ("Long-range piercing shot.").
+3. No rhetorical questions in coaching, and no "Ready to...?" openers.
+
+**Banned.** delve, realm, harness, unleash, seamless, journey, elevate, tapestry, embark, testament, "dive into", "at its core", "it's not just X, it's Y", "whether you're X or Y", "get ready to", "in the world of". No em-dash chains. No list of three by habit.
+
+**Before and after.**
+
+| Where | Before | After |
+| --- | --- | --- |
+| Tower (Rail Lance) | Long-range piercing shot. | Slow to reload, and it doesn't care. Each round goes clean through the line, Plating too. Hits fliers. |
+| Enemy (Mender) | Heals nearby enemies every second (green beams). | Heals everything around it once a second. You'll see the green beams. Take it out first. |
+| Boss (Leia) | Naps mid-lane, and takes far less damage while asleep | Every 12 s she naps for 3 s and takes 60% less damage. We've filed a complaint. |
+| Training (probe) | It flies anywhere on the map and loots sites. A wreck just appeared. Tap Probe. | Small, unarmed, and it can go anywhere. A wreck just turned up on the scope. Tap Probe and let's see what's in it. |
+| Alert | Lane opens at Wave 13 | A new lane opens at Wave 13. Expect company. |
+| Card (Hungry Core) | ×3 core Damage, +1 core Range · Core loses 4% HP each wave | The core deals ×3 Damage with +1 Range. The price: it burns 4% of its own HP every wave. |
+
+**Checks on every batch** are in step 6 above. The tool is `tools/strings.js` (export, number check, write-back).
+
 ### Honesty note for Nic
 
 Claude does the rewriting, so the safeguards matter: a voice Nic chose, the banned list, line-by-line review of samples, and a human reader. The aim is text a person would be proud to have written, not text that hides how it was made. If Nic later lists on Steam, its AI disclosure rules apply.
@@ -116,3 +155,29 @@ Claude does the rewriting, so the safeguards matter: a voice Nic chose, the bann
 2. Check live and lab versions (`git show origin/main:index.html | grep VERSION` in the site clone).
 3. Ask Nic for any new run logs (6.5.5+ logs carry sound health) and recordings.
 4. Start with the voice sample (section 5, step 1), since it needs Nic's answer, and work the bug list while waiting.
+
+## 8. Day two (after launch): the crew
+
+Nic, Nov 7: "I do like the idea of character development later on but let's keep that out of the loop for now and maybe make a day two plan with that in mind." Nothing here ships before launch.
+
+**The idea.** Give the voices in the game faces and names. Mission Control becomes a person. A small crew joins over time, each with one job and one way of talking. Lines that today come from nowhere get a speaker.
+
+**Who could be in it** (sketches, Nic decides):
+- **Mission Control.** The voice from launch. Gets a name, a portrait and a running bit (the complaint forms about Leia).
+- **The salvage chief.** Talks about the probe, loot sites and the Exchange. Proud of the gear, hates waste. Carries the "Salvage Crew" voice Nic liked (sample B).
+- **The pirate captain.** Already half there: the drop ships and thieves have `PIRATE_LINES`. A rival who sometimes helps.
+- **Nigel.** The studio cat as a cameo: a portrait on the hangar, maybe a line when you beat Leia.
+
+**Why it waits.** Characters need portraits, a place on screen for a speaker, and lines that stay in character across hundreds of runs. That is a feature, and the launch rule is no new features.
+
+**What launch work keeps the door open.**
+- Every line written to the voice guide can later move to Mission Control without a rewrite.
+- `tools/strings.js` records the area of each string, so a later pass can tag a speaker per line.
+- Keep pirate and boss lines in their own tables (`PIRATE_LINES`, boss `titles`), not inline.
+
+**Day-two plan, in order.**
+1. Nic picks names and roles (one short decision, like the voice pick).
+2. Portraits in the game's pixel style, drawn in code like Nigel (`docs/brand/nigel_couch.py`).
+3. A speaker slot on the coach card and the ticker (layout check at 667×375).
+4. Tag existing lines with a speaker. Write only the new lines each role needs.
+5. Lab first, then a TestFlight round.
