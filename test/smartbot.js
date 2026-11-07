@@ -204,6 +204,9 @@ for (let run = OFF; run < OFF + runs; run++) {
       for (const e of G.enemies) if (!e.dead && e.L && !e.pirate) { now.add(e.id); const r = seen.get(e.id); const fr = e.d / e.L.len; if (r) { r.fr = Math.max(r.fr, fr); } else seen.set(e.id, { type: e.boss ? 'boss' : e.type, el: e.elite && e.elite.length ? 1 : 0, w: G.wave, fr, t0: t }); }
       for (const [id, r] of seen) if (!now.has(id)) { (G._ttk || (G._ttk = [])).push({ type: r.type, el: r.el, w: r.w, fr: r.fr, life: t - r.t0 }); seen.delete(id); }
     }
+    if (process.env.LEAKLOG) { // 6.6.1: leaks per wave by enemy type (G.leakWave, as the breach warning reads it)
+      if (G.wave !== met.lwW) { if (met.lwS) console.log(`LEAK W${met.lwW} ${met.lwS}`); met.lwW = G.wave; met.lwS = ''; }
+      if (G.leakWave && Object.keys(G.leakWave).length) met.lwS = JSON.stringify(G.leakWave) + ` core ${Math.round(G.core.hp)}/${Math.round(G.core.max)}`; }
     met.minCore = Math.min(met.minCore, G.core.hp / G.core.max);
     met.waveMin = Math.min(met.waveMin == null ? 1 : met.waveMin, G.core.hp / G.core.max);
     if (G.wave !== lastWave) { lastWave = G.wave; met.creditsAtWave.push(G.credits); met.mins.push(met.waveMin == null ? 1 : met.waveMin); met.waveMin = 1; met.recentMin = Math.min(...met.mins.slice(-10));

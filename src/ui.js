@@ -135,6 +135,7 @@ const UI = (() => {
   let screen = 'hangar', panel = null, pick = null, capPeek = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null, modalFrom = null;
   let hudClock = 0, cloudOk = null, setup = { startWave: 1, chaos: 1, seed: 0, map: null, mode: 'std' };
   let confirmAbandon = false, confirmReset = false, confirmWebReset = false;
+  let sellArm = null, sellArmT = 0; // 6.6.1: Sell takes two taps (the first arms it for 3 s), like Reset and Nuke
   const stage = () => $('#stage');
 
   function show(id) {
@@ -774,7 +775,7 @@ const UI = (() => {
         tapTw('tapR', () => G.towers.find(t => t.type === 'rail'), 'LV 5', 'This Rail Lance is LV 5, the top. Tap it.'),
         info('asc', sel('#panel [data-act=up]'), 'Ascend', `Past LV 5 a tower Ascends: more damage${typeof PERKS !== 'undefined' ? ' and a perk you choose' : ''} each time. The price doubles every step.`, { skip: () => !panT(), leave: shut }),
         tapTw('tapC', () => G.towers.find(t => t.type === 'cryo'), 'Sell', 'This Cryo Emitter is in the way. Tap it.', { skip: () => !has('cryo') }),
-        { id: 'sell', hold: 1, at: sel('#panel [data-act=sell]'), t: 'Sell', b: 'Selling refunds 70% of what you put in (100% at a checkpoint). Tap Sell.', done: () => !has('cryo'), back: () => has('cryo') && !panT() && 'tapC' },
+        { id: 'sell', hold: 1, at: sel('#panel [data-act=sell]'), t: 'Sell', b: 'Selling refunds 70% of what you put in (100% at a checkpoint). Tap Sell, then tap it again to confirm.', done: () => !has('cryo'), back: () => has('cryo') && !panT() && 'tapC' },
         call('c1', 1),
         info('wrap', null, 'Upgrade or build?', 'Building needs power; upgrading needs only credits. When the grid is full, upgrade.', { when: () => after(1) }),
         end(),
@@ -1503,7 +1504,7 @@ const UI = (() => {
   }
 
   // ---------- Panels ----------
-  function closePanel() {
+  function closePanel() { sellArm = null;
     panel = null; pick = null; capPeek = null;
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
@@ -1672,9 +1673,25 @@ const UI = (() => {
     const below = r.bottom + 8, h = box.offsetHeight;
     box.style.top = (below + h < window.innerHeight - 8 ? below : Math.max(8, r.top - h - 8)) + 'px';
   }
+  // 6.6.1: a glossary word inside a button (a Veteran pick, a boon, a card) used to open its tooltip and eat the tap.
+  // Inside a button a quick tap now does the button's job; a press held 450 ms shows the tooltip instead.
+  const tipBtn = t => t && t.closest('button, [data-act]');
+  let tipHold = null, tipHeld = null;
+  document.addEventListener('pointerdown', e => {
+    const t = e.target.closest && e.target.closest('.tip'); clearTimeout(tipHold); tipHeld = null;
+    if (!tipBtn(t)) return;
+    tipHold = setTimeout(() => { showTip(t); $('#tipbox').dataset.for = t.dataset.tip; tipHeld = t; }, 450);
+  }, true);
+  const tipLift = () => clearTimeout(tipHold);
+  document.addEventListener('pointerup', tipLift, true); document.addEventListener('pointercancel', tipLift, true);
   document.addEventListener('click', e => {
     const t = e.target.closest && e.target.closest('.tip');
     const box = $('#tipbox');
+    if (t && tipBtn(t)) {
+      if (tipHeld === t) { e.stopPropagation(); e.preventDefault(); tipHeld = null; return; } // the hold showed the tooltip
+      if (box && !box.hidden) box.hidden = true;
+      return; // a quick tap: let the button act
+    }
     if (t) { e.stopPropagation(); e.preventDefault(); if (box && !box.hidden && box.dataset.for === t.dataset.tip) { box.hidden = true; box.dataset.for = ''; return; } showTip(t); $('#tipbox').dataset.for = t.dataset.tip; return; }
     if (box && !box.hidden) box.hidden = true;
   }, true);
@@ -1736,7 +1753,7 @@ const UI = (() => {
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${t.lvl === 3 ? `<button class="btn wide lvup" disabled>Choose a Specialization<small>${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'}</small></button>` : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}${G.fr ? (t === frDockT() ? '<button class="btn frmove" disabled>Move<small>Docked</small></button>' : `<button class="btn frmove" data-act="frmove" ${t.mvT > 0 ? 'disabled' : costBtn(frMoveFee(t))}>Move · ${fmt(frMoveFee(t))}${t.mvT > 0 ? '<small>Moving</small>' : ''}</button>`) : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}${G.fr ? (t === frDockT() ? '<button class="btn frmove" disabled>Move<small>Docked</small></button>' : `<button class="btn frmove" data-act="frmove" ${t.mvT > 0 ? 'disabled' : costBtn(frMoveFee(t))}>Move · ${fmt(frMoveFee(t))}${t.mvT > 0 ? '<small>Moving</small>' : ''}</button>`) : ''}<button class="btn danger${sellArm === t ? ' armed' : ''}" data-act="sell">${sellArm === t ? 'Tap again' : 'Sell'} +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
@@ -2134,7 +2151,9 @@ const UI = (() => {
       else if (act === 'spec') { if (!window.act('up', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'reroll') { if (!window.act('reroll', t.x, t.y, 0)) SFX.play('deny'); renderPanel(); }
       else if (act === 'rerollTok') { if (!window.act('reroll', t.x, t.y, 1)) SFX.play('deny'); renderPanel(); }
-      else if (act === 'sell') { window.act('sell', t.x, t.y); closePanel(); }
+      else if (act === 'sell') {
+        if (sellArm !== t) { sellArm = t; SFX.play('ui'); clearTimeout(sellArmT); sellArmT = setTimeout(() => { if (sellArm === t) { sellArm = null; if (panel && panel.t === t) renderPanel(); } }, 3000); renderPanel(); }
+        else { sellArm = null; clearTimeout(sellArmT); window.act('sell', t.x, t.y); closePanel(); } }
       else if (act === 'frmove') startMove(t);
       else if (act === 'oc') { if (!window.act('oc', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
       else if (act === 'vet') { if (!window.act('vet', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
@@ -2625,8 +2644,9 @@ const UI = (() => {
     const L = G.leakWave || {}, top = Object.entries(L).sort((a, b) => b[1] - a[1])[0];
     if (!top) return '';
     const n = Object.values(L).reduce((a, b) => a + b, 0), [ty, ...gs] = top[0].split('+'), D = ENEMIES[ty];
-    const nm = D ? D.name : ty.replace('boss:', ''), g0 = gs.find(g => GENES[g]);
-    const beat = g0 ? GENES[g0].counter : D && D.beat;
+    const mites = top[0] === 'drone' && (G.leakMiteW || 0) * 2 >= top[1]; // 6.6.1: mostly Carrier drops, not ground Drones
+    const nm = mites ? 'drones dropped by Carriers' : D ? D.name : ty.replace('boss:', ''), g0 = gs.find(g => GENES[g]);
+    const beat = mites ? 'anti-air (Rail, Missile, Pulse) that kills Carriers before they unload' : g0 ? GENES[g0].counter : D && D.beat;
     return `<div class="why"><b>Why</b><span>${n} got through in Wave ${G.wave}, mostly ${esc(nm)}${gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''} (${top[1]}).</span>${beat ? `<span class="good">Beat it: ${tipify(beat)}</span>` : ''}</div>`;
   }
   // ---------- v5.3 The Hunt: the choice after a bounty, hunt codes, and watching a recorded run ----------
@@ -3080,7 +3100,9 @@ const UI = (() => {
   function cpPlay(on) { const M = SFX.music, d = studioCfg().draft; if (on && d) { M.setPaused(false); M.setHold(false); M.jump(cpSpec(d)); } else M.setHold(true); }
   function leaveCompose() {
     const M = SFX.music; M.editing = false; M.setHold(false); M.setPaused(false);
-    M.jump(stRadio ? Object.assign({}, stRadio, { start: 0 }) : null); stRadio = null;
+    // 6.6.1: during a boss fight (themes on) Compose hands back to the boss theme, not a new radio song
+    const bt = M.boss && M.config.bossThemes !== false;
+    M.jump(bt ? { boss: M.boss } : stRadio ? Object.assign({}, stRadio, { start: 0 }) : null); stRadio = null;
   }
   function cpApply(rerender) { // the draft changed: save it and hear it
     const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose';
@@ -3936,6 +3958,7 @@ const UI = (() => {
   // 6.3 boss themes: tell the music which boss is on the field (the first one: its theme keeps playing while any boss with that id
   // lives, so Gloop's splits and Most Wanted twins don't restart it) and its phase. A kill (hp at 0, run not over) gets the victory sting.
   let musBoss = { id: null, e: null };
+  let slowTip = null;
   function bossMusic() {
     const M = SFX.music; let b = null;
     if (screen === 'game' && G && !G.over) {
@@ -3963,7 +3986,10 @@ const UI = (() => {
     // v5.2: fast-forward is safe to leave on. A boss arriving (or reaching Red Alert) drops the game to 1×; the old speed comes back when it falls.
     // Speeding up again by hand during the fight is respected
     if (bossOn && !G.over) { const b = G.bossAlive, key = b.id + (G.redAlert ? 'r' : '');
-      if (G.speed > 1 && G.slowKey !== key && PROF.settings.autoSlow !== false) { G.slowKey = key; G.speedWas = Math.max(G.speedWas || 0, G.speed); G.speed = 1; toast('SPEED 1×', G.redAlert ? 'Red Alert: the boss is at your gate' : 'Boss on the field. Your speed comes back when it falls', '#ffb03a', true, 'tip'); updateHud(); } }
+      if (G.speed > 1 && G.slowKey !== key && PROF.settings.autoSlow !== false) { G.slowKey = key; G.speedWas = Math.max(G.speedWas || 0, G.speed); G.speed = 1; slowTip = ['SPEED 1×', G.redAlert ? 'Red Alert: the boss is at your gate' : 'Boss on the field. Your speed comes back when it falls']; updateHud(); } }
+    // 6.6.1: the tip waits for the boss card to close (on iPad it sat over the card's Fight button for 3 s)
+    if (slowTip && (!G || G.over)) slowTip = null;
+    if (slowTip && !modalOpen && screen === 'game') { toast(slowTip[0], slowTip[1], '#ffb03a', true, 'tip'); slowTip = null; }
     else if (G && !G.over && G.speedWas && screen === 'game') { if (G.speed === 1) { G.speed = G.speedWas; toast(`SPEED ${G.speed}×`, 'Boss down', '#59f0b4', true, 'tip'); } G.speedWas = 0; G.slowKey = null; updateHud(); }
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }

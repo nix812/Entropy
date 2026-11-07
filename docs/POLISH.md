@@ -28,18 +28,19 @@ Known issues, collected from Nic's run logs and the builders' reports, Nov 4–7
 | Area | Issue | Source |
 | --- | --- | --- |
 | Sound | Sound stopped late in a 28-minute run (6.5.3). 6.5.5 logs sound health (`aud*` lines). Ask Nic for the next log where it happens, then fix the cause (likely an AudioContext rebuild on iOS). | Nic, Nov 6 log |
-| Balance | Drone floods from about Wave 41: 14–22 drone leaks per wave (`breachWarn` Drone), which end long runs. Seen in 6.0.2 and both 6.5.3 logs. Check whether it is a bug (breach scaling) or a balance spike. | Nic's logs |
-| Controls | Tapping an underlined glossary word inside a Veteran pick button opens the tooltip instead of picking. | tut66 report |
-| Controls | Top bar hit areas reach 12 px into the field and can take taps meant for an edge arrow. | ui652 report |
-| Controls | Under 44 px: rail buttons (50×42), tower panel Sell and Move (37–41 px wide), Studio genre names and its ✕ (40 px). | ui652 tapsize |
-| Training | Towers sit idle on the small board (the core gun kills most). The boss walks half the road untouched. On iPad the "SPEED 1×" tip covers the boss card's Fight button for about 3 s. | tut66 report |
-| Training | `node test/tutorial.js`: the Lift Off lesson check fails ("moved 0"), the same since 6.5.2. | tut66 report |
+| Balance | Drone floods from about Wave 41: 14–22 drone leaks per wave (`breachWarn` Drone), which end long runs. Seen in 6.0.2 and both 6.5.3 logs. **6.6.1 finding:** not a scaling bug. They are Carrier drops (`mite`, flying, 2 every 4.5 s for as long as the Carrier lives) and they leak under the key `drone`. A 60-point Frontier bot without anti-air died at W24 to 25 drop leaks in one wave; another seed reached W80 with almost none. The warning said "Drone" with the counter "Anything", which hid the real answer. **Fixed in 6.6.1:** the warning and death screen name Carrier drops and say anti-air. **Open (rules, lab first, needs Nic):** cap drops per Carrier (for example 6) at `frV >= 7`. | Nic's logs |
+| Controls | ~~Tapping an underlined glossary word inside a Veteran pick button opens the tooltip instead of picking.~~ **Fixed 6.6.1** (all pick buttons; hold 450 ms for the tooltip). | tut66 report |
+| Controls | ~~Top bar hit areas reach 12 px into the field and can take taps meant for an edge arrow.~~ **Fixed 6.6.1** (top-edge arrows sit lower on phones). | ui652 report |
+| Controls | Sell was one tap, right next to Move. **Fixed 6.6.1:** two taps ("Tap again", 3 s). Talent reset and leaving a run already confirm. | Nov 7 check |
+| Controls | Under 44 px: ~~rail buttons (50×42), tower panel Sell and Move (37–41 px wide)~~ **fixed 6.6.1**, plus the capstone strip (was crushed to 6 px on a phone, fixed). Open: Studio player buttons (36 px, hit 40×44), genre Play halves (30 px wide). Rows cut off at the bottom of a scrolling box read short in `tapsize` but are fine (scroll). | ui652 tapsize |
+| Training | Towers sit idle on the small board (the core gun kills most). The boss walks half the road untouched. ~~On iPad the "SPEED 1×" tip covers the boss card's Fight button for about 3 s.~~ **Fixed 6.6.1** (the tip waits for the card to close). | tut66 report |
+| Training | ~~`node test/tutorial.js`: the Lift Off lesson check fails ("moved 0").~~ **Fixed 6.6.1**: a test-bot timing issue (the lesson ends at tick 1164, the bot's second try was at 1350). | tut66 report |
 | Towers | Buzzsaw blade can finish its run on the old road after the core moves. Rimewall walls and Entangler links aren't in snapshots (rebuilt on resume). Wildcard and Surge Spire look weak for the bot. | tower64 report |
 | Cards | The 60-point bot median rose to about W82 with generated cards. If late runs feel easy, raise `ANOM_GEN.dr` from 0.8 to 0.9. | cards64 report |
-| Music | No boss theme if the boss arrives before the first tap. Leaving Compose during a boss fight starts a radio song. Techno lead is silent at mid energy. Trance Progressive is about 6 dB quiet. | mus63 report |
+| Music | ~~No boss theme if the boss arrives before the first tap. Leaving Compose during a boss fight starts a radio song.~~ **Fixed 6.6.1.** Open: Techno lead is silent at mid energy. Trance Progressive is about 6 dB quiet. | mus63 report |
 | Probe | No sounds of its own (reuses others). Gas clouds look the same in every zone. | probe65 report |
 | UI audit | Standing `uiaudit` flags: hangar version label, setup zone lines, Dictionary clipping, Archive and Hall close button. Decide fix or whitelist. | gate logs |
-| Tests | Flaky: `zone63shot` colour check, `probe65shot` one tap, the daily-seed check in `frontier.js`. Make them stable so a red gate means a real bug. | gate logs |
+| Tests | Flaky: `zone63shot` colour check, `probe65shot` one tap, the daily-seed check in `frontier.js`. Make them stable so a red gate means a real bug. **Also stale (same on 6.6.0):** `frontiershot.py` fails 8 checks: the core panel and Details tab look for the word "Docked" (the panel says "Second gun" since 6.5.2, and the button text is uppercase), and at 852×393 no green core arrow appears after looking at the boss. | gate logs |
 | Old copy | The Claude artifact copy listed in the Project instructions is version 4.4 and unused. Tell Nic it can be dropped from the instructions. | Nov 6 check |
 
 Method: reproduce in Playwright or the node harness, fix, add a regression check, ship in small batches.

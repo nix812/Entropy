@@ -2163,14 +2163,16 @@ function startWave() {
       G.breachBand = band;
       const now = G.leakWave || {}, top = Object.keys(now).map(k => [k, now[k]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
       let who = '', counter = '';
-      if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
+      const mites = top && top[0] === 'drone' && (G.leakMiteW || 0) * 2 >= top[1]; // 6.6.1: mostly Carrier drops, not ground Drones
+      if (mites) { who = 'drones dropped by Carriers'; counter = ' Counter: anti-air (Rail, Missile, Pulse) that kills Carriers before they unload.'; }
+      else if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
       const lk = G.stats.leaks - G.leaksAtStart;
       Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are eating your defences: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield hides it until it doesn't.${counter}`, '#ff4d6a', true);
       rlog('breachWarn', { n: lk, who, p: +P.toFixed(2) });
     }
   }
   G.leakDmgW = 0;
-  G.leakWave = {}; // v5.0.2: own per-wave tally (leakBy is cleared by the wave log, which left 'who' empty)
+  G.leakMiteW = 0; G.leakWave = {}; // v5.0.2: own per-wave tally (leakBy is cleared by the wave log, which left 'who' empty)
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
   lureAll();
@@ -3088,7 +3090,7 @@ function leak(e) {
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
   G.stats.leaks++;
   G.stats.lastLeak = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type;
-  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; (G.leakWave || (G.leakWave = {}))[lk] = (G.leakWave[lk] || 0) + 1; }
+  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; (G.leakWave || (G.leakWave = {}))[lk] = (G.leakWave[lk] || 0) + 1; if (e.mite) G.leakMiteW = (G.leakMiteW || 0) + 1; } // 6.6.1: Carrier drops leak as 'drone'; this tally lets the warnings name them (messages only, no rules)
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
   if (e.type === 'leech' && G.credits > 0) { const st2 = Math.round(Math.min(G.credits * LEECH.share, LEECH.cap(w))); G.credits -= st2; G.stats.leeched = (G.stats.leeched || 0) + st2; Hooks.fx('coin', { x: c.x, y: c.y - 0.6, v: -st2 }); if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech made off with ${st2} credits. They take more the more you bank`, '#ffb03a'); } }

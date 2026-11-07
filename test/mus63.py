@@ -231,7 +231,12 @@ if mode in ('ui', 'all'):
             pg = b.new_page(viewport={'width': W, 'height': H}, device_scale_factor=2, has_touch=True); pg.on('pageerror', lambda e: errs.append(str(e)))
             pg.goto('file://' + str(page)); pg.wait_for_timeout(400)
             pg.evaluate('() => { PROF.bestWave = 40; PROF.runs = 3; PROF.seenVer = VERSION; PROF.seenHelp = true; PROF.zoomHint = true; PROF.runSnap = null; PROF.codex.bosses = {}; PROF.settings.briefs = "off"; UI.renderHangar(); }')
-            pg.mouse.click(300, 200); pg.wait_for_timeout(300)
+            if W == 667: # 6.6.1: a boss reported before the music starts (no tap yet) plays its theme once the music starts
+                pg.evaluate('() => SFX.music.setBoss("cat", 0)'); pg.mouse.click(300, 200); pg.wait_for_timeout(500)
+                ok('a boss that came before the first tap gets its theme when the music starts', pg.evaluate('() => SFX.music.piece && SFX.music.piece.boss') == 'cat')
+                pg.evaluate('() => SFX.music.setBoss(null, 0)'); pg.wait_for_timeout(300)
+            else: pg.mouse.click(300, 200)
+            pg.wait_for_timeout(300)
             if W == 852:
                 pg.click('#bLaunch'); pg.wait_for_timeout(250); pg.click('[data-act=launch]'); pg.wait_for_timeout(600); dismiss(pg)
                 pg.evaluate('() => { G.next = 999; G.paused = false; }'); pg.wait_for_timeout(1500)
@@ -245,6 +250,11 @@ if mode in ('ui', 'all'):
                 pg.screenshot(path=str(out / f'ui_deck_{W}.png'))
                 pg.evaluate('() => { const e = G.enemies.find(e => e.boss === "cat"); hit(e, e.maxHp * 0.5, "K", null, { noStatus: 1 }); }'); pg.wait_for_timeout(600)
                 ok('a boss phase reaches the music', pg.evaluate('() => SFX.music.bossPhase') >= 1)
+                # 6.6.1: leaving Compose during the fight goes back to the boss theme, not a new radio song
+                pg.evaluate('() => UI._dbg.openStudio("game")'); pg.wait_for_timeout(500)
+                pg.evaluate('() => { const b = [...document.querySelectorAll("#modal [data-act]")].find(b => /tab/i.test(b.dataset.act) && b.dataset.v === "compose"); b && b.click(); }'); pg.wait_for_timeout(400)
+                pg.evaluate('() => { const b = document.querySelector("#modal [data-act=stClose]"); b && b.click(); }'); pg.wait_for_timeout(600); dismiss(pg)
+                ok('leaving Compose mid-fight returns to the boss theme', pg.evaluate('() => SFX.music.piece.boss') == 'cat')
                 pg.evaluate('() => { SFX.music.debug = true; }')
                 pg.evaluate(KILL, 'cat'); pg.wait_for_timeout(1500); dismiss(pg)
                 st = pg.evaluate('() => { const p = SFX.music.piece; return [p.boss, p.name, (SFX.music.events || []).some(e => e[2] === "victory")]; }'); pg.evaluate('() => { SFX.music.debug = false; }')

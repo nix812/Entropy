@@ -16,8 +16,10 @@ function play(opts) {
     if (G.checkpoint && !G.enemies.length) S.act('cpResume', 4);
     if (guard % 300 === 0) { const s = spot(); if (s && S.gridFree() > 0) S.act('build', types[(guard / 300) % types.length | 0], s[0], s[1]); else if (G.towers.length) { const t = G.towers[guard % G.towers.length]; S.act('up', t.x, t.y, t.lvl === 3 ? 1 : null); } }
     if (guard % 700 === 0) { const e = G.enemies.find(x => !x.dead); if (e) S.act('abil', 'strike', e.x, e.y); S.act('call'); }
-    if (G.fr && guard % 900 === 450) { // 6.1 Frontier: dock on a tower that allows it, then move another one next to the core
-      const c = S.frCands(), t = S.frCanFly() && G.towers.find(o => c.includes(S.tIdx(o.x, o.y)) && S.frPlan(o.x, o.y));
+    // 6.6.1: the Lift Off lesson ends at about tick 1160, before the old second try at tick 1350, so after a first flight
+    // the bot tries the move every 150 ticks until it has moved once
+    if (G.fr && (guard % 900 === 450 || G.flew && !G.moved && guard % 150 === 75)) { // 6.1 Frontier: dock on a tower that allows it, then move another one next to the core
+      const c = S.frCands(), t = !(G.flew && !G.moved && guard % 900 !== 450) && S.frCanFly() && G.towers.find(o => c.includes(S.tIdx(o.x, o.y)) && S.frPlan(o.x, o.y));
       if (t && S.act('frFly', t.x, t.y)) G.flew = (G.flew || 0) + 1;
       else if (!G.frFly && G.towers.length > 1) { const m = G.towers.find(o => o !== S.frDockT() && !(o.mvT > 0)), cx = G.map.core.x, cy = G.map.core.y;
         if (m) for (const [dx, dy] of [[2, 0], [0, 2], [-2, 0], [0, -2], [2, 2], [-2, -2]]) if (S.act('frMove', m.x, m.y, cx + dx, cy + dy)) { G.moved = (G.moved || 0) + 1; break; } }

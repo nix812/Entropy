@@ -27,6 +27,10 @@ with sync_playwright() as p:
         pg.wait_for_timeout(600)
         arr = pg.evaluate('() => Render.frArrows.filter(a => a.tre).map(a => [a.sx, a.sy, a.x, a.y])')
         check(2 <= len(arr) <= 3, f'{len(arr)} yellow treasure arrows (two crates side by side merge into one)', tag)
+        # 6.6.1: a top-edge arrow sits below the top bar's spilled hit boxes: its centre and its visible top both reach the field
+        tops = pg.evaluate('''() => { const r = document.querySelector('#cv').getBoundingClientRect(), hit = (x, y) => { const e = document.elementFromPoint(r.left + x * UIS, r.top + y * UIS); return !!e && e.id === 'cv'; };
+          return Render.frArrows.filter(a => a.sy < 60).map(a => [Math.round(a.sy), hit(a.sx, a.sy), hit(a.sx, a.sy - (a.big ? 11 : 8))]); }''')
+        check(all(t[1] and t[2] for t in tops), f'top-edge arrows clear of the top bar hit boxes {tops}', tag)
         pg.screenshot(path=str(out / f'qa_treasure_{tag}.png'))
         if arr:
             a = arr[0]; pg.mouse.click(cv[0] + a[0] * u, cv[1] + a[1] * u); pg.wait_for_timeout(300)

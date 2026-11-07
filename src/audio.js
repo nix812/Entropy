@@ -1892,6 +1892,8 @@ const SFX = (() => {
       if (running || !ctx) return; running = true;
       if (!mIn) busFor();
       if (!P) newPiece();
+      // 6.6.1: a boss that arrived before the music started (no tap yet) set bossNow while setBoss could do nothing: start on its theme
+      if (bossNow && P.boss !== bossNow && cfg.bossThemes !== false && !editing && !held) { bossRet = null; newPiece({ boss: bossNow }); forceNext = null; }
       nextT = ctx.currentTime + 0.1;
       if (!offline) timer = setInterval(() => schedule(), 100);
     }

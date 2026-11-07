@@ -2055,7 +2055,10 @@ const RES = 2;
       if (!onS(bx2s(G.core.x * TILE), by2s(G.core.y * TILE))) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
       if (G.hole && (G.hole.ph === 0 || holeVisible())) list.push({ x: G.hole.x, y: G.hole.y, col: '#b86cff', big: G.hole.ph === 0, hole: 1 }); // 6.5: a black hole drifting in always warns, even out in the fog
       // treasure: project each off-screen crate to the edge, merge crates whose arrows would land within 34 px, keep the 3 closest
-      const edge = (sx2, sy2) => { const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy))); return { px: cx0 + dx * k, py: cy0 + dy * k }; };
+      // 6.6.1: on phones the top bar's hit boxes reach --hx (44 / UIS - 32 px) into the field; top-edge arrows sit that much lower so
+      // a tap on the arrow lands on the arrow, not on a chip above it
+      const padT = pad + Math.max(0, 44 / UIS - 32);
+      const edge = (sx2, sy2) => { const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - (dy < 0 ? padT : pad)) / Math.max(1e-6, Math.abs(dy))); return { px: cx0 + dx * k, py: cy0 + dy * k }; };
       const tre = [];
       for (const cc of G.caches || []) { const x = cc.x + 0.5, y = cc.y + 0.5, sx2 = bx2s(x * TILE), sy2 = by2s(y * TILE); if (onS(sx2, sy2) || (fogLive && !fogSee(x, y))) continue;
         const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = tre.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);

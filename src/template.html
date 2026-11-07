@@ -666,9 +666,11 @@ body.rdy #tutlist { bottom: 6px; }
 .bt i { position: absolute; left: 0; right: 0; top: 0; height: 2px; }
 /* 6.4: unlocked capstone tier towers get a gold corner; locked ones sit greyed in one strip under the grid */
 .bt.capt::before { content: ''; position: absolute; left: 0; top: 0; border-top: 6px solid var(--warn); border-right: 6px solid transparent; pointer-events: none; z-index: 1; }
-.capstrip { display: flex; align-items: center; gap: 3px; margin-top: 3px; }
-.capstrip .lbl { flex: 0 0 auto; font-size: 13px; color: var(--dim); margin-right: 2px; white-space: nowrap; }
-.capstrip .cst { flex: 1 1 0; min-width: 0; height: 26px; padding: 0; border: 0; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); display: flex; align-items: center; justify-content: center; }
+/* 6.6.1: on a phone the label took the whole row and crushed the 7 chips to 6 px slivers. The label now sits on its own line
+   and the chips fill a grid of 44 px cells (4 a row on a phone) */
+.capstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 3px; margin-top: 3px; }
+.capstrip .lbl { grid-column: 1 / -1; font-size: 13px; color: var(--dim); white-space: nowrap; }
+.capstrip .cst { min-width: 0; height: 44px; padding: 0; border: 0; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); display: flex; align-items: center; justify-content: center; }
 .capstrip .cst canvas { width: 22px; height: 22px; image-rendering: pixelated; filter: grayscale(1) brightness(0.6); }
 .capstrip .cst.on { box-shadow: inset 0 0 0 2px var(--amber); } .capstrip .cst.on canvas { filter: grayscale(0.4) brightness(0.9); }
 .binfo p.bst.lockline { color: var(--warn); }
@@ -743,7 +745,8 @@ body.rdy #tutlist { bottom: 6px; }
 .spec span { font-size: 15px; }
 .spec em { font-style: normal; color: var(--amber); font-size: 16px; }
 .row2 { display: flex; gap: 5px; }
-.row2 .btn { flex: 1; padding: 8px 6px; font-size: 9px; }
+.row2 .btn { flex: 1; padding: 8px 2px; font-size: 9px; } /* 6.6.1: 2 px sides so four buttons reach 44 px on a phone */
+.btn.danger.armed { background: #6a2234; color: #fff; box-shadow: inset 0 0 0 2px #ff4d6a; }
 .pfoot .btn.reloc { min-height: 40px; color: var(--core); box-shadow: inset 0 0 0 2px var(--core), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
 .pfoot .btn.reloc small { color: #8fd8bd; }
 .maxed { font-family: var(--f-pix); font-size: 10px; color: var(--core); text-align: center; padding: 6px; }
@@ -1054,8 +1057,9 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
   #hud { gap: 11px; } .corebox > .lbl { display: none; } #hpbar { width: 54px; }
   .hs b { font-size: 20px; } .hs.cr b { font-size: 21px; }
 }
-@media (max-height: 400px) { .rb { height: 42px; } .entg { height: 64px; } #bCall { height: 54px; gap: 1px; } .rail { gap: 5px; } }
-@media (max-height: 340px) { .rb { height: 38px; } .rb span { display: none; } .entg { height: 54px; } #bCall { height: 46px; } }
+/* 6.6.1: phone rails reach 44 px tall where the 7-button left rail fits (they shrink to 38 px only when it doesn't) */
+@media (max-height: 400px) { .rb { height: auto; flex: 0 1 44px; min-height: 38px; } .entg { height: 64px; } #bCall { flex-basis: 54px; gap: 1px; } .rail { gap: 2px; } }
+@media (max-height: 340px) { .rb { flex-basis: 38px; } .rb span { display: none; } .entg { height: 54px; } #bCall { flex-basis: 46px; } }
 
 
 /* v5.0 token reroll */
