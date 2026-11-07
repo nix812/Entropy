@@ -1,6 +1,6 @@
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.5.5';
+const VERSION = '6.6.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -460,18 +460,13 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.5.5', title: 'Last Gradient 6.5.5 · Field Notes', items: [
-  ['Sound check', 'The run log now records the state of the sound every 2 s. If the sound stops, the log shows when and why.'],
-  ['Chests first', 'A tap on a pirate chest or crate claims it, even with the probe selected.'],
-  ['Pixel icons only', 'Every symbol in the game is now pixel art. Phones no longer swap in emoji.'],
-  ['Cleaner probe controls', 'Selecting the probe now shows 2 small buttons under Probe: Home and Upgrades. Tap Probe again to let it go.'],
-  ['Short hints', 'One short line says what the next tap does, then fades. A loot site shows its guards and credits.'],
-  ['Upgrades panel', 'A tap on the map now closes the probe Upgrades panel.'],
-  ['Two guns when docked', 'The core\'s own gun keeps firing when it docks. The docked tower is a second gun at ×2 damage and +1 range.'],
-  ['Wormholes', 'The no-build ring around a wormhole is now 4 tiles, down from 6.'],
-  ['Easier to tap', 'Top bar items, panel tabs, chips and the pause menu have bigger tap areas.'],
-  ['Training checklist', 'The checklist follows the lessons in order and ticks each step as you do it.'],
-  ['Sound', 'Tape & Vinyl is off by default. Settings › Sound › Boss music turns the boss themes off.'],
+const WHATS_NEW = { ver: '6.6.0', title: 'Last Gradient 6.6 · First Flight', items: [
+  ['New Basic Training', 'Training is now one guided run of about 10 minutes. It teaches one idea at a time and lets you play between lessons.'],
+  ['What it covers', 'Towers and upgrades, the core and its Battery, Lift Off and docking, links, the probe and loot, fog of war, Entropy cards and a boss.'],
+  ['What comes next', 'Training ends with a short list: real runs, talents, the capstone tier, Daily Hunts and the Field Manual.'],
+  ['Fewer repeats', 'Your first real run skips the cards for anything Training already taught.'],
+  ['Checklist', '17 lines, in lesson order. Each ticks when you do the thing.'],
+  ['Sound check', 'The run log now records the state of the sound every 2 s.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
