@@ -679,9 +679,11 @@ body.rdy #tutlist { bottom: 6px; }
 .bt i { position: absolute; left: 0; right: 0; top: 0; height: 2px; }
 /* 6.4: unlocked capstone tier towers get a gold corner; locked ones sit greyed in one strip under the grid */
 .bt.capt::before { content: ''; position: absolute; left: 0; top: 0; border-top: 6px solid var(--warn); border-right: 6px solid transparent; pointer-events: none; z-index: 1; }
-.capstrip { display: flex; align-items: center; gap: 3px; margin-top: 3px; }
-.capstrip .lbl { flex: 0 0 auto; font-size: 13px; color: var(--dim); margin-right: 2px; white-space: nowrap; }
-.capstrip .cst { flex: 1 1 0; min-width: 0; height: 26px; padding: 0; border: 0; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); display: flex; align-items: center; justify-content: center; }
+/* 6.6.1: on a phone the label took the whole row and crushed the 7 chips to 6 px slivers. The label now sits on its own line
+   and the chips fill a grid of 44 px cells (4 a row on a phone) */
+.capstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 3px; margin-top: 3px; }
+.capstrip .lbl { grid-column: 1 / -1; font-size: 13px; color: var(--dim); white-space: nowrap; }
+.capstrip .cst { min-width: 0; height: 44px; padding: 0; border: 0; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); display: flex; align-items: center; justify-content: center; }
 .capstrip .cst canvas { width: 22px; height: 22px; image-rendering: pixelated; filter: grayscale(1) brightness(0.6); }
 .capstrip .cst.on { box-shadow: inset 0 0 0 2px var(--amber); } .capstrip .cst.on canvas { filter: grayscale(0.4) brightness(0.9); }
 .binfo p.bst.lockline { color: var(--warn); }
@@ -756,7 +758,8 @@ body.rdy #tutlist { bottom: 6px; }
 .spec span { font-size: 15px; }
 .spec em { font-style: normal; color: var(--amber); font-size: 16px; }
 .row2 { display: flex; gap: 5px; }
-.row2 .btn { flex: 1; padding: 8px 6px; font-size: 9px; }
+.row2 .btn { flex: 1; padding: 8px 2px; font-size: 9px; } /* 6.6.1: 2 px sides so four buttons reach 44 px on a phone */
+.btn.danger.armed { background: #6a2234; color: #fff; box-shadow: inset 0 0 0 2px #ff4d6a; }
 .pfoot .btn.reloc { min-height: 40px; color: var(--core); box-shadow: inset 0 0 0 2px var(--core), inset 0 -3px 0 rgba(0, 0, 0, 0.35); }
 .pfoot .btn.reloc small { color: #8fd8bd; }
 .maxed { font-family: var(--f-pix); font-size: 10px; color: var(--core); text-align: center; padding: 6px; }
@@ -1067,8 +1070,9 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
   #hud { gap: 11px; } .corebox > .lbl { display: none; } #hpbar { width: 54px; }
   .hs b { font-size: 20px; } .hs.cr b { font-size: 21px; }
 }
-@media (max-height: 400px) { .rb { height: 42px; } .entg { height: 64px; } #bCall { height: 54px; gap: 1px; } .rail { gap: 5px; } }
-@media (max-height: 340px) { .rb { height: 38px; } .rb span { display: none; } .entg { height: 54px; } #bCall { height: 46px; } }
+/* 6.6.1: phone rails reach 44 px tall where the 7-button left rail fits (they shrink to 38 px only when it doesn't) */
+@media (max-height: 400px) { .rb { height: auto; flex: 0 1 44px; min-height: 38px; } .entg { height: 64px; } #bCall { flex-basis: 54px; gap: 1px; } .rail { gap: 2px; } }
+@media (max-height: 340px) { .rb { flex-basis: 38px; } .rb span { display: none; } .entg { height: 54px; } #bCall { flex-basis: 46px; } }
 
 
 /* v5.0 token reroll */
@@ -1260,7 +1264,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.6.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.6.1 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -1357,7 +1361,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.6.0';
+const VERSION = '6.6.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -4929,14 +4933,16 @@ function startWave() {
       G.breachBand = band;
       const now = G.leakWave || {}, top = Object.keys(now).map(k => [k, now[k]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
       let who = '', counter = '';
-      if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
+      const mites = top && top[0] === 'drone' && (G.leakMiteW || 0) * 2 >= top[1]; // 6.6.1: mostly Carrier drops, not ground Drones
+      if (mites) { who = 'drones dropped by Carriers'; counter = ' Counter: anti-air (Rail, Missile, Pulse) that kills Carriers before they unload.'; }
+      else if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
       const lk = G.stats.leaks - G.leaksAtStart;
       Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are eating your defences: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield hides it until it doesn't.${counter}`, '#ff4d6a', true);
       rlog('breachWarn', { n: lk, who, p: +P.toFixed(2) });
     }
   }
   G.leakDmgW = 0;
-  G.leakWave = {}; // v5.0.2: own per-wave tally (leakBy is cleared by the wave log, which left 'who' empty)
+  G.leakMiteW = 0; G.leakWave = {}; // v5.0.2: own per-wave tally (leakBy is cleared by the wave log, which left 'who' empty)
   G.next = 0; G.entWaveCombo = 0; G.leaksAtStart = G.stats.leaks;
   for (const t of G.snares || []) t.caught = 0;
   lureAll();
@@ -5854,7 +5860,7 @@ function leak(e) {
   if (e.boss && !e.gen) rlog('bossLeak', { id: e.boss, ph: e.phase || 0, hp: +(e.hp / e.maxHp).toFixed(2) });
   G.stats.leaks++;
   G.stats.lastLeak = e.boss ? e.bossName : ENEMIES[e.type] ? ENEMIES[e.type].name : e.type;
-  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; (G.leakWave || (G.leakWave = {}))[lk] = (G.leakWave[lk] || 0) + 1; }
+  { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; (G.leakWave || (G.leakWave = {}))[lk] = (G.leakWave[lk] || 0) + 1; if (e.mite) G.leakMiteW = (G.leakMiteW || 0) + 1; } // 6.6.1: Carrier drops leak as 'drone'; this tally lets the warnings name them (messages only, no rules)
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
   if (e.type === 'leech' && G.credits > 0) { const st2 = Math.round(Math.min(G.credits * LEECH.share, LEECH.cap(w))); G.credits -= st2; G.stats.leeched = (G.stats.leeched || 0) + st2; Hooks.fx('coin', { x: c.x, y: c.y - 0.6, v: -st2 }); if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech made off with ${st2} credits. They take more the more you bank`, '#ffb03a'); } }
@@ -9865,6 +9871,8 @@ const SFX = (() => {
       if (running || !ctx) return; running = true;
       if (!mIn) busFor();
       if (!P) newPiece();
+      // 6.6.1: a boss that arrived before the music started (no tap yet) set bossNow while setBoss could do nothing: start on its theme
+      if (bossNow && P.boss !== bossNow && cfg.bossThemes !== false && !editing && !held) { bossRet = null; newPiece({ boss: bossNow }); forceNext = null; }
       nextT = ctx.currentTime + 0.1;
       if (!offline) timer = setInterval(() => schedule(), 100);
     }
@@ -12733,7 +12741,10 @@ const RES = 2;
       if (!onS(bx2s(G.core.x * TILE), by2s(G.core.y * TILE))) list.push({ x: G.core.x, y: G.core.y, col: PAL.core, home: 1 });
       if (G.hole && (G.hole.ph === 0 || holeVisible())) list.push({ x: G.hole.x, y: G.hole.y, col: '#b86cff', big: G.hole.ph === 0, hole: 1 }); // 6.5: a black hole drifting in always warns, even out in the fog
       // treasure: project each off-screen crate to the edge, merge crates whose arrows would land within 34 px, keep the 3 closest
-      const edge = (sx2, sy2) => { const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - pad) / Math.max(1e-6, Math.abs(dy))); return { px: cx0 + dx * k, py: cy0 + dy * k }; };
+      // 6.6.1: on phones the top bar's hit boxes reach --hx (44 / UIS - 32 px) into the field; top-edge arrows sit that much lower so
+      // a tap on the arrow lands on the arrow, not on a chip above it
+      const padT = pad + Math.max(0, 44 / UIS - 32);
+      const edge = (sx2, sy2) => { const dx = sx2 - cx0, dy = sy2 - cy0, k = Math.min((DW / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (DH / 2 - (dy < 0 ? padT : pad)) / Math.max(1e-6, Math.abs(dy))); return { px: cx0 + dx * k, py: cy0 + dy * k }; };
       const tre = [];
       for (const cc of G.caches || []) { const x = cc.x + 0.5, y = cc.y + 0.5, sx2 = bx2s(x * TILE), sy2 = by2s(y * TILE); if (onS(sx2, sy2) || (fogLive && !fogSee(x, y))) continue;
         const E = edge(sx2, sy2), d = Math.hypot(sx2 - cx0, sy2 - cy0), m = tre.find(o => Math.hypot(o.px - E.px, o.py - E.py) < 34);
@@ -13691,6 +13702,7 @@ const UI = (() => {
   let screen = 'hangar', panel = null, pick = null, capPeek = null, hudFull = false, toastQ = [], logLines = [], modalOpen = null, modalFrom = null;
   let hudClock = 0, cloudOk = null, setup = { startWave: 1, chaos: 1, seed: 0, map: null, mode: 'std' };
   let confirmAbandon = false, confirmReset = false, confirmWebReset = false;
+  let sellArm = null, sellArmT = 0; // 6.6.1: Sell takes two taps (the first arms it for 3 s), like Reset and Nuke
   const stage = () => $('#stage');
 
   function show(id) {
@@ -14330,7 +14342,7 @@ const UI = (() => {
         tapTw('tapR', () => G.towers.find(t => t.type === 'rail'), 'LV 5', 'This Rail Lance is LV 5, the top. Tap it.'),
         info('asc', sel('#panel [data-act=up]'), 'Ascend', `Past LV 5 a tower Ascends: more damage${typeof PERKS !== 'undefined' ? ' and a perk you choose' : ''} each time. The price doubles every step.`, { skip: () => !panT(), leave: shut }),
         tapTw('tapC', () => G.towers.find(t => t.type === 'cryo'), 'Sell', 'This Cryo Emitter is in the way. Tap it.', { skip: () => !has('cryo') }),
-        { id: 'sell', hold: 1, at: sel('#panel [data-act=sell]'), t: 'Sell', b: 'Selling refunds 70% of what you put in (100% at a checkpoint). Tap Sell.', done: () => !has('cryo'), back: () => has('cryo') && !panT() && 'tapC' },
+        { id: 'sell', hold: 1, at: sel('#panel [data-act=sell]'), t: 'Sell', b: 'Selling refunds 70% of what you put in (100% at a checkpoint). Tap Sell, then tap it again to confirm.', done: () => !has('cryo'), back: () => has('cryo') && !panT() && 'tapC' },
         call('c1', 1),
         info('wrap', null, 'Upgrade or build?', 'Building needs power; upgrading needs only credits. When the grid is full, upgrade.', { when: () => after(1) }),
         end(),
@@ -15059,7 +15071,7 @@ const UI = (() => {
   }
 
   // ---------- Panels ----------
-  function closePanel() {
+  function closePanel() { sellArm = null;
     panel = null; pick = null; capPeek = null;
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
@@ -15228,9 +15240,25 @@ const UI = (() => {
     const below = r.bottom + 8, h = box.offsetHeight;
     box.style.top = (below + h < window.innerHeight - 8 ? below : Math.max(8, r.top - h - 8)) + 'px';
   }
+  // 6.6.1: a glossary word inside a button (a Veteran pick, a boon, a card) used to open its tooltip and eat the tap.
+  // Inside a button a quick tap now does the button's job; a press held 450 ms shows the tooltip instead.
+  const tipBtn = t => t && t.closest('button, [data-act]');
+  let tipHold = null, tipHeld = null;
+  document.addEventListener('pointerdown', e => {
+    const t = e.target.closest && e.target.closest('.tip'); clearTimeout(tipHold); tipHeld = null;
+    if (!tipBtn(t)) return;
+    tipHold = setTimeout(() => { showTip(t); $('#tipbox').dataset.for = t.dataset.tip; tipHeld = t; }, 450);
+  }, true);
+  const tipLift = () => clearTimeout(tipHold);
+  document.addEventListener('pointerup', tipLift, true); document.addEventListener('pointercancel', tipLift, true);
   document.addEventListener('click', e => {
     const t = e.target.closest && e.target.closest('.tip');
     const box = $('#tipbox');
+    if (t && tipBtn(t)) {
+      if (tipHeld === t) { e.stopPropagation(); e.preventDefault(); tipHeld = null; return; } // the hold showed the tooltip
+      if (box && !box.hidden) box.hidden = true;
+      return; // a quick tap: let the button act
+    }
     if (t) { e.stopPropagation(); e.preventDefault(); if (box && !box.hidden && box.dataset.for === t.dataset.tip) { box.hidden = true; box.dataset.for = ''; return; } showTip(t); $('#tipbox').dataset.for = t.dataset.tip; return; }
     if (box && !box.hidden) box.hidden = true;
   }, true);
@@ -15292,7 +15320,7 @@ const UI = (() => {
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${t.lvl === 3 ? `<button class="btn wide lvup" disabled>Choose a Specialization<small>${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'}</small></button>` : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}${G.fr ? (t === frDockT() ? '<button class="btn frmove" disabled>Move<small>Docked</small></button>' : `<button class="btn frmove" data-act="frmove" ${t.mvT > 0 ? 'disabled' : costBtn(frMoveFee(t))}>Move · ${fmt(frMoveFee(t))}${t.mvT > 0 ? '<small>Moving</small>' : ''}</button>`) : ''}<button class="btn danger" data-act="sell">Sell +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}${G.fr ? (t === frDockT() ? '<button class="btn frmove" disabled>Move<small>Docked</small></button>' : `<button class="btn frmove" data-act="frmove" ${t.mvT > 0 ? 'disabled' : costBtn(frMoveFee(t))}>Move · ${fmt(frMoveFee(t))}${t.mvT > 0 ? '<small>Moving</small>' : ''}</button>`) : ''}<button class="btn danger${sellArm === t ? ' armed' : ''}" data-act="sell">${sellArm === t ? 'Tap again' : 'Sell'} +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
@@ -15690,7 +15718,9 @@ const UI = (() => {
       else if (act === 'spec') { if (!window.act('up', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
       else if (act === 'reroll') { if (!window.act('reroll', t.x, t.y, 0)) SFX.play('deny'); renderPanel(); }
       else if (act === 'rerollTok') { if (!window.act('reroll', t.x, t.y, 1)) SFX.play('deny'); renderPanel(); }
-      else if (act === 'sell') { window.act('sell', t.x, t.y); closePanel(); }
+      else if (act === 'sell') {
+        if (sellArm !== t) { sellArm = t; SFX.play('ui'); clearTimeout(sellArmT); sellArmT = setTimeout(() => { if (sellArm === t) { sellArm = null; if (panel && panel.t === t) renderPanel(); } }, 3000); renderPanel(); }
+        else { sellArm = null; clearTimeout(sellArmT); window.act('sell', t.x, t.y); closePanel(); } }
       else if (act === 'frmove') startMove(t);
       else if (act === 'oc') { if (!window.act('oc', t.x, t.y, +b.dataset.v)) { SFX.play('deny'); toast('NOT ENOUGH POWER', 'Free some power: lower another Overcharge or sell a tower', '#ff4d6a'); } renderPanel(); updateHud(); }
       else if (act === 'vet') { if (!window.act('vet', t.x, t.y, +b.dataset.v)) SFX.play('deny'); renderPanel(); }
@@ -16181,8 +16211,9 @@ const UI = (() => {
     const L = G.leakWave || {}, top = Object.entries(L).sort((a, b) => b[1] - a[1])[0];
     if (!top) return '';
     const n = Object.values(L).reduce((a, b) => a + b, 0), [ty, ...gs] = top[0].split('+'), D = ENEMIES[ty];
-    const nm = D ? D.name : ty.replace('boss:', ''), g0 = gs.find(g => GENES[g]);
-    const beat = g0 ? GENES[g0].counter : D && D.beat;
+    const mites = top[0] === 'drone' && (G.leakMiteW || 0) * 2 >= top[1]; // 6.6.1: mostly Carrier drops, not ground Drones
+    const nm = mites ? 'drones dropped by Carriers' : D ? D.name : ty.replace('boss:', ''), g0 = gs.find(g => GENES[g]);
+    const beat = mites ? 'anti-air (Rail, Missile, Pulse) that kills Carriers before they unload' : g0 ? GENES[g0].counter : D && D.beat;
     return `<div class="why"><b>Why</b><span>${n} got through in Wave ${G.wave}, mostly ${esc(nm)}${gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''} (${top[1]}).</span>${beat ? `<span class="good">Beat it: ${tipify(beat)}</span>` : ''}</div>`;
   }
   // ---------- v5.3 The Hunt: the choice after a bounty, hunt codes, and watching a recorded run ----------
@@ -16636,7 +16667,9 @@ const UI = (() => {
   function cpPlay(on) { const M = SFX.music, d = studioCfg().draft; if (on && d) { M.setPaused(false); M.setHold(false); M.jump(cpSpec(d)); } else M.setHold(true); }
   function leaveCompose() {
     const M = SFX.music; M.editing = false; M.setHold(false); M.setPaused(false);
-    M.jump(stRadio ? Object.assign({}, stRadio, { start: 0 }) : null); stRadio = null;
+    // 6.6.1: during a boss fight (themes on) Compose hands back to the boss theme, not a new radio song
+    const bt = M.boss && M.config.bossThemes !== false;
+    M.jump(bt ? { boss: M.boss } : stRadio ? Object.assign({}, stRadio, { start: 0 }) : null); stRadio = null;
   }
   function cpApply(rerender) { // the draft changed: save it and hear it
     const M = SFX.music, c = studioCfg(); studioSave(); M.editing = stTab === 'compose';
@@ -17492,6 +17525,7 @@ const UI = (() => {
   // 6.3 boss themes: tell the music which boss is on the field (the first one: its theme keeps playing while any boss with that id
   // lives, so Gloop's splits and Most Wanted twins don't restart it) and its phase. A kill (hp at 0, run not over) gets the victory sting.
   let musBoss = { id: null, e: null };
+  let slowTip = null;
   function bossMusic() {
     const M = SFX.music; let b = null;
     if (screen === 'game' && G && !G.over) {
@@ -17519,7 +17553,10 @@ const UI = (() => {
     // v5.2: fast-forward is safe to leave on. A boss arriving (or reaching Red Alert) drops the game to 1×; the old speed comes back when it falls.
     // Speeding up again by hand during the fight is respected
     if (bossOn && !G.over) { const b = G.bossAlive, key = b.id + (G.redAlert ? 'r' : '');
-      if (G.speed > 1 && G.slowKey !== key && PROF.settings.autoSlow !== false) { G.slowKey = key; G.speedWas = Math.max(G.speedWas || 0, G.speed); G.speed = 1; toast('SPEED 1×', G.redAlert ? 'Red Alert: the boss is at your gate' : 'Boss on the field. Your speed comes back when it falls', '#ffb03a', true, 'tip'); updateHud(); } }
+      if (G.speed > 1 && G.slowKey !== key && PROF.settings.autoSlow !== false) { G.slowKey = key; G.speedWas = Math.max(G.speedWas || 0, G.speed); G.speed = 1; slowTip = ['SPEED 1×', G.redAlert ? 'Red Alert: the boss is at your gate' : 'Boss on the field. Your speed comes back when it falls']; updateHud(); } }
+    // 6.6.1: the tip waits for the boss card to close (on iPad it sat over the card's Fight button for 3 s)
+    if (slowTip && (!G || G.over)) slowTip = null;
+    if (slowTip && !modalOpen && screen === 'game') { toast(slowTip[0], slowTip[1], '#ffb03a', true, 'tip'); slowTip = null; }
     else if (G && !G.over && G.speedWas && screen === 'game') { if (G.speed === 1) { G.speed = G.speedWas; toast(`SPEED ${G.speed}×`, 'Boss down', '#59f0b4', true, 'tip'); } G.speedWas = 0; G.slowKey = null; updateHud(); }
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
