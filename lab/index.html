@@ -1264,7 +1264,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.6.1 + NEW GAME TEXT';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.6.1 + NEW GAME TEXT + DAILY BUILD';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -2095,8 +2095,8 @@ const LESSONS = [
     need: () => typeof PERKS !== 'undefined',
     run: { start: 12, credits: 2600, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 5, 1], ['pulse', 3]]]], waves: [[['drone', 10, 0.8, 0.8], ['tank', 2, 2, 0.8]]] } },
   { id: 'daily', title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1,
-    what: 'Every day has one Daily Hunt: the same map, zone, bounty and Nemesis for everyone, with a fixed talent build you set up for it. Your first run of the day is ranked.', when: 'Once a day, from the hangar.', todo: 'Spend the Hunt build’s points first, then start the ranked run. Watch the ranked run or share its code afterwards.',
-    real: 'Every day: set the Hunt build, then play your ranked run.' },
+    what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis and talent build for everyone. The build has two Capstones and their towers. Your first run of the day is ranked.', when: 'Once a day, from the hangar.', todo: 'Look at today’s build, then start the ranked run. Watch the ranked run or share its code afterwards.',
+    real: 'Every day: check today’s build, then play your ranked run.' },
   { id: 'meta', title: 'Talents and progression', blurb: 'XP, levels, Talents, Capstones, Supernova, the Archive.',
     what: 'Runs pay XP (from score and the Bounty Purse). Each level is a talent point. Seven trees: rows open every 3 points, a Capstone at 12 changes how you play. Supernova resets your talents for a permanent bonus. The Archive keeps what you have met.', when: 'Between runs.', todo: 'Spend points after each run. Go deep in one tree for its Capstone. Check the Archive’s Swarm Collection.',
     real: 'Between runs: spend your points, then pick a zone and go.', tour: 1 },
@@ -2765,8 +2765,45 @@ function dailySpec(key) {
   const sp = ['drone', 'swarmer', 'tank', 'splitter'][Math.floor(r() * 4)], el = ['K', 'T', 'C', 'A', 'V'][Math.floor(r() * 5)];
   // 5.8: the day's sector contract (drawn last, so the older fields keep their values)
   const sector = SECTORS[Math.floor(r() * SECTORS.length)].id;
-  return { date: key, seed, anoms, chaos: 2, nemesis: { kind: 'strain', type: sp, genes, el, rank: 1, daily: 1 }, sector };
+  // 6.7 (Nic, Nov 9): the day's talent build, the same for everyone (drawn after the older fields, so they keep their values)
+  const build = dailyBuild(r);
+  return { date: key, seed, anoms, chaos: 2, nemesis: { kind: 'strain', type: sp, genes, el, rank: 1, daily: 1 }, sector, v: DAILY_V, build };
 }
+// 6.7 Daily build (Nic, Nov 9: "a random (usable) build with capstone talents", "2 capstones always possible and the towers
+// associated with those builds"). Everyone plays the same build each day, so the ladder measures play, not the build.
+// Usable: two trees, at least one that deals damage (Bastion and Command support), no Capstone pair in CAP_CONFLICTS. Each tree
+// gets 16-20 points (enough for its Capstone and its capstone tier tower), filled with random talents that honor the row gates
+// like a player's would, then its Capstone and its tier node. DAILY_V 2: newRun gives the run these towers (G.capT).
+const DAILY_V = 2, DAILY_PTS = 40, DAILY_DMG = ['K', 'T', 'A', 'C', 'V'];
+function dailyBuild(r) {
+  const pick = a => a[Math.floor(r() * a.length)], ids = TALENTS.map(t => t.id);
+  let A, B, ca, cb;
+  for (let g = 0; g < 200; g++) {
+    A = pick(ids); B = pick(ids);
+    if (A === B || !(DAILY_DMG.includes(A) || DAILY_DMG.includes(B))) continue;
+    ca = pick(TREE_BY_ID[A].caps).id; cb = pick(TREE_BY_ID[B].caps).id;
+    if (CAP_CONFLICTS.some(([x, y]) => (x === ca && y === cb) || (x === cb && y === ca))) continue;
+    break;
+  }
+  const tal = {}, room = DAILY_PTS - 4, mA = treeMax(A), mB = treeMax(B); // 4: two Capstones and two tier nodes
+  const lo = Math.max(TTOP, room - mB), hi = Math.min(mA, room - TTOP), nA = lo + Math.floor(r() * (hi - lo + 1));
+  for (const [tid, n] of [[A, nA], [B, room - nA]]) {
+    const all = TREE_BY_ID[tid].rows.flat(), below = row => all.reduce((s, t) => s + (t.row < row ? tal[t.id] || 0 : 0), 0);
+    for (let k = 0; k < n; k++) {
+      const open = all.filter(t => (tal[t.id] || 0) < t.max && below(t.row) >= rowNeed(t.row));
+      if (!open.length) break;
+      const t = pick(open); tal[t.id] = (tal[t.id] || 0) + 1;
+    }
+    tal[TREE_BY_ID[tid].top.id] = 1;
+  }
+  // two small trees can't hold all 36 points: the rest go to first-row talents of a third tree
+  let left = room; for (const k in tal) if (!TAL[k].unlockT) left -= tal[k];
+  if (left > 0) { const C = pick(ids.filter(i => i !== A && i !== B)), row0 = TREE_BY_ID[C].rows[0].filter(t => !t.tech);
+    for (; left > 0; left--) { const open = row0.filter(t => (tal[t.id] || 0) < t.max); if (!open.length) break; const t = pick(open); tal[t.id] = (tal[t.id] || 0) + 1; } }
+  return { tal, caps: [ca, cb], remnants: [], lvl: DAILY_PTS };
+}
+// the run's capstone tier towers from a Daily build's tier nodes
+const dailyCapT = b => TALENTS.filter(tr => tr.top && b && b.tal && b.tal[tr.top.id]).map(tr => tr.top.unlockT);
 
 // ===================== ENTROPY — SIMULATION =====================
 const Hooks = {
@@ -2808,11 +2845,12 @@ const pointsFree = () => talLevel() - pointsSpent();
 function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && !T.unlockT && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; } // 6.4: the capstone tier node isn't a tree point
 const rowNeed = r => r >= 5 ? TTOP : r >= 4 ? TCAP : r * TROW; // 6.4: row 5 is the capstone tier
 // Capstone slots for the build being edited: the profile's by level, the Daily Hunt build's fixed HUNT_CAPS
-const slotsNow = () => TS() === PROF ? capSlots(talLevel()) : HUNT_CAPS;
+const slotsNow = () => TS() === PROF ? capSlots(talLevel()) : Math.max(HUNT_CAPS, capsHeld().length); // 6.7: a Daily build holds 2
 // why a talent can't take another rank right now ('' = it can)
 function talentBlock(id) {
   const T = TAL[id]; if (!T) return 'none';
   if (huntRun()) return 'locked';
+  if (TAL_EDIT && TAL_EDIT.ro) return 'today'; // 6.7: viewing today's Daily build (the same for everyone)
   if (pointsFree() < 1) return 'points';
   if (T.cap) {
     if (capsHeld().includes(id) || (TS().remnants || []).includes(id)) return 'have';
@@ -2845,6 +2883,7 @@ const refundFree = () => !(G && !G.over && !G.checkpoint);
 function talentCanRemove(id) {
   const T = TAL[id]; if (!T) return 'none';
   if (huntRun()) return 'locked';
+  if (TAL_EDIT && TAL_EDIT.ro) return 'today';
   if (T.cap) { if (!capsHeld().includes(id)) return 'none'; }
   else if (!talRank(id)) return 'none';
   if (!T.cap) {
@@ -2869,7 +2908,7 @@ function talentRemove(id) {
   return true;
 }
 // clear every talent (free between runs and at checkpoints only)
-function talentReset() { if (!refundFree() || huntRun()) return false; TS().tal = {}; TS().caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
+function talentReset() { if (!refundFree() || huntRun() || (TAL_EDIT && TAL_EDIT.ro)) return false; TS().tal = {}; TS().caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
 // v5.0 clean sheet: older webs are reset with every point refunded. v5.8 (WEB_VER 5): the talent rework refunds every point once,
 // in the profile and the Daily Hunt build, clears saved builds (their rows changed), renames replaced Capstone Remnants, and moves XP
 // onto the new curve so the level (and so the points) stays where it was. Returns false, 'web' (pre-5.0 web) or 'rework'
@@ -2900,7 +2939,7 @@ function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
   if (!b || !b.tal) return 'empty';
   let need = 0; for (const k in b.tal) if (TAL[k]) need += b.tal[k]; need += (b.caps || []).filter(c => TAL[c]).length;
-  if (huntRun()) return 'locked';
+  if (huntRun() || (TAL_EDIT && TAL_EDIT.ro)) return 'locked';
   if (need > talLevel()) return 'points';
   if (!refundFree()) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   // replay it rank by rank, row by row, so every gate is honoured
@@ -3536,6 +3575,7 @@ function newRun(opts) {
   if (T) { G.tut = T.v; G.lesson = T.id || null; G.tutS = T; G.huntBuild = JSON.parse(JSON.stringify(T.build || { tal: {}, caps: [], remnants: [], lvl: 0 })); } // the same for everyone: no talents, laws or Supernova
   // 6.4 (FR_VER 4): the capstone tier towers this run may build. Daily Hunts, Training and older rules get none (fixed, so they replay)
   G.capT = G.frV >= 4 && !opts.daily && !opts.huntBuild && !T && Array.isArray(opts.capT) ? opts.capT.filter(k => TOWERS[k] && TOWERS[k].capT) : [];
+  if (G.frV >= 4 && opts.daily && opts.daily.v >= 2 && opts.huntBuild && !T) G.capT = dailyCapT(opts.huntBuild); // 6.7: the Daily build's own tier towers
   G.ascV = ascV; G.mastery = opts.daily || opts.huntBuild ? {} : Object.assign({}, opts.mastery || {}); // Daily Hunts: no Mastery, same for everyone
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
@@ -13835,8 +13875,10 @@ const UI = (() => {
         <div class="setup-grid">
           <div class="col">
             <div class="lbl">Daily Hunt · ${spec.date}</div>
-            <p class="note">Same map, bounty and Nemesis for everyone. Every tower open, ${HUNT.pts} talent points each: it comes down to play. Your first run today is ranked.</p>
-            <div class="hbuild"><span>Hunt build <b>${spent}/${HUNT.pts}</b> points${capN.length ? ' · ' + capN.map(c => esc(TAL[c].name)).join(', ') : ''}</span><button class="btn small" data-act="huntBuild">${spent ? 'Edit' : 'Build it'}</button></div>
+            ${spec.build ? `<p class="note">Same map, bounty, Nemesis and talent build for everyone, so it comes down to play. Your first run today is ranked.</p>
+            <div class="hbuild"><span>Today's build: <b>${spec.build.caps.map(c => esc(TREE_BY_ID[TAL[c].tree].name)).join(' + ')}</b> · ${spec.build.caps.map(c => esc(TAL[c].name)).join(', ')} · ${dailyCapT(spec.build).map(k => esc(TOWERS[k].name)).join(', ')}</span><button class="btn small" data-act="dailyBuild">View</button></div>`
+            : `<p class="note">Same map, bounty and Nemesis for everyone. Every tower open, ${HUNT.pts} talent points each: it comes down to play. Your first run today is ranked.</p>
+            <div class="hbuild"><span>Hunt build <b>${spent}/${HUNT.pts}</b> points${capN.length ? ' · ' + capN.map(c => esc(TAL[c].name)).join(', ') : ''}</span><button class="btn small" data-act="huntBuild">${spent ? 'Edit' : 'Build it'}</button></div>`}
             <p class="note nem"><b>Today's Nemesis: ${esc(nem.name)}.</b> It leads the first Strain Assault.</p>
             ${spec.sector && SECTOR_BY[spec.sector] ? `<p class="note secnote">Today's zone: <b style="color:${SECTOR_BY[spec.sector].col}">${esc(SECTOR_BY[spec.sector].name)}</b>. ${sectorLine(SECTOR_BY[spec.sector])}</p>` : ''}
             <div class="anlist">${spec.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>
@@ -13864,7 +13906,7 @@ const UI = (() => {
     if (snap && snap.rec) { const sv = PROF.runSnap; replayRun(snap.rec, { quiet: true, until: snap.rec.end }); PROF.runSnap = sv; G.resumedHunt = { tick: G.tick, h: runHash(), n: G.inputs.length, w: G.wave }; }
     else if (snap) resumeRun(snap);
     else if (tut) { const lid = typeof tut === 'string' ? tut : undefined; setRows(tutSpec(lid, 1).rows); setCols(frCols(ROWS)); newRun({ tut: TUT.v, frontier: 1, cols: COLS, rows: ROWS, lesson: lid }); } // 5.8 Training and lessons (6.1: on Frontier rules)
-    else if (setup.mode === 'daily') { const sp = setup.daily; setRows(frRows(sp.chaos)); setCols(frCols(ROWS)); newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, frontier: 1, cols: COLS, rows: ROWS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); } // 6.1: Frontier rules (the flag rides in recOpts, so resume, codes and ladder checks rebuild it)
+    else if (setup.mode === 'daily') { const sp = setup.daily; setRows(frRows(sp.chaos)); setCols(frCols(ROWS)); newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, frontier: 1, cols: COLS, rows: ROWS, huntBuild: JSON.parse(JSON.stringify(sp.build || huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); } // 6.1: Frontier rules (the flag rides in recOpts, so resume, codes and ladder checks rebuild it)
     else {
       PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
       newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, rows: ROWS, frontier: 1, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks(), capT: capTowersOwned() }); // 6.1: every run is a Frontier run
@@ -14501,7 +14543,7 @@ const UI = (() => {
       daily: [
         info('row', sel('#hHunt .hhr.day'), 'Daily Hunt', 'One run a day, the same for everyone: map, zone, bounty and Nemesis.', { ok: 'Next' }),
         { id: 'open', hold: 1, at: sel('#hHunt [data-hact=daily]'), t: 'Open it', b: 'Tap Hunt.', done: () => modalOpen === 'setup' && setup.mode === 'daily' },
-        info('build', sel('#modal [data-act=huntBuild]'), 'Hunt build', 'A fixed talent build just for the Daily. Spend its points before you start.', { modal: 'setup', ok: 'Next' }),
+        info('build', sel('#modal [data-act=dailyBuild]'), 'Today\'s Build', 'Everyone plays the same talent build today: two Capstones and their towers. View shows the trees.', { modal: 'setup', ok: 'Next' }),
         info('start', sel('#modal [data-act=launchDaily]'), 'Ranked', 'Your first run of the day is ranked. Watch it or share its code afterwards.', { modal: 'setup', okFn: () => closeModal() }),
         end(),
       ],
@@ -17249,7 +17291,7 @@ const UI = (() => {
       case 'launchDaily': { // v5.4.1: unspent Hunt points are asked about before the run starts (the build locks once it does)
         const hb = huntBuildProf(); let sp = 0; for (const k in hb.tal) if (TAL[k]) sp += hb.tal[k]; sp += (hb.caps || []).filter(c => TAL[c]).length;
         const left = HUNT.pts - sp;
-        if (left > 0 && b.dataset.v !== 'anyway') {
+        if (left > 0 && b.dataset.v !== 'anyway' && !(setup.daily && setup.daily.build)) { // 6.7: today's build is fixed
           SFX.play('ui');
           modal(`<div class="card narrow"><div class="ch"><h2>Unspent Points</h2><span class="note">Daily Hunt</span></div>
             <p>${left === HUNT.pts ? `Your Hunt build is empty: all ${HUNT.pts} talent points are waiting.` : `${left} of your ${HUNT.pts} Hunt talent points ${left === 1 ? 'is' : 'are'} unspent.`} The build locks when the run starts.</p>
@@ -17278,6 +17320,7 @@ const UI = (() => {
       case 'push': closeModal(); if (window.act('push')) { G.paused = false; SFX.play('levelup'); } break;
       case 'door': closeModal(); if (window.act('push', +b.dataset.v)) { G.paused = false; SFX.play('levelup'); } break;
       case 'huntBuild': closeModal(); Tree.open('hunt'); break;
+      case 'dailyBuild': closeModal(); Tree.open('today'); break; // 6.7: today's build, read-only
       case 'huntWatch': { const d = PROF.daily; if (d && d.rec) watchRun(d.rec, `Your Daily Hunt · ${d.date}`); break; }
       case 'huntCode': { const d = PROF.daily, tell = () => toast('HUNT CODE COPIED', 'Paste it to a friend: they can watch your exact run', '#59f0b4', true, 'tip'); if (huntCodeCache) copyText(huntCodeCache, tell); else if (d && d.rec) huntCode(d.rec).then(c => { huntCodeCache = c; copyText(c, tell); }); break; }
       case 'huntPaste': pasteCode('Paste a hunt code', v => readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', /^TRACK/.test(v) ? 'That is a track code: Music Studio › Paste a code' : 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); })); break;
@@ -17642,6 +17685,7 @@ const Tree = (() => {
     if (why === 'max') return 'Already at its last rank';
     if (why === 'have') return 'Already yours';
     if (why === 'locked') return 'Your Daily Hunt build is locked for this run';
+    if (why === 'today') return 'Today\'s build is the same for everyone. It can\'t be changed';
     if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${slotsNow()} Capstone${slotsNow() > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
     if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${T.row >= 5 ? treePts(tr.id, 5) : treePts(tr.id)})`;
     if (why === 'daily') return 'Daily Hunts use the base towers. Learn it on your own build';
@@ -17691,6 +17735,7 @@ const Tree = (() => {
       <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / treeMax(tr.id) * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
   }
   function infoHTML() {
+    if ((!sel || !TAL[sel]) && mode === 'today') return `<div class="tinfo-empty"><p class="note">Everyone plays this build in today's Daily Hunt. It can't be changed.</p><p class="note">Tap a talent to read it. Tap a tree on the left to see its talents.</p></div>`; // 6.7
     if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after ${TROW} points in that tree. Capstones open at ${TCAP}. Techniques unlock a tower's alternate fire mode. Every point also adds +${TAL_PT_DMG}% Damage to all towers.</p></div>`;
     const T0 = TAL[sel], T = T0.unlockT ? Object.assign({}, T0, { cap: 1 }) : T0, tr = TREE_BY_ID[T.tree], r = T0.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id); // 6.4: a tier node reads like a Capstone
     const now = r ? talentLines(T, r) : null, next = !T.cap && r < T.max ? talentLines(T, r + 1) : null;
@@ -17707,11 +17752,12 @@ const Tree = (() => {
   function refresh() {
     if (!open_) return;
     const lv = talLevel(), free = pointsFree(), held = capsHeld().length, slots = slotsNow();
-    el('tree').querySelector('h2').textContent = mode === 'hunt' ? 'Hunt Build' : huntRun() ? 'Hunt Build · locked' : 'Talents';
+    el('tree').querySelector('h2').textContent = mode === 'today' ? 'Today\'s Build' : mode === 'hunt' ? 'Hunt Build' : huntRun() ? (G.recOpts && G.recOpts.daily && G.recOpts.daily.v >= 2 ? 'Today\'s Build · locked' : 'Hunt Build · locked') : 'Talents';
     el('tPts').textContent = free;
+    { const ro = mode === 'today' || huntRun(); el('tPts').parentElement.hidden = ro; el('tree').querySelector('[data-tact=builds]').hidden = mode === 'today'; } // 6.7: nothing to spend or reset in a fixed build
     el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
     const tk = el('tTok'); tk.hidden = !(G && !G.over); if (G) tk.innerHTML = `<b>${G.tokens}</b> tokens`;
-    const rs = el('tReset'); rs.hidden = !refundFree(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
+    const rs = el('tReset'); rs.hidden = !refundFree() || mode === 'today' || huntRun(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
     el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}${tr.top && talRank(tr.top.id) ? ' · ▲' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
     el('tgrid').innerHTML = (drawer === 'builds' ? buildsHTML() : '') + (cur === 'sum' ? sumHTML() : treeHTML(TREE_BY_ID[cur] || TALENTS[0]));
     el('tinfo').innerHTML = infoHTML();
@@ -17719,7 +17765,8 @@ const Tree = (() => {
     document.body.classList.toggle('tsel', !!sel);
   }
   function open(m) {
-    mode = m === 'hunt' ? 'hunt' : null; TAL_EDIT = mode ? huntBuildProf() : null; // v5.3: the Daily Hunt build, a fixed budget
+    mode = m === 'hunt' || m === 'today' ? m : null; // v5.3: the Daily Hunt build, a fixed budget; 6.7 'today': the day's build, read-only
+    TAL_EDIT = mode === 'hunt' ? huntBuildProf() : mode === 'today' ? Object.assign(JSON.parse(JSON.stringify(dailySpec(dailyKey()).build)), { ro: 1 }) : null;
     if (G && !G.over) { G.wasPaused = G.paused; G.paused = true; }
     UI.closePanel();
     el('tree').hidden = false; open_ = true; document.body.classList.add('webopen');
@@ -17729,7 +17776,7 @@ const Tree = (() => {
     drawer = null; confirmReset = false; refresh();
   }
   function close() {
-    const wasHunt = mode === 'hunt'; mode = null; TAL_EDIT = null;
+    const wasHunt = mode === 'hunt' || mode === 'today'; mode = null; TAL_EDIT = null;
     el('tree').hidden = true; open_ = false; sel = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
     if (wasHunt) { Save.save(); UI.openSetupDaily(); return; }
     if (G && !G.over) G.paused = !!G.wasPaused;
