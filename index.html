@@ -1353,7 +1353,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.6.1';
+const VERSION = '6.7.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1813,13 +1813,11 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.6.0', title: 'Last Gradient 6.6 · First Flight', items: [
-  ['New Basic Training', 'Training is now one guided run of about 10 minutes. It teaches one idea at a time and lets you play between lessons.'],
-  ['What it covers', 'Towers and upgrades, the core and its Battery, Lift Off and docking, links, the probe and loot, fog of war, Entropy cards and a boss.'],
-  ['What comes next', 'Training ends with a short list: real runs, talents, the capstone tier, Daily Hunts and the Field Manual.'],
-  ['Fewer repeats', 'Your first real run skips the cards for anything Training already taught.'],
-  ['Checklist', '17 lines, in lesson order. Each ticks when you do the thing.'],
-  ['Sound check', 'The run log now records the state of the sound every 2 s.'],
+const WHATS_NEW = { ver: '6.7.0', title: 'Last Gradient 6.7 · Same Build', items: [
+  ['Daily Hunt: one build for everyone', 'Every day, every player gets the same talent build: 40 points in two trees, two Capstones and their capstone tier towers. Tap View on the Daily card to read it.'],
+  ['A fair ladder', 'Same map, same Nemesis, same build. Your score shows how you played, not which build you copied.'],
+  ['New Training text', 'The Training cards are rewritten in plainer words.'],
+  ['Spelling', 'Text uses US spelling: armor, defense, center.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -1830,7 +1828,7 @@ const PROBE = {
   hp: 80, spd: 2.0, vis: 5, dps: 14, fireT: 0.5,  // base hull (× wave scale), tiles/s, vision tiles, lance damage per second (× wave scale), seconds per shot
   regen: 0.08, repair: 0.0005,                    // docked: +8% of its hull per second; repairs the core +0.05% of max hull per second
   up: { // 3 levels each; the value at levels 0..3. Price: cost[lv] × (1 + wave / 30)
-    hull: { name: 'Armour', v: [1, 1.6, 2.4, 3.5] },     // hull ×
+    hull: { name: 'Armor', v: [1, 1.6, 2.4, 3.5] },     // hull ×
     eng:  { name: 'Engine', v: [2.0, 2.6, 3.2, 4.0] },   // tiles per second
     gun:  { name: 'Lance', v: [0, 1, 1.9, 3.2], r: [0, 2.8, 3.2, 3.6] }, // damage × (0: no weapon), range in tiles
     rig:  { name: 'Rig', v: [1, 1.5, 2, 3] },            // harvest and mining speed ×
@@ -1869,7 +1867,7 @@ const WANTED_MODS = [
   { id: 'spectral', name: 'Spectral', desc: 'Cloaks for 2 s every 7 s', cloak: 1 },
   { id: 'loaded', name: 'Loaded', desc: 'Double bounty, and it drops a Captain\'s Chest where it dies', hp: 1.1, loaded: 1 },
 ];
-const WANTED_FOR = { behemoth: 'property damage', queen: 'an unlicensed breeding programme', wraith: 'trespassing (repeatedly)', overmind: 'identity theft', titan: 'being a wall',
+const WANTED_FOR = { behemoth: 'property damage', queen: 'an unlicensed breeding program', wraith: 'trespassing (repeatedly)', overmind: 'identity theft', titan: 'being a wall',
   cat: 'knocking things off tables', gloop: 'loitering', whale: 'singing without a permit', duck: 'disturbing the peace', fsm: 'impersonating a deity', worm: 'eating public property', auditor: 'tax evasion (ironic)', snail: 'speeding (allegedly)' };
 const WANTED = { creditsPerWave: 60 };
 // ---------- v5.3 The Hunt ----------
@@ -1900,7 +1898,7 @@ const SECTORS = [
     up: '+1 Chain, +15% Thermal Damage', down: '+10% enemy speed', m: { chain: 1, dmgT: 15 }, af: { haste: 0.1 } },
   { id: 'iron', name: 'Iron Reach', col: '#c8ccd8', pitch: 'Juggernauts and Aegis walls push slowly down the road.',
     lean: { tank: 2.5, shielder: 2.5, reflector: 1.5, swarmer: 0.6 }, storm: 'static', ev: { elite: 1.5, regen: 1.5 }, boss: 'titan', mod: 'armored',
-    up: '+15% armour piercing', down: '+6% enemy HP', m: { armorPen: 15 }, af: { hpx: 0.06 } },
+    up: '+15% armor piercing', down: '+6% enemy HP', m: { armorPen: 15 }, af: { hpx: 0.06 } },
   { id: 'skies', name: 'Open Skies', col: '#7fb4ff', pitch: 'No roads up here. Skimmers and Carriers fly straight in.',
     lean: { flyer: 2.2, carrier: 2.5, tank: 0.6, sapper: 0.6 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
     up: '+20% Arc Damage, +8% Range', down: '+10% tower cost', m: { dmgA: 20, range: 8 }, af: { costX: 0.1 } },
@@ -2035,12 +2033,12 @@ const LESSONS = [
     run: { start: 12, credits: 200, grid: 6, towers: ['pulse', 'rail', 'cryo'], abil: ['strike', 'nova', 'stasis', 'overclock', 'scan'], pre: [['towers', [['pulse', 3], ['rail', 3], ['cryo', 2]]], ['abil', ['strike', 'nova', 'stasis', 'overclock', 'scan'], 1]],
       waves: [[['swarmer', 16, 0.15, 0.8], ['phantom', 4, 1.4, 0.8], ['drone', 8, 0.7, 0.8]]] } },
   { id: 'swarm', title: 'The swarm adapts', blurb: 'Genes, the Threat Board, Arms Race and DNA.',
-    what: 'The swarm breeds against your defence. Enemies that get furthest pass on their genes (Plating, Shell, Ward, Haste…). Marks on each enemy show its genes.', when: 'From Wave 8 on Normal. The Threat Board shows what it is breeding and why.', todo: 'Open the Threat Board between waves. When a gene climbs, build its counter. Mixing elements keeps it guessing.',
+    what: 'The swarm breeds against your defense. Enemies that get furthest pass on their genes (Plating, Shell, Ward, Haste…). Marks on each enemy show its genes.', when: 'From Wave 8 on Normal. The Threat Board shows what it is breeding and why.', todo: 'Open the Threat Board between waves. When a gene climbs, build its counter. Mixing elements keeps it guessing.',
     real: 'In a run: when the Threat chip pulses, open it and answer the top gene.',
     run: { start: 10, credits: 500, grid: 6, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil'], pre: [['towers', [['pulse', 3], ['pulse', 2], ['rail', 2]]]],
       waves: [[['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.6 }], ['swarmer', 8, 0.25, 0.8, { genes: ['haste'], share: 0.5 }]], [['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.7 }], ['tank', 2, 2, 0.6]]] } },
   { id: 'hunt', title: 'Bounties and the purse', blurb: 'Most Wanted, the Bounty Purse, Extract or jump.',
-    what: 'Each run posts a Most Wanted boss. Killing it claims the bounty. Some of your XP rides in the Bounty Purse: Extract banks all of it and ends the run as a win; a jump door pushes into a new zone for a bigger purse. Fall later and you keep 30%.', when: 'Every 20 waves.', todo: 'Bank when the run feels shaky. Jump when your defence is strong: Steady, Hot and Deadly doors multiply the purse more.',
+    what: 'Each run posts a Most Wanted boss. Killing it claims the bounty. Some of your XP rides in the Bounty Purse: Extract banks all of it and ends the run as a win; a jump door pushes into a new zone for a bigger purse. Fall later and you keep 30%.', when: 'Every 20 waves.', todo: 'Bank when the run feels shaky. Jump when your defense is strong: Steady, Hot and Deadly doors multiply the purse more.',
     real: 'In a run: extract when your last waves were close calls; jump when they were easy.',
     run: { start: 18, credits: 300, grid: 7, towers: ['pulse', 'rail', 'cryo'], boss: { id: 'behemoth', mod: 'hasted', hp: 4000, w: 2 }, pre: [['towers', [['rail', 4, 1], ['pulse', 4, 1], ['pulse', 3], ['cryo', 3]]]],
       waves: [[['drone', 10, 0.8, 0.5]], [['drone', 4, 1, 0.5], ['boss', 1, 3, 1]]] } },
@@ -2065,7 +2063,7 @@ const LESSONS = [
     real: 'In a run: at a checkpoint, move towers to cover both roads before you resume.',
     run: { credits: 400, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['pulse', 1]]], ['lane', 1]], waves: [[['drone', 6, 1.2, 1]], [['drone', 10, 0.9, 1]]] } },
   { id: 'assault', title: 'Strain Assaults', blurb: 'The swarm commits a whole wave to beat you.',
-    what: 'Every few waves the swarm reads your defence and sends one strain built to beat it. It is announced a wave ahead, and selling is free (a refit) until it lands. Hold it and it breaks: +1 power and a bounty.', when: 'Normal: from Wave 14, every 8 waves.', todo: 'When the Threat chip turns red, open it, read the strain’s genes, and swap towers for their counters while selling is free.',
+    what: 'Every few waves the swarm reads your defense and sends one strain built to beat it. It is announced a wave ahead, and selling is free (a refit) until it lands. Hold it and it breaks: +1 power and a bounty.', when: 'Normal: from Wave 14, every 8 waves.', todo: 'When the Threat chip turns red, open it, read the strain’s genes, and swap towers for their counters while selling is free.',
     real: 'In a run: red Threat chip means refit now, while selling is free.',
     run: { start: 14, credits: 600, grid: 7, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil'], pre: [['towers', [['pulse', 3], ['pulse', 3], ['rail', 2]]], ['assault']], waves: [[['drone', 14, 0.6, 0.45], ['swarmer', 6, 0.3, 0.5]], [['drone', 6, 1, 0.4]]] } },
   { id: 'bosses', title: 'Bosses, boons and Nemesis', blurb: 'Every tenth wave, and what it pays.',
@@ -2087,8 +2085,8 @@ const LESSONS = [
     need: () => typeof PERKS !== 'undefined',
     run: { start: 12, credits: 2600, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 5, 1], ['pulse', 3]]]], waves: [[['drone', 10, 0.8, 0.8], ['tank', 2, 2, 0.8]]] } },
   { id: 'daily', title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1,
-    what: 'Every day has one Daily Hunt: the same map, zone, bounty and Nemesis for everyone, with a fixed talent build you set up for it. Your first run of the day is ranked.', when: 'Once a day, from the hangar.', todo: 'Spend the Hunt build’s points first, then start the ranked run. Watch the ranked run or share its code afterwards.',
-    real: 'Every day: set the Hunt build, then play your ranked run.' },
+    what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis and talent build for everyone. The build has two Capstones and their towers. Your first run of the day is ranked.', when: 'Once a day, from the hangar.', todo: 'Look at today’s build, then start the ranked run. Watch the ranked run or share its code afterwards.',
+    real: 'Every day: check today’s build, then play your ranked run.' },
   { id: 'meta', title: 'Talents and progression', blurb: 'XP, levels, Talents, Capstones, Supernova, the Archive.',
     what: 'Runs pay XP (from score and the Bounty Purse). Each level is a talent point. Seven trees: rows open every 3 points, a Capstone at 12 changes how you play. Supernova resets your talents for a permanent bonus. The Archive keeps what you have met.', when: 'Between runs.', todo: 'Spend points after each run. Go deep in one tree for its Capstone. Check the Archive’s Swarm Collection.',
     real: 'Between runs: spend your points, then pick a zone and go.', tour: 1 },
@@ -2167,7 +2165,7 @@ const OVERCHARGE = { max: 3, dmg: 0.35, rate: 0.15 };
 // furthest last time, so the swarm drifts towards whatever your defence handles worst. Every gene has a counter tower.
 const GENES = {
   plating: { name: 'Plating', col: '#c8ccd8', hp: 0.75, desc: 'Blunts all but piercing fire', counter: 'Rail, Void Lens, Burn' },
-  wings:   { name: 'Wings', col: '#9ad8ff', hp: 0.4, spd: 0.65, from: 16, desc: 'Flies over ground defences', counter: 'anti-air (not Flame or Gravity)' },
+  wings:   { name: 'Wings', col: '#9ad8ff', hp: 0.4, spd: 0.65, from: 16, desc: 'Flies over ground defenses', counter: 'anti-air (not Flame or Gravity)' },
   haste:   { name: 'Haste', col: '#ffe14d', hp: 0.7, spd: 1.4, desc: '+40% speed', counter: 'Cryo, Gravity, EMP, Snare' },
   bulk:    { name: 'Bulk', col: '#ff7b39', hp: 1.4, spd: 0.75, desc: '+40% HP, slower', counter: 'Void Lens, Rail' },
   brood:   { name: 'Brood', col: '#ff9ad5', hp: 0.7, desc: 'Bursts into 3 mites', counter: 'Missile, Flame, Coil' },
@@ -2266,8 +2264,8 @@ const EVENTS = [
   { id: 'gold', name: 'Gold Rush', good: 1, w: 7, from: 5, desc: '×2 Credits' },
   { id: 'overcharge', name: 'Overcharge', good: 1, w: 6, from: 5, desc: '+30% Attack Speed' },
   { id: 'meteor', name: 'Meteor Shower', good: 1, w: 6, from: 7, desc: 'Meteors strike the path' },
-  { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'Drifts in for 30s. Drags and slows enemies. Towers at its edge +40% Attack Speed, near its centre −50%',
-    long: 'Drifts in from past the sector edge, stays 30s, then collapses. Enemies within 6 tiles slow down, up to 50% at the centre. It drags them along the road toward it. Towers 2.5 to 6 tiles away: +40% Attack Speed. Towers within 2.5 tiles: −50%. Bosses feel half' },
+  { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'Drifts in for 30s. Drags and slows enemies. Towers at its edge +40% Attack Speed, near its center −50%',
+    long: 'Drifts in from past the sector edge, stays 30s, then collapses. Enemies within 6 tiles slow down, up to 50% at the center. It drags them along the road toward it. Towers 2.5 to 6 tiles away: +40% Attack Speed. Towers within 2.5 tiles: −50%. Bosses feel half' },
 ];
 // 6.5 (FR_VER 5, G.frV >= 5): the Black Hole event (fr: 5 keeps it out of older rules, so their event rolls are unchanged).
 // It drifts in from past the sector edge to a point on a road, hangs there drifting slowly, then collapses. Inside its reach:
@@ -2389,7 +2387,7 @@ const STAT_TXT = {
   napalmKill: () => 'Thermal kills leave burning ground for 2s', multiA: v => `Arc towers hit +${v} target`,
   freezeImmRed: v => `Enemies can be Frozen again ${v}% sooner`, markVoid: v => `Each Mark adds +${v}% Void damage taken`,
   salvage: () => 'Kills grant +1 credit for every 10 waves reached', vxpAll: v => `Veterans rank up ${v}% faster`,
-  cLink: v => `Circuit: +${v}% more Attack Speed per wired neighbour`, cBolt: v => `Circuit: chain lightning deals +${v}% damage`,
+  cLink: v => `Circuit: +${v}% more Attack Speed per wired neighbor`, cBolt: v => `Circuit: chain lightning deals +${v}% damage`,
   hPull: v => `Event Horizon: gravity wells pull ${v}% harder`, hWell: v => `Event Horizon: gravity wells reach ${v}% further`,
   aRank: v => `Artisan: +${v}% more Damage per Veteran rank`, aVxp: v => `Artisan: +${v}% Veteran XP`, gScore: v => `Gambler: +${v}% score`,
   msOc: v => `Marksman: each Overcharge step adds +${v}% more Damage`, wfHeat: v => `Wildfire: Heat can climb ${v}% higher`, wfDur: v => `Wildfire: road fire lasts ${v}% longer`,
@@ -2417,7 +2415,7 @@ const DOCTRINES = {
     lines: ['Burning ground enemies set the road on fire', 'Road fire builds Heat during a wave: up to +100% fire damage', 'Towers within 1 tile of burning road overheat: −25% Attack Speed'],
     smalls: [{ wfHeat: 20 }, { wfDur: 20 }] },
   2: { id: 'circuit', name: 'Circuit', tag: 'Placement is a puzzle', counter: 'shell',
-    lines: ['Attack towers next to each other are wired: +8% Attack Speed per wired neighbour', 'A chain of 4+ wired towers fires a lightning bolt every 4s at the toughest enemy in its reach, for 2s of the whole chain\'s damage', 'If one tower in a chain is disabled or jammed, the whole chain stalls'],
+    lines: ['Attack towers next to each other are wired: +8% Attack Speed per wired neighbor', 'A chain of 4+ wired towers fires a lightning bolt every 4s at the toughest enemy in its reach, for 2s of the whole chain\'s damage', 'If one tower in a chain is disabled or jammed, the whole chain stalls'],
     smalls: [{ cLink: 2 }, { cBolt: 15 }] },
   3: { id: 'glacier', name: 'Glacier', tag: 'Hold the line', counter: 'wings',
     lines: ['A Frozen ground enemy becomes an ice block: enemies behind it pile up and stop', 'Bosses and fliers are never blocked', 'All towers deal 10% less damage'],
@@ -2455,14 +2453,14 @@ const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
 // a Technique talent: one point, unlocks a fire mode for one tower type (the mode's own text lives in TOWER_FIRE)
 const TECH = (id, name, tower) => T_(id, name, 1, {}, { tech: tower });
 const TALENTS = [
-  { id: 'K', name: 'Ballistics', col: '#efe6cf', glyph: 'K', tag: 'Kinetic guns: crits that tear through armour',
+  { id: 'K', name: 'Ballistics', col: '#efe6cf', glyph: 'K', tag: 'Kinetic guns: crits that tear through armor',
     rows: [
       [T_('kDmg', 'Heavy Rounds', 3, { dmgK: 10 }), T_('kCrit', 'Precision', 3, { critC: 4 }), TECH('kSupp', 'Suppressor', 'pulse')],
       [T_('kRate', 'Autoloader', 3, { rateK: 6 }), T_('kPen', 'Penetrator', 2, { armorPen: 12 }), TECH('kOver', 'Charged Shot', 'rail')],
       [T_('kHollow', 'Hollow Points', 1, { critSplash: 40, critM: 15 }), T_('kLeth', 'Lethality', 2, { critM: 14 })],
       [T_('kRifle', 'Rifling', 1, { fifthCrit: 1, rateK: 8 }), T_('kShred', 'Armor Shredder', 2, { shredStack: 1.2, eliteDmg: 5 })]],
     caps: [CAP('marksman', 'Marksman', { ks: 'marksman', doc: 0 }),
-      CAP('nest', 'Sniper Nest', { ks: 'nest', lines: ['Rail Lances with no tower beside them: +40% Range, +30% Damage, and every shot pierces every enemy in line', 'Rail Lances with a neighbour deal 25% less damage'] }),
+      CAP('nest', 'Sniper Nest', { ks: 'nest', lines: ['Rail Lances with no tower beside them: +40% Range, +30% Damage, and every shot pierces every enemy in line', 'Rail Lances with a neighbor deal 25% less damage'] }),
       CAP('rico', 'Ricochet', { ks: 'rico', lines: ['Pulse Blaster rounds bounce to 3 more enemies, and the first bounce keeps full damage', 'Rail Lances fire 25% slower'] })] },
   { id: 'T', name: 'Combustion', col: '#ff7b39', glyph: 'T', tag: 'Thermal and Burn: set the swarm alight',
     rows: [
@@ -2757,8 +2755,45 @@ function dailySpec(key) {
   const sp = ['drone', 'swarmer', 'tank', 'splitter'][Math.floor(r() * 4)], el = ['K', 'T', 'C', 'A', 'V'][Math.floor(r() * 5)];
   // 5.8: the day's sector contract (drawn last, so the older fields keep their values)
   const sector = SECTORS[Math.floor(r() * SECTORS.length)].id;
-  return { date: key, seed, anoms, chaos: 2, nemesis: { kind: 'strain', type: sp, genes, el, rank: 1, daily: 1 }, sector };
+  // 6.7 (Nic, Nov 9): the day's talent build, the same for everyone (drawn after the older fields, so they keep their values)
+  const build = dailyBuild(r);
+  return { date: key, seed, anoms, chaos: 2, nemesis: { kind: 'strain', type: sp, genes, el, rank: 1, daily: 1 }, sector, v: DAILY_V, build };
 }
+// 6.7 Daily build (Nic, Nov 9: "a random (usable) build with capstone talents", "2 capstones always possible and the towers
+// associated with those builds"). Everyone plays the same build each day, so the ladder measures play, not the build.
+// Usable: two trees, at least one that deals damage (Bastion and Command support), no Capstone pair in CAP_CONFLICTS. Each tree
+// gets 16-20 points (enough for its Capstone and its capstone tier tower), filled with random talents that honor the row gates
+// like a player's would, then its Capstone and its tier node. DAILY_V 2: newRun gives the run these towers (G.capT).
+const DAILY_V = 2, DAILY_PTS = 40, DAILY_DMG = ['K', 'T', 'A', 'C', 'V'];
+function dailyBuild(r) {
+  const pick = a => a[Math.floor(r() * a.length)], ids = TALENTS.map(t => t.id);
+  let A, B, ca, cb;
+  for (let g = 0; g < 200; g++) {
+    A = pick(ids); B = pick(ids);
+    if (A === B || !(DAILY_DMG.includes(A) || DAILY_DMG.includes(B))) continue;
+    ca = pick(TREE_BY_ID[A].caps).id; cb = pick(TREE_BY_ID[B].caps).id;
+    if (CAP_CONFLICTS.some(([x, y]) => (x === ca && y === cb) || (x === cb && y === ca))) continue;
+    break;
+  }
+  const tal = {}, room = DAILY_PTS - 4, mA = treeMax(A), mB = treeMax(B); // 4: two Capstones and two tier nodes
+  const lo = Math.max(TTOP, room - mB), hi = Math.min(mA, room - TTOP), nA = lo + Math.floor(r() * (hi - lo + 1));
+  for (const [tid, n] of [[A, nA], [B, room - nA]]) {
+    const all = TREE_BY_ID[tid].rows.flat(), below = row => all.reduce((s, t) => s + (t.row < row ? tal[t.id] || 0 : 0), 0);
+    for (let k = 0; k < n; k++) {
+      const open = all.filter(t => (tal[t.id] || 0) < t.max && below(t.row) >= rowNeed(t.row));
+      if (!open.length) break;
+      const t = pick(open); tal[t.id] = (tal[t.id] || 0) + 1;
+    }
+    tal[TREE_BY_ID[tid].top.id] = 1;
+  }
+  // two small trees can't hold all 36 points: the rest go to first-row talents of a third tree
+  let left = room; for (const k in tal) if (!TAL[k].unlockT) left -= tal[k];
+  if (left > 0) { const C = pick(ids.filter(i => i !== A && i !== B)), row0 = TREE_BY_ID[C].rows[0].filter(t => !t.tech);
+    for (; left > 0; left--) { const open = row0.filter(t => (tal[t.id] || 0) < t.max); if (!open.length) break; const t = pick(open); tal[t.id] = (tal[t.id] || 0) + 1; } }
+  return { tal, caps: [ca, cb], remnants: [], lvl: DAILY_PTS };
+}
+// the run's capstone tier towers from a Daily build's tier nodes
+const dailyCapT = b => TALENTS.filter(tr => tr.top && b && b.tal && b.tal[tr.top.id]).map(tr => tr.top.unlockT);
 
 // ===================== ENTROPY — SIMULATION =====================
 const Hooks = {
@@ -2800,11 +2835,12 @@ const pointsFree = () => talLevel() - pointsSpent();
 function treePts(tid, belowRow) { let t = 0; for (const k in TS().tal || {}) { const T = TAL[k]; if (T && T.tree === tid && !T.cap && !T.unlockT && (belowRow === undefined || T.row < belowRow)) t += TS().tal[k]; } return t; } // 6.4: the capstone tier node isn't a tree point
 const rowNeed = r => r >= 5 ? TTOP : r >= 4 ? TCAP : r * TROW; // 6.4: row 5 is the capstone tier
 // Capstone slots for the build being edited: the profile's by level, the Daily Hunt build's fixed HUNT_CAPS
-const slotsNow = () => TS() === PROF ? capSlots(talLevel()) : HUNT_CAPS;
+const slotsNow = () => TS() === PROF ? capSlots(talLevel()) : Math.max(HUNT_CAPS, capsHeld().length); // 6.7: a Daily build holds 2
 // why a talent can't take another rank right now ('' = it can)
 function talentBlock(id) {
   const T = TAL[id]; if (!T) return 'none';
   if (huntRun()) return 'locked';
+  if (TAL_EDIT && TAL_EDIT.ro) return 'today'; // 6.7: viewing today's Daily build (the same for everyone)
   if (pointsFree() < 1) return 'points';
   if (T.cap) {
     if (capsHeld().includes(id) || (TS().remnants || []).includes(id)) return 'have';
@@ -2837,6 +2873,7 @@ const refundFree = () => !(G && !G.over && !G.checkpoint);
 function talentCanRemove(id) {
   const T = TAL[id]; if (!T) return 'none';
   if (huntRun()) return 'locked';
+  if (TAL_EDIT && TAL_EDIT.ro) return 'today';
   if (T.cap) { if (!capsHeld().includes(id)) return 'none'; }
   else if (!talRank(id)) return 'none';
   if (!T.cap) {
@@ -2861,7 +2898,7 @@ function talentRemove(id) {
   return true;
 }
 // clear every talent (free between runs and at checkpoints only)
-function talentReset() { if (!refundFree() || huntRun()) return false; TS().tal = {}; TS().caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
+function talentReset() { if (!refundFree() || huntRun() || (TAL_EDIT && TAL_EDIT.ro)) return false; TS().tal = {}; TS().caps = []; if (G && !G.over) recomputeAll(); Hooks.onChange('tree'); return true; }
 // v5.0 clean sheet: older webs are reset with every point refunded. v5.8 (WEB_VER 5): the talent rework refunds every point once,
 // in the profile and the Daily Hunt build, clears saved builds (their rows changed), renames replaced Capstone Remnants, and moves XP
 // onto the new curve so the level (and so the points) stays where it was. Returns false, 'web' (pre-5.0 web) or 'rework'
@@ -2892,7 +2929,7 @@ function treeLoadBuild(slot) {
   const b = PROF.builds[slot];
   if (!b || !b.tal) return 'empty';
   let need = 0; for (const k in b.tal) if (TAL[k]) need += b.tal[k]; need += (b.caps || []).filter(c => TAL[c]).length;
-  if (huntRun()) return 'locked';
+  if (huntRun() || (TAL_EDIT && TAL_EDIT.ro)) return 'locked';
   if (need > talLevel()) return 'points';
   if (!refundFree()) { if (G.tokens < 2) return 'tokens'; G.tokens -= 2; }
   // replay it rank by rank, row by row, so every gate is honoured
@@ -3528,6 +3565,7 @@ function newRun(opts) {
   if (T) { G.tut = T.v; G.lesson = T.id || null; G.tutS = T; G.huntBuild = JSON.parse(JSON.stringify(T.build || { tal: {}, caps: [], remnants: [], lvl: 0 })); } // the same for everyone: no talents, laws or Supernova
   // 6.4 (FR_VER 4): the capstone tier towers this run may build. Daily Hunts, Training and older rules get none (fixed, so they replay)
   G.capT = G.frV >= 4 && !opts.daily && !opts.huntBuild && !T && Array.isArray(opts.capT) ? opts.capT.filter(k => TOWERS[k] && TOWERS[k].capT) : [];
+  if (G.frV >= 4 && opts.daily && opts.daily.v >= 2 && opts.huntBuild && !T) G.capT = dailyCapT(opts.huntBuild); // 6.7: the Daily build's own tier towers
   G.ascV = ascV; G.mastery = opts.daily || opts.huntBuild ? {} : Object.assign({}, opts.mastery || {}); // Daily Hunts: no Mastery, same for everyone
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
@@ -4191,7 +4229,7 @@ function towerConditions(t) {
   if (s.fence) out.push(fencePartner(t) ? { t: 'Arc Fence: linked to a Coil', good: 1 } : { t: 'Arc Fence: no Coil within 4 tiles, so no fence', bad: 1 });
   if (s.mines) { let n = 0; for (const m of G.mines || []) if (m.src === t) n++; out.push({ t: `Pulse Mines: ${n}/${s.mines} on the road` }); }
   if (M.ks.stormrider && s.el0 === 'A' && G.storms.some(st => dist2(t.cx, t.cy, st.x, st.y) <= st.r * st.r)) out.push({ t: `Storm Rider: +60% Attack Speed${t.type === 'coil' && !s.fence ? ', +2 Chain' : ''}`, good: 1 });
-  if (M.ks.nest && t.type === 'rail') out.push(t.isolated ? { t: 'Sniper Nest: +40% Range, +30% Damage, pierces all', good: 1 } : { t: 'Sniper Nest: a neighbour, −25% Damage', bad: 1 });
+  if (M.ks.nest && t.type === 'rail') out.push(t.isolated ? { t: 'Sniper Nest: +40% Range, +30% Damage, pierces all', good: 1 } : { t: 'Sniper Nest: a neighbor, −25% Damage', bad: 1 });
   if (M.ks.chaos && t.wild && EL[t.wild]) out.push({ t: `Chaos Engine: ${EL[t.wild].name} this wave`, col: EL[t.wild].col });
   return out;
 }
@@ -4782,7 +4820,7 @@ function readDefence(w, jitter) {
   // under Conflagration a Thermal ward only resists 25%, so the swarm values it less
   if (els[0] && els[0][1] >= 0.35) out.push({ g: 'ward', el: els[0][0], score: (els[0][1] - 0.3) * 2.2 * (els[0][0] === 'T' && G.mods.ks.conflag ? 0.45 : 1), why: `${pc(els[0][1])} of your damage is ${EL[els[0][0]].name}` });
   const pierce = sh('rail') + sh('lens') + sh('flame') * 0.5 + sh('missile') * 0.25;
-  add('plating', (0.35 - pierce) * 1.6, `only ${pc(pierce)} of your fire pierces armour`);
+  add('plating', (0.35 - pierce) * 1.6, `only ${pc(pierce)} of your fire pierces armor`);
   const arc = (I.el.A || 0) / (etot || 1);
   const arcT = G.towers.filter(t => TOWERS[t.type] && TOWERS[t.type].el === 'A').length;
   add('shell', (0.15 - arc) * 3, !arcT ? 'you have no Arc towers to pop shields' : arc < 0.02 ? `your ${arcT} Arc tower${arcT > 1 ? 's' : ''} barely land a hit` : `only ${pc(arc)} of your damage is Arc, which pops shields`);
@@ -4929,7 +4967,7 @@ function startWave() {
       if (mites) { who = 'drones dropped by Carriers'; counter = ' Counter: anti-air (Rail, Missile, Pulse) that kills Carriers before they unload.'; }
       else if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
       const lk = G.stats.leaks - G.leaksAtStart;
-      Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are eating your defences: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield hides it until it doesn't.${counter}`, '#ff4d6a', true);
+      Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are eating your defenses: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield hides it until it doesn't.${counter}`, '#ff4d6a', true);
       rlog('breachWarn', { n: lk, who, p: +P.toFixed(2) });
     }
   }
@@ -13827,8 +13865,10 @@ const UI = (() => {
         <div class="setup-grid">
           <div class="col">
             <div class="lbl">Daily Hunt · ${spec.date}</div>
-            <p class="note">Same map, bounty and Nemesis for everyone. Every tower open, ${HUNT.pts} talent points each: it comes down to play. Your first run today is ranked.</p>
-            <div class="hbuild"><span>Hunt build <b>${spent}/${HUNT.pts}</b> points${capN.length ? ' · ' + capN.map(c => esc(TAL[c].name)).join(', ') : ''}</span><button class="btn small" data-act="huntBuild">${spent ? 'Edit' : 'Build it'}</button></div>
+            ${spec.build ? `<p class="note">Same map, bounty, Nemesis and talent build for everyone, so it comes down to play. Your first run today is ranked.</p>
+            <div class="hbuild"><span>Today's build: <b>${spec.build.caps.map(c => esc(TREE_BY_ID[TAL[c].tree].name)).join(' + ')}</b> · ${spec.build.caps.map(c => esc(TAL[c].name)).join(', ')} · ${dailyCapT(spec.build).map(k => esc(TOWERS[k].name)).join(', ')}</span><button class="btn small" data-act="dailyBuild">View</button></div>`
+            : `<p class="note">Same map, bounty and Nemesis for everyone. Every tower open, ${HUNT.pts} talent points each: it comes down to play. Your first run today is ranked.</p>
+            <div class="hbuild"><span>Hunt build <b>${spent}/${HUNT.pts}</b> points${capN.length ? ' · ' + capN.map(c => esc(TAL[c].name)).join(', ') : ''}</span><button class="btn small" data-act="huntBuild">${spent ? 'Edit' : 'Build it'}</button></div>`}
             <p class="note nem"><b>Today's Nemesis: ${esc(nem.name)}.</b> It leads the first Strain Assault.</p>
             ${spec.sector && SECTOR_BY[spec.sector] ? `<p class="note secnote">Today's zone: <b style="color:${SECTOR_BY[spec.sector].col}">${esc(SECTOR_BY[spec.sector].name)}</b>. ${sectorLine(SECTOR_BY[spec.sector])}</p>` : ''}
             <div class="anlist">${spec.anoms.map(id => { const A = ANOMALIES.find(a => a.id === id); return `<div><b>${esc(A.name)}</b><span class="good">${tipify(A.up)}</span><span class="bad">${tipify(A.down)}</span></div>`; }).join('')}</div>
@@ -13856,7 +13896,7 @@ const UI = (() => {
     if (snap && snap.rec) { const sv = PROF.runSnap; replayRun(snap.rec, { quiet: true, until: snap.rec.end }); PROF.runSnap = sv; G.resumedHunt = { tick: G.tick, h: runHash(), n: G.inputs.length, w: G.wave }; }
     else if (snap) resumeRun(snap);
     else if (tut) { const lid = typeof tut === 'string' ? tut : undefined; setRows(tutSpec(lid, 1).rows); setCols(frCols(ROWS)); newRun({ tut: TUT.v, frontier: 1, cols: COLS, rows: ROWS, lesson: lid }); } // 5.8 Training and lessons (6.1: on Frontier rules)
-    else if (setup.mode === 'daily') { const sp = setup.daily; setRows(frRows(sp.chaos)); setCols(frCols(ROWS)); newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, frontier: 1, cols: COLS, rows: ROWS, huntBuild: JSON.parse(JSON.stringify(huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); } // 6.1: Frontier rules (the flag rides in recOpts, so resume, codes and ladder checks rebuild it)
+    else if (setup.mode === 'daily') { const sp = setup.daily; setRows(frRows(sp.chaos)); setCols(frCols(ROWS)); newRun({ seed: sp.seed, chaos: sp.chaos, startWave: 1, daily: sp, frontier: 1, cols: COLS, rows: ROWS, huntBuild: JSON.parse(JSON.stringify(sp.build || huntBuildProf())), nemesis: sp.nemesis, sector: sp.sector || null }); } // 6.1: Frontier rules (the flag rides in recOpts, so resume, codes and ladder checks rebuild it)
     else {
       PROF.lastSetup = { startWave: setup.startWave, chaos: setup.chaos };
       newRun({ seed: setup.seed, chaos: setup.chaos, startWave: setup.startWave, cols: COLS, rows: ROWS, frontier: 1, nemesis: PROF.nemesis || null, sector: setupSector(), mastery: masteryRanks(), capT: capTowersOwned() }); // 6.1: every run is a Frontier run
@@ -13926,7 +13966,7 @@ const UI = (() => {
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
-    if (G.hole && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the centre. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
+    if (G.hole && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the center. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
     if (typeof fogOn === 'function' && fogOn() && G.wave >= 2 && G.time > 20 && introCard('fog', 'Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored, but enemies, crates and storms there are hidden. Bosses always show. Wormholes and the Threat Board still warn you.')) return;
     if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.probe && G.probe.alive && (G.sites || []).some(s => !s.done) && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. Loot rides home and banks when the probe docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
@@ -14163,12 +14203,12 @@ const UI = (() => {
     const info = (id, at, t, b, x) => Object.assign({ id, hold: 1, ok: 'Got it', at, t, b }, x || {});
     const call = (id, w, b, x) => Object.assign({ id, free: 1, at: sel('#bCall'), t: () => `Wave ${(G.startWave || 1) - 1 + w}`, b: b || 'Tap Next, or let the timer run.', done: () => W() >= w || (G.next <= 0 && G.spawningDone), skip: () => W() >= w }, x || {});
     const build = (id, type, key, t, first, x) => Object.assign({ id, hold: () => afford(type) && gridFree() >= 1, at: () => flowAt(type, key), t,
-      b: () => !afford(type) ? `${TOWERS[type].name} costs ${fmt(towerCost(type))} credits. Kills pay; the next wave is coming.` : gridFree() < 1 ? 'The grid is full: upgrade instead.' : flowText(type, first), done: () => has(type), leave: shut }, x || {});
+      b: () => !afford(type) ? `${TOWERS[type].name} costs ${fmt(towerCost(type))} credits. Killing enemies earns credits.` : gridFree() < 1 ? 'When the grid is full, spend credits on upgrading towers.' : flowText(type, first), done: () => has(type), leave: shut }, x || {});
     const tapTw = (id, get, t, b, x) => { const S = Object.assign({ id, hold: 1, at: () => towerR(get()), t, b, done: () => !!get() && panT() === get() }, x || {}), e = S.enter; S.enter = () => { probeEnd(); if (e) e(); }; return S; }; // 6.6: with the probe selected a map tap sends it, so a tower step lets it go first
     const intro = (id, t, b) => ({ id, hold: 1, ok: 'Start', t, b });
     const end = id => ({ id: 'end', hold: 1, ok: 'Finish', t: 'Lesson complete', b: () => LESSON_BY[plan].real, okFn: () => lessonDone(plan) });
     const threatOpen = (id, t, b, x) => Object.assign({ id, hold: 1, at: () => appR(q('#chips [data-threat]')), t, b, done: () => modalOpen === 'evo',
-      ok: () => appR(q('#chips [data-threat]')) ? null : 'Open it', okFn: () => openThreat() }, x || {}); // on a narrow top bar the chip can fold into +N: the card opens the board itself
+      ok: () => appR(q('#chips [data-threat]')) ? null : 'Show the next wave', okFn: () => openThreat() }, x || {}); // on a narrow top bar the chip can fold into +N: the card opens the board itself
     const inThreat = (id, at, t, b, x) => Object.assign({ id, hold: 1, modal: 'evo', ok: 'Got it', at, t, b, okFn: closeM, skip: () => modalOpen !== 'evo' }, x || {});
     const rowOf = k => () => { const c = q(`#modal canvas[data-eico=${k}]`); return c ? appR(c.closest('.threv')) : null; };
     const scrollTo = s => () => { const n = q(s); if (n) n.scrollIntoView({ block: 'center' }); };
@@ -14201,17 +14241,17 @@ const UI = (() => {
       const off = () => !frOn() || gone(), back = () => !inPick('land') && !flew() && frCanFly() && 'lift', mvBack = () => !panT() && !inPick('move') && !used('frMove') && 'mvTap';
       return [
         { id: 'lift', ls: 'lift', when, hold: 1, at: sel('#bLift'), t: 'Lift Off', enter: () => { closePanel(); mem.dock = dockPick(); mem.land = mem.dock ? null : landPick(); mem.fn0 = G.frN || 0; },
-          b: () => dockT() ? `Your core can fly. Land it on your ${TOWERS[dockT().type].name} to dock it as a second gun. Tap Lift Off.` : 'Your core can fly. The roads follow wherever it lands. Tap Lift Off.',
+          b: () => dockT() ? `The core is able to fly and move to a new location. You’re able to dock to an existing tower to increase its firepower. Tap Lift Off to enable movement of the base. The enemy paths will update with the new landed location.` : 'The core is able to fly and move to a new location. Tap Lift Off to enable movement of the base. The enemy paths will update with the new landed location.',
           done: () => inPick('land'), skip: () => off() || (!frCanFly() && !inPick('land')) },
         { id: 'pick', hold: 1, at: () => dockT() ? towerR(dockT()) : mem.land ? worldR(mem.land.x + 0.5, mem.land.y + 0.5, 0.62) : null, t: 'Pick a landing spot',
-          b: () => dockT() ? `The game waits while you choose. A framed tower can be docked. Tap your ${TOWERS[dockT().type].name}.` : 'The game waits while you choose. Tap the marked tile.',
+          b: () => dockT() ? `While in Lift Off mode, the game will pause so you have time to select a new location. Tap your ${TOWERS[dockT().type].name}.` : 'While in Lift Off mode, the game will pause so you have time to select a new location. Tap the marked tile.',
           done: () => inPick('land') && !!frSel.plan, skip: () => off() || flew() || !lifting(), back },
         { id: 'land', hold: 1, at: sel('#panel [data-act=frgo]'), t: () => frSel && frSel.plan && frSel.plan.dock ? 'Land and dock' : 'Land here',
           b: 'The dashed amber line is the new road. A shorter road brings enemies sooner. In flight, the core’s gun and shield are off. Tap it.', done: () => flew(), skip: () => off() || !lifting(), back },
         { id: 'docked', when: () => !G.frFly, hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: () => frDockT() ? 'Docked' : 'Landed', skip: () => off() || !flew(),
-          b: () => { const d = frDockT(); return d ? (frTwoGuns() ? `The core's own gun keeps firing. Your ${TOWERS[d.type].name} is a second gun: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range${frDockBat() ? '. Battery upgrades raise it' : ''}. Lift off later and the tower stays, intact.` : `The core fires the ${TOWERS[d.type].name} now: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range, and Battery upgrades raise it. Lift off again later and the tower is set back down, intact.`) : 'Here the core fires its plain cannon. Land on an attack tower to dock it.'; } },
+          b: () => { const d = frDockT(); return d ? (frTwoGuns() ? `The core's own gun keeps firing. Your ${TOWERS[d.type].name} is a second gun: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range${frDockBat() ? '. Battery upgrades raise it' : ''}. Lifting off leaves the tower behind and enables you to dock to another tower if desired.` : `The core fires the ${TOWERS[d.type].name} now: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range, and Battery upgrades raise it. Lifting off leaves the tower behind and enables you to dock to another tower if desired.`) : 'Here the core fires its plain cannon. Land on an attack tower to dock it.'; } },
         { id: 'links', when: () => !G.frFly, hold: 0, ok: 'Got it', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Links', skip: off, // 6.6: a line while the game runs
-          b: () => { const n = (G.frLinks || []).length; return `${n ? `Green lines link ${n} tower${n === 1 ? '' : 's'} to the core` : 'No tower is linked yet'}. The landed core links its ${frLinkN()} nearest attack towers within ${FRONTIER.linkR} tiles. Each gets +${pct(FRONTIER.linkDmg)} damage and rate.`; } },
+          b: () => { const n = (G.frLinks || []).length; return `${n ? `Green beams link ${n} tower${n === 1 ? '' : 's'} to the core` : 'No tower is linked yet'}. The landed core links its ${frLinkN()} nearest attack towers within ${FRONTIER.linkR} tiles. Each gets +${pct(FRONTIER.linkDmg)} damage and attack rate.`; } },
         tapTw('mvTap', mvT, 'Move a tower', () => `${mem.mvL ? `Towers can move too. Your ${TOWERS[mvT().type].name} can cover more road` : roadIn(mvT().x, mvT().y, mvT().s.range) ? `Your ${TOWERS[mvT().type].name} is out of link reach` : `Your ${TOWERS[mvT().type].name} guards empty ground now`}. Tap it.`,
           { ls: 'move', when: () => !G.frFly, skip: () => off() || used('frMove') || !mvT() }),
         { id: 'mvBtn', hold: 1, at: sel('#panel [data-act=frmove]'), t: 'Move', b: () => `Tap Move: ${fmt(frMoveFee(mvT()))} credits, ${pct(FRONTIER.moveFee)} of its cost. Moving is cheaper than selling.`, done: () => inPick('move'), skip: () => off() || used('frMove') || !mvT(), back: mvBack },
@@ -14225,28 +14265,28 @@ const UI = (() => {
         // 6.6 (tut66): one guided first run in the order a player meets things: towers, upgrades, the core, Lift Off, links, Move, Strike,
         // veterans, the probe, fog of war, an Entropy draw, a specialty, the boss. Each ls starts a lesson; a new lesson waits for ~22 s of
         // play or the end of a wave (Coach.paced). hold 0 = a coach line while the game runs (no pause): used for read-only notes.
-        { id: 'core', ls: 'start', hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Your core',
-          b: () => `Enemies walk the road to it. ${Math.round(G.core.hp)} health plus ${Math.round(G.core.shield)} shield. Leaks hit the shield first. At 0 health the run ends.` },
+        { id: 'core', ls: 'start', hold: 1, ok: 'Next', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'The Core',
+          b: () => `This is your base. Enemies will move towards it from wormholes. The core’s stats can be upgraded with credits.` },
         { id: 'spots', hold: 1, nodim: 1, ok: 'Next', at: () => { const p = G.map.lanes[0].pts[0]; return worldR(p.x, p.y, 1); }, t: 'Road and build spots',
-          b: () => `Enemies leave the wormhole and follow the road. Green tiles are build spots. Beside the road is best.${G.fr ? ` Nothing builds within ${frWormR()} tiles of a wormhole.` : ''}`, enter: () => { Render.spots = allSpots(); }, leave: () => { Render.spots = null; } },
+          b: () => `Enemies leave the wormhole and follow the road. Green tiles are build locations for towers. ${G.fr ? ` Nothing builds within ${frWormR()} tiles of a wormhole.` : ''}`, enter: () => { Render.spots = allSpots(); }, leave: () => { Render.spots = null; } },
         build('build1', 'pulse', 'a', 'Build a tower', 'Tap the marked tile beside the road.', { hold: 1 }),
-        { id: 'call1', hold: 1, at: sel('#bCall'), t: 'Start the wave', b: 'At 0 the next wave starts on its own. Tap Next to send Wave 1 now. Calling early pays bonus credits.', done: () => G.wave >= 1 || G.next <= 0 },
+        { id: 'call1', hold: 1, at: sel('#bCall'), t: 'Start the wave', b: 'At 0 the next wave starts on its own. Tap Next to send Wave 1 now. Calling the next wave early pays bonus credits.', done: () => G.wave >= 1 || G.next <= 0 },
         // the camera (6.2), once the first wave is under way
         { id: 'camera', ls: 'camera', hold: 1, nodim: 1, ok: 'Got it', when: () => W() >= 1, skip: () => W() >= 3, enter: () => { mem.cu0 = camUser; }, done: () => camUser - mem.cu0 > 12, t: 'Look around',
-          b: 'Drag to pan. Pinch to zoom. Edge arrows point at things off screen: tap one to look. The core arrow brings you home.' },
-        info('credits', sel('#hud .hs.cr'), 'Credits', 'Every kill pays credits. Spend them on towers and upgrades. Score turns into XP after the run.', { ls: 'money', hold: 0, when: () => G.kills >= 1, skip: () => W() >= 3 }),
+          b: 'Drag to pan. Pinch to zoom. Edge arrows point at points of interest off screen: tap the arrow to be taken to that POI.' },
+        info('credits', sel('#hud .hs.cr'), 'Credits', 'Kills and certain events earn credits. Spend them on towers and upgrades. Your final score converts into XP after the run.', { ls: 'money', hold: 0, when: () => G.kills >= 1, skip: () => W() >= 3 }),
         build('build2', 'pulse', 'b', 'A second tower', 'Build another one on the marked tile.', { ls: 'power', when: () => after(1) || W() >= 2, skip: () => W() >= 3, done: () => G.towers.length >= 2,
-          at: () => flowAt(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'b'), b: () => afford('pulse') ? flowText(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'Build another one on the marked tile. Any tower works.') : `Towers start at ${towerCost('pulse')} credits. Kills pay.` }),
-        info('power', sel('#hud .hs.pwr'), 'Power', () => `Power ${gridUsed()}/${gridCap()}: full. Each tower draws 1 power. Capacity grows as waves pass. In real runs, towers on Power Nodes (diamond tiles) use none.`, { when: () => after(1) || W() >= 2, skip: () => W() >= 3 }),
-        call('call2', 2, 'Power is full. Spend the next credits on upgrades.', { when: () => after(1) }),
+          at: () => flowAt(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'b'), b: () => afford('pulse') ? flowText(pick && TUT.towers.includes(pick) ? pick : 'pulse', 'Build another tower on the marked tile.') : `Towers start at ${towerCost('pulse')} credits. Earn credits by killing enemies.` }),
+        info('power', sel('#hud .hs.pwr'), 'Power Grid', () => `Power ${gridUsed()}/${gridCap()}: full. Each tower draws 1 power. Capacity grows as you progress and with core upgrades. In real runs, towers on Power Nodes (diamond tiles) cost no power.`, { when: () => after(1) || W() >= 2, skip: () => W() >= 3 }),
+        call('call2', 2, 'The power grid is full. Spend the next credits on upgrades.', { when: () => after(1) }),
         // upgrading, step by step (Nic's brother: "didn't understand how to upgrade towers or what that meant")
         tapTw('tapTower', tw, 'Upgrade', 'Tap your first tower to open its panel.', { ls: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: () => G.credits >= upgradeCost(tw()),
-          b: () => G.credits >= upgradeCost(tw()) ? 'Tap your first tower to open its panel.' : `An upgrade costs ${upgradeCost(tw())} credits. Kills pay.`, done: () => !!panT() }),
+          b: () => G.credits >= upgradeCost(tw()) ? 'Tap your first tower to open its panel.' : `An upgrade costs ${upgradeCost(tw())} credits.`, done: () => !!panT() }),
         { id: 'upgrade', when: () => after(2), skip: () => W() >= 3 || noTw(), hold: 1, at: sel('#panel [data-act=up]'), t: 'The Upgrade button', enter: () => { mem.ut = panT(); mem.b4 = mem.ut && stat(mem.ut); },
           b: () => `The price is on the button: ${fmt(panT() ? upgradeCost(panT()) : 0)} credits. Tap Upgrade.`,
           done: () => mem.ut && towerLevel(mem.ut) > mem.b4.lvl, back: () => !panT() && 'tapTower' },
         info('upDone', sel('#panel .lvtag'), 'Upgraded', () => upLine(mem.ut, mem.b4) + ' Upgrades cost credits, not power.', { when: () => !!panT(), skip: () => W() >= 3 || !panT(), ok: 'Next' }),
-        { id: 'affix', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Its bonus', b: 'Every upgrade rolls a random bonus: an affix. Tap Details to see them.', skip: () => W() >= 3 || !panT(), done: () => panel && panel.tab === 'info' },
+        { id: 'affix', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Tower Bonuses', b: 'Every tower upgrade rolls a random bonus: an affix. Tap Details to see all current affixes a tower has. These are random modifiers that can be rerolled with credits or tokens.', skip: () => W() >= 3 || !panT(), done: () => panel && panel.tab === 'info' },
         info('affixes', () => appR(q('#panel .affs')) || appR(q('#panel .pbody')), 'Affixes', 'Rare affixes are gold or purple. An arrow over a tower means you can afford its next upgrade.', { hold: 0, skip: () => W() >= 3 || !panT(), okFn: () => { mem.affix = 1; if (panel) { panel.tab = 'act'; renderPanel(); } }, enter: scrollTo('#panel .affs'), leave: shut }),
         // the core and its Battery (6.6: before Lift Off, which docks a second gun beside it)
         { id: 'tapCore', ls: 'core', enter: () => { shut(); probeEnd(); }, when: () => W() >= 3 && !G.frFly, skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core',
@@ -14255,43 +14295,43 @@ const UI = (() => {
           b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). The core's own gun hits harder.${G.fr ? ' Its range grows, so it sees farther too.' : ''}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
         info('coreMore', sel('#panel [data-act=ch]'), 'Shield, Hull, Uplink', () => G.fr ? `Shield soaks leaks. Hull adds health. Uplink speeds up abilities. Every ${FRONTIER.linkUplink} Uplink levels add a link.` : 'Shield soaks leaks. Hull adds health. Uplink speeds up abilities.',
           { hold: 0, when: () => panel && panel.kind === 'core', skip: () => W() >= 5 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
-        threatOpen('threat', 'Threat Board', 'This chip shows the next wave. Juggernauts are coming. Tap it.', { ls: 'threat', when: () => after(3), skip: () => W() >= 4, enter: () => { if (panel && panel.kind === 'core') closePanel(); } }),
-        inThreat('jugg', rowOf('tank'), 'Juggernaut', 'Plated: Pulse shots lose a third. A Rail Lance pierces Plating.', { when: () => after(3), skip: () => W() >= 4 || modalOpen !== 'evo', enter: () => { const c = q('#modal canvas[data-eico=tank]'); if (c) c.closest('.threv').scrollIntoView({ block: 'center' }); } }),
+        threatOpen('threat', 'Threat Board', 'This chip shows the next wave. Different enemies are coming. Tap it to check what is coming.', { ls: 'threat', when: () => after(3), skip: () => W() >= 4, enter: () => { if (panel && panel.kind === 'core') closePanel(); } }),
+        inThreat('jugg', rowOf('tank'), 'Juggernaut', 'Plated: Pulse shots lose a third of their damage. A Rail Lance pierces Plating.', { when: () => after(3), skip: () => W() >= 4 || modalOpen !== 'evo', enter: () => { const c = q('#modal canvas[data-eico=tank]'); if (c) c.closest('.threv').scrollIntoView({ block: 'center' }); } }),
         build('rail', 'rail', 'c', 'Build a Rail Lance', 'Tap the marked tile.', { when: () => after(3), skip: () => W() >= 4, at: () => flowAt('rail', 'c', null, false, frOn() ? dockable : null) }),
         call('call4', 4, 'Juggernauts are slow. Let them walk into the Rail.', { when: () => after(3) }),
         ...frSteps(() => W() >= 4, () => W() >= 5), // 6.1: dock on the Rail, links, Move (6.2: during Wave 4, one lesson at a time)
         // veterans (6.6: as Wave 4 ends, before Strike, so two lessons never meet in one break)
         { id: 'ready', ls: 'vets', when: () => (after(4) || W() >= 5) && vetsReady().length > 0 && !panel, skip: () => W() >= 8 || used('vet') || (W() >= 5 && !vetsReady().length), hold: 1, at: sel('#bReady'), t: 'Veterans ready',
-          b: 'Towers that fight earn veteran ranks. This button counts towers with a pick waiting. Tap it.', done: () => modalOpen === 'vets' },
-        { id: 'vpick', when: () => modalOpen === 'vets', skip: () => W() >= 8 || used('vet') || modalOpen !== 'vets', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices for this tower. The colour is its rarity. Tap one.', done: () => used('vet') },
-        call('call5', 5, 'A big pack is coming. Get ready to use an ability.', { when: () => after(4) }),
+          b: 'Towers that fight earn veteran ranks. This button counts towers with a rank selection waiting. Tap it.', done: () => modalOpen === 'vets' },
+        { id: 'vpick', when: () => modalOpen === 'vets', skip: () => W() >= 8 || used('vet') || modalOpen !== 'vets', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices for this tower. The color is its rarity: Orange > Yellow > Blue > White. Tap one.', done: () => used('vet') },
+        call('call5', 5, 'A large pack is coming. Get ready to use an ability.', { when: () => after(4) }),
         { id: 'strike', ls: 'strike', gap: 12, busyOK: 1, when: () => W() === 5 && (G.charges.strike || 0) > 0 && (pack() || [0, 0, 0])[2] >= 6, skip: () => W() >= 6, hold: 1, enter: () => { mem.c0 = G.charges.strike; },
           at: sel('#abils [data-abil=strike]'), t: 'Orbital Strike', b: 'A tight pack. Abilities are on the left. Tap Strike.', done: () => G.aimAbility === 'strike' || (G.charges.strike || 0) < mem.c0 },
         { id: 'aim', when: () => W() === 5, skip: () => W() >= 6, hold: 1, enter: () => { mem.pk = pack(); },
           at: () => packAt(), t: 'Aim', b: 'Tap the middle of the pack.', done: () => (G.charges.strike || 0) < mem.c0, back: () => G.aimAbility !== 'strike' && (G.charges.strike || 0) >= mem.c0 && 'strike' },
-        info('recharge', sel('#abils [data-abil=strike]'), 'Recharging', 'The bar on the button refills over time. Then Strike is ready again.', { when: () => W() === 5, skip: () => W() >= 6, hold: 0 }),
+        info('recharge', sel('#abils [data-abil=strike]'), 'Recharging', 'The bar on the button refills over time. Once full, the ability is ready to use again.', { when: () => W() === 5, skip: () => W() >= 6, hold: 0 }),
         // (6.6: no separate second-upgrade lesson: the arrow is one line in Affixes, and the specialty lesson upgrades again)
         // 6.6 the probe: a guard-free wreck near the core (TUT.b2.sites[0]), sent, salvaged, recalled, banked
         { id: 'prBtn', ls: 'probe', when: () => !!site(1) && prOK() && !panel, skip: () => looted(1) || !prOK() || !!site(1) && G.probe.task === site(1).id || W() >= 8, hold: 1, at: sel('#bProbe'), t: 'Your probe',
           b: 'It flies anywhere on the map and loots sites. A wreck just appeared. Tap Probe.', done: () => !!prCmd },
         { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1),
-          b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'Selected, every map tap sends the probe. Tap Probe again to let it go. Tap the wreck now.',
+          b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'Once selected, every map tap sends the probe. Tap Probe again to let it go. Tap the wreck now.',
           done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && G.probe.task !== site(1).id && 'prBtn' },
-        { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'It flies over anything. On the wreck it salvages for 2.5 s. Loot goes into its hold.',
+        { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'The probe is able to fly over the field. Once in range of a wreck or salvageable node, the probe will automatically salvage it.',
           done: () => looted(1), skip: () => !prOK(), back: () => !looted(1) && site(1) && G.probe.task !== site(1).id && 'prSend' },
         { id: 'prHome', hold: 1, when: () => looted(1), skip: () => !prOK() || G.probe.home, at: () => appR(q('#prbar [data-pr=home]')) || appR(q('#bProbe')), t: 'Bring it home',
-          b: () => `Cargo banks only when the probe docks at the core. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Home under Probe.' : 'Tap Probe, then Home.'}`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
-        info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits. Docked, the probe repairs the core. A lost probe drops its cargo and costs credits to rebuild.`,
+          b: () => `Cargo is deposited only when the probe docks at the core. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Home under Probe.' : 'Tap Probe, then Home.'}`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
+        info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits. The probe repairs itself and the core when docked. A lost probe drops its cargo and costs credits to rebuild.`,
           { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() && !((G.stats.pr || {}).trips) || W() >= 8, enter: probeEnd }),
         // 6.6 fog of war, on the way to a guarded wreck far out (TUT.b2.sites[1])
         { id: 'guard', ls: 'fog', when: () => !!site(2) && prOK() && G.probe.home && !panel, skip: () => looted(2) || gone(2) || !prOK() || W() >= 8, hold: 1, at: () => worldR(site(2).x, site(2).y, 1.7), t: 'A guarded site',
           b: () => prCmd && prCmd.site === site(2).id ? 'Tap the wreck again to send the probe.' : `A red drone guards this wreck. It shoots the probe when it comes near. ${prCmd ? 'Tap the wreck to send the probe.' : 'Tap the wreck twice: select, then send.'}`,
           done: () => !site(2) || G.probe.task === site(2).id },
         { id: 'fog', when: () => prOK() && !!site(2) && Math.hypot(G.probe.x - site(2).x, G.probe.y - site(2).y) < 9, skip: () => looted(2) || !prOK() || gone(2) || !!site(2) && G.probe.task !== site(2).id, hold: 1, ok: 'Next',
-          at: () => worldR(G.probe.x, G.probe.y, 2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dim ground, enemies are hidden.' },
-        info('fogFair', () => appR(q('#chips [data-threat]')), 'Fair warnings', 'Bosses always show. Roads stay on the map. Edge arrows mark enemies near your core. The Threat Board lists each wave.', { hold: 0, skip: () => looted(2) || !prOK() }),
+          at: () => worldR(G.probe.x, G.probe.y, 2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dark ground, enemies are hidden.' },
+        info('fogFair', () => appR(q('#chips [data-threat]')), 'Enemy Tips', 'Bosses always show. Roads stay on the map. Edge arrows mark enemies near your core. The Threat Board lists each wave.', { hold: 0, skip: () => looted(2) || !prOK() }),
         { id: 'prOut', hold: 1, when: () => looted(2) || !prOK(), skip: () => !prOK() || G.probe.home || G.probe.ret, at: () => appR(q('#prbar [data-pr=home]')) || appR(q('#bProbe')), t: 'Get out',
-          b: () => `The loot is in the hold. The drone shoots while the probe stays. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Home.' : 'Tap Probe, then Home.'} Later, Upgrades buys a Lance: then it shoots back.`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
+          b: () => `The loot is in the hold. The drone shoots while the probe stays. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Home.' : 'Tap Probe, then Home.'} Later, Upgrades buys a Lance: allowing it to attack and defend itself.`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
         info('prLost', sel('#bProbe'), 'Probe lost', () => `Its cargo lies in its wreck for ${PROBE.life.lost} s. Rebuild it from the Probe button: ${fmt(prRebuildCost())} credits, ${PROBE.rbT} s.`, { hold: 0, when: () => !!G.probe && !G.probe.alive, skip: () => !G.probe || G.probe.alive }),
         // 6.6 one Entropy draw (scripted: a Common, a Rare and an Exotic)
         { id: 'gauge', ls: 'ent', when: () => !!G.anomOffers && !panel, skip: () => !G.anomOffers && (used('anom') || used('stab')), hold: 1, at: sel('#bEnt'), t: 'Entropy',
@@ -14299,23 +14339,23 @@ const UI = (() => {
         { id: 'cards', hold: 0, when: () => !G.anomOffers, skip: () => !G.anomOffers && !(used('anom') || used('stab')), at: sel('#bEnt'), t: () => used('stab') ? 'Stabilized' : 'Anomaly taken', ok: 'Got it',
           b: () => `${used('stab') ? 'Stabilize skips the cards for score and a token.' : 'It lasts the rest of the run.'} Each draw makes the next gauge 30% longer. Pause lists your Anomalies.` }, // (the draw's header line teaches the card itself)
         // the spec: a permanent branch at LV 3
-        tapTw('tapLv3', () => mem.st, 'Specialize', () => G.credits >= upgradeCost(mem.st) ? 'Get your strongest tower to LV 3. Tap it.' : `Next upgrade: ${fmt(upgradeCost(mem.st))} credits. Kills pay.`,
+        tapTw('tapLv3', () => mem.st, 'Specialize', () => G.credits >= upgradeCost(mem.st) ? 'Get your strongest tower to LV 3. Tap it.' : `Next upgrade: ${fmt(upgradeCost(mem.st))} credits.`,
           { ls: 'spec', when: () => W() >= 7 && !G.anomOffers, skip: () => W() >= 8 || noTw() || G.towers.some(t => t.spec), hold: () => G.credits >= upgradeCost(mem.st), enter: () => { mem.st = G.towers.filter(t => !(G.fr && t === frDockT())).sort((a, b) => b.lvl - a.lvl || b.dmgDone - a.dmgDone)[0]; } }), // (6.6: not the docked tower, under the core)
         { id: 'toLv3', when: () => W() >= 7, skip: () => W() >= 8 || !mem.st || mem.st.lvl >= 3 || G.towers.some(t => t.spec), hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel [data-act=up]'), t: 'To LV 3',
           b: () => `Upgrade to LV ${mem.st.lvl + 1}: ${fmt(upgradeCost(mem.st))} credits.`, done: () => mem.st.lvl >= 3, back: () => panT() !== mem.st && 'tapLv3' },
         { id: 'spec', when: () => W() >= 7 && mem.st && mem.st.lvl >= 3, skip: () => W() >= 8 || !mem.st || G.towers.some(t => t.spec), hold: () => G.credits >= upgradeCost(mem.st), at: sel('#panel .specs'), t: 'Pick a spec',
-          b: () => G.credits >= upgradeCost(mem.st) ? `At LV 3 a tower picks one of two specs, for good. Read both. Tap one (${fmt(upgradeCost(mem.st))} credits).` : `The spec costs ${fmt(upgradeCost(mem.st))} credits. Kills pay.`,
+          b: () => G.credits >= upgradeCost(mem.st) ? `At LV 3 you pick one of two specs, permanently. Read both. Tap one (${fmt(upgradeCost(mem.st))} credits).` : `The spec costs ${fmt(upgradeCost(mem.st))} credits.`,
           done: () => !!mem.st.spec, back: () => panT() !== mem.st && G.credits >= upgradeCost(mem.st) && 'tapLv3', leave: shut },
         info('free', () => appR(q('#chips [data-wanted]')) || appR(q('#chips [data-more]')), 'Most Wanted', () => `This chip is the bounty. A boss lands on Wave ${G.wanted ? G.wanted.w : 8}. Until then, build and upgrade.`, { ls: 'wanted', when: () => W() >= 7, skip: () => W() >= 8, hold: 0 }),
         { id: 'boss', ls: 'boss', gap: 0, busyOK: 1, when: () => G.enemies.some(e => e.boss && !e.gen && onField(e)), skip: () => G.huntChoice || G.over, hold: 1, ok: 'Fight', enter: () => { mem.boss = G.enemies.find(e => e.boss && !e.gen && onField(e)); },
-          at: () => enemyR(mem.boss), t: () => mem.boss ? mem.boss.bossName : 'Boss', b: 'The Most Wanted boss: Plated, with huge health. Kill it to claim the bounty. Every boss has its own theme music. Bosses always show, even in fog.' },
+          at: () => enemyR(mem.boss), t: () => mem.boss ? mem.boss.bossName : 'Boss', b: 'The Most Wanted boss: Plated, with a huge health pool. Kill it to claim the bounty. Bosses always show, even in fog.' },
         { id: 'bounty', ls: 'bounty', gap: 0, busyOK: 1, when: () => modalOpen === 'hunt', hold: 1, modal: 'hunt', at: sel('#modal [data-act=extract]'), t: 'Bounty claimed',
           b: `Extract banks your Bounty Purse and ends the run as a win. In real runs, a jump door pushes on for a bigger purse. If you fall later, you keep ${Math.round(PURSE.death * 100)}%.`, done: () => G.over },
       ],
       towers: [
         intro('in', 'Towers and elements', 'Every tower has a job and an element. This lesson: read the build menu, then answer two waves.'),
         { id: 'open', hold: 1, at: () => flowAt('coil', 'a'), t: 'The build menu', b: 'Tap the marked tile.', done: () => panel && panel.kind === 'build' },
-        info('grid', sel('#panel .bgrid'), 'Six towers', 'Each card is a tower. Its colour is its element: Kinetic, Thermal, Cryo, Arc, Void.', { skip: () => !(panel && panel.kind === 'build') || has('coil') }),
+        info('grid', sel('#panel .bgrid'), 'Six towers', 'Each card is a tower. Its color is its element: Kinetic, Thermal, Cryo, Arc, Void.', { skip: () => !(panel && panel.kind === 'build') || has('coil') }),
         build('coil', 'coil', 'a', 'Arc Coil', 'Tap the marked tile.', { b: () => flowStage('coil') === 1 ? 'Tap Arc Coil. Skimmers next wave are weak to Arc.' : flowText('coil', 'Tap the marked tile.') }),
         threatOpen('threat', 'Threat Board', 'Open it to see what is coming.'),
         inThreat('skim', rowOf('flyer'), 'Skimmers', 'They fly straight at the core and are weak to Arc. Flame and Gravity Well can’t reach them.', { enter: scrollTo('#modal canvas[data-eico=flyer]') }),
@@ -14340,7 +14380,7 @@ const UI = (() => {
         end(),
       ],
       power: [
-        intro('in', 'Power and the core', 'Power limits how many towers you run. Credits can buy more, and the core has upgrades of its own.'),
+        intro('in', 'Power and the core', 'Power limits how many towers you run. Credits can buy reactor upgrades at the core to provide more power to the grid.'),
         info('pw', sel('#hud .hs.pwr'), 'Power', () => `${gridUsed()} of ${gridCap()}: full. Each tower draws 1. Capacity grows 1 every 3 waves.`),
         { id: 'open', hold: 1, at: () => flowAt('pulse', 'a'), t: 'Need more?', b: 'Tap the marked tile.', done: () => panel && panel.kind === 'build' },
         { id: 'reactor', hold: 1, at: sel('#panel [data-act=reactor]'), t: 'Expand the reactor', b: () => `With the grid full, the build menu sells +1 power: ${fmt(reactorCost())} credits. Tap it.`, done: () => (G.reactorN || 0) >= 1, back: () => !(panel && panel.kind === 'build') && 'open', leave: () => closePanel() },
@@ -14350,7 +14390,7 @@ const UI = (() => {
         end(),
       ],
       lift: [ // 6.1
-        intro('in', 'Lift Off and docking', 'Your core can fly. Wherever it lands, the roads follow it; on a tower, that tower becomes a second gun.'),
+        intro('in', 'Lift Off and docking', 'Your core can fly. Roads will be redrawn to match the new route. If you land on a tower it will dock to it and enhance its abilities and serve as a second gun.'),
         ...frSteps(() => true, () => W() >= 1),
         call('c1', 1, 'Send the wave. The docked core fights alongside the towers it links.'),
         info('wrap', sel('#bLift'), 'Recharging', () => `Lift Off recharges for ${frCd()} waves after a landing. The button shows the wave it is ready again.`, { when: () => after(1) }),
@@ -14374,11 +14414,11 @@ const UI = (() => {
         { id: 'frenzy', hold: 1, at: sel('#abils [data-abil=overclock]'), t: 'Frenzy', b: 'Your towers fire faster for 8 seconds. Tap it.', done: () => G.overclockT > 0 },
         { id: 'nova', hold: 1, enter: () => { mem.n0 = G.charges.nova; }, at: sel('#abils [data-abil=nova]'), t: 'Nova', b: 'Damages every enemy on the map at once. Tap it.', done: () => G.charges.nova < mem.n0 },
         { id: 'scan', when: () => G.enemies.some(e => e.type === 'phantom' && onField(e)), skip: () => cleared() && W() >= 1, hold: 1, at: sel('#abils [data-abil=scan]'), t: 'Scan', b: 'Phantoms cloak. Scan reveals them and marks the biggest threat. Tap it.', done: () => G.scanT > 0 },
-        info('charges', sel('#abils [data-abil=strike]'), 'Charges', 'Each bar refills over time. Crates and bosses give extra charges that stack. A full button wastes its timer: use it.', { when: () => cleared() }),
+        info('charges', sel('#abils [data-abil=strike]'), 'Charges', 'Each bar refills over time. Crates and bosses give extra charges that stack.', { when: () => cleared() }),
         end(),
       ],
       swarm: [
-        intro('in', 'The swarm adapts', 'Enemies that get furthest pass on their genes. The swarm drifts toward whatever your defence handles worst.'),
+        intro('in', 'The swarm adapts', 'Enemies that get furthest pass on their genes. The swarm drifts toward whatever your defense handles worst.'),
         threatOpen('threat', 'Threat Board', 'Open it.'),
         inThreat('arms', () => appR(q('#modal .armrow')) || appR(q('#modal .arms')), 'Arms Race', 'Your fire, the genes the swarm bred against it, how far each has spread (I, II, III) and why.', { okFn: null, ok: 'Next' }),
         inThreat('dna', () => appR(q('#modal .evlist .evrow')) || appR(q('#modal .evlist')), 'Swarm DNA', 'Every gene in the swarm right now, with its counter.', { enter: scrollTo('#modal .evlist') }),
@@ -14394,7 +14434,7 @@ const UI = (() => {
         info('chip', () => appR(q('#chips [data-wanted]')) || appR(q('#chips [data-more]')), 'The bounty chip', () => `The Most Wanted lands on Wave ${G.wanted.w}. The number after it is your Bounty Purse: XP you have not banked yet.`),
         call('c1', 1, 'Send the waves.'),
         { id: 'boss', when: () => G.enemies.some(e => e.boss && !e.gen && onField(e)), skip: () => G.huntChoice || G.over, hold: 1, ok: 'Fight', enter: () => { mem.boss = G.enemies.find(e => e.boss && !e.gen && onField(e)); }, at: () => enemyR(mem.boss), t: 'Most Wanted', b: 'Kill it to claim the bounty.' },
-        info('purse', sel('#modal .pursebox'), 'The Bounty Purse', `Part of your XP rides here, and the bounty grew it. Extract banks all of it. Fall later and you keep ${Math.round(PURSE.death * 100)}%.`, { modal: 'hunt', when: () => modalOpen === 'hunt', ok: 'Next' }),
+        info('purse', sel('#modal .pursebox'), 'The Bounty Purse', `Part of your XP rides here, and the bounty grew it. Extract banks all of it. Fall later and you keep only ${Math.round(PURSE.death * 100)}%.`, { modal: 'hunt', when: () => modalOpen === 'hunt', ok: 'Next' }),
         info('doors', sel('#modal .hopt.door'), 'Jump doors', 'Each door is a new zone for 20 waves: its enemies, weather and Most Wanted. Steady, Hot and Deadly multiply the purse more.', { modal: 'hunt', ok: 'Next' }),
         { id: 'choose', hold: 1, modal: 'hunt', at: sel('#modal [data-act=extract]'), t: 'Your call', b: 'Extract to bank it and end the run as a win, or take a door.', done: () => G.over || G.pushes > 0 },
         info('esc', null, 'Late escalations', 'From Wave 50 each boss wave adds an escalation instead of a boon: the run gets stranger, and score and XP climb.', { when: () => G.pushes > 0 }),
@@ -14411,7 +14451,7 @@ const UI = (() => {
       veterans: [
         intro('in', 'Veterans', 'Towers that fight earn ranks. Each rank lets you pick a mutation for that tower.'),
         { id: 'chip', hold: 1, at: sel('#bReady'), t: 'Ready', b: 'This button counts towers with a pick waiting (veteran mutations and Ascend perks). A gold star marks each one on the board. Tap it.', done: () => modalOpen === 'vets' || !G.towers.some(t => t.pending > 0) },
-        { id: 'pick', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices; the colour is its rarity. Tap one.', done: () => !G.towers.some(t => t.pending > 0) },
+        { id: 'pick', hold: 1, modal: 'vets', at: sel('#modal [data-act=vpick]'), t: 'Pick a mutation', b: 'Three choices; the color is its rarity. Tap one.', done: () => !G.towers.some(t => t.pending > 0) },
         tapTw('tapP', () => G.towers.find(t => t.type === 'pulse'), 'Affixes', 'Tap the Pulse Blaster.', { when: () => !modalOpen }),
         { id: 'details', hold: 1, at: sel('#panel [data-act=tab][data-v=info]'), t: 'Details', b: 'Tap Details.', done: () => panel && panel.tab === 'info', back: () => !panT() && 'tapP' },
         info('affs', sel('#panel .affs'), 'Affixes', 'Bonuses this tower rolled from upgrades and mutations. Reroll swaps them for credits or a token.', { skip: () => !panT() }),
@@ -14447,7 +14487,7 @@ const UI = (() => {
         end(),
       ],
       assault: [
-        intro('in', 'Strain Assaults', 'The swarm read your defence and built a strain to beat it. It lands next wave.'),
+        intro('in', 'Strain Assaults', 'The swarm read your defense and built a strain to beat it. It lands next wave.'),
         threatOpen('threat', 'Red chip', 'A red Threat chip means an assault is coming. Tap it.'),
         inThreat('strain', () => appR(q('#modal .asname')), 'The strain', 'Its name and genes, and why it chose them.', { ok: 'Next', okFn: null, enter: scrollTo('#modal .asname') }),
         inThreat('refit', () => appR(q('#modal .note.hl')), 'Refit', 'Selling is free until it lands. Swap towers for the counters. Hold it and it breaks: +1 power and a bounty.', { enter: scrollTo('#modal .note.hl') }),
@@ -14493,7 +14533,7 @@ const UI = (() => {
       daily: [
         info('row', sel('#hHunt .hhr.day'), 'Daily Hunt', 'One run a day, the same for everyone: map, zone, bounty and Nemesis.', { ok: 'Next' }),
         { id: 'open', hold: 1, at: sel('#hHunt [data-hact=daily]'), t: 'Open it', b: 'Tap Hunt.', done: () => modalOpen === 'setup' && setup.mode === 'daily' },
-        info('build', sel('#modal [data-act=huntBuild]'), 'Hunt build', 'A fixed talent build just for the Daily. Spend its points before you start.', { modal: 'setup', ok: 'Next' }),
+        info('build', sel('#modal [data-act=dailyBuild]'), 'Today\'s Build', 'Everyone plays the same talent build today: two Capstones and their towers. View shows the trees.', { modal: 'setup', ok: 'Next' }),
         info('start', sel('#modal [data-act=launchDaily]'), 'Ranked', 'Your first run of the day is ranked. Watch it or share its code afterwards.', { modal: 'setup', okFn: () => closeModal() }),
         end(),
       ],
@@ -14511,7 +14551,7 @@ const UI = (() => {
     function idleLine() {
       if (!G || G.over) return null;
       if (G.checkpoint) return ['Checkpoint', 'Rebuild for free, then tap Next.'];
-      if (!G.spawningDone || G.enemies.some(e => !e.dead)) return [`Wave ${G.wave}`, 'Your towers fire on their own. Watch the core bar. Tap an enemy to inspect it.'];
+      if (!G.spawningDone || G.enemies.some(e => !e.dead)) return [`Wave ${G.wave}`, 'Your towers fire on their own. Tap an enemy to inspect it.'];
       return ['Between waves', `Next wave in ${Math.max(0, Math.ceil(G.next))}s. Spend credits on towers or upgrades, or tap Next.`];
     }
     function ensureEl() {
@@ -14839,7 +14879,7 @@ const UI = (() => {
     const row = r => { const R = reads.find(x => x.g === r.g), d = r.v - (back[r.g] || 0), t = geneTier(r.v), el = r.g === 'ward' ? (R && R.el) || wardElNow() : null, tr = d >= 0.04 ? 'up' : d <= -0.04 ? 'dn' : '';
       return `<div class="armrow" style="--c:${GENES[r.g].col}"><canvas width="30" height="30" data-gico="${r.g}"${el ? ` data-el="${el}"` : ''}></canvas><b>${esc(geneTxt(r.g, el))}</b><i class="tier">${t ? roman(t) : '–'}</i><div class="armbar"><i style="width:${Math.round(r.v * 100)}%"></i><s style="left:20%"></s><s style="left:35%"></s><s style="left:50%"></s></div><em class="${tr}">${Math.round(r.v * 100)}%${tr === 'up' ? ' ▲' : tr === 'dn' ? ' ▼' : ''}</em><span>${esc(R ? R.why[0].toUpperCase() + R.why.slice(1) : 'Exploits ' + GENE_VS[r.g])} · <u>${esc(GENES[r.g].counter)}</u></span></div>`; };
     const next = reads.filter(x => (now[x.g] || 0) < 0.1).slice(0, 2);
-    return `<div class="lbl">Arms Race · how the swarm answers your defence</div>
+    return `<div class="lbl">Arms Race · how the swarm answers your defense</div>
       <div class="arms"><div class="armfire"><small>Your fire</small>${fire}</div>
       <div class="armrows">${rows.length ? rows.map(row).join('') : '<p class="note">No counters bred yet: the swarm is still mixing at random.</p>'}</div>
       ${next.length ? `<p class="note">Next it may breed: ${next.map(x => `<b style="color:${GENES[x.g].col};font-weight:400">${esc(geneTxt(x.g, x.el))}</b>, ${esc(x.why)}`).join(' · ')}</p>` : ''}</div>`;
@@ -14867,7 +14907,7 @@ const UI = (() => {
     if (cap > 0) {
       sec.push(`<div class="lbl">Swarm DNA · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(A && A.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</div>
         <div class="evlist">${evoRowsHTML()}</div>`);
-    } else sec.push(`<p class="note">${tipify(`The swarm starts to evolve at Wave ${evoCfg().start}: whatever your defence handles worst spreads through it.`)}</p>`);
+    } else sec.push(`<p class="note">${tipify(`The swarm starts to evolve at Wave ${evoCfg().start}: whatever your defense handles worst spreads through it.`)}</p>`);
     { const S = SECTOR_BY[G.sector], tw = Object.keys(G.twists || {}).map(id => { const X = TWISTS.find(t => t.id === id); return X ? X.name + (G.twists[id] > 1 ? ' ×' + G.twists[id] : '') : ''; }).filter(Boolean);
       if (S) sec.unshift(`<p class="note secnote">Zone: <b style="color:${S.col}">${esc(S.name)}</b>${G.tier ? ` <b style="color:${DOOR_TIERS[G.tier].col}">${esc(DOOR_TIERS[G.tier].name)}</b>` : ''}. ${sectorLine(S, G.tier)}${tw.length ? ` · <span class="bad">Escalations: ${esc(tw.join(', '))}</span>` : ''}</p>`); }
     modal(`<div class="card evo threat"><div class="ch"><h2>Threat Board</h2><span class="note">Wave ${G.wave || 0} · ${esc(G.CH.name)}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
@@ -15206,9 +15246,9 @@ const UI = (() => {
       ['Power', `Your grid. Every tower draws 1 power (towers on Power Nodes draw none); Overcharge draws more. Capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves.`],
       ['Overcharge', `Spend spare power on a tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Change it any time, even mid-wave.`],
       ['Plating', 'Blunts every hit except piercing fire: Rail Lance, Void Lens beams, Burn and other damage over time, and abilities.'],
-      ['Evolution', 'Waves are bred from the enemies that got furthest last time, so the swarm drifts towards whatever your defence handles worst. Counter what is spreading and it drifts away again.'],
+      ['Evolution', 'Waves are bred from the enemies that got furthest last time, so the swarm drifts towards whatever your defense handles worst. Counter what is spreading and it drifts away again.'],
       ['Common', 'Affix rarity. Base value.'], ['Magic', 'Affix rarity. ×1.7 value.'], ['Rare', 'Affix rarity. ×2.6 value.'],
-      ['Leaks', 'Enemies that reached your core. Each one costs core HP.'], ['Lone Wolf', 'Bonus damage for towers with no neighbours.'],
+      ['Leaks', 'Enemies that reached your core. Each one costs core HP.'], ['Lone Wolf', 'Bonus damage for towers with no neighbors.'],
     ];
     for (const [k, v] of named) if (k && v) GLOSS[k.toLowerCase()] = [k, esc(v)];
     for (const [k, v] of extra) GLOSS[k.toLowerCase()] = [k, v];
@@ -15926,7 +15966,7 @@ const UI = (() => {
     }
     const tx = Math.floor(p.x), ty = Math.floor(p.y);
     if (G.placing === 'beacon') {
-      if (tx === G.map.core.x && ty === G.map.core.y) { window.act('beaconCancel'); SFX.play('sell', {}); toast('NODE BEACON', 'Cancelled and refunded', '#6ae2ff', true); updateHud(); return; }
+      if (tx === G.map.core.x && ty === G.map.core.y) { window.act('beaconCancel'); SFX.play('sell', {}); toast('NODE BEACON', 'Canceled and refunded', '#6ae2ff', true); updateHud(); return; }
       if (window.act('beacon', tx, ty)) { SFX.play('ui'); toast('POWER NODE PLANTED', 'Towers built here draw no power and hit harder', '#6ae2ff'); updateHud(); }
       else { SFX.play('deny'); toast('NODE BEACON', 'Needs an empty ground tile inside the sector. Tap the core to cancel', '#ff4d6a', true); }
       return;
@@ -16131,7 +16171,7 @@ const UI = (() => {
     const lim = Math.max(1, Math.round(est * ASSAULT.hold));
     const live = A.state === 'live', done = A.state === 'done';
     modal(`<div class="card evo assault"><div class="ch"><h2>${intro ? 'The Swarm Makes Its Move' : 'Strain Assault'}</h2><span class="note">Wave ${A.w}${live ? ' · in progress' : done ? (A.won ? ' · broken' : ' · entrenched') : ''} · record ${S.won} held, ${S.lost} lost</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
-      ${intro ? `<p class="note">${tipify('Every few waves the swarm studies your defence, breeds the strain that beats it and throws most of a wave at you. It warns you a wave ahead: this is your move.')}</p>` : ''}
+      ${intro ? `<p class="note">${tipify('Every few waves the swarm studies your defense, breeds the strain that beats it and throws most of a wave at you. It warns you a wave ahead: this is your move.')}</p>` : ''}
       <h3 class="asname">${esc(A.name)}</h3>
       <div class="evlist">${A.genes.map(g => { const D = GENES[g]; return `<div class="evrow"><b style="color:${D.col}">${D.name}${g === 'ward' && A.el ? ' · ' + EL[A.el].name : ''}</b><div></div><em></em><span>${esc(g === 'ward' && A.el ? `Resists ${EL[A.el].name} by 50%` : D.desc)} · <u>Counter: ${esc(g === 'ward' && A.el ? `anything but ${EL[A.el].name}` : D.counter)}</u></span></div>`; }).join('')}</div>
       ${A.why.length ? `<div class="lbl">How it read you</div><ul class="aswhy">${A.why.map(x => `<li>${esc(x[0].toUpperCase() + x.slice(1))}</li>`).join('')}</ul>` : ''}
@@ -16145,8 +16185,8 @@ const UI = (() => {
     if (!G.over) G.paused = true;
     const cap = geneCap(G.wave);
     modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(G.assault && G.assault.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
-      ${intro ? `<p class="note">${tipify("Enemies that get furthest pass their traits on. Whatever your defence handles worst spreads; answer it and it fades. Each trait costs them HP or speed, so a balanced, adaptable defence keeps the swarm in check. Tap DNA in the top bar any time to see this.")}</p>` : ''}
-      ${(() => { const R = geneCap(G.wave) > 0 ? readDefence(Math.max(G.wave, 1)).slice(0, 2) : []; return R.length ? `<div class="lbl">What the swarm sees in your defence right now</div><ul class="aswhy">${R.map(x => `<li><b style="color:${GENES[x.g].col};font-weight:400">${GENES[x.g].name}${x.el ? ' · ' + EL[x.el].name : ''}</b>: ${esc(x.why)}</li>`).join('')}</ul>` : ''; })()}
+      ${intro ? `<p class="note">${tipify("Enemies that get furthest pass their traits on. Whatever your defense handles worst spreads; answer it and it fades. Each trait costs them HP or speed, so a balanced, adaptable defense keeps the swarm in check. Tap DNA in the top bar any time to see this.")}</p>` : ''}
+      ${(() => { const R = geneCap(G.wave) > 0 ? readDefence(Math.max(G.wave, 1)).slice(0, 2) : []; return R.length ? `<div class="lbl">What the swarm sees in your defense right now</div><ul class="aswhy">${R.map(x => `<li><b style="color:${GENES[x.g].col};font-weight:400">${GENES[x.g].name}${x.el ? ' · ' + EL[x.el].name : ''}</b>: ${esc(x.why)}</li>`).join('')}</ul>` : ''; })()}
       <div class="evlist">${evoRowsHTML()}</div>
       <div class="foot"><button class="btn primary" data-act="${intro ? 'evoDone' : 'close2'}">${intro ? 'Adapt' : 'Back'}</button></div></div>`, 'evo');
   }
@@ -16416,7 +16456,7 @@ const UI = (() => {
       graphics: sec('Effects')
         + row('Glow', 'Soft lighting on the field', flip(S.glow !== false, 'gfx', 'data-k="glow"'))
         + row('Screen shake', 'Big hits shake the view', sw(!!S.shake, 'shake'))
-        + row('Zone effects', 'Weather and particles in each zone. The zone colours stay on', flip(zfxOn(), 'gfx', 'data-k="zfx"'))
+        + row('Zone effects', 'Weather and particles in each zone. The zone colors stay on', flip(zfxOn(), 'gfx', 'data-k="zfx"'))
         + sec('Display')
         + row('Pixel scaling', 'Sharp is crisper. Simple is lighter work for older devices', seg('gfx', [['1', 'Sharp'], ['0', 'Simple']], S.sharp !== false ? '1' : '0', 'data-k="sharp"'))
         + (fsOK() ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
@@ -16702,7 +16742,7 @@ const UI = (() => {
     shape: { rows: [
       ['Energy', 'How full the music is: Still, Chill, Groove, Peak. Low energy thins the music to its core; high energy brings in more parts and picks the harder styles of each genre.'],
       ['Follow battle', 'How much the fight moves Energy. At 100% a calm menu pulls it down and a boss wave pushes it up. At 0% the music stays where you set it.'],
-      ['Tempo', 'BPM for the genre playing now. Each genre keeps its own. The slider is greyed out for composed songs and boss themes. They carry their own tempo.'],
+      ['Tempo', 'BPM for the genre playing now. Each genre keeps its own. The slider is grayed out for composed songs and boss themes. They carry their own tempo.'],
       ['Song length', 'Short changes song about every minute. Standard is a radio edit (intro, build, drop, outro), about 3 minutes. Long is an extended mix, about 5. The song playing takes the new shape at once.'],
       ['Reset sound', 'Back to the default mix. Keeps My Tracks, your Compose song, the song length and the boss theme switch.'],
       ['Mixer', 'Pads, Keys, Arps, Bass, Drums and Lead, up to 125%. Drag a fader; double-tap it for 100%. Tap a name to mute that part. The thin bar inside a fader is its live level.'],
@@ -16950,7 +16990,7 @@ const UI = (() => {
       ['Build', 'Tap an empty tile, choose a tower, then tap it again to build. With a panel open, tap empty ground to close it.'],
       ['Power', `Every tower draws 1 power. You start with ${GRID.base} and gain 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes are free. When the grid is full, the game is about making the towers you have count.`],
       ['Overcharge', `Tap a tower to spend spare power on it: +${OVERCHARGE.dmg * 100}% Damage per point, up to ${OVERCHARGE.max}. Free to move at any time, even mid-wave. When power sits unused during a wave, the power counter pulses: tap it to Overcharge your best tower in one go.`],
-      ['Evolution', 'From Wave 8 the swarm evolves. Enemies that get furthest pass on their traits (Plating, Wings, Haste, Shell...), so whatever your defence handles worst spreads. The next-wave chips show what is spreading; tap one to see its counter, then adapt.'],
+      ['Evolution', 'From Wave 8 the swarm evolves. Enemies that get furthest pass on their traits (Plating, Wings, Haste, Shell...), so whatever your defense handles worst spreads. The next-wave chips show what is spreading; tap one to see its counter, then adapt.'],
       ['Upgrade', 'Tap a tower. Each level adds damage and rolls a random affix.'],
       ['Specialize', 'At LV 3, choose one of two specializations.'],
       ['Core Battery', 'The core is a long-range gun that shells whatever is closest to reaching it, almost anywhere on the map. It starts as light support; Battery upgrades are expensive but make it a real weapon, with Twin Battery at LV 4, Siege Shells at LV 8 and Orbital Uplink at LV 12. Tap the core to upgrade, repair or reroll it.'],
@@ -17029,7 +17069,7 @@ const UI = (() => {
         ['Checkpoint', `Pause before a wormhole's first wave, once the field is clear. Full sell refunds and a free respec; a lift-off lands at once. Resume within ${CP_WINDOW}s for bonus credits and score; the bonus drains over time.`],
         ['Power', `Every tower draws 1 power from your grid; capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes draw none. When it's full, make towers better instead of adding more.`],
         ['Overcharge', `Spend spare power on one tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Free to change at any time, so shift it to whatever the wave needs.`],
-        ['Evolution', 'From Wave 8 enemies carry genes: up to 1 until Wave 22, 2 until Wave 45, then 3. Each gene trades HP or speed for an edge. Waves are bred from the enemies that got furthest, so traits your defence handles badly spread. The next-wave chips show what is spreading; tap one for its counter.'],
+        ['Evolution', 'From Wave 8 enemies carry genes: up to 1 until Wave 22, 2 until Wave 45, then 3. Each gene trades HP or speed for an edge. Waves are bred from the enemies that got furthest, so traits your defense handles badly spread. The next-wave chips show what is spreading; tap one for its counter.'],
         ['Ground-only', 'Flame Projector and Gravity Well cannot hit fliers (including enemies that evolve Wings).'],
         ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
         ['Nuke', `Once per run, from Wave ${OD_WAVE}: tap Nuke on the left rail, then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
@@ -17073,7 +17113,7 @@ const UI = (() => {
         ['Rich site', `Gold trim, from Wave ${PROBE.richFrom}: ×${PROBE.loot.rich} loot, 1 more guard, +${Math.round(PROBE.jack.rich * 100)}% jackpot.`, '#ffd84a'],
         ['Guard', `Neutral drone or brute (Brutes from Wave ${PROBE.guard.bruteFrom}). It attacks the probe within ${PROBE.guard.aggro} tiles of its site. Guards grow with the wave, and each one adds ${Math.round(PROBE.jack.guard * 100)}% jackpot chance. Out of a fight for ${PROBE.guard.calm} s, they heal.`, '#ff5a7a'],
         ['Jackpot', `${Math.round(PROBE.jack.base * 100)}% per site, more with guards. It banks as a boon pick or a full Entropy gauge.`, '#ffe14d'],
-        ['Probe upgrades', 'Lance (a weapon for guards), Armour, Engine, Rig (harvest and mining speed) and Scanner (vision, +10% loot per level). 3 levels each. Prices rise with the wave.', '#9fd8ff'],
+        ['Probe upgrades', 'Lance (a weapon for guards), Armor, Engine, Rig (harvest and mining speed) and Scanner (vision, +10% loot per level). 3 levels each. Prices rise with the wave.', '#9fd8ff'],
         ['Rebuild', `A lost probe costs ${PROBE.rb0} + ${PROBE.rbW} per wave credits, +${Math.round(PROBE.rbLv * 100)}% per upgrade level, then ${PROBE.rbT} s in the yard. Upgrades stay.`, '#ff8a9c'] ] },
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
       { id: 'anom', name: 'Anomalies', rows: [['How cards are made', `Most cards are built at each draw: 1 boon and 1 cost, sized to a fair trade. <span style="color:${ANOM_RARITY[1].col}">Rare</span> and <span style="color:${ANOM_RARITY[2].col}">Exotic</span> cards swing harder. Exotic cards carry 2 boons. Later draws swing harder. Offers favor the elements you field. Each slot has a 1 in 4 chance to hold a Classic card. A Classic card never repeats in a run.`, '#d6a6ff']]
@@ -17241,7 +17281,7 @@ const UI = (() => {
       case 'launchDaily': { // v5.4.1: unspent Hunt points are asked about before the run starts (the build locks once it does)
         const hb = huntBuildProf(); let sp = 0; for (const k in hb.tal) if (TAL[k]) sp += hb.tal[k]; sp += (hb.caps || []).filter(c => TAL[c]).length;
         const left = HUNT.pts - sp;
-        if (left > 0 && b.dataset.v !== 'anyway') {
+        if (left > 0 && b.dataset.v !== 'anyway' && !(setup.daily && setup.daily.build)) { // 6.7: today's build is fixed
           SFX.play('ui');
           modal(`<div class="card narrow"><div class="ch"><h2>Unspent Points</h2><span class="note">Daily Hunt</span></div>
             <p>${left === HUNT.pts ? `Your Hunt build is empty: all ${HUNT.pts} talent points are waiting.` : `${left} of your ${HUNT.pts} Hunt talent points ${left === 1 ? 'is' : 'are'} unspent.`} The build locks when the run starts.</p>
@@ -17270,6 +17310,7 @@ const UI = (() => {
       case 'push': closeModal(); if (window.act('push')) { G.paused = false; SFX.play('levelup'); } break;
       case 'door': closeModal(); if (window.act('push', +b.dataset.v)) { G.paused = false; SFX.play('levelup'); } break;
       case 'huntBuild': closeModal(); Tree.open('hunt'); break;
+      case 'dailyBuild': closeModal(); Tree.open('today'); break; // 6.7: today's build, read-only
       case 'huntWatch': { const d = PROF.daily; if (d && d.rec) watchRun(d.rec, `Your Daily Hunt · ${d.date}`); break; }
       case 'huntCode': { const d = PROF.daily, tell = () => toast('HUNT CODE COPIED', 'Paste it to a friend: they can watch your exact run', '#59f0b4', true, 'tip'); if (huntCodeCache) copyText(huntCodeCache, tell); else if (d && d.rec) huntCode(d.rec).then(c => { huntCodeCache = c; copyText(c, tell); }); break; }
       case 'huntPaste': pasteCode('Paste a hunt code', v => readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', /^TRACK/.test(v) ? 'That is a track code: Music Studio › Paste a code' : 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); })); break;
@@ -17634,6 +17675,7 @@ const Tree = (() => {
     if (why === 'max') return 'Already at its last rank';
     if (why === 'have') return 'Already yours';
     if (why === 'locked') return 'Your Daily Hunt build is locked for this run';
+    if (why === 'today') return 'Today\'s build is the same for everyone. It can\'t be changed';
     if (why === 'slots') { const lv = talLevel(), n = TAL_EDIT ? 0 : CAP_NEXT(lv); return `You can hold ${slotsNow()} Capstone${slotsNow() > 1 ? 's' : ''}${n ? `; another slot opens at Level ${n}` : ''}. Remove one first`; }
     if (why === 'row') return `Needs ${rowNeed(T.row)} points in ${tr.name} (you have ${T.row >= 5 ? treePts(tr.id, 5) : treePts(tr.id)})`;
     if (why === 'daily') return 'Daily Hunts use the base towers. Learn it on your own build';
@@ -17683,6 +17725,7 @@ const Tree = (() => {
       <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / treeMax(tr.id) * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
   }
   function infoHTML() {
+    if ((!sel || !TAL[sel]) && mode === 'today') return `<div class="tinfo-empty"><p class="note">Everyone plays this build in today's Daily Hunt. It can't be changed.</p><p class="note">Tap a talent to read it. Tap a tree on the left to see its talents.</p></div>`; // 6.7
     if (!sel || !TAL[sel]) return `<div class="tinfo-empty"><b>${pointsFree()}</b><span>point${pointsFree() === 1 ? '' : 's'} to spend</span><p class="note">Tap a talent to read it. Tap + (or double-tap) to add a rank.</p><p class="note">Each row opens after ${TROW} points in that tree. Capstones open at ${TCAP}. Techniques unlock a tower's alternate fire mode. Every point also adds +${TAL_PT_DMG}% Damage to all towers.</p></div>`;
     const T0 = TAL[sel], T = T0.unlockT ? Object.assign({}, T0, { cap: 1 }) : T0, tr = TREE_BY_ID[T.tree], r = T0.cap ? (activeCaps().includes(T.id) ? 1 : 0) : talRank(T.id), why = talentBlock(T.id), rw = talentCanRemove(T.id); // 6.4: a tier node reads like a Capstone
     const now = r ? talentLines(T, r) : null, next = !T.cap && r < T.max ? talentLines(T, r + 1) : null;
@@ -17699,11 +17742,12 @@ const Tree = (() => {
   function refresh() {
     if (!open_) return;
     const lv = talLevel(), free = pointsFree(), held = capsHeld().length, slots = slotsNow();
-    el('tree').querySelector('h2').textContent = mode === 'hunt' ? 'Hunt Build' : huntRun() ? 'Hunt Build · locked' : 'Talents';
+    el('tree').querySelector('h2').textContent = mode === 'today' ? 'Today\'s Build' : mode === 'hunt' ? 'Hunt Build' : huntRun() ? (G.recOpts && G.recOpts.daily && G.recOpts.daily.v >= 2 ? 'Today\'s Build · locked' : 'Hunt Build · locked') : 'Talents';
     el('tPts').textContent = free;
+    { const ro = mode === 'today' || huntRun(); el('tPts').parentElement.hidden = ro; el('tree').querySelector('[data-tact=builds]').hidden = mode === 'today'; } // 6.7: nothing to spend or reset in a fixed build
     el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
     const tk = el('tTok'); tk.hidden = !(G && !G.over); if (G) tk.innerHTML = `<b>${G.tokens}</b> tokens`;
-    const rs = el('tReset'); rs.hidden = !refundFree(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
+    const rs = el('tReset'); rs.hidden = !refundFree() || mode === 'today' || huntRun(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
     el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}${tr.top && talRank(tr.top.id) ? ' · ▲' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
     el('tgrid').innerHTML = (drawer === 'builds' ? buildsHTML() : '') + (cur === 'sum' ? sumHTML() : treeHTML(TREE_BY_ID[cur] || TALENTS[0]));
     el('tinfo').innerHTML = infoHTML();
@@ -17711,7 +17755,8 @@ const Tree = (() => {
     document.body.classList.toggle('tsel', !!sel);
   }
   function open(m) {
-    mode = m === 'hunt' ? 'hunt' : null; TAL_EDIT = mode ? huntBuildProf() : null; // v5.3: the Daily Hunt build, a fixed budget
+    mode = m === 'hunt' || m === 'today' ? m : null; // v5.3: the Daily Hunt build, a fixed budget; 6.7 'today': the day's build, read-only
+    TAL_EDIT = mode === 'hunt' ? huntBuildProf() : mode === 'today' ? Object.assign(JSON.parse(JSON.stringify(dailySpec(dailyKey()).build)), { ro: 1 }) : null;
     if (G && !G.over) { G.wasPaused = G.paused; G.paused = true; }
     UI.closePanel();
     el('tree').hidden = false; open_ = true; document.body.classList.add('webopen');
@@ -17721,7 +17766,7 @@ const Tree = (() => {
     drawer = null; confirmReset = false; refresh();
   }
   function close() {
-    const wasHunt = mode === 'hunt'; mode = null; TAL_EDIT = null;
+    const wasHunt = mode === 'hunt' || mode === 'today'; mode = null; TAL_EDIT = null;
     el('tree').hidden = true; open_ = false; sel = null; drawer = null; document.body.classList.remove('tsel', 'webopen');
     if (wasHunt) { Save.save(); UI.openSetupDaily(); return; }
     if (G && !G.over) G.paused = !!G.wasPaused;

@@ -1264,7 +1264,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.6.1 + NEW GAME TEXT + DAILY BUILD';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.7.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -1361,7 +1361,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.6.1';
+const VERSION = '6.7.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1821,13 +1821,11 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.6.0', title: 'Last Gradient 6.6 · First Flight', items: [
-  ['New Basic Training', 'Training is now one guided run of about 10 minutes. It teaches one idea at a time and lets you play between lessons.'],
-  ['What it covers', 'Towers and upgrades, the core and its Battery, Lift Off and docking, links, the probe and loot, fog of war, Entropy cards and a boss.'],
-  ['What comes next', 'Training ends with a short list: real runs, talents, the capstone tier, Daily Hunts and the Field Manual.'],
-  ['Fewer repeats', 'Your first real run skips the cards for anything Training already taught.'],
-  ['Checklist', '17 lines, in lesson order. Each ticks when you do the thing.'],
-  ['Sound check', 'The run log now records the state of the sound every 2 s.'],
+const WHATS_NEW = { ver: '6.7.0', title: 'Last Gradient 6.7 · Same Build', items: [
+  ['Daily Hunt: one build for everyone', 'Every day, every player gets the same talent build: 40 points in two trees, two Capstones and their capstone tier towers. Tap View on the Daily card to read it.'],
+  ['A fair ladder', 'Same map, same Nemesis, same build. Your score shows how you played, not which build you copied.'],
+  ['New Training text', 'The Training cards are rewritten in plainer words.'],
+  ['Spelling', 'Text uses US spelling: armor, defense, center.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
