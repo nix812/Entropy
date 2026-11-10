@@ -1264,7 +1264,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.7.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.7.0 + FASTER TRAINING START';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -14690,7 +14690,19 @@ const UI = (() => {
       const c = show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok);
       if (!panned && r && c) see(S, r, c);
     }
-    return { start, stop, tick, get hold() { return on && held; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
+    // 6.7 (Nic, Nov 9: "A large part of the first 4 steps is waiting around for the first couple of waves to make it into range"):
+    // in Training's first FF_WAVES waves, while enemies are on the road and none is in a tower's range or the core's, the game
+    // runs at FF_X (a margin of 1.5 tiles kept it off along roads that skirt the core's reach: 15 s saved of ~45). The clock only: same rules, same recording. It drops back the moment one comes close.
+    const FF_WAVES = 3, FF_X = 3;
+    function walkFF() {
+      if (!on || held || plan !== 'basic' || !G || G.over || !G.tut || W() < 1 || W() > FF_WAVES) return false;
+      let any = false; const cr = coreStats().range;
+      for (const e of G.enemies) { if (e.dead) continue; any = true;
+        if (Math.hypot(e.x - G.core.x, e.y - G.core.y) <= cr) return false;
+        for (const t of G.towers) if (t.s && Math.hypot(e.x - t.cx, e.y - t.cy) <= t.s.range) return false; }
+      return any;
+    }
+    return { start, stop, tick, get hold() { return on && held; }, get ff() { return walkFF() ? FF_X : 0; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
       get chain() { return on && cur ? lessonOf(i) : null; }, // 6.2: the lesson the current step belongs to (test/tutcadence.py)
       steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS), taught,
       checks: () => (G && G.tut && plan === 'basic' ? ckState() : null), checkNames: () => CHECK.map(c => c[0]) }; // 6.5.2: test/tutcheck.py
@@ -14758,7 +14770,7 @@ const UI = (() => {
     setHid($('#cpBanner'), !G.checkpoint || !!G.reloc);
     if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); setT($('#cpBanner').querySelector('span'), cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'); $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
-    const sp = $('#bSpeed'); setT(sp.querySelector('b'), G.speed + '×'); sp.classList.toggle('fast', G.speed > 1);
+    const sp = $('#bSpeed'), ffOn = !!UI.walkFF; setT(sp.querySelector('b'), ffOn ? '»' : G.speed + '×'); sp.classList.toggle('fast', G.speed > 1 || ffOn);
     { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Nuke') : 'W' + OD_WAVE;
       ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready); ob.classList.toggle('ghost', !!G.fresh && !ready && !G.odUsed);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
@@ -17631,7 +17643,7 @@ const UI = (() => {
   return {
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
-    get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, coach: Coach,
+    get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
     _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
   };
@@ -17899,9 +17911,11 @@ function talentsToast(kind) {
       if (G.watch && !G.paused && !UI.modalOpen) UI.watchFeed();
       const halted = G.over || G.paused || G.draft || G.huntChoice || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen || UI.coachHold;
       if (!halted) {
-        acc += dt * G.speed * (UI.slowmo > 0 ? 0.3 : 1);
+        const ff = UI.coachFF; if (!!ff !== !!UI.walkFF) { UI.walkFF = !!ff; UI.hudNow(); } // 6.7: Training's walk-in fast-forward (» on SPEED)
+        acc += dt * Math.max(G.speed, ff) * (UI.slowmo > 0 ? 0.3 : 1);
         let n = 0;
         while (acc >= STEP && n < 10) { simStep(STEP); acc -= STEP; n++; }
+        if (ff) UI.ffSec = (UI.ffSec || 0) + n * STEP; // game seconds spent in Training's fast-forward (tut66.py: time saved)
         if (n >= 10) acc = 0;
       }
       // 6.6 (perf66): the opaque Talents screen hides the field, so it isn't drawn; under a full modal (Pause, Settings, a boon or
