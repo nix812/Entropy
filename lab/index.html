@@ -7,10 +7,27 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LG TEST">
+<meta name="description" content="An endless sci-fi tower defense for iPhone and iPad. Your core can fly.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Last Gradient">
+<meta property="og:description" content="An endless sci-fi tower defense for iPhone and iPad. Your core can fly.">
+<meta property="og:url" content="https://nix812.github.io/Entropy/">
+<meta property="og:image" content="https://nix812.github.io/Entropy/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#07080f">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
+<script>if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });</script>
+<!--
+  Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved.
+  This page is public so the game can be played. It is not open source: no licence to copy, modify,
+  re-host or sell it, or any part of it, is granted. Fonts: Silkscreen and VT323, SIL Open Font License 1.1.
+-->
+<meta name="author" content="Nic Carter (Nigel Industries)">
+<meta name="copyright" content="(c) 2026 Nic Carter (Nigel Industries). All rights reserved.">
 <title>Last Gradient (TEST)</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>/* Silkscreen and VT323: SIL Open Font License 1.1 (assets/fonts/OFL-*.txt) */
@@ -690,6 +707,18 @@ body.rdy #tutlist { bottom: 6px; }
 .ebar i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#d6a6ff, var(--void)); box-shadow: 0 0 10px rgba(184, 108, 255, 0.6); }
 /* 6.9: the gauge names itself, like the other rail tiles */
 .entg small { font-family: var(--f-pix); font-size: 8px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); line-height: 1; position: relative; } .entg.ready small { color: #160826; }
+/* 6.9: in a phone browser tab, one line on how to get the full-screen game (Add to Home Screen). Tap it to hide it */
+#a2hs { position: absolute; left: max(16px, var(--sal, 0px)); top: max(14px, var(--sat, 0px)); z-index: 3; border: 0; background: rgba(9, 11, 22, 0.86); box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); font-family: var(--f-term); font-size: 15px; line-height: 1.1; padding: 8px 12px; min-height: 44px; max-width: calc(100% - 270px - var(--sal, 0px) - var(--sar, 0px)); text-align: left; }
+#a2hs b { color: var(--amber); font-weight: 400; } #a2hs i { font-style: normal; color: var(--dim); margin-left: 8px; }
+/* 6.9: a row of tabs that scrolls sideways fades at its right edge, so the cut-off tab reads as "more this way" */
+.dict-cats { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent); padding-right: 30px; }
+/* 6.9 the Legal card */
+.legal p { margin: 0 0 8px; } .legal .lbl { margin-top: 6px; }
+/* 6.9 Send Feedback: the card's two text boxes (tap to type in the typing panel), and Settings + Feedback side by side on the pause menu */
+.fbcard .cpnamebtn { margin: 8px 0 0; } .fbcard .cpnamebtn.empty b { color: var(--dim); } .fbcard .fbtext { min-height: 62px; align-items: flex-start; } .fbcard .fbtext b { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; line-height: 1.15; }
+.fbcard .chips { margin-top: 2px; } .fbcard .foot .btn[disabled] { opacity: 0.45; }
+.stack .pair { display: flex; gap: 8px; } .stack .pair .btn { flex: 1 1 0; min-width: 0; min-height: 44px; }
+.card.over .foot .fbb { margin-right: auto; }
 /* 6.9: a fold for background text on a card (the Strain Assault card) */
 details.more { margin: 6px 0 0; } details.more > summary { font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); cursor: pointer; list-style: none; padding: 9px 0; min-height: 26px; } details.more > summary::-webkit-details-marker { display: none; } details.more > summary::before { content: '+ '; color: var(--core); } details.more[open] > summary::before { content: '− '; }
 .entg b { font-family: var(--f-term); font-weight: 400; font-size: 17px; line-height: 1; position: relative; }
@@ -1089,6 +1118,10 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .tsumcap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; background: var(--panel2); padding: 6px 9px; margin-bottom: 4px; box-shadow: inset 3px 0 0 var(--c); }
 .tsumcap b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--c); }
 .tsumcap small { font-size: 15px; color: var(--dim); }
+/* 6.10 Fusion rows: two tree colors on the edge; the ones you can switch to are dimmer and tappable */
+.tsumcap.fus { box-shadow: inset 3px 0 0 var(--c), inset 6px 0 0 var(--c2); padding-left: 13px; }
+.tsumcap.fus.pick { opacity: 0.72; cursor: pointer; min-height: 44px; }
+.tsumcap.fus.pick:active { opacity: 1; }
 .tsumcap span { grid-column: 1 / -1; font-size: 16px; }
 .tsum { columns: 2; column-gap: 20px; margin: 4px 0 8px; padding-left: 16px; font-size: 16px; }
 .tbars div { display: grid; grid-template-columns: 110px minmax(0, 1fr) 30px; gap: 8px; align-items: center; font-size: 16px; margin: 2px 0; }
@@ -1302,7 +1335,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.9.0 + FIRST MINUTE + FONTS';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.10.0 + FUSION + FIRST MINUTE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -1312,6 +1345,7 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
   <section id="hangar" class="screen">
     <canvas id="bgfx"></canvas>
     <div class="ver" id="hVer"></div>
+    <button id="a2hs" hidden></button>
     <div class="hwrap">
       <div class="util">
         <button class="ib" id="bArchive" aria-label="Archive" data-svg="archive"></button>
@@ -1398,9 +1432,13 @@ b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.conta
 </div>
 
 <script>
+// Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.9.0';
+const VERSION = '6.10.0';
+// 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
+// buttons are hidden. It only accepts reports; it never returns data.
+const FEEDBACK_URL = '';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1455,23 +1493,23 @@ const ELS = ['K', 'T', 'C', 'A', 'V'];
 // rate = attacks/sec, range in tiles, dmg per hit at L1
 const TOWERS = {
   pulse: { name: 'Pulse Blaster', el: 'K', cost: 60, dmg: 10, rate: 2.4, range: 2.6, kind: 'bullet', pspd: 16, unlock: 1,
-    blurb: 'Rapid single-target fire.',
+    blurb: 'Fires fast at one target.',
     specs: [{ name: 'Gatling Array', desc: '×2.2 Attack Speed, ×0.85 Damage', m: { rateX: 2.2, dmgX: 0.85 } },
             { name: 'Twin Cannons', desc: 'Fires at 2 targets. ×1.25 Damage', m: { multi: 1, dmgX: 1.25 } }] },
   rail: { name: 'Rail Lance', el: 'K', cost: 110, dmg: 50, rate: 0.5, range: 4.6, kind: 'rail', pierce: 2, crit: 10, unlock: 1,
-    blurb: 'Long-range piercing shot.',
+    blurb: 'Fires long-range shots that pierce through enemies.',
     specs: [{ name: 'Gauss Spire', desc: '×1.8 Damage, +15% Crit Chance', m: { dmgX: 1.8, critC: 15 } },
             { name: 'Splinter Rail', desc: '+4 Pierce, ×1.5 Damage', m: { pierce: 4, shred: 1, dmgX: 1.5 } }] },
   cryo: { name: 'Cryo Emitter', el: 'C', cost: 75, dmg: 7.5, rate: 1.15, range: 2.5, kind: 'pulse', st: { chill: 1 }, unlock: 1,
-    blurb: 'Pulse that Chills nearby enemies.',
+    blurb: 'Sends out a pulse that Chills nearby enemies.',
     specs: [{ name: 'Glacier Core', desc: '×1.5 Chill strength. Freeze lasts 0.6s longer', m: { chillPot: 1.5, freezeBonus: 0.6 } },
             { name: 'Shatter Field', desc: 'Chilled enemies in range take +60% Kinetic Damage', m: { shatterField: 0.6 } }] },
   missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 35, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
-    blurb: 'Homing missiles. Splash and Burn.',
+    blurb: 'Fires homing missiles that deal splash damage and apply Burn.',
     specs: [{ name: 'Cluster Pods', desc: 'Missiles split into 3 bomblets', m: { cluster: 3 } },
             { name: 'Napalm Payload', desc: 'Impacts leave burning ground', m: { napalm: 1 } }] },
   pylon: { name: 'Relay Pylon', el: 'N', cost: 100, dmg: 0, rate: 0, range: 2.6, kind: 'support', buffDmg: 18, buffRate: 12, unlock: 8,
-    blurb: 'Boosts nearby towers. Reveals cloaked.',
+    blurb: 'Boosts nearby towers and reveals cloaked enemies.',
     specs: [{ name: 'Amplifier', desc: '+20% Damage boost', m: { buffDmg: 20 } },
             { name: 'Uplink', desc: '+1 Range. Also boosts Crit Chance by 12%', m: { rangeAdd: 1, buffCrit: 12 } }] },
   snare: { name: 'Snare Beacon', el: 'N', cost: 75, dmg: 0, rate: 0, range: 3.5, kind: 'snare', net: 1.3, netSlow: 0.5, hold: 0.8, catches: 8, unlock: 4,
@@ -1479,7 +1517,7 @@ const TOWERS = {
     specs: [{ name: 'Tangle Web', desc: 'Caught fliers are held 2s. Net slows 70%', m: { hold: 2, netSlow: 0.7 } },
             { name: 'Long Lure', desc: '+2 lure range, +6 catches per wave', m: { rangeAdd: 2, catches: 6 } }] },
   coil: { name: 'Arc Coil', el: 'A', cost: 100, dmg: 24, rate: 0.95, range: 2.8, kind: 'chain', chain: 3, st: { shock: 0.5 }, unlock: 10,
-    blurb: 'Chain lightning. Applies Shock.',
+    blurb: 'Fires chain lightning that applies Shock.',
     specs: [{ name: 'Tesla Crown', desc: '+3 Chain, ×1.35 Damage', m: { chain: 3, dmgX: 1.35 } },
             { name: 'Overvolt', desc: '×1.7 Damage, ×2 Shock effect, 12% chance to Stun', m: { dmgX: 1.7, shockX: 2, stun: 0.12 } }] }, // v5.4: the specs added no damage, so Coils fell behind at LV 5
   forge: { name: 'Credit Forge', el: 'N', cost: 150, dmg: 0, rate: 0, range: 0, kind: 'eco', income: 30, unlock: 12,
@@ -1487,7 +1525,7 @@ const TOWERS = {
     specs: [{ name: 'Refinery', desc: '×2.2 Income', m: { incomeX: 2.2 } },
             { name: 'Bounty Net', desc: '+30% kill credits within 3 tiles', m: { bounty: 0.3 } }] },
   flame: { ground: 1, name: 'Flame Projector', el: 'T', cost: 90, dmg: 6.5, rate: 8, range: 2.1, kind: 'cone', st: { burn: 1 }, unlock: 15,
-    blurb: 'Short-range cone. Applies Burn.',
+    blurb: 'Sprays a short-range cone of fire that applies Burn.',
     specs: [{ name: 'Inferno', desc: '×2 Burn damage', m: { burnX: 2 } },
             { name: 'Plasma Torch', desc: '+0.5 Range. Also applies Shock', m: { rangeAdd: 0.5, addShock: 0.35 } }] },
   lens: { name: 'Void Lens', el: 'V', cost: 150, dmg: 1.7, rate: 10, range: 3.2, kind: 'beam', rampMax: 2.8, // v5.4 trim: was 3.2 (4 Lenses did 71% of Nic's Wave 88 run). v5.0 trim: was 1.85 dmg, ×3.5 ramp (5 Lenses did 89% of Nic's Wave 87 run)
@@ -1497,11 +1535,11 @@ const TOWERS = {
     // collX the Collapses it sets off. Old recordings keep 1 and 1.
     // rampX scales the ramp bonus (×2.8 → ×2.26, Event Horizon ×4.3 → ×3.3, Prism ×2.5 → ×2.05): late enemies live long enough that a Lens sat at full ramp
     markX: 0.35, collX: 0.35, rampX: 0.7,
-    blurb: 'Ramping beam. Applies Mark.',
+    blurb: 'Fires a beam that deals more damage the longer it stays on one target. Applies Mark.',
     specs: [{ name: 'Event Horizon', desc: 'Ramps up to ×3.3 damage', m: { rampMax: 4.3 } }, // descs show the 5.8 ramp (rampX)
             { name: 'Prism Split', desc: 'Splits into 3 beams. Ramps up to ×2', m: { beams: 3, rampMax: 2.5 } }] },
   emp: { name: 'EMP Mortar', el: 'A', cost: 130, dmg: 40, rate: 0.38, range: 4.2, kind: 'mortar', pspd: 4, splash: 1.2, stunDur: 0.6, unlock: 25,
-    blurb: 'Lobbed shells that Stun an area.',
+    blurb: 'Lobs shells that Stun enemies in an area.',
     specs: [{ name: 'Blackout Shell', desc: '1.2s Stun, +0.3 Splash, ×1.4 Damage', m: { stunDur: 1.2, splash: 0.3, dmgX: 1.4 } },
             { name: 'Ion Barrage', desc: 'Fires 3 shells per volley', m: { shells: 3 } }] },
   grav: { ground: 1, name: 'Gravity Well', el: 'V', cost: 140, dmg: 30, rate: 0.35, range: 2.6, kind: 'grav', pull: 0.7, unlock: 30,
@@ -1531,7 +1569,7 @@ const TOWERS = {
     specs: [{ name: 'Wide Web', desc: 'Links 5 enemies. Shares 35%', m: { links: 2, share: 0.05 } },
             { name: 'Shared Fate', desc: 'Shares 45%. Linked enemies are 20% slower', m: { share: 0.15, tslow: 0.2 } }] },
   aegis: { name: 'Gatekeeper', el: 'N', cost: 150, dmg: 12, rate: 1.2, range: 3, kind: 'aegis', capT: 'E', unlock: 999, guards: 2, pspd: 14,
-    blurb: 'Guards the core. Stops 2 leaks per wave while the core is in range. Shoots what comes close.',
+    blurb: 'Guards the core. Stops 2 leaks per wave while the core is in range. Shoots enemies that come close.',
     specs: [{ name: 'Bulkhead', desc: '+2 leaks stopped per wave', m: { guards: 2 } },
             { name: 'Interceptor', desc: '×2.5 Damage. +1 Range', m: { dmgX: 2.5, rangeAdd: 1 } }] },
   joker: { name: 'Wildcard', el: 'N', cost: 120, dmg: 20, rate: 0.9, range: 3.2, kind: 'joker', capT: 'X', unlock: 999, pspd: 12, jack: 10,
@@ -1573,18 +1611,18 @@ const PERKS = {
   rail: [
     { id: 'pierce', name: 'Long Bore', v: [2, 3], d: v => `+${v} Pierce` },
     { id: 'overpress', name: 'Overpressure', v: [12, 22, 31, 39, 46], d: v => `+${v}% Damage` },
-    { id: 'spotter', name: 'Spotter', v: [1], d: () => 'Crits Mark all hit (2 stacks)' },
+    { id: 'spotter', name: 'Spotter', v: [1], d: () => 'Crits Mark every enemy hit (2 stacks)' },
     { id: 'deflect', name: 'Deflection', v: [1], d: () => 'Ricochets once for 60%' },
     { id: 'capBank', name: 'Capacitor Bank', v: [1], d: () => 'Every 3rd shot: ×2.5 Damage' },
     { id: 'coup', name: 'Coup de Grace', v: [10, 15], d: (v, tot) => `Executes non-bosses under ${tot || v}%` },
-    { id: 'bigGame', name: 'Big Game', v: [25, 40], d: v => `+${v}% Damage to bosses, elites` },
+    { id: 'bigGame', name: 'Big Game', v: [25, 40], d: v => `+${v}% Damage to Bosses and Elites` },
     { id: 'barrelR', name: 'Long Barrel', v: [0.8, 1.3], d: v => `+${v} Range` },
     { id: 'slug', name: 'Tungsten Slug', spec: 1, v: [50], d: () => '+50% Crit Damage' },
     { id: 'liveWire', name: 'Live Wire', spec: 2, v: [1], d: () => 'Shocks every enemy hit' },
   ],
   cryo: [
     { id: 'iceBurst', name: 'Ice Burst', v: [8], d: () => 'Frozen kills burst (8% HP)' },
-    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Its Frozen take +${v}% Damage` },
+    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Enemies it Freezes take +${v}% Damage` },
     { id: 'deep', name: 'Deep Freeze', v: [0.4, 0.7], d: v => `Freeze lasts +${v} s` },
     { id: 'flash', name: 'Flash Chill', v: [1], d: () => '+1 Chill per pulse' },
     { id: 'ring', name: 'Wide Ring', v: [0.5, 0.8], d: v => `+${v} Range` },
@@ -1643,7 +1681,7 @@ const PERKS = {
     { id: 'eater', name: 'Shield Eater', v: [1], d: () => 'Strips shields fully' },
     { id: 'breech', name: 'Fast Breech', v: [15, 27, 37, 45, 52], d: v => `+${v}% fire rate` },
     { id: 'ionE', name: 'Ion Charge', v: [0.6], d: () => 'Hits Shock' },
-    { id: 'blackout', name: 'Lights Out', spec: 1, v: [1], d: () => 'Bosses Stunned twice as long' },
+    { id: 'blackout', name: 'Lights Out', spec: 1, v: [1], d: () => 'Bosses are Stunned twice as long' },
     { id: 'shell4', name: 'Fourth Shell', spec: 2, v: [1], d: () => '+1 shell per volley' },
   ],
   grav: [
@@ -1706,7 +1744,7 @@ const PERKS = {
     { id: 'bite', name: 'Frostbite', v: [30, 55], d: v => `+${v}% Damage` },
     { id: 'shardW', name: 'Ice Shards', v: [1], d: () => 'A broken wall hits enemies within 1.5 tiles for ×4 Damage' },
     { id: 'reachW', name: 'Long Reach', v: [0.5, 0.8], d: v => `+${v} Range` },
-    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Its Frozen take +${v}% Damage` },
+    { id: 'brittle', name: 'Brittle', v: [15, 25], d: v => `Enemies it Freezes take +${v}% Damage` },
     { id: 'pack', name: 'Glacier Pack', spec: 1, v: [50], d: () => '+50% wall strength' },
     { id: 'barbs', name: 'Ice Barbs', spec: 2, v: [0.15], d: () => 'Held enemies take +15% more Kinetic Damage' },
   ],
@@ -1728,7 +1766,7 @@ const PERKS = {
     { id: 'patch', name: 'Patch Job', v: [2, 3], d: v => `Each stop repairs ${v}% core HP` },
     { id: 'qsight', name: 'Quick Sights', v: [15, 27], d: v => `+${v}% Attack Speed` },
     { id: 'last', name: 'Last Wall', spec: 1, v: [1], d: () => '+1 leak stopped per wave' },
-    { id: 'flak', name: 'Flak Rounds', spec: 2, v: [1], d: () => 'Shots burst for 50% in 0.8 tiles' },
+    { id: 'flak', name: 'Flak Rounds', spec: 2, v: [1], d: () => 'Shots burst for 50% Damage within 0.8 tiles' },
   ],
   joker: [
     { id: 'luck', name: 'Lucky Streak', v: [10, 18, 25], d: v => `+${v}% status chance` },
@@ -1809,12 +1847,12 @@ const LEGENDARIES = [
   { id: 'midas', pool: 'forge', name: 'Midas Press', t: () => '×2 Income. Earns 1% interest on banked credits' },
   // Mastery 5: each tower's own legendary joins that tower's rolls. Built from perk effects (pkv adds to the perk values)
   { id: 'mPulse', pool: 'atk', tower: 'pulse', name: 'Storm of Lead', pkv: { bounce: 2, rapid: 15 }, t: () => 'Rounds bounce to 2 more enemies. +15% Attack Speed' },
-  { id: 'mRail', pool: 'atk', tower: 'rail', name: 'Railstorm', pkv: { deflect: 1, pierce: 2 }, t: () => 'Shots ricochet once for 60%. +2 Pierce' },
+  { id: 'mRail', pool: 'atk', tower: 'rail', name: 'Railstorm', pkv: { deflect: 1, pierce: 2 }, t: () => 'Shots ricochet once for 60% Damage. +2 Pierce' },
   { id: 'mCryo', pool: 'atk', tower: 'cryo', name: 'Absolute Ring', pkv: { brittle: 20, flash: 1 }, t: () => 'Frozen enemies take +20% Damage. Each pulse adds 1 more Chill stack' },
   { id: 'mMissile', pool: 'atk', tower: 'missile', name: 'Hydra', pkv: { tube: 2, seek: 1 }, t: () => '+2 half-power missiles. Missiles find a new target if theirs dies' },
   { id: 'mCoil', pool: 'atk', tower: 'coil', name: 'Storm Crown', pkv: { chain: 2, loop: 1 }, t: () => '+2 Chain. The last arc jumps back to the first target' },
   { id: 'mFlame', pool: 'atk', tower: 'flame', name: "Dragon's Breath", pkv: { updraft: 1, spread: 1, accel: 30 }, t: () => 'Flames reach fliers. Burn spreads on death. +30% Damage' },
-  { id: 'mLens', pool: 'atk', tower: 'lens', name: 'Twin Singularity', pkv: { fork: 50, hold: 1 }, t: () => 'Beam forks to a 2nd target for 50%. Keeps half its ramp when switching target' },
+  { id: 'mLens', pool: 'atk', tower: 'lens', name: 'Twin Singularity', pkv: { fork: 50, hold: 1 }, t: () => 'Beam forks to a 2nd target for 50% Damage. Keeps half its ramp when switching target' },
   { id: 'mEmp', pool: 'atk', tower: 'emp', name: 'Cascade', pkv: { scatter: 1, longPulse: 0.3 }, t: () => 'Shells split into 3 bomblets. Stun lasts 0.3 s longer' },
   { id: 'mGrav', pool: 'atk', tower: 'grav', name: 'Abyss', pkv: { anchor: 1, undertow: 30 }, t: () => 'Wells drag fliers. Pulled enemies are slowed 30%' },
   { id: 'mPylon', pool: 'pylon', tower: 'pylon', name: 'Overmind', pkv: { ampP: 10, mast: 1 }, t: () => '+10% Damage boost. +1 Range' },
@@ -1840,7 +1878,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -1860,11 +1898,15 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.9.0', title: 'Last Gradient 6.9 · First Minute', items: [
+const WHATS_NEW = { ver: '6.10.0', title: 'Last Gradient 6.10 · Fusion', items: [
+  ['Fusions', 'Spend 8 points in each of two talent trees to open their Fusion. Each of the 21 pairs has its own. One Fusion is active in a run. See Talents, Your Build.'],
+  ['Game text', 'About 120 lines now use full sentences and plain words.'],
   ['New players', 'The Daily Hunt shows after your first run or after Training. The New Run screen leaves out the Evolution and Sector lines until then.'],
   ['Strain Assault card', 'The background text now sits in a fold, How Strain Assaults Work. It is open the first time you see the card.'],
   ['Labels', 'The Entropy gauge has its name. The chip in the top bar reads "+3 more" where there is room. Tutorial is now called Training everywhere.'],
+  ['Send Feedback', 'Report a bug or share an idea from the pause menu, the end-of-run screen or Settings.'],
   ['Fonts', 'The game carries its own fonts. It no longer loads them from the web.'],
+  ['Legal', 'Settings has a Legal card. In a phone browser, the main menu shows how to add the game to your Home Screen.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -1907,7 +1949,7 @@ const PIRATE_LINES = {
 };
 // ---------- v4.4 Most Wanted: every run names one boss, a mutation for it and a bounty, announced at the start ----------
 const WANTED_MODS = [
-  { id: 'colossal', name: 'Colossal', desc: '×1.6 health, half again as big, 20% slower', hp: 1.6, spd: 0.8, size: 1.5 },
+  { id: 'colossal', name: 'Colossal', desc: '×1.6 health, 50% larger and 20% slower', hp: 1.6, spd: 0.8, size: 1.5 },
   { id: 'twins', name: 'Twin', desc: 'Two of them, each at 60% health, 3 s apart', hp: 0.6, twins: 1 },
   { id: 'hasted', name: 'Hasted', desc: '35% faster, 25% less health', hp: 0.75, spd: 1.35 },
   { id: 'armored', name: 'Armored', desc: 'Takes 30% less damage from everything', hp: 0.9, armorAll: 0.3 },
@@ -1957,7 +1999,7 @@ const SECTORS = [
     up: '+25% Credits', down: '+15% upgrade cost', m: { credits: 25 }, af: { upgX: 0.15 } },
   { id: 'tempest', name: 'Tempest Front', col: '#ffe14d', pitch: 'Storms come one after another. Skimmers and Carriers come with them.',
     lean: { flyer: 1.5, carrier: 1.5 }, storm: null, ev: { surge: 1.5, overcharge: 2 }, boss: 'fsm', mod: 'hasted',
-    up: 'Storms twice as often, 40% stronger', down: '+10% enemy speed', m: { stormFreq: 100, stormPow: 40 }, af: { haste: 0.1 } },
+    up: 'Storms arrive twice as often and are 40% stronger', down: '+10% enemy speed', m: { stormFreq: 100, stormPow: 40 }, af: { haste: 0.1 } },
   { id: 'demo', name: 'Demolition Row', col: '#ff7b39', pitch: 'Sappers knock your towers out. Splitters burst into Swarmers.',
     lean: { sapper: 4, splitter: 1.5, reflector: 1.5 }, storm: 'cryo', ev: { emp: 2, elite: 1.5 }, boss: 'overmind', mod: 'hasted',
     up: '+10% Attack Speed', down: 'More Elites', m: { rate: 10 }, af: { elite: 0.08 } },
@@ -2054,46 +2096,46 @@ const TUT = {
 // tour: 1 = a walk through the hangar's own screens instead of a run. The coach steps live in ui.js (Coach PLANS, same id).
 // need(): hide a lesson until its system exists (the Ascend perks branch adds PERKS).
 const LESSONS = [
-  { id: 'towers', title: 'Towers and elements', blurb: 'What each tower is for, and why element matters.',
+  { id: 'towers', title: 'Towers and Elements', blurb: 'What each tower is for, and why element matters.',
     what: 'Every tower has an element: Kinetic, Thermal, Cryo, Arc or Void. Enemies resist some and are weak to others.', when: 'Every build. The Threat Board says what the next wave is weak to.', todo: 'Read the role line on each card. Build the counter the Threat Board names. Mix elements.',
     real: 'In a run: check the Threat Board between waves and build the counter it names.',
     run: { credits: 380, grid: 6, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil', 'flame'], waves: [[['flyer', 7, 1.3, 0.9], ['drone', 4, 1.2, 0.8]], [['swarmer', 16, 0.2, 1], ['drone', 4, 1, 0.8]]] } },
-  { id: 'upgrades', title: 'Upgrades, specs and selling', blurb: 'Make a tower stronger, pick its branch, sell what sits idle.',
-    what: 'Tap a built tower to open its panel. Upgrade raises its level: more damage and a random bonus (an affix). At LV 3 you pick one of two specs for good. LV 5 is the top; after it, Ascend for a perk.', when: 'When power is full, or a tower already sits in the right spot.', todo: 'Upgrade the tower doing the most work. The arrow over a tower means you can afford its best upgrade. Sell towers that stay idle.',
+  { id: 'upgrades', title: 'Upgrades, Specs and Selling', blurb: 'Make a tower stronger, pick its spec, and sell towers you do not use.',
+    what: 'Tap a built tower to open its panel. Upgrade raises its level: more damage and a random bonus (an affix). At LV 3 you pick one of two specs permanently. LV 5 is the highest level. After that, a tower can Ascend to gain a perk.', when: 'When power is full, or a tower already sits in the right spot.', todo: 'Upgrade the tower doing the most work. The arrow over a tower means you can afford its best upgrade. Sell towers that stay idle.',
     real: 'In a run: follow the arrow. When power is full, upgrade instead of building.',
     run: { credits: 1400, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 3], ['rail', 5, 1], ['cryo', 1]]]], waves: [[['drone', 8, 1, 1.2], ['tank', 2, 2, 1]]] } },
-  { id: 'power', title: 'Power, reactor and core', blurb: 'The power grid, expanding it, and upgrading the core.',
+  { id: 'power', title: 'Power, Reactor and Core', blurb: 'The power grid, expanding it, and upgrading the core.',
     what: 'Each tower draws 1 power. Capacity grows by 1 every 3 waves; the reactor adds more for credits. The core has its own upgrades: Battery (its gun, and a docked tower), Shield, Hull and Uplink.', when: 'When the power readout is full and you still have credits.', todo: 'Upgrade towers first. Expand the reactor when you have credits to spare. Hull makes the core sturdier, Uplink recharges abilities faster.',
-    real: 'In a run: a full grid means upgrade. Spare credits late go into the reactor and the core’s Hull.',
+    real: 'In a run: when the grid is full, upgrade. Late in the run, spend spare credits on the reactor and the core’s Hull.',
     run: { credits: 1600, grid: 3, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['rail', 1], ['cryo', 1]]]], waves: [[['drone', 10, 1, 1.2]]] } },
-  { id: 'lift', title: 'Lift Off and docking', blurb: 'Fly the core, dock it on a tower, link and move towers.',
-    what: 'Your core can fly. Tap Lift Off, pick a landing spot and read the preview. Land on an attack tower to dock it as a second gun at ×2 damage and +1 range. The core’s own gun keeps firing. The landed core links its 3 nearest attack towers within 4 tiles (+10% damage and rate each). Any tower can Move from its panel.', when: 'Whenever the swarm shifts: a new road, a strain warded against your main element, a boss on the way. After a landing, Lift Off recharges for 3 waves.', todo: 'Dock on the tower that answers the next wave. Read the road line in the preview: a shorter road means enemies arrive sooner. Move stranded towers instead of selling them.',
+  { id: 'lift', title: 'Lift Off and Docking', blurb: 'Fly the core, dock it on a tower, link and move towers.',
+    what: 'Your core can fly. Tap Lift Off, pick a landing spot and read the preview. Land on an attack tower to dock it as a second gun at ×2 damage and +1 range. The core’s own gun keeps firing. The landed core links its 3 nearest attack towers within 4 tiles (+10% damage and attack rate each). Any tower can Move from its panel.', when: 'Whenever the swarm changes: a new road, a strain warded against your main element, a boss on the way. After a landing, Lift Off recharges for 3 waves.', todo: 'Dock on the tower that answers the next wave. Read the road line in the preview: a shorter road means enemies arrive sooner. Move stranded towers instead of selling them.',
     real: 'In a run: dock where the next wave hurts most, then move towers into link reach.',
     run: { credits: 260, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['road', [['rail', 3, 0.78, 1], ['pulse', 2, 0.66], ['pulse', 2, 0.42]]]], waves: [[['drone', 6, 1.6, 1.4], ['tank', 2, 3.2, 1.2]]] } },
   { id: 'overcharge', title: 'Overcharge', blurb: 'Put spare power into one tower.',
     what: 'Overcharge spends spare power on a tower: +35% damage per step, 1 power per step.', when: 'When you have power left over and one tower doing most of the work.', todo: 'Open the tower panel and tap +1, +2 or +3. Tap the power readout to Overcharge your top tower in one go.',
     real: 'In a run: never leave power unused. Overcharge your best tower.',
     run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 2], ['pulse', 1]]]], waves: [[['drone', 10, 0.9, 1.4], ['tank', 2, 2, 1]]] } },
-  { id: 'abilities', title: 'Abilities and charges', blurb: 'Strike, Stasis, Frenzy, Nova and Scan.',
-    what: 'Five abilities on the left rail, each on its own cooldown. Strike hits an area, Stasis freezes everything, Frenzy speeds up your towers, Nova damages every enemy, Scan reveals cloaked enemies and marks the biggest threat.', when: 'On a dense pack, a boss, or a wave that is leaking.', todo: 'Use them: a full charge slot wastes its timer. Crates and bosses add extra charges that stack.',
-    real: 'In a run: spend charges on the waves that leak; they come back.',
+  { id: 'abilities', title: 'Abilities and Charges', blurb: 'Strike, Stasis, Frenzy, Nova and Scan.',
+    what: 'Five abilities on the left rail, each on its own cooldown. Strike hits an area, Stasis freezes everything, Frenzy speeds up your towers, Nova damages every enemy, Scan reveals cloaked enemies and marks the largest threat.', when: 'On a dense pack, a boss, or a wave that is leaking.', todo: 'A full charge slot does not recharge further. Crates and bosses add extra charges that stack.',
+    real: 'In a run: use charges on the waves that leak. Charges recharge.',
     run: { start: 12, credits: 200, grid: 6, towers: ['pulse', 'rail', 'cryo'], abil: ['strike', 'nova', 'stasis', 'overclock', 'scan'], pre: [['towers', [['pulse', 3], ['rail', 3], ['cryo', 2]]], ['abil', ['strike', 'nova', 'stasis', 'overclock', 'scan'], 1]],
       waves: [[['swarmer', 16, 0.15, 0.8], ['phantom', 4, 1.4, 0.8], ['drone', 8, 0.7, 0.8]]] } },
-  { id: 'swarm', title: 'The swarm adapts', blurb: 'Genes, the Threat Board, Arms Race and DNA.',
-    what: 'The swarm breeds against your defense. Enemies that get furthest pass on their genes (Plating, Shell, Ward, Haste…). Marks on each enemy show its genes.', when: 'From Wave 8 on Normal. The Threat Board shows what it is breeding and why.', todo: 'Open the Threat Board between waves. When a gene climbs, build its counter. Mixing elements keeps it guessing.',
+  { id: 'swarm', title: 'The Swarm Adapts', blurb: 'Genes, the Threat Board, Arms Race and DNA.',
+    what: 'The swarm breeds against your defense. Enemies that get furthest pass on their genes (Plating, Shell, Ward, Haste…). Marks on each enemy show its genes.', when: 'From Wave 8 on Normal. The Threat Board shows what it is breeding and why.', todo: 'Open the Threat Board between waves. When a gene climbs, build its counter. Mixed elements give the swarm less to adapt to.',
     real: 'In a run: when the Threat chip pulses, open it and answer the top gene.',
     run: { start: 10, credits: 500, grid: 6, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil'], pre: [['towers', [['pulse', 3], ['pulse', 2], ['rail', 2]]]],
       waves: [[['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.6 }], ['swarmer', 8, 0.25, 0.8, { genes: ['haste'], share: 0.5 }]], [['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.7 }], ['tank', 2, 2, 0.6]]] } },
-  { id: 'hunt', title: 'Bounties and the purse', blurb: 'Most Wanted, the Bounty Purse, Extract or jump.',
-    what: 'Each run posts a Most Wanted boss. Killing it claims the bounty. Some of your XP rides in the Bounty Purse: Extract banks all of it and ends the run as a win; a jump door pushes into a new zone for a bigger purse. Fall later and you keep 30%.', when: 'Every 20 waves.', todo: 'Bank when the run feels shaky. Jump when your defense is strong: Steady, Hot and Deadly doors multiply the purse more.',
+  { id: 'hunt', title: 'Bounties and the Purse', blurb: 'Most Wanted, the Bounty Purse, Extract or jump.',
+    what: 'Each run posts a Most Wanted boss. Killing it claims the bounty. Some of your XP is held in the Bounty Purse. Extract deposits all of it and ends the run as a win. A jump door takes you to a new zone for a larger purse. If the core falls later, you keep 30%.', when: 'Every 20 waves.', todo: 'Extract when the run is at risk. Jump when your defense is strong: Steady, Hot and Deadly doors multiply the purse more.',
     real: 'In a run: extract when your last waves were close calls; jump when they were easy.',
     run: { start: 18, credits: 300, grid: 7, towers: ['pulse', 'rail', 'cryo'], boss: { id: 'behemoth', mod: 'hasted', hp: 4000, w: 2 }, pre: [['towers', [['rail', 4, 1], ['pulse', 4, 1], ['pulse', 3], ['cryo', 3]]]],
       waves: [[['drone', 10, 0.8, 0.5]], [['drone', 4, 1, 0.5], ['boss', 1, 3, 1]]] } },
-  { id: 'salvage', title: 'Crates and salvage', blurb: 'Loot on the map, and the pirates who want it.',
-    what: 'Drop ships leave crates on the map: credits, ability charges or tokens. They decay. Golden crates pay big; cursed ones bite.', when: 'From Wave 3, between and during waves.', todo: 'Tap a crate to claim it. A tower next to a crate collects it for you. Shoot down pirate skiffs before they fly off with one.',
+  { id: 'salvage', title: 'Crates and Salvage', blurb: 'Loot on the map, and the pirates who want it.',
+    what: 'Drop ships leave crates on the map: credits, ability charges or tokens. Crates disappear after a while. Golden crates pay more. Cursed crates carry a penalty.', when: 'From Wave 3, between and during waves.', todo: 'Tap a crate to claim it. A tower next to a crate collects it for you. Shoot down pirate skiffs before they fly off with one.',
     real: 'In a run: tap crates as they land, or build next to where they drop.',
     run: { credits: 200, grid: 4, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2]]], ['cache']], waves: [[['drone', 6, 1.2, 1]]] } },
-  { id: 'veterans', title: 'Veterans, affixes, resonance', blurb: 'Towers that earn ranks, and where to put them.',
+  { id: 'veterans', title: 'Veterans, Affixes, Resonance', blurb: 'Towers that earn ranks, and where to put them.',
     what: 'Towers that fight earn veteran ranks; each rank offers a mutation. Affixes are the bonuses a tower rolls on upgrades. Towers of different elements side by side resonate: +8% damage each.', when: 'Whenever the Ready button shows a count; whenever you place a tower.', todo: 'Tap Ready: it walks you through every waiting tower (a gold star marks each). Pick a mutation. Build mixed elements next to each other.',
     real: 'In a run: clear veteran picks between waves; pair Kinetic with Cryo or Arc side by side.',
     run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['cryo', 1]]], ['vet', 0]], waves: [[['drone', 8, 1, 1]]] } },
@@ -2101,32 +2143,32 @@ const LESSONS = [
     what: 'The Relay Pylon boosts damage and attack speed of towers in its range and reveals cloaked enemies. The Credit Forge pays credits every wave.', when: 'Pylon: when towers are clustered. Forge: early in a long run.', todo: 'Build a Pylon in the middle of a cluster. Build Forges early; they pay for themselves in a few waves.',
     real: 'In a run: one Pylon per tower cluster; Forges before Wave 20.',
     run: { start: 12, credits: 500, grid: 6, towers: ['pulse', 'rail', 'cryo', 'pylon', 'forge'], pre: [['towers', [['pulse', 3], ['rail', 3]]]], waves: [[['drone', 10, 0.8, 0.6], ['phantom', 3, 1.5, 0.6]]] } },
-  { id: 'storms', title: 'Storms and anomalies', blurb: 'Weather that boosts an element, and the Entropy gauge.',
-    what: 'Storms drift across the map and boost one element: towers of that element inside fight harder. Kills fill the Entropy gauge; when it is full you draw an Anomaly, a permanent twist with an upside and a downside.', when: 'Storms from Wave 6. Anomalies whenever the gauge fills.', todo: 'Tap a storm chip to see what it boosts. Tap the full gauge and pick the Anomaly that suits your build, or Stabilize for score.',
+  { id: 'storms', title: 'Storms and Anomalies', blurb: 'Weather that boosts an element, and the Entropy gauge.',
+    what: 'Storms drift across the map and boost one element: towers of that element inside a storm are stronger. Kills fill the Entropy gauge; when it is full you draw an Anomaly, a permanent twist with an upside and a downside.', when: 'Storms from Wave 6. Anomalies whenever the gauge fills.', todo: 'Tap a storm chip to see what it boosts. Tap the full gauge and pick the Anomaly that suits your build, or Stabilize for score.',
     real: 'In a run: build into storms of your element; draw Anomalies that match your towers.',
     run: { start: 8, credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo', 'missile'], pre: [['towers', [['missile', 2], ['pulse', 2]]], ['storm', 'solar'], ['entropy', 100]], waves: [[['drone', 10, 0.9, 0.7]]] } },
-  { id: 'wormholes', title: 'Wormholes and checkpoints', blurb: 'New roads, a bigger map, a breather.',
+  { id: 'wormholes', title: 'Wormholes and Checkpoints', blurb: 'New roads, a larger map and a pause.',
     what: 'Every so often a wormhole opens a new road and the map grows. Nothing can be built within 4 tiles of a wormhole. The wave before it lands is a checkpoint: full refunds and a free respec until you resume.', when: 'At set waves (Normal: 15, 28, 42…).', todo: 'At a checkpoint, move towers (or sell and rebuild) to cover the new road, then tap Next. Resuming fast pays a bonus.',
     real: 'In a run: at a checkpoint, move towers to cover both roads before you resume.',
     run: { credits: 400, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['pulse', 1]]], ['lane', 1]], waves: [[['drone', 6, 1.2, 1]], [['drone', 10, 0.9, 1]]] } },
   { id: 'assault', title: 'Strain Assaults', blurb: 'The swarm commits a whole wave to beat you.',
-    what: 'Every few waves the swarm reads your defense and sends one strain built to beat it. It is announced a wave ahead, and selling is free (a refit) until it lands. Hold it and it breaks: +1 power and a bounty.', when: 'Normal: from Wave 14, every 8 waves.', todo: 'When the Threat chip turns red, open it, read the strain’s genes, and swap towers for their counters while selling is free.',
-    real: 'In a run: red Threat chip means refit now, while selling is free.',
+    what: 'Every few waves the swarm reads your defense and sends one strain built to beat it. It is announced a wave ahead, and selling is free (a refit) until it lands. If you hold it, the strain is defeated: +1 power and a bounty.', when: 'Normal: from Wave 14, every 8 waves.', todo: 'When the Threat chip turns red, open it, read the strain’s genes, and swap towers for their counters while selling is free.',
+    real: 'In a run: a red Threat chip means refit now, while selling is free.',
     run: { start: 14, credits: 600, grid: 7, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil'], pre: [['towers', [['pulse', 3], ['pulse', 3], ['rail', 2]]], ['assault']], waves: [[['drone', 14, 0.6, 0.45], ['swarmer', 6, 0.3, 0.5]], [['drone', 6, 1, 0.4]]] } },
-  { id: 'bosses', title: 'Bosses, boons and Nemesis', blurb: 'Every tenth wave, and what it pays.',
+  { id: 'bosses', title: 'Bosses, Boons and Nemesis', blurb: 'Every tenth wave, and what it pays.',
     what: 'A boss lands every 10 waves. It has phases and powers, and if it reaches the core the run ends. Killing one pays a boon: one of three permanent bonuses. A boss or strain that ends your run becomes your Nemesis and comes back next run.', when: 'Wave 10, 20, 30…', todo: 'Save Strike and Stasis for bosses. Plated bosses need Rail, Lens or Burn. Pick the boon that fits your build.',
     real: 'In a run: hold your abilities for the boss wave.',
     run: { start: 10, credits: 300, grid: 6, towers: ['pulse', 'rail', 'cryo'], abil: ['strike', 'stasis'], boss: { id: 'queen', hp: 2600 }, pre: [['towers', [['rail', 3], ['pulse', 3], ['pulse', 2], ['cryo', 2]]], ['abil', ['strike', 'stasis'], 1]], waves: [[['drone', 4, 1, 0.6], ['boss', 1, 3, 1]]] } },
   { id: 'market', title: 'Black Market and Cash In', blurb: 'What to do with banked credits.',
-    what: 'From Wave 10 the Score button opens the Exchange: the Black Market sells three items (restocked after boss waves), and Cash In turns credits into score.', when: 'When credits pile up and the grid is full.', todo: 'Check the Market after each boss wave. Cash In only what you can’t spend on towers.',
+    what: 'From Wave 10 the Score button opens the Exchange: the Black Market sells three items (restocked after boss waves), and Cash In turns credits into score.', when: 'When credits build up and the grid is full.', todo: 'Check the Market after each boss wave. Cash In only what you can’t spend on towers.',
     real: 'In a run: spend on towers first, the Market second, Cash In last.',
     run: { start: 12, credits: 2500, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 3], ['rail', 2]]]], waves: [[['drone', 8, 1, 0.6]]] } },
   { id: 'techniques', title: 'Techniques', blurb: 'Alternate fire modes from your talents.',
-    what: 'A Technique is an alternate fire mode for one tower type, learned with a one-point talent. Each tower then has a Fire row: Standard or the Technique. It is a different job, not an upgrade.', when: 'After you learn one in Talents.', todo: 'Open a tower and switch its Fire mode. Mix: one Suppressor slows the pack, the Standard Pulses finish it.',
+    what: 'A Technique is an alternate fire mode for one tower type, learned with a one-point talent. Each tower then has a Fire row: Standard or the Technique. It is a different job, not an upgrade.', when: 'After you learn one in Talents.', todo: 'Open a tower and switch its Fire mode. Mix modes: one Suppressor slows the group and the Standard Pulse Blasters finish it.',
     real: 'In a run: switch one tower of a type to its Technique when the wave calls for that job.',
     need: () => typeof TOWER_FIRE !== 'undefined',
     run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], build: { tal: { kSupp: 1 }, caps: [], remnants: [], lvl: 1 }, pre: [['towers', [['pulse', 2], ['pulse', 2]]]], waves: [[['drone', 8, 0.8, 1.2], ['swarmer', 8, 0.25, 1]]] } },
-  { id: 'mastery', title: 'Ascend perks and Mastery', blurb: 'Past LV 5, and what each tower earns across runs.',
+  { id: 'mastery', title: 'Ascend Perks and Mastery', blurb: 'Past LV 5, and what each tower earns across runs.',
     what: 'Past LV 5 a tower Ascends: ×1.15 damage and a choice of three perks that change how it works (a forking beam, ricochets, shattering freezes). Every tower type also has a Mastery: 5 ranks earned across runs from its share of the damage.', when: 'Late in a run, when your best towers are maxed. Mastery: after every run.', todo: 'Ascend the tower doing the most work and pick the perk that fixes its weakness. Try different towers: Mastery pays most for towers that are not your top one.',
     real: 'In a run: pick a perk the moment the Ascend lands; between runs, check Mastery in the Archive.',
     need: () => typeof PERKS !== 'undefined',
@@ -2134,7 +2176,7 @@ const LESSONS = [
   { id: 'daily', title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1,
     what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis and talent build for everyone. The build has two Capstones and their towers. Your first run of the day is ranked.', when: 'Once a day, from the hangar.', todo: 'Look at today’s build, then start the ranked run. Watch the ranked run or share its code afterwards.',
     real: 'Every day: check today’s build, then play your ranked run.' },
-  { id: 'meta', title: 'Talents and progression', blurb: 'XP, levels, Talents, Capstones, Supernova, the Archive.',
+  { id: 'meta', title: 'Talents and Progression', blurb: 'XP, levels, Talents, Capstones, Supernova, the Archive.',
     what: 'Runs pay XP (from score and the Bounty Purse). Each level is a talent point. Seven trees: rows open every 3 points, a Capstone at 12 changes how you play. Supernova resets your talents for a permanent bonus. The Archive keeps what you have met.', when: 'Between runs.', todo: 'Spend points after each run. Go deep in one tree for its Capstone. Check the Archive’s Swarm Collection.',
     real: 'Between runs: spend your points, then pick a zone and go.', tour: 1 },
 ];
@@ -2180,20 +2222,20 @@ const CURSES = [
 // v5.1 Know Your Enemy: every enemy says what it does (desc) and what beats it (beat). Four late enemies arrive from Wave 18,
 // each announced the wave before it lands
 const ENEMIES = {
-  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit', beat: 'Anything. They add up in numbers' },
-  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups', beat: 'Splash: Swarm Missile, Flamethrower, Arc Coil' },
+  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit', beat: 'Any tower. Drones are dangerous in large numbers' },
+  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups', beat: 'Splash: Swarm Missile, Flame Projector, Arc Coil' },
   tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully', beat: 'Rail Lance, Void Lens or Burn' },
   flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc', beat: 'Arc, Pulse, Rail. Flame and Gravity can\'t reach it' },
-  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash to clean up the Swarmers it bursts into' },
-  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'Relay Pylon or Sensor Sweep to reveal it; Void hits it hard' },
-  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first: Rail or Strike. Burn stops all healing' },
+  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash damage, to kill the Swarmers it bursts into' },
+  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'A Relay Pylon or Sensor Sweep reveals it. Void damage is strong against it' },
+  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first with a Rail Lance or Strike. Burn stops all healing' },
   shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 3×' },
-  reflector: { name: 'Reflector', hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flamethrower, EMP Mortar' },
-  carrier:  { name: 'Carrier', hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, drops: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air (Rail, Missile, Pulse) before it unloads' },
-  sapper:   { name: 'Sapper', hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, sap: 1, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your line' },
-  leech:    { name: 'Leech', hp: 55, spd: 1.35, cr: 8, leak: 2, from: 30, w: 2.5, leech: 1, desc: 'Steals credits if it reaches the core, more the more you have banked', beat: 'Anything that kills it before the core. Spend what you bank' },
-  pirate: { name: 'Pirate Skiff', hp: 70, spd: 1.5, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core', beat: 'Anti-air before it escapes' },
-  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'Flies. Spawned by a Maelstrom', beat: 'Arc and anti-air' },
+  reflector: { name: 'Reflector', hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flame Projector, EMP Mortar' },
+  carrier:  { name: 'Carrier', hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, drops: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air damage (Rail, Missile, Pulse) before it drops its Drones' },
+  sapper:   { name: 'Sapper', hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, sap: 1, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your towers' },
+  leech:    { name: 'Leech', hp: 55, spd: 1.35, cr: 8, leak: 2, from: 30, w: 2.5, leech: 1, desc: 'Steals credits if it reaches the core. It steals more when you hold more credits', beat: 'Kill it before it reaches the core. Spend your credits so it has less to steal' },
+  pirate: { name: 'Pirate Skiff', hp: 70, spd: 1.5, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core', beat: 'Anti-air towers, before it escapes' },
+  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'A flying enemy that a Maelstrom spawns', beat: 'Arc and anti-air' },
 };
 // v5.1: the drone a Carrier drops (a flying Drone, smaller)
 const CARRIER = { every: 4.5, n: 2, hp: 0.1 };
@@ -2211,11 +2253,11 @@ const OVERCHARGE = { max: 3, dmg: 0.35, rate: 0.15 };
 // Ordinary enemies carry genes. Each gene is a trade: an edge for some HP or speed. Waves are bred from the genomes that got
 // furthest last time, so the swarm drifts towards whatever your defence handles worst. Every gene has a counter tower.
 const GENES = {
-  plating: { name: 'Plating', col: '#c8ccd8', hp: 0.75, desc: 'Blunts all but piercing fire', counter: 'Rail, Void Lens, Burn' },
+  plating: { name: 'Plating', col: '#c8ccd8', hp: 0.75, desc: 'Reduces damage from everything except piercing fire', counter: 'Rail, Void Lens, Burn' },
   wings:   { name: 'Wings', col: '#9ad8ff', hp: 0.4, spd: 0.65, from: 16, desc: 'Flies over ground defenses', counter: 'anti-air (not Flame or Gravity)' },
   haste:   { name: 'Haste', col: '#ffe14d', hp: 0.7, spd: 1.4, desc: '+40% speed', counter: 'Cryo, Gravity, EMP, Snare' },
   bulk:    { name: 'Bulk', col: '#ff7b39', hp: 1.4, spd: 0.75, desc: '+40% HP, slower', counter: 'Void Lens, Rail' },
-  brood:   { name: 'Brood', col: '#ff9ad5', hp: 0.7, desc: 'Bursts into 3 mites', counter: 'Missile, Flame, Coil' },
+  brood:   { name: 'Brood', col: '#ff9ad5', hp: 0.7, desc: 'Bursts into 3 mites when killed', counter: 'Missile, Flame, Coil' },
   shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.65, desc: 'Shield worth 60% of HP. It recharges when left alone, unless Arc has hit it in the last 3s', counter: 'Arc Coil, EMP' },
   regen:   { name: 'Regrowth', col: '#59f0b4', hp: 0.75, desc: 'Heals 2.5%/s unless Burning', counter: 'Flame, Missile' },
   ward:    { name: 'Ward', col: '#d6a6ff', hp: 0.85, desc: '50% resist to one element', counter: 'any other element' },
@@ -2312,7 +2354,7 @@ const EVENTS = [
   { id: 'overcharge', name: 'Overcharge', good: 1, w: 6, from: 5, desc: '+30% Attack Speed' },
   { id: 'meteor', name: 'Meteor Shower', good: 1, w: 6, from: 7, desc: 'Meteors strike the path' },
   { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'Drifts in for 30s. Drags and slows enemies. Towers at its edge +40% Attack Speed, near its center −50%',
-    long: 'Drifts in from past the sector edge, stays 30s, then collapses. Enemies within 6 tiles slow down, up to 50% at the center. It drags them along the road toward it. Towers 2.5 to 6 tiles away: +40% Attack Speed. Towers within 2.5 tiles: −50%. Bosses feel half' },
+    long: 'Drifts in from past the sector edge, stays 30s, then collapses. Enemies within 6 tiles slow down, up to 50% at the center. It drags them along the road toward it. Towers 2.5 to 6 tiles away: +40% Attack Speed. Towers within 2.5 tiles: −50%. Bosses are affected half as much' },
 ];
 // 6.5 (FR_VER 5, G.frV >= 5): the Black Hole event (fr: 5 keeps it out of older rules, so their event rolls are unchanged).
 // It drifts in from past the sector edge to a point on a road, hangs there drifting slowly, then collapses. Inside its reach:
@@ -2337,11 +2379,11 @@ const FOG = { core: 10, tower: 4, pad: 1.5, every: 15 };
 // v5.1: abilities recharge on a cooldown into charge slots (1 each, more from Command talents). Charges from crates, chests
 // and bosses stack on top with no limit. `from`: the wave an ability comes online, so a new player meets them one at a time
 const ABILITIES = {
-  strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap a target. Heavy area damage.', target: 1, cd: 45, from: 1 },
+  strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap a target to deal heavy area damage.', target: 1, cd: 45, from: 1 },
   nova: { name: 'Entropy Nova', key: 'NOV', short: 'Nova', desc: 'All enemies lose 35% HP (Bosses 10%).', cd: 210, from: 12 },
   stasis: { name: 'Stasis Field', key: 'STS', short: 'Stasis', desc: 'Freezes all enemies for 4s.', cd: 110, from: 4 },
   overclock: { name: 'Frenzy', key: 'FRZ', short: 'Frenzy', desc: '+100% Attack Speed for 8s.', cd: 90, from: 9 },
-  scan: { name: 'Sensor Sweep', key: 'SCN', short: 'Scan', desc: 'Reveals cloaked enemies for 8s, Marks everything it sweeps (+15% damage taken) and flags the biggest threat.', cd: 30, from: 7 },
+  scan: { name: 'Sensor Sweep', key: 'SCN', short: 'Scan', desc: 'Reveals cloaked enemies for 8s, Marks everything it sweeps (+15% damage taken) and flags the largest threat.', cd: 30, from: 7 },
 };
 const ABIL_ORDER = ['strike', 'nova', 'stasis', 'overclock', 'scan'];
 const SCAN = { dur: 8, mark: 15 };
@@ -2399,7 +2441,7 @@ const STAT_TXT = {
   splash: v => `+${v} Splash radius`, chain: v => `+${v} Chain`,
   pierceK: v => `+${v} Pierce for Kinetic towers`, costRed: v => `−${v}% tower cost`,
   upgRed: v => `−${v}% upgrade cost`, credits: v => `+${v}% Credits`, startCredits: v => `+${v} starting credits`,
-  coreHP: v => `+${v} core HP`, shield: v => `+${v} core shield`, shieldRegen: v => `+${v}% shield regen`,
+  coreHP: v => `+${v} core HP`, shield: v => `+${v} core shield`, shieldRegen: v => `+${v}% Shield recharge speed`,
   coreDmg: v => `+${v}% core Damage`, coreRate: v => `+${v}% core Attack Speed`, coreRange: v => `+${v} core Range`,
   abilCharge: v => `−${v}% ability cooldowns`, abilPower: v => `+${v}% ability power`, abilSlots: v => `+${v} charge slot${v > 1 ? 's' : ''} for every ability`,
   stasisDur: v => `+${v}s Stasis duration`, stormFreq: v => `+${v}% storm frequency`, stormPow: v => `+${v}% storm effects`,
@@ -2574,13 +2616,13 @@ const CAP_RENAMED = { glass: 'nest', deadeye: 'rico', overgrid: 'stormrider', th
 // m keys are read in applyFire (sim.js): dmgX, rateX, rangeAdd, rangeX, pullX multiply or add; the rest switch behaviour.
 const TOWER_FIRE = {
   pulse: [{ id: 'supp', need: 'kSupp', name: 'Suppressor', short: 'Slows what it hits by 35%. ×0.75 Damage', desc: 'Rounds slow what they hit by 35% for 1.5s. ×0.75 Damage', m: { dmgX: 0.75, supSlow: 0.35, supDur: 1.5 } }],
-  rail: [{ id: 'over', need: 'kOver', name: 'Charged Shot', short: 'Every 3rd shot ×4 and pierces all. Half speed', desc: 'Every 3rd shot deals ×4 and pierces every enemy in line. ×0.5 Attack Speed', m: { rateX: 0.5, ocEvery: 3, ocX: 4 } }],
+  rail: [{ id: 'over', need: 'kOver', name: 'Charged Shot', short: 'Every 3rd shot deals ×4 Damage and pierces all enemies. Half Attack Speed', desc: 'Every 3rd shot deals ×4 and pierces every enemy in line. ×0.5 Attack Speed', m: { rateX: 0.5, ocEvery: 3, ocX: 4 } }],
   cryo: [{ id: 'lance', need: 'cLance', name: 'Cold Lance', short: 'A freezing beam on one target. ×3 Damage', desc: 'A freezing beam on one target instead of a pulse: ×3 Damage to it, pierces Plating, +0.8 Range', m: { lance: 3, rangeAdd: 0.8 } }],
   missile: [{ id: 'bunker', need: 'tBunk', name: 'Bunker Buster', short: '×2 Damage, ignores Plating. No splash', desc: 'One heavy warhead: ×2 Damage, ignores Plating and half of Armor. No splash, bomblets or napalm', m: { dmgX: 2, bunker: 1 } }],
   coil: [{ id: 'fence', need: 'aFence', name: 'Arc Fence', short: 'Zaps a line to a Coil within 4 tiles', desc: 'Stops chaining. Arcs a fence to the nearest Coil within 4 tiles that zaps and Shocks everything within a tile of it', m: { fence: 4 } }],
   flame: [{ id: 'back', need: 'tBack', name: 'Backdraft', short: 'A full ring of fire. ×0.7 Range', desc: 'Burns a full ring around the tower instead of a cone. ×0.7 Range', m: { ring: 1, rangeX: 0.7 } }],
-  lens: [{ id: 'tether', need: 'vTether', name: 'Null Tether', short: 'No ramp. Beamed enemies 35% slower', desc: 'No ramp: steady damage at the base rate. Beamed enemies are 35% slower and Marked twice as fast', m: { tether: 0.35 } }],
-  emp: [{ id: 'mines', need: 'aMines', name: 'Pulse Mines', short: 'Lays up to 4 road mines. ×1.75 Damage', desc: 'Shells stay on the road as mines (up to 4) that blow when a ground enemy steps on them. ×1.75 Damage. Fliers never set them off', m: { mines: 4, dmgX: 1.75 } }],
+  lens: [{ id: 'tether', need: 'vTether', name: 'Null Tether', short: 'No ramp. Beamed enemies move 35% slower', desc: 'No ramp: steady damage at the base rate. Beamed enemies are 35% slower and Marked twice as fast', m: { tether: 0.35 } }],
+  emp: [{ id: 'mines', need: 'aMines', name: 'Pulse Mines', short: 'Lays up to 4 road mines. ×1.75 Damage', desc: 'Shells stay on the road as mines (up to 4) that explode when a ground enemy steps on them. ×1.75 Damage. Fliers never set them off', m: { mines: 4, dmgX: 1.75 } }],
   grav: [{ id: 'repulse', need: 'vRepulse', name: 'Repulsor', short: 'Hits fliers and throws them back', desc: 'Also hits fliers and throws them back along their flight. ×0.6 pull on the ground, ×0.5 Damage', m: { repulse: 1, pullX: 0.6, dmgX: 0.5 } }],
 };
 const fireModes = type => TOWER_FIRE[type] || [];
@@ -2781,6 +2823,37 @@ const roman = n => ROMAN[n] || String(n);
 // ---------- Codex (discoveries kept across runs) ----------
 const COMBO_NAMES = ['SHATTER', 'THERMAL SHOCK', 'OVERLOAD', 'SUPERCONDUCT', 'COLLAPSE'];
 
+// 6.10 Fusions (Nic, Nov 10: "specing into two trees gives a unique ability across any two combos"). FR_VER 7, G.frV >= 7.
+// FUS_NEED points in each of two talent trees opens that pair's Fusion. One Fusion is active in a run (G.fus): the player's pick
+// (PROF.fus) when it is open, else the open pair with the most points. Patterns, so they are easy to learn: Command pairs (X) fire
+// when an ability is used, Singularity pairs (V) change the Collapse, Bastion pairs (E) work at the core. Numbers: FUSV.
+const FUS_NEED = 8;
+const FUSV = { ktBurn: 0.2, kaArc: 0.5, kaR: 1.5, kcShatter: 2, kvMark: 0.06, keR: 3, keDmg: 0.3, kxT: 4, taRad: 1.5, taDmg: 1.5, tcAt: 2, tcDmg: 2, teCr: 0.2, txBurn: 5, txT: 4,
+  acRad: 1.5, acCD: 0.4, avT: 6, aeFree: 4, axT: 6, cvT: 1, ceR: 3, ceT: 1.5, ceCD: 4, cxChill: 2, veR: 3, veSlow: 0.25, vxMark: 2, exShield: 0.25 };
+const FUSIONS = [
+  { id: 'KT', name: 'Hot Rounds', desc: `Kinetic hits set enemies on fire. The Burn deals ${FUSV.ktBurn * 100}% of the hit per second for 3s.` },
+  { id: 'KA', name: 'Arc Rounds', desc: `Kinetic hits on Shocked enemies arc to the nearest enemy within ${FUSV.kaR} tiles for ${FUSV.kaArc * 100}% of the hit as Arc damage.` },
+  { id: 'KC', name: 'Shatterpoint', desc: `Shatter deals ×${FUSV.kcShatter} damage.` },
+  { id: 'KV', name: 'Death Mark', desc: `Kinetic hits deal +${FUSV.kvMark * 100}% damage for each Mark on the target.` },
+  { id: 'KE', name: 'Home Guard', desc: `Kinetic towers within ${FUSV.keR} tiles of the core deal +${FUSV.keDmg * 100}% damage.` },
+  { id: 'KX', name: 'Called Shots', desc: `After you use an ability, Kinetic towers always crit for ${FUSV.kxT}s.` },
+  { id: 'TA', name: 'Plasma Front', desc: `Overload explosions are ${Math.round((FUSV.taRad - 1) * 100)}% larger and deal +${Math.round((FUSV.taDmg - 1) * 100)}% damage.` },
+  { id: 'TC', name: 'Thermal Fracture', desc: `Thermal Shock triggers at ${FUSV.tcAt} Chill stacks instead of 3 and deals ×${FUSV.tcDmg} damage instead of ×1.5.` },
+  { id: 'TV', name: 'Dark Flame', desc: 'A Collapse sets every enemy it hits on fire.' },
+  { id: 'TE', name: 'Slag Harvest', desc: `Enemies that die while Burning pay +${FUSV.teCr * 100}% credits.` },
+  { id: 'TX', name: 'Flare', desc: `When you use an ability, every enemy on the map Burns for ${FUSV.txT}s.` },
+  { id: 'AC', name: 'Cold Circuit', desc: `Superconduct reaches ${Math.round((FUSV.acRad - 1) * 100)}% further and can trigger again after ${FUSV.acCD}s instead of 1s.` },
+  { id: 'AV', name: 'Static Collapse', desc: `A Collapse Shocks every enemy it hits for ${FUSV.avT}s.` },
+  { id: 'AE', name: 'Free Current', desc: `Your first ${FUSV.aeFree} Arc towers use no power.` },
+  { id: 'AX', name: 'Static Burst', desc: `When you use an ability, every enemy on the map is Shocked for ${FUSV.axT}s.` },
+  { id: 'CV', name: 'Absolute Zero', desc: `A Collapse Freezes every enemy it hits for ${FUSV.cvT}s. Bosses are not affected.` },
+  { id: 'CE', name: 'Cold Shell', desc: `When an enemy reaches the core, enemies within ${FUSV.ceR} tiles are Frozen for ${FUSV.ceT}s. This can happen once every ${FUSV.ceCD}s.` },
+  { id: 'CX', name: 'Flash Freeze', desc: `When you use an ability, every enemy on the map gains ${FUSV.cxChill} Chill stacks.` },
+  { id: 'VE', name: 'Gravity Anchor', desc: `Enemies within ${FUSV.veR} tiles of the core move ${FUSV.veSlow * 100}% slower.` },
+  { id: 'VX', name: 'Dark Signal', desc: `When you use an ability, every enemy on the map gains ${FUSV.vxMark} Marks.` },
+  { id: 'EX', name: 'Emergency Power', desc: `When you use an ability, the core shield recharges by ${FUSV.exShield * 100}%.` },
+];
+const FUS = Object.fromEntries(FUSIONS.map(f => [f.id, f]));
 const COMBO_DESC = {
   'SHATTER': 'Kinetic hit on a Frozen enemy deals burst damage',
   'THERMAL SHOCK': 'Thermal hit on a heavily Chilled enemy shatters the frost',
@@ -2842,6 +2915,7 @@ function dailyBuild(r) {
 // the run's capstone tier towers from a Daily build's tier nodes
 const dailyCapT = b => TALENTS.filter(tr => tr.top && b && b.tal && b.tal[tr.top.id]).map(tr => tr.top.unlockT);
 
+// Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — SIMULATION =====================
 const Hooks = {
   sfx() {}, fx() {}, log() {}, toast() {}, onWave() {}, onDraft() {}, onGameOver() {},
@@ -3069,6 +3143,28 @@ const abilLeft = k => ABIL_TIMER[k] && G[ABIL_TIMER[k]] > 0 ? G[ABIL_TIMER[k]] :
 const eProg = e => e.L.pre ? (e.L.pre + e.d) / (e.L.pre + e.L.len) : e.d / e.L.len;
 function threatScore(e) { const prog = e.L && e.L.len ? eProg(e) : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
+// 6.10 Fusions (data.js FUSIONS; G.frV >= 7). fus('KT'): is that Fusion active in this run. fusionsOpen(): the pairs the build has
+// opened. fusionNow(): the one a new run takes.
+const fus = id => !!G && G.fus === id;
+function fusionsOpen() { const o = []; for (const F of FUSIONS) if (treePts(F.id[0]) >= FUS_NEED && treePts(F.id[1]) >= FUS_NEED) o.push(F.id); return o; }
+function fusionNow() {
+  const o = fusionsOpen(); if (!o.length) return '';
+  const pick = TS().fus; if (pick && o.includes(pick)) return pick;
+  const pts = id => treePts(id[0]) + treePts(id[1]);
+  return o.slice().sort((a, b) => pts(b) - pts(a) || FUSIONS.indexOf(FUS[a]) - FUSIONS.indexOf(FUS[b]))[0];
+}
+// Command pairs: every ability use sets off the element of the other tree
+function fusAbility() {
+  const M = G.mods, w = Math.max(1, G.wave);
+  if (fus('KX')) G.fusT = FUSV.kxT;
+  if (fus('EX')) { const c = G.core; if (c.smax > 0) c.shield = Math.min(c.smax, c.shield + c.smax * FUSV.exShield); return; }
+  if (!(fus('TX') || fus('AX') || fus('CX') || fus('VX'))) return;
+  for (const e of G.enemies) { if (e.dead) continue; const st = e.st;
+    if (fus('TX')) { const dps = FUSV.txBurn * hpMult(w) * M.burnDmg; if (!st.burn || st.burn.dps < dps) st.burn = { dps, t: FUSV.txT * M.burnDur, src: null }; else st.burn.t = Math.max(st.burn.t, FUSV.txT * M.burnDur); }
+    else if (fus('AX')) { st.shock = Math.max(st.shock, FUSV.axT); st.shockEff = Math.max(st.shockEff, M.shockEff); }
+    else if (fus('CX')) { if (!e.elite.includes('jugg')) { st.chill = Math.min(5, st.chill + FUSV.cxChill); st.chillT = 2.5; st.chillPot = Math.max(st.chillPot, 1); } }
+    else if (fus('VX')) { st.mark = Math.min(M.markMax, st.mark + FUSV.vxMark); st.markT = 4; } }
+}
 function computeMods(alloc, runMods) {
   // v5.0: alloc is ignored (kept in the signature for old callers); talents, Capstones and Remnants come from PROF
   const m = {}, ks = {};
@@ -3400,7 +3496,7 @@ const ocFree = t => G.mods && G.mods.ks.marksman && canOvercharge(t) ? 2 : 0;
 const ocMax = () => OVERCHARGE.max + (G && G.mods && G.mods.ks.marksman ? 2 : 0);
 function canOvercharge(t) { const k = TOWERS[t.type].kind; return k !== 'eco' && k !== 'support' && k !== 'snare'; }
 function towerPower(t) { return (isNode(t.x, t.y) ? 0 : 1) + (canOvercharge(t) ? t.oc || 0 : 0); }
-function gridUsed() { let n = 0; for (const t of G.towers) n += towerPower(t); return n; }
+function gridUsed() { let n = 0, arc = 0; for (const t of G.towers) { n += towerPower(t); if (TOWERS[t.type].el === 'A' && !isNode(t.x, t.y)) arc++; } return n - (fus('AE') ? Math.min(FUSV.aeFree, arc) : 0); } // 6.10 Free Current
 function gridFree() { return gridCap() - gridUsed(); }
 function setOvercharge(t, n) {
   n = clamp(n | 0, 0, ocMax());
@@ -3609,10 +3705,12 @@ function newRun(opts) {
   G.sector = G.hk && SECTOR_BY[opts.sector] ? opts.sector : null; G.tier = 0; G.purse = 0; G.purseOut = null; G.twists = {}; G.twistW = 0;
   G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }, G.fr ? { frontier: 1, frV: G.frV } : {}))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
+  G.fus = ''; G.fusT = 0; G.fusCD = 0; // 6.10: set below, once the run's build is known
   if (T) { G.tut = T.v; G.lesson = T.id || null; G.tutS = T; G.huntBuild = JSON.parse(JSON.stringify(T.build || { tal: {}, caps: [], remnants: [], lvl: 0 })); } // the same for everyone: no talents, laws or Supernova
   // 6.4 (FR_VER 4): the capstone tier towers this run may build. Daily Hunts, Training and older rules get none (fixed, so they replay)
   G.capT = G.frV >= 4 && !opts.daily && !opts.huntBuild && !T && Array.isArray(opts.capT) ? opts.capT.filter(k => TOWERS[k] && TOWERS[k].capT) : [];
   if (G.frV >= 4 && opts.daily && opts.daily.v >= 2 && opts.huntBuild && !T) G.capT = dailyCapT(opts.huntBuild); // 6.7: the Daily build's own tier towers
+  if (G.frV >= 7) { G.fus = opts.v ? (FUS[opts.fus] ? opts.fus : '') : fusionNow(); G.recOpts.fus = G.fus; } // 6.10 Fusion: a recording carries its own
   G.ascV = ascV; G.mastery = opts.daily || opts.huntBuild ? {} : Object.assign({}, opts.mastery || {}); // Daily Hunts: no Mastery, same for everyone
   G.pushes = 0; G.bounties = []; G.huntChoice = null;
   PROF.codex = Object.assign(defaultProfile().codex, PROF.codex || {});
@@ -3654,6 +3752,7 @@ function newRun(opts) {
   G.hole = null; fogInit(); // 6.5 (frV 5): no black hole yet; fog of war starts from what the core and the roads show
   prepareWave(G.wave + 1);
   Hooks.log(`Run started · Wave ${sw} · ${G.CH.name}`, '#59f0b4');
+  if (G.fus && FUS[G.fus]) Hooks.log(`Fusion: ${FUS[G.fus].name}`, '#ffd166'); // 6.10
   // harder difficulties: the swarm arrives already adapted to one or two weaknesses (seeded as strong parents)
   if (G.CH.evo && G.CH.evo.seed) {
     const pool = ['plating', 'haste', 'bulk', 'shell', 'regen', 'ward', 'cloak', 'brood'], picks = [];
@@ -4192,7 +4291,7 @@ function updateLinkBeams(dt) {
 // ---------- Core Overdrive (the Nuke since 6.2; internal ids stay od*): once per run, from Wave OD_WAVE, the core wipes every non-boss enemy on the map ----------
 const OD_WAVE = 35, OD_BOSS = 0.2;
 const odReady = () => !!(G && !G.over && !G.odUsed && G.wave >= OD_WAVE);
-function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('NUKE ONLINE', 'Tap Nuke on the left: one board clear this run', '#59f0b4'); Hooks.sfx('milestone'); } }
+function odAnnounce() { if (G.wave >= OD_WAVE && !G.odUsed && !G.odToldAt) { G.odToldAt = G.wave; Hooks.toast('NUKE ONLINE', 'Tap Nuke on the left to clear the board. You can use it once per run', '#59f0b4'); Hooks.sfx('milestone'); } }
 function releaseOverdrive() {
   if (G.over) return 'over';
   if (G.odUsed) return 'used';
@@ -4276,7 +4375,7 @@ function towerConditions(t) {
   if (s.fence) out.push(fencePartner(t) ? { t: 'Arc Fence: linked to a Coil', good: 1 } : { t: 'Arc Fence: no Coil within 4 tiles, so no fence', bad: 1 });
   if (s.mines) { let n = 0; for (const m of G.mines || []) if (m.src === t) n++; out.push({ t: `Pulse Mines: ${n}/${s.mines} on the road` }); }
   if (M.ks.stormrider && s.el0 === 'A' && G.storms.some(st => dist2(t.cx, t.cy, st.x, st.y) <= st.r * st.r)) out.push({ t: `Storm Rider: +60% Attack Speed${t.type === 'coil' && !s.fence ? ', +2 Chain' : ''}`, good: 1 });
-  if (M.ks.nest && t.type === 'rail') out.push(t.isolated ? { t: 'Sniper Nest: +40% Range, +30% Damage, pierces all', good: 1 } : { t: 'Sniper Nest: a neighbor, −25% Damage', bad: 1 });
+  if (M.ks.nest && t.type === 'rail') out.push(t.isolated ? { t: 'Sniper Nest: +40% Range, +30% Damage, pierces all enemies', good: 1 } : { t: 'Sniper Nest: has a neighbor, −25% Damage', bad: 1 });
   if (M.ks.chaos && t.wild && EL[t.wild]) out.push({ t: `Chaos Engine: ${EL[t.wild].name} this wave`, col: EL[t.wild].col });
   return out;
 }
@@ -4882,13 +4981,13 @@ function readDefence(w, jitter) {
   add('brood', (0.2 - splash) * 1.8, `only ${pc(splash)} of your damage is splash`);
   // the swarm also reads your Doctrine
   const K = G.mods.ks;
-  if (K.marksman) add('brood', 0.5, 'you rely on a few big guns, so it comes in numbers');
+  if (K.marksman) add('brood', 0.5, 'you rely on a few strong towers, so it comes in large numbers');
   if (K.wildfire) add('wings', 0.55, 'your fire only burns the road, so it flies over it');
   if (K.wareco) add('haste', 0.45, 'it wants to reach your core before the war chest fills');
-  if (K.circuit) add('shell', 0.45, 'its shields soak your chain lightning');
-  if (K.glacier) add('wings', 0.5, 'fliers skip your ice jams');
+  if (K.circuit) add('shell', 0.45, 'its shields absorb your chain lightning');
+  if (K.glacier) add('wings', 0.5, 'fliers pass over your ice blocks');
   if (K.horizon) add('bulk', 0.45, 'heavy bodies shrug off your gravity');
-  if (K.artisan) add('brood', 0.45, 'you trust a few crafted towers, so it comes in numbers');
+  if (K.artisan) add('brood', 0.45, 'you rely on a few crafted towers, so it comes in large numbers');
   const last = G.stats.assaults && G.stats.assaults.list.length ? G.stats.assaults.list[G.stats.assaults.list.length - 1] : null;
   if (last && last.won && last.genes) for (const o of out) if (last.genes.includes(o.g)) o.score *= 0.4;
   if (jitter) for (const o of out) o.score *= 0.85 + G.r() * 0.3;
@@ -5014,7 +5113,7 @@ function startWave() {
       if (mites) { who = 'drones dropped by Carriers'; counter = ' Counter: anti-air (Rail, Missile, Pulse) that kills Carriers before they unload.'; }
       else if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
       const lk = G.stats.leaks - G.leaksAtStart;
-      Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are eating your defenses: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield hides it until it doesn't.${counter}`, '#ff4d6a', true);
+      Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are wearing down your defenses: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield absorbs this damage until it runs out.${counter}`, '#ff4d6a', true);
       rlog('breachWarn', { n: lk, who, p: +P.toFixed(2) });
     }
   }
@@ -5607,6 +5706,7 @@ function enemySlow(e) {
   if (e.st.chill > 0) s += e.st.chill * 0.08 * e.st.chillPot;
   s += e.fieldSlow || 0;
   if (G.mods.ks.conflag && e.st.burn) s += 0.25; // Conflagration: burning enemies are scorched (25% slow)
+  if (G.fus === 'VE' && dist2(e.x, e.y, G.core.x, G.core.y) <= FUSV.veR * FUSV.veR) s += FUSV.veSlow; // 6.10 Gravity Anchor
   if (e.st.chill > 0) s += FX('glacial') / 100;
   if (e.kSlowT > 0) s += FX('kSlow') / 100;
   if (e.gSlowT > 0) s += e.gSlowV; // v5.8 Gravity perk: Undertow
@@ -5768,13 +5868,14 @@ function updateEnemies(dt) {
       const rem = e.L.len - e.d;
       // v5.3: a first, earlier alarm at the halfway mark while there's still time to answer
       if (!e.halfTold && e.d >= e.L.len * 0.5 && e.hp > e.maxHp * 0.3) { e.halfTold = 1; Hooks.toast('BOSS HALFWAY', `${e.bossName} is halfway to your core with ${Math.round(e.hp / e.maxHp * 100)}% HP. ${G.tut ? 'In a real run a boss at the core ends it' : 'If it reaches the core the run ends'}: slow it, Scan it, Strike it`, '#ff4d6a', true); Hooks.sfx('bosswarn'); }
-      if (rem <= RED_ALERT.tiles) { e.redAlert = 1; rlog('redAlert', { id: e.boss, hp: +(e.hp / e.maxHp).toFixed(2) }); Hooks.toast('RED ALERT', `${e.bossName} is ${Math.max(1, Math.ceil(rem))} tiles from the core. Last Stand: core shells hit it ×${RED_ALERT.coreDmg}. Stasis, Strike and Overcharge now`, '#ff4d6a', true); Hooks.sfx('bosswarn'); Hooks.fx('shake', { v: 6 }); Hooks.log(`Red Alert: ${e.bossName} at the gate`, '#ff4d6a'); }
+      if (rem <= RED_ALERT.tiles) { e.redAlert = 1; rlog('redAlert', { id: e.boss, hp: +(e.hp / e.maxHp).toFixed(2) }); Hooks.toast('RED ALERT', `${e.bossName} is ${Math.max(1, Math.ceil(rem))} tiles from the core. Last Stand: core shells hit it ×${RED_ALERT.coreDmg}. Use Stasis, Strike and Overcharge now`, '#ff4d6a', true); Hooks.sfx('bosswarn'); Hooks.fx('shake', { v: 6 }); Hooks.log(`Red Alert: ${e.bossName} at the gate`, '#ff4d6a'); }
     }
     if (e.d >= e.L.len - 0.05) leak(e);
   }
   G.redAlert = G.enemies.some(e => e.boss && e.redAlert && !e.dead);
   if (G.stasisT > 0) G.stasisT -= dt;
   if (G.dragT > 0) G.dragT -= dt;
+  if (G.fusT > 0) G.fusT -= dt; if (G.fusCD > 0) G.fusCD -= dt; // 6.10 Fusion timers (Called Shots, Cold Shell)
   if (G.slime && G.slime.length) { for (const p of G.slime) p.t -= dt; G.slime = G.slime.filter(p => p.t > 0); }
   G.enemies = G.enemies.filter(e => !e.dead);
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
@@ -5940,13 +6041,16 @@ function leak(e) {
   { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; (G.leakWave || (G.leakWave = {}))[lk] = (G.leakWave[lk] || 0) + 1; if (e.mite) G.leakMiteW = (G.leakMiteW || 0) + 1; } // 6.6.1: Carrier drops leak as 'drone'; this tally lets the warnings name them (messages only, no rules)
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
-  if (e.type === 'leech' && G.credits > 0) { const st2 = Math.round(Math.min(G.credits * LEECH.share, LEECH.cap(w))); G.credits -= st2; G.stats.leeched = (G.stats.leeched || 0) + st2; Hooks.fx('coin', { x: c.x, y: c.y - 0.6, v: -st2 }); if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech made off with ${st2} credits. They take more the more you bank`, '#ffb03a'); } }
+  if (e.type === 'leech' && G.credits > 0) { const st2 = Math.round(Math.min(G.credits * LEECH.share, LEECH.cap(w))); G.credits -= st2; G.stats.leeched = (G.stats.leeched || 0) + st2; Hooks.fx('coin', { x: c.x, y: c.y - 0.6, v: -st2 }); if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech stole ${st2} credits. Leeches steal more when you hold more credits`, '#ffb03a'); } }
   // v4.1: a boss that reaches the core ends the run outright (shields and Unbreakable don't save you). Gloop's splits still breach for a share
   if (e.boss && !e.gen) {
     Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
     Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
     G.stats.bossBreach = e.bossName; G.stats.bossBreachId = e.boss; c.shield = 0; c.hp = 0; gameOver(); return;
   }
+  if (fus('CE') && !(G.fusCD > 0)) { G.fusCD = FUSV.ceCD; let n = 0; // 6.10 Cold Shell
+    for (const o of G.enemies) if (!o.dead && o !== e && !o.boss && !o.elite.includes('jugg') && dist2(o.x, o.y, c.x, c.y) <= FUSV.ceR * FUSV.ceR) { o.st.frozen = Math.max(o.st.frozen, FUSV.ceT); n++; }
+    if (n) Hooks.fx('freeze', { x: c.x, y: c.y }); }
   if (e.boss) dmg = c.max * (e.gen === 1 ? 0.12 : 0.06);
   if (e.boss === 'worm' && e.gut && e.gut.length) { Hooks.toast('DIGESTED', `${e.gut.length} swallowed tower${e.gut.length > 1 ? 's are' : ' is'} gone for good`, '#ff4d6a', true); e.gut = []; }
   if (e.boss === 'auditor' && e.audited > 0) { Hooks.log(`The Auditor left with ${Math.round(e.audited)} of your credits`, '#ff4d6a'); e.audited = 0; }
@@ -5992,6 +6096,10 @@ function hit(e, dmg, el, src, o) {
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2 + ((e.lureT.s && e.lureT.s.netVuln) || 0);
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
+  if (el === 'K' && G.fus && !o.dot) { // 6.10 Fusions: Death Mark, Home Guard
+    if (st.mark > 0 && fus('KV')) mult *= 1 + FUSV.kvMark * st.mark;
+    if (fus('KE') && src && src.s && src !== G.core && src.cx !== undefined && dist2(src.cx, src.cy, G.core.x, G.core.y) <= FUSV.keR * FUSV.keR) mult *= 1 + FUSV.keDmg;
+  }
   if (st.frozen > 0) mult *= 1 + M.frozenVuln;
   if (st.frozen > 0 && st.brittle) mult *= 1 + st.brittle; // v5.8 Cryo perk: Brittle
   if (e.stormVuln) mult *= 1 + e.stormVuln;
@@ -6059,22 +6167,23 @@ function applyStatuses(e, dmg, el, src, o) {
   if (el === 'K' && st.frozen > 0) {
     combo(e, 'SHATTER', '#6ae2ff');
     if (FX('coldSnap')) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.boss && o2.st.frozen <= 0 && dist2(o2.x, o2.y, e.x, e.y) <= 1) { o2.st.frozen = 0.8; Hooks.fx('freeze', { x: o2.x, y: o2.y }); }
-    hit(e, dmg * 1.0 * M.shatter * cmb, 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return;
+    hit(e, dmg * 1.0 * M.shatter * cmb * (fus('KC') ? FUSV.kcShatter : 1), 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return;
   }
-  if (el === 'T' && st.chill >= 3) { st.chill = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * 1.5 * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; }
+  const tcF = fus('TC'); // 6.10 Thermal Fracture
+  if (el === 'T' && st.chill >= (tcF ? FUSV.tcAt : 3)) { st.chill = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * (tcF ? FUSV.tcDmg : 1.5) * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; }
   // Conflagration has no Chill, so heat builds instead: every 3rd Thermal hit on a burning enemy flashes a Thermal Shock
-  if (el === 'T' && M.ks.conflag && st.burn) { e.heat = (e.heat || 0) + 1; if (e.heat >= 3) { e.heat = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * 1.5 * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; } }
+  if (el === 'T' && M.ks.conflag && st.burn) { e.heat = (e.heat || 0) + 1; if (e.heat >= (tcF ? FUSV.tcAt : 3)) { e.heat = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * (tcF ? FUSV.tcDmg : 1.5) * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; } }
   if (((el === 'T' && st.shock > 0) || (el === 'A' && st.burn)) && e.ovlCD <= 0) {
     e.ovlCD = FX('ovlFree') ? 0 : 1; st.shock = 0;
-    const rad = 1 * M.overloadRad, d = (dmg * 0.6 + 10 * Math.sqrt(hpMult(G.wave))) * M.overload * cmb;
+    const taF = fus('TA'), rad = 1 * M.overloadRad * (taF ? FUSV.taRad : 1), d = (dmg * 0.6 + 10 * Math.sqrt(hpMult(G.wave))) * M.overload * cmb * (taF ? FUSV.taDmg : 1); // 6.10 Plasma Front
     combo(e, 'OVERLOAD', '#ffb03a');
     Hooks.fx('boom', { x: e.x, y: e.y, r: rad, col: '#ffb03a' });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { hit(o2, d, 'A', src, { noStatus: 1 }); if (FX('ovlBurn') && !o2.dead && !o2.st.burn) o2.st.burn = { dps: d * 0.25 * M.burnDmg, t: 3 * M.burnDur, src }; }
     if (e.dead) return;
   }
   if (el === 'A' && st.chill > 0 && e.supCD <= 0) {
-    e.supCD = 1;
-    const rad = 1.2 * M.superRad;
+    const acF = fus('AC'); e.supCD = acF ? FUSV.acCD : 1; // 6.10 Cold Circuit
+    const rad = 1.2 * M.superRad * (acF ? FUSV.acRad : 1);
     let n = 0;
     for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { o2.st.shock = FX('shockLong') ? 6 : 3; o2.st.shockEff = Math.max(o2.st.shockEff, M.shockEff); if (FX('superChill') && !o2.elite.includes('jugg')) { o2.st.chill = Math.min(5, o2.st.chill + 1); o2.st.chillT = 2.5; } n++; }
     if (n) { combo(e, 'SUPERCONDUCT', '#9ff2ff'); Hooks.fx('arcs', { x: e.x, y: e.y, r: rad }); }
@@ -6089,8 +6198,18 @@ function applyStatuses(e, dmg, el, src, o) {
       // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
       hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old)) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
+      if (G.fus && !o2.dead) { const s2 = o2.st; // 6.10 Singularity Fusions change the Collapse: Dark Flame, Static Collapse, Absolute Zero
+        if (fus('TV')) { const dps = dmg * 0.35 * M.burnDmg; if (!s2.burn || s2.burn.dps < dps) s2.burn = { dps, t: 3 * M.burnDur, src }; else s2.burn.t = 3 * M.burnDur; }
+        else if (fus('AV')) { s2.shock = Math.max(s2.shock, FUSV.avT); s2.shockEff = Math.max(s2.shockEff, M.shockEff); }
+        else if (fus('CV') && !o2.boss && !o2.elite.includes('jugg')) { s2.frozen = Math.max(s2.frozen, FUSV.cvT); Hooks.fx('freeze', { x: o2.x, y: o2.y }); } }
     }
     if (e.dead) return;
+  }
+  // 6.10 Ballistics Fusions: Hot Rounds (Kinetic hits Burn), Arc Rounds (a Kinetic hit on a Shocked enemy arcs to its neighbor)
+  if (el === 'K' && G.fus && !o.dot) {
+    if (fus('KT')) { const dps = dmg * FUSV.ktBurn * M.burnDmg; if (!st.burn || st.burn.dps < dps) st.burn = { dps, t: 3 * M.burnDur, src }; else st.burn.t = Math.max(st.burn.t, 3 * M.burnDur); }
+    else if (fus('KA') && st.shock > 0) { let b = null, bd = FUSV.kaR * FUSV.kaR; for (const o2 of G.enemies) { if (o2.dead || o2 === e) continue; const d2 = dist2(o2.x, o2.y, e.x, e.y); if (d2 <= bd) { bd = d2; b = o2; } }
+      if (b) { Hooks.fx('arcs', { x: e.x, y: e.y, r: Math.sqrt(bd) }); hit(b, dmg * FUSV.kaArc, 'A', src, { noStatus: 1 }); } }
   }
   // statuses
   let burnP = s.burn, chillP = s.chill, shockP = s.shock, markP = s.mark;
@@ -6171,6 +6290,7 @@ function kill(e, src, o) {
     if (f.s.fbounty) cm *= 1 + f.s.fbounty;
     if (f.s.bountyAura && dist2(f.cx, f.cy, e.x, e.y) <= 9) cm *= 1 + f.s.bountyAura;
   }
+  if (e.st.burn && fus('TE')) cm *= 1 + FUSV.teCr; // 6.10 Slag Harvest
   const cr = Math.max(1, Math.round(e.cr * cm)) + (FX('salvage') ? Math.floor(G.wave / 10) : 0);
   G.credits += cr;
   G.kills++; if (!ghostRun()) PROF.kills++;
@@ -6293,6 +6413,7 @@ function findTargets(t, range, n, exclude) {
   return out;
 }
 function rollCrit(t) {
+  if (t.s.el === 'K' && G.fusT > 0 && fus('KX')) return true; // 6.10 Called Shots
   if (t.s.el === 'K' && FX('fifthCrit')) { t.shotN = (t.shotN || 0) + 1; if (t.shotN % 5 === 0) return true; }
   const c = t.s.critC + t.buff.crit;
   return G.r() * 100 < c;
@@ -7322,7 +7443,7 @@ function frLand() {
   frRestat();
   const d = frDockT();
   Hooks.fx('upgrade', { x: G.core.x, y: G.core.y, col: d ? EL[d.s.el].col : '#59f0b4' }); Hooks.sfx('upgrade', {});
-  Hooks.log(`${d ? `Docked on ${towerLabel(d)}` : 'Core landed'} · ${G.frLinks.length} link${G.frLinks.length === 1 ? '' : 's'} · next lift-off Wave ${G.frReady}`, '#59f0b4');
+  Hooks.log(`${d ? `Docked on ${towerLabel(d)}` : 'Core landed'} · ${G.frLinks.length} link${G.frLinks.length === 1 ? '' : 's'} · next Lift Off at Wave ${G.frReady}`, '#59f0b4');
   if (Hooks.frLanded) Hooks.frLanded(d);
 }
 // enemies already on the field turn toward the landing spot: one search outward from it gives every tile its next step,
@@ -7667,6 +7788,7 @@ function useAbility(k, x, y) {
   G.charges[k]--; rlog('abil', { id: k });
   // Tactician: every use takes 30% off the other abilities' cooldowns
   if (M.ks.tactician) for (const o of ABIL_ORDER) if (o !== k && G.abilCd[o] > 0) G.abilCd[o] *= 0.7;
+  if (G.fus) fusAbility(); // 6.10 Command Fusions
   switch (k) {
     case 'strike': {
       const boom = () => {
@@ -7987,6 +8109,7 @@ function snapshotRun(waveNum) {
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     ascV: G.ascV || 1, mastery: G.mastery || {}, capT: G.capT && G.capT.length ? G.capT.slice() : undefined, // v5.8; 6.4 capT
+    fus: G.fus || '', // 6.10 the run's Fusion
     fr: G.fr || 0, frReady: G.frReady || 0, frN: G.frN || 0, frFly: G.frFly ? Object.assign({}, G.frFly) : null, // Frontier (the core's tile says where it lands)
     probe: G.probe ? JSON.parse(JSON.stringify(G.probe)) : null, sites: G.probe ? JSON.parse(JSON.stringify(G.sites || [])) : undefined, siteT: G.probe ? G.siteT : undefined, // 6.5
     fog: G.fogEx ? fogPack(G.fogEx) : undefined, hole: G.hole ? Object.assign({}, G.hole) : null, // 6.5 explored tiles (run lengths), a black hole still out
@@ -8047,6 +8170,7 @@ function resumeRun(S) {
   if (G.probe && S.probe) { G.probe = Object.assign(G.probe, JSON.parse(JSON.stringify(S.probe))); G.sites = JSON.parse(JSON.stringify(S.sites || [])); G.siteT = S.siteT || PROBE.site.first; } // 6.5: older saves get a fresh probe
   if (G.fogEx) { fogUnpack(S.fog, G.fogEx); fogMark(fogSources()); } // 6.5: explored tiles come back (an older snapshot: what the core, towers and roads show now)
   G.hole = G.frV >= 5 && S.hole && typeof S.hole.x === 'number' ? Object.assign({}, S.hole) : null;
+  if (G.frV >= 7 && typeof S.fus === 'string') G.fus = FUS[S.fus] ? S.fus : ''; // 6.10: the Fusion the run started with (a save from before 6.10 takes the build's Fusion now)
   prepareWave(S.wave);
   Hooks.log(`Run resumed · Wave ${S.wave}`, '#59f0b4');
   return G;
@@ -8054,6 +8178,7 @@ function resumeRun(S) {
 
 if (typeof module !== 'undefined') module.exports = { };
 
+// Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — SYNTH AUDIO =====================
 // Engine modeled on the Elemental Clash SFX kit: osc / fm / noise / kick voices
 // routed through reverb, compression and distortion. Everything is synthesized.
@@ -10114,6 +10239,7 @@ const Haptics = (() => {
   return { leak: () => buzz(30, 1), big: () => buzz([70, 50, 110], 3), tap: f => buzz(15, 1, f), get native() { return !!navigator.vibrate; } };
 })();
 
+// Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — HI-RES ART KIT (v4.5) =====================
 // Sprites are painted procedurally at 2 px per world unit. Each design is a list of parts: a height field (how tall the
 // surface is at each point, in local coords facing +x) plus a colour ramp. The rasterizer picks the tallest part per pixel,
@@ -10262,6 +10388,7 @@ const ART = (() => {
   return { RES: RESA, raster, paintOver, S, max, cut, ramp, mix, rgb, STEEL, DARKSTEEL, BRASS, RUST, get, getB, has, frameStart, warm, idle, queued: () => queue.length, cacheSize: () => cache.size };
 })();
 
+// Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — TOWER AND ENEMY DESIGNS (v4.5 hi-res) =====================
 // Local coords are hi-res pixels (2 per world unit), origin at the centre, +x = facing. A tile is 48 px.
 const UNITS = (() => {
@@ -10790,6 +10917,7 @@ const UNITS = (() => {
   return { base, top, icon, enemy, boss, wormSeg, meat, core, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
 })();
 
+// Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — RENDERER (24px tiles, cached sprites, camera) =====================
 const PAL = {
   bg: '#07080f', amber: '#ffb03a', bad: '#ff4d6a', good: '#59f0b4', warn: '#ffe14d', ink: '#e9e4d4', core: '#59f0b4',
@@ -13735,6 +13863,7 @@ const TitleFX = (() => {
   return { draw, kick: () => { kickT = 0.3; }, rebuild: () => { key = ''; } };
 })();
 
+// Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — UI, TREE VIEW, SAVES, LOOP =====================
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -13888,6 +14017,7 @@ const UI = (() => {
   // ---------- Hangar ----------
   function renderHangar() {
     const hv = $('#hVer'); if (hv) hv.textContent = 'v' + VERSION;
+    a2hsUI(); // 6.9
     const L = profLevel(), free = pointsFree();
     $('#hLevel').textContent = L.level;
     $('#hXpFill').style.width = pct(L.into / L.need);
@@ -13945,7 +14075,7 @@ const UI = (() => {
             <p class="note frpitch">Your core flies. Land it on a tower to fire that weapon, twice as hard.</p>
             <div class="lbl">Starting Wave</div>
             <div class="chips wrap">${starts.map(w => `<button class="chip ${w === sw ? 'on' : ''}" data-act="sw" data-v="${w}">${w}</button>`).join('')}</div>
-            <p class="note">${starts.length === 1 ? 'Reach Wave 10 to unlock later starts.' : sw === 1 ? 'Later starts skip early waves and grant bonus credits.' : `${fmt(credits)} starting credits. Tougher enemies, bigger rewards.`}</p>
+            <p class="note">${starts.length === 1 ? 'Reach Wave 10 to unlock later starts.' : sw === 1 ? 'Later starts skip early waves and grant bonus credits.' : `${fmt(credits)} starting credits. Tougher enemies, larger rewards.`}</p>
             <div class="lbl">Chaos</div>
             <div class="chips">${CHAOS_LEVELS.map((c, i) => chaosUnlocked(i) ? `<button class="chip ${i === setup.chaos ? 'on' : ''} ${i === 3 ? 'hot' : ''}" data-act="ch" data-v="${i}">${c.name}</button>` : `<button class="chip locked" data-act="chLock" data-v="${i}">${c.name}<small>Extract on ${CHAOS_LEVELS[i - 1].name}</small></button>`).join('')}</div>
             <p class="note">Enemy HP ×${CH.hp} · Events ×${CH.ev} · Storms ×${CH.storm} · Elites ×${CH.elite}${CH.cr ? ` · Credits ×${CH.cr}` : ""} · <b class="amber">Score ×${CH.score}</b></p>
@@ -14110,8 +14240,8 @@ const UI = (() => {
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
     if (G.hole && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the center. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
     if (typeof fogOn === 'function' && fogOn() && G.wave >= 2 && G.time > 20 && introCard('fog', 'Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored, but enemies, crates and storms there are hidden. Bosses always show. Wormholes and the Threat Board still warn you.')) return;
-    if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside fight harder (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
-    if (G.probe && G.probe.alive && (G.sites || []).some(s => !s.done) && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. Loot rides home and banks when the probe docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
+    if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element. Towers of that element inside a storm are stronger (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
+    if (G.probe && G.probe.alive && (G.sites || []).some(s => !s.done) && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. The probe carries loot home and deposits it when it docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
     if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button at the top right to pick each one a mutation.', 'veterans')) return;
     if (G.charges.stasis > 0 && G.abilOn && G.abilOn.stasis && introCard('abil', 'Abilities', 'The buttons on the left are abilities. Each recharges on its own timer (the bar fills); crates and bosses give extra charges that stack.', 'abilities')) return;
@@ -14351,7 +14481,7 @@ const UI = (() => {
       b: () => !afford(type) ? `${TOWERS[type].name} costs ${fmt(towerCost(type))} credits. Killing enemies earns credits.` : gridFree() < 1 ? 'When the grid is full, spend credits on upgrading towers.' : flowText(type, first), done: () => has(type), leave: shut }, x || {});
     const tapTw = (id, get, t, b, x) => { const S = Object.assign({ id, hold: 1, at: () => towerR(get()), t, b, done: () => !!get() && panT() === get() }, x || {}), e = S.enter; S.enter = () => { probeEnd(); if (e) e(); }; return S; }; // 6.6: with the probe selected a map tap sends it, so a tower step lets it go first
     const intro = (id, t, b) => ({ id, hold: 1, ok: 'Start', t, b });
-    const end = id => ({ id: 'end', hold: 1, ok: 'Finish', t: 'Lesson complete', b: () => LESSON_BY[plan].real, okFn: () => lessonDone(plan) });
+    const end = id => ({ id: 'end', hold: 1, ok: 'Finish', t: 'Lesson Complete', b: () => LESSON_BY[plan].real, okFn: () => lessonDone(plan) });
     const threatOpen = (id, t, b, x) => Object.assign({ id, hold: 1, at: () => appR(q('#chips [data-threat]')), t, b, done: () => modalOpen === 'evo',
       ok: () => appR(q('#chips [data-threat]')) ? null : 'Show the next wave', okFn: () => openThreat() }, x || {}); // on a narrow top bar the chip can fold into +N: the card opens the board itself
     const inThreat = (id, at, t, b, x) => Object.assign({ id, hold: 1, modal: 'evo', ok: 'Got it', at, t, b, okFn: closeM, skip: () => modalOpen !== 'evo' }, x || {});
@@ -14388,7 +14518,7 @@ const UI = (() => {
         { id: 'lift', ls: 'lift', when, hold: 1, at: sel('#bLift'), t: 'Lift Off', enter: () => { closePanel(); mem.dock = dockPick(); mem.land = mem.dock ? null : landPick(); mem.fn0 = G.frN || 0; },
           b: () => dockT() ? `The core is able to fly and move to a new location. You’re able to dock to an existing tower to increase its firepower. Tap Lift Off to enable movement of the base. The enemy paths will update with the new landed location.` : 'The core is able to fly and move to a new location. Tap Lift Off to enable movement of the base. The enemy paths will update with the new landed location.',
           done: () => inPick('land'), skip: () => off() || (!frCanFly() && !inPick('land')) },
-        { id: 'pick', hold: 1, at: () => dockT() ? towerR(dockT()) : mem.land ? worldR(mem.land.x + 0.5, mem.land.y + 0.5, 0.62) : null, t: 'Pick a landing spot',
+        { id: 'pick', hold: 1, at: () => dockT() ? towerR(dockT()) : mem.land ? worldR(mem.land.x + 0.5, mem.land.y + 0.5, 0.62) : null, t: 'Pick a Landing Spot',
           b: () => dockT() ? `While in Lift Off mode, the game will pause so you have time to select a new location. Tap your ${TOWERS[dockT().type].name}.` : 'While in Lift Off mode, the game will pause so you have time to select a new location. Tap the marked tile.',
           done: () => inPick('land') && !!frSel.plan, skip: () => off() || flew() || !lifting(), back },
         { id: 'land', hold: 1, at: sel('#panel [data-act=frgo]'), t: () => frSel && frSel.plan && frSel.plan.dock ? 'Land and dock' : 'Land here',
@@ -14397,12 +14527,12 @@ const UI = (() => {
           b: () => { const d = frDockT(); return d ? (frTwoGuns() ? `The core's own gun keeps firing. Your ${TOWERS[d.type].name} is a second gun: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range${frDockBat() ? '. Battery upgrades raise it' : ''}. Lifting off leaves the tower behind and enables you to dock to another tower if desired.` : `The core fires the ${TOWERS[d.type].name} now: ×${num1(frDockX())} damage, +${FRONTIER.dockRange} range, and Battery upgrades raise it. Lifting off leaves the tower behind and enables you to dock to another tower if desired.`) : 'Here the core fires its plain cannon. Land on an attack tower to dock it.'; } },
         { id: 'links', when: () => !G.frFly, hold: 0, ok: 'Got it', at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Links', skip: off, // 6.6: a line while the game runs
           b: () => { const n = (G.frLinks || []).length; return `${n ? `Green beams link ${n} tower${n === 1 ? '' : 's'} to the core` : 'No tower is linked yet'}. The landed core links its ${frLinkN()} nearest attack towers within ${FRONTIER.linkR} tiles. Each gets +${pct(FRONTIER.linkDmg)} damage and attack rate.`; } },
-        tapTw('mvTap', mvT, 'Move a tower', () => `${mem.mvL ? `Towers can move too. Your ${TOWERS[mvT().type].name} can cover more road` : roadIn(mvT().x, mvT().y, mvT().s.range) ? `Your ${TOWERS[mvT().type].name} is out of link reach` : `Your ${TOWERS[mvT().type].name} guards empty ground now`}. Tap it.`,
+        tapTw('mvTap', mvT, 'Move a Tower', () => `${mem.mvL ? `Towers can move too. Your ${TOWERS[mvT().type].name} can cover more road` : roadIn(mvT().x, mvT().y, mvT().s.range) ? `Your ${TOWERS[mvT().type].name} is out of link reach` : `Your ${TOWERS[mvT().type].name} guards empty ground now`}. Tap it.`,
           { ls: 'move', when: () => !G.frFly, skip: () => off() || used('frMove') || !mvT() }),
         { id: 'mvBtn', hold: 1, at: sel('#panel [data-act=frmove]'), t: 'Move', b: () => `Tap Move: ${fmt(frMoveFee(mvT()))} credits, ${pct(FRONTIER.moveFee)} of its cost. Moving is cheaper than selling.`, done: () => inPick('move'), skip: () => off() || used('frMove') || !mvT(), back: mvBack },
-        { id: 'mvPick', hold: 1, at: () => { const d = mvTo(); if (!d) return null; Render.hints = [d]; return worldR(d.x + 0.5, d.y + 0.5, 0.62); }, t: 'Its new tile',
+        { id: 'mvPick', hold: 1, at: () => { const d = mvTo(); if (!d) return null; Render.hints = [d]; return worldR(d.x + 0.5, d.y + 0.5, 0.62); }, t: 'Its New Tile',
           b: () => mvNear(mvTo()) ? `Tap the marked tile: in reach of the core, so it ${mem.mvL ? 'stays linked' : 'links'}.` : 'Tap the marked tile: it covers more road.', done: () => inPick('move') && !!frSel.dest, skip: () => off() || used('frMove'), back: mvBack },
-        { id: 'mvGo', hold: 1, at: sel('#panel [data-act=frmovego]'), t: 'Move here', b: `It flies over and is offline for ${FRONTIER.moveT} s. Tap Move here.`, done: () => used('frMove'), skip: off, back: mvBack, leave: shut },
+        { id: 'mvGo', hold: 1, at: sel('#panel [data-act=frmovego]'), t: 'Move Here', b: `It flies over and is offline for ${FRONTIER.moveT} s. Tap Move here.`, done: () => used('frMove'), skip: off, back: mvBack, leave: shut },
       ];
     }
     const PLANS = {
@@ -14854,7 +14984,7 @@ const UI = (() => {
       modal(`<div class="card narrow brief wanted"><div class="ch"><h2>Most Wanted</h2><span class="note">Wave ${Wd.w}</span></div>
         <p class="wname">${esc(Wd.name)}</p><p class="note">Wanted for ${esc(Wd.crime)}.</p>${M ? `<p>${tipify(M.desc)}.</p>` : ''}
         <p class="amber">Reward: ${fmt(Wd.bounty)} credits and a Legendary schematic${M && M.loaded ? " (double, plus a Captain's Chest)" : ''}.</p>
-        <p class="note">Bring it in and the run is a win: extract and bank it, or push on for a bigger score and the next bounty.</p>
+        <p class="note">Bring it in and the run is a win: Extract to keep it, or continue for a larger score and the next bounty.</p>
         <div class="foot"><span class="note">Tap the Wanted chip any time to see this again</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
       return;
     }
@@ -15077,7 +15207,7 @@ const UI = (() => {
         <p class="note hl">${live ? `${A.n - A.killed - A.leaked} of ${A.n} left · ${A.leaked} leaked of ${lim} allowed. Hold it and it breaks: +1 power and a bounty.` : tipify(`Selling is free until Wave ${A.w} starts. Swap towers for the counters above. Let few enough through and the strain breaks: +1 power and a bounty.`)}</p>`);
     }
     if (cap > 0) {
-      sec.push(`<div class="lbl">Swarm DNA · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(A && A.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</div>
+      sec.push(`<div class="lbl">Swarm DNA · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(A && A.state !== 'done') ? ` · next Strain Assault about Wave ${G.assaultNext}` : ''}</div>
         <div class="evlist">${evoRowsHTML()}</div>`);
     } else sec.push(`<p class="note">${tipify(`The swarm starts to evolve at Wave ${evoCfg().start}: whatever your defense handles worst spreads through it.`)}</p>`);
     { const S = SECTOR_BY[G.sector], tw = Object.keys(G.twists || {}).map(id => { const X = TWISTS.find(t => t.id === id); return X ? X.name + (G.twists[id] > 1 ? ' ×' + G.twists[id] : '') : ''; }).filter(Boolean);
@@ -15404,7 +15534,7 @@ const UI = (() => {
       ['Supernova', 'Prestige. Reset your level and web for a Remnant, a Cosmic Law, and permanent score and XP bonuses.'],
       ['Cosmic Law', 'Permanent rule change chosen at a Supernova. Adds score.'],
       ['Recalibration', 'Recalibration tokens pay for respecs during a run.'], ['Technique', 'An alternate fire mode for one tower type, unlocked by a one-point talent. Switch it per tower from the tower panel (Fire row).'], ['Legendary', 'Highest affix rarity with a unique effect.'], ['Curse', 'A negative affix.'],
-      ['Boss', 'Arrives every 10 waves, on the longest road.'], ['Snare Beacon', 'Pulls passing fliers off their straight line, through its net, then on to the core. Catches a set number per wave. Bosses are too big to lure.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
+      ['Boss', 'Arrives every 10 waves, on the longest road.'], ['Snare Beacon', 'Pulls passing fliers off their straight line, through its net, then on to the core. Catches a set number per wave. Bosses are too large to lure.'], ['Skimmers', 'Flying enemies. They ignore the path.'], ['Resonance', 'Adjacent towers of different elements: +8% Damage per element.'],
     ];
     const named = [
       ...Object.values(TOWERS).map(T => [T.name, T.blurb]),
@@ -16241,11 +16371,12 @@ const UI = (() => {
     modal(`<div class="card narrow"><div class="ch"><h2>Paused</h2></div>
       <p class="note">Wave ${G.wave} · Score ${fmt(G.score)} · Multiplier ×${(G.scoreMult * huntMult()).toFixed(2)}</p>
       <p class="note">${G.bounties.length ? `${G.bounties.length} bount${G.bounties.length === 1 ? 'y' : 'ies'} claimed · ` : ''}${G.wanted ? `Next bounty: ${esc(G.wanted.name)}, Wave ${G.wanted.w}` : ''}${G.nemesis && !G.nemesis.beaten ? ` · Nemesis: ${esc(G.nemesis.name)}` : ''}</p>
+      ${G.fus && FUS[G.fus] ? `<p class="note">Fusion: <b>${esc(FUS[G.fus].name)}</b>. ${esc(FUS[G.fus].desc)}</p>` : ''}
       ${anomCount() ? `<div class="lbl">Anomalies</div><div class="anlist">${anomTaken().map(A => `<div><b style="color:${A.col}">${esc(A.name)}<i class="arar">${A.label}</i></b>${A.up.map(l => `<span class="good">${tipify(l)}</span>`).join('')}${A.dn.map(l => `<span class="bad">${tipify(l)}</span>`).join('')}</div>`).join('')}</div>` : ''}
       <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
       <button class="btn" data-act="tutPick">Training</button>
       <button class="btn" data-act="studio">Music Studio</button>
-      <button class="btn" data-act="settings">Settings</button>
+      ${fbOn() ? '<div class="pair"><button class="btn" data-act="settings">Settings</button><button class="btn" data-act="feedback" data-v="pause">Feedback</button></div>' : '<button class="btn" data-act="settings">Settings</button>'}
       <button class="btn" data-act="exit">Save &amp; Quit</button>
       <button class="btn danger" data-act="abandon">${confirmAbandon ? 'Tap again to confirm' : 'End Run'}</button></div></div>`, 'pause');
   }
@@ -16357,22 +16488,101 @@ const UI = (() => {
       <div class="evlist">${A.genes.map(g => { const D = GENES[g]; return `<div class="evrow"><b style="color:${D.col}">${D.name}${g === 'ward' && A.el ? ' · ' + EL[A.el].name : ''}</b><div></div><em></em><span>${esc(g === 'ward' && A.el ? `Resists ${EL[A.el].name} by 50%` : D.desc)} · <u>Counter: ${esc(g === 'ward' && A.el ? `anything but ${EL[A.el].name}` : D.counter)}</u></span></div>`; }).join('')}</div>
       ${A.why.length ? `<div class="lbl">How it read you</div><ul class="aswhy">${A.why.map(x => `<li>${esc(x[0].toUpperCase() + x.slice(1))}</li>`).join('')}</ul>` : ''}
       ${live ? `<p class="note hl">${A.n - A.killed - A.leaked} of ${A.n} left · ${A.leaked} leaked of ${assaultLimit(A)} allowed</p>`
-        : done ? '' : `<p class="note hl">${tipify(`Your move: selling is free (100% refund) until Wave ${A.w} starts, and Overcharge moves for free. Swap towers for the counters above.`)}</p>`}
+        : done ? '' : `<p class="note hl">${tipify(`Prepare now: selling is free (100% refund) until Wave ${A.w} starts, and Overcharge moves for free. Swap towers for the counters above.`)}</p>`}
       ${done ? '' : `<p class="note">${tipify(`Let ${live ? assaultLimit(A) : 'about ' + lim} or fewer through and the strain is broken: +1 power for the rest of the run and a credit bounty, and the swarm stops trusting those genes.`)}</p>`}
       ${done ? '' : `<details class="more"${first ? ' open' : ''}><summary>How Strain Assaults work</summary>
-        <p class="note">${tipify('Every few waves the swarm studies your defense, breeds the strain that beats it and throws most of a wave at you. It warns you a wave ahead: this is your move.')}</p>
-        <p class="note">${tipify('More, and it entrenches: it spreads through the next waves and the next assault comes sooner.')}</p></details>`}
+        <p class="note">${tipify('Every few waves the swarm studies your defense, breeds the strain that beats it and sends most of a wave at you. It warns you a wave ahead, so you can prepare.')}</p>
+        <p class="note">${tipify('If more get through, the strain entrenches: it spreads through the next waves and the next assault comes sooner.')}</p></details>`}
       <div class="foot"><button class="btn primary" data-act="${intro ? 'assaultDone' : 'close2'}">${intro ? 'Answer it' : 'Back'}</button></div></div>`, 'assault');
   }
   function openEvo(intro) {
     if (!G) return;
     if (!G.over) G.paused = true;
     const cap = geneCap(G.wave);
-    modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(G.assault && G.assault.state !== 'done') ? ` · next Strain Assault ~Wave ${G.assaultNext}` : ''}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
-      ${intro ? `<p class="note">${tipify("Enemies that get furthest pass their traits on. Whatever your defense handles worst spreads; answer it and it fades. Each trait costs them HP or speed, so a balanced, adaptable defense keeps the swarm in check. Tap DNA in the top bar any time to see this.")}</p>` : ''}
+    modal(`<div class="card evo"><div class="ch"><h2>${intro ? 'The Swarm Evolves' : 'Swarm DNA'}</h2><span class="note">Wave ${G.wave} · up to ${cap} gene${cap === 1 ? '' : 's'} per enemy${G.assaultNext && !(G.assault && G.assault.state !== 'done') ? ` · next Strain Assault about Wave ${G.assaultNext}` : ''}</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
+      ${intro ? `<p class="note">${tipify("Enemies that get furthest pass their traits on. The traits your defense handles worst spread. Build the counter and they fade. Tap DNA in the top bar to see this again.")}</p>` : ''}
       ${(() => { const R = geneCap(G.wave) > 0 ? readDefence(Math.max(G.wave, 1)).slice(0, 2) : []; return R.length ? `<div class="lbl">What the swarm sees in your defense right now</div><ul class="aswhy">${R.map(x => `<li><b style="color:${GENES[x.g].col};font-weight:400">${GENES[x.g].name}${x.el ? ' · ' + EL[x.el].name : ''}</b>: ${esc(x.why)}</li>`).join('')}</ul>` : ''; })()}
       <div class="evlist">${evoRowsHTML()}</div>
       <div class="foot"><button class="btn primary" data-act="${intro ? 'evoDone' : 'close2'}">${intro ? 'Adapt' : 'Back'}</button></div></div>`, 'evo');
+  }
+  // ---- 6.9 the Add to Home Screen line and the Legal card ----
+  // In a browser tab on a phone or tablet the game loses height to the browser's bars. One line on the main menu says how to get
+  // the full-screen game. Not shown in the Home Screen app, on a desktop, or after the player taps it away (PROF.a2hsOff).
+  function a2hsUI() {
+    const el = $('#a2hs'); if (!el) return;
+    const standalone = !!navigator.standalone || (window.matchMedia && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches);
+    const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0, ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+    const show = touch && !standalone && !PROF.a2hsOff && (!navigator.webdriver || window.a2hsTest);
+    el.hidden = !show; if (!show) return;
+    el.innerHTML = (ios ? 'For full screen: tap <b>Share</b>, then <b>Add to Home Screen</b>.' : 'For full screen: open the browser menu, then <b>Add to Home screen</b>.') + '<i>✕</i>';
+    el.onclick = () => { PROF.a2hsOff = 1; Save.save(); el.hidden = true; };
+  }
+  function openLegal() {
+    modal(`<div class="card narrow legal"><div class="ch"><h2>Legal</h2><button class="x" data-act="settings" aria-label="Back">✕</button></div>
+      <p>Last Gradient. © 2026 Nic Carter (Nigel Industries). All rights reserved.</p>
+      <p class="note">The game, its code, design, text, art and sound may not be copied, changed, re-hosted or sold without written permission.</p>
+      <div class="lbl">Fonts</div><p class="note">Silkscreen and VT323, used under the SIL Open Font License 1.1.</p>
+      <div class="lbl">Your Data</div><p class="note">Your progress is stored on this device. The game has no ads and no tracking. It sends nothing${fbOn() ? ' unless you use Send Feedback, which sends what you type, your device type, the screen size and the log of your last run' : ''}.</p>
+      <p class="note">The game is provided as is, with no warranty.</p>
+      <div class="foot"><button class="btn primary" data-act="settings">Back</button></div></div>`, 'settings');
+  }
+  // ---- 6.9 Send Feedback ----
+  // A bug or an idea, typed by the player, goes to Nic's Google Sheet (FEEDBACK_URL; tools/feedback/Code.gs) with the game version,
+  // the device, the screen size and the run log. Nothing comes back. With no connection the report waits in localStorage and goes
+  // out the next time the game opens. 5 reports per device per day. No sim state is read except the wave and the log.
+  const FB_Q = 'entropy.fbq', FB_N = 'entropy.fbn', FB_MAX = 5;
+  const fbUrl = () => (typeof window !== 'undefined' && window.__fbUrl) || FEEDBACK_URL;
+  const fbOn = () => !!fbUrl();
+  let fb = null;
+  const fbToday = () => new Date().toISOString().slice(0, 10);
+  function fbCount(add) { let c = { d: fbToday(), n: 0 }; try { const o = JSON.parse(localStorage.getItem(FB_N) || 'null'); if (o && o.d === c.d) c = o; } catch (e) {} if (add) { c.n++; try { localStorage.setItem(FB_N, JSON.stringify(c)); } catch (e) {} } return c.n; }
+  function fbLog() { // this run's log while a run is open, else the last finished run's; the first 30 KB and the last 370 KB of a long one
+    let t = ''; try { t = G && G.rlog && !G.tut && screen === 'game' ? 'ENTROPY RUN LOG · ' + VERSION + ' · ' + new Date().toISOString() + '\n' + G.rlog.map(e => JSON.stringify(e)).join('\n') : lastLogText(); } catch (e) {}
+    return t.length > 400000 ? t.slice(0, 30000) + '\n… (cut) …\n' + t.slice(-370000) : t;
+  }
+  function fbRunLine() { if (!G || screen !== 'game') return 'Main menu'; return (G.tut ? 'Training' : G.daily ? 'Daily Hunt' : 'Endless') + ' · Wave ' + G.wave + (G.CH ? ' · ' + G.CH.name : '') + (G.over ? ' · run over' : ''); }
+  function openFeedback(from) {
+    if (!fbOn()) return;
+    if (!fb || from) fb = { from: from || 'hangar', kind: fb ? fb.kind : 'bug', text: fb ? fb.text : '', name: fb ? fb.name : (PROF.fbName || ''), busy: false };
+    if (G && !G.over && screen === 'game') G.paused = true;
+    const left = FB_MAX - fbCount();
+    modal(`<div class="card narrow fbcard"><div class="ch"><h2>Send Feedback</h2><button class="x" data-act="fbClose" aria-label="Close">✕</button></div>
+      <div class="chips"><button class="chip ${fb.kind === 'bug' ? 'on' : ''}" data-act="fbKind" data-v="bug">Bug</button><button class="chip ${fb.kind === 'idea' ? 'on' : ''}" data-act="fbKind" data-v="idea">Idea</button></div>
+      <button class="cpnamebtn fbtext ${fb.text ? '' : 'empty'}" data-act="fbText"><b>${fb.text ? esc(fb.text) : (fb.kind === 'bug' ? 'Tap to write what happened' : 'Tap to write your idea')}</b></button>
+      <button class="cpnamebtn ${fb.name ? '' : 'empty'}" data-act="fbName"><b>${fb.name ? esc(fb.name) : 'Your name (optional)'}</b></button>
+      <p class="note">Sent with it: the game version, your device type, the screen size and the log of your last run.</p>
+      <div class="foot">${left > 0 ? `<button class="btn primary" data-act="fbSend" ${fb.text.trim() && !fb.busy ? '' : 'disabled'}>${fb.busy ? 'Sending' : 'Send'}</button>` : '<span class="note">That is 5 reports today. Thank you. More tomorrow.</span>'}</div></div>`, 'feedback');
+  }
+  function fbBack() { const from = fb ? fb.from : 'hangar'; closeModal(); if (from === 'pause' && G && !G.over) openPause(); else if (from === 'over' && G && G.over) openGameOver(); else if (from === 'settings') openSettings(); }
+  // true = stored; false = refused by the inbox (do not retry); null = could not reach it (keep and retry later)
+  async function fbPost(p) {
+    const url = fbUrl(), body = JSON.stringify(p);
+    try { const r = await fetch(url, { method: 'POST', body, redirect: 'follow' }); let j = null; try { j = await r.json(); } catch (e) {} if (j) return !!j.ok; return r.ok ? true : null; }
+    catch (e) { // the answer could not be read. Online: send once more without reading the answer (the inbox keeps one copy per id)
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return null;
+      try { await fetch(url, { method: 'POST', body, mode: 'no-cors' }); return true; } catch (e2) { return null; } }
+  }
+  function fbQueue() { try { const q = JSON.parse(localStorage.getItem(FB_Q) || '[]'); return Array.isArray(q) ? q : []; } catch (e) { return []; } }
+  function fbKeep(p) { const q = fbQueue(); if (p.log && p.log.length > 150000) p = Object.assign({}, p, { log: p.log.slice(0, 20000) + '\n… (cut) …\n' + p.log.slice(-130000) }); q.push(p); while (q.length > 3) q.shift();
+    try { localStorage.setItem(FB_Q, JSON.stringify(q)); } catch (e) { try { localStorage.setItem(FB_Q, JSON.stringify(q.map(x => Object.assign({}, x, { log: '' })))); } catch (e2) {} } }
+  async function fbFlush() { if (!fbOn()) return; const q = fbQueue(); if (!q.length) return; const rest = [];
+    for (const p of q) { const r = await fbPost(p); if (r === null) rest.push(p); }
+    try { if (rest.length) localStorage.setItem(FB_Q, JSON.stringify(rest)); else localStorage.removeItem(FB_Q); } catch (e) {} }
+  async function fbSend() {
+    if (!fb || fb.busy || !fb.text.trim() || fbCount() >= FB_MAX) return;
+    fb.busy = true; openFeedback();
+    const p = { app: 'last-gradient', v: 1, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), kind: fb.kind, text: fb.text.trim().slice(0, 2000), name: (fb.name || '').trim().slice(0, 60),
+      ver: VERSION, build: /\/lab\//.test(location.pathname) ? 'lab' : 'live', where: fb.from, run: fbRunLine(),
+      device: (navigator.userAgent || '').slice(0, 280), screen: innerWidth + 'x' + innerHeight + ' @' + (window.devicePixelRatio || 1) + (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) ? ' app' : ' browser'), log: fbLog() };
+    if (fb.name !== (PROF.fbName || '')) { PROF.fbName = (fb.name || '').trim().slice(0, 60); Save.save(); }
+    const r = await fbPost(p);
+    if (!fb) return;
+    fb.busy = false;
+    if (r === false) { if (modalOpen === 'feedback') openFeedback(); toast('NOT SENT', 'The feedback inbox could not take it. Please try again later.', '#ff4d6a', true); return; }
+    fbCount(true);
+    if (r === null) fbKeep(p);
+    const was = modalOpen === 'feedback'; fb.text = ''; if (was) fbBack(); fb = null;
+    toast(r ? 'FEEDBACK SENT' : 'FEEDBACK SAVED', r ? 'Thank you. It helps.' : 'No connection. It goes out the next time the game opens.', '#59f0b4', true);
   }
   // ---- v3.1 run log export ----
   const LOG_KEY = 'lastgradient.lab.runlog';
@@ -16381,7 +16591,7 @@ const UI = (() => {
   function copyText(txt, onDone) {
     const done = onDone || (() => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · paste it into a chat with Claude`, '#59f0b4', true));
     const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
-      if (ok) done(); else if (onDone) askText({ title: 'Copy this code', value: txt, multiline: true, readOnly: true, ok: 'Done', onDone: () => {} }); else toast('COPY FAILED', 'Use Save log instead', '#ff4d6a', true); };
+      if (ok) done(); else if (onDone) askText({ title: 'Copy This Code', value: txt, multiline: true, readOnly: true, ok: 'Done', onDone: () => {} }); else toast('COPY FAILED', 'Use Save log instead', '#ff4d6a', true); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
   }
   // v5.5.10 typing on a phone: a panel pinned to the part of the screen the keyboard leaves visible. The game is a fixed,
@@ -16390,7 +16600,7 @@ const UI = (() => {
   function askText(o) {
     const old = $('#entry'); if (old) old.remove();
     const el = document.createElement('div'); el.id = 'entry';
-    el.innerHTML = `<div class="enbox"><b>${esc(o.title || '')}</b>${o.multiline ? `<textarea rows="3" ${o.readOnly ? 'readonly' : ''} autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${esc(o.placeholder || '')}"></textarea>` : `<input type="text" maxlength="${o.max || 60}" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(o.placeholder || '')}">`}
+    el.innerHTML = `<div class="enbox"><b>${esc(o.title || '')}</b>${o.multiline ? `<textarea rows="${o.prose ? 4 : 3}" ${o.readOnly ? 'readonly' : ''} ${o.max ? `maxlength="${o.max}"` : ''} autocomplete="off" ${o.prose ? 'autocapitalize="sentences"' : 'autocorrect="off" autocapitalize="off" spellcheck="false"'} placeholder="${esc(o.placeholder || '')}"></textarea>` : `<input type="text" maxlength="${o.max || 60}" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${esc(o.placeholder || '')}">`}
       <div class="enrow">${o.readOnly ? '' : '<button class="btn" data-en="x">Cancel</button>'}<button class="btn primary" data-en="ok">${esc(o.ok || 'OK')}</button></div></div>`;
     document.body.appendChild(el); entryOpen = true;
     const inp = el.querySelector('input, textarea'), vv = window.visualViewport;
@@ -16411,7 +16621,7 @@ const UI = (() => {
     const name = `last-gradient-run-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.txt`;
     try {
       const file = new File([txt], name, { type: 'text/plain' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Last Gradient run log' }).catch(() => {}); return; }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Last Gradient Run Log' }).catch(() => {}); return; }
     } catch (e) {}
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
@@ -16474,7 +16684,7 @@ const UI = (() => {
       <p class="note"><b class="wname">${esc(C.name)}</b> +${fmt(C.cr)} credits, a Legendary schematic, and your purse grew ×${PURSE.bounty}.</p>
       <div class="pursebox"><span>Bounty Purse</span><b>${fmt(P)} XP</b><em>Extract banks all of it. Push on and fall later, and you keep ${Math.round(PURSE.death * 100)}%.</em></div>
       <div class="dchoice">
-        <button class="hopt ext" data-act="extract"><b>Extract</b><span>End the run as a win and bank ${fmt(P)} XP. ${G.daily ? 'Your Daily Hunt result is locked in.' : 'Counts toward the next Chaos level.'}</span><span>${G.tut && !G.lesson ? 'Jump doors open in real runs.' : 'Or take a jump door: a new zone for 20 waves, and the purse grows.'}</span></button>
+        <button class="hopt ext" data-act="extract"><b>Extract</b><span>End the run as a win and keep ${fmt(P)} XP. ${G.daily ? 'Your Daily Hunt result is locked in.' : 'Counts toward the next Chaos level.'}</span><span>${G.tut && !G.lesson ? 'Jump doors open in real runs.' : 'Or take a jump door: a new zone for 20 waves, and the purse grows.'}</span></button>
         ${C.doors.map((d, i) => { const S = SECTOR_BY[d.sector], T = DOOR_TIERS[d.tier]; return `<button class="hopt door" data-act="door" data-v="${i}" style="--c:${S.col};--t:${T.col}"${G.tut && !G.lesson ? ' disabled' : ''}><canvas class="zsw" width="72" height="120" data-zsw="${d.sector}"></canvas><b>${esc(S.name)} <i>${esc(T.name)} · purse ×${d.mult}</i></b><span class="dp">${esc(S.pitch)}</span><span>${sectorLine(S, d.tier)}</span><span class="dw">Next bounty: ${esc(d.wanted)}, Wave ${C.next}</span></button>`; }).join('')}
       </div></div>`, 'hunt');
     zoneSwatches(3, 5); // 6.3: each door shows the board you would land on
@@ -16552,7 +16762,7 @@ const UI = (() => {
     modal(`<div class="card over"><div class="ch">${G.extracted ? '<h2 class="good">Extracted</h2>' : '<h2 class="bad">Core Destroyed</h2>'}<span class="note">${G.daily ? 'Daily Hunt · ' + esc(G.daily) : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>${G.daily ? 'Bounties' : 'Levels'}<b>${G.daily ? G.bounties.length : '+' + gained}</b></span></div>
       ${G.extracted ? `<div class="why good"><b>Bounty banked</b><span>${esc(G.bounties.map(b => b.name).join(', '))}. ${G.purseOut ? `Bounty Purse: +${fmt(G.purseOut.paid)} XP, all of it.` : G.stats.extractXp ? `+${fmt(G.stats.extractXp)} XP for getting out alive.` : ''}${G.pushes ? ` You pushed past ${G.pushes} bount${G.pushes === 1 ? 'y' : 'ies'} first.` : ''}</span></div>` : lossWhyHTML()}
-      ${!G.extracted && G.purseOut && G.purseOut.purse > 0 ? `<p class="note hl" style="color:#ffd84a">Bounty Purse: you kept ${Math.round(G.purseOut.share * 100)}%, +${fmt(G.purseOut.paid)} of ${fmt(G.purseOut.purse)} XP.${G.bounties.length ? ` Extracting after ${esc(G.bounties[G.bounties.length - 1].name)} would have banked all of it.` : ' Claim a bounty, then Extract, to bank all of it.'}</p>`
+      ${!G.extracted && G.purseOut && G.purseOut.purse > 0 ? `<p class="note hl" style="color:#ffd84a">Bounty Purse: you kept ${Math.round(G.purseOut.share * 100)}%, +${fmt(G.purseOut.paid)} of ${fmt(G.purseOut.purse)} XP.${G.bounties.length ? ` Extracting after ${esc(G.bounties[G.bounties.length - 1].name)} would have banked all of it.` : ' Claim a bounty, then Extract, to deposit all of it.'}</p>`
         : !G.extracted && G.bounties.length ? `<p class="note hl" style="color:#ffd84a">Bounties claimed: ${esc(G.bounties.map(b => b.name).join(', '))}. Pushing on cost you the extraction bonus.</p>` : ''}
       ${G.nemDown ? `<p class="good">Nemesis down: ${esc(G.nemDown)}.</p>` : ''}
       ${N ? `<div class="why nem"><b>${N.rank > 1 ? 'It got you again' : 'New Nemesis'}</b><span>${esc(N.name)}${N.rank > 1 ? ` (rank ${N.rank})` : ''}. ${N.kind === 'boss' ? 'It will take your next bounty, mutated, for double the reward.' : 'The swarm will start your next run already carrying it, and it leads your first Strain Assault.'}</span></div>` : ''}
@@ -16564,7 +16774,7 @@ const UI = (() => {
       ${masteryGainHTML(G.masteryGain)}
       ${pointsFree() > 0 ? `<p class="good">${pointsFree()} talent point${pointsFree() === 1 ? '' : 's'} to spend</p>` : ''}
       <div class="row logrow"><span class="note">Run log for analysis</span><button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button></div>
-      <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Talents</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
+      <div class="foot">${fbOn() ? '<button class="btn fbb" data-act="feedback" data-v="over">Feedback</button>' : ''}<button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Talents</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
     countUp('#modal .card.over .bigstats b');
   }
@@ -16635,6 +16845,8 @@ const UI = (() => {
         + row('Haptics', 'A buzz when the core is hit', flip(S.haptics !== false, 'haptic'))
         + sec('Save')
         + row('Save location', cloudOk ? 'Synced to your Claude account' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
+        + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>')
+        + (fbOn() ? row('Feedback', 'Report a bug or share an idea', '<button class="btn small" data-act="feedback" data-v="settings">Send Feedback</button>') : '')
         + (inRun ? '' : row('Transfer save', 'Move your progress to another device with a code', '<button class="btn small" data-act="xcopy">Export</button><button class="btn small" data-act="xpaste">Import</button>'))
         + row('Run log', lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
         + sec('About')
@@ -17121,7 +17333,7 @@ const UI = (() => {
         studioSave(); if (stTab === 'listen') openStudio(); return true;
       }
       case 'stPlay': { const f = c.favs[+b.dataset.v]; if (f) { stPlayNow(f); toast('NOW PLAYING', f.name, '#ff5fa8'); } return true; }
-      case 'stRen': { const i = +b.dataset.v, f = c.favs[i]; if (!f) return true; askText({ title: 'Rename track', value: f.name, max: 24, ok: 'Rename', onDone: v => { v = v.trim().slice(0, 24); if (!v) return; f.name = v; const p0 = M.piece; if (p0 && p0.seed === f.seed && !f.comp === !p0.comp) M.setName(v); studioSave(); openStudio(); } }); return true; }
+      case 'stRen': { const i = +b.dataset.v, f = c.favs[i]; if (!f) return true; askText({ title: 'Rename Track', value: f.name, max: 24, ok: 'Rename', onDone: v => { v = v.trim().slice(0, 24); if (!v) return; f.name = v; const p0 = M.piece; if (p0 && p0.seed === f.seed && !f.comp === !p0.comp) M.setName(v); studioSave(); openStudio(); } }); return true; }
       case 'stDel': { const i = +b.dataset.v; if (stDelArm !== i) { stDelArm = i; openStudio(); return true; } stDelArm = -1; c.favs.splice(i, 1); if (!c.favs.length) c.favOnly = false; studioSave(); openStudio(); return true; }
       case 'stShare': { const f = c.favs[+b.dataset.v]; if (f) shareTrack(f); return true; }
       case 'stShareNow': { const t = M.track; if (t) shareTrack(t); return true; }
@@ -17149,7 +17361,7 @@ const UI = (() => {
       case 'cpFrom': { const cp = M.compFromPiece(); if (cp) { cp.name = 'Song ' + (c.favs.filter(t => t.comp).length + 1); c.draft = cp; stGrid = 'drums'; stOverArm = false; M.editing = true; cpApply(true); } return true; }
       case 'cpOver': { if (!stOverArm) { stOverArm = true; openStudio(); return true; } stOverArm = false; c.draft = null; studioSave(); M.setHold(true); openStudio(); return true; }
       case 'cpDrumClr': { const d = c.draft; if (d) { for (const k in d.drums) d.drums[k] = '0'.repeat(16); cpApply('grid'); } return true; }
-      case 'cpRename': { const d = c.draft; if (d) askText({ title: 'Name your song', value: d.name, max: 24, ok: 'Rename', onDone: v => { v = v.trim().slice(0, 24); if (v) { d.name = v; studioSave(); if (M.piece && M.piece.comp) M.setName(v); openStudio(); } } }); return true; }
+      case 'cpRename': { const d = c.draft; if (d) askText({ title: 'Name Your Song', value: d.name, max: 24, ok: 'Rename', onDone: v => { v = v.trim().slice(0, 24); if (v) { d.name = v; studioSave(); if (M.piece && M.piece.comp) M.setName(v); openStudio(); } } }); return true; }
       case 'cpSave': { const d = c.draft; if (!d) return true; M.saveComp(d); studioSave(); toast('SAVED TO MY TRACKS', d.name, '#ff5fa8'); return true; }
       case 'cpGrid': stGrid = b.dataset.v; openStudio(); return true;
       case 'cpStep': {
@@ -17219,14 +17431,14 @@ const UI = (() => {
       ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned 2 waves ahead.'],
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
       ['Abilities', 'The left rail. Each ability comes online at its wave and recharges on its own timer (the bar under it fills). Crates, chests, bosses and milestones add extra charges on top, with no cap. Command talents and the core\'s Command Uplink cut cooldowns and add charge slots.'],
-      ['Sensor Sweep', `Scan: reveals cloaked enemies for ${SCAN.dur}s, Marks everything it sweeps (+${SCAN.mark}% damage taken) and flags the biggest threat with a reticle. Short cooldown.`],
+      ['Sensor Sweep', `Scan: reveals cloaked enemies for ${SCAN.dur}s, Marks everything it sweeps (+${SCAN.mark}% damage taken) and flags the largest threat with a reticle. Short cooldown.`],
       ['Know your enemy', 'Tap (or hover) any enemy to see its HP, what it does and what beats it. Each wave leans on a headline enemy, shown as an amber chip. New enemies are announced the wave before they land.'],
       ['Command Uplink', `A core upgrade line: −${UPLINK.cd}% ability cooldowns per level. ${UPLINK.mods.map(m => `LV ${m.lv} ${m.name}: ${m.desc}`).join('. ')}.`],
       ['Bosses', 'Every 10 waves, always on the longest road (flying bosses skim it). Drop a boon and a Recalibration token. If one reaches your core, the run ends, so watch the Red Alert.'],
       ['Red Alert', `A boss within ${RED_ALERT.tiles} tiles of the core: sirens, the field turns red and the core goes to Last Stand, hitting it ×${RED_ALERT.coreDmg}. That is the moment for Stasis, a Strike or a burst of Overcharge.`],
       ['Black Market', 'Tap Score to open the Exchange: Cash In, plus a pirate trader with 3 items in stock (a Legendary for your next towers, a bribe for the boss, a stolen blueprint...). Prices climb with the wave; new stock after every boss.'],
       ['Checkpoint', 'Once the field is clear, the game holds before a wormhole opens. Full refunds and a free respec; a lift-off lands at once. Resume fast for a bonus.'],
-      ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Land the core on one for a bigger boost. Each sector expansion reveals a new one.'],
+      ['Power Nodes', 'Glowing cyan diamonds. A tower built on one is overcharged. Land the core on one for a larger boost. Each sector expansion reveals a new one.'],
       ['Space Pirates', "Pirate ships fly over during waves and drop salvage crates. Tap a crate before its ring runs out for credits, a charge, Entropy, score or a token. Red crates are booby-trapped: double loot, but a stowaway elite breaks loose. Boss waves bring the Captain's Chest. Leave a crate too long and a Pirate Skiff may come to steal it; shoot it down to get the loot back plus a bounty."],
       ['Nuke', `Your one emergency button. From Wave ${OD_WAVE}, tap Nuke on the left rail to erase every enemy on the map except bosses. Once per run.`],
       ['Node Links', 'Two attack towers on Power Nodes within 9 tiles link up: +10% Damage each and a beam between them that burns anything crossing it.'],
@@ -17234,7 +17446,7 @@ const UI = (() => {
     { id: 'progress', name: 'Progression', rows: [
       ['XP', 'Score converts to XP. Each level grants 1 talent point.'],
       ['Talents', `Seven trees of permanent bonuses. Each row opens after ${TROW} points in its tree; ${TCAP} points reach its Capstones, play styles you pick one of. You hold 1 Capstone, 2 from Level 25, 3 from Level 60. Techniques (one point each) unlock an alternate fire mode for a tower: switch it per tower from the tower panel. Changes are free between runs and at checkpoints; mid-run they cost Recalibration tokens.`],
-      ['Capstones', 'Each tree ends in three play styles, for example Marksman (few huge guns), Wildfire (the road burns), War Economy (banked credits arm the core), Glass Cannon or Conflagration. Each changes how a run plays, often with a cost on the field.'],
+      ['Capstones', 'Each tree ends in three play styles, for example Marksman (a few very strong towers), Wildfire (the road burns), War Economy (banked credits arm the core), Glass Cannon or Conflagration. Each changes how a run plays, often with a cost on the field.'],
       ['Recalibration', 'Tokens from boss kills, Stabilize and pirate crates. Spend one to reroll a tower\'s affixes, or to refund a talent mid-run (2 for a Capstone).'],
       ['Builds', 'Save up to five talent layouts and load one between runs (2 tokens mid-run).'],
       ['Supernova', 'Hold 2 Capstones and reach the required level to collapse your galaxy. You lose your level and talents. You keep one Capstone as a Remnant (always on, no slot), gain a Cosmic Law, and earn more score and XP from then on.'],
@@ -17273,7 +17485,7 @@ const UI = (() => {
         ['Power Node', 'Charged tile. Towers on it draw no power and get +25% Damage and +15% Range (support and economy +25%). The core on a Node gets +50% Damage and +20% Rate. Roads never pave over one.'],
         ['Nuke', `Once per run, from Wave ${OD_WAVE}: tap Nuke on the left rail, then tap again to confirm. Every enemy on the map that isn't a boss is erased (with kill credits and score). Bosses survive, losing ${Math.round(OD_BOSS * 100)}% of their remaining HP.`],
         ['Node Link', `Attack towers on Power Nodes within ${LINK_MAX} tiles of each other. Each gets +10% Damage, and a beam between them deals 50% of their average damage per second to anything touching it.`],
-        ['Bounty Purse', `${Math.round(PURSE.safe * 100)}% of the XP you earn banks at once; the rest rides in the purse. Each bounty claimed grows it ×${PURSE.bounty}, and each push through a jump door multiplies it again (×${DOOR_TIERS.map(t => t.mult).join(', ×')} by risk). Extract to bank all of it. If your core falls you keep ${Math.round(PURSE.death * 100)}%.`],
+        ['Bounty Purse', `${Math.round(PURSE.safe * 100)}% of the XP you earn is deposited at once; the rest is held in the purse. Each bounty claimed grows it ×${PURSE.bounty}, and each push through a jump door multiplies it again (×${DOOR_TIERS.map(t => t.mult).join(', ×')} by risk). Extract to deposit all of it. If your core falls you keep ${Math.round(PURSE.death * 100)}%.`],
         ['Zone', 'The contract a run is fought under: which enemies come most, the weather, the events, the Most Wanted boss, plus a perk and a drawback. You pick one of three at the start, and a new one through a jump door at every bounty.'],
         ['Jump door', 'After a bounty you can push on through one of three doors: a new zone for the next 20 waves at a risk tier (Steady, Hot or Deadly). Riskier doors grow the Bounty Purse more and pay more score.'],
         ['Escalation', `From Wave ${TWIST_FROM}, each boss wave makes you choose one of two permanent twists. They stack and each one raises your score and XP.`],
@@ -17287,8 +17499,8 @@ const UI = (() => {
         ['Stolen Blueprint', 'Black Market item: your next locked tower is unlocked for the rest of this run.'],
         ['Lift Off', `The core flies to any open tile in the sector, or onto an attack tower (docking). Every road re-routes to the landing spot and enemies already walking turn toward it. Gun offline and shield down in the air; ${FRONTIER.cd} waves to recharge after landing (Uplink shortens it).`],
         ['Docking', `The landed core docks the attack tower under it as a second gun: its element, affixes, spec, perks and Technique, at ×${FRONTIER.dockDmg} Damage and +${FRONTIER.dockRange} Range. The core's own gun keeps firing. Support towers can't be docked.`],
-        ['Core link', `A green line from the landed core to one of its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate for the tower, +${pct(FRONTIER.linkCore)} Damage for the core.`],
-        ['No-build zone', `The ground within ${frWormR()} tiles of a wormhole: no towers, so the swarm is seen before it is shot.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
+        ['Core Link', `A green line from the landed core to one of its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate for the tower, +${pct(FRONTIER.linkCore)} Damage for the core.`],
+        ['No-Build Zone', `The ground within ${frWormR()} tiles of a wormhole: no towers, so the swarm is seen before it is shot.`], ['Cash In', 'Trade credits for score. Rate: 3 × (1 + 10% per wave), before multipliers.'],
         ['Score multiplier', 'Raised by chaos level, Anomalies, Stabilize, Supernovas and Cosmic Laws.'], ['Skimmer route', 'Pink dotted line. Fliers ignore the path unless a Snare Beacon pulls them in.'] ] },
       { id: 'affix', name: 'Affixes', rows: [
         ['Common', 'Base value.', RARITY[0].col], ['Magic', '×1.7 value.', RARITY[1].col], ['Rare', '×2.6 value.', RARITY[2].col], ['Legendary', 'Unique effect. See Legendaries.', RARITY[3].col], ['Curse', 'Negative affix. See Curses.', RARITY[4].col],
@@ -17304,14 +17516,14 @@ const UI = (() => {
         ['Maelstrom', 'Forms when storms of 3 types merge. +75% Damage inside. Collapses after 30s.', '#ff4d6a'] ] },
       { id: 'event', name: 'Events', rows: EVENTS.map(E => [E.name, (E.long || E.desc) + '.', E.good ? '#59f0b4' : E.id === 'hole' ? '#b86cff' : '#ff8a9c']) },
       { id: 'probe', name: 'Probe', rows: [ // 6.5
-        ['Probe', `Your scout ship. Tap Probe (or the probe), then tap any spot: it flies there in a straight line at ${PROBE.up.eng.v[0]} tiles per second. Tap the core to recall it. Docked, it repairs the core ${PROBE.repair * 100}% of max hull per second.`, '#9fd8ff'],
-        ['Cargo', 'Loot rides in the probe and banks when it docks at the core. A lost probe leaves its cargo in a wreck you can salvage.', '#ffe14d'],
+        ['Probe', `Your scout ship. Tap Probe (or the probe), then tap any spot: it flies there in a straight line at ${PROBE.up.eng.v[0]} tiles per second. Tap the core to recall it. When docked, it repairs the core ${PROBE.repair * 100}% of max hull per second.`, '#9fd8ff'],
+        ['Cargo', 'The probe carries loot and deposits it when it docks at the core. A lost probe leaves its cargo in a wreck you can salvage.', '#ffe14d'],
         ['Wreckage', `Loot site. Quick grab: ${PROBE.wreckT} s on top of it. Credits, and ${Math.round(PROBE.loot.charge * 100)}% of the time an ability charge.`, '#ff6ad5'],
-        ['Gas cloud', `Loot site. Harvest inside it for ${PROBE.cloudT} s: credits and Entropy as it drains. Static costs ${PROBE.cloudZap * 100}% hull per second.`, '#b98cff'],
+        ['Gas Cloud', `Loot site. Harvest inside it for ${PROBE.cloudT} s: credits and Entropy as it drains. Static costs ${PROBE.cloudZap * 100}% hull per second.`, '#b98cff'],
         ['Asteroid', `Loot site. It drifts. Mine it in 3 chunks of credits. Crystal asteroids (${Math.round(PROBE.loot.crystal * 100)}%) add a charge and a token.`, '#8c7a66'],
-        ['Rich site', `Gold trim, from Wave ${PROBE.richFrom}: ×${PROBE.loot.rich} loot, 1 more guard, +${Math.round(PROBE.jack.rich * 100)}% jackpot.`, '#ffd84a'],
+        ['Rich Site', `Gold trim, from Wave ${PROBE.richFrom}: ×${PROBE.loot.rich} loot, 1 more guard, +${Math.round(PROBE.jack.rich * 100)}% jackpot.`, '#ffd84a'],
         ['Guard', `Neutral drone or brute (Brutes from Wave ${PROBE.guard.bruteFrom}). It attacks the probe within ${PROBE.guard.aggro} tiles of its site. Guards grow with the wave, and each one adds ${Math.round(PROBE.jack.guard * 100)}% jackpot chance. Out of a fight for ${PROBE.guard.calm} s, they heal.`, '#ff5a7a'],
-        ['Jackpot', `${Math.round(PROBE.jack.base * 100)}% per site, more with guards. It banks as a boon pick or a full Entropy gauge.`, '#ffe14d'],
+        ['Jackpot', `${Math.round(PROBE.jack.base * 100)}% per site, more with guards. It is deposited as a boon pick or a full Entropy gauge.`, '#ffe14d'],
         ['Probe upgrades', 'Lance (a weapon for guards), Armor, Engine, Rig (harvest and mining speed) and Scanner (vision, +10% loot per level). 3 levels each. Prices rise with the wave.', '#9fd8ff'],
         ['Rebuild', `A lost probe costs ${PROBE.rb0} + ${PROBE.rbW} per wave credits, +${Math.round(PROBE.rbLv * 100)}% per upgrade level, then ${PROBE.rbT} s in the yard. Upgrades stay.`, '#ff8a9c'] ] },
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
@@ -17494,6 +17706,13 @@ const UI = (() => {
       case 'htab': openHelp(b.dataset.v); break;
       case 'dcat': dictCat = b.dataset.v; openHelp(); break;
       case 'settings': if (modalOpen === 'pause') modalFrom = 'pause'; openSettings(); break;
+      case 'legal': openLegal(); break; // 6.9
+      case 'feedback': openFeedback(b.dataset.v || 'hangar'); break; // 6.9
+      case 'fbKind': if (fb) { fb.kind = b.dataset.v; openFeedback(); } break;
+      case 'fbText': if (fb) askText({ title: fb.kind === 'bug' ? 'What Happened?' : 'Your Idea', value: fb.text, multiline: true, prose: true, max: 2000, placeholder: fb.kind === 'bug' ? 'What you did, what you expected, what happened' : 'What would make the game better?', ok: 'Done', onDone: v => { if (fb) { fb.text = v; openFeedback(); } } }); break;
+      case 'fbName': if (fb) askText({ title: 'Your Name (Optional)', value: fb.name, max: 60, ok: 'Done', onDone: v => { if (fb) { fb.name = v; openFeedback(); } } }); break;
+      case 'fbSend': fbSend(); break;
+      case 'fbClose': fbBack(); fb = null; break;
       case 'setTab': setSettingsTab(b.dataset.v); break;
       case 'studio': openStudio('pause'); break;
       case 'studioS': openStudio('settings'); break;
@@ -17824,6 +18043,7 @@ const UI = (() => {
   return {
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
+    fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
     _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
@@ -17851,6 +18071,7 @@ const Tree = (() => {
       }
       if (a === 'add') { sel = v; add(v); return; }
       if (a === 'rem') { remove(v); return; }
+      if (a === 'fus') { if (TS() === PROF && fusionsOpen().includes(v)) { PROF.fus = v; Save.save(); SFX.play('pick'); } refresh(); return; } // 6.10
       if (a === 'builds') { drawer = drawer === 'builds' ? null : 'builds'; refresh(); return; }
       if (a === 'reset') { if (!confirmReset) { confirmReset = true; refresh(); return; } confirmReset = false; if (talentReset()) { SFX.play('sell'); UI.toast('TALENTS RESET', 'Every point is back', '#ffb03a'); } refresh(); return; }
       if (a === 'bsave') { treeSaveBuild(+v); Save.save(); UI.toast('BUILD SAVED', `Slot ${+v + 1}`, '#59f0b4'); refresh(); return; }
@@ -17911,7 +18132,17 @@ const Tree = (() => {
     return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${rowsHTML}
       <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
       ${tierHTML(tr)}
+      <p class="note tfoot">${FUS_NEED} points here and ${FUS_NEED} in another tree open the Fusion of the two trees. See Your Build.</p>
       <p class="note tfoot">The capstone tier (${TTOP} points, no slot) unlocks a new tower. Capstones change how you play. Pick one per tree; ${TS() !== PROF ? `this build holds ${slotsNow()}` : `you can hold ${capSlots(profLevel().level)} at Level ${profLevel().level}${CAP_NEXT(profLevel().level) ? ` (another at Level ${CAP_NEXT(profLevel().level)})` : ''}`}.</p>`;
+  }
+  // 6.10 the Fusion block of Your Build: the active Fusion, and the other open ones to tap (own profile only)
+  function fusHTML() {
+    const open = fusionsOpen(), id = fusionNow(), mine = TS() === PROF;
+    const row = (f, on) => { const F = FUS[f], a = TREE_BY_ID[f[0]], b = TREE_BY_ID[f[1]];
+      return `<div class="tsumcap fus${on ? ' on' : ' pick'}" style="--c:${a.col};--c2:${b.col}"${on ? '' : ` data-tact="fus" data-v="${f}" role="button"`}><b>${esc(F.name)}</b><small>${esc(a.name)} + ${esc(b.name)}${on ? ' · active' : ' · tap to use'}</small><span>${esc(F.desc)}</span></div>`; };
+    return `<div class="lbl">Fusion</div>` + (id ? row(id, true) + (mine ? open.filter(f => f !== id).map(f => row(f, false)).join('') : '')
+      + `<p class="note">One Fusion is active in a run. A run keeps the Fusion it started with.</p>`
+      : `<p class="note">None yet. Spend ${FUS_NEED} points in each of two trees to open their Fusion.</p>`);
   }
   function sumHTML() {
     const M = computeMods(null, null), lines = [];
@@ -17920,7 +18151,8 @@ const Tree = (() => {
     for (const k in agg) if (STAT_TXT[k]) lines.push(STAT_TXT[k](typeof agg[k] === 'number' && agg[k] !== 1 ? +agg[k].toFixed(2) : agg[k]));
     const caps = activeCaps();
     return `<div class="thead"><b>Your build</b><span>Everything your talents give you, in one place</span><em>${pointsSpent()} spent · ${pointsFree()} free</em></div>
-      <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(TS().remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : '<p class="note">None yet. Spend 20 points in one tree to reach its Capstones.</p>'}
+      <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(TS().remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : `<p class="note">None yet. Spend ${TCAP} points in one tree to reach its Capstones.</p>`}
+      ${fusHTML()}
       ${(() => { const nt = TALENTS.filter(tr => tr.top && talRank(tr.top.id)); return nt.length ? `<div class="lbl">New towers</div><p class="note">${nt.map(tr => `<b style="color:${tr.col}">${esc(tr.top.name)}</b>`).join(' · ')}</p>` : ''; })()}
       <div class="lbl">Bonuses</div><p class="note">Every point spent: +${TAL_PT_DMG}% Damage to all towers (now +${+(pointsSpent() * TAL_PT_DMG).toFixed(1)}%).</p>${lines.length ? `<ul class="tsum">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="note">No talents yet.</p>'}
       <div class="lbl">Per tree</div><div class="tbars">${TALENTS.map(tr => `<div style="--c:${tr.col}"><span>${esc(tr.name)}</span><i style="width:${Math.min(100, treePts(tr.id) / treeMax(tr.id) * 100)}%"></i><b>${treePts(tr.id)}</b></div>`).join('')}</div>`;
@@ -18026,6 +18258,7 @@ function talentsToast(kind) {
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
+  setTimeout(() => { try { UI.fbFlush(); } catch (e) {} }, 3000); // 6.9: feedback written with no connection goes out now
   // Home Screen copy: notice a newer release (Pages caches pages for ~10 min, and iOS keeps the app in memory)
   // and reload onto it from the main menu, never mid-run
   let updTo = null, updAt = 0;

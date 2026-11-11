@@ -1,0 +1,24 @@
+Last Gradient
+Copyright (c) 2026 Nic Carter (publishing as Nigel Industries). All rights reserved.
+
+This repository is public so that the game can be served from GitHub Pages.
+It is NOT open source. No licence is granted by its being public.
+
+Without prior written permission from the copyright holder you may not:
+  - copy, modify, merge, publish, distribute, sublicense or sell this
+    software or any part of it (source code, game design, text, art,
+    sound design, generated music system, data tables);
+  - host a copy of the game, or a modified copy, anywhere;
+  - use the name "Last Gradient", the title art or the Nigel Industries
+    name or logo for another product.
+
+You may play the game at its official address for your own enjoyment, and
+you may read the source to learn from it.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+Third-party material keeps its own licence. See THIRD-PARTY-NOTICES.md.
