@@ -97,6 +97,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 #hangar .util .ib { background: rgba(21, 25, 51, 0.55); }
 .badge { font-style: normal; background: var(--core); color: #062018; font-family: var(--f-term); font-size: 17px; padding: 0 5px; line-height: 1.15; letter-spacing: 0; text-transform: none; }
 .menu .btn.glow { box-shadow: inset 0 0 0 2px var(--core); }
+#hPts { white-space: nowrap; flex: none; margin-left: 6px; } .menu .mrow .btn { padding: 0 10px; } .menu .mrow #bWebH { flex: 1.5 1 0; } /* 6.8: "102 pts" stays on one line inside the Talents button, also at 667 px */
 .menu .btn.nova { min-height: 44px; color: #ffe9b0; background: linear-gradient(90deg, #2a1440, #3a1a2a); box-shadow: inset 0 0 0 1px #b86cff; }
 .menu .btn.nova small { font-size: 15px; color: #c9a6ff; }
 .menu .btn.nova.ready { color: #1a0a24; background: linear-gradient(90deg, #ffe9b0, #ff9adf, #b86cff); box-shadow: none; animation: pulse 1.6s infinite; }
@@ -145,6 +146,30 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 #hpbar i { position: absolute; left: 0; top: 0; bottom: 0; }
 #hpfill { background: var(--core); box-shadow: 0 0 8px rgba(89, 240, 180, 0.5); }
 #shfill { background: rgba(127, 212, 255, 0.9); height: 3px; bottom: auto !important; }
+/* 6.8 HUD reactions: the hull bar keeps a white trail of what was just lost and jolts on a hit; credits and the wave number pop when they change */
+#hplag { background: #fff2f5; transition: width 0.45s 0.3s linear; }
+#hpbar.hit { animation: hphit 0.28s steps(4); }
+@keyframes hphit { 0% { transform: translateX(-3px); filter: brightness(2); } 35% { transform: translateX(3px); } 70% { transform: translateX(-2px); filter: none; } 100% { transform: none; } }
+#cr, #wave { display: inline-block; transform-origin: 0 60%; }
+#cr.bump, #wave.bump { animation: hudbump 0.24s steps(4); }
+@keyframes hudbump { 0% { transform: scale(1.3); filter: brightness(1.7); } 100% { transform: none; filter: none; } }
+#cr.dip { animation: huddip 0.26s steps(3); }
+@keyframes huddip { 0% { transform: translateY(3px); filter: brightness(0.6); } 100% { transform: none; filter: none; } }
+/* 6.8: a short stepped fade when the screen changes (hangar, battle, talents) */
+#xfade { position: fixed; inset: 0; z-index: 900; background: #07080f; pointer-events: none; opacity: 0; }
+#xfade.go { animation: xfade 0.3s steps(6) forwards; }
+@keyframes xfade { 0% { opacity: 1; } 100% { opacity: 0; } }
+/* 6.8: panels and cards step in (the first time they open; a re-render of an open card stays put) */
+.panel.left { animation: pninL 0.14s steps(3); } .panel.right { animation: pninR 0.14s steps(3); }
+@keyframes pninL { 0% { transform: translateX(-14px); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes pninR { 0% { transform: translateX(14px); opacity: 0; } 100% { transform: none; opacity: 1; } }
+#modal.fresh:not(.side) > .card { animation: cardin 0.16s steps(4); }
+@keyframes cardin { 0% { transform: translateY(10px) scale(0.985); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .panel.left, .panel.right, #modal.fresh > .card { animation: none; } }
+/* 6.8: end-of-run numbers arrive one after another */
+.card.over .bigstats span { animation: statin 0.3s steps(4) backwards; } .card.over .bigstats span:nth-child(2) { animation-delay: 0.14s; } .card.over .bigstats span:nth-child(3) { animation-delay: 0.28s; } .card.over .bigstats span:nth-child(4) { animation-delay: 0.42s; }
+@keyframes statin { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #xfade.go, .card.over .bigstats span, #cr.bump, #wave.bump, #cr.dip, #hpbar.hit { animation: none; } }
 #hpbar.low #hpfill { background: var(--bad); animation: blink 0.5s infinite steps(1); }
 @keyframes blink { 50% { opacity: 0.4; } }
 #hptxt { font-size: 19px; font-variant-numeric: tabular-nums; }
@@ -566,7 +591,10 @@ body.panel-r #toasts { left: calc(50% - 140px); width: min(400px, 46%); }
 #tip b { font-family: var(--f-pix); font-size: 9px; color: var(--c); white-space: nowrap; }
 #tip span { font-size: 15px; line-height: 1.15; }
 #tip.out { opacity: 0; }
-body.panel-l #tip { left: calc(50% + 140px); } body.panel-r #tip { left: calc(50% - 140px); }
+/* 6.8: beside an open side panel the tip keeps to the free part of the field, so it never covers the panel's buttons */
+body.panel-l #tip { left: calc(max(16px, var(--sal, 0px)) + var(--rail) + min(270px, 46%) + 10px); right: calc(max(16px, var(--sar, 0px)) + var(--rail) + 10px); transform: none; max-width: none; width: fit-content; margin-inline: auto; }
+body.panel-r #tip { left: calc(max(16px, var(--sal, 0px)) + var(--rail) + 10px); right: calc(max(16px, var(--sar, 0px)) + var(--rail) + min(270px, 46%) + 10px); transform: none; max-width: none; width: fit-content; margin-inline: auto; }
+#modal:not([hidden]):not(.side) ~ #tip { visibility: hidden; } /* 6.8: a tip waits under a full modal (it covered Save & Quit on the pause menu) */
 body.webopen #tip { bottom: calc(var(--sab, 0px) + 58px); } /* clear the region chips in the Passive Web */
 .evchip.dna.pulse, .evchip.storm.pulse { animation: dnapulse 0.9s steps(2) infinite; }
 @keyframes dnapulse { 50% { box-shadow: inset 0 0 0 1px #59f0b4, 0 0 10px #59f0b4; } }
@@ -591,6 +619,8 @@ body.hudfull #dps { display: block; }
 #log { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; left: 6px; bottom: 6px; max-width: min(340px, 38%); font-size: 14px; }
 #log .fl { background: rgba(7, 8, 15, 0.78); padding: 1px 6px; line-height: 1.2; max-width: 100%; white-space: normal; color: #c9c6bc; box-shadow: inset 2px 0 0 var(--c); animation: tin 0.2s; transition: opacity 1.4s; }
 #log .fl b { color: var(--c); font-weight: 400; }
+/* 6.8: the corner feed holds its 4 newest lines, 2 rows each. The full text is in the Log */
+#log .fl { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; } #log .fl:nth-last-child(n+5) { display: none; }
 #log .fl i { color: var(--dim); font-style: normal; }
 #log .fl.old { opacity: 0; }
 body.panel-l #log, body.tipon #log { display: none; }
@@ -1293,7 +1323,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 
   <section id="game" class="screen" hidden>
     <header id="hud">
-      <div class="corebox"><span class="lbl">Core</span><div id="hpbar"><i id="hpfill"></i><i id="shfill"></i><i id="leakmark"></i></div><span id="hptxt">100</span></div>
+      <div class="corebox"><span class="lbl">Core</span><div id="hpbar"><i id="hplag"></i><i id="hpfill"></i><i id="shfill"></i><i id="leakmark"></i></div><span id="hptxt">100</span></div>
       <div class="hs cr"><span class="coin"></span><b id="cr">0</b></div>
       <div class="hs pwr" aria-label="Power grid"><span class="bolt"></span><b id="pw">0/0</b></div>
       <div class="hs"><span class="lbl">Wave</span><b id="wave">0</b><small id="nextw"></small></div>
@@ -1344,6 +1374,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
     <div id="tbody"><nav id="ttabs"></nav><div id="tgrid"></div><aside id="tinfo"></aside></div>
   </section>
 
+  <div id="xfade"></div>
   <div id="modal" hidden></div>
   <div id="toasts"></div>
   <div id="tip" hidden></div>
@@ -1353,7 +1384,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.7.0';
+const VERSION = '6.8.0';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1813,11 +1844,12 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
-const WHATS_NEW = { ver: '6.7.0', title: 'Last Gradient 6.7 · Same Build', items: [
-  ['Daily Hunt: one build for everyone', 'Every day, every player gets the same talent build: 40 points in two trees, two Capstones and their capstone tier towers. Tap View on the Daily card to read it.'],
-  ['A fair ladder', 'Same map, same Nemesis, same build. Your score shows how you played, not which build you copied.'],
-  ['New Training text', 'The Training cards are rewritten in plainer words.'],
-  ['Spelling', 'Text uses US spelling: armor, defense, center.'],
+const WHATS_NEW = { ver: '6.8.0', title: 'Last Gradient 6.8 · Afterglow', items: [
+  ['Bloom', 'Shots, beams, blasts and the core now glow. You can turn it off in Settings, Graphics, Bloom.'],
+  ['Hits with weight', 'Enemies warp in at the wormhole. They flash and break apart when they die, and ground units leave a scorch on the ground. Health bars show the damage just dealt.'],
+  ['Boss kills', 'A boss goes up in stages. The game holds for 1 second before the boon pick, so you can watch it.'],
+  ['New sounds', 'The probe has its own sounds. Menus, tabs and switches each sound different. The music softens on the pause menu.'],
+  ['A clearer field', 'Tips no longer cover an open panel. The message feed in the corner shows 4 lines at most. The core bar and the credits react when they change.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -7482,7 +7514,7 @@ function prLose() {
   if (had) G.sites.push({ id: G.eid++, k: 'lost', x: P.x, y: P.y, t: PROBE.life.lost, life: PROBE.life.lost, val: c.cr / prStats().assay, ent: c.ent, ch: c.ch, tok: c.tok, jp2: c.jp, rich: 0, prog: 0, g: [], z: 0, jp: 0 });
   P.cargo = { cr: 0, ent: 0, ch: 0, tok: 0, jp: 0 };
   rlog('prLost', { x: Math.round(P.x), y: Math.round(P.y), lv: prLvN() });
-  Hooks.fx('prBoom', { x: P.x, y: P.y, big: 1 }); Hooks.sfx('boom', { x: P.x, y: P.y });
+  Hooks.fx('prBoom', { x: P.x, y: P.y, big: 1 }); Hooks.sfx('prDown', { x: P.x, y: P.y });
   Hooks.toast('PROBE LOST', `${had ? `Its cargo lies in the wreck for ${PROBE.life.lost} s. ` : ''}Rebuild: ${prRebuildCost()} credits, ${PROBE.rbT} s`, '#ff4d6a', true, 'alert');
 }
 // the guards of every site: drones orbit and shoot, brutes chase within their leash; out of a fight for 5 s, they heal
@@ -7497,7 +7529,7 @@ function guardsUpdate(dt) {
       if (g.k === 'drone') {
         g.a += dt * (fight ? 1.4 : 0.7); g.x = s.x + Math.cos(g.a) * D.orbit; g.y = s.y + Math.sin(g.a) * D.orbit;
         g.cd -= dt;
-        if (fight && dp <= D.r && g.cd <= 0) { g.cd = D.cd; P.hp -= D.dmg * ws; P.hitT = G.time; Hooks.fx('rail', { x1: g.x, y1: g.y, x2: P.x, y2: P.y, col: '#ff5a7a' }); Hooks.sfx('zap', { x: g.x, y: g.y }); }
+        if (fight && dp <= D.r && g.cd <= 0) { g.cd = D.cd; P.hp -= D.dmg * ws; P.hitT = G.time; Hooks.fx('rail', { x1: g.x, y1: g.y, x2: P.x, y2: P.y, col: '#ff5a7a' }); Hooks.sfx('prHit', { x: P.x, y: P.y }); }
       } else {
         const chase = fight && Math.hypot(P.x - s.x, P.y - s.y) <= Gd.leash, tx = chase ? P.x : g.hx, ty = chase ? P.y : g.hy, d = Math.hypot(tx - g.x, ty - g.y), stop = chase ? D.r * 0.8 : 0;
         if (d > stop + 0.01) { const m = Math.min(D.spd * dt, d - stop); g.x += (tx - g.x) / d * m; g.y += (ty - g.y) / d * m; }
@@ -7514,12 +7546,12 @@ function prFire(dt, S) {
   for (const s of G.sites) for (const g of s.g) { const d = dist2(P.x, P.y, g.x, g.y); if (d <= bd) { bd = d; best = g; bs = s; } }
   if (!best) return;
   P.cd = PROBE.fireT; best.hp -= S.dps * PROBE.fireT; best.hitT = G.time; best.calm = 0;
-  Hooks.fx('rail', { x1: P.x, y1: P.y, x2: best.x, y2: best.y, col: '#7fe8ff' }); Hooks.sfx('zap', { x: P.x, y: P.y });
+  Hooks.fx('rail', { x1: P.x, y1: P.y, x2: best.x, y2: best.y, col: '#7fe8ff' }); Hooks.sfx('prZap', { x: P.x, y: P.y });
   if (best.hp <= 0) {
     bs.g = bs.g.filter(g => g !== best);
     const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 }); st.kills++;
     prLoot(prVal() * (best.k === 'brute' ? PROBE.loot.brute : PROBE.loot.guard), 0, 0, 0, best.x, best.y);
-    Hooks.fx('prBoom', { x: best.x, y: best.y, big: best.k === 'brute' ? 1 : 0, guard: 1 }); Hooks.sfx('crack', { x: best.x, y: best.y });
+    Hooks.fx('prBoom', { x: best.x, y: best.y, big: best.k === 'brute' ? 1 : 0, guard: 1 }); Hooks.sfx('prPop', { x: best.x, y: best.y });
   }
 }
 // working the site under the probe: salvage a wreck, harvest a cloud (static hurts), mine a rock in 3 chunks
@@ -7542,7 +7574,7 @@ function prWork(dt, S) {
     if (s.k === 'rock') {
       s.hp -= PROBE.mine * prWS() * S.rig * dt;
       const ch = Math.min(3, Math.floor(3 * (1 - s.hp / s.max)));
-      while (s.chunks < ch && s.chunks < 2) { s.chunks++; prLoot(s.val / 3, 0, 0, 0, s.x, s.y); Hooks.fx('siteChunk', { x: s.x, y: s.y }); Hooks.sfx('crack', { x: s.x, y: s.y }); }
+      while (s.chunks < ch && s.chunks < 2) { s.chunks++; prLoot(s.val / 3, 0, 0, 0, s.x, s.y); Hooks.fx('siteChunk', { x: s.x, y: s.y }); Hooks.sfx('prChunk', { x: s.x, y: s.y }); }
       if (s.hp <= 0) siteDone(s);
     } else {
       s.prog += dt * S.rig / PROBE.wreckT;
@@ -7554,7 +7586,7 @@ function probeUpdate(dt) {
   const P = G.probe, S = prStats();
   sitesUpdate(dt);
   if (!P.alive) {
-    if (P.rb > 0) { P.rb -= dt; if (P.rb <= 0) { const h = prHomePt(); Object.assign(P, { rb: 0, alive: true, home: 1, ret: 0, x: h.x, y: h.y, max: S.max, hp: S.max, cd: 0 }); Hooks.fx('build', { x: P.x, y: P.y, col: '#9fd8ff' }); Hooks.sfx('build', {}); Hooks.log('Probe rebuilt', '#9fd8ff'); } }
+    if (P.rb > 0) { P.rb -= dt; if (P.rb <= 0) { const h = prHomePt(); Object.assign(P, { rb: 0, alive: true, home: 1, ret: 0, x: h.x, y: h.y, max: S.max, hp: S.max, cd: 0 }); Hooks.fx('build', { x: P.x, y: P.y, col: '#9fd8ff' }); Hooks.sfx('prUp', { x: P.x, y: P.y }); Hooks.log('Probe rebuilt', '#9fd8ff'); } }
     guardsUpdate(dt);
     return;
   }
@@ -8131,7 +8163,10 @@ const SFX = (() => {
     crushIn.curve = cv; crushIn.connect(busW);
   }
   // re-route music through a duck stage
-  function hookMusic() { musBus.disconnect(); musBus.connect(duckM); duckM.connect(limiter); }
+  // 6.8: the music passes one low-pass on its way out. Wide open in play; on the pause menu it closes to 900 Hz (the song goes to the next room)
+  let mufF = null, mufOn = false;
+  function hookMusic() { musBus.disconnect(); musBus.connect(duckM); mufF = ctx.createBiquadFilter(); mufF.type = 'lowpass'; mufF.Q.value = 0.5; mufF.frequency.value = mufOn ? 900 : 20000; duckM.connect(mufF); mufF.connect(limiter); }
+  function muffle(on) { mufOn = !!on; if (!mufF || !ctx) return; const t = ctx.currentTime; try { mufF.frequency.cancelScheduledValues(t); mufF.frequency.setTargetAtTime(mufOn ? 900 : 20000, t, mufOn ? 0.08 : 0.05); } catch (e) {} }
 
   // ---------- per-event chain: gain -> stereo pan (+ off-screen dulling) -> bus, with sends ----------
   function chain(bus, o) {
@@ -8245,7 +8280,7 @@ const SFX = (() => {
   // loudness trims (dB), set from offline renders so each role lands in its tier (loudest 50 ms, dBFS):
   // UI -28 · rapid weapons -28 to -31 · single-shot weapons -24 · hits -36 · deaths -30 (heavy -24) · combos -22 ·
   // player actions -22 · notices -20 to -24 · big events -12. Measured with test/sfxrender.py.
-  const TRIM = { ui: 20, deny: 12, rail: -2.3, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -9, hit: 13, hitcrit: -2, hitshield: 2,
+  const TRIM = { open: 12, close: 18, tab: 21, on: 18, off: 18, pick: 12, whoosh: 10, prGo: 8, prZap: 8, prHit: 4, prPop: -1, prChunk: 4, prDown: -3.5, prUp: 3, /* 6.8, from sfxrender */ ui: 20, deny: 12, rail: -2.3, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -9, hit: 13, hitcrit: -2, hitshield: 2,
     build: -3, upgrade: 4, reroll: 15, sell: 12, cash: 4, wave: -2, call: 11, milestone: 6, freeze: 2, net: 15, boom: -2, blink: 3, storm: 7, levelup: 2, unbreak: 4,
     converge: 4, crack: 1, stasis: 5, strikecharge: 3, overclock: 12, quack: 5, nuke: -1.5, // 6.2 the Nuke: the loudest big event, by a dB
     // v5.8 tower character (measured with sfxrender.py; spec variants sit level with their base sound, grav trimmed 3 dB into its tier)
@@ -8511,6 +8546,16 @@ const SFX = (() => {
   const UIS = {
     ui() { const c = ev('ui', busUI, 0.3, { jit: 0.3, pan: 0 }); tone(c, { w: 0.25, f0: 1568, d: 0.025, v: 0.12, lp: 6000 }); tone(c, { w: 0.25, f0: 2093, d: 0.03, v: 0.09, at: 0.022, lp: 6000 }); done(c); },
     deny() { const c = ev('deny', busUI, 0.35, { jit: 0, pan: 0 }); tone(c, { w: 0.125, f0: 233, d: 0.06, v: 0.2, lp: 2000 }); tone(c, { w: 0.125, f0: 175, d: 0.09, v: 0.2, at: 0.065, lp: 2000 }); done(c); },
+    // 6.8: the interface gets a small vocabulary instead of one click. All in the UI tier (about -28 dB), same pulse voice as 'ui':
+    // open rises a fourth with a breath of air, close falls it, tab is one dry tick, on/off are a step up or down,
+    // pick is a three-note confirm for a choice that lasts (a boon, a card, a perk), whoosh covers a screen change
+    open() { const c = ev('open', busUI, 0.3, { jit: 0.2, pan: 0 }); tone(c, { w: 0.25, f0: 1175, d: 0.03, v: 0.1, lp: 5000 }); tone(c, { w: 0.25, f0: 1568, d: 0.045, v: 0.1, at: 0.03, lp: 6000 }); nz(c, { ft: 'highpass', f0: 2500, f1: 6000, d: 0.09, v: 0.05, a: 0.03 }); done(c); },
+    close() { const c = ev('close', busUI, 0.3, { jit: 0.2, pan: 0 }); tone(c, { w: 0.25, f0: 1568, d: 0.03, v: 0.09, lp: 5000 }); tone(c, { w: 0.25, f0: 1175, d: 0.045, v: 0.09, at: 0.03, lp: 4000 }); done(c); },
+    tab() { const c = ev('tab', busUI, 0.3, { jit: 0.4, pan: 0 }); tone(c, { w: 0.125, f0: 1865, d: 0.022, v: 0.11, lp: 6000 }); click(c, 0.03, 0, 5000); done(c); },
+    on() { const c = ev('on', busUI, 0.3, { jit: 0.2, pan: 0 }); tone(c, { w: 0.25, f0: 1319, d: 0.025, v: 0.1, lp: 6000 }); tone(c, { w: 0.25, f0: 1760, d: 0.04, v: 0.1, at: 0.028, lp: 6000 }); done(c); },
+    off() { const c = ev('off', busUI, 0.3, { jit: 0.2, pan: 0 }); tone(c, { w: 0.25, f0: 1319, d: 0.025, v: 0.1, lp: 5000 }); tone(c, { w: 0.25, f0: 988, d: 0.04, v: 0.1, at: 0.028, lp: 4000 }); done(c); },
+    pick() { const c = ev('pick', busUI, 0.34, { jit: 0, pan: 0, room: 0.25 }); arp(c, [76, 81, 88], 0.05, { v: 0.1, d: 0.1, bell: 1 }); done(c); },
+    whoosh() { const c = ev('whoosh', busUI, 0.3, { jit: 0.3, pan: 0 }); nz(c, { f0: 500, f1: 3200, q: 1.1, d: 0.22, v: 0.14, a: 0.09, curve: 'lin' }); done(c); },
   };
   // musical events use a shared scale (A minor pentatonic, matching the soundtrack's home key)
   const note = m => 440 * Math.pow(2, (m - 69) / 12);
@@ -8528,6 +8573,17 @@ const SFX = (() => {
     // 6.3 (zone63): arriving in a zone: a soft rising whoosh, then two bell notes pitched per zone
     zone(id) { const r = { drift: 0, hive: 3, iron: -2, skies: 5, ghost: -4, salvage: 2, tempest: -5, demo: -3, choir: 4, oddball: 7 }[id] || 0; const c = ev('zone', busE, 0.5, { hall: 0.5, jit: 0, pan: 0, trim: 5 }); // +5 dB lands it in the notice tier (sfxrender: about -23 dB)
       nz(c, { f0: 300, f1: 2400, q: 1.2, d: 0.7, v: 0.16, a: 0.35, curve: 'lin' }); arp(c, [69 + r, 76 + r], 0.16, { v: 0.1, d: 0.5, bell: 1, at: 0.3 }); done(c); },
+    // 6.8: the probe has its own voice (it borrowed cash, boom, zap, crack and build): small, high and clean, in its light blue.
+    // prGo a thruster chirp on a new course; prZap its lance; prHit a guard's shot landing on its hull; prPop a guard going down;
+    // prChunk a piece of a site breaking off (rock, then a coin tick); prDown the probe lost (a falling, crushed whine);
+    // prUp rebuilt and docked (three notes up and a latch)
+    prGo(p) { if (!allow('prGo', 0.12, 1)) return; const c = ev('prGo', busE, 0.45, { room: 0.2, jit: 0.4 }, p); tone(c, { w: 0.25, f0: 392, f1: 784, slide: 0.1, d: 0.13, v: 0.11, lp: 4500 }); nz(c, { ft: 'highpass', f0: 3500, f1: 7000, d: 0.16, v: 0.07, a: 0.02 }); done(c); },
+    prZap(p) { if (!allow('prZap', 0.1, 2)) return; const c = ev('prZap', busW, 0.4, { jit: 0.8 }, p); fmv(c, { f0: 1480, f1: 880, r: 2.01, i: 2.2, d: 0.07, v: 0.16 }); done(c); },
+    prHit(p) { if (!allow('prHit', 0.14, 2)) return; const c = ev('prHit', busH, 0.45, { jit: 0.6 }, p); nz(c, { ft: 'bandpass', f0: 1400, f1: 500, q: 1.5, d: 0.07, v: 0.3, lofi: 1 }); tone(c, { w: 0.125, f0: 196, f1: 147, d: 0.06, v: 0.14, lp: 1800 }); done(c); },
+    prPop(p) { const c = ev('prPop', busH, 0.5, { room: 0.25 }, p); sub(c, 150, 60, 0.12, 0.4); nz(c, { ft: 'lowpass', f0: 3200, f1: 500, d: 0.16, v: 0.32, lofi: 1 }); tone(c, { w: 0.25, f0: 880, f1: 1320, slide: 0.06, d: 0.07, v: 0.07, at: 0.05 }); done(c); },
+    prChunk(p) { if (!allow('prChunk', 0.15, 2)) return; const c = ev('prChunk', busE, 0.45, { room: 0.3 }, p); nz(c, { ft: 'bandpass', f0: 900, f1: 350, q: 0.9, d: 0.1, v: 0.34, lofi: 1 }); click(c, 0.25, 0, 3000); arp(c, [88, 93], 0.04, { at: 0.08, v: 0.08, d: 0.06, bell: 1 }); done(c); },
+    prDown(p) { duck(-3, 0.02, 0.3, 0.6); const c = ev('prDown', busE, 0.6, { hall: 0.35, jit: 0 }, p); tone(c, { w: 0.25, f0: 660, f1: 82, slide: 0.45, d: 0.5, v: 0.14, lp: 2600, crush: 1 }); sub(c, 120, 45, 0.3, 0.45); nz(c, { ft: 'lowpass', f0: 2600, f1: 200, d: 0.4, v: 0.3, lofi: 1 }); done(c); },
+    prUp(p) { const c = ev('prUp', busE, 0.5, { room: 0.35, jit: 0 }, p); arp(c, [69, 76, 81], 0.06, { v: 0.1, d: 0.1, bell: 1 }); sub(c, 110, 70, 0.07, 0.3, 0.2); click(c, 0.25, 0.2, 3500); done(c); },
     // 6.5 the Black Hole: arrival is a slow sub swell under a falling filtered rush; the collapse a rising suck, then a deep thump
     hole(p) { duck(-3, 0.3, 0.8, 1.2); const c = ev('hole', busE, 0.6, { hall: 0.55, jit: 0, trim: -1 }, p); /* sfxrender: about -14 dB, under the Maelstrom */ sub(c, 48, 30, 1.6, 0.55); nz(c, { ft: 'lowpass', f0: 1800, f1: 120, d: 1.4, v: 0.22, a: 0.5, curve: 'lin' }); tone(c, { w: 'sine', f0: 62, f1: 41, slide: 1.4, d: 1.6, v: 0.16, a: 0.4 }); done(c); },
     holeEnd(p) { const c = ev('holeEnd', busE, 0.6, { hall: 0.5, jit: 0, trim: 1 }, p); nz(c, { ft: 'bandpass', f0: 200, f1: 2600, q: 2, d: 0.5, v: 0.2, a: 0.45, curve: 'lin' }); sub(c, 90, 32, 0.5, 0.6, 0.5); click(c, 0.35, 0.5, 2500); done(c); },
@@ -8601,6 +8657,7 @@ const SFX = (() => {
     whale(e) { if (!allow('whale', 1)) return; const c = ev('whale', busE, 0.6, { hall: 0.8 }, e); tone(c, { w: 'sine', f0: 180, f1: 260, d: 1.2, v: 0.16, a: 0.3, vib: [4, 0.015] }); tone(c, { w: 'sine', f0: 260, f1: 140, d: 1.1, v: 0.12, a: 0.2, at: 1.1, vib: [5, 0.02] }); done(c); },
     blorp(e) { if (!allow('blorp', 0.2)) return; const c = ev('blorp', busE, 0.6, { room: 0.3, jit: 2 }, e); tone(c, { w: 'sine', f0: 440, f1: 70, d: 0.18, v: 0.3 }); nz(c, { ft: 'lowpass', f0: 700, q: 6, f1: 200, d: 0.12, v: 0.25 }); done(c); },
   };
+  const UIPRI = { ui: 1, tab: 2, on: 3, off: 3, open: 4, close: 4, pick: 5 }; let uiPend = null;
   function play(name, arg, arg2) {
     if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
     if (WEAP[name] || HIT[name] || name === 'die') { // 6.2: placed once by camera distance; a far one is thinned out before it builds anything
@@ -8608,7 +8665,11 @@ const SFX = (() => {
       curP = P; try { return WEAP[name] ? WEAP[name](arg, arg2) : HIT[name] ? HIT[name](arg, arg2) : die(arg); } finally { curP = null; } }
     if (name === 'bosswarn') return EVT.boss(arg);
     if (name === 'combo') { const n = typeof arg === 'string' ? arg : arg && arg.n; if (!COMBO[n] || !allow('combo' + n, 0.12, 2)) return; const c = ev('combo' + n, busE, 0.6, { room: 0.3 }, typeof arg === 'object' ? arg : null); COMBO[n](c); done(c); return; }
-    if (name === 'ui' || name === 'deny') { if (!allow(name, name === 'ui' ? 0.03 : 0.1)) return; return UIS[name](); }
+    if (UIS[name]) { // 6.8: one interface sound per tap. Everything asked for in the same tick is weighed and the most telling one plays
+      if (name === 'deny' || name === 'whoosh' || offline) { if (!allow(name, 0.1)) return; return UIS[name](); }
+      const pr = UIPRI[name] || 1; if (!uiPend) { uiPend = name; Promise.resolve().then(() => { const n = uiPend; uiPend = null; if (n && ctx && ctx.state === 'running' && allow(n, 0.03)) UIS[n](); }); }
+      else if (pr >= (UIPRI[uiPend] || 1)) uiPend = name;
+      return; }
     if (EVT[name]) return EVT[name](arg, arg2);
   }
   // Void Lens: one shared beam hum. Its level follows how many beams are firing; its pitch climbs as they ramp up.
@@ -10015,7 +10076,7 @@ const SFX = (() => {
     const M = Music;
     return { st: ctx.state, ct: ctx.currentTime, rms, played, inFlight, errN, sfxV: sfxVol, musV: musVol, mRun: M.isRunning ? (M.isRunning() ? 1 : 0) : -1, mPause: M.paused ? 1 : 0, mHeld: M.held ? 1 : 0, sr: ctx.sampleRate };
   }
-  return { health, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { health, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -10729,7 +10790,7 @@ const Render = (() => {
 const TW_K = 1.12, EN_K = 1.15; // v4.8 sprite scale-up (towers still sit inside their tile)
 const SIGHTED = { bullet: 1, rail: 1, beam: 1, cone: 1 };
 const RES = 2;
-  const R_ = { glow: true, sharp: true, zfx: true }; // v5.3 graphics switches (Settings · Glow, Pixel scaling; 6.3 Zone effects)
+  const R_ = { glow: true, sharp: true, zfx: true, bloom: true }; // v5.3 graphics switches (Settings · Glow, Pixel scaling; 6.3 Zone effects)
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
   const cam = { z: 1, x: 0, y: 0 };
@@ -10746,6 +10807,12 @@ const RES = 2;
   // v5.8 tower character (render-only): a render clock, small screen kicks for heavy hits, hop stars and pull streaks.
   // LITE skips decorative extras on a crowded field or at high speed
   let rt = 0, kickT = -9, stars = [], drags = [], LITE = false;
+  // 6.8 polish (render-only): white death pops, scorch marks, towers that drop in, and the frame's dt for eased bars
+  let pops = [], decals = [], fdt = 0, scorch = null, dangerVg = null; const born = new Map();
+  function scorchSprite() { if (scorch) return scorch; const q = document.createElement('canvas'); q.width = 28; q.height = 18; const g = q.getContext('2d');
+    for (let y = 0; y < 18; y++) for (let x = 0; x < 28; x++) { const dx = (x - 13.5) / 14, dy = (y - 8.5) / 9, d = dx * dx + dy * dy; if (d > 1) continue;
+      const dith = ((x + y) & 1) ? 0.12 : 0, a = d < 0.3 + dith ? 0.55 : d < 0.62 + dith ? 0.32 : ((x ^ y) & 1) ? 0.16 : 0; if (a) { g.fillStyle = `rgba(4,3,10,${a})`; g.fillRect(x, y, 1, 1); } }
+    q.u = 0.5; return scorch = q; }
   function kick(px, gap) { if (!doShake || rt - kickT < (gap || 0.25)) return; kickT = rt; shakeAt(px * 2, 0.12); }
   // flame particles age white → yellow → orange → smoke (Inferno redder, Plasma Torch blue-white)
   const FLAME_RAMP = { 1: ['#ffffff', '#fff3b0', '#ffe14d', '#ff9a3c', '#ff6a2a', '#5e5658'], 2: ['#fff0c0', '#ffd24a', '#ff8a2a', '#ff4a1a', '#c0281a', '#5a4444'],
@@ -11854,6 +11921,7 @@ const RES = 2;
     return s2;
   }
   let lights = [];
+  const blm = [], blx = []; // 6.8 bloom: a chain of half-size buffers (1/2, 1/4, 1/8, 1/16 of the world buffer)
   function light(x, y, r, col, a) { if (a > 0.01 && r > 0) lights.push(x, y, r, col, a); }
 
   // ---------- dynamic drawing ----------
@@ -11888,6 +11956,10 @@ const RES = 2;
   }
   // Frontier: a tower that is moving glides from its old tile to the new one (lifted off the ground) while it is offline
   function drawTower(t) {
+    if (born.size) { const key = t.x + ',' + t.y, bt = born.get(key); // 6.8: a new tower drops onto its tile and lands with a puff
+      if (bt !== undefined) { const a = (rt - bt) / 0.16;
+        if (a >= 1) { born.delete(key); const x = t.cx * TILE, y = t.cy * TILE + 6; if (!LITE) for (let i = 0; i < 8; i++) { const sg = i < 4 ? -1 : 1; parts.push({ x: x + sg * (6 + Math.random() * 4), y: y + (Math.random() - 0.5) * 3, vx: sg * (18 + Math.random() * 22), vy: -4 - Math.random() * 8, life: 0.3, max: 0.3, col: '#8a8fa8', s: 2, smoke: 1 }); } kick(1, 0.3); }
+        else { const lift = (1 - a) * (1 - a) * 11; b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(t.cx * TILE + 1.5, t.cy * TILE + 2, 12 * (0.5 + a * 0.5), 11 * (0.5 + a * 0.5), 0, 0, 6.283); b.fill(); b.save(); b.translate(0, -lift); drawTower0(t); b.restore(); return; } } }
     if (!(t.mvT > 0 && t.mvFrom)) return drawTower0(t);
     const k = clamp(1 - t.mvT / FRONTIER.moveT, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) * (-2 * k + 2) / 2, lift = Math.sin(k * Math.PI) * 7;
     const dx = (t.mvFrom.x - t.cx) * (1 - e) * TILE, dy = (t.mvFrom.y - t.cy) * (1 - e) * TILE;
@@ -12085,6 +12157,8 @@ const RES = 2;
     if (e.genes && e.genes.includes('bulk')) k *= 1.3;
     if (e.mite) k *= 0.7;
     if (!e.boss) k *= EN_K; // v4.8: units a size up so they read at phone zoom
+    if (e._bt === undefined) e._bt = rt; // 6.8: a unit warps in over 0.22 s the first time it is drawn (small to full size, white fading out)
+    const ba = e.boss ? 1 : (rt - e._bt) / 0.22; if (ba < 1) { const q = 1 - ba; k *= 1 - 0.55 * q * q; }
     const elite = e.elite.length && !e.boss && !e.pirate, eCols = e.elite.length ? e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).col) : null;
     if (elite) k *= 1.22; // v4.7: elites stand a size up from their kin
     const su = (s.u || 1) * k, sw = s.width * su, hw = sw / 2, hh = s.height * su / 2;
@@ -12112,6 +12186,8 @@ const RES = 2;
     else b.drawImage(s, Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2);
     if (e.stowaway) { R(b, X - 5, y - hh - 1, 10, 2, '#d8281a'); R(b, X + 5, y - hh - 1, 2, 1, '#d8281a'); P(b, X + 7, y - hh, '#d8281a'); }
     const ovl = col => { const tc = tintOf(s, col); if (e.boss && Math.cos(e._ha) < -0.3) { b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); b.scale(-1, 1); b.drawImage(tc, -hw, -hh, sw, hh * 2); b.restore(); } else b.drawImage(tc, Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2); };
+    if (ba < 1 && !cloaked) { b.globalAlpha = (1 - ba) * 0.8; ovl('#ffffff'); }
+    e._sp = s; e._sw = sw; e._sy = y; // 6.8: what the death pop needs
     if (e.hitFlash > 0) { b.globalAlpha = cloaked ? 0.2 : e.boss ? 0.3 : 0.55; ovl('#ffffff'); }
     else if (st.frozen > 0) { b.globalAlpha = 0.6; ovl('#bff4ff'); }
     else if (st.chill > 0) { b.globalAlpha = 0.12 + st.chill * 0.06; ovl('#9ad8ff'); }
@@ -12148,7 +12224,10 @@ const RES = 2;
     if (!cloaked && (e.hp < e.maxHp || e.shield > 0) && !e.boss) {
       const w = Math.max(12, Math.round(sw)), hr = Math.max(0, e.hp / e.maxHp);
       if (elite) R(b, X - w / 2 - 1, y - hh - 5, w + 2, 4, '#ffd84a');
-      R(b, X - w / 2, y - hh - 4, w, 2, '#2a0010'); R(b, X - w / 2, y - hh - 4, Math.max(1, Math.round(w * hr)), 2, hr > 0.5 ? '#ff7c9c' : '#ff3355');
+      // 6.8: the chunk just lost stays white for a moment, then drains to the new value
+      if (e._hl === undefined || e._hl < hr) e._hl = hr; else if (e._hl > hr) e._hl = Math.max(hr, e._hl - Math.max(0.6, (e._hl - hr) * 6) * fdt);
+      R(b, X - w / 2, y - hh - 4, w, 2, '#2a0010'); if (e._hl > hr + 0.02) R(b, X - w / 2, y - hh - 4, Math.max(1, Math.round(w * e._hl)), 2, '#fff2f5');
+      R(b, X - w / 2, y - hh - 4, Math.max(1, Math.round(w * hr)), 2, hr > 0.5 ? '#ff7c9c' : '#ff3355');
       if (e.shield > 0) R(b, X - w / 2, y - hh - 6, Math.max(1, Math.round(w * Math.min(1, e.shield / e.maxHp))), 1, '#8ab6ff');
     }
   }
@@ -12309,7 +12388,7 @@ const RES = 2;
 
   // ---------- frame ----------
   function draw(dt, fs) { // fs: animation steps this frame (6.6: 2 when the veiled field is drawn every other frame)
-    frame += fs || 1; rt += dt;
+    frame += fs || 1; rt += dt; fdt = dt;
     ART.frameStart(); ART.idle(dt > 0 ? 3 : 1.5);
     const c = ctx;
     c.setTransform(1, 0, 0, 1, 0, 0);
@@ -12340,6 +12419,7 @@ const RES = 2;
         if (f >= 1) { wipe = null; oldLayer.width = oldLayer.height = 1; }
       } else blitL(mapLayer); }
     drawVeil();
+    if (decals.length) { const sp = scorchSprite(); for (const q of decals) { q.life -= dt; b.globalAlpha = Math.max(0, Math.min(1, q.life / q.max * 2.5)); b.drawImage(sp, Math.round((q.x - 7 * q.k) * RES) / RES, Math.round((q.y - 4.5 * q.k) * RES) / RES, 14 * q.k, 9 * q.k); } b.globalAlpha = 1; decals = decals.filter(q => q.life > 0); }
     // 6.5 fog of war: which enemies are hidden this frame (bosses and Scanned enemies always show; a boss in fog is drawn over it)
     const FOGON = fogUpdate();
     for (const e of G.enemies) { const see = !FOGON || fogSee(e.x, e.y); e._fogH = !see && !e.boss && !(e.scanned > 0); e._fogB = !see && !!e.boss; }
@@ -12502,6 +12582,8 @@ const RES = 2;
     for (const e of G.enemies) if (!e.fly && !e._fogH && !e._fogB) drawEnemy(e);
     if (G.capT && G.capT.length) drawCapField(); // 6.4 Rimewall walls (in front of the ground enemies they hold) and Entangler links
     for (const e of G.enemies) if (e.fly && !e._fogH && !e._fogB) drawEnemy(e);
+    for (const q of pops) { q.life -= dt; const k = 1 - Math.max(0, q.life / q.max), z = 1 + 0.45 * k, w = q.w * z, h = q.h * z; b.globalAlpha = (1 - k) * 0.9; b.drawImage(tintOf(q.s, '#ffffff'), Math.round((q.x - w / 2) * RES) / RES, Math.round((q.y - h / 2) * RES) / RES, w, h); }
+    if (pops.length) { b.globalAlpha = 1; pops = pops.filter(q => q.life > 0); }
     // pirate drop ships
     for (const P2 of G.pirates || []) {
       if (FOGON && !fogSee(P2.x, P2.y)) continue;
@@ -12662,6 +12744,23 @@ const RES = 2;
       const r = lights[i + 2] * ws * lsc, x = (bx2s(lights[i]) - ox) * lsc, y = (by2s(lights[i + 1]) - oy) * lsc;
       if (x + r < 0 || y + r < 0 || x - r > lw || y - r > lh) continue;
       lctx.globalAlpha = Math.min(1, lights[i + 4]); lctx.drawImage(lightSprite(lights[i + 3]), x - r, y - r, r * 2, r * 2);
+    }
+    // 6.8 bloom: what is bright in the frame (shots, beams, blasts, the core) bleeds a soft halo. The world buffer is halved
+    // twice, raised to the 4th power with three 'multiply' draws so mid-tones fall away, halved twice more, and the two widest steps join the lights
+    if (R_.bloom !== false && R_.glow !== false && !(DBG & 32)) {
+      const sx0 = (v.vx - vxI) * RES, sy0 = (v.vy - vyI) * RES, sw0 = v.vw * RES, sh0 = v.vh * RES;
+      const q0 = Math.max(2, sw0 / 560); // the first step is at most 560 px wide, so a zoomed-out view costs no more than the home view
+      let pw = Math.max(1, Math.ceil(sw0 / q0)), ph = Math.max(1, Math.ceil(sh0 / q0));
+      for (let i = 0; i < 4; i++) { const q = blm[i], g = blx[i];
+        if (q.width !== pw || q.height !== ph) { q.width = pw; q.height = ph; }
+        g.globalCompositeOperation = 'copy'; g.globalAlpha = 1; g.imageSmoothingEnabled = true;
+        if (i === 0) g.drawImage(buf, sx0, sy0, sw0, sh0, 0, 0, pw, ph); else g.drawImage(blm[i - 1], 0, 0, pw, ph);
+        if (i === 1) { g.globalCompositeOperation = 'multiply'; for (let m = 0; m < 3; m++) g.drawImage(blm[0], 0, 0, pw, ph); } // the 4th power: a bright road (0.6) keeps 13%, a white-hot shot keeps all of it
+        pw = Math.max(1, Math.ceil(pw / 2)); ph = Math.max(1, Math.ceil(ph / 2)); }
+      lctx.imageSmoothingEnabled = true;
+      lctx.globalAlpha = 0.55; lctx.drawImage(blm[2], 0, 0, lw, lh);
+      lctx.globalAlpha = 0.5; lctx.drawImage(blm[3], 0, 0, lw, lh);
+      lctx.globalAlpha = 1;
     }
     if (R_.glow !== false) { c.globalCompositeOperation = 'lighter'; c.drawImage(lightCv, ox, oy, DW, DH); }
     c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
@@ -13006,7 +13105,7 @@ const RES = 2;
     for (const T of texts) {
       T.life -= dt; T.y += T.vy * dt;
       const a = Math.min(1, T.life / T.max * 2), p = tileToScreen(T.x, T.y);
-      const f = `${Math.round(T.size * tz)}px ${T.font || 'VT323, monospace'}`;
+      const f = `${Math.round(T.size * tz * (T.pop && T.max - T.life < 0.07 ? 1.45 : 1))}px ${T.font || 'VT323, monospace'}`; // 6.8: crits and payouts land a size up for two frames
       if (f !== lastFont) { c.font = f; lastFont = f; }
       if (T.bub) { const tw = c.measureText(T.txt).width + 10, th = Math.round(T.size * tz) + 6; c.fillStyle = `rgba(8,8,20,${a * 0.85})`; c.fillRect(Math.round(p.x - tw / 2), Math.round(p.y - th / 2), Math.round(tw), th); c.fillRect(Math.round(p.x - 2), Math.round(p.y + th / 2), 4, 3); c.strokeStyle = `rgba(255,255,255,${a * 0.5})`; c.lineWidth = 1; c.strokeRect(Math.round(p.x - tw / 2) + 0.5, Math.round(p.y - th / 2) + 0.5, Math.round(tw) - 1, th - 1); }
       c.fillStyle = `rgba(0,0,0,${a * 0.8})`; c.fillText(T.txt, p.x + 1, p.y + 1);
@@ -13020,6 +13119,7 @@ const RES = 2;
       c.font = '10px Silkscreen, monospace'; c.fillStyle = e.redAlert && frame % 10 < 5 ? '#ffffff' : '#ff9aac'; c.textAlign = 'left';
       c.fillText((e.redAlert ? 'RED ALERT · ' : '') + e.bossName.toUpperCase() + (e.bossTitle ? ' · ' + e.bossTitle.toUpperCase() : '') + (e.elite.length ? ' · ' + e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).name).join(' · ') : ''), bx, by + 5);
       c.fillStyle = '#3a0a18'; c.fillRect(bx, by + 12, bw, 5);
+      { const hr = Math.max(0, e.hp / e.maxHp); if (e._hl === undefined || e._hl < hr) e._hl = hr; else if (e._hl > hr) e._hl = Math.max(hr, e._hl - Math.max(0.12, (e._hl - hr) * 3) * dt); if (e._hl > hr + 0.004) { c.fillStyle = '#ffe9ee'; c.fillRect(bx, by + 12, bw * e._hl, 5); } } // 6.8: the chunk just lost
       c.fillStyle = e.phaseT > 0 && frame % 8 < 4 ? '#ffffff' : '#ff3355'; c.fillRect(bx, by + 12, bw * Math.max(0, e.hp / e.maxHp), 5);
       if (!e.gen && e.boss !== 'gloop') { for (const th of BOSS_PHASES) { c.fillStyle = '#07080f'; c.fillRect(Math.round(bx + bw * th) - 1, by + 11, 2, 7); }
         c.font = '8px Silkscreen, monospace'; c.textAlign = 'right'; c.fillStyle = e.phase ? '#ff9aac' : '#8a8fa8'; c.fillText(e.phaseT > 0 ? 'SHIFTING' : ['PHASE I', 'PHASE II', 'FINAL PHASE'][e.phase || 0], bx + bw, by + 26); }
@@ -13037,6 +13137,9 @@ const RES = 2;
     }
     // scanlines: one dark row every 3 px, drawn as plain stripes in one path. v5.3.2: a repeating createPattern fill left three
     // white seams across the field on iPhone Safari (Nic's display test isolated it), so no patterns here
+    // 6.8: under 30% hull the edges of the field pulse red (slow, then faster as the hull drops)
+    if (!G.over && G.core.hp / G.core.max < 0.3) { if (!dangerVg) { dangerVg = document.createElement('canvas'); dangerVg.width = 64; dangerVg.height = 36; const g = dangerVg.getContext('2d'), gr = g.createRadialGradient(32, 18, 10, 32, 18, 38); gr.addColorStop(0, 'rgba(255,40,70,0)'); gr.addColorStop(0.6, 'rgba(255,40,70,0.1)'); gr.addColorStop(1, 'rgba(255,40,70,0.75)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 36); }
+      const k = 1 - G.core.hp / G.core.max / 0.3; c.globalAlpha = (0.3 + 0.3 * k) * (0.6 + 0.4 * Math.sin(rt * (3 + 5 * k))); c.imageSmoothingEnabled = true; c.drawImage(dangerVg, 0, 0, W, H); c.globalAlpha = 1; }
     c.fillStyle = 'rgba(0,0,0,0.13)'; c.beginPath(); for (let y = 2; y < H; y += 3) c.rect(0, y, W, 1); c.fill();
   }
 
@@ -13055,10 +13158,10 @@ const RES = 2;
       case 'holeEnd': { if (fogLive && !fogSeeR(d.x, d.y, 2.5)) break; const x = T2P(d.x), y = T2P(d.y); // 6.5 the Black Hole collapses: a white pinch, then a ring and sparks thrown out
         stars.push({ x, y, life: 0.12, max: 0.12, col: '#ffffff', s: TILE * 0.7, disc: 1 }); rings.push({ x, y, r0: 4, r1: HOLE.r * TILE, life: 0.7, max: 0.7, col: '#b86cff', w: 3 });
         rings.push({ x, y, r0: 2, r1: TILE * 2.2, life: 0.35, max: 0.35, col: '#fff0c8', fill: 1, w: 2 }); burst(x, y, LITE ? 14 : 40, '#ff9a4a', 70 * K, 0.7); kick(3, 0.5); break; }
-      case 'build': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 22, life: 0.35, max: 0.35, col: d.col }); burst(T2P(d.x), T2P(d.y), 14, d.col, 30 * K, 0.4); break;
-      case 'upgrade': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 22, r1: 4, life: 0.4, max: 0.4, col: d.col }); burst(T2P(d.x), T2P(d.y), 18, d.col, 25 * K, 0.6, -30 * K); break;
+      case 'build': born.set(Math.floor(d.x) + ',' + Math.floor(d.y), rt); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 22, life: 0.35, max: 0.35, col: d.col }); burst(T2P(d.x), T2P(d.y), 14, d.col, 30 * K, 0.4); break;
+      case 'upgrade': stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.08, max: 0.08, col: '#ffffff', s: 9, disc: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 22, r1: 4, life: 0.4, max: 0.4, col: d.col }); burst(T2P(d.x), T2P(d.y), 18, d.col, 25 * K, 0.6, -30 * K); break;
       case 'sell': burst(T2P(d.x), T2P(d.y), 16, '#8a8aa6', 20 * K, 0.5, 30 * K); break;
-      case 'num': if (!showNums || (!fullHud && !d.crit && !d.combo) || texts.length > 22) return; text(d.x + (Math.random() - 0.5) * 0.4, d.y - 0.5, fmt(d.v) + (d.crit ? '!' : ''), d.crit ? '#ffffff' : d.col, d.crit ? 18 : 15, 0.7); break;
+      case 'num': if (!showNums || (!fullHud && !d.crit && !d.combo) || texts.length > 22) return; text(d.x + (Math.random() - 0.5) * 0.4, d.y - 0.5, fmt(d.v) + (d.crit ? '!' : ''), d.crit ? '#ffffff' : d.col, d.crit ? 18 : 15, 0.7); if (d.crit || d.combo) texts[texts.length - 1].pop = 1; break;
       case 'combo': {
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 28, life: 0.3, max: 0.3, col: d.col });
         const now = performance.now();
@@ -13133,7 +13236,22 @@ const RES = 2;
       case 'aegis': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.4, max: 0.4, col: '#59f0b4', w: 2, core: 1 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 2, r1: 16, life: 0.4, max: 0.4, col: '#b8ffe0', w: 2 }); text(d.x2, d.y2 - 0.6, 'STOPPED', '#59f0b4', 12, 0.8, -1, 'Silkscreen, monospace'); break; // 6.4 Gatekeeper
       case 'jackpot': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 30, life: 0.5, max: 0.5, col: '#ffd84a', w: 2 }); if (texts.filter(T => T.combo).length < 3) { text(d.x, d.y - 1, 'JACKPOT', '#ffd84a', 13, 0.9, -1, 'Silkscreen, monospace'); texts[texts.length - 1].combo = 1; } break; // 6.4 Wildcard
       case 'flamering': for (let i = 0; i < 8; i++) { const an = Math.random() * 6.2832, v = (d.range * TILE) * (2 + Math.random()); parts.push({ x: T2P(d.x), y: T2P(d.y), vx: Math.cos(an) * v, vy: Math.sin(an) * v, life: 0.28, max: 0.28, col: Math.random() < 0.5 ? d.col : '#ffe14d', s: 3 }); } break; // v5.8 Backdraft
-      case 'death': burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break;
+      case 'death': { // 6.8: the body flashes white and swells for a few frames, chunks fly, and ground units leave a scorch mark
+        let e0 = null; for (const e of G.enemies) if (e.x === d.x && e.y === d.y && e.type === d.type && e._sp) { e0 = e; break; }
+        if (e0 && e0._fogH) break;
+        const x = T2P(d.x), y = T2P(d.y), col = d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470');
+        if (e0 && !d.boss && pops.length < 40) pops.push({ s: e0._sp, x, y: e0._sy, w: e0._sw, h: e0._hh * 2, life: 0.13, max: 0.13 });
+        if (!LITE && !d.boss) { for (let i = 0, n = d.elite ? 6 : 3; i < n; i++) { const a = Math.random() * 6.283, sp = (30 + Math.random() * 45) * K; parts.push({ x, y: y - 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6 - 45 * K, g: 260 * K, life: 0.45, max: 0.45, col: i % 2 ? sh(col, 0.55) : col, s: 2.5 }); }
+          if (e0 && !e0.fly && decals.length < 60) decals.push({ x, y: y + 3, k: Math.max(0.7, Math.min(1.6, (e0._sw || 12) / 14)), life: 7, max: 7 }); }
+        if (d.boss && !d.gen) { // the big ones go up in stages: a white core, three staggered blasts, long sparks, and a mark that stays
+          stars.push({ x, y, life: 0.16, max: 0.16, col: '#ffffff', s: TILE * 1.1, disc: 1 });
+          for (let i = 0; i < 3; i++) { const a = Math.random() * 6.283, rr = TILE * (0.5 + Math.random() * 0.9), qx = x + Math.cos(a) * rr, qy = y + Math.sin(a) * rr;
+            rings.push({ x: qx, y: qy, r0: 3, r1: TILE * (1.2 + i * 0.5), life: 0.4, max: 0.4, col: i % 2 ? '#fff0c8' : col, fill: 1, w: 3, dl: 0.12 + i * 0.16 });
+            stars.push({ x: qx, y: qy, life: 0.07, max: 0.07, col: '#ffffff', s: TILE * 0.5, disc: 1, dl: 0.12 + i * 0.16 }); }
+          rings.push({ x, y, r0: 6, r1: TILE * 7, life: 0.9, max: 0.9, col: '#ffffff', w: 2 }); rings.push({ x, y, r0: 4, r1: TILE * 4.5, life: 0.6, max: 0.6, col, w: 4, fill: 1 });
+          for (let i = 0, n = LITE ? 10 : 26; i < n; i++) { const a = Math.random() * 6.283, sp = (60 + Math.random() * 120) * K; parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 - 50 * K, g: 200 * K, life: 0.9 + Math.random() * 0.4, max: 1.3, col: i % 3 ? col : '#ffffff', s: 3 }); }
+          decals.push({ x, y: y + 6, k: 3.2, life: 14, max: 14 }); }
+        burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break; }
       case 'arcs': for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x) + Math.cos(a) * rr * 0.5 + (Math.random() - 0.5) * 10, y: T2P(d.y) + Math.sin(a) * rr * 0.5 }, { x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr }], life: 0.18, max: 0.18, col: '#9ff2ff', core: 1, w: 2 }); } break;
       case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' });
         for (const o of d.to || []) { lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(o.x), y: T2P(o.y) }], life: 0.45, max: 0.45, col: '#7dffb0', core: 1, w: 2 }); text(o.x, o.y - 0.5, '+', '#7dffb0', 14, 0.5, -0.8); }
@@ -13182,7 +13300,7 @@ const RES = 2;
       case 'elite': burst(T2P(d.x), T2P(d.y), 10, '#ffe14d', 25 * K, 0.5); break;
       case 'jam': case 'fizzle': burst(T2P(d.x), T2P(d.y), 8, '#8a8aa6', 20 * K, 0.4, -20 * K); break;
       case 'plates': burst(T2P(d.x), T2P(d.y), 40, '#a4aac4', 60 * K, 0.8, 60 * K, 3); shakeAt(6, 0.3); break;
-      case 'coin': text(d.x, d.y - 0.6, d.v < 0 ? '−' + Math.abs(d.v) : '+' + d.v, d.v < 0 ? PAL.bad : PAL.amber, 15, 1, -0.6);
+      case 'coin': text(d.x, d.y - 0.6, d.v < 0 ? '−' + Math.abs(d.v) : '+' + d.v, d.v < 0 ? PAL.bad : PAL.amber, 15, 1, -0.6); texts[texts.length - 1].pop = 1;
         // v5.8 Credit Forge payout: a spray of sparks out of the furnace
         if (d.forge && !LITE) { for (let i = 0; i < 14; i++) parts.push({ x: T2P(d.x) + (Math.random() - 0.5) * 8, y: T2P(d.y) - 2, vx: (Math.random() - 0.5) * 50, vy: -40 - Math.random() * 45, g: 150, life: 0.7, max: 0.7, col: Math.random() < 0.3 ? '#ffffff' : Math.random() < 0.6 ? '#ffe14d' : '#ffb03a', s: 2 }); stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.08, max: 0.08, col: '#ffe14d', s: 4 }); }
         break;
@@ -13195,6 +13313,12 @@ const RES = 2;
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: TILE * 4, life: 0.7, max: 0.7, col, w: 4, fill: 1 });
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: TILE * 6, life: 1, max: 1, col: '#ffffff', w: 2 });
         burst(T2P(d.x), T2P(d.y), 80, col, 110 * K, 0.9); break; }
+      case 'coreDeath': { const x = G.core.x * TILE, y = G.core.y * TILE; // 6.8: the run ends with the core going up, not a freeze-frame
+        flashes.push({ col: '#ffffff', life: 0.5, max: 0.5, a: 0.55 }); shakeAt(10, 0.6);
+        stars.push({ x, y, life: 0.2, max: 0.2, col: '#ffffff', s: TILE * 1.5, disc: 1 });
+        for (let i = 0; i < 4; i++) rings.push({ x, y, r0: 6, r1: TILE * (4 + i * 2.5), life: 0.7 + i * 0.12, max: 0.7 + i * 0.12, col: i % 2 ? '#ffffff' : '#ff3355', w: 4 - i * 0.5, fill: i === 0 ? 1 : 0, dl: i * 0.09 });
+        for (let i = 0; i < 46; i++) { const a = Math.random() * 6.283, sp = (50 + Math.random() * 150) * K; parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 - 40 * K, g: 180 * K, life: 0.8 + Math.random() * 0.5, max: 1.3, col: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? PAL.core : '#ff3355', s: 3 }); }
+        decals.push({ x, y: y + 6, k: 4, life: 20, max: 20 }); break; }
       case 'cash': flashes.push({ col: '#ffb03a', life: 0.25, max: 0.25, a: 0.18 }); break;
     }
   }
@@ -13206,6 +13330,7 @@ const RES = 2;
     mapLayer = document.createElement('canvas');
     mid = document.createElement('canvas'); mctx = mid.getContext('2d');
     lightCv = document.createElement('canvas'); lctx = lightCv.getContext('2d');
+    for (let i = 0; i < 4; i++) { const q = document.createElement('canvas'); q.width = q.height = 1; blm.push(q); blx.push(q.getContext('2d')); }
     resize();
   }
   function resize() {
@@ -13216,7 +13341,7 @@ const RES = 2;
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     fit();
   }
-  function reset() { mapZone = null; wipe = null; zoneAmbReset(); nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
+  function reset() { pops = []; decals = []; born.clear(); mapZone = null; wipe = null; zoneAmbReset(); nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
 
   // build-menu card art: the tower on a lit plinth against its element's colour
   function towerCard(type, canvas, locked) {
@@ -13265,7 +13390,7 @@ const RES = 2;
     g.setLineDash([]);
   }
   return {
-    set glow(v) { R_.glow = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
+    set glow(v) { R_.glow = v; }, set bloom(v) { R_.bloom = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
     tintStats: () => ({ kept: tintLRU.size, made: tintMade, cap: TINT_CAP }), // 6.6 test hook (perf66)
     zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
@@ -13739,6 +13864,7 @@ const UI = (() => {
     // the web is a .screen too: switching screens while it's open would hide it but leave Tree.isOpen set, which halts the game
     try { if (id !== 'tree' && Tree.isOpen) Tree.close(); } catch (e) { /* Tree not built yet during boot */ }
     for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== id;
+    if (screen !== id && screen) { SFX.play('whoosh'); const x = $('#xfade'); if (x) { x.classList.remove('go'); void x.offsetWidth; x.classList.add('go'); } } // 6.8: a short stepped fade into the new screen
     screen = id;
     if (id !== 'tree') SFX.setTrack(id === 'game' ? 'game' : 'menu');
   }
@@ -13906,7 +14032,7 @@ const UI = (() => {
     G.unlocks = []; G.bestAtStart = PROF.bestWave; G.fresh = freshProfile() || !!G.tut;
     if (!snap && G.preAdapted) { const pa = G.preAdapted; setTimeout(() => { if (G && screen === 'game') toast('SWARM PRE-ADAPTED', `${pa.join(' and ')} already in its DNA. Plan your counters`, '#ff4d6a', 1); }, 1600); }
     hudFull = PROF.settings.hud === 'full';
-    Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false; Render.zfx = zfxOn();
+    Render.full = hudFull; Render.nums = PROF.settings.dmgNums; Render.shakeOn = PROF.settings.shake; Render.glow = PROF.settings.glow !== false; Render.bloom = PROF.settings.bloom !== false; Render.sharp = PROF.settings.sharp !== false; Render.zfx = zfxOn();
     zoneSeen = null; { const zb = $('#zoneBan'); if (zb) zb.hidden = true; } // 6.3: the zone banner shows once the field is clear
     document.body.classList.toggle('hudfull', hudFull);
     closePanel();
@@ -14682,7 +14808,19 @@ const UI = (() => {
       const c = show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok);
       if (!panned && r && c) see(S, r, c);
     }
-    return { start, stop, tick, get hold() { return on && held; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
+    // 6.7 (Nic, Nov 9: "A large part of the first 4 steps is waiting around for the first couple of waves to make it into range"):
+    // in Training's first FF_WAVES waves, while enemies are on the road and none is in a tower's range or the core's, the game
+    // runs at FF_X (a margin of 1.5 tiles kept it off along roads that skirt the core's reach: 15 s saved of ~45). The clock only: same rules, same recording. It drops back the moment one comes close.
+    const FF_WAVES = 3, FF_X = 3;
+    function walkFF() {
+      if (!on || held || plan !== 'basic' || !G || G.over || !G.tut || W() < 1 || W() > FF_WAVES) return false;
+      let any = false; const cr = coreStats().range;
+      for (const e of G.enemies) { if (e.dead) continue; any = true;
+        if (Math.hypot(e.x - G.core.x, e.y - G.core.y) <= cr) return false;
+        for (const t of G.towers) if (t.s && Math.hypot(e.x - t.cx, e.y - t.cy) <= t.s.range) return false; }
+      return any;
+    }
+    return { start, stop, tick, get hold() { return on && held; }, get ff() { return walkFF() ? FF_X : 0; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
       get chain() { return on && cur ? lessonOf(i) : null; }, // 6.2: the lesson the current step belongs to (test/tutcadence.py)
       steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS), taught,
       checks: () => (G && G.tut && plan === 'basic' ? ckState() : null), checkNames: () => CHECK.map(c => c[0]) }; // 6.5.2: test/tutcheck.py
@@ -14727,10 +14865,25 @@ const UI = (() => {
   // 6.6 (perf66): HUD writes skip values that haven't changed (a text write always replaces the node and dirties layout)
   const setT = (el, v) => { v = String(v); if (el && el.textContent !== v) el.textContent = v; };
   const setHid = (el, v) => { v = !!v; if (el && el.hidden !== v) el.hidden = v; };
+  // 6.8 HUD reactions: a jolt on the hull bar when the core is hit, a pop on credits for a large gain, a dip when credits are
+  // spent, a pop on the wave number. Classes restart their CSS animation; nothing here touches the run
+  const hudLast = { run: null, hp: 0, cr: 0, wave: 0, t: 0 };
+  function hudKick(el, cls) { if (!el) return; el.classList.remove('bump', 'dip', 'hit'); void el.offsetWidth; el.classList.add(cls); }
+  function hudReact(c) {
+    const H = hudLast, now = performance.now(), tot = c.hp + (c.shield || 0);
+    if (H.run !== G) { H.run = G; H.hp = tot; H.cr = G.credits; H.wave = G.wave; return; }
+    if (tot < H.hp - 0.5 && now - H.t > 250) { H.t = now; hudKick($('#hpbar'), 'hit'); }
+    H.hp = tot;
+    const d = G.credits - H.cr;
+    if (d <= -1) hudKick($('#cr'), 'dip'); else if (d >= Math.max(40, H.cr * 0.06)) hudKick($('#cr'), 'bump');
+    H.cr = G.credits;
+    if (G.wave !== H.wave) { H.wave = G.wave; hudKick($('#wave'), 'bump'); }
+  }
   function updateHud(force) {
     if (!G) return;
     const c = G.core;
-    $('#hpfill').style.width = pct(Math.max(0, c.hp / c.max));
+    $('#hpfill').style.width = pct(Math.max(0, c.hp / c.max)); { const lg = $('#hplag'); if (lg) lg.style.width = pct(Math.max(0, c.hp / c.max)); }
+    hudReact(c);
     $('#shfill').style.width = pct(c.smax ? c.shield / c.smax : 0);
     setT($('#hptxt'), `${Math.max(0, Math.ceil(c.hp))}${c.shield >= 1 ? '+' + Math.floor(c.shield) : ''}`);
     $('#hpbar').classList.toggle('low', c.hp / c.max < 0.3);
@@ -14750,7 +14903,7 @@ const UI = (() => {
     setHid($('#cpBanner'), !G.checkpoint || !!G.reloc);
     if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); setT($('#cpBanner').querySelector('span'), cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'); $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
-    const sp = $('#bSpeed'); setT(sp.querySelector('b'), G.speed + '×'); sp.classList.toggle('fast', G.speed > 1);
+    const sp = $('#bSpeed'), ffOn = !!UI.walkFF; setT(sp.querySelector('b'), ffOn ? '»' : G.speed + '×'); sp.classList.toggle('fast', G.speed > 1 || ffOn);
     { const ob = $('#bOD'); if (ob) { const ready = odReady(), lbl = G.odUsed ? 'Used' : ready ? (odArm ? 'Again!' : 'Nuke') : 'W' + OD_WAVE;
       ob.classList.toggle('ready', ready && !odArm); ob.classList.toggle('arm', ready && odArm); ob.classList.toggle('dim', !ready); ob.classList.toggle('ghost', !!G.fresh && !ready && !G.odUsed);
       const sp = ob.querySelector('span'); if (sp.textContent !== lbl) sp.textContent = lbl; } }
@@ -15104,6 +15257,7 @@ const UI = (() => {
 
   // ---------- Panels ----------
   function closePanel() { sellArm = null;
+    if (panel) SFX.play('close');
     panel = null; pick = null; capPeek = null;
     $('#panel').hidden = true;
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
@@ -15112,6 +15266,7 @@ const UI = (() => {
     document.body.classList.remove('panel-l', 'panel-r');
   }
   function openPanel(p) {
+    if (!panel) SFX.play('open');
     panel = p;
     const left = Render.tileToScreen(p.x + 0.5, p.y).x > Render.layout.W / 2;
     const el = $('#panel');
@@ -15550,6 +15705,7 @@ const UI = (() => {
       if (!P.alive) { closePanel(); probeEnd(); return false; }
       const x = Math.round(p.x * 10) / 10, y = Math.round(p.y * 10) / 10;
       if (!window.act('prGo', x, y)) { SFX.play('deny'); return true; }
+      SFX.play('prGo', { x, y });
       SFX.play('ui');
       if (prCmd) prCmd.site = P.task || 0;
       if (inPanel) { panel.site = P.task || 0; renderPanel(); }
@@ -15589,7 +15745,7 @@ const UI = (() => {
   }
   function prBarAction(k) {
     if (!prCmd || !G || !G.probe) return;
-    if (k === 'home') { if (!window.act('prHome')) SFX.play('deny'); else SFX.play('ui'); }
+    if (k === 'home') { if (!window.act('prHome')) SFX.play('deny'); else SFX.play('prGo', G.probe); }
     else if (k === 'ups') { SFX.play('ui'); openProbe(prCmd.site && siteById(prCmd.site) ? prCmd.site : 0); }
     prBarUI(); updateHud();
   }
@@ -16043,6 +16199,8 @@ const UI = (() => {
   function modal(html, kind) {
     if (modalOpen === 'studio' && kind !== 'studio' && stInCompose) { stInCompose = false; leaveCompose(); }
     const m = $('#modal');
+    if (!modalOpen) SFX.play('open'); // 6.8: a modal arriving (a re-render of an open one keeps its click)
+    $('#modal').classList.toggle('fresh', !modalOpen);
     m.classList.remove('side'); m.innerHTML = html; m.hidden = false; modalOpen = kind || 'modal';
     for (const c of m.querySelectorAll(':scope > .card')) frameBox(c, 'ch', 'foot', 'cbody');
     document.body.classList.add('modal-open');
@@ -16050,6 +16208,7 @@ const UI = (() => {
   }
   function closeModal() {
     if (modalOpen === 'studio' && stInCompose) { stInCompose = false; leaveCompose(); }
+    if (modalOpen) SFX.play('close');
     $('#modal').hidden = true; $('#modal').innerHTML = ''; $('#modal').classList.remove('side'); modalOpen = null; modalFrom = null; confirmAbandon = false; confirmReset = false;
     document.body.classList.remove('modal-open');
     flushToasts();
@@ -16382,6 +16541,20 @@ const UI = (() => {
       <div class="row logrow"><span class="note">Run log for analysis</span><button class="btn small" data-act="logCopy">Copy log</button><button class="btn small" data-act="logSave">Save log</button></div>
       <div class="foot"><button class="btn" data-act="hangar">Main Menu</button><button class="btn" data-act="web">Talents</button><button class="btn primary" data-act="again">Play Again</button></div></div>`, 'over');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
+    countUp('#modal .card.over .bigstats b');
+  }
+  // 6.8: big numbers count up to their value (0.7 s each, one after another). The final text is exactly what was written
+  function countUp(q) {
+    if (navigator.webdriver && !window.__countUp) return; // tests read the numbers right away
+    const els = [...document.querySelectorAll(q)], t0 = performance.now();
+    const jobs = els.map((el, i) => { const txt = el.textContent, m = txt.match(/^([+−-]?)(\d[\d,]*\.?\d*)([KMBT]?)$/); if (!m) return null; const n = parseFloat(m[2].replace(/,/g, '')); if (!(n > 0)) return null;
+      el.textContent = m[1] + '0' + m[3]; return { el, txt, pre: m[1], n, suf: m[3], dec: (m[2].split('.')[1] || '').length, at: i * 140 }; }).filter(Boolean);
+    if (!jobs.length) return;
+    const step = () => { const t = performance.now() - t0; let live = false;
+      for (const j of jobs) { if (j.done || !j.el.isConnected) continue; const k = Math.min(1, Math.max(0, (t - j.at) / 700));
+        if (k >= 1) { j.el.textContent = j.txt; j.done = 1; } else { live = true; const e = 1 - (1 - k) * (1 - k); j.el.textContent = j.pre + (j.n * e).toFixed(j.dec) + j.suf; } }
+      if (live) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
   }
   // v5.8 Tower Mastery gained this run: rank-ups first ("Arc Coil Mastery 2 → 3"), then the biggest gains
   function masteryGainHTML(L) {
@@ -16455,6 +16628,7 @@ const UI = (() => {
         + row('Sound', `<em id="sndStat">${esc(soundStatus())}</em>`, '<button class="btn small" data-act="sndFix">Restart sound</button>'),
       graphics: sec('Effects')
         + row('Glow', 'Soft lighting on the field', flip(S.glow !== false, 'gfx', 'data-k="glow"'))
+        + row('Bloom', 'Bright shots and blasts glow. Needs Glow', flip(S.bloom !== false, 'gfx', 'data-k="bloom"'))
         + row('Screen shake', 'Big hits shake the view', sw(!!S.shake, 'shake'))
         + row('Zone effects', 'Weather and particles in each zone. The zone colors stay on', flip(zfxOn(), 'gfx', 'data-k="zfx"'))
         + sec('Display')
@@ -16888,7 +17062,7 @@ const UI = (() => {
     const M = SFX.music, c = M.config;
     if (act !== 'stDel') stDelArm = -1; if (act !== 'cpOver') stOverArm = false;
     switch (act) {
-      case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; SFX.play('ui'); openStudio(); return true;
+      case 'stTab': stTab = b.dataset.v; stPaste = false; stEdit = -1; SFX.play('tab'); openStudio(); return true;
       case 'stHelp': stHelp = stTab; SFX.play('ui'); openStudio(); return true; // 6.2 the ? sheet, on the tab you are on
       case 'stHelpTab': stHelp = b.dataset.v; SFX.play('ui'); openStudio(); return true;
       case 'stHelpX': stHelp = null; SFX.play('ui'); openStudio(); return true;
@@ -17251,7 +17425,7 @@ const UI = (() => {
   }
   function modalAction(act, b) {
     if (act.startsWith('st') || act.startsWith('cp')) { try { if (studioAction(act, b)) return; } catch (e) { SFX.report(e, 'studio ' + act); toast('STUDIO ERROR', String(e && e.message || e).slice(0, 90) + ' · tell Claude', '#ff4d6a', true); return; } }
-    SFX.play('ui');
+    SFX.play(b.classList.contains('sw') ? (b.classList.contains('on') ? 'off' : 'on') : /tab$/i.test(act) ? 'tab' : 'ui'); // 6.8: switches and tabs have their own sounds
     switch (act) {
       case 'close': closeModal(); break;
       case 'brief': closeModal(); if (G) { G.paused = false; G.briefing = false; } break;
@@ -17316,8 +17490,8 @@ const UI = (() => {
       case 'huntPaste': pasteCode('Paste a hunt code', v => readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', /^TRACK/.test(v) ? 'That is a track code: Music Studio › Paste a code' : 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); })); break;
       case 'huntPasteGo': { const v = ($('#huntIn') || {}).value || ''; readHuntCode(v).then(rec => { if (!rec) { toast('HUNT CODE', 'That code could not be read', '#ff4d6a', true, 'tip'); return; } watchRun(rec, `Hunt code · ${rec.opts && rec.opts.daily ? rec.opts.daily.date : ''}`); }); break; }
       case 'watchEnd': endWatch(); break;
-      case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } window.act('boon', +b.dataset.v); closeModal(); if (!o.twist) toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
-      case 'anom': { const A = anomInfo((G.anomOffers || []).find(o => o === b.dataset.v || (o && o.id === b.dataset.v))); if (!A) { closeModal(); break; } window.act('anom', b.dataset.v); closeModal(); G.paused = false; toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
+      case 'boon': { const o = G.draft && G.draft[+b.dataset.v]; if (!o) { closeModal(); break; } window.act('boon', +b.dataset.v); closeModal(); SFX.play('pick'); if (!o.twist) toast('BOON', o.name, '#59f0b4'); renderPanel(); break; }
+      case 'anom': { const A = anomInfo((G.anomOffers || []).find(o => o === b.dataset.v || (o && o.id === b.dataset.v))); if (!A) { closeModal(); break; } window.act('anom', b.dataset.v); closeModal(); SFX.play('pick'); G.paused = false; toast('ANOMALY', A.name, '#b86cff'); Render.fx('nova', {}); renderPanel(); Save.save(); break; }
       case 'stab': { window.act('stab'); closeModal(); G.paused = false; toast('STABILIZED', `Score multiplier ×${G.scoreMult.toFixed(2)}`, '#59f0b4'); break; }
       case 'hangar': closeModal(); G = null; show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); break;
       case 'again': closeModal(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); break; // 6.0: after Training, a saved run comes first
@@ -17347,7 +17521,7 @@ const UI = (() => {
       }
       case 'hud': PROF.settings.hud = b.dataset.v; Save.save(); openSettings(); break;
       case 'uis': PROF.settings.uiScale = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v; Save.save(); UI.fitVV(); openSettings(); break;
-      case 'gfx': PROF.settings[b.dataset.k] = b.dataset.v === '1'; Render.glow = PROF.settings.glow !== false; Render.sharp = PROF.settings.sharp !== false; Render.zfx = zfxOn(); Save.save(); openSettings(); break;
+      case 'gfx': PROF.settings[b.dataset.k] = b.dataset.v === '1'; Render.glow = PROF.settings.glow !== false; Render.bloom = PROF.settings.bloom !== false; Render.sharp = PROF.settings.sharp !== false; Render.zfx = zfxOn(); Save.save(); openSettings(); break;
       case 'autoslow': PROF.settings.autoSlow = b.dataset.v === '1'; Save.save(); openSettings(); break;
       case 'haptic': PROF.settings.haptics = b.dataset.v === '1'; Save.save(); if (PROF.settings.haptics) Haptics.tap(true); openSettings(); break;
       case 'briefs': PROF.settings.briefings = b.dataset.v; Save.save(); openSettings(); break;
@@ -17500,7 +17674,8 @@ const UI = (() => {
     Hooks.sfx = (n, a, b) => { SFX.play(n, a, b); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view
     SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, py: p.y / L.H * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; }); // 6.2: py for the camera-distance mix
-    Hooks.fx = (t, d) => Render.fx(t, d);
+    // 6.8: a boss kill gets a beat. The blast plays for 1 s before the boon pick covers it, and the sim runs slow where it keeps running
+    Hooks.fx = (t, d) => { if (t === 'death' && d.boss && !d.gen && !G.watch) { UI.beat = 1; UI.slowmo = Math.max(UI.slowmo, 0.6); } Render.fx(t, d); };
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && screen === 'game') evoWait = true; }; // 6.2: shown by tick when the teaching gate allows
     Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) { teachMark(); openAssault(true); } }, 700); }; // (an assault can't wait: it is this wave)
@@ -17510,8 +17685,8 @@ const UI = (() => {
     Hooks.gridFull = () => { const T = topTower(); toast('GRID FULL', `Every tower uses 1 power (${gridUsed()}/${gridCap()}). Build on a Power Node (free), sell an idle tower, or expand the reactor${T ? `. Or Overcharge your best: ${TOWERS[T.type].name}` : ''}`, '#ffb03a'); };
     Hooks.log = log;
     Hooks.toast = toast;
-    Hooks.onDraft = opts => { closePanel(); openDraft(opts); };
-    Hooks.onGameOver = () => { closePanel(); setTimeout(openGameOver, 900); };
+    Hooks.onDraft = opts => { closePanel(); if (!(UI.beat > 0)) openDraft(opts); }; // 6.8: during the boss-kill beat UI.tick opens it when the beat ends
+    Hooks.onGameOver = () => { closePanel(); if (!ghostRun()) { Render.fx('coreDeath'); UI.beat = 1.2; } setTimeout(openGameOver, ghostRun() ? 900 : 1300); };
     Hooks.onLevel = (L, n) => { toast('LEVEL UP · ' + L, `+${n} talent point${n > 1 ? 's' : ''}`, '#59f0b4'); Save.save(); };
     Hooks.onUnlock = k => { if (G) (G.unlocks || (G.unlocks = [])).push(k); if (panel && panel.kind === 'build') renderPanel(); };
     Hooks.onChange = () => { if (G && panel) renderPanel(); Save.save(); };
@@ -17593,7 +17768,8 @@ const UI = (() => {
     else if (G && !G.over && G.speedWas && screen === 'game') { if (G.speed === 1) { G.speed = G.speedWas; toast(`SPEED ${G.speed}×`, 'Boss down', '#59f0b4', true, 'tip'); } G.speedWas = 0; G.slowKey = null; updateHud(); }
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
-    if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen && !G.watch) { closePanel(); openDraft(G.draft); }
+    { const mf = screen === 'game' && !!G && modalOpen === 'pause'; if (mf !== SFX.muffled) SFX.muffle(mf); } // 6.8: the music goes dull on the pause menu
+    if (screen === 'game' && G && G.draft && !G.over && !modalOpen && !Tree.isOpen && !G.watch && !(UI.beat > 0)) { closePanel(); openDraft(G.draft); }
     if (screen === 'game' && G && G.huntChoice && !G.draft && !G.over && !modalOpen && !Tree.isOpen && !G.watch) { closePanel(); openHunt(); }
     if (G && G.reloc && !canRelocate()) endReloc();
     // continuous sounds: the Void Lens hum and the low-hull heartbeat
@@ -17621,9 +17797,9 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
+    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
-    get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, coach: Coach,
+    get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
     _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
   };
@@ -17641,7 +17817,7 @@ const Tree = (() => {
       const b = e.target.closest('[data-tact]'); if (!b) return;
       const a = b.dataset.tact, v = b.dataset.v;
       if (a === 'close') { close(); return; }
-      if (a === 'tab') { cur = v; sel = null; drawer = null; SFX.play('ui'); refresh(); el('tgrid').scrollTop = 0; return; }
+      if (a === 'tab') { cur = v; sel = null; drawer = null; SFX.play('tab'); refresh(); el('tgrid').scrollTop = 0; return; }
       if (a === 'sum') { cur = 'sum'; sel = null; drawer = null; SFX.play('ui'); refresh(); return; }
       if (a === 'sel') {
         const now = performance.now();
@@ -17888,19 +18064,22 @@ function talentsToast(kind) {
     if (UI.screen === 'game' && G) {
       if (G.checkpoint && !G.paused && !G.reloc && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt;
       if (UI.slowmo > 0) UI.slowmo -= dt;
+      if (UI.beat > 0) UI.beat -= dt;
       if (G.watch && !G.paused && !UI.modalOpen) UI.watchFeed();
       const halted = G.over || G.paused || G.draft || G.huntChoice || (G.checkpoint && !G.enemies.length) || Tree.isOpen || UI.modalOpen || UI.coachHold;
       if (!halted) {
-        acc += dt * G.speed * (UI.slowmo > 0 ? 0.3 : 1);
+        const ff = UI.coachFF; if (!!ff !== !!UI.walkFF) { UI.walkFF = !!ff; UI.hudNow(); } // 6.7: Training's walk-in fast-forward (» on SPEED)
+        acc += dt * Math.max(G.speed, ff) * (UI.slowmo > 0 ? 0.3 : 1);
         let n = 0;
         while (acc >= STEP && n < 10) { simStep(STEP); acc -= STEP; n++; }
+        if (ff) UI.ffSec = (UI.ffSec || 0) + n * STEP; // game seconds spent in Training's fast-forward (tut66.py: time saved)
         if (n >= 10) acc = 0;
       }
       // 6.6 (perf66): the opaque Talents screen hides the field, so it isn't drawn; under a full modal (Pause, Settings, a boon or
       // card pick, a briefing) the halted field sits behind an 80% veil and is drawn every other frame, two animation steps at a time
       if (Tree.isOpen) { ART.frameStart(); ART.idle(1.5); }
       else if (halted && UI.modalOpen && !modalEl.classList.contains('side')) { veilOdd = !veilOdd; if (veilOdd) Render.draw(0, 2); else { ART.frameStart(); ART.idle(1.5); } }
-      else Render.draw(halted ? 0 : dt);
+      else Render.draw(halted && !(UI.beat > 0 && !G.paused && !UI.modalOpen) ? 0 : dt); // 6.8: during a beat the effects keep moving over the frozen field
     } else { if (UI.screen === 'hangar') { drawBg(dt); TitleFX.draw(dt); } ART.idle(4); } // menus: pre-render unit art in the background
     if (Tree.isOpen) Tree.draw();
     wakeT -= dt; if (wakeT <= 0) { wakeT = 2; if (!document.hidden) SFX.wake(); try { AudWatch.check(); } catch (e) {} } // iOS can leave the sound 'interrupted'; 6.5.5 the sound watchdog
