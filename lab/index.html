@@ -1118,6 +1118,12 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .tsumcap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; background: var(--panel2); padding: 6px 9px; margin-bottom: 4px; box-shadow: inset 3px 0 0 var(--c); }
 .tsumcap b { font-family: var(--f-pix); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--c); }
 .tsumcap small { font-size: 15px; color: var(--dim); }
+/* 6.10 a tree's Signature, under the tree header */
+.tsig { display: grid; gap: 2px; margin: 0 0 8px; padding: 7px 10px; background: rgba(255, 255, 255, 0.04); box-shadow: inset 3px 0 0 var(--c); }
+.tsig b { color: var(--c); font-family: var(--f-pix); font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.04em; }
+.tsig span { font-size: 17px; line-height: 1.1; color: var(--ink); }
+.tsig small { font-size: 14px; color: var(--dim); }
+.tsig.off span { color: var(--dim); }
 /* 6.10 Fusion rows: two tree colors on the edge; the ones you can switch to are dimmer and tappable */
 .tsumcap.fus { box-shadow: inset 3px 0 0 var(--c), inset 6px 0 0 var(--c2); padding-left: 13px; }
 .tsumcap.fus.pick { opacity: 0.72; cursor: pointer; min-height: 44px; }
@@ -1335,7 +1341,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.10.0 + FUSION V2 + FIRST MINUTE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.10.0 + SIGNATURES + FUSION V2';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -1899,6 +1905,7 @@ const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
 const WHATS_NEW = { ver: '6.10.0', title: 'Last Gradient 6.10 · Fusion', items: [
+  ['Signatures', 'Every talent tree has a Signature: one effect only that tree has. Every point in the tree makes it stronger, and deeper points count more. See the top of each tree.'],
   ['Fusions', 'Spend 8 points in each of two talent trees to open their Fusion. Each of the 21 pairs has its own. One Fusion is active in a run. See Talents, Your Build.'],
   ['Game text', 'About 120 lines now use full sentences and plain words.'],
   ['New players', 'The Daily Hunt shows after your first run or after Training. The New Run screen leaves out the Evolution and Sector lines until then.'],
@@ -2823,6 +2830,27 @@ const roman = n => ROMAN[n] || String(n);
 // ---------- Codex (discoveries kept across runs) ----------
 const COMBO_NAMES = ['SHATTER', 'THERMAL SHOCK', 'OVERLOAD', 'SUPERCONDUCT', 'COLLAPSE'];
 
+// 6.10 Tree Signatures (Nic, Nov 11: "Each point spent in talents needs to be felt ... that should scale with time too. Higher tier
+// rewards need to be felt more and more defining. I want a less homogenous spec pool."). FR_VER 7. Every point in a tree raises that
+// tree's Signature, one effect per tree that no other tree has. Points count more the deeper they are: SIG_BANDS per point, in bands
+// of 3 points (points 1-3 count 1 each, 4-6 count 1.5, 7-9 count 2, 10 and up count 3). sigUnits(12) = 22.5, sigUnits(19) = 43.5.
+// All but Fortify and Battle Rhythm work on a share of the enemy's max HP, so they keep their weight as waves grow. u = units.
+const SIG_BANDS = [1, 1.5, 2, 3];
+function sigUnits(n) { let u = 0; for (let i = 0; i < n; i++) u += SIG_BANDS[Math.min(3, Math.floor(i / 3))]; return u; }
+// Sweep f (first numbers: K 0.0035, T 0.0005, A 0.003, C 0.003, V 0.0005, Fortify): Voltaic +8.9 waves, Combustion +6.9, the rest inside the noise. A 15% execute
+// is worth about +18% damage, and +18% damage is about 1.5 waves. Second numbers below; Bastion changed from hull growth (useless: a boss
+// leak is a share of the hull) to less damage per leak.
+const SIGV = { K: 0.007, T: 0.0008, A: 0.006, Ar: 2.5, C: 0.009, V: 0.0015, E: 0.01, Emax: 0.6, X: 0.0025, Xt: 5 };
+const sp = (u, k, d) => +(u * SIGV[k] * 100).toFixed(d === undefined ? 1 : d);
+const SIGS = {
+  K: { name: 'Killshot', desc: u => `Kinetic hits kill any enemy below ${sp(u, 'K')}% health. Bosses are immune; they take +${sp(u, 'K')}% Kinetic damage instead.` },
+  T: { name: 'Consume', desc: u => `Burn deals at least ${sp(u, 'T', 2)}% of the enemy's max HP per second. Bosses take a quarter of that.` },
+  A: { name: 'Arc Leap', desc: u => `When a Shocked enemy dies, lightning hits the nearest enemy within ${SIGV.Ar} tiles for ${sp(u, 'A')}% of its max HP and Shocks it.` },
+  C: { name: 'Deep Cold', desc: u => `An enemy takes ${sp(u, 'C')}% of its max HP at the moment it is Frozen.` },
+  V: { name: 'Crushing Depth', desc: u => `A Collapse deals ${sp(u, 'V', 2)}% more of each enemy's max HP.` },
+  E: { name: 'Stand Fast', desc: u => `Every enemy that reaches the core deals ${Math.min(SIGV.Emax * 100, sp(u, 'E'))}% less damage to it. Bosses too.` },
+  X: { name: 'Battle Rhythm', desc: u => `After you use an ability, all towers gain +${sp(u, 'X')}% Attack Speed for ${SIGV.Xt}s.` },
+};
 // 6.10 Fusions (Nic, Nov 10: "specing into two trees gives a unique ability across any two combos"). FR_VER 7, G.frV >= 7.
 // FUS_NEED points in each of two talent trees opens that pair's Fusion. One Fusion is active in a run (G.fus): the player's pick
 // (PROF.fus) when it is open, else the open pair with the most points. Patterns, so they are easy to learn: Command pairs (X) fire
@@ -3147,6 +3175,8 @@ function threatScore(e) { const prog = e.L && e.L.len ? eProg(e) : 0.5; return e
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 // 6.10 Fusions (data.js FUSIONS; G.frV >= 7). fus('KT'): is that Fusion active in this run. fusionsOpen(): the pairs the build has
 // opened. fusionNow(): the one a new run takes.
+// 6.10 Tree Signatures (data.js SIGS): sig('K') = the tree's units in this run, 0 under older rules. M.sig is set in computeMods
+const sig = t => (G && G.frV >= 7 && !G.noSig && G.mods && G.mods.sig && G.mods.sig[t]) || 0;
 const fus = id => !!G && G.fus === id;
 // Fusion payoffs deal a share of the enemy's own max HP (bosses a quarter), like the Collapse: this keeps its weight in late waves,
 // where flat damage does not (sweep d: 21 points in an element tree moved the bots' median wave by 0 to 7).
@@ -3224,6 +3254,7 @@ function computeMods(alloc, runMods) {
   for (const [k2, d2] of [['cLink', 'circuit'], ['cBolt', 'circuit'], ['hPull', 'horizon'], ['hWell', 'horizon'], ['aRank', 'artisan'], ['aVxp', 'artisan'], ['gScore', 'gambler']]) if (!ks[d2]) delete m[k2];
   if (!ks.marksman) delete m.msOc; if (!ks.wildfire) { delete m.wfHeat; delete m.wfDur; } if (!ks.wareco) { delete m.weStep; delete m.weTur; }
   M.raw = m;
+  M.sig = {}; for (const t of TALENTS) M.sig[t.id] = sigUnits(treePts(t.id)); // 6.10
   return M;
 }
 
@@ -5771,7 +5802,8 @@ function updateEnemies(dt) {
     if (st.burn) {
       st.burn.t -= dt;
       if (G.mods.ks.wildfire && !e.fly && !e.burrowed) { e.fireT = (e.fireT || 0) - dt; if (e.fireT <= 0) { e.fireT = 0.4; roadFire(e); } }
-      hit(e, st.burn.dps * dt, 'T', st.burn.src, { dot: 1, noStatus: 1 });
+      const sb = sig('T'); // 6.10 Consume: a floor on Burn, as a share of max HP
+      hit(e, (sb ? Math.max(st.burn.dps, e.maxHp * sb * SIGV.T * (e.boss ? 0.25 : 1)) : st.burn.dps) * dt, 'T', st.burn.src, { dot: 1, noStatus: 1 });
       if (st.burn.t <= 0) st.burn = null;
       if (e.dead) continue;
     }
@@ -5786,6 +5818,7 @@ function updateEnemies(dt) {
     if (st.shock > 0) st.shock -= dt;
     if (st.mark > 0 && !FX('markPerma')) { st.markT -= dt; if (st.markT <= 0) { st.mark = Math.max(0, st.mark - 1); st.markT = 1.2; } }
     if (st.stun > 0) st.stun -= dt;
+    if (st.frozen > 0) { if (!e.frzOn) { e.frzOn = 1; const dc = sig('C'); if (dc) { fusPct(e, dc * SIGV.C, 'C', null); if (e.dead) continue; } } } else if (e.frzOn) e.frzOn = 0; // 6.10 Deep Cold
     if (e.shatterT > 0) e.shatterT -= dt;
     // regen
     let regen = 0;
@@ -5883,7 +5916,7 @@ function updateEnemies(dt) {
   G.redAlert = G.enemies.some(e => e.boss && e.redAlert && !e.dead);
   if (G.stasisT > 0) G.stasisT -= dt;
   if (G.dragT > 0) G.dragT -= dt;
-  if (G.fusT > 0) G.fusT -= dt; if (G.fusCD > 0) G.fusCD -= dt; // 6.10 Fusion timers (Called Shots, Cold Shell)
+  if (G.fusT > 0) G.fusT -= dt; if (G.fusCD > 0) G.fusCD -= dt; if (G.rhyT > 0) G.rhyT -= dt; // 6.10 Fusion timers (Called Shots, Cold Shell)
   if (G.slime && G.slime.length) { for (const p of G.slime) p.t -= dt; G.slime = G.slime.filter(p => p.t > 0); }
   G.enemies = G.enemies.filter(e => !e.dead);
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
@@ -6064,6 +6097,7 @@ function leak(e) {
   if (e.boss === 'auditor' && e.audited > 0) { Hooks.log(`The Auditor left with ${Math.round(e.audited)} of your credits`, '#ff4d6a'); e.audited = 0; }
   if (e.shield > 0 && e.boss) dmg *= 1.2;
   if (c.A && c.A.cguard) dmg *= 1 - Math.min(0.6, c.A.cguard / 100);
+  { const sf = sig('E'); if (sf) dmg *= 1 - Math.min(SIGV.Emax, sf * SIGV.E); } // 6.10 Stand Fast: every leak hurts the core less, bosses included
   if (c.hLvl) dmg *= 1 - HULL.guard / 100 * c.hLvl;
   if (c.leg && c.leg.retribution && G.time - (c.retT || -99) > 1.5) {
     c.retT = G.time;
@@ -6104,6 +6138,7 @@ function hit(e, dmg, el, src, o) {
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2 + ((e.lureT.s && e.lureT.s.netVuln) || 0);
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
+  if (el === 'K' && e.boss && !o.dot && src && src.s) { const k = sig('K'); if (k) mult *= 1 + k * SIGV.K; } // 6.10 Killshot, the boss half
   if (el === 'K' && G.fus && !o.dot) { // 6.10 Fusions: Death Mark, Home Guard
     if (st.mark > 0 && fus('KV')) mult *= 1 + FUSV.kvMark * st.mark;
     if (o.crit && G.fusT > 0 && fus('KX')) mult *= 1 + FUSV.kxCrit;
@@ -6139,6 +6174,7 @@ function hit(e, dmg, el, src, o) {
     if (G.stats.dmgByEl[el] !== undefined) G.stats.dmgByEl[el] += a; // v5.0.2: shield damage counts, so Arc's real work shows up
     if (amt <= 0) { e.hitFlash = 0.08; if (!o.dot) Hooks.sfx('hitshield', e); if (src && src.dmgDone !== undefined) { src.dmgDone += a; src.dpsAcc += a; } return a; }
   }
+  if (el === 'K' && !e.boss && !o.dot && src && src.s && amt < e.hp) { const k = sig('K'); if (k && e.hp - amt <= e.maxHp * k * SIGV.K) { amt = e.hp; Hooks.fx('say', { x: e.x, y: e.y - 0.4, t: 'killshot' }); } } // 6.10 Killshot
   const dealt = Math.min(e.hp, amt);
   if (G.dbgBoss && e.boss) { if (!e._hit0) e._hit0 = G.time; const k = o.combo || (o.abil ? 'ability' : o.dot ? 'dot' : src && src.type ? src.type : src === G.core ? 'core' : 'other'); G.dbgBoss[k] = (G.dbgBoss[k] || 0) + dealt; }
   e.hp -= amt;
@@ -6206,7 +6242,7 @@ function applyStatuses(e, dmg, el, src, o) {
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
       // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old)) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * ((o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old) + sig('V') * SIGV.V * (o2.boss || o2.assault ? 0.25 : 1))) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
       if (G.fus && !o2.dead) { const s2 = o2.st; // 6.10 Singularity Fusions change the Collapse: Dark Flame, Static Collapse, Absolute Zero
         if (fus('TV')) { const dps = Math.max(dmg * 0.35, o2.maxHp * FUSV.tvPct * (o2.boss ? 0.25 : 1)) * M.burnDmg; if (!s2.burn || s2.burn.dps < dps) s2.burn = { dps, t: 3 * M.burnDur, src }; else s2.burn.t = 3 * M.burnDur; }
@@ -6282,6 +6318,9 @@ function kill(e, src, o) {
   if (G.mods.ks.horizon && !e.dead && (G.wells || (G.wells = [])).length < 24) { G.wells.push({ x: e.x, y: e.y, r: 1.2 * (1 + FX('hWell') / 100), t: 0.6 }); if (Math.random() < 0.35) Hooks.fx('implode', { x: e.x, y: e.y, r: 1.2 }); }
   if (e.dead) return;
   e.dead = true; e.hp = 0;
+  if (e.st.shock > 0) { const lw = sig('A'); if (lw) { let b = null, bd = SIGV.Ar * SIGV.Ar; // 6.10 Arc Leap: the Shock jumps on from a dead enemy
+    for (const o2 of G.enemies) { if (o2.dead) continue; const d2 = dist2(o2.x, o2.y, e.x, e.y); if (d2 <= bd) { bd = d2; b = o2; } }
+    if (b) { Hooks.fx('arcs', { x: e.x, y: e.y, r: Math.sqrt(bd) }); b.st.shock = Math.max(b.st.shock, 3); b.st.shockEff = Math.max(b.st.shockEff, G.mods.shockEff); fusPct(b, lw * SIGV.A, 'A', src); } } }
   geneRecord(e, false); assaultHit(e, false);
   if (e.brood) { // Brood: bursts into mites
     const mh = hpBase(e) * 0.12 / ENEMIES.swarmer.hp;
@@ -6507,6 +6546,7 @@ function updateTowers(dt) {
     if (burning && s.el === 'T') rate *= 1 + Math.min(0.4, 0.02 * burning);
     if (t.hot && M.ks.wildfire) rate *= 0.75;
     if (M.ks.stormrider && s.el0 === 'A' && sw.inStorm) rate *= 1.6; // v5.8 Storm Rider
+    if (G.rhyT > 0) rate *= 1 + sig('X') * SIGV.X; // 6.10 Battle Rhythm
     if (s.el === 'A' && FX('capacitor')) t.capT = (t.capT || 0) + dt;
     if (s.kind === 'surge') { if (t.surgeIdle) t.charge = Math.min(s.cells, (t.charge || 0) + dt * s.chargeRate); if ((t.charge || 0) >= 1) rate *= SURGE.burst; } // 6.4 Surge Spire
     t.effRange = range;
@@ -7802,6 +7842,7 @@ function useAbility(k, x, y) {
   // Tactician: every use takes 30% off the other abilities' cooldowns
   if (M.ks.tactician) for (const o of ABIL_ORDER) if (o !== k && G.abilCd[o] > 0) G.abilCd[o] *= 0.7;
   if (G.fus) fusAbility(); // 6.10 Command Fusions
+  if (sig('X')) G.rhyT = SIGV.Xt; // 6.10 Battle Rhythm
   switch (k) {
     case 'strike': {
       const boom = () => {
@@ -18136,13 +18177,18 @@ const Tree = (() => {
     return `<div class="trow toprow ${ok ? '' : 'locked'}"><div class="trl"><b>▲</b><small>${TTOP} pts</small></div><div class="trt"><div class="${cls}" style="--c:${tr.col}">
       <button class="tbody" data-tact="sel" data-v="${T.id}"><canvas class="ico" width="24" height="24" data-ico="${T.unlockT}"></canvas><em>Capstone tier · new tower</em><b>${esc(D.name)}${r ? ' <i>Unlocked</i>' : ''}</b><span class="td">${esc(D.blurb)}</span></button>${!why ? `<button class="tadd" data-tact="add" data-v="${T.id}" aria-label="Unlock">+</button>` : ''}</div></div></div>`;
   }
+  // 6.10 the tree's Signature: what it does now, at this many points
+  function sigHTML(tr, pts) {
+    const S = SIGS[tr.id]; if (!S) return '';
+    return `<div class="tsig${pts ? '' : ' off'}" style="--c:${tr.col}"><b>Signature · ${esc(S.name)}</b><span>${esc(S.desc(sigUnits(Math.max(1, pts))))}</span><small>${pts ? 'Every point in this tree makes it stronger. Deeper points count more.' : 'This is the Signature at 1 point. Every point in this tree makes it stronger.'}</small></div>`;
+  }
   function treeHTML(tr) {
     const pts = treePts(tr.id), rowsHTML = tr.rows.map((row, r) => {
       const need = rowNeed(r), ok = pts >= need || treePts(tr.id, r) >= need;
       return `<div class="trow ${ok ? '' : 'locked'}"><div class="trl"><b>${r + 1}</b>${r ? `<small>${need} pts</small>` : ''}</div><div class="trt">${row.map(T => tile(T, tr)).join('')}</div></div>`;
     }).join('');
     const capOk = pts >= TCAP;
-    return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${rowsHTML}
+    return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${sigHTML(tr, pts)}${rowsHTML}
       <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
       ${tierHTML(tr)}
       <p class="note tfoot">${FUS_NEED} points here and ${FUS_NEED} in another tree open the Fusion of the two trees. See Your Build.</p>
@@ -18165,6 +18211,7 @@ const Tree = (() => {
     const caps = activeCaps();
     return `<div class="thead"><b>Your build</b><span>Everything your talents give you, in one place</span><em>${pointsSpent()} spent · ${pointsFree()} free</em></div>
       <div class="lbl">Capstones</div>${caps.length ? caps.map(id => { const T = TAL[id], tr = TREE_BY_ID[T.tree]; return `<div class="tsumcap" style="--c:${tr.col}"><b>${esc(T.name)}</b><small>${esc(tr.name)}${(TS().remnants || []).includes(id) ? ' · Remnant' : ''}</small><span>${talentLines(T).map(esc).join(' · ')}</span></div>`; }).join('') : `<p class="note">None yet. Spend ${TCAP} points in one tree to reach its Capstones.</p>`}
+      ${(() => { const on = TALENTS.filter(t => treePts(t.id) > 0); return on.length ? `<div class="lbl">Signatures</div>` + on.map(t => `<div class="tsumcap" style="--c:${t.col}"><b>${esc(SIGS[t.id].name)}</b><small>${esc(t.name)} · ${treePts(t.id)} point${treePts(t.id) === 1 ? '' : 's'}</small><span>${esc(SIGS[t.id].desc(sigUnits(treePts(t.id))))}</span></div>`).join('') : ''; })()}
       ${fusHTML()}
       ${(() => { const nt = TALENTS.filter(tr => tr.top && talRank(tr.top.id)); return nt.length ? `<div class="lbl">New towers</div><p class="note">${nt.map(tr => `<b style="color:${tr.col}">${esc(tr.top.name)}</b>`).join(' · ')}</p>` : ''; })()}
       <div class="lbl">Bonuses</div><p class="note">Every point spent: +${TAL_PT_DMG}% Damage to all towers (now +${+(pointsSpent() * TAL_PT_DMG).toFixed(1)}%).</p>${lines.length ? `<ul class="tsum">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : '<p class="note">No talents yet.</p>'}
