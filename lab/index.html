@@ -1335,7 +1335,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.10.0 + FUSION + FIRST MINUTE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.10.0 + FUSION V2 + FIRST MINUTE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
 <body>
@@ -2293,7 +2293,7 @@ const COLL_SPECIES = Object.keys(ENEMIES).filter(k => ENEMIES[k].from < 999);
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
-  { id: 'wraith', name: 'Phase Wraith', hp: 22, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks' },
+  { id: 'wraith', name: 'Phase Wraith', hp: 22, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks. Slowing it delays the next jump' },
   { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'Disables nearby towers' },
   { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
   // oddballs: random stand-ins on boss waves
@@ -2828,30 +2828,32 @@ const COMBO_NAMES = ['SHATTER', 'THERMAL SHOCK', 'OVERLOAD', 'SUPERCONDUCT', 'CO
 // (PROF.fus) when it is open, else the open pair with the most points. Patterns, so they are easy to learn: Command pairs (X) fire
 // when an ability is used, Singularity pairs (V) change the Collapse, Bastion pairs (E) work at the core. Numbers: FUSV.
 const FUS_NEED = 8;
-const FUSV = { ktBurn: 0.2, kaArc: 0.5, kaR: 1.5, kcShatter: 2, kvMark: 0.06, keR: 3, keDmg: 0.3, kxT: 4, taRad: 1.5, taDmg: 1.5, tcAt: 2, tcDmg: 2, teCr: 0.2, txBurn: 5, txT: 4,
-  acRad: 1.5, acCD: 0.4, avT: 6, aeFree: 4, axT: 6, cvT: 1, ceR: 3, ceT: 1.5, ceCD: 4, cxChill: 2, veR: 3, veSlow: 0.25, vxMark: 2, exShield: 0.25 };
+const FUSV = { ktBurn: 0.2, ktPct: 0.04, kaPct: 0.03, kaR: 2, kcShatter: 2, kcPct: 0.06, kvMark: 0.1, keR: 4, keDmg: 0.5, kxT: 6, kxCrit: 0.5, taRad: 1.5, taDmg: 1.5, taPct: 0.04,
+  tcAt: 2, tcDmg: 2, tcPct: 0.06, tvPct: 0.02, teCr: 0.35, txBurn: 5, txT: 4, acRad: 1.5, acCD: 0.4, acPct: 0.04, avT: 6, avEff: 1.5, aeFree: 4, axT: 6, axStun: 1, cvT: 1.5,
+  ceR: 4, ceT: 2.5, ceCD: 3, cxChill: 2, cxT: 1.5, veR: 4, veSlow: 0.35, vxPct: 0.02, exShield: 0.4, exHull: 0.03 };
+const pc = v => +(v * 100).toFixed(1); // 0.04 -> 4
 const FUSIONS = [
-  { id: 'KT', name: 'Hot Rounds', desc: `Kinetic hits set enemies on fire. The Burn deals ${FUSV.ktBurn * 100}% of the hit per second for 3s.` },
-  { id: 'KA', name: 'Arc Rounds', desc: `Kinetic hits on Shocked enemies arc to the nearest enemy within ${FUSV.kaR} tiles for ${FUSV.kaArc * 100}% of the hit as Arc damage.` },
-  { id: 'KC', name: 'Shatterpoint', desc: `Shatter deals ×${FUSV.kcShatter} damage.` },
-  { id: 'KV', name: 'Death Mark', desc: `Kinetic hits deal +${FUSV.kvMark * 100}% damage for each Mark on the target.` },
-  { id: 'KE', name: 'Home Guard', desc: `Kinetic towers within ${FUSV.keR} tiles of the core deal +${FUSV.keDmg * 100}% damage.` },
-  { id: 'KX', name: 'Called Shots', desc: `After you use an ability, Kinetic towers always crit for ${FUSV.kxT}s.` },
-  { id: 'TA', name: 'Plasma Front', desc: `Overload explosions are ${Math.round((FUSV.taRad - 1) * 100)}% larger and deal +${Math.round((FUSV.taDmg - 1) * 100)}% damage.` },
-  { id: 'TC', name: 'Thermal Fracture', desc: `Thermal Shock triggers at ${FUSV.tcAt} Chill stacks instead of 3 and deals ×${FUSV.tcDmg} damage instead of ×1.5.` },
-  { id: 'TV', name: 'Dark Flame', desc: 'A Collapse sets every enemy it hits on fire.' },
-  { id: 'TE', name: 'Slag Harvest', desc: `Enemies that die while Burning pay +${FUSV.teCr * 100}% credits.` },
+  { id: 'KT', name: 'Hot Rounds', desc: `Kinetic hits set enemies on fire. A Kinetic crit on a Burning enemy detonates it: ${pc(FUSV.ktPct)}% of max HP to every enemy within 1 tile.` },
+  { id: 'KA', name: 'Arc Rounds', desc: `A Kinetic crit calls lightning on the target and its 2 nearest neighbors: ${pc(FUSV.kaPct)}% of max HP as Arc damage, and Shock.` },
+  { id: 'KC', name: 'Shatterpoint', desc: `Shatter deals ×${FUSV.kcShatter} damage, plus ${pc(FUSV.kcPct)}% of the enemy's max HP.` },
+  { id: 'KV', name: 'Death Mark', desc: `Kinetic hits deal +${pc(FUSV.kvMark)}% damage for each Mark on the target.` },
+  { id: 'KE', name: 'Home Guard', desc: `Kinetic towers within ${FUSV.keR} tiles of the core deal +${pc(FUSV.keDmg)}% damage.` },
+  { id: 'KX', name: 'Called Shots', desc: `After you use an ability, Kinetic towers always crit for ${FUSV.kxT}s, and their crits deal +${pc(FUSV.kxCrit)}% damage.` },
+  { id: 'TA', name: 'Plasma Front', desc: `Overload explosions are ${Math.round((FUSV.taRad - 1) * 100)}% larger and also deal ${pc(FUSV.taPct)}% of max HP to every enemy they hit.` },
+  { id: 'TC', name: 'Thermal Fracture', desc: `Thermal Shock triggers at ${FUSV.tcAt} Chill stacks instead of 3. It deals ×${FUSV.tcDmg} damage, plus ${pc(FUSV.tcPct)}% of the enemy's max HP.` },
+  { id: 'TV', name: 'Dark Flame', desc: `A Collapse sets every enemy it hits on fire. The Burn deals at least ${pc(FUSV.tvPct)}% of max HP per second.` },
+  { id: 'TE', name: 'Slag Harvest', desc: `Enemies that die while Burning pay +${pc(FUSV.teCr)}% credits.` },
   { id: 'TX', name: 'Flare', desc: `When you use an ability, every enemy on the map Burns for ${FUSV.txT}s.` },
-  { id: 'AC', name: 'Cold Circuit', desc: `Superconduct reaches ${Math.round((FUSV.acRad - 1) * 100)}% further and can trigger again after ${FUSV.acCD}s instead of 1s.` },
-  { id: 'AV', name: 'Static Collapse', desc: `A Collapse Shocks every enemy it hits for ${FUSV.avT}s.` },
+  { id: 'AC', name: 'Cold Circuit', desc: `Superconduct reaches ${Math.round((FUSV.acRad - 1) * 100)}% further, can trigger again after ${FUSV.acCD}s, and deals ${pc(FUSV.acPct)}% of max HP to every enemy it Shocks.` },
+  { id: 'AV', name: 'Static Collapse', desc: `A Collapse Shocks every enemy it hits for ${FUSV.avT}s. This Shock is ${Math.round((FUSV.avEff - 1) * 100)}% stronger.` },
   { id: 'AE', name: 'Free Current', desc: `Your first ${FUSV.aeFree} Arc towers use no power.` },
-  { id: 'AX', name: 'Static Burst', desc: `When you use an ability, every enemy on the map is Shocked for ${FUSV.axT}s.` },
+  { id: 'AX', name: 'Static Burst', desc: `When you use an ability, every enemy on the map is Shocked for ${FUSV.axT}s and Stunned for ${FUSV.axStun}s. Bosses are not Stunned.` },
   { id: 'CV', name: 'Absolute Zero', desc: `A Collapse Freezes every enemy it hits for ${FUSV.cvT}s. Bosses are not affected.` },
   { id: 'CE', name: 'Cold Shell', desc: `When an enemy reaches the core, enemies within ${FUSV.ceR} tiles are Frozen for ${FUSV.ceT}s. This can happen once every ${FUSV.ceCD}s.` },
-  { id: 'CX', name: 'Flash Freeze', desc: `When you use an ability, every enemy on the map gains ${FUSV.cxChill} Chill stacks.` },
-  { id: 'VE', name: 'Gravity Anchor', desc: `Enemies within ${FUSV.veR} tiles of the core move ${FUSV.veSlow * 100}% slower.` },
-  { id: 'VX', name: 'Dark Signal', desc: `When you use an ability, every enemy on the map gains ${FUSV.vxMark} Marks.` },
-  { id: 'EX', name: 'Emergency Power', desc: `When you use an ability, the core shield recharges by ${FUSV.exShield * 100}%.` },
+  { id: 'CX', name: 'Flash Freeze', desc: `When you use an ability, every enemy on the map is Frozen for ${FUSV.cxT}s. Bosses gain ${FUSV.cxChill} Chill stacks instead.` },
+  { id: 'VE', name: 'Gravity Anchor', desc: `Enemies within ${FUSV.veR} tiles of the core move ${pc(FUSV.veSlow)}% slower.` },
+  { id: 'VX', name: 'Dark Signal', desc: `When you use an ability, every Marked enemy takes ${pc(FUSV.vxPct)}% of its max HP for each Mark on it.` },
+  { id: 'EX', name: 'Emergency Power', desc: `When you use an ability, the core shield recharges by ${pc(FUSV.exShield)}% and the hull is repaired by ${pc(FUSV.exHull)}%.` },
 ];
 const FUS = Object.fromEntries(FUSIONS.map(f => [f.id, f]));
 const COMBO_DESC = {
@@ -3146,6 +3148,9 @@ const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
 // 6.10 Fusions (data.js FUSIONS; G.frV >= 7). fus('KT'): is that Fusion active in this run. fusionsOpen(): the pairs the build has
 // opened. fusionNow(): the one a new run takes.
 const fus = id => !!G && G.fus === id;
+// Fusion payoffs deal a share of the enemy's own max HP (bosses a quarter), like the Collapse: this keeps its weight in late waves,
+// where flat damage does not (sweep d: 21 points in an element tree moved the bots' median wave by 0 to 7).
+function fusPct(e, pct, el, src) { if (!e.dead) hit(e, e.maxHp * pct * (e.boss ? 0.25 : 1), el, src, { noStatus: 1 }); }
 function fusionsOpen() { const o = []; for (const F of FUSIONS) if (treePts(F.id[0]) >= FUS_NEED && treePts(F.id[1]) >= FUS_NEED) o.push(F.id); return o; }
 function fusionNow() {
   const o = fusionsOpen(); if (!o.length) return '';
@@ -3157,13 +3162,14 @@ function fusionNow() {
 function fusAbility() {
   const M = G.mods, w = Math.max(1, G.wave);
   if (fus('KX')) G.fusT = FUSV.kxT;
-  if (fus('EX')) { const c = G.core; if (c.smax > 0) c.shield = Math.min(c.smax, c.shield + c.smax * FUSV.exShield); return; }
+  if (fus('EX')) { const c = G.core; if (c.smax > 0) c.shield = Math.min(c.smax, c.shield + c.smax * FUSV.exShield); c.hp = Math.min(c.max, c.hp + c.max * FUSV.exHull); return; }
   if (!(fus('TX') || fus('AX') || fus('CX') || fus('VX'))) return;
+  if (fus('VX')) Hooks.fx('implode', { x: G.core.x, y: G.core.y, r: 2 });
   for (const e of G.enemies) { if (e.dead) continue; const st = e.st;
     if (fus('TX')) { const dps = FUSV.txBurn * hpMult(w) * M.burnDmg; if (!st.burn || st.burn.dps < dps) st.burn = { dps, t: FUSV.txT * M.burnDur, src: null }; else st.burn.t = Math.max(st.burn.t, FUSV.txT * M.burnDur); }
-    else if (fus('AX')) { st.shock = Math.max(st.shock, FUSV.axT); st.shockEff = Math.max(st.shockEff, M.shockEff); }
-    else if (fus('CX')) { if (!e.elite.includes('jugg')) { st.chill = Math.min(5, st.chill + FUSV.cxChill); st.chillT = 2.5; st.chillPot = Math.max(st.chillPot, 1); } }
-    else if (fus('VX')) { st.mark = Math.min(M.markMax, st.mark + FUSV.vxMark); st.markT = 4; } }
+    else if (fus('AX')) { st.shock = Math.max(st.shock, FUSV.axT); st.shockEff = Math.max(st.shockEff, M.shockEff); if (!e.boss) st.stun = Math.max(st.stun || 0, FUSV.axStun); }
+    else if (fus('CX')) { if (!e.elite.includes('jugg')) { if (e.boss) { st.chill = Math.min(5, st.chill + FUSV.cxChill); st.chillT = 2.5; st.chillPot = Math.max(st.chillPot, 1); } else st.frozen = Math.max(st.frozen, FUSV.cxT); } }
+    else if (fus('VX')) { if (st.mark > 0) fusPct(e, FUSV.vxPct * st.mark, 'V', null); } } // v3: adding Marks cost about 10 waves in sweeps d and e; now every Mark pays out
 }
 function computeMods(alloc, runMods) {
   // v5.0: alloc is ignored (kept in the signature for old callers); talents, Capstones and Remnants come from PROF
@@ -5760,7 +5766,7 @@ function updateEnemies(dt) {
     const st = e.st;
     const hm = G.hole ? holeEnemy(e) : 1, dtE = G.hole ? dt * e.hk : dt; // 6.5 Black Hole: speed factor, and dilated time for what it does
     e.hitFlash = Math.max(0, e.hitFlash - dt);
-    e.ovlCD -= dt; e.supCD -= dt;
+    e.ovlCD -= dt; e.supCD -= dt; if (e.fusCD > 0) e.fusCD -= dt;
     // statuses
     if (st.burn) {
       st.burn.t -= dt;
@@ -5797,7 +5803,9 @@ function updateEnemies(dt) {
     if ((e.boss === 'wraith' || e.wcloak) && e.cloakT > 0) { e.cloakT -= dt; if (e.cloakT <= 0) e.cloaked = false; }
     if (e.wcloak && !e.cloaked) { e.wcT = (e.wcT === undefined ? 7 : e.wcT) - dt; if (e.wcT <= 0) { e.wcT = 7; e.cloaked = true; e.cloakT = 2; Hooks.fx('blink', { x: e.x, y: e.y }); } }
     // behaviors
-    e.timer -= dtE;
+    // 6.10 (G.frV >= 7): the Phase Wraith needs a run-up. Its jump clock runs at its own pace: a slow delays the next jump by the same
+    // share (never below a quarter speed) and a Freeze stops the clock. It ended 189 of 857 bot runs in sweep b, twice the next cause.
+    e.timer -= e.boss === 'wraith' && G.frV >= 7 ? dtE * (st.frozen > 0 ? 0 : Math.max(0.25, 1 - enemySlow(e))) : dtE;
     if (e.type === 'medic' && e.timer <= 0) {
       e.timer = 1;
       const healed = [];
@@ -6098,6 +6106,7 @@ function hit(e, dmg, el, src, o) {
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
   if (el === 'K' && G.fus && !o.dot) { // 6.10 Fusions: Death Mark, Home Guard
     if (st.mark > 0 && fus('KV')) mult *= 1 + FUSV.kvMark * st.mark;
+    if (o.crit && G.fusT > 0 && fus('KX')) mult *= 1 + FUSV.kxCrit;
     if (fus('KE') && src && src.s && src !== G.core && src.cx !== undefined && dist2(src.cx, src.cy, G.core.x, G.core.y) <= FUSV.keR * FUSV.keR) mult *= 1 + FUSV.keDmg;
   }
   if (st.frozen > 0) mult *= 1 + M.frozenVuln;
@@ -6167,25 +6176,26 @@ function applyStatuses(e, dmg, el, src, o) {
   if (el === 'K' && st.frozen > 0) {
     combo(e, 'SHATTER', '#6ae2ff');
     if (FX('coldSnap')) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.boss && o2.st.frozen <= 0 && dist2(o2.x, o2.y, e.x, e.y) <= 1) { o2.st.frozen = 0.8; Hooks.fx('freeze', { x: o2.x, y: o2.y }); }
-    hit(e, dmg * 1.0 * M.shatter * cmb * (fus('KC') ? FUSV.kcShatter : 1), 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return;
+    const kcF = fus('KC'); hit(e, dmg * 1.0 * M.shatter * cmb * (kcF ? FUSV.kcShatter : 1), 'C', src, { noStatus: 1, combo: 'SHATTER' }); if (e.dead) return;
+    if (kcF) { fusPct(e, FUSV.kcPct, 'C', src); if (e.dead) return; } // 6.10 Shatterpoint
   }
   const tcF = fus('TC'); // 6.10 Thermal Fracture
-  if (el === 'T' && st.chill >= (tcF ? FUSV.tcAt : 3)) { st.chill = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * (tcF ? FUSV.tcDmg : 1.5) * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; }
+  if (el === 'T' && st.chill >= (tcF ? FUSV.tcAt : 3)) { st.chill = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * (tcF ? FUSV.tcDmg : 1.5) * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (tcF) fusPct(e, FUSV.tcPct, 'T', src); if (e.dead) return; }
   // Conflagration has no Chill, so heat builds instead: every 3rd Thermal hit on a burning enemy flashes a Thermal Shock
-  if (el === 'T' && M.ks.conflag && st.burn) { e.heat = (e.heat || 0) + 1; if (e.heat >= (tcF ? FUSV.tcAt : 3)) { e.heat = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * (tcF ? FUSV.tcDmg : 1.5) * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (e.dead) return; } }
+  if (el === 'T' && M.ks.conflag && st.burn) { e.heat = (e.heat || 0) + 1; if (e.heat >= (tcF ? FUSV.tcAt : 3)) { e.heat = 0; combo(e, 'THERMAL SHOCK', '#ff7b39'); hit(e, dmg * (tcF ? FUSV.tcDmg : 1.5) * cmb, 'T', src, { noStatus: 1, combo: 'THERMAL SHOCK' }); if (tcF) fusPct(e, FUSV.tcPct, 'T', src); if (e.dead) return; } }
   if (((el === 'T' && st.shock > 0) || (el === 'A' && st.burn)) && e.ovlCD <= 0) {
     e.ovlCD = FX('ovlFree') ? 0 : 1; st.shock = 0;
     const taF = fus('TA'), rad = 1 * M.overloadRad * (taF ? FUSV.taRad : 1), d = (dmg * 0.6 + 10 * Math.sqrt(hpMult(G.wave))) * M.overload * cmb * (taF ? FUSV.taDmg : 1); // 6.10 Plasma Front
     combo(e, 'OVERLOAD', '#ffb03a');
     Hooks.fx('boom', { x: e.x, y: e.y, r: rad, col: '#ffb03a' });
-    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { hit(o2, d, 'A', src, { noStatus: 1 }); if (FX('ovlBurn') && !o2.dead && !o2.st.burn) o2.st.burn = { dps: d * 0.25 * M.burnDmg, t: 3 * M.burnDur, src }; }
+    for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { hit(o2, d, 'A', src, { noStatus: 1 }); if (taF) fusPct(o2, FUSV.taPct, 'A', src); if (FX('ovlBurn') && !o2.dead && !o2.st.burn) o2.st.burn = { dps: d * 0.25 * M.burnDmg, t: 3 * M.burnDur, src }; }
     if (e.dead) return;
   }
   if (el === 'A' && st.chill > 0 && e.supCD <= 0) {
     const acF = fus('AC'); e.supCD = acF ? FUSV.acCD : 1; // 6.10 Cold Circuit
     const rad = 1.2 * M.superRad * (acF ? FUSV.acRad : 1);
     let n = 0;
-    for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { o2.st.shock = FX('shockLong') ? 6 : 3; o2.st.shockEff = Math.max(o2.st.shockEff, M.shockEff); if (FX('superChill') && !o2.elite.includes('jugg')) { o2.st.chill = Math.min(5, o2.st.chill + 1); o2.st.chillT = 2.5; } n++; }
+    for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { if (acF) { fusPct(o2, FUSV.acPct, 'A', src); if (o2.dead) continue; } o2.st.shock = FX('shockLong') ? 6 : 3; o2.st.shockEff = Math.max(o2.st.shockEff, M.shockEff); if (FX('superChill') && !o2.elite.includes('jugg')) { o2.st.chill = Math.min(5, o2.st.chill + 1); o2.st.chillT = 2.5; } n++; }
     if (n) { combo(e, 'SUPERCONDUCT', '#9ff2ff'); Hooks.fx('arcs', { x: e.x, y: e.y, r: rad }); }
   }
   if (el === 'V' && st.mark >= M.markMax && (st.burn || st.chill > 0 || st.shock > 0)) {
@@ -6199,17 +6209,20 @@ function applyStatuses(e, dmg, el, src, o) {
       hit(o2, (dmg * 2 * M.collapse + o2.maxHp * (o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old)) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
       if (G.fus && !o2.dead) { const s2 = o2.st; // 6.10 Singularity Fusions change the Collapse: Dark Flame, Static Collapse, Absolute Zero
-        if (fus('TV')) { const dps = dmg * 0.35 * M.burnDmg; if (!s2.burn || s2.burn.dps < dps) s2.burn = { dps, t: 3 * M.burnDur, src }; else s2.burn.t = 3 * M.burnDur; }
-        else if (fus('AV')) { s2.shock = Math.max(s2.shock, FUSV.avT); s2.shockEff = Math.max(s2.shockEff, M.shockEff); }
+        if (fus('TV')) { const dps = Math.max(dmg * 0.35, o2.maxHp * FUSV.tvPct * (o2.boss ? 0.25 : 1)) * M.burnDmg; if (!s2.burn || s2.burn.dps < dps) s2.burn = { dps, t: 3 * M.burnDur, src }; else s2.burn.t = 3 * M.burnDur; }
+        else if (fus('AV')) { s2.shock = Math.max(s2.shock, FUSV.avT); s2.shockEff = Math.max(s2.shockEff, M.shockEff * FUSV.avEff); }
         else if (fus('CV') && !o2.boss && !o2.elite.includes('jugg')) { s2.frozen = Math.max(s2.frozen, FUSV.cvT); Hooks.fx('freeze', { x: o2.x, y: o2.y }); } }
     }
     if (e.dead) return;
   }
   // 6.10 Ballistics Fusions: Hot Rounds (Kinetic hits Burn), Arc Rounds (a Kinetic hit on a Shocked enemy arcs to its neighbor)
   if (el === 'K' && G.fus && !o.dot) {
-    if (fus('KT')) { const dps = dmg * FUSV.ktBurn * M.burnDmg; if (!st.burn || st.burn.dps < dps) st.burn = { dps, t: 3 * M.burnDur, src }; else st.burn.t = Math.max(st.burn.t, 3 * M.burnDur); }
-    else if (fus('KA') && st.shock > 0) { let b = null, bd = FUSV.kaR * FUSV.kaR; for (const o2 of G.enemies) { if (o2.dead || o2 === e) continue; const d2 = dist2(o2.x, o2.y, e.x, e.y); if (d2 <= bd) { bd = d2; b = o2; } }
-      if (b) { Hooks.fx('arcs', { x: e.x, y: e.y, r: Math.sqrt(bd) }); hit(b, dmg * FUSV.kaArc, 'A', src, { noStatus: 1 }); } }
+    if (fus('KT')) { const dps = dmg * FUSV.ktBurn * M.burnDmg, was = !!st.burn; if (!st.burn || st.burn.dps < dps) st.burn = { dps, t: 3 * M.burnDur, src }; else st.burn.t = Math.max(st.burn.t, 3 * M.burnDur);
+      if (o.crit && was && !(e.fusCD > 0)) { e.fusCD = 1; Hooks.fx('boom', { x: e.x, y: e.y, r: 1, col: '#ff7b39' }); // a crit on a Burning enemy detonates it
+        for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= 1) fusPct(o2, FUSV.ktPct, 'T', src); if (e.dead) return; } }
+    else if (fus('KA') && o.crit && !(e.fusCD > 0)) { e.fusCD = 1; const near = G.enemies.filter(o2 => !o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= FUSV.kaR * FUSV.kaR).sort((a, b) => dist2(a.x, a.y, e.x, e.y) - dist2(b.x, b.y, e.x, e.y)).slice(0, 2);
+      Hooks.fx('arcs', { x: e.x, y: e.y, r: FUSV.kaR }); // a crit calls lightning on the target and its 2 nearest neighbors
+      for (const o2 of [e, ...near]) { o2.st.shock = Math.max(o2.st.shock, 3); o2.st.shockEff = Math.max(o2.st.shockEff, M.shockEff); fusPct(o2, FUSV.kaPct, 'A', src); } if (e.dead) return; }
   }
   // statuses
   let burnP = s.burn, chillP = s.chill, shockP = s.shock, markP = s.mark;
