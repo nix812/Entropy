@@ -85,7 +85,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 
 /* ---------- hangar: brand left, play in the right thumb zone, utilities top-right ---------- */
 #bgfx { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; z-index: 0; }
-#bgfx2 { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+#bgfx2 { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; mix-blend-mode: screen; }
 #hangar { padding-bottom: max(12px, var(--sab)); padding-top: max(12px, var(--sat)); }
 #hangar .ver { position: absolute; z-index: 1; left: max(16px, var(--sal)); bottom: max(10px, var(--sab)); font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.08em; color: var(--dim); opacity: 0.75; pointer-events: none; }
 .hwrap { position: relative; z-index: 1; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) min(300px, 42%); grid-template-rows: auto 1fr auto; gap: 0 24px; max-width: 1000px; width: 100%; margin: 0 auto; }
@@ -14117,39 +14117,63 @@ const HangarFX = (() => {
   // light trails on a second canvas (#bgfx2) at device resolution, with a soft glow at each wing's centre. Same place, size,
   // sway and projection as before (lay, a), so the title shards still fall into it. SMOOTH = false brings the 6.11.3 look back.
   const SMOOTH = true, CT = Math.cos(0.32), ST = Math.sin(0.32);
-  let tcv = null, tc = null, TW = 0, TH = 0, TF = 1, TP = [], TK = [], tKey = '', tOp = -1;
-  const lstep = (p, h) => { const dx = 10 * (p.y - p.x), dy = p.x * (28 - p.z) - p.y, dz = p.x * p.y - (8 / 3) * p.z; p.x += dx * h; p.y += dy * h; p.z += dz * h; };
-  function tproj(p, cx, cy, s, ca, sa) {
-    const z = p.z - 24, rx = p.x * ca - p.y * sa, ry = p.x * sa + p.y * ca, rz = z * CT + ry * ST, k = 140 / (140 + ry * CT - z * ST);
-    p.sx = (cx + rx * s * k) * TF; p.sy = (cy - rz * s * k) * TF;
+  // Nic, twice: "slow the spins down", "still feels too fast slow it way down". TSPD is Lorenz time per second: one turn of a wing
+  // takes about 10 s (the first build: 1.2 s). At this speed a fading canvas cannot hold the trails (the fade per frame rounds
+  // to nothing and a haze builds up), so each particle keeps its last TM positions (TD apart in Lorenz time) and the canvas is
+  // cleared and redrawn every frame: exact at any frame rate, nothing to run ahead, and the sway costs nothing.
+  const TSPD = 0.06, TM = 12, TD = 0.0125, TS = TM + 1;
+  const TCOL = [C.cryo, C.void, C.ink, C.amber, C.core, C.bad], TALPHA = [1.05, 1.2, 1.25, 1.5, 1.5, 1.5], TFALL = Array.from({ length: TM + 1 }, (_, j) => Math.exp(-1.7 * (j + 0.5) / (TM + 1)));
+  let tcv = null, tc = null, TW = 0, TH = 0, TF = 1, TN = 0, HX = null, PH = null, TGp = null, ring = 0, acc = 0, tKey = '', tOp = -1;
+  const lz = (A, i, h) => { const x = A[i], y = A[i + 1], z = A[i + 2]; A[i] = x + 10 * (y - x) * h; A[i + 1] = y + (x * (28 - z) - y) * h; A[i + 2] = z + (x * y - (8 / 3) * z) * h; };
+  function tseed(n) {
+    TN = n + 3; HX = new Float32Array(TN * 3); PH = new Float32Array(TN * TS * 3); TGp = new Uint8Array(TN); ring = 0; acc = 0;
+    const q = new Float32Array([0.1, 0, 20]); for (let i = 0; i < 4000; i++) lz(q, 0, 0.006);
+    for (let i = 0; i < TN; i++) { for (let k = 0; k < 23; k++) lz(q, 0, 0.006);
+      const o = i * 3; HX[o] = q[0]; HX[o + 1] = q[1]; HX[o + 2] = q[2];
+      for (let j = TM; j >= 0; j--) { const w = (i * TS + j) * 3; PH[w] = HX[o]; PH[w + 1] = HX[o + 1]; PH[w + 2] = HX[o + 2]; if (j) for (let k = 0; k < 3; k++) lz(HX, o, TD / 3); } // oldest first, up to the head
+      TGp[i] = i >= n ? 3 + (i - n) : Math.random() < 0.12 ? 2 : 255; } // 255: by wing, decided each frame; 3 to 5: the three comets
   }
-  function tseed(cx, cy, s, a) {
-    const n = Math.max(500, Math.min(1800, Math.round(80 * s * PX))), q = { x: 0.1, y: 0, z: 20 }, ca = Math.cos(a), sa = Math.sin(a); TP = []; TK = [];
-    for (let i = 0; i < 4000; i++) lstep(q, 0.006);
-    for (let i = 0; i < n + 3; i++) { for (let k = 0; k < 23; k++) lstep(q, 0.006); const p = { x: q.x, y: q.y, z: q.z, w: Math.random() < 0.12, sx: 0, sy: 0 }; tproj(p, cx, cy, s, ca, sa); (i < n ? TP : TK).push(p); }
-    TK.forEach((p, i) => { p.col = [C.amber, C.core, C.bad][i]; });
-  }
-  function tframe(dt, cx, cy, s, a, pre) { // pre (0..1): a run-ahead frame, drawn at the strength it would have faded to, with no fade pass
-    const g = tc, ca = Math.cos(a), sa = Math.sin(a), f = 1 - Math.exp(-dt * 1.7), h = Math.min(0.02, dt * 0.25), /* Nic: "slow the spins down": half the first speed, and half the fade so the trails keep their length */ ns = Math.max(1, Math.ceil(h / 0.0045)), hs = h / ns;
-    if (pre == null) { g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 1; g.fillStyle = 'rgba(0,0,0,' + f.toFixed(4) + ')'; g.fillRect(0, 0, TW, TH); }
-    g.globalCompositeOperation = 'lighter'; g.globalAlpha = pre == null ? 1 : pre; g.lineCap = 'round'; g.lineWidth = Math.max(1, TF / PX);
-    const pa = [new Path2D(), new Path2D(), new Path2D()];
-    for (const p of TP) { const ox = p.sx, oy = p.sy; for (let k = 0; k < ns; k++) lstep(p, hs); tproj(p, cx, cy, s, ca, sa); const q = pa[p.w ? 2 : p.x < 0 ? 0 : 1]; q.moveTo(ox, oy); q.lineTo(p.sx, p.sy); }
-    g.strokeStyle = rgba(C.cryo, 0.34); g.stroke(pa[0]); g.strokeStyle = rgba(C.void, 0.38); g.stroke(pa[1]); g.strokeStyle = rgba(C.ink, 0.42); g.stroke(pa[2]);
-    g.lineWidth = Math.max(1, TF / PX) * 1.7; // three comets in the game's colours
-    for (const p of TK) { const ox = p.sx, oy = p.sy; for (let k = 0; k < ns; k++) lstep(p, hs * 1.6); tproj(p, cx, cy, s, ca, sa); g.strokeStyle = rgba(p.col, 0.8); g.beginPath(); g.moveTo(ox, oy); g.lineTo(p.sx, p.sy); g.stroke(); }
-    const kf = f / 0.055, r = s * TF * 5.2, o = { x: 0, y: 0, z: 0, sx: 0, sy: 0 }; // a glow in the eye of each wing; kf keeps it as bright at any frame rate
-    for (let n = 0; n < 2; n++) { const sd = n ? -1 : 1, col = n ? C.cryo : C.void; o.x = sd * FPX; o.y = sd * FPX; o.z = 27; tproj(o, cx, cy, s, ca, sa);
-      const gr = g.createRadialGradient(o.sx, o.sy, 0, o.sx, o.sy, r); gr.addColorStop(0, 'rgba(255,255,255,' + (0.10 * kf).toFixed(4) + ')'); gr.addColorStop(0.18, rgba(col, (0.05 * kf).toFixed(4))); gr.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = gr; g.fillRect(o.sx - r, o.sy - r, 2 * r, 2 * r); }
+  // The trails are plotted by hand into a pixel buffer that covers only the galaxies (drawing 17,000 canvas lines a frame ran
+  // at 17 fps in the test browser). Every sample is split over two neighbouring pixels, so the lines are smooth. The canvas
+  // blends with `screen` (template.html), so black in the buffer shows the sky behind it.
+  let tbuf = null, tbx = 0, tby = 0, tbw = 0, tbh = 0;
+  function tframe(dt, cx, cy, s, a) {
+    const g = tc, ca = Math.cos(a), sa = Math.sin(a), h = Math.min(0.012, dt * TSPD), ns = Math.max(1, Math.ceil(h / 0.0045)), hs = h / ns;
+    if (h > 0) { for (let i = 0; i < TN; i++) for (let k = 0; k < ns; k++) lz(HX, i * 3, hs);
+      acc += h; while (acc >= TD) { acc -= TD; ring = (ring + TM) % TS; for (let i = 0; i < TN; i++) { const w = (i * TS + ring) * 3, o = i * 3; PH[w] = HX[o]; PH[w + 1] = HX[o + 1]; PH[w + 2] = HX[o + 2]; } } }
+    const ss = s * TF, bx = Math.max(0, Math.floor((cx - 32 * s) * TF)), by = Math.max(0, Math.floor((cy - 26 * s) * TF)), bw = Math.min(TW, Math.ceil((cx + 33 * s) * TF)) - bx, bh = Math.min(TH, Math.ceil((cy + 22 * s) * TF)) - by;
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, TW, TH); if (bw < 4 || bh < 4) return;
+    if (!tbuf || tbw !== bw || tbh !== bh) { tbw = bw; tbh = bh; tbuf = g.createImageData(bw, bh); } tbx = bx; tby = by;
+    const d = tbuf.data; d.fill(0);
+    const cxs = cx * TF - bx, cys = cy * TF - by, xm = bw - 2, ym = bh - 2;
+    for (let i = 0; i < TN; i++) {
+      const o = i * 3, gp = TGp[i] === 255 ? (HX[o] < 0 ? 0 : 1) : TGp[i], col = TCOL[gp], al = TALPHA[gp], thick = gp > 2;
+      let x = HX[o], y = HX[o + 1], z = HX[o + 2] - 24, rx = x * ca - y * sa, ry = x * sa + y * ca, k = 140 / (140 + ry * CT - z * ST), px = cxs + rx * ss * k, py = cys - (z * CT + ry * ST) * ss * k;
+      for (let j = 0; j < TS; j++) {
+        const w = (i * TS + (ring + j) % TS) * 3; x = PH[w]; y = PH[w + 1]; z = PH[w + 2] - 24; rx = x * ca - y * sa; ry = x * sa + y * ca; k = 140 / (140 + ry * CT - z * ST);
+        const nx = cxs + rx * ss * k, ny = cys - (z * CT + ry * ST) * ss * k, dx = nx - px, dy = ny - py, adx = dx < 0 ? -dx : dx, ady = dy < 0 ? -dy : dy;
+        const wt = al * TFALL[j], c0 = col[0] * wt, c1 = col[1] * wt, c2 = col[2] * wt, n = Math.max(1, Math.ceil(adx > ady ? adx : ady)), sx = dx / n, sy = dy / n;
+        if (adx > ady) for (let q = 0; q < n; q++) { const X = (px + sx * q + 0.5) | 0, yy = py + sy * q, Y = Math.floor(yy), f = yy - Y; if (X < 0 || X > xm || Y < 0 || Y > ym) continue;
+          let m = (Y * bw + X) * 4; const e = 1 - f; d[m] += c0 * e; d[m + 1] += c1 * e; d[m + 2] += c2 * e; d[m + 3] = 255; m += bw * 4; d[m] += c0 * f; d[m + 1] += c1 * f; d[m + 2] += c2 * f; d[m + 3] = 255;
+          if (thick) { m -= bw * 8; if (m >= 0) { d[m] += c0 * f; d[m + 1] += c1 * f; d[m + 2] += c2 * f; d[m + 3] = 255; } } }
+        else for (let q = 0; q < n; q++) { const Y = (py + sy * q + 0.5) | 0, xx = px + sx * q, X = Math.floor(xx), f = xx - X; if (X < 0 || X > xm || Y < 0 || Y > ym) continue;
+          let m = (Y * bw + X) * 4; const e = 1 - f; d[m] += c0 * e; d[m + 1] += c1 * e; d[m + 2] += c2 * e; d[m + 3] = 255; m += 4; d[m] += c0 * f; d[m + 1] += c1 * f; d[m + 2] += c2 * f; d[m + 3] = 255;
+          if (thick && X > 0) { m -= 8; d[m] += c0 * f; d[m + 1] += c1 * f; d[m + 2] += c2 * f; d[m + 3] = 255; } }
+        px = nx; py = ny;
+      }
+    }
+    g.putImageData(tbuf, bx, by); g.globalCompositeOperation = 'lighter';
+    const r = ss * 5.2; // a glow in the eye of each wing
+    for (let n = 0; n < 2; n++) { const sd = n ? -1 : 1, col = n ? C.cryo : C.void, x = sd * FPX, y = sd * FPX, z = 3, rx = x * ca - y * sa, ry = x * sa + y * ca, k = 140 / (140 + ry * CT - z * ST), gx = cx * TF + rx * ss * k, gy = cy * TF - (z * CT + ry * ST) * ss * k;
+      const gr = g.createRadialGradient(gx, gy, 0, gx, gy, r); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.07, rgba([(col[0] + 510) / 3, (col[1] + 510) / 3, (col[2] + 510) / 3].map(Math.round), 1)); gr.addColorStop(0.18, rgba(col, 0.8)); gr.addColorStop(0.5, rgba(col, 0.22)); gr.addColorStop(1, rgba(col, 0));
+      g.fillStyle = gr; g.fillRect(gx - r, gy - r, 2 * r, 2 * r); }
   }
   function trails(dt, cx, cy, s, a, cw, ch, dpr) {
     if (!tcv) { tcv = document.getElementById('bgfx2'); if (!tcv) return; tc = tcv.getContext('2d'); }
     const q = Math.min(2, dpr, Math.sqrt(2.4e6 / (cw * ch))), tw = Math.max(2, Math.round(cw * q)), th = Math.max(2, Math.round(ch * q)), // at most 2.4 million pixels
-      key = tw + 'x' + th + ':' + W + ':' + cx + ',' + cy + ',' + s.toFixed(2);
-    if (key !== tKey) { // new size or place: start over and run ahead, so the picture is complete on the first frame
-      tKey = key; TW = tcv.width = tw; TH = tcv.height = th; TF = TW / W; tseed(cx, cy, s, a); for (let i = 0; i < 200; i++) tframe(1 / 60, cx, cy, s, a, Math.pow(0.972, 199 - i)); tc.globalAlpha = 1; }
-    else if (dt > 0) tframe(Math.min(0.05, dt), cx, cy, s, a);
+      n = Math.max(400, Math.min(1500, Math.round(66 * s * PX / 100) * 100)), key = tw + 'x' + th + ':' + n;
+    if (key !== tKey) { tKey = key; TW = tcv.width = tw; TH = tcv.height = th; if (TN !== n + 3) tseed(n); }
+    TF = TW / W; tframe(Math.min(0.05, dt), cx, cy, s, a);
     const op = Math.round(fade * 50) / 50; if (op !== tOp) { tOp = op; tcv.style.opacity = op; }
   }
 
