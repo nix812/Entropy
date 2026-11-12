@@ -1535,7 +1535,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.0 + STORY FILM CUT + MUSIC';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2136,7 +2136,8 @@ const STORY = [
 ];
 const STORY_MC = 'Mission Control to pilot. The core is yours. Good luck.';
 const storyEnd = w => `The gradient held for ${w} wave${w === 1 ? '' : 's'}. Then the dark came in.`; // the end screen, when the core falls
-const WHATS_NEW = { ver: '6.10.0', title: 'Last Gradient 6.10 · Fusion', items: [
+const WHATS_NEW = { ver: '6.11.0', title: 'Last Gradient 6.11 · The Story', items: [
+  ['The story', 'The intro has its own stars, an ending and its own music. Watch it in the Field Manual: tap The Last Gradient.'],
   ['The story', 'A short intro now tells you what the Last Gradient is. It plays once. You can read it again in the Field Manual.'],
   ['Talents screen', 'The Talents screen is new. Each talent is a picture, and the lit bars in its tile are its points. A whole tree fits on one screen. The track under it shows what opens at 3, 6, 9, 12 and 16 points.'],
   ['Signatures', 'Every talent tree has a Signature: one effect only that tree has. Every point in the tree makes it stronger, and deeper points count more. Tap the Signature at the top of a tree.'],
