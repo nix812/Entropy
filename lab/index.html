@@ -357,6 +357,9 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
   padding: 4px 10px 9px; display: flex; flex-direction: column; gap: 3px; }
 #coach .chd { display: flex; align-items: center; gap: 8px; }
 #coach .chd em { font-style: normal; font-family: var(--f-pix); font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--amber); margin-right: auto; white-space: nowrap; }
+#coach .chide[hidden] { display: none; }
+#coach .chide { font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: none; border: 0; min-height: 34px; min-width: 40px; padding: 0 6px; margin-right: 2px; cursor: pointer; white-space: nowrap; }
+#coach.min .ccard { visibility: hidden; } /* 6.11.4: hidden by the player; the checklist strip brings it back */
 #coach .cskip { font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); background: none; border: 0; min-height: 30px; padding: 0 2px 0 10px; cursor: pointer; white-space: nowrap; }
 #coach .ct { font-family: var(--f-pix); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink); font-weight: 400; margin-top: -3px; }
 #coach .cb { margin: 0; font-size: 16px; line-height: 1.12; color: var(--ink); }
@@ -364,8 +367,6 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
 #coach .cft .btn { min-height: 34px; min-width: 84px; justify-content: center; }
 #coach .cft .btn[hidden] { display: none; }
 #coach .ccard button { pointer-events: auto; }
-#coach.idle .ccard { box-shadow: inset 0 0 0 1px var(--line2), 0 4px 14px rgba(0, 0, 0, 0.5); background: rgba(10, 12, 24, 0.88); width: min(330px, 50vw); }
-#coach.idle .ct { font-size: 10px; color: var(--amber); } #coach.idle .cb { font-size: 15px; } #coach.idle .cft { display: none; }
 /* 5.8 Field Manual */
 .card.manual .lgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
 .lrow { display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto; gap: 1px 8px; text-align: left; background: var(--panel2); border: 0; color: var(--ink); padding: 8px 10px; cursor: pointer;
@@ -401,6 +402,8 @@ body.tut #bWeb, body.tut #bStats, body.tut:not(.tutent) #bEnt { visibility: hidd
 #tutlist li.miss { opacity: 0.55; } /* 6.5.2: its lesson passed without it; doing it later still ticks it */
 #tutlist.flash { box-shadow: inset 0 0 0 2px var(--good); }
 body.panel-l #tutlist { visibility: hidden; }
+body.panel-l #tutlist.min { visibility: visible; left: auto; right: 6px; } /* 6.11.4: a hidden coach card must stay reachable beside a left panel */
+#tutlist.min { box-shadow: inset 0 0 0 1px var(--amber); } #tutlist.min .tlh i { color: var(--amber); }
 #chips::-webkit-scrollbar { display: none; }
 .evchip { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; padding: 5px 6px; white-space: nowrap; box-shadow: inset 0 0 0 1px currentColor; }
 .evchip.bad { color: #ff8a9c; } .evchip.good { color: var(--core); } .evchip.storm { color: var(--c); }
@@ -1535,7 +1538,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.3 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.4 + TRAINING: ONE CARD + HIDE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1663,7 +1666,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.11.3';
+const VERSION = '6.11.4';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -14794,11 +14797,11 @@ const UI = (() => {
   // The coach. Each step points at one thing (a spotlight that dims the rest, a pulsing ring, an arrow), says a line or two, and moves on
   // when the player does it: it watches state every frame (towers, panels, waves, kills, charges, modals), never a timer. Steps that wait
   // for the player hold the game (UI.coachHold, read by the frame loop). No sim state is touched, so the recording replays exactly.
-  // The card lets taps through except its buttons, and always carries Skip (two taps). Between steps an idle line says what to do now.
+  // The card lets taps through except its buttons, and always carries Skip (two taps) and, on the battlefield, Hide (6.11.4). Between steps no card shows: the checklist strip is the one small card.
   // PLANS: one step list per lesson id ('basic' is Basic Training). A step: { id, when, skip, hold, at (target rect), t, b, ok (button
   // label for a read step), okFn, done, back (step id to return to), enter, leave, modal (the modal kind it shows over), tree, idle }.
   const Coach = (() => {
-    let on = false, plan = 'basic', i = 0, cur = null, el = null, held = false, sig = '', skipT = -1e9, mem = {}, miss = false;
+    let on = false, plan = 'basic', i = 0, cur = null, el = null, held = false, sig = '', skipT = -1e9, mem = {}, miss = false, min = false, minT = ''; // 6.11.4 min: the player hid this step's card (minT: its title, shown on the strip)
     const STEPS = () => PLANS[plan] || [];
     const W = () => G ? tutIdx(G.wave) : 0; // the script's wave number
     const cleared = () => G.spawningDone && G.enemies.every(e => e.dead);
@@ -14885,21 +14888,28 @@ const UI = (() => {
     const ckPassed = k => { if (plan !== 'basic' || !CHECK[k][2]) return false; const j = STEPS().findIndex(S => S.id === CHECK[k][2]); return j >= 0 && i > j; };
     let listEl = null, listSig = '', listOpen = false, flashT = 0;
     try { listOpen = localStorage.getItem('entropy.tutlist') === '1'; } catch (e) { /* private mode: closed by default */ }
+    // 6.11.4 (Nic: "there's a redundant smaller card on the tutorial. We just need one"; "sometimes the tutorial cards are in the way and
+    // can't be dismissed"): one card at a time. The strip shows only while no coach card is up (the idle line card is gone). Every coach
+    // card has Hide: the card folds into this strip (its title + "show"), the ring and arrow stay on the target, a tap on the strip
+    // brings the card back. A new step always opens its card. Field Manual lessons get the strip only for a hidden card.
+    const cardUp = () => !!el && !el.hidden && !min;
     function list() {
-      if (plan !== 'basic' || !G || !G.tut) { if (listEl) listEl.hidden = true; return; }
+      const basic = plan === 'basic';
+      if (!G || !G.tut || (!basic && !min)) { if (listEl) listEl.hidden = true; return; }
       if (!listEl || !listEl.isConnected) {
         listEl = document.createElement('button'); listEl.id = 'tutlist'; listEl.type = 'button';
-        listEl.onclick = () => { listOpen = !listOpen; listSig = ''; SFX.play('ui'); try { localStorage.setItem('entropy.tutlist', listOpen ? '1' : '0'); } catch (e) {} };
+        listEl.onclick = () => { SFX.play('ui'); listSig = ''; if (min) { min = false; sig = ''; return; } listOpen = !listOpen; try { localStorage.setItem('entropy.tutlist', listOpen ? '1' : '0'); } catch (e) {} };
         $('#stage').appendChild(listEl);
       }
       // the full list shows while nothing waits on the player; during a held step it folds to its strip (the current task) so the coach card has room
-      const open = listOpen && !held, ok = ckState(), n = ok.filter(Boolean).length, miss = ok.map((v, k) => !v && ckPassed(k)), nx = ok.findIndex((v, k) => !v && !miss[k]),
-        now = nx >= 0 ? nx : ok.indexOf(false), key = ok.join('') + miss.join('') + open + listOpen;
-      listEl.hidden = !!modalOpen && modalOpen !== 'hunt';
+      const open = listOpen && !held && !min, ok = basic ? ckState() : [], n = ok.filter(Boolean).length, miss = ok.map((v, k) => !v && ckPassed(k)), nx = ok.findIndex((v, k) => !v && !miss[k]),
+        now = nx >= 0 ? nx : ok.indexOf(false), key = ok.join('') + miss.join('') + open + listOpen + (min ? '|' + minT : '');
+      listEl.hidden = (!!modalOpen && modalOpen !== 'hunt') || cardUp();
+      listEl.classList.toggle('min', min);
       if (key === listSig) return;
       if (listSig && n > (+listEl.dataset.n || 0)) { listEl.classList.add('flash'); clearTimeout(flashT); flashT = setTimeout(() => listEl && listEl.classList.remove('flash'), 1200); }
       listSig = key; listEl.dataset.n = n; listEl.classList.toggle('open', open);
-      listEl.innerHTML = `<span class="tlh">Training ${n}/${CHECK.length}<i>${listOpen ? 'hide' : 'list'}</i></span><span class="tlcur">${now < 0 ? 'All done' : `${now + 1}. ${esc(CHECK[now][0])}`}</span>
+      listEl.innerHTML = `<span class="tlh">${basic ? `Training ${n}/${CHECK.length}` : 'Lesson'}<i>${min ? 'show' : listOpen ? 'hide' : 'list'}</i></span><span class="tlcur">${min ? esc(minT) : now < 0 ? 'All done' : `${now + 1}. ${esc(CHECK[now][0])}`}</span>
         <ol>${CHECK.map((c, k) => `<li class="${ok[k] ? 'ok' : k === now ? 'now' : miss[k] ? 'miss' : ''}"><b>${ok[k] ? '✓' : k + 1}</b>${esc(c[0])}</li>`).join('')}</ol>`;
     }
     const allSpots = () => { const R = G.region, out = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) out.push({ x, y }); return out; };
@@ -15266,18 +15276,13 @@ const UI = (() => {
       ],
     };
     // with nothing to do this moment, a line that says what is going on and what to do next
-    function idleLine() {
-      if (!G || G.over) return null;
-      if (G.checkpoint) return ['Checkpoint', 'Rebuild for free, then tap Next.'];
-      if (!G.spawningDone || G.enemies.some(e => !e.dead)) return [`Wave ${G.wave}`, 'Your towers fire on their own. Tap an enemy to inspect it.'];
-      return ['Between waves', `Next wave in ${Math.max(0, Math.ceil(G.next))}s. Spend credits on towers or upgrades, or tap Next.`];
-    }
     function ensureEl() {
       if (el) return el;
       el = document.createElement('div'); el.id = 'coach'; el.hidden = true;
-      el.innerHTML = '<div class="cspot"></div><div class="cring"></div><div class="carrow"></div><div class="ccard"><div class="chd"><em></em><button class="cskip" type="button">Skip</button></div><b class="ct"></b><p class="cb"></p><div class="cft"><button class="btn primary small cok" type="button"></button></div></div>';
+      el.innerHTML = '<div class="cspot"></div><div class="cring"></div><div class="carrow"></div><div class="ccard"><div class="chd"><em></em><button class="chide" type="button">Hide</button><button class="cskip" type="button">Skip</button></div><b class="ct"></b><p class="cb"></p><div class="cft"><button class="btn primary small cok" type="button"></button></div></div>';
       el.addEventListener('click', e => {
         if (e.target.closest('.cskip')) { SFX.play('ui'); if (performance.now() - skipT < 3000) skip(); else { skipT = performance.now(); e.target.textContent = 'Tap again to skip'; setTimeout(() => { if (el) el.querySelector('.cskip').textContent = skipLbl(); }, 3000); } return; }
+        if (e.target.closest('.chide')) { SFX.play('ui'); min = true; listSig = ''; return; }
         if (e.target.closest('.cok') && cur) { SFX.play('ui'); const S = cur; next(); if (S.okFn) S.okFn(); }
       });
       $('#app').appendChild(el);
@@ -15286,16 +15291,16 @@ const UI = (() => {
     const skipLbl = () => plan === 'basic' ? 'Skip Training' : 'Skip lesson';
     const tour = () => !!(LESSON_BY[plan] && LESSON_BY[plan].tour);
     function start(p) {
-      plan = p || 'basic'; on = true; i = 0; cur = null; mem = {}; sig = ''; ensureEl(); el.querySelector('.cskip').textContent = skipLbl();
+      plan = p || 'basic'; on = true; i = 0; cur = null; mem = {}; sig = ''; min = false; ensureEl(); el.querySelector('.cskip').textContent = skipLbl();
       document.body.classList.toggle('tut', !tour()); document.body.classList.toggle('tutent', plan === 'storms'); entOn = plan === 'storms';
     }
-    function stop() { on = false; cur = null; held = false; Render.spots = null; if (el) el.hidden = true; document.body.classList.remove('tut', 'tutent'); if (G && G.tut) Render.hints = null; }
+    function stop() { on = false; cur = null; held = false; min = false; Render.spots = null; if (el) el.hidden = true; document.body.classList.remove('tut', 'tutent'); if (G && G.tut) Render.hints = null; }
     function skip() {
       const p = plan, tl = taught(); stop(); closeModal(); closePanel();
       if (p === 'basic') { tutState().seen = 1; markTaught(tl); Save.save(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); return; } // 6.0: never offer a new run over a saved one
       if (G && G.tut) G = null; if (Tree.isOpen) Tree.close(); show('hangar'); renderHangar(); openManual();
     }
-    function next() { const S = cur; cur = null; i++; Render.hints = null; sig = ''; if (S && mem.shownId === S.id && !S.free && G) { mem.gapT = G.time; mem.gapW = W(); mem.gapC = cleared(); } if (S && S.leave) S.leave(); }
+    function next() { const S = cur; cur = null; i++; min = false; Render.hints = null; sig = ''; if (S && mem.shownId === S.id && !S.free && G) { mem.gapT = G.time; mem.gapW = W(); mem.gapC = cleared(); } if (S && S.leave) S.leave(); }
     // 6.2 pacing (Basic Training): steps that start a new lesson carry ls. One lesson's steps run back to back (an action chain); a
     // new lesson waits for PACE_GAP seconds of play since the last card (G.time stops while a card holds the game) or for a wave to
     // end with at least 10 s of play since, and for a calm moment (teachBusy). With the countdown nearly out between waves it goes ahead, so a lesson that belongs
@@ -15319,7 +15324,7 @@ const UI = (() => {
       return out;
     }
     const lessonOf = k => { const P = STEPS(); for (let j = Math.min(k, P.length - 1); j >= 0; j--) if (P[j].ls) return P[j].ls; return null; };
-    function go(id) { const k = STEPS().findIndex(s => s.id === id); if (k >= 0) { cur = null; i = k; sig = ''; Render.hints = null; } }
+    function go(id) { const k = STEPS().findIndex(s => s.id === id); if (k >= 0) { cur = null; i = k; min = false; sig = ''; Render.hints = null; } }
     function hide() { if (el && !el.hidden) el.hidden = true; }
     const ov = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
     const grow = (r, d) => ({ x: r.x - d, y: r.y - d, w: r.w + 2 * d, h: r.h + 2 * d });
@@ -15336,16 +15341,13 @@ const UI = (() => {
       const ys = [st.y + m, st.y + (st.h - ch) / 2, st.y + st.h - ch - m];
       const avoid = []; if (r) avoid.push(grow(r, 26));
       if (pn) avoid.push(pn);
-      const tl = !full && listEl && !listEl.hidden ? appR(listEl) : null; // the checklist gives way (it hides for this step) rather than the target
       let best = null;
       for (const y of ys) for (const x of xs) {
-        const c = { x, y, w: cw, h: ch }; let s = tl ? ov(c, tl) * 4 : 0; for (const a of avoid) s += ov(c, a) * 100;
+        const c = { x, y, w: cw, h: ch }; let s = 0; for (const a of avoid) s += ov(c, a) * 100;
         if (r) s += Math.hypot(x + cw / 2 - (r.x + r.w / 2), y + ch / 2 - (r.y + r.h / 2)) * 0.05;
-        else if (idle) s += y === ys[2] && x === xs[1] ? 0 : 1; // an idle line sits bottom centre, out of the way
         if (!best || s < best.s) best = { x, y, s };
       }
       card.style.left = Math.round(best.x) + 'px'; card.style.top = Math.round(best.y) + 'px';
-      if (listEl) listEl.style.visibility = tl && ov({ x: best.x, y: best.y, w: cw, h: ch }, tl) > 0 ? 'hidden' : ''; // no room for both: the card wins for this step
       return { x: best.x, y: best.y, w: cw, h: ch };
     }
     function show2(S, t, b, r, ok, idle) {
@@ -15358,7 +15360,9 @@ const UI = (() => {
         el.querySelector('.ct').textContent = t; el.querySelector('.cb').textContent = b;
         const o = el.querySelector('.cok'); o.hidden = !ok; o.textContent = ok || '';
       }
-      el.classList.toggle('dim', held && !!r && !S.nodim); el.classList.toggle('dimall', held && !r && !S.nodim);
+      const canMin = !!(G && G.tut) && screen === 'game' && !S.modal && !S.tree; if (!canMin) min = false; el.querySelector('.chide').hidden = !canMin; // (the strip lives on the battlefield: no Hide over a modal, Talents or the hangar tour)
+      el.classList.toggle('min', min); minT = t; // hidden by the player: no card and no dimming; the ring and arrow stay
+      el.classList.toggle('dim', !min && held && !!r && !S.nodim); el.classList.toggle('dimall', !min && held && !r && !S.nodim);
       const sp = el.querySelector('.cspot'), rg = el.querySelector('.cring'), ar = el.querySelector('.carrow');
       sp.hidden = rg.hidden = ar.hidden = !r;
       const c = place(S, r, idle);
@@ -15374,14 +15378,12 @@ const UI = (() => {
     }
     function idle() {
       held = false;
-      const L = !tour() && !modalOpen && !Tree.isOpen && screen === 'game' && !panel ? idleLine() : null;
-      if (!L) { hide(); return; }
-      show2({}, L[0], L[1], null, null, true);
+      hide(); // 6.11.4: no idle line card. Between steps the checklist strip is the one small card
     }
     let entOn = false;
-    function tick() {
-      if (!on) { if (listEl) listEl.hidden = true; return; }
-      list();
+    function tick() { step(); if (on) list(); else if (listEl) listEl.hidden = true; }
+    function step() {
+      if (!on) return;
       { const e = plan === 'storms' || !!(plan === 'basic' && G && G.tutS && G.tutS.ent && (G.anomOffers || G.tutEnt)); if (e !== entOn) { entOn = e; document.body.classList.toggle('tutent', e); } } // 6.6: the Entropy gauge shows from the Training draw on
       const runOK = G && G.tut && screen === 'game' && (G.lesson || 'basic') === plan, tourOK = tour() && !G && (screen === 'hangar' || Tree.isOpen);
       if (!runOK && !tourOK) { stop(); return; }
