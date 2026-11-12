@@ -1617,7 +1617,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.11.2';
+const VERSION = '6.11.3';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -13945,12 +13945,43 @@ const HangarFX = (() => {
   const sstep = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
 
   // ---- the attractor: one long Lorenz trajectory, computed once ----
-  const LN = 13000, LP = new Float32Array(LN * 3); // v5.4.3: twice the points at half the step, so trails stay solid at the finer resolution
+  // 6.12 (Nic: "the galaxies that are intertwined... make them look a bit better"): the two wings read as two galaxies.
+  // After the LN trajectory points come ND dust points (trajectory points pushed a little off the line, so the arms have
+  // body) and 2 x NB bulge points (a ball of stars at each wing's centre, the Lorenz fixed points). Every point has its own
+  // colour (PC: cream at the centre of its wing, the wing's colour further out) and weight (PA).
+  const LN = 13000, ND = 8000, NB = 1700, NT = LN + ND + 2 * NB, LP = new Float32Array(NT * 3); // v5.4.3: twice the points at half the step, so trails stay solid at the finer resolution
+  const FPX = Math.sqrt(72), FPZ = 3, PC = new Uint8Array(NT * 3), PA = new Float32Array(NT);
   { let x = 0.1, y = 0, z = 20; const h = 0.0025;
     for (let i = -5000; i < LN; i++) {
       const dx = 10 * (y - x), dy = x * (28 - z) - y, dz = x * y - (8 / 3) * z; x += dx * h; y += dy * h; z += dz * h;
-      if (i >= 0) { LP[i * 3] = x; LP[i * 3 + 1] = y; LP[i * 3 + 2] = z - 24; } } }
-  const SX = new Float32Array(LN), SY = new Float32Array(LN), SD = new Float32Array(LN);
+      if (i >= 0) { LP[i * 3] = x; LP[i * 3 + 1] = y; LP[i * 3 + 2] = z - 24; } }
+    const gs = () => (Math.random() + Math.random() + Math.random() + Math.random() - 2) * 0.87; // roughly a unit bell curve
+    for (let i = LN; i < LN + ND; i++) { const q = Math.floor(Math.random() * LN) * 3, sp = Math.random() < 0.3 ? 2.1 : 0.85;
+      LP[i * 3] = LP[q] + gs() * sp; LP[i * 3 + 1] = LP[q + 1] + gs() * sp; LP[i * 3 + 2] = LP[q + 2] + gs() * sp; }
+    for (let i = LN + ND; i < NT; i++) { const sd = i < LN + ND + NB ? 1 : -1, sp = Math.random() < 0.45 ? 1.7 : 4.4;
+      LP[i * 3] = sd * FPX + gs() * sp; LP[i * 3 + 1] = sd * FPX + gs() * sp; LP[i * 3 + 2] = FPZ + gs() * sp * 0.8; }
+    const WARM = [255, 236, 200];
+    for (let i = 0; i < NT; i++) {
+      const px = LP[i * 3], py = LP[i * 3 + 1], pz = LP[i * 3 + 2], bulge = i >= LN + ND, sd = bulge ? (i < LN + ND + NB ? 1 : -1) : (px > 0 ? 1 : -1);
+      const r = Math.hypot(px - sd * FPX, py - sd * FPX, pz - FPZ), w = 1 - sstep(1, 9.5, r), L = sd > 0 ? C.void : C.cryo;
+      for (let ch = 0; ch < 3; ch++) PC[i * 3 + ch] = L[ch] + (WARM[ch] - L[ch]) * w * (bulge ? 0.8 : 0.6);
+      PA[i] = bulge ? 0.16 + 0.34 * w : i >= LN ? 0.4 + 0.2 * w : 1 + 0.35 * w;
+    } }
+  const SX = new Float32Array(NT), SY = new Float32Array(NT), SD = new Float32Array(NT);
+  // stars that sit on the arms and twinkle (6.12)
+  const ASTAR = Array.from({ length: 150 }, () => ({ i: Math.floor(Math.random() * LN), p: Math.random() * 6.28, f: 0.5 + Math.random() * 1.8, b: 0.5 + 0.5 * Math.random() }));
+  let coreSpr = null, coreR = 0;
+  function coreSprite(col, r) { // a galaxy core: cream centre, the wing's colour around it, dithered into steps so it stays pixel art
+    const cvs = document.createElement('canvas'); cvs.width = cvs.height = r * 2; const g = cvs.getContext('2d'), img = g.createImageData(r * 2, r * 2), d = img.data;
+    for (let y = 0; y < r * 2; y++) for (let x = 0; x < r * 2; x++) {
+      const dx = (x + 0.5 - r) / r, dy = (y + 0.5 - r) / r * 1.25, q = Math.hypot(dx, dy); if (q >= 1) continue; // a little wider than tall, like a tilted disc
+      const v = Math.pow(1 - q, 2.1), hot = Math.pow(Math.max(0, 1 - q * 4.2), 1.6), th = (BAYER[(y & 3) * 4 + (x & 3)] / 16 - 0.5) / 12;
+      const a = Math.max(0, Math.round((v * 0.6 + hot * 0.3 + th) * 12) / 12), i = (y * r * 2 + x) * 4;
+      for (let ch = 0; ch < 3; ch++) d[i + ch] = (col[ch] + ([255, 240, 214][ch] - col[ch]) * Math.min(1, hot * 1.2 + v * 0.2)) * a;
+      d[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0); return cvs;
+  }
 
   function sprite(col, r) { // soft round glow, drawn additively
     const s = document.createElement('canvas'); s.width = s.height = r * 2; const g = s.getContext('2d');
@@ -13989,6 +14020,7 @@ const HangarFX = (() => {
     gr.addColorStop(0, 'rgba(4,5,10,0)'); gr.addColorStop(1, 'rgba(4,5,10,0.78)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
     g.fillStyle = 'rgba(0,0,0,0.12)'; g.beginPath(); for (let y = 1; y < H; y += 2) g.rect(0, y, W, 1); g.fill();
     halo = sprite(C.void, Math.round(H * 0.42));
+    coreR = Math.max(8, Math.round(lay.s * 10)); coreSpr = [coreSprite(C.void, coreR), coreSprite(C.cryo, coreR)];
   }
   function seed() {
     stars = [];
@@ -14022,7 +14054,7 @@ const HangarFX = (() => {
   }
   function project(cx, cy, s, a) {
     const ca = Math.cos(a), sa = Math.sin(a), ct = Math.cos(0.32), st = Math.sin(0.32);
-    for (let i = 0; i < LN; i++) {
+    for (let i = 0; i < NT; i++) {
       const x = LP[i * 3], y = LP[i * 3 + 1], z = LP[i * 3 + 2];
       const rx = x * ca - y * sa, ry = x * sa + y * ca, rz = z * ct + ry * st, dep = ry * ct - z * st, k = 140 / (140 + dep);
       SX[i] = cx + rx * s * k; SY[i] = cy - rz * s * k; SD[i] = dep;
@@ -14053,7 +14085,15 @@ const HangarFX = (() => {
     const dd = dimg.data; dd.fill(0);
     const plot = (x, y, k, a) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= W || y >= H || a <= 0) return; const q = (y * W + x) * 4; dd[q] += k[0] * a; dd[q + 1] += k[1] * a; dd[q + 2] += k[2] * a; dd[q + 3] = 255; };
     const lift = Math.min(1.8, Math.max(1, s / (2.2 * R))) * (0.6 + 0.4 * R) * fade; // finer lines read dimmer, so lift them a touch // bigger on big screens spreads the points, so lift them
-    for (let i = 0; i < LN; i++) { const d = SD[i]; plot(SX[i], SY[i], LP[i * 3] > 0 ? C.void : C.cryo, (d > 9 ? 0.1 : d > -9 ? 0.17 : 0.27) * lift); }
+    for (let i = 0; i < NT; i++) { // each point in its own colour, nearer points brighter
+      const x = SX[i] | 0, y = SY[i] | 0; if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const d = SD[i], al = (d > 9 ? 0.1 : d > -9 ? 0.17 : 0.27) * lift * PA[i], q = (y * W + x) * 4, j = i * 3;
+      dd[q] += PC[j] * al; dd[q + 1] += PC[j + 1] * al; dd[q + 2] += PC[j + 2] * al; dd[q + 3] = 255; }
+    for (const st of ASTAR) { // stars on the arms: they twinkle, the bright ones flare into small crosses
+      st.p += st.f * dt; const tw = 0.5 + 0.5 * Math.sin(st.p), al = st.b * (0.25 + 0.75 * tw) * fade * (SD[st.i] > 9 ? 0.55 : 1), x = SX[st.i], y = SY[st.i];
+      plot(x, y, C.ink, al);
+      if (tw > 0.8 && st.b > 0.75) { const a2 = al * 0.4; plot(x - 1, y, C.ink, a2); plot(x + 1, y, C.ink, a2); plot(x, y - 1, C.ink, a2); plot(x, y + 1, C.ink, a2); }
+    }
     // comets run the trajectory, leaving fading trails and shedding sparks
     for (const k of comets) {
       k.i = (k.i + k.v * dt) % LN; const hi = Math.floor(k.i), col = C[k.col];
@@ -14084,6 +14124,12 @@ const HangarFX = (() => {
       if (m.l >= m.L) streak = null;
     }
     dctx.putImageData(dimg, 0, 0); c.globalAlpha = 1; c.drawImage(dcv, 0, 0);
+    if (coreSpr) for (let n = 0; n < 2; n++) { // 6.12 a glowing core in the eye of each wing, breathing slowly and out of step
+      const sd = n ? -1 : 1, ca = Math.cos(a), sa = Math.sin(a), rx = sd * FPX * (ca - sa), ry = sd * FPX * (sa + ca);
+      const rz = FPZ * Math.cos(0.32) + ry * Math.sin(0.32), dep = ry * Math.cos(0.32) - FPZ * Math.sin(0.32), k = 140 / (140 + dep);
+      c.globalAlpha = fade * (0.72 + 0.1 * Math.sin(t * 0.55 + n * 2.4)) * (dep > 0 ? 0.85 : 1);
+      c.drawImage(coreSpr[n], Math.round(cx + rx * s * k - coreR), Math.round(cy - rz * s * k - coreR));
+    }
     for (const k of comets) { // soft heads on top
       const hi = Math.floor(k.i); c.globalAlpha = fade * (SD[hi] < 0 ? 1 : 0.6); const g = GLOW[k.col]; c.drawImage(g, Math.round(SX[hi] - g.width / 2), Math.round(SY[hi] - g.height / 2));
     }
