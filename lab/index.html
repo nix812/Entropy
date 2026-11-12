@@ -1480,41 +1480,50 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #splash .spi { font-family: var(--f-pix); font-size: min(3.6vh, 3vw); letter-spacing: 0.55em; margin: 1.6vh 0 0 0.55em; color: var(--dim); }
 #splash .spp { font-family: var(--f-term); font-size: min(4vh, 3.4vw); letter-spacing: 0.12em; margin-top: 3.4vh; color: #6b6a88; }
 @media (prefers-reduced-motion: reduce) { #splash, #splash .spc { transition: none; } }
-/* 6.8.1 the story: four screens over the hangar sky (UI.story). --sk is how dark the sky is behind the words */
-#story { position: fixed; inset: 0; z-index: 9999; --sk: 0.66; background: rgba(4, 5, 11, var(--sk)); display: grid; place-items: center; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; transition: opacity 1s, background-color 3.2s; }
-#story.pre { background: #05060c; } #story.out { opacity: 0; pointer-events: none; }
-#story.s0 { --sk: 0.42; } #story.s1 { --sk: 0.96; transition: opacity 1s, background-color 5s; } #story.s2 { --sk: 0.9; } #story.s3 { --sk: 0.96; } #story.mc { --sk: 0.42; transition: opacity 1s, background-color 1.6s; }
-/* the hangar's own buttons and title leave while the story is told (only the sky stays), then fade back in */
-body.storying #hangar > :not(#bgfx) { opacity: 0; pointer-events: none; }
-body.storyend #hangar > :not(#bgfx) { transition: opacity 1.4s ease 0.2s; }
-#story::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, transparent 38%, rgba(2, 2, 6, 0.78) 100%); }
-#story .stglow { position: absolute; left: 50%; top: 50%; width: 120vmin; height: 120vmin; margin: -60vmin 0 0 -60vmin; border-radius: 50%; pointer-events: none; opacity: 0; transform: scale(0.5);
-  background: radial-gradient(circle, rgba(255, 196, 110, 0.34) 0%, rgba(255, 150, 50, 0.16) 22%, rgba(255, 120, 40, 0.05) 46%, transparent 68%); transition: opacity 3s, transform 5s; }
-#story.s2 .stglow { opacity: 1; transform: scale(1); animation: stember 5.5s ease-in-out 3s infinite; }
-#story.s3 .stglow { opacity: 0.6; transform: scale(0.62); animation: stember 5.5s ease-in-out infinite; }
-#story.mc .stglow { opacity: 0; transition: opacity 1.2s; }
-@keyframes stember { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.28); } }
+/* 6.8.1 the story, 6.11 staged like a film (UI.story). Black with the story's own stars; the menu shows only at the end */
+#story { position: fixed; inset: 0; z-index: 9999; --em: 0.3; --eo: 0; background-color: #04050b; display: grid; place-items: center; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; transition: opacity 1s, background-color 3.4s ease; }
+#story.out { opacity: 0; pointer-events: none; }
+#story.mc { background-color: rgba(4, 5, 11, 0.16); }
+#story::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(2, 2, 6, 0.8) 100%); }
+#story .stsky { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; pointer-events: none; transition: opacity 1.2s; }
+#story.mc .stsky { opacity: 0; }
+/* the ember: the core's fire. --em is its size and --eo its strength; they step up with each line of screens 3 and 4 */
+#story .stglow { position: absolute; left: 50%; top: 50%; width: 120vmin; height: 120vmin; margin: -60vmin 0 0 -60vmin; border-radius: 50%; pointer-events: none; opacity: var(--eo); transform: scale(var(--em));
+  background: radial-gradient(circle, rgba(255, 214, 150, 0.5) 0%, rgba(255, 176, 80, 0.3) 9%, rgba(255, 150, 50, 0.15) 24%, rgba(255, 120, 40, 0.05) 46%, transparent 68%); transition: opacity 2.4s ease, transform 2.8s ease; animation: stember 5.5s ease-in-out infinite; }
+#story.hit .stglow { transition: opacity 0.5s ease, transform 0.9s cubic-bezier(0.2, 0.9, 0.3, 1); }
+#story.mc .stglow { opacity: 0; transform: scale(3.6); transition: opacity 3s ease 0.5s, transform 3.2s cubic-bezier(0.3, 0.6, 0.3, 1); }
+@keyframes stember { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+#story .stflash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(255, 232, 190, 0.9) 0%, rgba(255, 180, 90, 0.5) 30%, rgba(255, 140, 60, 0.12) 62%, transparent 85%); }
+#story.mc .stflash { animation: stflash 2.6s ease-out both; } @keyframes stflash { 0% { opacity: 0; } 22% { opacity: 0.6; } 100% { opacity: 0; } }
 #story .stbox { position: relative; z-index: 1; width: min(88vw, 46em); padding: 0 max(18px, var(--sal)) 0 max(18px, var(--sar)); text-align: center; font-family: var(--f-term); font-size: clamp(19px, min(6.4vh, 3.05vw), 34px); line-height: 1.2; letter-spacing: 0.02em; }
 #story .stbox p { margin: 0 0 0.62em; color: #c9c5dc; opacity: 0; transform: translateY(0.4em); filter: blur(3px); transition: opacity 1.5s ease, transform 1.8s ease, filter 1.5s ease; text-wrap: balance; text-shadow: 0 0 18px rgba(4, 5, 11, 0.9), 0 2px 0 rgba(0, 0, 0, 0.55); }
 #story .stbox p.on { opacity: 1; transform: none; filter: none; }
 #story .stbox p:last-child { margin-bottom: 0; color: var(--ink); }
 #story.s0 .stbox p:last-child { color: var(--cryo); } #story.s2 .stbox p:last-child { color: #ffc98a; }
-#story.s3 .stbox p:last-child { margin-top: 1.1em; font-family: var(--f-pix); font-size: 1.12em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); text-shadow: 0 0 22px rgba(255, 176, 58, 0.55), 0 2px 0 rgba(0, 0, 0, 0.6); }
+#story.s3 .stbox p:last-child { margin-top: 1.1em; font-family: var(--f-pix); font-size: 1.12em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); text-shadow: 0 0 22px rgba(255, 176, 58, 0.55), 0 2px 0 rgba(0, 0, 0, 0.6); transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.2, 0.9, 0.3, 1), filter 0.5s ease; transform: scale(1.12); }
+#story.s3 .stbox p:last-child.on { transform: none; }
 #story.leave .stbox p { opacity: 0; transform: translateY(-0.3em); filter: blur(3px); transition: opacity 0.8s ease, transform 0.9s ease, filter 0.8s ease; }
-#story .stmc { position: absolute; z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(88vw, 40em); text-align: center; opacity: 0; transition: opacity 0.6s; pointer-events: none; }
-#story.mc .stmc { opacity: 1; }
+#story .stgate { position: absolute; z-index: 1; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-family: var(--f-pix); font-size: 11px; letter-spacing: 0.34em; text-transform: uppercase; color: var(--ink); opacity: 0; transition: opacity 0.9s; pointer-events: none; }
+#story.gate .stgate { opacity: 0.9; animation: sthint 2.4s ease-in-out 0.9s infinite; }
+#story .stmc { position: absolute; z-index: 1; left: 50%; top: 74%; transform: translate(-50%, -50%); width: min(88vw, 40em); text-align: center; opacity: 0; transition: opacity 0.6s; pointer-events: none; }
+#story.say .stmc { opacity: 1; }
 #story .stmc b { display: block; font-family: var(--f-pix); font-weight: 400; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--core); margin-bottom: 10px; }
-#story .stmc span { font-family: var(--f-term); font-size: clamp(19px, min(6vh, 2.9vw), 30px); color: var(--ink); min-height: 1.2em; display: inline-block; }
+#story .stmc span { font-family: var(--f-term); font-size: clamp(19px, min(6vh, 2.9vw), 30px); color: var(--ink); min-height: 1.2em; display: inline-block; text-shadow: 0 0 14px rgba(4, 5, 11, 0.95), 0 2px 0 rgba(0, 0, 0, 0.6); }
 #story .stmc span::after { content: '_'; color: var(--core); animation: stcur 0.9s steps(1) infinite; } @keyframes stcur { 50% { opacity: 0; } }
 #story .sthint { position: absolute; z-index: 1; left: 0; right: 0; bottom: max(26px, calc(var(--sab) + 18px)); text-align: center; font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--dim); opacity: 0; transition: opacity 0.9s; pointer-events: none; }
 #story.ready .sthint { opacity: 0.85; animation: sthint 2.4s ease-in-out 0.9s infinite; } @keyframes sthint { 50% { opacity: 0.35; } }
 #story .stdots { position: absolute; z-index: 1; left: 0; right: 0; bottom: max(12px, calc(var(--sab) + 4px)); display: flex; justify-content: center; gap: 7px; pointer-events: none; transition: opacity 0.6s; }
 #story .stdots i { width: 5px; height: 5px; background: #34334a; transition: background 0.8s; } #story .stdots i.on { background: var(--dim); }
-#story.pre .stdots, #story.mc .stdots, #story.pre .stskip, #story.mc .sthint { opacity: 0; }
+#story.pre .stdots, #story.gate .stdots, #story.mc .stdots, #story.pre .stskip, #story.mc .sthint { opacity: 0; }
 #story .stskip { position: absolute; z-index: 2; top: max(6px, var(--sat)); right: max(8px, var(--sar)); min-width: 64px; min-height: 44px; padding: 0 14px; background: none; border: 0; font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); opacity: 0.7; transition: opacity 0.6s; cursor: pointer; }
 #story.calm, #story.calm * { transition: none !important; animation: none !important; }
-body.storyend.calm #hangar > :not(#bgfx) { transition: none; }
-#story.calm .stbox p { filter: none; transform: none; }
+#story.calm .stbox p { filter: none; transform: none; } #story.calm .stflash { display: none; }
+/* the menu stays away while the story is told. At the reveal the title rises alone (storyrise); the rest fades in at the end */
+body.storying #hangar > :not(#bgfx):not(.hwrap), body.storying #hangar .hwrap > :not(.brand), body.storying #hangar .brand > * { opacity: 0; pointer-events: none; }
+body.storying.storyrise #hangar .brand > h1 { opacity: 1; transition: opacity 2.8s ease; }
+body.storyend #hangar > :not(#bgfx):not(.hwrap), body.storyend #hangar .hwrap > :not(.brand), body.storyend #hangar .brand > * { transition: opacity 1.4s ease 0.2s; }
+body.storyend #hangar .brand > h1 { transition: none; }
+@media (prefers-reduced-motion: reduce) { body.storyend #hangar *, body.storyrise #hangar .brand > h1 { transition: none !important; } }
 .card.over .storyend { margin: 2px 0 8px; font-size: 17px; color: #b9b3d6; font-style: normal; letter-spacing: 0.02em; }
 .lrow.lstory { box-shadow: inset 0 0 0 1px #4a3d6e; }
 </style>
@@ -1526,7 +1535,7 @@ body.storyend.calm #hangar > :not(#bgfx) { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.10.2 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.0 + STORY FILM CUT + MUSIC';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1654,7 +1663,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.10.2';
+const VERSION = '6.11.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -10500,7 +10509,104 @@ const SFX = (() => {
     const M = Music;
     return { st: ctx.state, ct: ctx.currentTime, rms, played, inFlight, errN, sfxV: sfxVol, musV: musVol, mRun: M.isRunning ? (M.isRunning() ? 1 : 0) : -1, mPause: M.paused ? 1 : 0, mHeld: M.held ? 1 : 0, sr: ctx.sampleRate };
   }
-  return { health, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  // ================= 6.11 the story's music (Nic, Nov 12: "we need a set music piece for the intro") =================
+  // One fixed piece in D for the four story screens and the reveal. The player sets the pace, so it is 5 stages and not a
+  // timeline: UI.story calls stage(n) when a screen arrives, line(n, k) as each line fades in (a bell or a chord change per
+  // line), hit() on "Defend the Last Gradient", and stop() at the end. It plays into the music bus (music volume, mute, mono
+  // and the limiter all apply) while the generative music is held; stop() fades it out and lets the menu music in.
+  // Every call takes an optional time so test/storymusic.py can render it offline; pump(until) schedules the heartbeat.
+  const Intro = (() => {
+    let on = false, out = null, wet = null, dr = null, pd = null, nz = null, beat = null, beatT = 0, timer = null, st = -1, nodes = [];
+    const mtof = m => 440 * Math.pow(2, (m - 69) / 12), T = t => (t === undefined ? ctx.currentTime : t);
+    const G = (v, dest) => { const g = ctx.createGain(); g.gain.value = v; if (dest) g.connect(dest); return g; };
+    const to = (p, v, t, tc) => { p.cancelScheduledValues(t); p.setTargetAtTime(v, t, tc); };
+    const osc = (type, f, dest, det) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; if (det) o.detune.value = det; o.connect(dest); o.start(); nodes.push(o); return o; };
+    const lpf = (f, q, dest) => { const b = ctx.createBiquadFilter(); b.type = 'lowpass'; b.frequency.value = f; b.Q.value = q; b.connect(dest); return b; };
+    function build() {
+      out = G(0, musBus); wet = G(1);
+      const conv = ctx.createConvolver(); conv.buffer = impulse(3.6, 0.32); const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 160;
+      wet.connect(hp); hp.connect(conv); conv.connect(G(0.5, out));
+      // drone: D1 + D2 + A2 sines, two soft detuned saws through a low-pass that closes as the stars go out
+      // (a phone speaker gives almost nothing under 200 Hz, so the saws and the D3/A3 sines carry the drone there)
+      const dg = G(0, out), lp = lpf(520, 0.6, dg), fifth = G(0.11, dg), air = G(0.1, lp);
+      osc('sine', mtof(26), G(0.15, dg)); osc('sine', mtof(38), G(0.18, dg)); osc('sine', mtof(45), fifth); osc('sine', mtof(50), G(0.09, dg)); osc('sine', mtof(57), G(0.5, fifth));
+      osc('sawtooth', mtof(38), air, 6); osc('sawtooth', mtof(50), air, -5);
+      const lfo = ctx.createOscillator(), lg = G(0.12, dg.gain); lfo.frequency.value = 0.07; lfo.connect(lg); lfo.start(); nodes.push(lfo); // a slow breath
+      dg.connect(G(0.25, wet)); dr = { g: dg, lp, fifth };
+      // pad: 5 voices, each two detuned saws and a triangle, through one low-pass
+      const pg = G(0, out), plp = lpf(600, 0.7, pg); pg.connect(G(0.55, wet));
+      pd = { g: pg, lp: plp, v: [] };
+      for (let i = 0; i < 5; i++) { const vg = G(0, plp); pd.v.push({ g: vg, o: [osc('sawtooth', 110, G(0.16, vg), 7), osc('sawtooth', 110, G(0.16, vg), -7), osc('triangle', 110, G(0.3, vg))] }); }
+      // air: filtered noise that rises before the last line
+      const ng = G(0, out), bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 400; bp.Q.value = 0.7; bp.connect(ng); ng.connect(G(0.4, wet));
+      const ns = ctx.createBufferSource(); ns.buffer = noiseBuf; ns.loop = true; ns.connect(bp); ns.start(); nodes.push(ns); nz = { g: ng, f: bp };
+    }
+    function bell(m, t, v, dur) { // FM bell: a sine carrier, a 3.5x modulator whose depth dies away
+      const f = mtof(m), c = ctx.createOscillator(), mo = ctx.createOscillator(), mg = ctx.createGain(), g = ctx.createGain(); dur = dur || 3.2;
+      c.frequency.value = f; mo.frequency.value = f * 3.5; mg.gain.setValueAtTime(f * 1.3, t); mg.gain.exponentialRampToValueAtTime(f * 0.04, t + 0.8);
+      mo.connect(mg); mg.connect(c.frequency);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      c.connect(g); g.connect(out); g.connect(wet); c.start(t); mo.start(t); c.stop(t + dur + 0.1); mo.stop(t + dur + 0.1);
+    }
+    function thump(t, v, f0, len) { // one heartbeat: a sine that falls in pitch
+      const o = ctx.createOscillator(), g = ctx.createGain(); f0 = f0 || 64; len = len || 0.34;
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 0.52, t + len * 0.6);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t + len + 0.05);
+      const k = ctx.createOscillator(), kg = ctx.createGain(); k.type = 'triangle'; // the knock a phone speaker can play
+      k.frequency.setValueAtTime(f0 * 2.6, t); k.frequency.exponentialRampToValueAtTime(f0 * 1.5, t + len * 0.4);
+      kg.gain.setValueAtTime(0.0001, t); kg.gain.exponentialRampToValueAtTime(v * 0.42, t + 0.006); kg.gain.exponentialRampToValueAtTime(0.0001, t + len * 0.7);
+      k.connect(kg); kg.connect(out); kg.connect(wet); k.start(t); k.stop(t + len);
+    }
+    function crash(t, v) { // the hit: a short burst of low noise with a long tail
+      const s = ctx.createBufferSource(), g = ctx.createGain(), f = lpf(1500, 0.5, g); s.buffer = noiseBuf; s.connect(f);
+      f.frequency.setValueAtTime(2600, t); f.frequency.exponentialRampToValueAtTime(260, t + 1.6);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.9);
+      g.connect(out); g.connect(wet); s.start(t, Math.random() * 1.5); s.stop(t + 2);
+    }
+    function chord(ms, t, tc, lvl, cut) { // move the pad: voices glide to the new notes, unused voices fade
+      pd.v.forEach((v, i) => { const m = ms[i]; if (m === undefined) { to(v.g.gain, 0, t, tc); return; } const f = mtof(m);
+        v.o.forEach((o, k) => to(o.frequency, k === 2 ? f : f, t, 0.05)); to(v.g.gain, 1, t, tc); });
+      if (lvl !== undefined) to(pd.g.gain, lvl, t, tc); if (cut) to(pd.lp.frequency, cut, t, tc);
+    }
+    const pulse = (int, v, t) => { if (!beat) beatT = t + 0.25; beat = { int, v }; };
+    function pump(until) { if (!on || !beat) return; while (beatT < until) { thump(beatT, beat.v); thump(beatT + 0.27, beat.v * 0.62, 58); beatT += beat.int; } }
+    // what each line plays. [stage][line] -> (t)
+    const LINES = [
+      [t => bell(74, t, 0.2), t => { bell(69, t, 0.17); bell(76, t + 0.38, 0.15); }, t => { bell(77, t, 0.17); bell(72, t + 0.42, 0.13); }, t => { bell(62, t, 0.16, 4.5); bell(74, t + 0.05, 0.2, 4.5); bell(81, t + 0.1, 0.15, 4.5); }],
+      [t => bell(77, t, 0.13, 4), t => bell(72, t, 0.1, 4), t => bell(69, t, 0.08, 4.5), t => { bell(62, t, 0.07, 6); to(dr.g.gain, 0.3, t, 2.5); }],
+      [t => { chord([57], t, 1.6, 0.22, 480); bell(69, t, 0.07, 4); },
+        t => { chord([50, 57, 64, 65], t, 1.4, 0.3, 760); },
+        t => { chord([46, 53, 57, 62], t, 1.4, 0.34, 820); pulse(1.35, 0.5, t); },
+        t => { chord([46, 52, 55, 61], t, 1.2, 0.38, 980); pulse(1.15, 0.58, t); to(nz.g.gain, 0.05, t, 2.5); to(nz.f.frequency, 700, t, 3); }],
+      [t => { chord([43, 50, 58, 62], t, 1.2, 0.36, 900); to(nz.g.gain, 0.02, t, 1); bell(70, t + 0.1, 0.1, 4); },
+        t => { chord([45, 52, 55, 62], t, 1.1, 0.42, 1250); pulse(0.92, 0.66, t); to(nz.g.gain, 0.09, t, 1.4); to(nz.f.frequency, 1500, t, 1.8); },
+        t => hit(t)],
+    ];
+    function hit(t) { t = T(t); if (!on) return;
+      beat = null; thump(t, 0.85, 92, 0.9); crash(t, 0.3); to(nz.g.gain, 0, t, 0.25);
+      chord([38, 45, 50, 57, 62], t, 0.06, 0.5, 2800); to(pd.lp.frequency, 1300, t + 0.4, 1.6); to(dr.g.gain, 1, t, 0.1); to(dr.lp.frequency, 700, t, 0.3);
+      bell(74, t, 0.2, 5); bell(81, t + 0.11, 0.17, 5); bell(86, t + 0.22, 0.13, 5.5); }
+    function stage(n, t) { t = T(t); if (!on) return; st = n;
+      if (n === 0) { to(out.gain, 0.85, t, 0.4); to(dr.g.gain, 0.8, t, 1.6); }
+      else if (n === 1) { to(dr.lp.frequency, 300, t, 3.5); to(dr.fifth.gain, 0, t, 3); to(dr.g.gain, 0.5, t, 2.5); }
+      else if (n === 2) { to(dr.g.gain, 0.75, t, 1.5); to(dr.lp.frequency, 240, t, 2); to(dr.fifth.gain, 0.08, t, 2); pulse(1.6, 0.4, t); }
+      else if (n === 3) { to(nz.g.gain, 0.02, t, 1.2); }
+      else if (n === 4) { beat = null; to(nz.g.gain, 0, t, 0.5); chord([38, 45, 52, 57, 64], t, 1.4, 0.4, 1700); to(dr.fifth.gain, 0.11, t, 1);
+        bell(74, t + 0.5, 0.15, 5); bell(81, t + 1.0, 0.14, 5); bell(88, t + 1.5, 0.12, 5.5); bell(90, t + 2.4, 0.08, 6); }
+    }
+    function line(n, k, t) { t = T(t); if (!on || !LINES[n] || !LINES[n][k]) return; LINES[n][k](t); pump(t + 0.6); }
+    function begin(t) { if (!ctx || on) return on; try { build(); } catch (e) { noteErr(e, 'intro'); return false; }
+      on = true; st = -1; beat = null; try { Music.setHold(true); } catch (e) {}
+      if (!offline) timer = setInterval(() => { try { pump(ctx.currentTime + 0.6); } catch (e) {} }, 200);
+      return true; }
+    function stop(fade, t) { if (!on) return; t = T(t); on = false; beat = null; clearInterval(timer); timer = null; fade = fade || 2.5;
+      const o = out, ns = nodes; nodes = []; to(o.gain, 0, t, fade / 3.5);
+      try { Music.setHold(false); } catch (e) {}
+      if (!offline) setTimeout(() => { for (const n of ns) { try { n.stop(); } catch (e) {} } try { o.disconnect(); } catch (e) {} }, fade * 1000 + 1500); }
+    return { begin, stage, line, hit, stop, pump, get on() { return on; }, get at() { return st; } };
+  })();
+  return { health, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -18619,50 +18725,97 @@ UI.splash = function (force) {
   try { document.fonts.ready.then(start); } catch (e) {} setTimeout(start, 600);
   return 4100;
 };
-// 6.8.1 the story (STORY, STORY_MC in data.js). Four screens over the hangar sky: lines fade in one after another, a tap
-// moves on (a tap while lines are still arriving shows them all), the sky dims as the stars go out and an ember glows for the
-// core. Then Mission Control types one line and the hangar comes back. Shown once per profile (PROF.story) on a cold start,
-// under the splash; `force` replays it (Field Manual). Skipped under automation unless forced, like the splash.
+// 6.8.1 the story (STORY, STORY_MC in data.js), 6.11 staged like a film (Nic: "deliver this cinematically", "don't have the
+// menu fade in until the last slide", "a set music piece"). Nothing of the menu shows until the end. In order:
+//   gate    "Tap to begin" on black, only when the sound is not running yet (an iPhone plays nothing before a touch)
+//   1       the story's own stars fade in on black; lines fade in one after another, each with a bell
+//   2       the stars go out one by one (all of them by about 9 s; at once if the player moves on first)
+//   3, 4    an ember for the core grows with each line; the last line of screen 4 is the hit
+//   reveal  the ember flares, the menu sky and the LAST GRADIENT title rise out of it, Mission Control types one line,
+//           then the rest of the menu fades in
+// A tap while lines are still arriving shows them all; the next tap moves on. Skip ends it. Music: SFX.intro (audio.js), 5
+// stages that follow the taps. Shown once per profile (PROF.story) on a cold start, under the splash; `force` replays it
+// (Field Manual). Skipped under automation unless forced, like the splash. Reduce Motion: no fades, typing or dying stars.
 UI.story = function (force, done) {
   if (!force && (navigator.webdriver || PROF.story)) return false;
   const old = document.getElementById('story'); if (old) old.remove();
   const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const el = document.createElement('div'); el.id = 'story'; el.className = 'pre' + (calm ? ' calm' : ''); el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'The story');
-  el.innerHTML = '<div class="stglow"></div><div class="stbox" aria-live="polite"></div><div class="stmc"><b>Mission Control</b><span></span></div>'
+  el.innerHTML = '<canvas class="stsky"></canvas><div class="stglow"></div><div class="stflash"></div><div class="stbox" aria-live="polite"></div><div class="stgate">Tap to begin</div>'
+    + '<div class="stmc"><b>Mission Control</b><span></span></div>'
     + '<div class="stdots">' + STORY.map(() => '<i></i>').join('') + '</div><div class="sthint">Tap to continue</div><button class="stskip" type="button">Skip</button>';
   document.body.appendChild(el);
-  const box = el.querySelector('.stbox'), dots = [...el.querySelectorAll('.stdots i')], mc = el.querySelector('.stmc span');
-  const GAP = calm ? 0 : 1500, LEAVE = calm ? 0 : 900; // ms between lines; ms a screen takes to fade out
-  let i = -1, full = false, busy = false, over = false, timers = [];
+  const box = el.querySelector('.stbox'), dots = [...el.querySelectorAll('.stdots i')], mc = el.querySelector('.stmc span'), B = document.body;
+  const GAP = calm ? 0 : 1500, LEAVE = calm ? 0 : 900, RISE = calm ? 0 : 3400; // ms between lines; a screen's fade-out; the reveal before Mission Control speaks
+  let i = -1, full = false, busy = false, over = false, gate = false, timers = [];
   const later = (f, ms) => timers.push(setTimeout(f, ms)), clear = () => { timers.forEach(clearTimeout); timers = []; };
-  UI.storyOn = true; UI.storyAt = -1;
-  document.body.classList.remove('storyend'); document.body.classList.add('storying');
-  const finish = () => { if (over) return; over = true; clear(); PROF.story = 1; Save.save(); el.classList.add('out'); document.body.classList.add('storyend'); document.body.classList.remove('storying'); setTimeout(() => document.body.classList.remove('storyend'), 1800);
+  const aud = (f, ...a) => { try { SFX.intro[f](...a); } catch (e) {} };
+  UI.storyOn = true; UI.storyAt = -1; UI.storyGate = false;
+  B.classList.remove('storyend', 'storyrise'); B.classList.add('storying');
+
+  // ---- the story's own sky: 150 stars at fixed places, drawn 1 canvas px = 3 screen px to match the game's pixels ----
+  const cv = el.querySelector('.stsky'), cx = cv.getContext('2d'), PX = 3, COL = ['#e6ecff', '#e6ecff', '#e6ecff', '#a9dcff', '#ffdcae', '#d9bdff'];
+  let seed = 812, sky = 'off', skyT = 0, rush = 0, raf = 0, skyLeft = 0;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const stars = []; for (let k = 0; k < 150; k++) { const x = rnd(), y = rnd(), mid = x > 0.14 && x < 0.86 && y > 0.24 && y < 0.8, b = (0.3 + 0.7 * Math.pow(rnd(), 1.8)) * (mid ? 0.5 : 1); stars.push({ x, y, b, s: b > 0.8 ? 2 : 1, c: COL[Math.floor(rnd() * COL.length)], ph: rnd() * 6.28, sp: 0.6 + rnd() * 1.6, d: rnd() * 1800, out: 0.55 * rnd() + 0.45 * b * rnd() }); }
+  stars.push({ x: 0.5, y: 0.2, b: 1, s: 2, c: '#ffe9c4', ph: 0, sp: 0.9, d: 900, out: 1 }); // the last one to go
+  const OUT0 = 700, OUTSPAN = 8200, FLARE = 650; // screen 2: a star goes out at OUT0 + out * OUTSPAN ms, with a short flare
+  function drawSky() { raf = 0; if (over && sky !== 'off') return;
+    const w = Math.ceil(innerWidth / PX), h = Math.ceil(innerHeight / PX); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    cx.clearRect(0, 0, w, h); if (sky === 'off') return;
+    const now = performance.now(), t = now - skyT, te = rush ? (rush - skyT) + (now - rush) * 14 : t; let left = 0;
+    for (const s of stars) { let a = s.b * (calm ? 1 : 0.72 + 0.28 * Math.sin(s.ph + now * 0.001 * s.sp));
+      if (sky === 'in') a *= calm ? 1 : Math.max(0, Math.min(1, (t - s.d) / 1400));
+      else { const o = OUT0 + s.out * OUTSPAN; if (calm || te >= o + FLARE) continue; if (te >= o) { const u = (te - o) / FLARE; a = Math.min(1, s.b * (1 + 1.2 * (1 - u))) * (1 - u * u); } }
+      if (a <= 0.01) { left++; continue; } left++;
+      cx.globalAlpha = Math.min(1, a); cx.fillStyle = s.c; cx.fillRect(Math.floor(s.x * w), Math.floor(s.y * h), s.s, s.s); }
+    cx.globalAlpha = 1; skyLeft = sky === 'dying' ? left : stars.length; UI.storyStars = skyLeft;
+    if (sky === 'dying' && !left) { sky = 'off'; return; }
+    if (!calm) raf = requestAnimationFrame(drawSky); }
+  const skyGo = m => { sky = m; skyT = performance.now(); rush = 0; if (!raf) drawSky(); };
+  const ember = (scale, op) => { el.style.setProperty('--em', scale); el.style.setProperty('--eo', op); };
+  const EMBER = [null, null, [[0.34, 0.5], [0.48, 0.72], [0.6, 0.86], [0.74, 1]], [[0.8, 1], [0.94, 1], [1.5, 1]]]; // [screen][line] -> glow size, strength
+
+  const finish = quick => { if (over) return; over = true; clear(); PROF.story = 1; Save.save(); el.classList.add('out'); if (raf) cancelAnimationFrame(raf);
+    aud('stop', quick ? 0.8 : 2.5);
+    B.classList.add('storyend'); B.classList.remove('storying', 'storyrise'); setTimeout(() => B.classList.remove('storyend'), 1900);
     setTimeout(() => { el.remove(); UI.storyOn = false; if (done) done(); }, calm ? 0 : 1100); };
-  const reveal = () => { clear(); box.querySelectorAll('p').forEach(p => p.classList.add('on')); full = true; el.classList.add('ready'); };
-  const screen = n => { i = n; UI.storyAt = n; full = false; busy = false; el.classList.remove('ready', 'leave');
+  const lineOn = (p, k, sound) => { if (p.classList.contains('on')) return; p.classList.add('on'); const E = EMBER[i] && EMBER[i][k]; if (E) ember(E[0], E[1]);
+    if (i === STORY.length - 1 && k === STORY[i].length - 1) el.classList.add('hit');
+    if (sound) aud('line', i, k); };
+  const reveal = () => { clear(); const ps = [...box.querySelectorAll('p')]; ps.forEach((p, k) => lineOn(p, k, k === ps.length - 1)); full = true; el.classList.add('ready'); };
+  const screen = n => { i = n; UI.storyAt = n; full = false; busy = false; el.classList.remove('ready', 'leave', 'gate', 'pre');
     el.className = el.className.replace(/\bs\d\b/g, '').trim() + ' s' + n; dots.forEach((d, k) => d.classList.toggle('on', k <= n));
     box.innerHTML = STORY[n].map(t => '<p>' + t.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p>').join('');
+    aud('stage', n);
+    if (n === 0) skyGo('in'); else if (n === 1) skyGo('dying'); else if (sky === 'dying' && !rush) rush = performance.now(); // the stars that are left go out now
     const ps = [...box.querySelectorAll('p')]; void box.offsetWidth;
-    ps.forEach((p, k) => later(() => p.classList.add('on'), 350 + k * GAP));
+    ps.forEach((p, k) => later(() => lineOn(p, k, true), 350 + k * GAP));
     later(() => { full = true; el.classList.add('ready'); }, 350 + (ps.length - 1) * GAP + (calm ? 0 : 1300)); };
+  // the reveal: the ember flares, the sky and the title rise, then Mission Control
   const control = () => { i = STORY.length; UI.storyAt = i; full = false; busy = false; el.classList.remove('ready', 'leave'); el.classList.add('mc'); box.innerHTML = '';
-    let k = 0; const type = () => { if (over) return; k = calm ? STORY_MC.length : k + 1; mc.textContent = STORY_MC.slice(0, k);
-      if (k < STORY_MC.length) later(type, 30); else { full = true; later(finish, 2600); } };
-    later(type, calm ? 0 : 700); };
+    aud('stage', STORY.length); sky = 'off'; later(() => B.classList.add('storyrise'), calm ? 0 : 600);
+    let k = 0; const type = () => { if (over) return; el.classList.add('say'); k = calm ? STORY_MC.length : k + 1; mc.textContent = STORY_MC.slice(0, k);
+      if (k < STORY_MC.length) later(type, 34); else { full = true; later(() => finish(), 2800); } };
+    later(type, RISE); };
+  const start = () => { gate = false; UI.storyGate = false; try { SFX.init(); SFX.wake(); } catch (e) {} aud('begin'); screen(0); };
   const next = () => { if (over || busy) return;
+    if (gate) return start();
     if (i < 0) return; // still under the splash
-    if (!full) { if (i >= STORY.length) { clear(); mc.textContent = STORY_MC; full = true; later(finish, 1600); } else reveal(); return; }
+    if (!full) { if (i >= STORY.length) { clear(); B.classList.add('storyrise'); el.classList.add('say'); mc.textContent = STORY_MC; full = true; later(() => finish(), 2200); } else reveal(); return; }
     if (i >= STORY.length) return finish();
     busy = true; clear(); el.classList.remove('ready'); el.classList.add('leave'); try { SFX.play('tab'); } catch (e) {}
     later(() => (i + 1 < STORY.length ? screen(i + 1) : control()), LEAVE); };
-  el.addEventListener('pointerdown', e => { e.preventDefault(); if (e.target.closest('.stskip')) finish(); else next(); });
-  // wait for the splash to leave, then begin
+  el.addEventListener('pointerdown', e => { e.preventDefault(); if (e.target.closest('.stskip')) finish(true); else next(); });
+  // wait for the splash to leave. Then begin, or ask for the first touch when the sound is not running yet
   const begin = () => { if (over) return; const sp = document.getElementById('splash'); if (sp && !sp.classList.contains('out')) return setTimeout(begin, 120);
-    el.classList.remove('pre'); screen(0); };
+    let run = false; try { run = SFX.state === 'running'; } catch (e) {}
+    if (run) return start();
+    gate = true; UI.storyGate = true; el.classList.remove('pre'); el.classList.add('gate'); };
   begin();
   return true;
 };
+
 // v5.8: what the one-time talent refund says (migrateWeb returns 'web' for a pre-5.0 passive web, 'rework' for the 5.8 rework)
 function talentsToast(kind) {
   return kind === 'web' ? ['TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a']
