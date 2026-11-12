@@ -1124,6 +1124,26 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .tsig span { font-size: 17px; line-height: 1.1; color: var(--ink); }
 .tsig small { font-size: 14px; color: var(--dim); }
 .tsig.off span { color: var(--dim); }
+/* 6.10 Fusions on the Talents screen: the header chip, the strip of six chips on a tree page, the states on the Fusions page */
+.tfusb { cursor: pointer; } .tfusb b { color: var(--amber); }
+@media (max-width: 760px) { .tfusb { display: none; } } /* the rail's Fusions tab says the same on a phone */
+@media (max-width: 760px) { .tfs .tfs-c { grid-template-columns: repeat(2, minmax(0, 1fr)); } } /* 3 across cut the tree names on a phone */
+.tfs { margin: 0 0 10px; }
+.tfs-h { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 5px; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--dim); }
+.tfs-h em { font-style: normal; color: var(--ink); }
+.tfs-c { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.tfc { display: grid; gap: 1px; min-height: 44px; padding: 5px 8px; border: 0; text-align: left; background: rgba(255, 255, 255, 0.03); box-shadow: inset 3px 0 0 var(--c); color: var(--dim); font-family: var(--f-term); cursor: pointer; }
+.tfc b { font-family: var(--f-pix); font-size: 9px; font-weight: 400; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tfc small { display: flex; gap: 6px; justify-content: space-between; font-size: 14px; line-height: 1; white-space: nowrap; }
+.tfc small i { font-style: normal; min-width: 0; overflow: hidden; text-overflow: ellipsis; } .tfc small em { font-style: normal; flex: none; } /* the state never gets cut; the tree name gives way */
+.tfc.near { color: var(--ink); box-shadow: inset 3px 0 0 var(--c), inset 0 0 0 1px var(--line2); }
+.tfc.open { color: var(--ink); background: rgba(255, 209, 102, 0.07); box-shadow: inset 3px 0 0 var(--c), inset 0 0 0 1px var(--amber); } .tfc.open b { color: var(--amber); }
+.tfc.on { color: #0c0a08; background: var(--amber); box-shadow: inset 3px 0 0 var(--c); }
+.tsumcap.fus b i { float: right; font-style: normal; color: var(--dim); margin-left: 8px; }
+.tsumcap.fus.fx-lock { opacity: 0.5; } .tsumcap.fus.fx-near { opacity: 0.85; } .tsumcap.fus.fx-near b i { color: var(--ink); }
+.tsumcap.fus.fx-open { cursor: pointer; background: rgba(255, 209, 102, 0.06); } .tsumcap.fus.fx-open b i, .tsumcap.fus.fx-on b i { color: var(--amber); }
+.tsumcap.fus.fx-on { background: rgba(255, 209, 102, 0.14); box-shadow: inset 3px 0 0 var(--c), inset 6px 0 0 var(--c2), inset 0 0 0 1px var(--amber); }
+.tsumcap.fus.hi { outline: 2px solid var(--amber); outline-offset: -2px; }
 /* 6.10 Fusion rows: two tree colors on the edge; the ones you can switch to are dimmer and tappable */
 .tsumcap.fus { box-shadow: inset 3px 0 0 var(--c), inset 6px 0 0 var(--c2); padding-left: 13px; }
 .tsumcap.fus.pick { opacity: 0.72; cursor: pointer; min-height: 44px; }
@@ -1459,6 +1479,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
       <h2>Talents</h2>
       <span class="tpts"><b id="tPts">0</b> points</span>
       <span class="tpts" id="tCaps"><b>0/1</b> Capstones</span>
+      <span class="tpts tfusb" id="tFus" data-tact="fuspg" role="button"><b>No</b> Fusion</span>
       <span class="tpts" id="tTok"><b>0</b> tokens</span>
       <div class="spacer"></div>
       <button class="hbtn" data-tact="builds">Builds</button>
@@ -2887,13 +2908,13 @@ function sigUnits(n) { let u = 0; for (let i = 0; i < n; i++) u += SIG_BANDS[Mat
 const SIGV = { K: 0.0002, T: 0.0008, A: 0.0075, Ar: 2.5, C: 0.0004, V: 0.0015, E: 0.01, Emax: 0.6, X: 0.0025, Xt: 5 };
 const sp = (u, k, d) => +(u * SIGV[k] * 100).toFixed(d === undefined ? 1 : d);
 const SIGS = {
-  K: { name: 'Killshot', desc: u => `Kinetic crits deal an extra ${sp(u, 'K', 2)}% of the enemy's max HP. Bosses take a quarter of that.` },
-  T: { name: 'Consume', desc: u => `Burn deals at least ${sp(u, 'T', 2)}% of the enemy's max HP per second. Bosses take a quarter of that.` },
-  A: { name: 'Arc Leap', desc: u => `When a Shocked enemy dies, lightning hits the nearest enemy within ${SIGV.Ar} tiles for ${sp(u, 'A')}% of its max HP and Shocks it.` },
-  C: { name: 'Deep Cold', desc: u => `Chilled enemies lose ${sp(u, 'C', 2)}% of their max HP per second for each Chill stack. A Frozen enemy counts as 5 stacks. Bosses take a quarter of that.` },
-  V: { name: 'Crushing Depth', desc: u => `A Collapse deals ${sp(u, 'V', 2)}% more of each enemy's max HP.` },
-  E: { name: 'Stand Fast', desc: u => `Every enemy that reaches the core deals ${Math.min(SIGV.Emax * 100, sp(u, 'E'))}% less damage to it. Bosses too.` },
-  X: { name: 'Battle Rhythm', desc: u => `After you use an ability, all towers gain +${sp(u, 'X')}% Attack Speed for ${SIGV.Xt}s.` },
+  K: { name: 'Killshot', v: u => sp(u, 'K', 2) + '%', desc: u => `Kinetic crits deal an extra ${sp(u, 'K', 2)}% of the enemy's max HP. Bosses take a quarter of that.` },
+  T: { name: 'Consume', v: u => sp(u, 'T', 2) + '%', desc: u => `Burn deals at least ${sp(u, 'T', 2)}% of the enemy's max HP per second. Bosses take a quarter of that.` },
+  A: { name: 'Arc Leap', v: u => sp(u, 'A', 1) + '%', desc: u => `When a Shocked enemy dies, lightning hits the nearest enemy within ${SIGV.Ar} tiles for ${sp(u, 'A')}% of its max HP and Shocks it.` },
+  C: { name: 'Deep Cold', v: u => sp(u, 'C', 2) + '%', desc: u => `Chilled enemies lose ${sp(u, 'C', 2)}% of their max HP per second for each Chill stack. A Frozen enemy counts as 5 stacks. Bosses take a quarter of that.` },
+  V: { name: 'Crushing Depth', v: u => sp(u, 'V', 2) + '%', desc: u => `A Collapse deals ${sp(u, 'V', 2)}% more of each enemy's max HP.` },
+  E: { name: 'Stand Fast', v: u => Math.min(SIGV.Emax * 100, sp(u, 'E')) + '%', desc: u => `Every enemy that reaches the core deals ${Math.min(SIGV.Emax * 100, sp(u, 'E'))}% less damage to it. Bosses too.` },
+  X: { name: 'Battle Rhythm', v: u => sp(u, 'X', 1) + '%', desc: u => `After you use an ability, all towers gain +${sp(u, 'X')}% Attack Speed for ${SIGV.Xt}s.` },
 };
 // 6.10 Fusions (Nic, Nov 10: "specing into two trees gives a unique ability across any two combos"). FR_VER 7, G.frV >= 7.
 // FUS_NEED points in each of two talent trees opens that pair's Fusion. One Fusion is active in a run (G.fus): the player's pick
@@ -18154,7 +18175,7 @@ const UI = (() => {
 // Tree tabs on the left, the chosen tree's rows in the middle, the selected talent's details on the right. Tap a talent to see it,
 // tap + to add a rank (or double-tap the talent). Everything is plain DOM: it scrolls like any page on a phone.
 const Tree = (() => {
-  let mode = null, open_ = false, cur = 'K', sel = null, drawer = null, lastTap = { id: null, t: 0 }, confirmReset = false;
+  let mode = null, open_ = false, cur = 'K', sel = null, drawer = null, lastTap = { id: null, t: 0 }, confirmReset = false, lastOpen = null, fsel = null; // 6.10 lastOpen: the Fusions open at the last draw; fsel: the row the Fusions page opens on
   const el = id => document.getElementById(id);
   const capName = id => TAL[id] ? TAL[id].name : id;
   function init() {
@@ -18164,6 +18185,7 @@ const Tree = (() => {
       if (a === 'close') { close(); return; }
       if (a === 'tab') { cur = v; sel = null; drawer = null; SFX.play('tab'); refresh(); el('tgrid').scrollTop = 0; return; }
       if (a === 'sum') { cur = 'sum'; sel = null; drawer = null; SFX.play('ui'); refresh(); return; }
+      if (a === 'fuspg') { cur = 'fus'; fsel = v || null; sel = null; drawer = null; SFX.play('tab'); refresh(); const r = fsel && document.getElementById('fus-' + fsel); if (r) r.scrollIntoView({ block: 'center' }); else el('tgrid').scrollTop = 0; return; } // 6.10
       if (a === 'sel') {
         const now = performance.now();
         if (lastTap.id === v && now - lastTap.t < 350) { add(v); lastTap = { id: null, t: 0 }; return; }
@@ -18226,7 +18248,26 @@ const Tree = (() => {
   // 6.10 the tree's Signature: what it does now, at this many points
   function sigHTML(tr, pts) {
     const S = SIGS[tr.id]; if (!S) return '';
-    return `<div class="tsig${pts ? '' : ' off'}" style="--c:${tr.col}"><b>Signature · ${esc(S.name)}</b><span>${esc(S.desc(sigUnits(Math.max(1, pts))))}</span><small>${pts ? 'Every point in this tree makes it stronger. Deeper points count more.' : 'This is the Signature at 1 point. Every point in this tree makes it stronger.'}</small></div>`;
+    return `<div class="tsig${pts ? '' : ' off'}" style="--c:${tr.col}"><b>Signature · ${esc(S.name)}</b><span>${esc(S.desc(sigUnits(Math.max(1, pts))))}</span><small>${pts ? `Now ${S.v(sigUnits(pts))}. Next point: ${S.v(sigUnits(pts + 1))}. Deeper points count more.` : 'This is the Signature at 1 point. Every point in this tree makes it stronger.'}</small></div>`;
+  }
+  // 6.10 Fusions where the points are spent (research of Nov 11: status always visible, requirements at the point of choice with clear
+  // states, one list of every pair). fusState: on (active), open, near (4 points or fewer missing), lock.
+  function fusState(f, now) { const a = treePts(f[0]), b = treePts(f[1]), open = a >= FUS_NEED && b >= FUS_NEED, miss = Math.max(0, FUS_NEED - a) + Math.max(0, FUS_NEED - b);
+    return { a: Math.min(a, FUS_NEED), b: Math.min(b, FUS_NEED), miss, st: open ? (now === f ? 'on' : 'open') : miss <= 4 ? 'near' : 'lock' }; }
+  // the strip on a tree page: this tree's six Fusions, one chip per other tree. A tap opens the Fusions page at that row
+  function fusStrip(tr, pts) {
+    const now = fusionNow();
+    return `<div class="tfs"><div class="tfs-h">Fusions with ${esc(tr.name)}<em>${Math.min(pts, FUS_NEED)}/${FUS_NEED} points here</em></div><div class="tfs-c">` + TALENTS.filter(o => o.id !== tr.id).map(o => {
+      const f = FUS[tr.id + o.id] ? tr.id + o.id : o.id + tr.id, s = fusState(f, now), op = Math.min(treePts(o.id), FUS_NEED);
+      return `<button class="tfc ${s.st}" style="--c:${o.col}" data-tact="fuspg" data-v="${f}"><b>${esc(FUS[f].name)}</b><small><i>+ ${esc(o.name)}</i><em>${s.st === 'on' ? 'active' : s.st === 'open' ? 'open' : op + '/' + FUS_NEED}</em></small></button>`; }).join('') + `</div></div>`;
+  }
+  // the Fusions page: every pair, its two trees with their progress, what it does, and its state. An open one is a button
+  function fusPageHTML() {
+    const now = fusionNow(), mine = TS() === PROF;
+    return `<div class="thead" style="--c:var(--amber)"><b>Fusions</b><span>${FUS_NEED} points in each of two trees open their Fusion. One Fusion is active in a run.</span></div>` + FUSIONS.map(F => {
+      const f = F.id, a = TREE_BY_ID[f[0]], b = TREE_BY_ID[f[1]], s = fusState(f, now), can = s.st === 'open' && mine;
+      const lab = s.st === 'on' ? 'active' : s.st === 'open' ? (mine ? 'open · tap to use' : 'open') : s.st === 'near' ? `${s.miss} point${s.miss === 1 ? '' : 's'} away` : 'locked';
+      return `<div class="tsumcap fus fx-${s.st}${fsel === f ? ' hi' : ''}" id="fus-${f}" style="--c:${a.col};--c2:${b.col}"${can ? ` data-tact="fus" data-v="${f}" role="button"` : ''}><b>${esc(F.name)}<i>${lab}</i></b><small>${esc(a.name)} ${s.a}/${FUS_NEED} + ${esc(b.name)} ${s.b}/${FUS_NEED}</small><span>${esc(F.desc)}</span></div>`; }).join('');
   }
   function treeHTML(tr) {
     const pts = treePts(tr.id), rowsHTML = tr.rows.map((row, r) => {
@@ -18234,7 +18275,7 @@ const Tree = (() => {
       return `<div class="trow ${ok ? '' : 'locked'}"><div class="trl"><b>${r + 1}</b>${r ? `<small>${need} pts</small>` : ''}</div><div class="trt">${row.map(T => tile(T, tr)).join('')}</div></div>`;
     }).join('');
     const capOk = pts >= TCAP;
-    return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${sigHTML(tr, pts)}${rowsHTML}
+    return `<div class="thead" style="--c:${tr.col}"><b>${esc(tr.name)}</b><span>${esc(tr.tag)}</span><em>${pts} point${pts === 1 ? '' : 's'} in this tree</em></div>${sigHTML(tr, pts)}${fusStrip(tr, pts)}${rowsHTML}
       <div class="trow caprow ${capOk ? '' : 'locked'}"><div class="trl"><b>★</b><small>${TCAP} pts</small></div><div class="trt">${tr.caps.map(T => tile(T, tr)).join('')}</div></div>
       ${tierHTML(tr)}
       <p class="note tfoot">${FUS_NEED} points here and ${FUS_NEED} in another tree open the Fusion of the two trees. See Your Build.</p>
@@ -18287,8 +18328,11 @@ const Tree = (() => {
     el('tCaps').innerHTML = `<b>${held}/${slots}</b> Capstones`;
     const tk = el('tTok'); tk.hidden = !(G && !G.over); if (G) tk.innerHTML = `<b>${G.tokens}</b> tokens`;
     const rs = el('tReset'); rs.hidden = !refundFree() || mode === 'today' || huntRun(); rs.textContent = confirmReset ? 'Tap again' : 'Reset';
-    el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}${tr.top && talRank(tr.top.id) ? ' · ▲' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
-    el('tgrid').innerHTML = (drawer === 'builds' ? buildsHTML() : '') + (cur === 'sum' ? sumHTML() : treeHTML(TREE_BY_ID[cur] || TALENTS[0]));
+    el('ttabs').innerHTML = TALENTS.map(tr => { const p = treePts(tr.id), cap = activeCaps().find(c => TAL[c].tree === tr.id); return `<button class="ttab ${cur === tr.id ? 'on' : ''}" style="--c:${tr.col}" data-tact="tab" data-v="${tr.id}"><b>${esc(tr.name)}</b><small>${p ? p + ' pts' : '—'}${cap ? ' · ★' : ''}${tr.top && talRank(tr.top.id) ? ' · ▲' : ''}</small></button>`; }).join('') + `<button class="ttab sum ${cur === 'fus' ? 'on' : ''}" data-tact="fuspg"><b>Fusions</b><small>${FUS[fusionNow()] ? esc(FUS[fusionNow()].name) : fusionsOpen().length ? fusionsOpen().length + ' open' : 'none open'}</small></button><button class="ttab sum ${cur === 'sum' ? 'on' : ''}" data-tact="sum"><b>Your Build</b><small>${pointsSpent()} pts</small></button>`;
+    { const F = FUS[fusionNow()], tf = el('tFus'); if (tf) tf.innerHTML = `<b>${F ? esc(F.name) : 'No'}</b> Fusion`; }
+    // 6.10 the moment a Fusion opens: a sound and a toast with what it does (not on the first draw, not in a fixed build)
+    { const nowOpen = mode ? null : fusionsOpen(); if (nowOpen && lastOpen) { const nu = nowOpen.find(f => !lastOpen.includes(f)); if (nu) { SFX.play('pick'); if (Hooks.toast) Hooks.toast('Fusion opened: ' + FUS[nu].name, FUS[nu].desc, '#ffd166', true); } } lastOpen = nowOpen; }
+    el('tgrid').innerHTML = (drawer === 'builds' ? buildsHTML() : '') + (cur === 'sum' ? sumHTML() : cur === 'fus' ? fusPageHTML() : treeHTML(TREE_BY_ID[cur] || TALENTS[0]));
     el('tinfo').innerHTML = infoHTML();
     for (const cv of el('tgrid').querySelectorAll('canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv); // 6.4: the tier tile's tower
     document.body.classList.toggle('tsel', !!sel);
@@ -18299,7 +18343,8 @@ const Tree = (() => {
     if (G && !G.over) { G.wasPaused = G.paused; G.paused = true; }
     UI.closePanel();
     el('tree').hidden = false; open_ = true; document.body.classList.add('webopen');
-    if (cur !== 'sum' && !TREE_BY_ID[cur]) cur = 'K';
+    if (cur !== 'sum' && cur !== 'fus' && !TREE_BY_ID[cur]) cur = 'K';
+    lastOpen = null; fsel = null;
     // open on the tree you've invested in most
     if (!sel) { let best = cur, bp = -1; for (const tr of TALENTS) { const p = treePts(tr.id); if (p > bp) { bp = p; best = tr.id; } } if (bp > 0) cur = best; }
     drawer = null; confirmReset = false; refresh();
