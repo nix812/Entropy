@@ -1285,6 +1285,43 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #splash .spi { font-family: var(--f-pix); font-size: min(3.6vh, 3vw); letter-spacing: 0.55em; margin: 1.6vh 0 0 0.55em; color: var(--dim); }
 #splash .spp { font-family: var(--f-term); font-size: min(4vh, 3.4vw); letter-spacing: 0.12em; margin-top: 3.4vh; color: #6b6a88; }
 @media (prefers-reduced-motion: reduce) { #splash, #splash .spc { transition: none; } }
+/* 6.8.1 the story: four screens over the hangar sky (UI.story). --sk is how dark the sky is behind the words */
+#story { position: fixed; inset: 0; z-index: 9999; --sk: 0.66; background: rgba(4, 5, 11, var(--sk)); display: grid; place-items: center; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; transition: opacity 1s, background-color 3.2s; }
+#story.pre { background: #05060c; } #story.out { opacity: 0; pointer-events: none; }
+#story.s0 { --sk: 0.42; } #story.s1 { --sk: 0.96; transition: opacity 1s, background-color 5s; } #story.s2 { --sk: 0.9; } #story.s3 { --sk: 0.96; } #story.mc { --sk: 0.42; transition: opacity 1s, background-color 1.6s; }
+/* the hangar's own buttons and title leave while the story is told (only the sky stays), then fade back in */
+body.storying #hangar > :not(#bgfx) { opacity: 0; pointer-events: none; }
+body.storyend #hangar > :not(#bgfx) { transition: opacity 1.4s ease 0.2s; }
+#story::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, transparent 38%, rgba(2, 2, 6, 0.78) 100%); }
+#story .stglow { position: absolute; left: 50%; top: 50%; width: 120vmin; height: 120vmin; margin: -60vmin 0 0 -60vmin; border-radius: 50%; pointer-events: none; opacity: 0; transform: scale(0.5);
+  background: radial-gradient(circle, rgba(255, 196, 110, 0.34) 0%, rgba(255, 150, 50, 0.16) 22%, rgba(255, 120, 40, 0.05) 46%, transparent 68%); transition: opacity 3s, transform 5s; }
+#story.s2 .stglow { opacity: 1; transform: scale(1); animation: stember 5.5s ease-in-out 3s infinite; }
+#story.s3 .stglow { opacity: 0.6; transform: scale(0.62); animation: stember 5.5s ease-in-out infinite; }
+#story.mc .stglow { opacity: 0; transition: opacity 1.2s; }
+@keyframes stember { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.28); } }
+#story .stbox { position: relative; z-index: 1; width: min(88vw, 46em); padding: 0 max(18px, var(--sal)) 0 max(18px, var(--sar)); text-align: center; font-family: var(--f-term); font-size: clamp(19px, min(6.4vh, 3.05vw), 34px); line-height: 1.2; letter-spacing: 0.02em; }
+#story .stbox p { margin: 0 0 0.62em; color: #c9c5dc; opacity: 0; transform: translateY(0.4em); filter: blur(3px); transition: opacity 1.5s ease, transform 1.8s ease, filter 1.5s ease; text-wrap: balance; text-shadow: 0 0 18px rgba(4, 5, 11, 0.9), 0 2px 0 rgba(0, 0, 0, 0.55); }
+#story .stbox p.on { opacity: 1; transform: none; filter: none; }
+#story .stbox p:last-child { margin-bottom: 0; color: var(--ink); }
+#story.s0 .stbox p:last-child { color: var(--cryo); } #story.s2 .stbox p:last-child { color: #ffc98a; }
+#story.s3 .stbox p:last-child { margin-top: 1.1em; font-family: var(--f-pix); font-size: 1.12em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); text-shadow: 0 0 22px rgba(255, 176, 58, 0.55), 0 2px 0 rgba(0, 0, 0, 0.6); }
+#story.leave .stbox p { opacity: 0; transform: translateY(-0.3em); filter: blur(3px); transition: opacity 0.8s ease, transform 0.9s ease, filter 0.8s ease; }
+#story .stmc { position: absolute; z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(88vw, 40em); text-align: center; opacity: 0; transition: opacity 0.6s; pointer-events: none; }
+#story.mc .stmc { opacity: 1; }
+#story .stmc b { display: block; font-family: var(--f-pix); font-weight: 400; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--core); margin-bottom: 10px; }
+#story .stmc span { font-family: var(--f-term); font-size: clamp(19px, min(6vh, 2.9vw), 30px); color: var(--ink); min-height: 1.2em; display: inline-block; }
+#story .stmc span::after { content: '_'; color: var(--core); animation: stcur 0.9s steps(1) infinite; } @keyframes stcur { 50% { opacity: 0; } }
+#story .sthint { position: absolute; z-index: 1; left: 0; right: 0; bottom: max(26px, calc(var(--sab) + 18px)); text-align: center; font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--dim); opacity: 0; transition: opacity 0.9s; pointer-events: none; }
+#story.ready .sthint { opacity: 0.85; animation: sthint 2.4s ease-in-out 0.9s infinite; } @keyframes sthint { 50% { opacity: 0.35; } }
+#story .stdots { position: absolute; z-index: 1; left: 0; right: 0; bottom: max(12px, calc(var(--sab) + 4px)); display: flex; justify-content: center; gap: 7px; pointer-events: none; transition: opacity 0.6s; }
+#story .stdots i { width: 5px; height: 5px; background: #34334a; transition: background 0.8s; } #story .stdots i.on { background: var(--dim); }
+#story.pre .stdots, #story.mc .stdots, #story.pre .stskip, #story.mc .sthint { opacity: 0; }
+#story .stskip { position: absolute; z-index: 2; top: max(6px, var(--sat)); right: max(8px, var(--sar)); min-width: 64px; min-height: 44px; padding: 0 14px; background: none; border: 0; font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); opacity: 0.7; transition: opacity 0.6s; cursor: pointer; }
+#story.calm, #story.calm * { transition: none !important; animation: none !important; }
+body.storyend.calm #hangar > :not(#bgfx) { transition: none; }
+#story.calm .stbox p { filter: none; transform: none; }
+.card.over .storyend { margin: 2px 0 8px; font-size: 17px; color: #b9b3d6; font-style: normal; letter-spacing: 0.02em; }
+.lrow.lstory { box-shadow: inset 0 0 0 1px #4a3d6e; }
 </style>
 
 
@@ -1384,7 +1421,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 <script>
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.8.0';
+const VERSION = '6.8.1';
 // interface scale: >1 on tablets so the phone-sized UI grows with the screen
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
@@ -1844,6 +1881,16 @@ const FRONTIER = {
 const frRows = chaos => Math.min(FRONTIER.rowsMax, Math.round(CHAOS_LEVELS[chaos].rows * FRONTIER.rowsX));
 const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // "What's New" sheet, shown once per version to returning players (and from Settings)
+// 6.8.1 the story (Nic, Nov 12: testers asked for one and kept asking what the Last Gradient is). Four screens told once on a
+// cold start, by a narrator; then one line from Mission Control. Shown by UI.story (ui.js); replay from the Field Manual.
+const STORY = [
+  ['In the beginning there was a difference.', 'Hot beside cold. Light beside dark.', 'Every star, every sea, every heartbeat was that difference running down.', 'We named it the gradient.'],
+  ['It ran down.', 'The stars burned out one by one, and no new ones lit.', 'The last worlds went dark with no one left to see it.', 'Then the cold was the same in every direction, and time had nothing left to do.'],
+  ['One difference remains.', 'It burns inside your core: the last fire in a universe of ash.', 'The things that outlived the stars can feel it.', 'They are starving, and they are all coming.'],
+  ['No one has ever held it.', 'Every pilot before you is part of the dark now.', 'Hold it anyway.'],
+];
+const STORY_MC = 'Mission Control here. No pressure. Let’s build you a tower.';
+const storyEnd = w => `The gradient held for ${w} wave${w === 1 ? '' : 's'}. Then the dark came in.`; // the end screen, when the core falls
 const WHATS_NEW = { ver: '6.8.0', title: 'Last Gradient 6.8 · Afterglow', items: [
   ['Bloom', 'Shots, beams, blasts and the core now glow. You can turn it off in Settings, Graphics, Bloom.'],
   ['Hits with weight', 'Enemies warp in at the wormhole. They flash and break apart when they die, and ground units leave a scorch on the ground. Health bars show the damage just dealt.'],
@@ -2840,7 +2887,7 @@ function defaultProfile() {
     v: 1, webV: WEB_VER, xp: 0, alloc: ['start'], tal: {}, caps: [], builds: [null, null, null, null, null], bestWave: 0, bestScore: 0,
     runs: 0, kills: 0, playTime: 0,
     settings: { sfx: 0.8, music: 0.45, bpm: 72, soundtrack: 'drift', briefings: 'pause', notes: 'all', hud: 'lean', dmgNums: true, shake: true, haptics: true },
-    seenHelp: false, seenVer: '', seenEvo: false, seenAssault: false, tut: {}, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
+    seenHelp: false, story: 0, seenVer: '', seenEvo: false, seenAssault: false, tut: {}, runSnap: null, lastSetup: { startWave: 1, chaos: 1 }, updatedAt: 0,
     codex: { combos: {}, bosses: {}, anomalies: {}, gen: { n: 0, r: [0, 0, 0], parts: {} }, legendaries: {}, maelstroms: 0, bestRank: 0, bestName: '', coll: {}, collC: {}, collNew: [] },
     mastery: { v: 2, xp: {} }, loadout: ['strike', 'nova', 'stasis', 'overclock'], orbit: {},
     nova: 0, remnants: [], laws: [], stars: {}, hall: [],
@@ -14194,7 +14241,8 @@ const UI = (() => {
     if (manTab === 'dict') return openHelp('dict');
     const body = `<div class="lgrid">
         <button class="lrow basic${S.done ? ' done' : ''}" data-act="tutStart"><i>${S.done ? '✓' : ''}</i><b>Basic Training</b><span>The whole loop in one guided run, about 10 minutes${S.paid ? '' : ` · +${fmt(tutReward())} XP`}.</span></button>
-        ${lessonsOpen().map(L => row(L, D[L.id])).join('')}</div>`;
+        ${lessonsOpen().map(L => row(L, D[L.id])).join('')}
+        ${inRun ? '' : '<button class="lrow lstory" data-act="story"><i></i><b>The Last Gradient</b><span>What you are guarding, and why they come. 30 seconds.</span></button>'}</div>`;
     modal(`<div class="card help manual"><div class="ch"><h2>Field Manual</h2><span class="note">${lessonPct()}% complete</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       <div class="chips gtabs"><button class="chip on" data-act="mtab" data-v="lessons">Lessons</button><button class="chip" data-act="htab" data-v="dict">Dictionary</button></div>
       ${body}</div>`, 'help');
@@ -16525,6 +16573,7 @@ const UI = (() => {
     const N = G.newNemesis, ranked = !!G.rankedRun;
     if (G.daily) prepHuntCode();
     modal(`<div class="card over"><div class="ch">${G.extracted ? '<h2 class="good">Extracted</h2>' : '<h2 class="bad">Core Destroyed</h2>'}<span class="note">${G.daily ? 'Daily Hunt · ' + esc(G.daily) : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
+      ${G.extracted ? '' : `<p class="storyend">${esc(storyEnd(G.wave))}</p>`}
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>${G.daily ? 'Bounties' : 'Levels'}<b>${G.daily ? G.bounties.length : '+' + gained}</b></span></div>
       ${G.extracted ? `<div class="why good"><b>Bounty banked</b><span>${esc(G.bounties.map(b => b.name).join(', '))}. ${G.purseOut ? `Bounty Purse: +${fmt(G.purseOut.paid)} XP, all of it.` : G.stats.extractXp ? `+${fmt(G.stats.extractXp)} XP for getting out alive.` : ''}${G.pushes ? ` You pushed past ${G.pushes} bount${G.pushes === 1 ? 'y' : 'ies'} first.` : ''}</span></div>` : lossWhyHTML()}
       ${!G.extracted && G.purseOut && G.purseOut.purse > 0 ? `<p class="note hl" style="color:#ffd84a">Bounty Purse: you kept ${Math.round(G.purseOut.share * 100)}%, +${fmt(G.purseOut.paid)} of ${fmt(G.purseOut.purse)} XP.${G.bounties.length ? ` Extracting after ${esc(G.bounties[G.bounties.length - 1].name)} would have banked all of it.` : ' Claim a bounty, then Extract, to bank all of it.'}</p>`
@@ -17434,6 +17483,7 @@ const UI = (() => {
       case 'lesson': startTut(b.dataset.v); break;
       case 'lpage': openManual(b.dataset.v); break;
       case 'manual': openManual(); break;
+      case 'story': closeModal(); UI.story(true, () => { if (screen === 'hangar') openManual(); }); break; // 6.8.1: replay the intro
       case 'mtab': manTab = b.dataset.v; helpTab = 'lessons'; openManual(); break;
       case 'tutSkip': tutState().seen = 1; Save.save(); openSetup(); break;
       case 'evoR': closeModal(); if (G) G.paused = false; openThreat(); break;
@@ -17975,6 +18025,50 @@ UI.splash = function (force) {
   try { document.fonts.ready.then(start); } catch (e) {} setTimeout(start, 600);
   return 4100;
 };
+// 6.8.1 the story (STORY, STORY_MC in data.js). Four screens over the hangar sky: lines fade in one after another, a tap
+// moves on (a tap while lines are still arriving shows them all), the sky dims as the stars go out and an ember glows for the
+// core. Then Mission Control types one line and the hangar comes back. Shown once per profile (PROF.story) on a cold start,
+// under the splash; `force` replays it (Field Manual). Skipped under automation unless forced, like the splash.
+UI.story = function (force, done) {
+  if (!force && (navigator.webdriver || PROF.story)) return false;
+  const old = document.getElementById('story'); if (old) old.remove();
+  const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const el = document.createElement('div'); el.id = 'story'; el.className = 'pre' + (calm ? ' calm' : ''); el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'The story');
+  el.innerHTML = '<div class="stglow"></div><div class="stbox" aria-live="polite"></div><div class="stmc"><b>Mission Control</b><span></span></div>'
+    + '<div class="stdots">' + STORY.map(() => '<i></i>').join('') + '</div><div class="sthint">Tap to continue</div><button class="stskip" type="button">Skip</button>';
+  document.body.appendChild(el);
+  const box = el.querySelector('.stbox'), dots = [...el.querySelectorAll('.stdots i')], mc = el.querySelector('.stmc span');
+  const GAP = calm ? 0 : 1500, LEAVE = calm ? 0 : 900; // ms between lines; ms a screen takes to fade out
+  let i = -1, full = false, busy = false, over = false, timers = [];
+  const later = (f, ms) => timers.push(setTimeout(f, ms)), clear = () => { timers.forEach(clearTimeout); timers = []; };
+  UI.storyOn = true; UI.storyAt = -1;
+  document.body.classList.remove('storyend'); document.body.classList.add('storying');
+  const finish = () => { if (over) return; over = true; clear(); PROF.story = 1; Save.save(); el.classList.add('out'); document.body.classList.add('storyend'); document.body.classList.remove('storying'); setTimeout(() => document.body.classList.remove('storyend'), 1800);
+    setTimeout(() => { el.remove(); UI.storyOn = false; if (done) done(); }, calm ? 0 : 1100); };
+  const reveal = () => { clear(); box.querySelectorAll('p').forEach(p => p.classList.add('on')); full = true; el.classList.add('ready'); };
+  const screen = n => { i = n; UI.storyAt = n; full = false; busy = false; el.classList.remove('ready', 'leave');
+    el.className = el.className.replace(/\bs\d\b/g, '').trim() + ' s' + n; dots.forEach((d, k) => d.classList.toggle('on', k <= n));
+    box.innerHTML = STORY[n].map(t => '<p>' + t.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p>').join('');
+    const ps = [...box.querySelectorAll('p')]; void box.offsetWidth;
+    ps.forEach((p, k) => later(() => p.classList.add('on'), 350 + k * GAP));
+    later(() => { full = true; el.classList.add('ready'); }, 350 + (ps.length - 1) * GAP + (calm ? 0 : 1300)); };
+  const control = () => { i = STORY.length; UI.storyAt = i; full = false; busy = false; el.classList.remove('ready', 'leave'); el.classList.add('mc'); box.innerHTML = '';
+    let k = 0; const type = () => { if (over) return; k = calm ? STORY_MC.length : k + 1; mc.textContent = STORY_MC.slice(0, k);
+      if (k < STORY_MC.length) later(type, 30); else { full = true; later(finish, 2600); } };
+    later(type, calm ? 0 : 700); };
+  const next = () => { if (over || busy) return;
+    if (i < 0) return; // still under the splash
+    if (!full) { if (i >= STORY.length) { clear(); mc.textContent = STORY_MC; full = true; later(finish, 1600); } else reveal(); return; }
+    if (i >= STORY.length) return finish();
+    busy = true; clear(); el.classList.remove('ready'); el.classList.add('leave'); try { SFX.play('tab'); } catch (e) {}
+    later(() => (i + 1 < STORY.length ? screen(i + 1) : control()), LEAVE); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); if (e.target.closest('.stskip')) finish(); else next(); });
+  // wait for the splash to leave, then begin
+  const begin = () => { if (over) return; const sp = document.getElementById('splash'); if (sp && !sp.classList.contains('out')) return setTimeout(begin, 120);
+    el.classList.remove('pre'); screen(0); };
+  begin();
+  return true;
+};
 // v5.8: what the one-time talent refund says (migrateWeb returns 'web' for a pre-5.0 passive web, 'rework' for the 5.8 rework)
 function talentsToast(kind) {
   return kind === 'web' ? ['TALENTS ARRIVE', 'The passive web is now seven Talent trees. Every point is refunded: open Talents to spend them', '#ffb03a']
@@ -17995,9 +18089,10 @@ function talentsToast(kind) {
   UI.renderHangar();
   UI.show('hangar');
   const spT = UI.splash(); // v5.7: Nigel Industries presents (cold start only; a tap skips)
+  UI.story(); // 6.8.1: the story, once, under the splash (a tap moves on, Skip ends it)
   // returning players see what changed once per version; brand-new players skip it
   if (!PROF.runs) { PROF.seenVer = VERSION; }
-  else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(() => { if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
+  else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(function news() { if (UI.storyOn) return setTimeout(news, 700); if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
@@ -18015,7 +18110,7 @@ function talentsToast(kind) {
   checkUpdate();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
   setInterval(() => {
-    if (!updTo || UI.screen !== 'hangar' || UI.modalOpen || Tree.isOpen) return;
+    if (!updTo || UI.screen !== 'hangar' || UI.modalOpen || Tree.isOpen || UI.storyOn) return;
     let tried = null; try { tried = sessionStorage.getItem('entropy.upd'); } catch (e) {}
     if (tried === updTo) { updTo = null; return; } // already reloaded for this one; don't loop
     try { sessionStorage.setItem('entropy.upd', updTo); } catch (e) {}
