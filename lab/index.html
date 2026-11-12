@@ -1343,7 +1343,45 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 </style>
 <script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.10.0 + SIGNATURES + FUSION V2 + FEEDBACK';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
-b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script></head>
+b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
+#labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
+#labPanel{position:fixed;z-index:99998;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:92vh;overflow:auto;background:#120c05;color:#ffe2b0;border:2px solid #ffb03a;padding:12px 14px;font:16px/1.25 monospace}
+#labPanel h3{margin:0 0 6px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#ffb03a}
+#labPanel .lr{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+#labPanel .ll{flex:0 0 100%;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#c9a565}
+#labPanel button{font:inherit;font-size:14px;min-height:44px;min-width:44px;padding:6px 12px;background:#2a1a08;color:#ffcf7a;border:2px solid #7a5416;cursor:pointer}
+#labPanel button.on{background:#ffb03a;color:#120c05;border-color:#ffb03a}
+#labPanel button.x{position:sticky;float:right;top:0;border-color:#ffb03a}
+#labPanel p{margin:0 0 8px;font-size:13px;color:#c9a565}
+</style>
+<script>document.addEventListener('DOMContentLoaded',function(){
+var h=document.getElementById('hangar');if(!h)return;
+var b=document.createElement('button');b.id='labTools';b.textContent='Test tools';h.appendChild(b);
+var p=document.createElement('div');p.id='labPanel';p.hidden=true;document.body.appendChild(p);
+var pick=[];
+function done(fn){try{fn();PROF.updatedAt=Date.now();Save.save();if(Save.flushNow)Save.flushNow();}catch(e){console.error('lab tools',e);}setTimeout(function(){location.reload();},400);}
+function unlock(){PROF.bestWave=Math.max(PROF.bestWave||0,120);PROF.runs=Math.max(PROF.runs||0,5);PROF.seenHelp=true;PROF.seenVer=VERSION;PROF.seenEvo=true;PROF.seenAssault=true;PROF.tut=Object.assign(PROF.tut||{},{seen:1,done:1,paid:1});}
+function level(L){PROF.xp=xpToLevel(L)+1;if(pointsFree()<0){PROF.tal={};PROF.caps=[];}}
+function lvl(){try{return profLevel().level;}catch(e){return 0;}}
+function fill(trees){PROF.tal={};PROF.caps=[];unlock();var need=Math.max(trees.length*21+3,trees.length>=3?63:45);if(lvl()<need)level(need);
+trees.forEach(function(id){var tr=TALENTS.filter(function(t){return t.id===id;})[0],moved=true,guard=0;
+while(moved&&guard++<80){moved=false;tr.rows.forEach(function(r){r.forEach(function(t){var n=0;while(n++<9&&talentAdd(t.id))moved=true;});});}
+if(tr.caps&&tr.caps[0])talentAdd(tr.caps[0].id);if(tr.top)talentAdd(tr.top.id);});}
+function draw(){var t='<button class="x" data-l="close">X</button><h3>Test tools</h3><p>Only in the test copy. Each button changes the test save and reloads. The real game is not touched.</p>'
++'<p>Now: Level '+lvl()+', best Wave '+(PROF.bestWave||0)+', '+pointsFree()+' points free.</p>'
++'<div class="lr"><span class="ll">Set level (1 level = 1 talent point)</span>'+[10,20,42,60,100,150].map(function(L){return '<button data-l="lv" data-v="'+L+'">'+L+(L===150?' (all talents)':'')+'</button>';}).join('')+'</div>'
++'<div class="lr"><span class="ll">Unlock</span><button data-l="unlock">All towers, zones and start waves. Training done</button></div>'
++'<div class="lr"><span class="ll">Build: pick 1 to 3 trees, then fill them (all talents, first Capstone, tier tower)</span>'+TALENTS.map(function(tr){return '<button data-l="tree" data-v="'+tr.id+'" class="'+(pick.indexOf(tr.id)>=0?'on':'')+'">'+tr.name+'</button>';}).join('')
++'<button data-l="fill"'+(pick.length?'':' disabled')+'>Fill '+(pick.length||'')+' selected</button><button data-l="clear">Clear talents</button></div>';p.innerHTML=t;}
+b.addEventListener('click',function(e){e.stopPropagation();pick=[];draw();p.hidden=false;});
+p.addEventListener('click',function(e){var q=e.target.closest('button');if(!q)return;var a=q.dataset.l,v=q.dataset.v;
+if(a==='close'){p.hidden=true;return;}
+if(a==='tree'){var i=pick.indexOf(v);if(i>=0)pick.splice(i,1);else if(pick.length<3)pick.push(v);draw();return;}
+if(a==='lv'){done(function(){level(+v);});return;}
+if(a==='unlock'){done(unlock);return;}
+if(a==='clear'){done(function(){PROF.tal={};PROF.caps=[];});return;}
+if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
+});</script></head>
 <body>
 <div id="app">
   <div id="rotate"><div class="ph-icon"></div><h2>Rotate Your Device</h2><p class="note">Last Gradient is played in landscape.</p><button class="btn small" id="bRotate">Continue Anyway</button></div>
