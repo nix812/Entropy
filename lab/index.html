@@ -16887,7 +16887,7 @@ const UI = (() => {
   // a segmented choice, a slider or a button). All four pages are in the DOM (inactive ones hidden), so a tab switch is instant and
   // older tests that click a control by data-act still find it. The open tab is remembered for the session.
   let setTab = 'general';
-  const SET_TABS = [['general', 'General', 'gear'], ['sound', 'Sound', 'speaker'], ['graphics', 'Graphics', 'screen'], ['interface', 'Interface', 'sliders']];
+  const SET_TABS = [['general', 'General', 'gear'], ['sound', 'Sound', 'speaker'], ['graphics', 'Graphics', 'screen'], ['interface', 'Interface', 'sliders'], ['support', 'Support', 'help']]; // 6.10: Support holds Send Feedback, the run log and Legal (Nic: they cluttered General)
   function openSettings() {
     const S = PROF.settings, inRun = !!(G && !G.over);
     const prev = $('#modal .card.settings .setpane'), keep = prev && prev.dataset.tab === setTab ? prev.scrollTop : 0;
@@ -16905,14 +16905,16 @@ const UI = (() => {
         + row('Haptics', 'A buzz when the core is hit', flip(S.haptics !== false, 'haptic'))
         + sec('Save')
         + row('Save location', cloudOk ? 'Synced to your Claude account' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
-        + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>')
-        + (fbOn() ? row('Feedback', 'Report a bug or share an idea', '<button class="btn small" data-act="feedback" data-v="settings">Send Feedback</button>') : '')
         + (inRun ? '' : row('Transfer save', 'Move your progress to another device with a code', '<button class="btn small" data-act="xcopy">Export</button><button class="btn small" data-act="xpaste">Import</button>'))
-        + row('Run log', lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
         + sec('About')
         + row("What's New", `Version ${VERSION}`, `<button class="btn small" data-act="news">Open</button>`)
         + row('Music', 'Drift: a generative score written live as you play, in ten genres', '')
         + (inRun ? '' : row('Reset progress', 'Erase everything on this device. There is no undo', `<button class="btn small danger" data-act="wipe">${confirmReset ? 'Tap again to erase' : 'Reset'}</button>`, 'danger')),
+      support: sec('Feedback')
+        + (fbOn() ? row('Feedback', 'Report a bug or share an idea', '<button class="btn small" data-act="feedback" data-v="settings">Send Feedback</button>') : '')
+        + row('Run log', lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
+        + sec('About')
+        + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>'),
       sound: sec('Volume')
         + row('Sound effects', 'Weapons, impacts and alerts', rng('setSfx', S.sfx, 0, 1, 0.05, pctV(S.sfx), 'sfxV'))
         + row('Music', 'The score that follows the battle', rng('setMus', S.music, 0, 1, 0.05, pctV(S.music), 'musV'))
