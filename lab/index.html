@@ -85,6 +85,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 
 /* ---------- hangar: brand left, play in the right thumb zone, utilities top-right ---------- */
 #bgfx { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; z-index: 0; }
+#bgfx2 { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 #hangar { padding-bottom: max(12px, var(--sab)); padding-top: max(12px, var(--sat)); }
 #hangar .ver { position: absolute; z-index: 1; left: max(16px, var(--sal)); bottom: max(10px, var(--sab)); font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.08em; color: var(--dim); opacity: 0.75; pointer-events: none; }
 .hwrap { position: relative; z-index: 1; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) min(300px, 42%); grid-template-rows: auto 1fr auto; gap: 0 24px; max-width: 1000px; width: 100%; margin: 0 auto; }
@@ -1522,9 +1523,9 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 #story.calm, #story.calm * { transition: none !important; animation: none !important; }
 #story.calm .stbox p { filter: none; transform: none; } #story.calm .stflash { display: none; }
 /* the menu stays away while the story is told. At the reveal the title rises alone (storyrise); the rest fades in at the end */
-body.storying #hangar > :not(#bgfx):not(.hwrap), body.storying #hangar .hwrap > :not(.brand), body.storying #hangar .brand > * { opacity: 0; pointer-events: none; }
+body.storying #hangar > :not(#bgfx):not(#bgfx2):not(.hwrap), body.storying #hangar .hwrap > :not(.brand), body.storying #hangar .brand > * { opacity: 0; pointer-events: none; }
 body.storying.storyrise #hangar .brand > h1 { opacity: 1; transition: opacity 2.8s ease; }
-body.storyend #hangar > :not(#bgfx):not(.hwrap), body.storyend #hangar .hwrap > :not(.brand), body.storyend #hangar .brand > * { transition: opacity 1.4s ease 0.2s; }
+body.storyend #hangar > :not(#bgfx):not(#bgfx2):not(.hwrap), body.storyend #hangar .hwrap > :not(.brand), body.storyend #hangar .brand > * { transition: opacity 1.4s ease 0.2s; }
 body.storyend #hangar .brand > h1 { transition: none; }
 @media (prefers-reduced-motion: reduce) { body.storyend #hangar *, body.storyrise #hangar .brand > h1 { transition: none !important; } }
 .card.over .storyend { margin: 2px 0 8px; font-size: 17px; color: #b9b3d6; font-style: normal; letter-spacing: 0.02em; }
@@ -1538,7 +1539,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.4 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.5 + SMOOTH GALAXIES';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1585,6 +1586,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 
   <section id="hangar" class="screen">
     <canvas id="bgfx"></canvas>
+    <canvas id="bgfx2"></canvas>
     <div class="ver" id="hVer"></div>
     <button id="a2hs" hidden></button>
     <div class="hwrap">
@@ -1666,7 +1668,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.11.4';
+const VERSION = '6.11.5';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -14110,6 +14112,47 @@ const HangarFX = (() => {
     }
   }
 
+  // ---- 6.11.5 smooth galaxies (Nic liked the website's render: "update the title screen to be similar") ----
+  // The two wings are no longer plotted points in the pixel buffer. Particles run the Lorenz equations live and leave fading
+  // light trails on a second canvas (#bgfx2) at device resolution, with a soft glow at each wing's centre. Same place, size,
+  // sway and projection as before (lay, a), so the title shards still fall into it. SMOOTH = false brings the 6.11.3 look back.
+  const SMOOTH = true, CT = Math.cos(0.32), ST = Math.sin(0.32);
+  let tcv = null, tc = null, TW = 0, TH = 0, TF = 1, TP = [], TK = [], tKey = '', tOp = -1;
+  const lstep = (p, h) => { const dx = 10 * (p.y - p.x), dy = p.x * (28 - p.z) - p.y, dz = p.x * p.y - (8 / 3) * p.z; p.x += dx * h; p.y += dy * h; p.z += dz * h; };
+  function tproj(p, cx, cy, s, ca, sa) {
+    const z = p.z - 24, rx = p.x * ca - p.y * sa, ry = p.x * sa + p.y * ca, rz = z * CT + ry * ST, k = 140 / (140 + ry * CT - z * ST);
+    p.sx = (cx + rx * s * k) * TF; p.sy = (cy - rz * s * k) * TF;
+  }
+  function tseed(cx, cy, s, a) {
+    const n = Math.max(500, Math.min(1800, Math.round(80 * s * PX))), q = { x: 0.1, y: 0, z: 20 }, ca = Math.cos(a), sa = Math.sin(a); TP = []; TK = [];
+    for (let i = 0; i < 4000; i++) lstep(q, 0.006);
+    for (let i = 0; i < n + 3; i++) { for (let k = 0; k < 23; k++) lstep(q, 0.006); const p = { x: q.x, y: q.y, z: q.z, w: Math.random() < 0.12, sx: 0, sy: 0 }; tproj(p, cx, cy, s, ca, sa); (i < n ? TP : TK).push(p); }
+    TK.forEach((p, i) => { p.col = [C.amber, C.core, C.bad][i]; });
+  }
+  function tframe(dt, cx, cy, s, a, pre) { // pre (0..1): a run-ahead frame, drawn at the strength it would have faded to, with no fade pass
+    const g = tc, ca = Math.cos(a), sa = Math.sin(a), f = 1 - Math.exp(-dt * 3.4), h = Math.min(0.02, dt * 0.5), ns = Math.max(1, Math.ceil(h / 0.0045)), hs = h / ns;
+    if (pre == null) { g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 1; g.fillStyle = 'rgba(0,0,0,' + f.toFixed(4) + ')'; g.fillRect(0, 0, TW, TH); }
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = pre == null ? 1 : pre; g.lineCap = 'round'; g.lineWidth = Math.max(1, TF / PX);
+    const pa = [new Path2D(), new Path2D(), new Path2D()];
+    for (const p of TP) { const ox = p.sx, oy = p.sy; for (let k = 0; k < ns; k++) lstep(p, hs); tproj(p, cx, cy, s, ca, sa); const q = pa[p.w ? 2 : p.x < 0 ? 0 : 1]; q.moveTo(ox, oy); q.lineTo(p.sx, p.sy); }
+    g.strokeStyle = rgba(C.cryo, 0.34); g.stroke(pa[0]); g.strokeStyle = rgba(C.void, 0.38); g.stroke(pa[1]); g.strokeStyle = rgba(C.ink, 0.42); g.stroke(pa[2]);
+    g.lineWidth = Math.max(1, TF / PX) * 1.7; // three comets in the game's colours
+    for (const p of TK) { const ox = p.sx, oy = p.sy; for (let k = 0; k < ns; k++) lstep(p, hs * 1.6); tproj(p, cx, cy, s, ca, sa); g.strokeStyle = rgba(p.col, 0.8); g.beginPath(); g.moveTo(ox, oy); g.lineTo(p.sx, p.sy); g.stroke(); }
+    const kf = f / 0.055, r = s * TF * 5.2, o = { x: 0, y: 0, z: 0, sx: 0, sy: 0 }; // a glow in the eye of each wing; kf keeps it as bright at any frame rate
+    for (let n = 0; n < 2; n++) { const sd = n ? -1 : 1, col = n ? C.cryo : C.void; o.x = sd * FPX; o.y = sd * FPX; o.z = 27; tproj(o, cx, cy, s, ca, sa);
+      const gr = g.createRadialGradient(o.sx, o.sy, 0, o.sx, o.sy, r); gr.addColorStop(0, 'rgba(255,255,255,' + (0.10 * kf).toFixed(4) + ')'); gr.addColorStop(0.18, rgba(col, (0.05 * kf).toFixed(4))); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(o.sx - r, o.sy - r, 2 * r, 2 * r); }
+  }
+  function trails(dt, cx, cy, s, a, cw, ch, dpr) {
+    if (!tcv) { tcv = document.getElementById('bgfx2'); if (!tcv) return; tc = tcv.getContext('2d'); }
+    const q = Math.min(2, dpr, Math.sqrt(2.4e6 / (cw * ch))), tw = Math.max(2, Math.round(cw * q)), th = Math.max(2, Math.round(ch * q)), // at most 2.4 million pixels
+      key = tw + 'x' + th + ':' + W + ':' + cx + ',' + cy + ',' + s.toFixed(2);
+    if (key !== tKey) { // new size or place: start over and run ahead, so the picture is complete on the first frame
+      tKey = key; TW = tcv.width = tw; TH = tcv.height = th; TF = TW / W; tseed(cx, cy, s, a); for (let i = 0; i < 110; i++) tframe(1 / 60, cx, cy, s, a, Math.pow(0.945, 109 - i)); tc.globalAlpha = 1; }
+    else if (dt > 0) tframe(Math.min(0.05, dt), cx, cy, s, a);
+    const op = Math.round(fade * 50) / 50; if (op !== tOp) { tOp = op; tcv.style.opacity = op; }
+  }
+
   function draw(canvas, dt) {
     const now = performance.now(); if (now - lastCall > 600) fade = 0; lastCall = now;
     if (cv !== canvas) { cv = canvas; c = cv.getContext('2d'); W = 0; title = document.querySelector('.brand h1'); }
@@ -14128,23 +14171,23 @@ const HangarFX = (() => {
     layT -= dt; if (layT <= 0) { layT = 0.5; const o = lay && lay.cx + ',' + lay.cy; layout(); if (o !== lay.cx + ',' + lay.cy) buildOverlay(); }
     const cx = lay.cx, cy = lay.cy, s = lay.s, a = -0.5 + 0.42 * Math.sin(t * 0.085); // sways around the widest view of the butterfly, never edge-on
     c.globalAlpha = 0.16 * fade * (0.85 + 0.15 * Math.sin(t * 0.7)); c.drawImage(halo, Math.round(cx - halo.width / 2), Math.round(cy - halo.height / 2));
-    project(cx, cy, s, a);
+    if (!SMOOTH) project(cx, cy, s, a);
     // every point (attractor, comet trails, sparks, stars, meteor) goes into one additive pixel buffer, uploaded once:
     // overlaps glow brighter, and it costs a fraction of drawing thousands of 1-pixel rects (the byte array clamps at 255 by itself)
     const dd = dimg.data; dd.fill(0);
     const plot = (x, y, k, a) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= W || y >= H || a <= 0) return; const q = (y * W + x) * 4; dd[q] += k[0] * a; dd[q + 1] += k[1] * a; dd[q + 2] += k[2] * a; dd[q + 3] = 255; };
     const lift = Math.min(1.8, Math.max(1, s / (2.2 * R))) * (0.6 + 0.4 * R) * fade; // finer lines read dimmer, so lift them a touch // bigger on big screens spreads the points, so lift them
-    for (let i = 0; i < NT; i++) { // each point in its own colour, nearer points brighter
+    if (!SMOOTH) for (let i = 0; i < NT; i++) { // each point in its own colour, nearer points brighter
       const x = SX[i] | 0, y = SY[i] | 0; if (x < 0 || y < 0 || x >= W || y >= H) continue;
       const d = SD[i], al = (d > 9 ? 0.1 : d > -9 ? 0.17 : 0.27) * lift * PA[i], q = (y * W + x) * 4, j = i * 3;
       dd[q] += PC[j] * al; dd[q + 1] += PC[j + 1] * al; dd[q + 2] += PC[j + 2] * al; dd[q + 3] = 255; }
-    for (const st of ASTAR) { // stars on the arms: they twinkle, the bright ones flare into small crosses
+    if (!SMOOTH) for (const st of ASTAR) { // stars on the arms: they twinkle, the bright ones flare into small crosses
       st.p += st.f * dt; const tw = 0.5 + 0.5 * Math.sin(st.p), al = st.b * (0.25 + 0.75 * tw) * fade * (SD[st.i] > 9 ? 0.55 : 1), x = SX[st.i], y = SY[st.i];
       plot(x, y, C.ink, al);
       if (tw > 0.8 && st.b > 0.75) { const a2 = al * 0.4; plot(x - 1, y, C.ink, a2); plot(x + 1, y, C.ink, a2); plot(x, y - 1, C.ink, a2); plot(x, y + 1, C.ink, a2); }
     }
     // comets run the trajectory, leaving fading trails and shedding sparks
-    for (const k of comets) {
+    if (!SMOOTH) for (const k of comets) {
       k.i = (k.i + k.v * dt) % LN; const hi = Math.floor(k.i), col = C[k.col];
       for (let j = 0; j < k.len; j++) { const q = (hi - j + LN) % LN; plot(SX[q], SY[q], col, 0.9 * (0.7 + 0.3 * R) * fade * Math.pow(1 - j / k.len, 1.6)); }
       if (mv && Math.random() < dt * 9 && sparks.length < 140) {
@@ -14173,13 +14216,13 @@ const HangarFX = (() => {
       if (m.l >= m.L) streak = null;
     }
     dctx.putImageData(dimg, 0, 0); c.globalAlpha = 1; c.drawImage(dcv, 0, 0);
-    if (coreSpr) for (let n = 0; n < 2; n++) { // 6.12 a glowing core in the eye of each wing, breathing slowly and out of step
+    if (coreSpr && !SMOOTH) for (let n = 0; n < 2; n++) { // 6.12 a glowing core in the eye of each wing, breathing slowly and out of step
       const sd = n ? -1 : 1, ca = Math.cos(a), sa = Math.sin(a), rx = sd * FPX * (ca - sa), ry = sd * FPX * (sa + ca);
       const rz = FPZ * Math.cos(0.32) + ry * Math.sin(0.32), dep = ry * Math.cos(0.32) - FPZ * Math.sin(0.32), k = 140 / (140 + dep);
       c.globalAlpha = fade * (0.72 + 0.1 * Math.sin(t * 0.55 + n * 2.4)) * (dep > 0 ? 0.85 : 1);
       c.drawImage(coreSpr[n], Math.round(cx + rx * s * k - coreR), Math.round(cy - rz * s * k - coreR));
     }
-    for (const k of comets) { // soft heads on top
+    if (!SMOOTH) for (const k of comets) { // soft heads on top
       const hi = Math.floor(k.i); c.globalAlpha = fade * (SD[hi] < 0 ? 1 : 0.6); const g = GLOW[k.col]; c.drawImage(g, Math.round(SX[hi] - g.width / 2), Math.round(SY[hi] - g.height / 2));
     }
     c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
@@ -14198,6 +14241,7 @@ const HangarFX = (() => {
     }
     c.drawImage(over, 0, 0);
     if (fade < 1) { c.fillStyle = rgba(C.bg, (1 - fade) * 0.85); c.fillRect(0, 0, W, H); }
+    if (SMOOTH) trails(dt, cx, cy, s, a, cw, ch, dpr);
   }
   function center() { // the attractor in on-screen px, for TitleFX (null until laid out)
     if (!lay || !cv || !W) return null; const r0 = cv.getBoundingClientRect(), k = W / (r0.width || 1);
