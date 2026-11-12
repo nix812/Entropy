@@ -1535,7 +1535,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.1 + TITLE SKY';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.2 + TITLE SKY';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1663,7 +1663,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.11.1';
+const VERSION = '6.11.2';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2130,7 +2130,7 @@ const frCols = rows => Math.round(rows * FRONTIER.aspect);
 // cold start, by a narrator; then one line from Mission Control. Shown by UI.story (ui.js); replay from the Field Manual.
 const STORY = [
   ['In the beginning there was a difference.', 'Warm beside cold. Light beside dark.', 'Every sunrise, every heartbeat, every hand you ever held was fire falling toward the cold.', 'We named that fall the gradient.'],
-  ['Nothing falls forever.', 'The stars burned away one by one, and none were born to replace them.', 'Somewhere, someone watched the last sunrise and did not know it was the last.', 'Then the cold was the same in every direction, and time had nothing left to do.'],
+  ['Nothing falls forever.', 'The stars burned away one by one, and none were born to replace them.', 'On the final night, they burned everything they loved to stay warm one more hour.', 'Then the cold was the same in every direction, and time had nothing left to do.'],
   ['One difference remains.', 'It burns inside your core: the last fire in a universe of ash.', 'The things that outlived the stars can feel it.', 'They are starving, and they are all coming.'],
   ['What is left of humanity lives by its light.', 'Every pilot before you is part of the dark now.', 'Defend the Last Gradient.'],
 ];
