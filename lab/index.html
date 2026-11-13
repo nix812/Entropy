@@ -681,6 +681,8 @@ body.panel-r .liftbtn, body.panel-l .liftbtn { display: none; }
 .probebtn.dead { color: #ff8a9c; box-shadow: inset 0 0 0 1px #8a3040; background: rgba(30, 10, 16, 0.9); }
 body.prb.fr .rdybtn { top: 102px; }
 body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
+/* 6.11.6: a HUD button Basic Training has not taught yet: grey, no glow. A tap gives a short "locked" note */
+.liftbtn.tlock, .probebtn.tlock, #abils .tlock { opacity: 0.38; filter: grayscale(1); animation: none; box-shadow: inset 0 0 0 1px var(--line); }
 /* 6.5.2 probe command mode: the Probe button reads as pressed, and a bar under it (in Ready's slot; Ready waits, as it does for a
    side panel) says what the next map tap does, shows the probe's state, and holds Recall, Upgrades (the full panel) and ✕ */
 .probebtn.sel { background: #9fd8ff; color: #08162a; box-shadow: inset 0 0 0 2px #e6f4ff; animation: none; }
@@ -1539,7 +1541,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.5 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.11.6 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1668,7 +1670,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.11.5';
+const VERSION = '6.11.6';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -15460,7 +15462,8 @@ const UI = (() => {
       const S = P[i];
       if (!S) { if (tour() || (G && G.lesson)) lessonDone(plan); else idle(); return; }
       if (G && G.over && plan === 'basic') { held = false; hide(); return; }
-      if (!cur) { if ((S.when && !S.when()) || !paced(S)) { idle(); return; } cur = S; sig = ''; if (S.enter) S.enter(); }
+      mem.top = Math.max(mem.top | 0, i);
+      if (!cur) { if ((S.when && !S.when()) || !paced(S)) { idle(); return; } cur = S; sig = ''; (mem.op = mem.op || {})[S.id] = 1; if (S.enter) S.enter(); }
       if (S.done && S.done()) { next(); idle(); return; }
       if (S.skip && S.skip()) { next(); idle(); return; }
       const bk = S.back && S.back(); if (bk) { go(bk); idle(); return; }
@@ -15473,6 +15476,16 @@ const UI = (() => {
     // 6.7 (Nic, Nov 9: "A large part of the first 4 steps is waiting around for the first couple of waves to make it into range"):
     // in Training's first FF_WAVES waves, while enemies are on the road and none is in a tower's range or the core's, the game
     // runs at FF_X (a margin of 1.5 tiles kept it off along roads that skirt the core's reach: 15 s saved of ~45). The clock only: same rules, same recording. It drops back the moment one comes close.
+    // 6.11.6 (Nic: "Don't have the buttons active yet in the tutorial til they need to be used. Like lift off and the probe"):
+    // in Basic Training a HUD button stays locked (grey, no action) until the step that teaches it opens its card, or Training
+    // passes that step (a skipped lesson must not leave a button dead). LOCKS: button -> the step id that teaches it.
+    const LOCKS = { call: 'call1', lift: 'lift', probe: 'prBtn', strike: 'strike' };
+    function locked(k) {
+      if (!on || plan !== 'basic' || !G || !G.tut || G.over || !LOCKS[k]) return false;
+      const n = PLANS.basic.findIndex(s => s.id === LOCKS[k]); if (n < 0 || (mem.op && mem.op[LOCKS[k]])) return false;
+      return Math.max(i, mem.top | 0) <= n;
+    }
+    const lockTip = name => { SFX.play('deny'); toast(name, 'Locked for now. Training opens it at its lesson', '#8a8fa8', true, 'tip'); };
     const FF_WAVES = 3, FF_X = 3;
     function walkFF() {
       if (!on || held || plan !== 'basic' || !G || G.over || !G.tut || W() < 1 || W() > FF_WAVES) return false;
@@ -15484,7 +15497,7 @@ const UI = (() => {
     }
     return { start, stop, tick, get hold() { return on && held; }, get ff() { return walkFF() ? FF_X : 0; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
       get chain() { return on && cur ? lessonOf(i) : null; }, // 6.2: the lesson the current step belongs to (test/tutcadence.py)
-      steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS), taught,
+      steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS), taught, locked, lockTip,
       checks: () => (G && G.tut && plan === 'basic' ? ckState() : null), checkNames: () => CHECK.map(c => c[0]) }; // 6.5.2: test/tutcheck.py
   })();
 
@@ -15557,11 +15570,11 @@ const UI = (() => {
     setT($('#score'), fmt(G.score));
     const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint && !cpWait;
     const cb = $('#bCall');
-    cb.disabled = !canCall && !G.checkpoint;
+    cb.disabled = (!canCall && !G.checkpoint) || Coach.locked('call');
     cb.classList.toggle('cp', !!G.checkpoint);
     setT(cb.querySelector('span'), G.checkpoint ? 'Resume' : 'Next');
     const cpb = G.checkpoint ? cpBonus() : null;
-    setT(cb.querySelector('b'), G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '');
+    setT(cb.querySelector('b'), G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall && !cb.disabled ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '');
     setHid($('#cpBanner'), !G.checkpoint || !!G.reloc);
     if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); setT($('#cpBanner').querySelector('span'), cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'); $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
@@ -15574,6 +15587,7 @@ const UI = (() => {
       const n = G.charges[k] || 0, btn = document.querySelector(`[data-abil="${k}"]`);
       if (!btn) continue;
       const on = abilOnline(k), slots = abilSlots(), cnt = btn.querySelector('.cnt'), lab = btn.querySelector('span');
+      btn.classList.toggle('tlock', Coach.locked(k));
       const ct = on && (n > 1 || n > slots) ? String(n) : '';
       if (cnt.textContent !== ct) cnt.textContent = ct;
       cnt.classList.toggle('extra', n > slots);
@@ -15630,7 +15644,7 @@ const UI = (() => {
     for (const E of G.evList) chips.push(`<span class="evchip ${E.good ? 'good' : 'bad'}" title="${esc(E.desc)}">${esc(E.name)}</span>`);
     { const rdy = vetsReady().length; if (rdy) chips.unshift(`<span class="evchip warn ready" data-ready="1" style="--c:#ffe14d">${rdy} ready</span>`);
       { const lb = $('#bLift'); if (lb) { const on = !!(G.fr && !G.over && !G.watch), lbl = on ? (G.frFly ? 'Flying' : frCanFly() ? 'Lift Off' : `Lift · W${G.frReady}`) : ''; // Frontier
-        if (lb.hidden === on) lb.hidden = !on; if (on && lb.dataset.l !== lbl) { lb.dataset.l = lbl; lb.firstChild.textContent = lbl; lb.classList.toggle('fly', !!G.frFly); lb.classList.toggle('cool', !G.frFly && !frCanFly()); lb.classList.add('go'); } } }
+        if (lb.hidden === on) lb.hidden = !on; if (on && lb.dataset.l !== lbl) { lb.dataset.l = lbl; lb.firstChild.textContent = lbl; lb.classList.toggle('fly', !!G.frFly); lb.classList.toggle('cool', !G.frFly && !frCanFly()); lb.classList.add('go'); } lb.classList.toggle('tlock', on && Coach.locked('lift')); } }
       prBtnUI(); // 6.5
       const rb = $('#bReady'); if (rb) { const was = +rb.dataset.n || 0; if (rdy !== was) { rb.dataset.n = rdy; $('#rdyN').textContent = rdy; rb.hidden = !rdy; if (rdy > was) { rb.classList.remove('pulse'); void rb.offsetWidth; rb.classList.add('pulse'); } } } } // 5.8 Ready button
     if (G.flux) chips.push(`<span class="evchip storm" style="--c:${EL[G.flux.el].col}">${EL[G.flux.el].name} ×2</span>`);
@@ -16272,11 +16286,12 @@ const UI = (() => {
       : `<div class="sts">${tipify(frTwoGuns() ? 'Core gun only. Land on an attack tower to dock it as a second gun' : 'Plain cannon. Land on an attack tower to dock it: the core fires its weapon')}</div>`;
     return `<div class="lbl">Flight</div>${gun}
       <div class="sts ${n ? 'good' : 'dim'}">${G.frFly ? 'Links break while flying' : `Links ${n}/${frLinkN()} · linked towers +${pct(FRONTIER.linkDmg)} Damage and Rate · core +${pct(FRONTIER.linkCore * n)}`}</div>
-      <div class="row2"><button class="btn frlift" data-act="frlift" ${frCanFly() ? '' : 'disabled'}>${G.frFly ? 'In flight' : 'Lift Off'}<small>${frCanFly() ? 'Land anywhere · on a tower to dock' : G.frFly ? 'Landing' : `Ready on Wave ${G.frReady}`}</small></button>${d ? '<button class="btn" data-act="frtower">Docked tower<small>Upgrade, Fire, Aim</small></button>' : ''}</div>`;
+      <div class="row2"><button class="btn frlift" data-act="frlift" ${frCanFly() && !Coach.locked('lift') ? '' : 'disabled'}>${G.frFly ? 'In flight' : 'Lift Off'}<small>${Coach.locked('lift') ? 'Locked until its lesson' : frCanFly() ? 'Land anywhere · on a tower to dock' : G.frFly ? 'Landing' : `Ready on Wave ${G.frReady}`}</small></button>${d ? '<button class="btn" data-act="frtower">Docked tower<small>Upgrade, Fire, Aim</small></button>' : ''}</div>`;
   }
   function frPause(on) { if (!G) return; if (on) { if (frSel && frSel.paused === undefined) { frSel.paused = G.paused; G.paused = true; } } else if (frSel && frSel.paused === false && !modalOpen) G.paused = false; }
   function startLift() {
     if (!G || !G.fr || G.over) return;
+    if (Coach.locked('lift')) { Coach.lockTip('LIFT OFF'); return; }
     if (!frCanFly()) { SFX.play('deny'); toast('LIFT OFF', G.frFly ? 'Already in the air' : `Recharging: ready on Wave ${G.frReady}`, '#59f0b4', true, 'tip'); return; }
     frEnd(); closePanel();
     frSel = { kind: 'land', cands: new Set(frCands()), plan: null }; Render.frSel = frSel; frPause(true);
@@ -16354,6 +16369,7 @@ const UI = (() => {
   // command mode on (a live probe) or, for a lost probe, the panel with the rebuild
   function selectProbe(siteId) {
     if (!G || !G.probe || G.over || G.watch) return;
+    if (Coach.locked('probe')) { Coach.lockTip('PROBE'); return; }
     if (!G.probe.alive) { prCmd = null; return openProbe(); }
     if (panel) closePanel();
     prCmd = { site: siteId || 0, g: G }; Render.prSel = true; prBarUI();
@@ -16439,6 +16455,7 @@ const UI = (() => {
     const cls = !P.alive ? 'dead' : P.home ? '' : G.time - P.hitT < 1 ? 'hit' : 'away';
     if (pb.dataset.l !== lbl) { pb.dataset.l = lbl; pb.firstChild.textContent = lbl; }
     if (pb.dataset.c !== cls) { pb.dataset.c = cls; pb.className = 'probebtn ' + cls + (prCmd ? ' sel' : ''); }
+    pb.classList.toggle('tlock', Coach.locked('probe'));
   }
   function frLandPanelHTML() {
     const P = frSel && frSel.plan;
@@ -18365,6 +18382,7 @@ const UI = (() => {
       if (e.target.closest('#bOD')) { overdriveTap(); return; }
       const b = e.target.closest('[data-abil]'); if (!b || b.disabled || !G) return;
       const k = b.dataset.abil;
+      if (Coach.locked(k)) { Coach.lockTip(ABILITIES[k].name.toUpperCase()); return; }
       if (!abilOnline(k)) { SFX.play('deny'); toast(ABILITIES[k].name.toUpperCase(), `Comes online at Wave ${ABILITIES[k].from}. ${ABILITIES[k].desc}`, '#8a8fa8', true, 'tip'); return; }
       if (!(G.charges[k] > 0)) { SFX.play('deny'); toast(ABILITIES[k].name.toUpperCase(), `Recharging · ${Math.ceil(G.abilCd[k] || 0)}s. Upgrade the core's Command Uplink or take Command talents for faster cooldowns`, '#8a8fa8', true, 'tip'); return; }
       if (ABILITIES[k].target) { G.aimAbility = G.aimAbility === k ? null : k; if (G.aimAbility) { toast('ORBITAL STRIKE', 'Tap a target', '#ffb03a'); closePanel(); } }
