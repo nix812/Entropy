@@ -1624,7 +1624,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.11.7';
+const VERSION = '6.12.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2067,7 +2067,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 8; // 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -3941,6 +3941,7 @@ function newRun(opts) {
   // 5.8: a recording carries the rules it was made under (old recordings have none: hk 0, the 5.7 rules); a fresh run gets the current ones
   G.hk = opts.v ? (opts.hk | 0) : HOOK_VER;
   G.frV = !G.fr ? 0 : opts.v ? (opts.frV | 0) || 1 : FR_VER; // Frontier rules version (1: the lab prototype; 2: the baseline game)
+  G.dd = opts.daily && G.frV >= 8 ? 1 : 0; G.ddN = {}; // 6.12: a Daily Hunt draws its big rolls from the day's shared dice (ddR)
   G.sector = G.hk && SECTOR_BY[opts.sector] ? opts.sector : null; G.tier = 0; G.purse = 0; G.purseOut = null; G.twists = {}; G.twistW = 0;
   G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }, G.fr ? { frontier: 1, frV: G.frV } : {}))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
@@ -4864,6 +4865,7 @@ function prepareWave(w) {
   if (G.tut && G.tutS.grant && G.tutS.grant[tutIdx(w)] && w > G.wave) { const cr = G.tutS.grant[tutIdx(w)]; G.credits += cr; Hooks.toast('SUPPLY DROP', `+${cr} credits for Training`, '#ffb03a'); Hooks.fx('coin', { x: G.core.x, y: G.core.y - 0.6, v: cr }); }
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
+  if (G.dd) g.queue.forEach((q, i) => { q.dk = w * 4096 + i + 1; }); // 6.12: each unit's own key for its elite mods
   const counts = {}, genes = {}; let elites = 0, fly = 0, boss = null, ng = 0;
   for (const q of g.queue) {
     if (q.type === 'boss') { boss = BOSSES.find(b => b.id === q.boss); continue; }
@@ -5025,7 +5027,7 @@ function genWave(w, ev) {
   const affN = 1 + (w >= 25) + (w >= 50) + (w >= 80) + (af.affN || 0);
   const interval = Math.max(0.3, 0.8 - w * 0.008) * (1 - (af.gap || 0));
   const q = []; let t = 0;
-  const plan = breedPlan(w);
+  const plan = breedPlan(w), br = G.dd ? ddR('breed', w) : r; // 6.12: breeding follows each player's defence, so in a Daily it draws its own dice
   const lanes = G.map.lanes.filter(L => laneOpen(L, w));
   let rift = null;
   if (ev.breach || af.rifts) {
@@ -5046,7 +5048,7 @@ function genWave(w, ev) {
     const grp = ENEMIES[type].group || 1;
     for (let g = 0; g < grp; g++) {
       const el = r() < eliteP && type !== 'swarmer' ? affN : 0;
-      const gm = breedOne(plan, type, r);
+      const gm = breedOne(plan, type, br);
       q.push({ t, type, lane, hpm: hpE, elite: el, genes: gm ? gm.genes : null, gel: gm ? gm.el : null });
       t += grp > 1 ? 0.18 : G.fr ? interval / FRONTIER.count : interval; // Frontier: the same spawn time for fewer units
     }
@@ -5736,7 +5738,8 @@ function vetOffer(t) {
     const o = [], r0 = G.r;
     // v5.3: the offer comes from the tower's own stream (seed, tower, rank, pick count): looking at a panel must never move the run's dice
     G.r = mulberry32((G.seed ^ Math.imul(t.id, 2654435761) ^ Math.imul(t.rank + 1, 40503) ^ Math.imul((t.vetN || 0) + 1, 9973)) >>> 0);
-    try { for (let i = 0; i < 3; i++) o.push(rollAffix(t, undefined, 0.3 * t.rank, minTier, o.map(a => a.id))); } finally { G.r = r0; }
+    G.ddOwn = 1; // 6.12: the shared Daily dice leave this stream alone
+    try { for (let i = 0; i < 3; i++) o.push(rollAffix(t, undefined, 0.3 * t.rank, minTier, o.map(a => a.id))); } finally { G.r = r0; G.ddOwn = 0; }
     t.offer = o;
   }
   return t.offer;
@@ -5794,7 +5797,8 @@ function spawnEnemy(type, q) {
     }
   } else if (geneCap(w) > 0 && !q.fromPt && !q.L && D.from < 999) e.gkey = '';
   if (q.elite) {
-    const pool = ELITE_AFFIXES.slice();
+    const pool = ELITE_AFFIXES.slice(), r0 = G.r;
+    if (G.dd && q.dk) G.r = ddR('elite', q.dk); // 6.12: a wave's elites roll the same mods for everyone in a Daily
     for (let i = 0; i < q.elite && pool.length; i++) {
       const a = pool.splice(Math.floor(G.r() * pool.length), 1)[0];
       e.elite.push(a.id);
@@ -5804,6 +5808,7 @@ function spawnEnemy(type, q) {
     if (e.elite.includes('hasted')) e.spd *= 1.4;
     if (e.elite.includes('jugg')) { e.maxHp *= 1.3; e.hp = e.maxHp; }
     if (e.elite.includes('resist')) { const el = pick(G.r, ELS); e.res[el] = (e.res[el] || 0) + 0.5; e.resistEl = el; }
+    G.r = r0;
   }
   lanePos(e.L, e.d, e);
   G.enemies.push(e);
@@ -5856,6 +5861,7 @@ function claimBounty(e) {
   if (M.twins && G.enemies.some(o => o !== e && !o.dead && o.wanted)) { Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: 'my twin will avenge me' }); return; }
   const cr = Wd.bounty * (M.loaded ? 2 : 1);
   G.credits += cr; G.legendQueue++; Wd.done = 1; G.stats.bounty = Wd.name;
+  if (G.dd) G.tokens++; // 6.12: a Daily bounty also pays 1 free Recalibration token
   if (M.loaded) { const c = { x: Math.round(e.x - 0.5), y: Math.round(e.y - 0.5), t: CACHE_LIFE * 2, id: G.eid++, kind: 'gold' }; if (inRegion(c.x, c.y, G.region) && G.map.tiles[tIdx(c.x, c.y)] !== 2 && !G.towerAt[tIdx(c.x, c.y)]) { (G.caches || (G.caches = [])).push(c); Hooks.fx('cache', { x: c.x + 0.5, y: c.y + 0.5, kind: 'gold' }); } }
   rlog('bounty', { boss: e.boss, mod: M.id, cr });
   if (Wd.nemesis && G.nemesis) G.nemesis.beaten = G.wave;
@@ -5875,7 +5881,7 @@ function claimBounty(e) {
     rlog('doors', { w: Wd.w, doors: doors.map(d => d.sector + ':' + d.tier), purse: Math.round(G.purse) });
   }
   Hooks.huntChoice && Hooks.huntChoice(G.huntChoice);
-  Hooks.toast('BOUNTY CLAIMED', `${Wd.name} brought in: +${fmt(cr)} credits, your next tower rolls a Legendary${M.loaded ? ", and the Captain's Chest it was carrying" : ''}`, '#ffd84a', true);
+  Hooks.toast('BOUNTY CLAIMED', `${Wd.name} brought in: +${fmt(cr)} credits${G.dd ? ', +1 Recalibration token' : ''}, your next tower rolls a Legendary${M.loaded ? ", and the Captain's Chest it was carrying" : ''}`, '#ffd84a', true);
   Hooks.sfx('levelup'); Hooks.fx('cash', {});
 }
 function nextBoss(w, r) {
@@ -6604,8 +6610,8 @@ function kill(e, src, o) {
     const tw = G.hk && !G.draft && (e.bw || G.wave) >= TWIST_FROM && G.twistW !== (e.bw || G.wave) ? twistOffers() : null;
     if (tw && tw.length) { G.twistW = e.bw || G.wave; G.draft = tw; Hooks.onDraft(tw); }
     else if (!G.draft && !(G.hk && (e.wanted || G.huntChoice || (e.bw || G.wave) >= TWIST_FROM))) { // one boon pick at a time
-      const opts = []; const pool = BOONS.slice();
-      for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
+      const opts = []; const pool = BOONS.slice(), br = G.dd ? ddR('boon') : G.r; // 6.12: the Nth boon pick is the same for everyone in a Daily
+      for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(br() * pool.length), 1)[0]);
       G.draft = opts;
       Hooks.onDraft(opts);
     }
@@ -8086,6 +8092,41 @@ function useAbility(k, x, y) {
   return true;
 }
 
+// ---------- 6.12 Shared Daily dice (FR_VER 8, Daily Hunts only; Nic, Nov 12: "I still want the chaos, but somewhat competitive") ----------
+// In a Daily Hunt every big roll draws from a fresh stream made from the day's seed, the kind of roll and its number in line:
+// the 5th affix roll, Wave 12, the 3rd crate, the 2nd boon pick. Everyone on the same day draws the same ones in the same order.
+// A reroll takes the next affix roll in line. Combat dice (crits, procs, hits, enemy moves) stay on G.r, per player.
+// Off (G.dd 0: normal runs, older rules) every function below runs unchanged on G.r, so old recordings replay exactly.
+function ddHash(k) { let h = 2166136261; for (let i = 0; i < k.length; i++) h = Math.imul(h ^ k.charCodeAt(i), 16777619); return h >>> 0; }
+function ddR(kind, key) {
+  if (key === undefined) { const n = G.ddN || (G.ddN = {}); key = n[kind] = (n[kind] || 0) + 1; }
+  return mulberry32((G.seed ^ ddHash(kind) ^ Math.imul(key + 1, 0x85EBCA77)) >>> 0);
+}
+// kind: a name (counted per call) or a function of the call's arguments that returns [name, key]
+function ddWrap(kind, f) {
+  return function () {
+    if (!G || !G.dd || G.ddOwn) return f.apply(this, arguments);
+    const k = typeof kind === 'function' ? kind.apply(this, arguments) : [kind], r0 = G.r;
+    G.r = ddR(k[0], k[1]);
+    try { return f.apply(this, arguments); } finally { G.r = r0; }
+  };
+}
+const ddTick = n => () => [n, G.tick || 0]; // things that roll every step: one stream per step
+startWave = ddWrap(() => ['start', G.wave + 1], startWave);            // events upkeep, Mutagen, Chaos Engine
+prepareWave = ddWrap(w => ['wave', w], prepareWave);                   // the wave, its events, new wormholes and lanes
+rollEvents = ddWrap(w => ['ev', w], rollEvents); genWave = ddWrap(w => ['gen', w], genWave); // each on fresh dice: a Strain Assault's
+planAssault = ddWrap(w => ['assault', w], planAssault);                // plan reads the player's defence, so it must not shift them
+planWanted = ddWrap(at => ['wanted', at || 0], planWanted);            // bounty posters
+spawnBoss = ddWrap(() => ['boss' + G.wave], spawnBoss);                // boss mods, counted per wave
+claimBounty = ddWrap('bounty', claimBounty);                           // jump doors
+rollAffix = ddWrap('aff', rollAffix); rollCoreAffix = ddWrap('aff', rollCoreAffix); rollCurse = ddWrap('curse', rollCurse);
+updateCaches = ddWrap(ddTick('cache'), updateCaches);                  // crate drops and thieves
+claimCache = ddWrap('crate', claimCache); spawnThief = ddWrap('pirate', spawnThief);
+milestone = ddWrap('mile', milestone); twistOffers = ddWrap('twist', twistOffers);
+anomOffersGen = ddWrap('anom', anomOffersGen);                         // Anomaly cards
+updateStorms = ddWrap(ddTick('storm'), updateStorms);
+siteSpawn = ddWrap('site', siteSpawn); sitesUpdate = ddWrap(ddTick('sites'), sitesUpdate); siteDone = ddWrap('sdone', siteDone); prJackpot = ddWrap('jackpot', prJackpot);
+
 // ---------- main step ----------
 function simStep(dt) {
   if (!G || G.over || G.paused || G.draft || G.huntChoice) return;
@@ -8360,7 +8401,7 @@ function snapshotRun(waveNum) {
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, uLvl: G.core.uLvl || 0, hLvl: G.core.hLvl || 0, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
-    rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
+    rerollDisc: G.rerollDisc, dd: G.dd || 0, ddN: Object.assign({}, G.ddN || {}), nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     ascV: G.ascV || 1, mastery: G.mastery || {}, capT: G.capT && G.capT.length ? G.capT.slice() : undefined, // v5.8; 6.4 capT
@@ -8398,7 +8439,7 @@ function resumeRun(S) {
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t;
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
-    charges: Object.assign({}, S.charges), tokens: S.tokens, legendQueue: S.legendQueue, rerollDisc: S.rerollDisc, nextMs: S.nextMs,
+    charges: Object.assign({}, S.charges), tokens: S.tokens, legendQueue: S.legendQueue, rerollDisc: S.rerollDisc, dd: S.dd || 0, ddN: Object.assign({}, S.ddN || {}), nextMs: S.nextMs,
     lanesOpened: S.lanesOpened, cpDue: S.cpDue || 0, unbreakUsed: S.unbreakUsed, boonsTaken: S.boonsTaken || [], next: 12,
     entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), ganoms: JSON.parse(JSON.stringify(S.ganoms || [])), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
   if (S.stats) G.stats = S.stats;
