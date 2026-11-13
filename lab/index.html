@@ -420,6 +420,7 @@ body.panel-l #tutlist.min { visibility: visible; left: auto; right: 6px; } /* 6.
 .hhunt .hhr .lbl { min-width: 104px; } .hhunt .hhr b { font-weight: 400; color: var(--ink); } .hhunt .hhr small { color: var(--dim); font-size: 14px; flex-basis: 100%; padding-left: 116px; margin-top: -4px; }
 .hhunt .hhr.nem { box-shadow: inset 2px 0 0 #ff4d6a; } .hhunt .hhr.nem b { color: #ff8a9c; } .hhunt .hhr.day .btn { margin-left: auto; } .hhunt .hhr.day { box-shadow: inset 2px 0 0 #b86cff; }
 @media (max-width: 760px) { .hhunt .hhr small { padding-left: 0; } }
+.hhunt .hhr.day.lock { opacity: 0.62; } .hhunt .hhr.day.lock b { color: var(--dim); } .chip.lock { opacity: 0.55; } /* 6.13: the Daily Hunt before Level 20 */
 .card.hunt .wname, .card.wanted .wname { font-family: var(--f-pix); font-size: 15px; color: #ffd84a; margin: 4px 0; text-transform: uppercase; letter-spacing: 1px; }
 .hchoice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .hopt { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 12px; border: 0; background: var(--panel2); color: var(--ink); clip-path: var(--cut); cursor: pointer; font: inherit; }
@@ -1541,7 +1542,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.12.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.13.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1670,7 +1671,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.12.0';
+const VERSION = '6.13.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2113,7 +2114,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 8; // 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 9; // 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2344,6 +2345,9 @@ const TUT = {
 // talent build), boss, pre (presets: towers, abil, cache, vet, storm, entropy, lane, assault, tokens; see tutPreset).
 // tour: 1 = a walk through the hangar's own screens instead of a run. The coach steps live in ui.js (Coach PLANS, same id).
 // need(): hide a lesson until its system exists (the Ascend perks branch adds PERKS).
+// 6.13: the Daily Hunt opens at Level 20 (Nic, Nov 13: "they don't know what the hunt is"). A Daily run in progress always resumes.
+const DAILY_LVL = 20;
+const dailyOpen = () => typeof PROF === 'undefined' || !PROF || profLevel().level >= DAILY_LVL || !!(PROF.runSnap && PROF.runSnap.rec);
 const LESSONS = [
   { id: 'towers', title: 'Towers and Elements', blurb: 'What each tower is for, and why element matters.',
     what: 'Every tower has an element: Kinetic, Thermal, Cryo, Arc or Void. Enemies resist some and are weak to others.', when: 'Every build. The Threat Board says what the next wave is weak to.', todo: 'Read the role line on each card. Build the counter the Threat Board names. Mix elements.',
@@ -2422,8 +2426,8 @@ const LESSONS = [
     real: 'In a run: pick a perk the moment the Ascend lands; between runs, check Mastery in the Archive.',
     need: () => typeof PERKS !== 'undefined',
     run: { start: 12, credits: 2600, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 5, 1], ['pulse', 3]]]], waves: [[['drone', 10, 0.8, 0.8], ['tank', 2, 2, 0.8]]] } },
-  { id: 'daily', title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1,
-    what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis and talent build for everyone. The build has two Capstones and their towers. Your first run of the day is ranked.', when: 'Once a day, from the hangar.', todo: 'Look at today’s build, then start the ranked run. Watch the ranked run or share its code afterwards.',
+  { id: 'daily', title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1, need: () => dailyOpen(),
+    what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis, talent build and dice for everyone. The build has two Capstones and their towers. Your first run of the day is ranked: best wave first, then score.', when: 'Once a day, from the hangar. Opens at Level ' + DAILY_LVL + '.', todo: 'Look at today’s build, then start the ranked run. Extract to lock it in, or Push for more score. Share its code to race friends.',
     real: 'Every day: check today’s build, then play your ranked run.' },
   { id: 'meta', title: 'Talents and Progression', blurb: 'XP, levels, Talents, Capstones, Supernova, the Archive.',
     what: 'Runs pay XP (from score and the Bounty Purse). Each level is a talent point. Seven trees: rows open every 3 points, a Capstone at 12 changes how you play. Supernova resets your talents for a permanent bonus. The Archive keeps what you have met.', when: 'Between runs.', todo: 'Spend points after each run. Go deep in one tree for its Capstone. Check the Archive’s Swarm Collection.',
@@ -2542,7 +2546,7 @@ const COLL_SPECIES = Object.keys(ENEMIES).filter(k => ENEMIES[k].from < 999);
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
-  { id: 'wraith', name: 'Phase Wraith', hp: 22, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks. Slowing it delays the next jump' },
+  { id: 'wraith', name: 'Phase Wraith', hp: 22, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks. Slowing it delays the next jump, and so does Shock or a Mark' },
   { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'Disables nearby towers' },
   { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
   // oddballs: random stand-ins on boss waves
@@ -2786,6 +2790,9 @@ const TROW = 3, TCAP = 12;
 // every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall (v5.8: 0.4 → 0.15, so
 // specialising beats spreading; balance pass: 0.15 → 0.1, 60 and 96 points ran well past their targets)
 const TAL_PT_DMG = 0.1;
+// FR_VER 9 (6.13): Command was far ahead alone (bots: median 100 at 21 points, other trees 58 to 72; sweep c: Uplink and Telemetry drive it).
+// Runs under older rules (resumed saves, recordings) keep these values. computeMods reads them when G.frV < 9.
+const TAL_V7 = { xPow: { abilPower: 13 }, xCharge: { abilCharge: 8 }, tactician: { abilPower: 25 } };
 const T_ = (id, name, max, fx, extra) => Object.assign({ id, name, max, fx }, extra || {});
 const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
 // a Technique talent: one point, unlocks a fire mode for one tower type (the mode's own text lives in TOWER_FIRE)
@@ -2846,13 +2853,13 @@ const TALENTS = [
       CAP('bulwark', 'Bulwark', { ks: 'bulwark', lines: ['When an enemy reaches the core, the core throws back every enemy within 2.5 tiles and Stuns them (every 3s at most)', 'Core +40% max HP', 'Towers deal 10% less damage'] })] },
   { id: 'X', name: 'Command', col: '#ff5fa8', glyph: 'X', tag: 'Abilities, veterans, luck and storms',
     rows: [
-      [T_('xPow', 'Uplink', 3, { abilPower: 13 }), T_('xCharge', 'Telemetry', 3, { abilCharge: 8 })],
+      [T_('xPow', 'Uplink', 3, { abilPower: 9 }), T_('xCharge', 'Telemetry', 3, { abilCharge: 6 })],
       [T_('xLuck', 'Mutation', 2, { affixLuck: 15 }), T_('xXp', 'Insight', 2, { xp: 9 }), T_('xRange', 'Optics', 2, { range: 6 })],
       [T_('xCell', 'Reserve Cells', 2, { abilSlots: 1 }), T_('xLoad', 'Quartermaster', 1, { quarter: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
       [T_('xWolf', 'Lone Wolf', 1, { loneWolf: 35 }), T_('xStasis', 'Stasis Theory', 1, { stasisDur: 3, chillVoid: 15 }), T_('xVet', 'Field Promotion', 2, { vxpAll: 45 })]],
     caps: [CAP('artisan', 'Artisan', { ks: 'artisan', doc: 6 }), CAP('gambler', 'Gambler', { ks: 'gambler', doc: 7 }),
       CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['Every wave, each attack tower takes a random element for that wave (its shots, statuses, talents and Resonance follow it)', '+25% Damage'] }),
-      CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 25 }, lines: ['Using an ability takes 30% off every other ability\'s cooldown', '+25% ability power'] })] },
+      CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 15 }, lines: ['Using an ability takes 20% off every other ability\'s cooldown', '+15% ability power'] })] },
 ];
 // 6.4 capstone tier (tower64): one node per tree above the Capstones. It needs TTOP points in that tree, costs 1 point, takes no
 // Capstone slot and unlocks that tree's new tower (CAP_TOWERS) for your runs. Row 5 in TAL; stored in PROF.tal like any talent
@@ -3089,12 +3096,16 @@ function sigUnits(n) { let u = 0; for (let i = 0; i < n; i++) u += SIG_BANDS[Mat
 // Sweep i (v4): Killshot works (Ballistics alone 61 -> 68.5 median, mean +15; its pairs 89 -> 116). Deep Cold at 0.00015 did nothing (Cryogenics alone 53,
 // no talents 54 mean; its pairs 75.5): Cryo towers deal little, so the cold has to. C raised to 0.0004 (19 points: 1.74% per stack per second).
 const SIGV = { K: 0.0002, T: 0.0008, A: 0.0075, Ar: 2.5, C: 0.0004, V: 0.0015, E: 0.01, Emax: 0.6, X: 0.0025, Xt: 5 };
-const sp = (u, k, d) => +(u * SIGV[k] * 100).toFixed(d === undefined ? 1 : d);
+// FR_VER 9 (6.13): Crushing Depth ×0.8 (Singularity was second alone, median 90.5; ×0.7 cut Void 17 waves in sweep v8a). Two new single-tree payoffs that scale with enemy health,
+// because flat percentages fall behind enemy health growth: Voltaic Discharge (each Arc hit charges the enemy, a Shocked one twice; An charges release Ad × units of its max HP)
+// and Cryogenics Thaw Crack (when a Freeze ends: Cc × units of max HP, half to enemies within Cr tiles). Bosses take a quarter of both.
+const SIGV8 = Object.assign({}, SIGV, { V: 0.0012, Ad: 0.0006, An: 4, Dt: 1, Cc: 0.004, Cr: 1 }); // sweeps (Nov 13): v8a Ad 0.0018 gave Voltaic +36 waves, V 0.00105 cut Void 17, Cc 0.0025 gave Cryo +4; v8b Ad 0.0006 still +26, V 0.0012 -7, Cc 0.004 +16; v8c Ad 0.00025 still +27; v8d Discharge off -4.5 (so the Discharge is the cause, and its rate, not its size); v8e: at most once every Dt s per enemy
+const sp = (u, k, d) => +(u * SIGV8[k] * 100).toFixed(d === undefined ? 1 : d);
 const SIGS = {
   K: { name: 'Killshot', v: u => sp(u, 'K', 2) + '%', desc: u => `Kinetic crits deal an extra ${sp(u, 'K', 2)}% of the enemy's max HP. Bosses take a quarter of that.` },
   T: { name: 'Consume', v: u => sp(u, 'T', 2) + '%', desc: u => `Burn deals at least ${sp(u, 'T', 2)}% of the enemy's max HP per second. Bosses take a quarter of that.` },
-  A: { name: 'Arc Leap', v: u => sp(u, 'A', 1) + '%', desc: u => `When a Shocked enemy dies, lightning hits the nearest enemy within ${SIGV.Ar} tiles for ${sp(u, 'A')}% of its max HP and Shocks it.` },
-  C: { name: 'Deep Cold', v: u => sp(u, 'C', 2) + '%', desc: u => `Chilled enemies lose ${sp(u, 'C', 2)}% of their max HP per second for each Chill stack. A Frozen enemy counts as 5 stacks. Bosses take a quarter of that.` },
+  A: { name: 'Arc Leap', v: u => sp(u, 'A', 1) + '%', desc: u => `When a Shocked enemy dies, lightning hits the nearest enemy within ${SIGV.Ar} tiles for ${sp(u, 'A')}% of its max HP and Shocks it. Arc hits charge an enemy, Shocked ones twice as fast. At ${SIGV8.An} charges it discharges for ${sp(u, 'Ad')}% of its max HP, at most once every ${SIGV8.Dt} s. Bosses take a quarter of the discharge.` },
+  C: { name: 'Deep Cold', v: u => sp(u, 'C', 2) + '%', desc: u => `Chilled enemies lose ${sp(u, 'C', 2)}% of their max HP per second for each Chill stack. A Frozen enemy counts as 5 stacks. Bosses take a quarter of that. When a Freeze ends, the ice cracks for ${sp(u, 'Cc')}% of the enemy's max HP, and half that to enemies within ${SIGV8.Cr} tile. Bosses take a quarter.` },
   V: { name: 'Crushing Depth', v: u => sp(u, 'V', 2) + '%', desc: u => `A Collapse deals ${sp(u, 'V', 2)}% more of each enemy's max HP.` },
   E: { name: 'Stand Fast', v: u => Math.min(SIGV.Emax * 100, sp(u, 'E')) + '%', desc: u => `Every enemy that reaches the core deals ${Math.min(SIGV.Emax * 100, sp(u, 'E'))}% less damage to it. Bosses too.` },
   X: { name: 'Battle Rhythm', v: u => sp(u, 'X', 1) + '%', desc: u => `After you use an ability, all towers gain +${sp(u, 'X')}% Attack Speed for ${SIGV.Xt}s.` },
@@ -3134,6 +3145,8 @@ const FUSIONS = [
 const FUS = Object.fromEntries(FUSIONS.map(f => [f.id, f]));
 const COMBO_DESC = {
   'SHATTER': 'Kinetic hit on a Frozen enemy deals burst damage',
+  'DISCHARGE': 'Voltaic: Arc hits charge an enemy, then release a share of its max HP',
+  'THAW CRACK': 'Cryogenics: when a Freeze ends, the ice cracks for a share of max HP',
   'THERMAL SHOCK': 'Thermal hit on a heavily Chilled enemy shatters the frost',
   'OVERLOAD': 'Thermal on Shocked or Arc on Burning causes an explosion',
   'SUPERCONDUCT': 'Arc hit on a Chilled enemy spreads Shock nearby',
@@ -3428,6 +3441,13 @@ const sig = t => (G && G.frV >= 7 && !G.noSig && G.mods && G.mods.sig && G.mods.
 const fus = id => !!G && G.fus === id;
 // Fusion payoffs deal a share of the enemy's own max HP (bosses a quarter), like the Collapse: this keeps its weight in late waves,
 // where flat damage does not (sweep d: 21 points in an element tree moved the bots' median wave by 0 to 7).
+// FR_VER 9 (6.13) Cryogenics Thaw Crack: when a Freeze ends, the ice cracks for a share of max HP; half of it to enemies within SIGV8.Cr tiles.
+function thawCrack(e, u) {
+  const pct = u * SIGV8.Cc, r2 = SIGV8.Cr * SIGV8.Cr;
+  combo(e, 'THAW CRACK', '#9ff2ff'); Hooks.fx('boom', { x: e.x, y: e.y, r: SIGV8.Cr, col: '#9ff2ff' });
+  for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) <= r2) hit(o, o.maxHp * pct * 0.5 * (o.boss ? 0.25 : 1), 'C', null, { noStatus: 1 });
+  hit(e, e.maxHp * pct * (e.boss ? 0.25 : 1), 'C', null, { noStatus: 1, combo: 'THAW CRACK' });
+}
 function fusPct(e, pct, el, src) { if (!e.dead) hit(e, e.maxHp * pct * (e.boss ? 0.25 : 1), el, src, { noStatus: 1 }); }
 function fusionsOpen() { const o = []; for (const F of FUSIONS) if (treePts(F.id[0]) >= FUS_NEED && treePts(F.id[1]) >= FUS_NEED) o.push(F.id); return o; }
 function fusionNow() {
@@ -3456,8 +3476,9 @@ function computeMods(alloc, runMods) {
   const add = fx => { for (const k in fx) m[k] = (m[k] || 0) + fx[k]; };
   const SRC = TS();
   const tech = {};
-  for (const id in SRC.tal || {}) { const T = TAL[id], r = Math.min(T ? T.max : 0, SRC.tal[id] || 0); if (!T || T.cap || !r) continue; if (T.tech) tech[id] = 1; for (const k in T.fx) m[k] = (m[k] || 0) + T.fx[k] * r; }
-  for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add(T.fx); }
+  const v7 = typeof G !== 'undefined' && G && G.fr && G.frV > 0 && G.frV < 9; // FR_VER 9: Command's old numbers for older rules (TAL_V7)
+  for (const id in SRC.tal || {}) { const T = TAL[id], r = Math.min(T ? T.max : 0, SRC.tal[id] || 0); if (!T || T.cap || !r) continue; if (T.tech) tech[id] = 1; const fx = (v7 && TAL_V7[id]) || T.fx; for (const k in fx) m[k] = (m[k] || 0) + fx[k] * r; }
+  for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add((v7 && TAL_V7[id]) || T.fx); }
   // legacy remnants from the old web: that tree's one-point notables stay on
   for (const r of SRC.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
   if (m.vxpAll) for (const e of ELS) orb.vxp[e] = (orb.vxp[e] || 0) + m.vxpAll;
@@ -6067,7 +6088,7 @@ function updateEnemies(dt) {
     if (e.heldT > 0) e.heldT -= dt;
     if (e.gSlowT > 0) e.gSlowT -= dt;
     if (st.burn && FX('burnSpread')) { e.spreadT = (e.spreadT || 1) - dt; if (e.spreadT <= 0) { e.spreadT = 1; let best = null, bd = 1; for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.st.burn) { const d = dist2(o2.x, o2.y, e.x, e.y); if (d < bd) { bd = d; best = o2; } } if (best) best.st.burn = { dps: st.burn.dps * 0.8, t: 3 * M.burnDur, src: st.burn.src }; } }
-    if (st.frozen > 0) st.frozen -= dt;
+    if (st.frozen > 0) { st.frozen -= dt; if (st.frozen <= 0 && G.frV >= 9) { const u = sig('C'); if (u) { thawCrack(e, u); if (e.dead) continue; } } } // FR_VER 9 Thaw Crack
     if (st.freezeImm > 0) st.freezeImm -= dt;
     if (st.shock > 0) st.shock -= dt;
     if (st.mark > 0 && !FX('markPerma')) { st.markT -= dt; if (st.markT <= 0) { st.mark = Math.max(0, st.mark - 1); st.markT = 1.2; } }
@@ -6092,7 +6113,7 @@ function updateEnemies(dt) {
     // behaviors
     // 6.10 (G.frV >= 7): the Phase Wraith needs a run-up. Its jump clock runs at its own pace: a slow delays the next jump by the same
     // share (never below a quarter speed) and a Freeze stops the clock. It ended 189 of 857 bot runs in sweep b, twice the next cause.
-    e.timer -= e.boss === 'wraith' && G.frV >= 7 ? dtE * (st.frozen > 0 ? 0 : Math.max(0.25, 1 - enemySlow(e))) : dtE;
+    e.timer -= e.boss === 'wraith' && G.frV >= 7 ? dtE * (st.frozen > 0 ? 0 : Math.max(0.25, 1 - enemySlow(e))) * (G.frV >= 9 && (st.shock > 0 || st.mark > 0) ? 0.5 : 1) : dtE; // FR_VER 9: Shock or a Mark halves its jump clock
     if (e.type === 'medic' && e.timer <= 0) {
       e.timer = 1;
       const healed = [];
@@ -6480,6 +6501,8 @@ function applyStatuses(e, dmg, el, src, o) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { hit(o2, d, 'A', src, { noStatus: 1 }); if (taF) fusPct(o2, FUSV.taPct, 'A', src); if (FX('ovlBurn') && !o2.dead && !o2.st.burn) o2.st.burn = { dps: d * 0.25 * M.burnDmg, t: 3 * M.burnDur, src }; }
     if (e.dead) return;
   }
+  if (el === 'A' && G.frV >= 9) { const u = sig('A'); if (u) { e.dch = Math.min(SIGV8.An, (e.dch || 0) + (st.shock > 0 ? 2 : 1)); if (e.dch >= SIGV8.An && !(G.tick - (e.dchK === undefined ? -1e9 : e.dchK) < SIGV8.Dt * 30)) { e.dch = 0; e.dchK = G.tick; // FR_VER 8 Voltaic Discharge, at most once per Dt s per enemy
+    combo(e, 'DISCHARGE', '#ffe14d'); Hooks.fx('arcs', { x: e.x, y: e.y, r: 0.8 }); hit(e, e.maxHp * u * SIGV8.Ad * (e.boss ? 0.25 : 1), 'A', src, { noStatus: 1, combo: 'DISCHARGE' }); if (e.dead) return; } } }
   if (el === 'A' && st.chill > 0 && e.supCD <= 0) {
     const acF = fus('AC'); e.supCD = acF ? FUSV.acCD : 1; // 6.10 Cold Circuit
     const rad = 1.2 * M.superRad * (acF ? FUSV.acRad : 1);
@@ -6495,7 +6518,7 @@ function applyStatuses(e, dmg, el, src, o) {
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
       // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * ((o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old) + sig('V') * SIGV.V * (o2.boss || o2.assault ? 0.25 : 1))) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * ((o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old) + sig('V') * (G.frV >= 9 ? SIGV8 : SIGV).V * (o2.boss || o2.assault ? 0.25 : 1))) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
       if (G.fus && !o2.dead) { const s2 = o2.st; // 6.10 Singularity Fusions change the Collapse: Dark Flame, Static Collapse, Absolute Zero
         if (fus('TV')) { const dps = Math.max(dmg * 0.35, o2.maxHp * FUSV.tvPct * (o2.boss ? 0.25 : 1)) * M.burnDmg; if (!s2.burn || s2.burn.dps < dps) s2.burn = { dps, t: 3 * M.burnDur, src }; else s2.burn.t = 3 * M.burnDur; }
@@ -7785,6 +7808,8 @@ function frReroute(old) {
     if (keep) { const M = mainOf(e); if (M && M.len > L.len) L.pre = M.len - L.len; }
     e.L = L; e.d = 0; e.seg = 0;
   }
+  // FR_VER 9: a Buzzsaw blade in flight followed the old road after the core moved; now it breaks up where it is
+  if (G.frV >= 9) for (const p of G.projs) if (p.k === 'saw' && !p.dead) { p.dead = true; Hooks.fx('boom', { x: p.x, y: p.y, r: 0.3, col: '#c8ccd8' }); }
 }
 // moving a tower: it is set down on the new tile at once (so nothing else can take it) and stays offline while it relocates
 const frMoveFee = t => Math.round(t.invested * FRONTIER.moveFee);
@@ -8093,7 +8118,7 @@ function useAbility(k, x, y) {
   const M = G.mods, w = Math.max(1, G.wave);
   G.charges[k]--; rlog('abil', { id: k });
   // Tactician: every use takes 30% off the other abilities' cooldowns
-  if (M.ks.tactician) for (const o of ABIL_ORDER) if (o !== k && G.abilCd[o] > 0) G.abilCd[o] *= 0.7;
+  if (M.ks.tactician) for (const o of ABIL_ORDER) if (o !== k && G.abilCd[o] > 0) G.abilCd[o] *= G.frV >= 9 ? 0.8 : 0.7; // FR_VER 9: 20% (was 30%)
   if (G.fus) fusAbility(); // 6.10 Command Fusions
   if (sig('X')) G.rhyT = SIGV.Xt; // 6.10 Battle Rhythm
   switch (k) {
@@ -14609,14 +14634,26 @@ const UI = (() => {
     const H = PROF.hunt || {}, N = PROF.nemesis, hh = $('#hHunt'), rows = [];
     if (N) rows.push(`<div class="hhr nem"><span class="lbl">Nemesis</span><b>${esc(N.name)}</b><small>${N.kind === 'boss' ? 'takes your next bounty' : 'leads your next Strain Assault'} · ended you on Wave ${N.lastW}</small></div>`);
     if (H.bounties || H.extracts || H.nemDown) rows.push(`<div class="hhr"><span class="lbl">Trophies</span><b>${H.bounties || 0} bount${H.bounties === 1 ? 'y' : 'ies'} · ${H.extracts || 0} extracted${H.nemDown ? ` · ${H.nemDown} Nemes${H.nemDown === 1 ? 'is' : 'es'} down` : ''}</b></div>`);
-    if (!newPlayer()) rows.push(`<div class="hhr day"><span class="lbl">Today's Hunt</span><b>${dd && dd.ranked ? `Wave ${dd.ranked.wave}${dd.ranked.ext ? ' · extracted' : ''}` : 'Not played yet'}</b><button class="btn small" data-hact="daily">${dd && dd.ranked ? 'Ladder' : 'Hunt'}</button></div>`);
+    if (!newPlayer() && !dailyOpen()) rows.push(`<div class="hhr day lock"><span class="lbl">Daily Hunt</span><b>Opens at Level ${DAILY_LVL}</b><small>One run a day, the same for every pilot</small></div>`); // 6.13
+    else if (!newPlayer()) rows.push(`<div class="hhr day"><span class="lbl">Today's Hunt</span><b>${dd && dd.ranked ? `Wave ${dd.ranked.wave}${dd.ranked.ext ? ' · extracted' : ''}` : 'Not played yet'}</b><button class="btn small" data-hact="daily">${dd && dd.ranked ? 'Ladder' : 'Hunt'}</button></div>`);
     hh.innerHTML = rows.join('');
+    if (dailyOpen() && !newPlayer() && !PROF.dailyBrief && (!navigator.webdriver || window.dailyBriefTest)) setTimeout(dailyBrief, 400); // 6.13
+  }
+  // 6.13: once, the first time the hangar shows with the Daily Hunt open (Level 20, or already past it)
+  function dailyBrief() {
+    if (screen !== 'hangar' || modalOpen || PROF.dailyBrief || !dailyOpen()) return;
+    PROF.dailyBrief = 1; Save.save();
+    modal(`<div class="card narrow dbrief"><div class="ch"><h2>Daily Hunt</h2><span class="note">Now open</span></div>
+      <p>One run a day. Every pilot flies the same map, the same build and the same dice.</p>
+      <p>Your first run of the day counts. Extract to lock it in, or Push for more score.</p>
+      <p class="note">Best wave ranks first. Score breaks ties. Share your hunt code to race friends.</p>
+      <div class="foot"><button class="btn" data-act="close2">Later</button><button class="btn primary" data-act="briefDaily">Open it</button></div></div>`, 'dbrief');
   }
 
   // ---------- Setup ----------
   function openSetup() {
     const ls = PROF.lastSetup || { startWave: 1, chaos: 1 };
-    if (setup.mode !== 'daily') setup.mode = 'std'; // 6.1: one kind of run (Frontier rules); the Daily Hunt is the other tab
+    if (setup.mode !== 'daily' || !dailyOpen()) setup.mode = 'std'; // 6.13: not before Level 20. 6.1: one kind of run (Frontier rules); the Daily Hunt is the other tab
     setup.chaos = ls.chaos ?? 1; if (!chaosUnlocked(setup.chaos)) setup.chaos = 1;
     const maxStart = Math.max(1, Math.floor((PROF.bestWave - 5) / 5) * 5);
     setup.startWave = Math.min(ls.startWave || 1, maxStart);
@@ -14691,7 +14728,7 @@ const UI = (() => {
   function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B) <= 20 ? `${M.name} ${B.name}` : ''; }
   function modeChips() {
     if (newPlayer() && setup.mode !== 'daily') return '';
-    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Endless</button><button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button></div>`;
+    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Endless</button>${dailyOpen() ? `<button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button>` : `<button class="chip lock" data-act="dailyLocked" style="--c:#b86cff">Daily Hunt · Lv ${DAILY_LVL}</button>`}</div>`;
   }
   function renderDaily() {
     const spec = dailySpec(dailyKey());
@@ -18291,7 +18328,9 @@ const UI = (() => {
           break;
         }
         launch(); break; }
-      case 'mode': setup.mode = b.dataset.v; if (setup.mode !== 'daily') rerollMap(); renderSetup(); break;
+      case 'briefDaily': closeModal(); if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); break; } openSetup(); setup.mode = 'daily'; renderSetup(); break;
+      case 'dailyLocked': toast('DAILY HUNT', `Opens at Level ${DAILY_LVL}. You are Level ${profLevel().level}.`, '#b86cff', true, 'tip'); break;
+      case 'mode': if (b.dataset.v === 'daily' && !dailyOpen()) break; setup.mode = b.dataset.v; if (setup.mode !== 'daily') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
       case 'help': if (modalOpen === 'pause') modalFrom = 'pause'; openHelp(); break;
       case 'htab': openHelp(b.dataset.v); break;
@@ -18447,7 +18486,7 @@ const UI = (() => {
     });
     $('#bLaunch').onclick = () => { SFX.init(); SFX.play('ui'); if (PROF.runSnap && PROF.runSnap.rec) { modal(`<div class="card narrow"><div class="ch"><h2>Daily Hunt</h2></div><p class="note">Restoring your run exactly where you left it…</p></div>`, 'wait'); setTimeout(() => launch(PROF.runSnap), 80); } else if (PROF.runSnap) launch(PROF.runSnap); else if (tutOffer()) openTutOffer(); else openSetup(); };
     $('#watchbar').addEventListener('click', e => { if (e.target.closest('[data-act=watchEnd]')) { SFX.play('ui'); endWatch(); } });
-    $('#hHunt').addEventListener('click', e => { const b = e.target.closest('[data-hact]'); if (!b) return; SFX.init(); SFX.play('ui'); if (b.dataset.hact === 'daily') { if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); return; } openSetup(); setup.mode = 'daily'; renderSetup(); } });
+    $('#hHunt').addEventListener('click', e => { const b = e.target.closest('[data-hact]'); if (!b) return; SFX.init(); SFX.play('ui'); if (b.dataset.hact === 'daily') { if (!dailyOpen()) return; if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); return; } openSetup(); setup.mode = 'daily'; renderSetup(); } });
     $('#bLaunch2').onclick = () => { SFX.init(); SFX.play('ui'); openSetup(); };
     $('#bWebH').onclick = () => { SFX.init(); SFX.play('ui'); Tree.open(); };
     $('#bReady').onclick = () => { SFX.play('ui'); if (!G || G.over) return; vetFlow.ix = 0; openVets(); };
