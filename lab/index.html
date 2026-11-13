@@ -1541,7 +1541,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.12.0 + BALANCE 6.12';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.12.0 + SHARED DAILY DICE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2113,7 +2113,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 8; // 8 (6.12, Nov 12 night): balance by mechanics (see SIGV8 and TAL_V7 below). Was 7; // 7 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 8; // 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2542,7 +2542,7 @@ const COLL_SPECIES = Object.keys(ENEMIES).filter(k => ENEMIES[k].from < 999);
 const BOSSES = [
   { id: 'behemoth', name: 'Behemoth', hp: 40, spd: 0.45, armor: 0.3, size: 2, desc: 'Spawns Swarmers' },
   { id: 'queen', name: 'Hive Queen', hp: 30, spd: 0.6, fly: 1, size: 2, desc: 'Flies. Spawns Skimmers' },
-  { id: 'wraith', name: 'Phase Wraith', hp: 22, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks. Slowing it delays the next jump, and so does Shock or a Mark' },
+  { id: 'wraith', name: 'Phase Wraith', hp: 22, spd: 0.7, size: 2, desc: 'Teleports forward and cloaks. Slowing it delays the next jump' },
   { id: 'overmind', name: 'Overmind', hp: 36, spd: 0.5, size: 2, desc: 'Disables nearby towers' },
   { id: 'titan', name: 'Titan', hp: 52, spd: 0.4, armorAll: 0.5, size: 2, desc: 'Armor breaks at 66% and 33% HP' },
   // oddballs: random stand-ins on boss waves
@@ -2786,9 +2786,6 @@ const TROW = 3, TCAP = 12;
 // every point spent anywhere also adds a little Damage to every tower, so any build makes you stronger overall (v5.8: 0.4 → 0.15, so
 // specialising beats spreading; balance pass: 0.15 → 0.1, 60 and 96 points ran well past their targets)
 const TAL_PT_DMG = 0.1;
-// FR_VER 8 (6.12): Command was far ahead alone (bots: median 100 at 21 points, other trees 58 to 72; sweep c: Uplink and Telemetry drive it).
-// Runs under older rules (resumed saves, recordings) keep these values. computeMods reads them when G.frV < 8.
-const TAL_V7 = { xPow: { abilPower: 13 }, xCharge: { abilCharge: 8 }, tactician: { abilPower: 25 } };
 const T_ = (id, name, max, fx, extra) => Object.assign({ id, name, max, fx }, extra || {});
 const CAP = (id, name, o) => Object.assign({ id, name, cap: 1 }, o);
 // a Technique talent: one point, unlocks a fire mode for one tower type (the mode's own text lives in TOWER_FIRE)
@@ -2849,13 +2846,13 @@ const TALENTS = [
       CAP('bulwark', 'Bulwark', { ks: 'bulwark', lines: ['When an enemy reaches the core, the core throws back every enemy within 2.5 tiles and Stuns them (every 3s at most)', 'Core +40% max HP', 'Towers deal 10% less damage'] })] },
   { id: 'X', name: 'Command', col: '#ff5fa8', glyph: 'X', tag: 'Abilities, veterans, luck and storms',
     rows: [
-      [T_('xPow', 'Uplink', 3, { abilPower: 9 }), T_('xCharge', 'Telemetry', 3, { abilCharge: 6 })],
+      [T_('xPow', 'Uplink', 3, { abilPower: 13 }), T_('xCharge', 'Telemetry', 3, { abilCharge: 8 })],
       [T_('xLuck', 'Mutation', 2, { affixLuck: 15 }), T_('xXp', 'Insight', 2, { xp: 9 }), T_('xRange', 'Optics', 2, { range: 6 })],
       [T_('xCell', 'Reserve Cells', 2, { abilSlots: 1 }), T_('xLoad', 'Quartermaster', 1, { quarter: 1 }), T_('xStorm', 'Storm Caller', 1, { stormFreq: 50, stormPow: 50 })],
       [T_('xWolf', 'Lone Wolf', 1, { loneWolf: 35 }), T_('xStasis', 'Stasis Theory', 1, { stasisDur: 3, chillVoid: 15 }), T_('xVet', 'Field Promotion', 2, { vxpAll: 45 })]],
     caps: [CAP('artisan', 'Artisan', { ks: 'artisan', doc: 6 }), CAP('gambler', 'Gambler', { ks: 'gambler', doc: 7 }),
       CAP('chaos', 'Chaos Engine', { ks: 'chaos', lines: ['Every wave, each attack tower takes a random element for that wave (its shots, statuses, talents and Resonance follow it)', '+25% Damage'] }),
-      CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 15 }, lines: ['Using an ability takes 20% off every other ability\'s cooldown', '+15% ability power'] })] },
+      CAP('tactician', 'Tactician', { ks: 'tactician', fx: { abilPower: 25 }, lines: ['Using an ability takes 30% off every other ability\'s cooldown', '+25% ability power'] })] },
 ];
 // 6.4 capstone tier (tower64): one node per tree above the Capstones. It needs TTOP points in that tree, costs 1 point, takes no
 // Capstone slot and unlocks that tree's new tower (CAP_TOWERS) for your runs. Row 5 in TAL; stored in PROF.tal like any talent
@@ -3092,16 +3089,12 @@ function sigUnits(n) { let u = 0; for (let i = 0; i < n; i++) u += SIG_BANDS[Mat
 // Sweep i (v4): Killshot works (Ballistics alone 61 -> 68.5 median, mean +15; its pairs 89 -> 116). Deep Cold at 0.00015 did nothing (Cryogenics alone 53,
 // no talents 54 mean; its pairs 75.5): Cryo towers deal little, so the cold has to. C raised to 0.0004 (19 points: 1.74% per stack per second).
 const SIGV = { K: 0.0002, T: 0.0008, A: 0.0075, Ar: 2.5, C: 0.0004, V: 0.0015, E: 0.01, Emax: 0.6, X: 0.0025, Xt: 5 };
-// FR_VER 8 (6.12): Crushing Depth ×0.8 (Singularity was second alone, median 90.5; ×0.7 cut Void 17 waves in sweep v8a). Two new single-tree payoffs that scale with enemy health,
-// because flat percentages fall behind enemy health growth: Voltaic Discharge (each Arc hit charges the enemy, a Shocked one twice; An charges release Ad × units of its max HP)
-// and Cryogenics Thaw Crack (when a Freeze ends: Cc × units of max HP, half to enemies within Cr tiles). Bosses take a quarter of both.
-const SIGV8 = Object.assign({}, SIGV, { V: 0.0012, Ad: 0.0006, An: 4, Dt: 1, Cc: 0.004, Cr: 1 }); // sweeps (Nov 13): v8a Ad 0.0018 gave Voltaic +36 waves, V 0.00105 cut Void 17, Cc 0.0025 gave Cryo +4; v8b Ad 0.0006 still +26, V 0.0012 -7, Cc 0.004 +16; v8c Ad 0.00025 still +27; v8d Discharge off -4.5 (so the Discharge is the cause, and its rate, not its size); v8e: at most once every Dt s per enemy
-const sp = (u, k, d) => +(u * SIGV8[k] * 100).toFixed(d === undefined ? 1 : d);
+const sp = (u, k, d) => +(u * SIGV[k] * 100).toFixed(d === undefined ? 1 : d);
 const SIGS = {
   K: { name: 'Killshot', v: u => sp(u, 'K', 2) + '%', desc: u => `Kinetic crits deal an extra ${sp(u, 'K', 2)}% of the enemy's max HP. Bosses take a quarter of that.` },
   T: { name: 'Consume', v: u => sp(u, 'T', 2) + '%', desc: u => `Burn deals at least ${sp(u, 'T', 2)}% of the enemy's max HP per second. Bosses take a quarter of that.` },
-  A: { name: 'Arc Leap', v: u => sp(u, 'A', 1) + '%', desc: u => `When a Shocked enemy dies, lightning hits the nearest enemy within ${SIGV.Ar} tiles for ${sp(u, 'A')}% of its max HP and Shocks it. Arc hits charge an enemy, Shocked ones twice as fast. At ${SIGV8.An} charges it discharges for ${sp(u, 'Ad')}% of its max HP, at most once every ${SIGV8.Dt} s. Bosses take a quarter of the discharge.` },
-  C: { name: 'Deep Cold', v: u => sp(u, 'C', 2) + '%', desc: u => `Chilled enemies lose ${sp(u, 'C', 2)}% of their max HP per second for each Chill stack. A Frozen enemy counts as 5 stacks. Bosses take a quarter of that. When a Freeze ends, the ice cracks for ${sp(u, 'Cc')}% of the enemy's max HP, and half that to enemies within ${SIGV8.Cr} tile. Bosses take a quarter.` },
+  A: { name: 'Arc Leap', v: u => sp(u, 'A', 1) + '%', desc: u => `When a Shocked enemy dies, lightning hits the nearest enemy within ${SIGV.Ar} tiles for ${sp(u, 'A')}% of its max HP and Shocks it.` },
+  C: { name: 'Deep Cold', v: u => sp(u, 'C', 2) + '%', desc: u => `Chilled enemies lose ${sp(u, 'C', 2)}% of their max HP per second for each Chill stack. A Frozen enemy counts as 5 stacks. Bosses take a quarter of that.` },
   V: { name: 'Crushing Depth', v: u => sp(u, 'V', 2) + '%', desc: u => `A Collapse deals ${sp(u, 'V', 2)}% more of each enemy's max HP.` },
   E: { name: 'Stand Fast', v: u => Math.min(SIGV.Emax * 100, sp(u, 'E')) + '%', desc: u => `Every enemy that reaches the core deals ${Math.min(SIGV.Emax * 100, sp(u, 'E'))}% less damage to it. Bosses too.` },
   X: { name: 'Battle Rhythm', v: u => sp(u, 'X', 1) + '%', desc: u => `After you use an ability, all towers gain +${sp(u, 'X')}% Attack Speed for ${SIGV.Xt}s.` },
@@ -3141,8 +3134,6 @@ const FUSIONS = [
 const FUS = Object.fromEntries(FUSIONS.map(f => [f.id, f]));
 const COMBO_DESC = {
   'SHATTER': 'Kinetic hit on a Frozen enemy deals burst damage',
-  'DISCHARGE': 'Voltaic: Arc hits charge an enemy, then release a share of its max HP',
-  'THAW CRACK': 'Cryogenics: when a Freeze ends, the ice cracks for a share of max HP',
   'THERMAL SHOCK': 'Thermal hit on a heavily Chilled enemy shatters the frost',
   'OVERLOAD': 'Thermal on Shocked or Arc on Burning causes an explosion',
   'SUPERCONDUCT': 'Arc hit on a Chilled enemy spreads Shock nearby',
@@ -3437,13 +3428,6 @@ const sig = t => (G && G.frV >= 7 && !G.noSig && G.mods && G.mods.sig && G.mods.
 const fus = id => !!G && G.fus === id;
 // Fusion payoffs deal a share of the enemy's own max HP (bosses a quarter), like the Collapse: this keeps its weight in late waves,
 // where flat damage does not (sweep d: 21 points in an element tree moved the bots' median wave by 0 to 7).
-// FR_VER 8 (6.12) Cryogenics Thaw Crack: when a Freeze ends, the ice cracks for a share of max HP; half of it to enemies within SIGV8.Cr tiles.
-function thawCrack(e, u) {
-  const pct = u * SIGV8.Cc, r2 = SIGV8.Cr * SIGV8.Cr;
-  combo(e, 'THAW CRACK', '#9ff2ff'); Hooks.fx('boom', { x: e.x, y: e.y, r: SIGV8.Cr, col: '#9ff2ff' });
-  for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) <= r2) hit(o, o.maxHp * pct * 0.5 * (o.boss ? 0.25 : 1), 'C', null, { noStatus: 1 });
-  hit(e, e.maxHp * pct * (e.boss ? 0.25 : 1), 'C', null, { noStatus: 1, combo: 'THAW CRACK' });
-}
 function fusPct(e, pct, el, src) { if (!e.dead) hit(e, e.maxHp * pct * (e.boss ? 0.25 : 1), el, src, { noStatus: 1 }); }
 function fusionsOpen() { const o = []; for (const F of FUSIONS) if (treePts(F.id[0]) >= FUS_NEED && treePts(F.id[1]) >= FUS_NEED) o.push(F.id); return o; }
 function fusionNow() {
@@ -3472,9 +3456,8 @@ function computeMods(alloc, runMods) {
   const add = fx => { for (const k in fx) m[k] = (m[k] || 0) + fx[k]; };
   const SRC = TS();
   const tech = {};
-  const v7 = typeof G !== 'undefined' && G && G.fr && G.frV > 0 && G.frV < 8; // FR_VER 8: Command's old numbers for older rules (TAL_V7)
-  for (const id in SRC.tal || {}) { const T = TAL[id], r = Math.min(T ? T.max : 0, SRC.tal[id] || 0); if (!T || T.cap || !r) continue; if (T.tech) tech[id] = 1; const fx = (v7 && TAL_V7[id]) || T.fx; for (const k in fx) m[k] = (m[k] || 0) + fx[k] * r; }
-  for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add((v7 && TAL_V7[id]) || T.fx); }
+  for (const id in SRC.tal || {}) { const T = TAL[id], r = Math.min(T ? T.max : 0, SRC.tal[id] || 0); if (!T || T.cap || !r) continue; if (T.tech) tech[id] = 1; for (const k in T.fx) m[k] = (m[k] || 0) + T.fx[k] * r; }
+  for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add(T.fx); }
   // legacy remnants from the old web: that tree's one-point notables stay on
   for (const r of SRC.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
   if (m.vxpAll) for (const e of ELS) orb.vxp[e] = (orb.vxp[e] || 0) + m.vxpAll;
@@ -4004,6 +3987,7 @@ function newRun(opts) {
   // 5.8: a recording carries the rules it was made under (old recordings have none: hk 0, the 5.7 rules); a fresh run gets the current ones
   G.hk = opts.v ? (opts.hk | 0) : HOOK_VER;
   G.frV = !G.fr ? 0 : opts.v ? (opts.frV | 0) || 1 : FR_VER; // Frontier rules version (1: the lab prototype; 2: the baseline game)
+  G.dd = opts.daily && G.frV >= 8 ? 1 : 0; G.ddN = {}; // 6.12: a Daily Hunt draws its big rolls from the day's shared dice (ddR)
   G.sector = G.hk && SECTOR_BY[opts.sector] ? opts.sector : null; G.tier = 0; G.purse = 0; G.purseOut = null; G.twists = {}; G.twistW = 0;
   G.recOpts = JSON.parse(JSON.stringify(Object.assign({}, opts, { v: VERSION, cols: COLS, rows: ROWS, hk: G.hk, sector: G.sector }, G.fr ? { frontier: 1, frV: G.frV } : {}))); G.inputs = []; G.tick = 0;
   if (opts.huntBuild) G.huntBuild = JSON.parse(JSON.stringify(opts.huntBuild));
@@ -4927,6 +4911,7 @@ function prepareWave(w) {
   if (G.tut && G.tutS.grant && G.tutS.grant[tutIdx(w)] && w > G.wave) { const cr = G.tutS.grant[tutIdx(w)]; G.credits += cr; Hooks.toast('SUPPLY DROP', `+${cr} credits for Training`, '#ffb03a'); Hooks.fx('coin', { x: G.core.x, y: G.core.y - 0.6, v: cr }); }
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
+  if (G.dd) g.queue.forEach((q, i) => { q.dk = w * 4096 + i + 1; }); // 6.12: each unit's own key for its elite mods
   const counts = {}, genes = {}; let elites = 0, fly = 0, boss = null, ng = 0;
   for (const q of g.queue) {
     if (q.type === 'boss') { boss = BOSSES.find(b => b.id === q.boss); continue; }
@@ -5088,7 +5073,7 @@ function genWave(w, ev) {
   const affN = 1 + (w >= 25) + (w >= 50) + (w >= 80) + (af.affN || 0);
   const interval = Math.max(0.3, 0.8 - w * 0.008) * (1 - (af.gap || 0));
   const q = []; let t = 0;
-  const plan = breedPlan(w);
+  const plan = breedPlan(w), br = G.dd ? ddR('breed', w) : r; // 6.12: breeding follows each player's defence, so in a Daily it draws its own dice
   const lanes = G.map.lanes.filter(L => laneOpen(L, w));
   let rift = null;
   if (ev.breach || af.rifts) {
@@ -5109,7 +5094,7 @@ function genWave(w, ev) {
     const grp = ENEMIES[type].group || 1;
     for (let g = 0; g < grp; g++) {
       const el = r() < eliteP && type !== 'swarmer' ? affN : 0;
-      const gm = breedOne(plan, type, r);
+      const gm = breedOne(plan, type, br);
       q.push({ t, type, lane, hpm: hpE, elite: el, genes: gm ? gm.genes : null, gel: gm ? gm.el : null });
       t += grp > 1 ? 0.18 : G.fr ? interval / FRONTIER.count : interval; // Frontier: the same spawn time for fewer units
     }
@@ -5799,7 +5784,8 @@ function vetOffer(t) {
     const o = [], r0 = G.r;
     // v5.3: the offer comes from the tower's own stream (seed, tower, rank, pick count): looking at a panel must never move the run's dice
     G.r = mulberry32((G.seed ^ Math.imul(t.id, 2654435761) ^ Math.imul(t.rank + 1, 40503) ^ Math.imul((t.vetN || 0) + 1, 9973)) >>> 0);
-    try { for (let i = 0; i < 3; i++) o.push(rollAffix(t, undefined, 0.3 * t.rank, minTier, o.map(a => a.id))); } finally { G.r = r0; }
+    G.ddOwn = 1; // 6.12: the shared Daily dice leave this stream alone
+    try { for (let i = 0; i < 3; i++) o.push(rollAffix(t, undefined, 0.3 * t.rank, minTier, o.map(a => a.id))); } finally { G.r = r0; G.ddOwn = 0; }
     t.offer = o;
   }
   return t.offer;
@@ -5857,7 +5843,8 @@ function spawnEnemy(type, q) {
     }
   } else if (geneCap(w) > 0 && !q.fromPt && !q.L && D.from < 999) e.gkey = '';
   if (q.elite) {
-    const pool = ELITE_AFFIXES.slice();
+    const pool = ELITE_AFFIXES.slice(), r0 = G.r;
+    if (G.dd && q.dk) G.r = ddR('elite', q.dk); // 6.12: a wave's elites roll the same mods for everyone in a Daily
     for (let i = 0; i < q.elite && pool.length; i++) {
       const a = pool.splice(Math.floor(G.r() * pool.length), 1)[0];
       e.elite.push(a.id);
@@ -5867,6 +5854,7 @@ function spawnEnemy(type, q) {
     if (e.elite.includes('hasted')) e.spd *= 1.4;
     if (e.elite.includes('jugg')) { e.maxHp *= 1.3; e.hp = e.maxHp; }
     if (e.elite.includes('resist')) { const el = pick(G.r, ELS); e.res[el] = (e.res[el] || 0) + 0.5; e.resistEl = el; }
+    G.r = r0;
   }
   lanePos(e.L, e.d, e);
   G.enemies.push(e);
@@ -5919,6 +5907,7 @@ function claimBounty(e) {
   if (M.twins && G.enemies.some(o => o !== e && !o.dead && o.wanted)) { Hooks.fx('say', { x: e.x, y: e.y - 0.6, t: 'my twin will avenge me' }); return; }
   const cr = Wd.bounty * (M.loaded ? 2 : 1);
   G.credits += cr; G.legendQueue++; Wd.done = 1; G.stats.bounty = Wd.name;
+  if (G.dd) G.tokens++; // 6.12: a Daily bounty also pays 1 free Recalibration token
   if (M.loaded) { const c = { x: Math.round(e.x - 0.5), y: Math.round(e.y - 0.5), t: CACHE_LIFE * 2, id: G.eid++, kind: 'gold' }; if (inRegion(c.x, c.y, G.region) && G.map.tiles[tIdx(c.x, c.y)] !== 2 && !G.towerAt[tIdx(c.x, c.y)]) { (G.caches || (G.caches = [])).push(c); Hooks.fx('cache', { x: c.x + 0.5, y: c.y + 0.5, kind: 'gold' }); } }
   rlog('bounty', { boss: e.boss, mod: M.id, cr });
   if (Wd.nemesis && G.nemesis) G.nemesis.beaten = G.wave;
@@ -5938,7 +5927,7 @@ function claimBounty(e) {
     rlog('doors', { w: Wd.w, doors: doors.map(d => d.sector + ':' + d.tier), purse: Math.round(G.purse) });
   }
   Hooks.huntChoice && Hooks.huntChoice(G.huntChoice);
-  Hooks.toast('BOUNTY CLAIMED', `${Wd.name} brought in: +${fmt(cr)} credits, your next tower rolls a Legendary${M.loaded ? ", and the Captain's Chest it was carrying" : ''}`, '#ffd84a', true);
+  Hooks.toast('BOUNTY CLAIMED', `${Wd.name} brought in: +${fmt(cr)} credits${G.dd ? ', +1 Recalibration token' : ''}, your next tower rolls a Legendary${M.loaded ? ", and the Captain's Chest it was carrying" : ''}`, '#ffd84a', true);
   Hooks.sfx('levelup'); Hooks.fx('cash', {});
 }
 function nextBoss(w, r) {
@@ -6078,7 +6067,7 @@ function updateEnemies(dt) {
     if (e.heldT > 0) e.heldT -= dt;
     if (e.gSlowT > 0) e.gSlowT -= dt;
     if (st.burn && FX('burnSpread')) { e.spreadT = (e.spreadT || 1) - dt; if (e.spreadT <= 0) { e.spreadT = 1; let best = null, bd = 1; for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !o2.st.burn) { const d = dist2(o2.x, o2.y, e.x, e.y); if (d < bd) { bd = d; best = o2; } } if (best) best.st.burn = { dps: st.burn.dps * 0.8, t: 3 * M.burnDur, src: st.burn.src }; } }
-    if (st.frozen > 0) { st.frozen -= dt; if (st.frozen <= 0 && G.frV >= 8) { const u = sig('C'); if (u) { thawCrack(e, u); if (e.dead) continue; } } } // FR_VER 8 Thaw Crack
+    if (st.frozen > 0) st.frozen -= dt;
     if (st.freezeImm > 0) st.freezeImm -= dt;
     if (st.shock > 0) st.shock -= dt;
     if (st.mark > 0 && !FX('markPerma')) { st.markT -= dt; if (st.markT <= 0) { st.mark = Math.max(0, st.mark - 1); st.markT = 1.2; } }
@@ -6103,7 +6092,7 @@ function updateEnemies(dt) {
     // behaviors
     // 6.10 (G.frV >= 7): the Phase Wraith needs a run-up. Its jump clock runs at its own pace: a slow delays the next jump by the same
     // share (never below a quarter speed) and a Freeze stops the clock. It ended 189 of 857 bot runs in sweep b, twice the next cause.
-    e.timer -= e.boss === 'wraith' && G.frV >= 7 ? dtE * (st.frozen > 0 ? 0 : Math.max(0.25, 1 - enemySlow(e))) * (G.frV >= 8 && (st.shock > 0 || st.mark > 0) ? 0.5 : 1) : dtE; // FR_VER 8: Shock or a Mark halves its jump clock
+    e.timer -= e.boss === 'wraith' && G.frV >= 7 ? dtE * (st.frozen > 0 ? 0 : Math.max(0.25, 1 - enemySlow(e))) : dtE;
     if (e.type === 'medic' && e.timer <= 0) {
       e.timer = 1;
       const healed = [];
@@ -6491,8 +6480,6 @@ function applyStatuses(e, dmg, el, src, o) {
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) { hit(o2, d, 'A', src, { noStatus: 1 }); if (taF) fusPct(o2, FUSV.taPct, 'A', src); if (FX('ovlBurn') && !o2.dead && !o2.st.burn) o2.st.burn = { dps: d * 0.25 * M.burnDmg, t: 3 * M.burnDur, src }; }
     if (e.dead) return;
   }
-  if (el === 'A' && G.frV >= 8) { const u = sig('A'); if (u) { e.dch = Math.min(SIGV8.An, (e.dch || 0) + (st.shock > 0 ? 2 : 1)); if (e.dch >= SIGV8.An && !(G.tick - (e.dchK === undefined ? -1e9 : e.dchK) < SIGV8.Dt * 30)) { e.dch = 0; e.dchK = G.tick; // FR_VER 8 Voltaic Discharge, at most once per Dt s per enemy
-    combo(e, 'DISCHARGE', '#ffe14d'); Hooks.fx('arcs', { x: e.x, y: e.y, r: 0.8 }); hit(e, e.maxHp * u * SIGV8.Ad * (e.boss ? 0.25 : 1), 'A', src, { noStatus: 1, combo: 'DISCHARGE' }); if (e.dead) return; } } }
   if (el === 'A' && st.chill > 0 && e.supCD <= 0) {
     const acF = fus('AC'); e.supCD = acF ? FUSV.acCD : 1; // 6.10 Cold Circuit
     const rad = 1.2 * M.superRad * (acF ? FUSV.acRad : 1);
@@ -6508,7 +6495,7 @@ function applyStatuses(e, dmg, el, src, o) {
     Hooks.fx('implode', { x: e.x, y: e.y, r: rad });
     for (const o2 of G.enemies) if (!o2.dead && dist2(o2.x, o2.y, e.x, e.y) <= rad * rad) {
       // the max-HP part made bosses melt whatever their health (Lens marks fast enough to Collapse every second); bosses take a sliver
-      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * ((o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old) + sig('V') * (G.frV >= 8 ? SIGV8 : SIGV).V * (o2.boss || o2.assault ? 0.25 : 1))) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
+      hit(o2, (dmg * 2 * M.collapse + o2.maxHp * ((o2.boss || o2.assault ? COLLAPSE_HP.boss : G.ascV >= 2 ? COLLAPSE_HP.mob : COLLAPSE_HP.old) + sig('V') * SIGV.V * (o2.boss || o2.assault ? 0.25 : 1))) * cmb * (s.collX || 1), 'V', src, { noStatus: 1 });
       if (!o2.boss && !o2.elite.includes('jugg')) o2.d = Math.max(0, o2.d - (FX('blackHole') ? 1 : 0.5));
       if (G.fus && !o2.dead) { const s2 = o2.st; // 6.10 Singularity Fusions change the Collapse: Dark Flame, Static Collapse, Absolute Zero
         if (fus('TV')) { const dps = Math.max(dmg * 0.35, o2.maxHp * FUSV.tvPct * (o2.boss ? 0.25 : 1)) * M.burnDmg; if (!s2.burn || s2.burn.dps < dps) s2.burn = { dps, t: 3 * M.burnDur, src }; else s2.burn.t = 3 * M.burnDur; }
@@ -6669,8 +6656,8 @@ function kill(e, src, o) {
     const tw = G.hk && !G.draft && (e.bw || G.wave) >= TWIST_FROM && G.twistW !== (e.bw || G.wave) ? twistOffers() : null;
     if (tw && tw.length) { G.twistW = e.bw || G.wave; G.draft = tw; Hooks.onDraft(tw); }
     else if (!G.draft && !(G.hk && (e.wanted || G.huntChoice || (e.bw || G.wave) >= TWIST_FROM))) { // one boon pick at a time
-      const opts = []; const pool = BOONS.slice();
-      for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(G.r() * pool.length), 1)[0]);
+      const opts = []; const pool = BOONS.slice(), br = G.dd ? ddR('boon') : G.r; // 6.12: the Nth boon pick is the same for everyone in a Daily
+      for (let i = 0; i < 3; i++) opts.push(pool.splice(Math.floor(br() * pool.length), 1)[0]);
       G.draft = opts;
       Hooks.onDraft(opts);
     }
@@ -7798,8 +7785,6 @@ function frReroute(old) {
     if (keep) { const M = mainOf(e); if (M && M.len > L.len) L.pre = M.len - L.len; }
     e.L = L; e.d = 0; e.seg = 0;
   }
-  // FR_VER 8: a Buzzsaw blade in flight followed the old road after the core moved; now it breaks up where it is
-  if (G.frV >= 8) for (const p of G.projs) if (p.k === 'saw' && !p.dead) { p.dead = true; Hooks.fx('boom', { x: p.x, y: p.y, r: 0.3, col: '#c8ccd8' }); }
 }
 // moving a tower: it is set down on the new tile at once (so nothing else can take it) and stays offline while it relocates
 const frMoveFee = t => Math.round(t.invested * FRONTIER.moveFee);
@@ -8108,7 +8093,7 @@ function useAbility(k, x, y) {
   const M = G.mods, w = Math.max(1, G.wave);
   G.charges[k]--; rlog('abil', { id: k });
   // Tactician: every use takes 30% off the other abilities' cooldowns
-  if (M.ks.tactician) for (const o of ABIL_ORDER) if (o !== k && G.abilCd[o] > 0) G.abilCd[o] *= G.frV >= 8 ? 0.8 : 0.7; // FR_VER 8: 20% (was 30%)
+  if (M.ks.tactician) for (const o of ABIL_ORDER) if (o !== k && G.abilCd[o] > 0) G.abilCd[o] *= 0.7;
   if (G.fus) fusAbility(); // 6.10 Command Fusions
   if (sig('X')) G.rhyT = SIGV.Xt; // 6.10 Battle Rhythm
   switch (k) {
@@ -8152,6 +8137,41 @@ function useAbility(k, x, y) {
   Hooks.log(`${ABILITIES[k].name} activated`, '#ffe14d');
   return true;
 }
+
+// ---------- 6.12 Shared Daily dice (FR_VER 8, Daily Hunts only; Nic, Nov 12: "I still want the chaos, but somewhat competitive") ----------
+// In a Daily Hunt every big roll draws from a fresh stream made from the day's seed, the kind of roll and its number in line:
+// the 5th affix roll, Wave 12, the 3rd crate, the 2nd boon pick. Everyone on the same day draws the same ones in the same order.
+// A reroll takes the next affix roll in line. Combat dice (crits, procs, hits, enemy moves) stay on G.r, per player.
+// Off (G.dd 0: normal runs, older rules) every function below runs unchanged on G.r, so old recordings replay exactly.
+function ddHash(k) { let h = 2166136261; for (let i = 0; i < k.length; i++) h = Math.imul(h ^ k.charCodeAt(i), 16777619); return h >>> 0; }
+function ddR(kind, key) {
+  if (key === undefined) { const n = G.ddN || (G.ddN = {}); key = n[kind] = (n[kind] || 0) + 1; }
+  return mulberry32((G.seed ^ ddHash(kind) ^ Math.imul(key + 1, 0x85EBCA77)) >>> 0);
+}
+// kind: a name (counted per call) or a function of the call's arguments that returns [name, key]
+function ddWrap(kind, f) {
+  return function () {
+    if (!G || !G.dd || G.ddOwn) return f.apply(this, arguments);
+    const k = typeof kind === 'function' ? kind.apply(this, arguments) : [kind], r0 = G.r;
+    G.r = ddR(k[0], k[1]);
+    try { return f.apply(this, arguments); } finally { G.r = r0; }
+  };
+}
+const ddTick = n => () => [n, G.tick || 0]; // things that roll every step: one stream per step
+startWave = ddWrap(() => ['start', G.wave + 1], startWave);            // events upkeep, Mutagen, Chaos Engine
+prepareWave = ddWrap(w => ['wave', w], prepareWave);                   // the wave, its events, new wormholes and lanes
+rollEvents = ddWrap(w => ['ev', w], rollEvents); genWave = ddWrap(w => ['gen', w], genWave); // each on fresh dice: a Strain Assault's
+planAssault = ddWrap(w => ['assault', w], planAssault);                // plan reads the player's defence, so it must not shift them
+planWanted = ddWrap(at => ['wanted', at || 0], planWanted);            // bounty posters
+spawnBoss = ddWrap(() => ['boss' + G.wave], spawnBoss);                // boss mods, counted per wave
+claimBounty = ddWrap('bounty', claimBounty);                           // jump doors
+rollAffix = ddWrap('aff', rollAffix); rollCoreAffix = ddWrap('aff', rollCoreAffix); rollCurse = ddWrap('curse', rollCurse);
+updateCaches = ddWrap(ddTick('cache'), updateCaches);                  // crate drops and thieves
+claimCache = ddWrap('crate', claimCache); spawnThief = ddWrap('pirate', spawnThief);
+milestone = ddWrap('mile', milestone); twistOffers = ddWrap('twist', twistOffers);
+anomOffersGen = ddWrap('anom', anomOffersGen);                         // Anomaly cards
+updateStorms = ddWrap(ddTick('storm'), updateStorms);
+siteSpawn = ddWrap('site', siteSpawn); sitesUpdate = ddWrap(ddTick('sites'), sitesUpdate); siteDone = ddWrap('sdone', siteDone); prJackpot = ddWrap('jackpot', prJackpot);
 
 // ---------- main step ----------
 function simStep(dt) {
@@ -8427,7 +8447,7 @@ function snapshotRun(waveNum) {
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, uLvl: G.core.uLvl || 0, hLvl: G.core.hLvl || 0, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
     charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
-    rerollDisc: G.rerollDisc, nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
+    rerollDisc: G.rerollDisc, dd: G.dd || 0, ddN: Object.assign({}, G.ddN || {}), nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
     ascV: G.ascV || 1, mastery: G.mastery || {}, capT: G.capT && G.capT.length ? G.capT.slice() : undefined, // v5.8; 6.4 capT
@@ -8465,7 +8485,7 @@ function resumeRun(S) {
     G.towers.push(t); G.towerAt[tIdx(t.x, t.y)] = t;
   }
   Object.assign(G, { wave: S.wave - 1, credits: S.credits, score: S.score, xpEarned: S.xpEarned, kills: S.kills, time: S.time,
-    charges: Object.assign({}, S.charges), tokens: S.tokens, legendQueue: S.legendQueue, rerollDisc: S.rerollDisc, nextMs: S.nextMs,
+    charges: Object.assign({}, S.charges), tokens: S.tokens, legendQueue: S.legendQueue, rerollDisc: S.rerollDisc, dd: S.dd || 0, ddN: Object.assign({}, S.ddN || {}), nextMs: S.nextMs,
     lanesOpened: S.lanesOpened, cpDue: S.cpDue || 0, unbreakUsed: S.unbreakUsed, boonsTaken: S.boonsTaken || [], next: 12,
     entropy: S.entropy || 0, anoms: (S.anoms || []).slice(), ganoms: JSON.parse(JSON.stringify(S.ganoms || [])), anomOffers: S.anomOffers || null, stabilized: S.stabilized || 0, flux: S.flux || null });
   if (S.stats) G.stats = S.stats;
@@ -11185,23 +11205,8 @@ const UNITS = (() => {
       // fluffy outlines: a dome or ellipse whose edge breaks into tufts
       const fluff = (cx, cy, rx, ry, h, n, amp, ph) => (x, y) => { const a = Math.atan2(y - cy, x - cx), k = 1 + amp * (Math.abs(Math.sin(a * n + (ph || 0))) - 0.5), u = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2; if (u / (k * k) > 1) return -1; return Math.sqrt(Math.max(0.03, 1 - u)) * h; }; // tufted edge, smooth lighting
       const fur = (x, y) => nz(x * 1.3, y * 1.3) * 0.45; // soft, uneven fur
-      // the big plume of a tail (6.11.7, Nic: "her tail looks funky like it's clipping"): it was a straight strip cut off square at
-      // both ends. Now a thick, tufted plume on a curve: it starts behind her body, sweeps out and up beside her, and ends in a
-      // round tip that curls back in. Every point takes its distance to the curve, so the ends are round. f swishes the tip.
-      const tailP = (() => { const sw = f ? -5 : 0, A = [28, 54], B = [55, 62], Cq = [61, 10], D = [47 + sw, -6 + (f ? 2 : 0)], pts = [];
-        for (let i = 0; i <= 48; i++) { const t = i / 48, u = 1 - t; pts.push([u * u * u * A[0] + 3 * u * u * t * B[0] + 3 * u * t * t * Cq[0] + t * t * t * D[0], u * u * u * A[1] + 3 * u * u * t * B[1] + 3 * u * t * t * Cq[1] + t * t * t * D[1], t]); }
-        return pts; })();
-      const tailR = (t) => 8.5 + 5.5 * Math.sin(Math.min(1, t * 1.25) * Math.PI * 0.85); // slim at the root, full in the middle, a round tip
-      const tail = (x, y) => {
-        let bd = 1e9, bt = 0;
-        for (let i = 0; i < tailP.length - 1; i++) { const [ax, ay, at] = tailP[i], [bx, by, btt] = tailP[i + 1], vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
-          const k = L2 ? Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / L2)) : 0, dx = x - ax - vx * k, dy = y - ay - vy * k, d = dx * dx + dy * dy;
-          if (d < bd) { bd = d; bt = at + (btt - at) * k; } }
-        const d = Math.sqrt(bd), r = tailR(bt) * (1 + 0.13 * (Math.abs(Math.sin(bt * 38 + Math.atan2(y - 20, x - 50) * 3)) - 0.5)); // tufted edge
-        return d > r ? -1 : 11 * Math.sqrt(Math.max(0.04, 1 - (d / r) ** 2));
-      };
-      tail.bb = [14, -24, 74, 74];
-      parts.push(P(tail, 0, G, { d: (x, y) => fur(x, y) + (Math.sin(x * 0.55 + y * 0.35) > 0.86 ? -0.7 : 0) })); // fur, with a few soft strands
+      // the big plume of a tail, swishing
+      parts.push(P((x, y) => { const tx = 48 + Math.sin(y * 0.09 + f * 1.4) * 7, w = 8 + 3 * Math.sin(Math.max(0, Math.min(1, (y - 2) / 64)) * Math.PI); return y < 2 || y > 66 || Math.abs(x - tx) > w ? -1 : 7 * Math.sqrt(1 - ((x - tx) / w) ** 2); }, 0, G, { d: fur }));
       // body: grey back and sides, a big white chest ruff and belly
       parts.push(P(fluff(0, 30, 42, 28, 26, 16, 0.06), 2, G, { d: fur, e: (x, y, t) => (((x / 25) ** 2 + ((y - 36) / 26) ** 2 < 1) ? W[t] : null) }));
       parts.push(P(fluff(0, 22, 24, 15, 8, 12, 0.14, 1), 24, W, { d: fur })); // the ruff under the chin
