@@ -1542,7 +1542,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.13.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.13.1 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1671,7 +1671,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.13.0';
+const VERSION = '6.13.1';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -9172,6 +9172,7 @@ const SFX = (() => {
       curP = P; try { return WEAP[name] ? WEAP[name](arg, arg2) : HIT[name] ? HIT[name](arg, arg2) : die(arg); } finally { curP = null; } }
     if (name === 'bosswarn') return EVT.boss(arg);
     if (name === 'combo') { const n = typeof arg === 'string' ? arg : arg && arg.n; if (!COMBO[n] || !allow('combo' + n, 0.12, 2)) return; const c = ev('combo' + n, busE, 0.6, { room: 0.3 }, typeof arg === 'object' ? arg : null); COMBO[n](c); done(c); return; }
+    if (UIS[name] && typeof UI !== 'undefined' && UI.storyOn) return; // 6.13.1: the story intro plays no interface sounds (Nic, Nov 13)
     if (UIS[name]) { // 6.8: one interface sound per tap. Everything asked for in the same tick is weighed and the most telling one plays
       if (name === 'deny' || name === 'whoosh' || offline) { if (!allow(name, 0.1)) return; return UIS[name](); }
       const pr = UIPRI[name] || 1; if (!uiPend) { uiPend = name; Promise.resolve().then(() => { const n = uiPend; uiPend = null; if (n && ctx && ctx.state === 'running' && allow(n, 0.03)) UIS[n](); }); }
@@ -19034,7 +19035,7 @@ UI.story = function (force, done) {
     if (i < 0) return; // still under the splash
     if (!full) { if (i >= STORY.length) { clear(); B.classList.add('storyrise'); el.classList.add('say'); mc.textContent = STORY_MC; full = true; later(() => finish(), 2200); } else reveal(); return; }
     if (i >= STORY.length) return finish();
-    busy = true; clear(); el.classList.remove('ready'); el.classList.add('leave'); try { SFX.play('tab'); } catch (e) {}
+    busy = true; clear(); el.classList.remove('ready'); el.classList.add('leave'); // 6.13.1: no tap sound between screens (Nic: the clicks are distracting)
     later(() => (i + 1 < STORY.length ? screen(i + 1) : control()), LEAVE); };
   el.addEventListener('pointerdown', e => { e.preventDefault(); if (e.target.closest('.stskip')) finish(true); else next(); });
   // wait for the splash to leave. Then begin, or ask for the first touch when the sound is not running yet
