@@ -700,10 +700,12 @@ body.panel-l #dps { display: none; }
 /* 6.2: the Home/Map camera button is gone (Nic: wasted space; pinch, drag, double-tap and the green core arrow cover it). The right
    column starts at the top: Lift Off (Frontier), then Ready */
 /* 5.8 Ready: towers with a veteran pick or an Ascend perk waiting. A fixed spot at the top right, hidden at zero, a pulse when the count rises */
-.rdybtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 40px; padding: 0 6px 0 10px; display: flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
-  background: rgba(40, 32, 6, 0.92); box-shadow: inset 0 0 0 2px #ffd84a; color: #ffd84a; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
-.rdybtn::after { content: ''; position: absolute; left: 0; right: 0; top: -2px; bottom: -2px; } /* 6.5.2: a 44 px hit box */
-.rdybtn b { min-width: 26px; height: 26px; padding: 0 5px; display: grid; place-items: center; background: #ffd84a; color: #1a1004; font-weight: 400; font-size: 13px; }
+/* 6.14 (Nic, Nov 14: "the veteran ready button styling is different"): the same shape as Lift Off and Probe (44 px, cut corners,
+   92 px minimum, centred label); the count is a small chip like the ability badges */
+.rdybtn { position: absolute; right: 6px; top: 6px; z-index: 4; height: 44px; min-width: 92px; padding: 0 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
+  background: rgba(40, 32, 6, 0.92); box-shadow: inset 0 0 0 2px #ffd84a; color: #ffd84a; font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; clip-path: var(--cut); }
+
+.rdybtn b { min-width: 16px; height: 16px; padding: 1px 4px 0; display: grid; place-items: center; background: #ffd84a; color: #1a1004; font-family: var(--f-term); font-weight: 700; font-size: 12px; line-height: 1; clip-path: polygon(3px 0, 100% 0, 100% 100%, 0 100%, 0 3px); }
 .rdybtn.pulse { animation: rdyp 0.5s steps(3) 3; } @keyframes rdyp { 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 14px rgba(255, 216, 74, 0.8); transform: scale(1.06); } }
 body.panel-r .rdybtn, body.panel-l .rdybtn { display: none; } /* a side panel moves the ticker and the music deck: Ready waits until it closes */
 /* Frontier: Lift Off tops the right column (Ready moves down one slot); it waits while a side panel is open, like Ready */
@@ -1589,7 +1591,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + ENEMY KIT + CHECKPOINTS + FONT + ABILITY RAIL + PAUSE + CRITS + PROBE HOME';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + 6.14 LAB: ENEMY KIT, CHECKPOINTS, FONT, ABILITY RAIL, PAUSE, CRITS, PROBE, MUSIC, BOSS SPEED, GRAVITY, READY';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2161,7 +2163,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 11; // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 12; // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2209,6 +2211,10 @@ const WHATS_NEW = { ver: '6.11.0', title: 'Last Gradient 6.11 · The Story', ite
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
 // (mined in 3 chunks, they drift). Some have neutral guards. Loot rides home in the cargo hold and banks at the core; a lost probe
 // drops its cargo as a wreck and costs credits and time to rebuild. Probe and guards both grow with the wave (wS); guards a bit faster.
+// 6.14 rules 12 (Nic, Nov 14: "Gravity wells can essentially stop all progress of enemies"): every pull back along the road (Gravity
+// Well pulses, Repulsor throws, Event Horizon wells, the Marks yank, Gravitic knockback) spends an enemy's allowance. It starts full at
+// cap tiles and refills by share of every tile it walks, so gravity can take back at most half of its movement over time
+const GRAV = { cap: 1.5, share: 0.5 };
 const PROBE = {
   wS: 15,                                         // wave scale: 1 + wave / 15 (Wave 15 = ×2, Wave 60 = ×5)
   hp: 80, spd: 2.0, vis: 5, dps: 14, fireT: 0.5,  // base hull (× wave scale), tiles/s, vision tiles, lance damage per second (× wave scale), seconds per shot
@@ -6128,12 +6134,19 @@ function enemySlow(e) {
   if (e.boss) s *= 0.5;
   return Math.min(0.75, s);
 }
+// rules 12: a pull back along the road spends the enemy's gravity allowance (GRAV); older rules pull the full distance
+function gPull(e, p) {
+  if (!(p > 0)) return 0;
+  if (!(G.frV >= 12)) { e.d = Math.max(0, e.d - p); return p; }
+  if (e.gb == null) e.gb = GRAV.cap;
+  const k = Math.min(p, e.gb); e.gb -= k; e.d = Math.max(0, e.d - k); return k;
+}
 function updateEnemies(dt) {
   const ev = G.ev, M = G.mods;
   // Event Horizon: gravity wells drag ground enemies back down the road
   if (G.wells && G.wells.length) {
     const pull = 2.6 * (1 + FX('hPull') / 100);
-    for (const w of G.wells) { w.t -= dt; for (const e of G.enemies) if (!e.dead && !e.boss && !e.fly && dist2(e.x, e.y, w.x, w.y) <= w.r * w.r) e.d = Math.max(0, e.d - pull * dt); }
+    for (const w of G.wells) { w.t -= dt; for (const e of G.enemies) if (!e.dead && !e.boss && !e.fly && dist2(e.x, e.y, w.x, w.y) <= w.r * w.r) gPull(e, pull * dt); }
     G.wells = G.wells.filter(w => w.t > 0);
   }
   // Glacier: Frozen ground enemies are ice blocks; whoever walks up behind them stops (and becomes part of the jam)
@@ -6244,6 +6257,7 @@ function updateEnemies(dt) {
       if (G.slime && G.slime.length && e.boss !== 'snail') for (const p of G.slime) if (p.L === e.L && Math.abs(p.d - e.d) < 0.4) { spd *= 1.4; break; }
       e.slow = 1 - spd / e.spd;
       e.d += spd * dt;
+      if (G.frV >= 12) e.gb = Math.min(GRAV.cap, (e.gb == null ? GRAV.cap : e.gb) + GRAV.share * spd * dt); // rules 12: walking refills the gravity allowance
     }
     if (e.d < 0) e.d = 0;
     lanePos(e.L, e.d, e);
@@ -6640,9 +6654,9 @@ function applyStatuses(e, dmg, el, src, o) {
     if (s.stun && r() < s.stun && !jugg) { st.stun = Math.max(st.stun, e.boss ? 0.2 : 0.6); Hooks.fx('ovstun', { x: e.x, y: e.y }); }
   }
   if (markP > 0 && r() < markP) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4 + ((s.pkv && s.pkv.linger) || 0); }
-  if (M.ks.horizon && st.mark >= M.markMax && !e.yanked && !e.boss && !e.fly) { e.yanked = 1; e.d = Math.max(0, e.d - 1.5); Hooks.fx('implode', { x: e.x, y: e.y, r: 0.8 }); }
+  if (M.ks.horizon && st.mark >= M.markMax && !e.yanked && !e.boss && !e.fly) { e.yanked = 1; gPull(e, 1.5); Hooks.fx('implode', { x: e.x, y: e.y, r: 0.8 }); }
   if (M.chillVoid && st.chill > 0 && r() < M.chillVoid / 100) { st.mark = Math.min(M.markMax, st.mark + 1); st.markT = 4; }
-  if (M.knock && r() < M.knock && !jugg) { e.d = Math.max(0, e.d - (e.boss ? 0.15 : 0.5)); if (FX('knockMark')) { st.mark = Math.min(M.markMax, st.mark + 2); st.markT = 4; } }
+  if (M.knock && r() < M.knock && !jugg) { gPull(e, e.boss ? 0.15 : 0.5); if (FX('knockMark')) { st.mark = Math.min(M.markMax, st.mark + 2); st.markT = 4; } }
   if (s.stunDur && s.kind === 'mortar' && !jugg) st.stun = Math.max(st.stun, s.stunDur * (e.boss ? (s.pkv && s.pkv.blackout ? 0.6 : 0.3) : 1));
 }
 const huntMult = () => 1 + HUNT.pushScore * ((G && G.pushes) || 0);
@@ -7080,7 +7094,7 @@ function towerAttack(t, range, sw) {
       for (const e of tg) {
         // v5.8 Repulsor: fliers are thrown back along their flight line (REPULSE × the ground pull, which Repulsor cuts to 60%)
         const jugg = e.elite.includes('jugg');
-        if (!jugg) { e.pullN = (e.pullN || 0) + 1; e.d = Math.max(0, e.d - s.pull * (e.fly && s.repulse ? REPULSE : 1) * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - (pk.steady ? 0.075 : 0.15) * (e.pullN - 1))); }
+        if (!jugg) { e.pullN = (e.pullN || 0) + 1; gPull(e, s.pull * (e.fly && s.repulse ? REPULSE : 1) * (e.boss ? 0.3 : 1) * Math.max(0.3, 1 - (pk.steady ? 0.075 : 0.15) * (e.pullN - 1))); }
         hit(e, dmg, s.el, t);
         if (e.dead) continue;
         if (pk.undertow && !jugg) { e.gSlowT = 1.5; e.gSlowV = Math.max(e.gSlowV || 0, Math.min(0.5, pk.undertow / 100)); } // v5.8 Gravity perks
@@ -9378,6 +9392,8 @@ const SFX = (() => {
     let echoIn = null, echoL = null, echoR = null, echoFb = null, echoRet = null, vinylG = null, hissG = null;
     const CH = {}, AN = {}; let L = {};
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+    // 6.14 (Nic, Nov 14): ceilings for generated v2 songs (MIDI). A lead phrase tops out at E6 (88); no lead, arp or piano note goes past G6 (91)
+    const LEAD_CEIL = 88, LEAD_HARD = 91;
     let R = Math.random;
     const pick = a => a[Math.floor(R() * a.length)], chance = p => R() < p, rr = (a, b) => a + R() * (b - a);
     const wpick = (a, w) => { let t = 0; for (const x of w) t += x; let r = R() * t; for (let i = 0; i < a.length; i++) { r -= w[i]; if (r <= 0) return a[i]; } return a[0]; };
@@ -10111,7 +10127,7 @@ const SFX = (() => {
       const e = t + dec + 0.4; for (const o of [car, m1, m2]) { o.start(t); o.stop(e); }
       sendFx(g, 0.35, 0.12);
     }
-    function piano(n, t, v, dec) { evlog('keys', 'piano', t, n, v); const f = mtof(n), g = vca(t, 0.002, dec, v * 0.9, L.keys), fl = lp(Math.min(9000, f * 9), 0.5, g); fl.frequency.setTargetAtTime(f * 3, t, 0.25); osc('triangle', f, t, t + dec + 0.4, fl, -3); osc('triangle', f, t, t + dec + 0.4, fl, 3); osc('sine', f * 2, t, t + dec + 0.4, gainN(0.3, fl)); nhit(t, 'bandpass', f * 4, 1, 0.015, v * 0.06, g); sendFx(g, 0.35, 0.1); }
+    function piano(n, t, v, dec) { if (P && P.v2 && !P.comp && !P.boss) while (n > LEAD_HARD) n -= 12; /* 6.14: under G6 in generated songs */ evlog('keys', 'piano', t, n, v); const f = mtof(n), g = vca(t, 0.002, dec, v * 0.9, L.keys), fl = lp(Math.min(9000, f * 9), 0.5, g); fl.frequency.setTargetAtTime(f * 3, t, 0.25); osc('triangle', f, t, t + dec + 0.4, fl, -3); osc('triangle', f, t, t + dec + 0.4, fl, 3); osc('sine', f * 2, t, t + dec + 0.4, gainN(0.3, fl)); nhit(t, 'bandpass', f * 4, 1, 0.015, v * 0.06, g); sendFx(g, 0.35, 0.1); }
     function stab(ns, t, v, how) {
       for (const n of ns) evlog('keys', 'stab', t, n, v);
       const E = effE(), fl = lp(1, how === 'dubtechno' ? 3 : 2.5, null, how === 'dubtechno' ? 'bandpass' : 'lowpass'), g = vca(t, 0.003, how === 'dubtechno' ? 0.25 : 0.32, v, L.keys);
@@ -10123,7 +10139,7 @@ const SFX = (() => {
     }
     function organ(ns, t, v, dur) { for (const n of ns) { evlog('keys', 'organ', t, n, v); const g = vca(t, 0.004, dur, v * 0.32, L.keys); for (const [h, a] of [[1, 1], [2, 0.5], [3, 0.3], [4, 0.22]]) osc('sine', mtof(n) * h, t, t + dur + 0.3, gainN(a, g)); nhit(t, 'bandpass', mtof(n) * 6, 2, 0.008, v * 0.08, g); sendFx(g, 0.25, 0.2); } }
     function skank(ns, t, v) { for (const n of ns) evlog('keys', 'skank', t, n, v); const fl = lp(1400, 0.8, null, 'bandpass'), g = vca(t, 0.002, 0.12, v * 0.6, L.keys); fl.connect(g); for (const n of ns) { osc(0.25, mtof(n), t, t + 0.2, fl); osc('triangle', mtof(n), t, t + 0.2, fl); } sendFx(g, 0.5, 0.75); }
-    function pluck(n, t, v, dest, role) { evlog(role || 'arp', 'pluck', t, n, v); const fl = lp(1, 2.4, vca(t, 0.002, 0.45, v, dest || L.arp)); fl.frequency.setValueAtTime(1200 + 4000 * effE(), t); fl.frequency.setTargetAtTime(420, t, 0.07); osc('sawtooth', mtof(n), t, t + 0.5, fl, 0); }
+    function pluck(n, t, v, dest, role) { if (P && P.v2 && !P.comp && !P.boss) { const cap = (role || 'arp') === 'arp' ? LEAD_CEIL : LEAD_HARD; while (n > cap) n -= 12; } /* 6.14: arps stay under E6, plucked keys under G6 */ evlog(role || 'arp', 'pluck', t, n, v); const fl = lp(1, 2.4, vca(t, 0.002, 0.45, v, dest || L.arp)); fl.frequency.setValueAtTime(1200 + 4000 * effE(), t); fl.frequency.setTargetAtTime(420, t, 0.07); osc('sawtooth', mtof(n), t, t + 0.5, fl, 0); }
     function chipNote(n, t, dur, v, duty, dest, role) { evlog(role, 'chip', t, n, v); const g = ctx.createGain(); g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v * 0.75, t + Math.min(dur * 0.5, 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + dur); g.connect(dest); osc(duty, mtof(n), t, t + dur + 0.02, g); }
     // gated supersaw chord: one sustained 3-voice stack per note, chopped by the trance gate pattern
     function gateChord(ns, t, sp16, bars, v) {
@@ -10135,7 +10151,7 @@ const SFX = (() => {
     }
     // ---- pads ----
     function pad(ns, t, dur, v, kind) {
-      if (!kind) return; for (const n of ns) evlog('pads', kind, t, n, v);
+      if (!kind) return; if (P && P.v2 && !P.comp && !P.boss) ns = ns.map(n => { while (n > LEAD_CEIL) n -= 12; return n; }); /* 6.14: sustained pad notes stay under E6 */ for (const n of ns) evlog('pads', kind, t, n, v);
       const E = effE(), atk = kind === 'warm' || kind === 'strings' ? Math.min(2.2, dur * 0.35) : kind === 'supersaw' ? 0.4 : 0.6, top = kind === 'dark' ? 500 + 500 * E : kind === 'juno' ? 900 + 2000 * E : kind === 'supersaw' ? 3000 + 5000 * E : kind === 'strings' ? 1400 + 1600 * E : 800 + 1400 * E;
       const fl = lp(300, kind === 'juno' ? 1.4 : 0.7), g = ctx.createGain();
       fl.frequency.setValueAtTime(300, t); fl.frequency.linearRampToValueAtTime(top, t + dur * 0.45); fl.frequency.linearRampToValueAtTime(top * 0.6, t + dur + 1.5);
@@ -10151,6 +10167,7 @@ const SFX = (() => {
     }
     // ---- leads ----
     function lead(n, t, dur, v, kind, duty) {
+      if (P && P.v2 && !P.comp && !P.boss) while (n > LEAD_HARD) n -= 12;
       evlog('lead', kind, t, n, v);
       const dest = L.lead, f = mtof(n);
       if (kind === 'bell' || kind === 'glass') { const g = vca(t, 0.003, kind === 'glass' ? 1.6 : 2.8, v, L.spark), car = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(); car.frequency.value = f; m.frequency.value = f * (kind === 'glass' ? 7 : 3.5); mg.gain.setValueAtTime(f * 1.2, t); mg.gain.setTargetAtTime(f * 0.05, t, 0.4); m.connect(mg); mg.connect(car.frequency); car.connect(g); car.start(t); m.start(t); car.stop(t + 3.4); m.stop(t + 3.4); sendFx(g, 0.6, 0.35); return; }
@@ -10420,6 +10437,16 @@ const SFX = (() => {
           if ((ph.drop || /Hook|Drop/.test(ph.n)) && barInPh >= 4 && barInPh < 6 && Ld.oct <= 74) up = 12;
         }
         const tail = barInPh % 4 === 3 && barInPh !== 7 ? 1 : 0;
+        // 6.14 (Nic, Nov 14: "really high-pitched for long periods... piercing"): in generated v2 songs the whole phrase of this bar
+        // moves down by octaves until its highest note is at or under LEAD_CEIL, so the melody keeps its shape. The drop octave goes
+        // first. The Composer, fixed notes, boss themes and old v1 tracks are untouched
+        let shift = 0;
+        if (P.v2 && !P.comp && !P.fixedMel && mot.length) {
+          const sc0 = Ld.scale === 'pent' || Ld.scale === 'pentmajor' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : P.scale, off0 = sc0.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
+          let hiD = -99; for (const nn of mot) if (nn.d > hiD) hiD = nn.d;
+          let top = degTo(P.root + 12 * Math.round((Ld.oct - P.root) / 12), off0 + hiD, sc0) + up;
+          while (top > LEAD_CEIL && shift > -36) { if (up) up = 0; else shift -= 12; top -= 12; }
+        }
         for (const nn of mot) if (nn.st === st) {
           if (tail && s16 >= 8 && !P.fixedMel && !P.v2 && chance(0.5)) continue;
           const abs = P.fixedMel && P.comp && P.comp.melAbs; // 5.5.8 'Fixed notes': degrees of the key, not of each chord
@@ -10427,7 +10454,7 @@ const SFX = (() => {
           const strong = s16 % 4 === 0, off = abs ? 0 : scaleTones.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
           let n = degTo(P.root + 12 * Math.round((Ld.oct - P.root) / 12), off + nn.d, scaleTones);
           if (!P.fixedMel) { if (strong) n = nearestChordTone(n, C0); if (barInPh === 7 && s16 >= 8) n = nearestPc(n, C0.root % 12); if (Ld.grammar === 'drone' && !strong) continue; }
-          lead(n + up, tt + hum(), Math.max(sp16, nn.len * sp16), (Ld.kind === 'chip' ? 0.6 : 0.85) * ll, Ld.kind, Ld.duty);
+          lead(n + up + shift, tt + hum(), Math.max(sp16, nn.len * sp16), (Ld.kind === 'chip' ? 0.6 : 0.85) * ll, Ld.kind, Ld.duty);
         }
       }
       // ---- ambient: incommensurable bell loops (Music for Airports) ----
@@ -18734,7 +18761,9 @@ const UI = (() => {
     // 6.6.1: the tip waits for the boss card to close (on iPad it sat over the card's Fight button for 3 s)
     if (slowTip && (!G || G.over)) slowTip = null;
     if (slowTip && !modalOpen && screen === 'game') { toast(slowTip[0], slowTip[1], '#ffb03a', true, 'tip'); slowTip = null; }
-    else if (G && !G.over && G.speedWas && screen === 'game') { if (G.speed === 1) { G.speed = G.speedWas; toast(`SPEED ${G.speed}×`, 'Boss down', '#59f0b4', true, 'tip'); } G.speedWas = 0; G.slowKey = null; updateHud(); }
+    // 6.14 fix (Nic, Nov 14: the speed button flickered in boss fights): restore only once the boss is down. Before, this ran on the
+    // next frame while the boss was still alive, and the line above slowed it again: 3x, 1x, 3x... every frame
+    else if (G && !G.over && G.speedWas && screen === 'game' && !bossOn) { if (G.speed === 1) { G.speed = G.speedWas; toast(`SPEED ${G.speed}×`, 'Boss down', '#59f0b4', true, 'tip'); } G.speedWas = 0; G.slowKey = null; updateHud(); }
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
     { const mf = screen === 'game' && !!G && modalOpen === 'pause'; if (mf !== SFX.muffled) SFX.muffle(mf); } // 6.8: the music goes dull on the pause menu
