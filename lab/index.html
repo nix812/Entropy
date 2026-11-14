@@ -1591,7 +1591,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + 6.14 LAB: ENEMY KIT, CHECKPOINTS, FONT, ABILITY RAIL, PAUSE, CRITS, PROBE, MUSIC, BOSS SPEED, GRAVITY, READY';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + 6.14 LAB: ENEMY KIT, CHECKPOINTS 1X, FONT, ABILITY RAIL, PAUSE, CRITS, PROBE, MUSIC, BOSS SPEED, GRAVITY, READY, BLACK HOLE, STORMS';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2163,7 +2163,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 12; // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 13; // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2638,11 +2638,11 @@ const ELITE_AFFIXES = [
 
 // ---------- Storms (weather) ----------
 const STORMS = {
-  ion:    { name: 'Ion Storm', el: 'A', col: '#ffe14d', desc: '+40% Arc Damage' },
-  solar:  { name: 'Solar Flare', el: 'T', col: '#ff7b39', desc: '+40% Thermal Damage' },
-  cryo:   { name: 'Cryo Front', el: 'C', col: '#6ae2ff', desc: '+40% Cryo Damage. Slows enemies' },
-  void:   { name: 'Void Tide', el: 'V', col: '#b86cff', desc: '+40% Void Damage. Enemies take +10% damage' },
-  static: { name: 'Static Haze', el: 'K', col: '#a59f92', desc: '+40% Kinetic Damage, −15% Range' },
+  ion:    { name: 'Ion Storm', el: 'A', col: '#ffe14d', desc: '+40% Arc Damage. Lightning strikes enemies under it. Probe harvest: Strike' },
+  solar:  { name: 'Solar Flare', el: 'T', col: '#ff7b39', desc: '+40% Thermal Damage. Enemies under it Burn. Probe harvest: Frenzy' },
+  cryo:   { name: 'Cryo Front', el: 'C', col: '#6ae2ff', desc: '+40% Cryo Damage. Slows and Chills enemies. Probe harvest: Stasis' },
+  void:   { name: 'Void Tide', el: 'V', col: '#b86cff', desc: '+40% Void Damage. Enemies take +10% damage and gain Marks. Probe harvest: Nova' },
+  static: { name: 'Static Haze', el: 'K', col: '#a59f92', desc: '+40% Kinetic Damage, −15% Range. Reveals cloaked enemies. Probe harvest: Scan' },
 };
 const STORM_KEYS = Object.keys(STORMS);
 const COMBO_STORMS = {
@@ -2664,8 +2664,8 @@ const EVENTS = [
   { id: 'gold', name: 'Gold Rush', good: 1, w: 7, from: 5, desc: '×2 Credits' },
   { id: 'overcharge', name: 'Overcharge', good: 1, w: 6, from: 5, desc: '+30% Attack Speed' },
   { id: 'meteor', name: 'Meteor Shower', good: 1, w: 6, from: 7, desc: 'Meteors strike the path' },
-  { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'Drifts in for 30s. Drags and slows enemies. Towers at its edge +40% Attack Speed, near its center −50%',
-    long: 'Drifts in from past the sector edge, stays 30s, then collapses. Enemies within 6 tiles slow down, up to 50% at the center. It drags them along the road toward it. Towers 2.5 to 6 tiles away: +40% Attack Speed. Towers within 2.5 tiles: −50%. Bosses are affected half as much' },
+  { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'Lands after 8s. Feed it kills in its reach: fed, it collapses in a blast and leaves salvage; starved, it spits voidlings. Strike inside it for a Gravity Bomb',
+    long: 'A marker shows where it lands, 8s ahead. Every kill inside its reach feeds it. Fed when its 30s run out, it collapses in a blast that tears into nearby enemies and leaves a rich wreck for your probe. Starved, it spits voidlings back out. A Strike aimed inside its reach becomes a Gravity Bomb that drags enemies to its center and crushes them. While it holds: Enemies within 6 tiles slow down, up to 50% at the center. It drags them along the road toward it. Towers 2.5 to 6 tiles away: +40% Attack Speed. Towers within 2.5 tiles: −50%. Bosses are affected half as much' },
 ];
 // 6.5 (FR_VER 5, G.frV >= 5): the Black Hole event (fr: 5 keeps it out of older rules, so their event rolls are unchanged).
 // It drifts in from past the sector edge to a point on a road, hangs there drifting slowly, then collapses. Inside its reach:
@@ -2681,6 +2681,19 @@ const HOLE = {
   inSpd: 1.2, off: 3,            // drifts in at 1.2 tiles/s from 3 tiles past the sector edge
   hold: 30, drift: 0.12, out: 1.5, // then 30 s at 0.12 tiles/s, then a 1.5 s collapse
 };
+// 6.14 rules 13 (Nic, Nov 14: "feed it or fear it"). The hole drifts in for warn s with its effects off and a marker where it lands.
+// Landed, every kill inside its reach feeds it (an elite eliteM, a boss bossM) toward a goal of feed + wave × feedW. When its hold
+// ends: fed, it collapses into a blast (blast of max HP to enemies within blastR, bosses blastBoss) and leaves a rich wreck for the
+// probe; starved, it spits voidlings at its centre (spit + wave / spitW, fewer the closer it came). A Strike aimed inside its reach
+// becomes a Gravity Bomb: everything in the reach is dragged up to bombPull tiles along its road toward the centre, stunned bombStun
+// s and hit for bombX × the Strike
+const HOLE13 = { warn: 8, feed: 6, feedW: 0.25, eliteM: 3, bossM: 10, blastR: 8, blast: 0.3, blastBoss: 0.06, spit: 3, spitW: 10, bombX: 1.5, bombPull: 4, bombStun: 1.2 };
+// 6.14 rules 13 storms: every `every` s a storm acts on the enemies under it. Ion strikes up to zapN of them for zap of max HP (bosses
+// zapBoss); Solar sets them burning (burn × the wave's HP scale per s for burnT s); Cryo chills (+1 stack); Void Marks (+1);
+// Static reveals cloaked ones. The probe harvests a storm it is sent to: harvest s inside (within inR of its radius) gives one charge
+// of the matching ability per storm type, the storm shrinking by shrink each time; harvested out, it breaks up and the probe heads home
+const STORM13 = { every: 1, zapN: 2, zap: 0.06, zapBoss: 0.01, burn: 4, burnT: 2, harvest: 6, inR: 0.6, shrink: 0.75,
+  abil: { ion: 'strike', cryo: 'stasis', void: 'nova', solar: 'overclock', static: 'scan' } };
 // 6.5 (FR_VER 5) fog of war: presentation only (the sim never reads it). Vision comes from the core (its gun range, at least
 // FOG.core tiles), every tower (its range + FOG.pad, at least FOG.tower) and the probe (G.probe.vis). G.fogEx remembers explored
 // tiles (sim.js fogTick, every FOG.every ticks); roads are always known
@@ -4747,10 +4760,45 @@ function towerConditions(t) {
 function spawnStorm(types, x, y, vx, vy) {
   const s = { id: G.eid++, types, x, y, vx, vy, r: 3 + G.r() * 1.2, life: 30 + G.r() * 15, age: 0, mael: false, spawnT: 0, rot: 0 };
   G.storms.push(s);
-  const nm = stormName(s);
+  const nm = stormName(s); rlog('storm', { t: types.join('+') });
   Hooks.log(`${nm} incoming`, STORMS[types[0]].col);
   Hooks.sfx('storm', s);
   return s;
+}
+// rules 13 (STORM13): every `every` s each storm acts on the enemies under it, by type. The Maelstrom keeps its own rules
+function stormAct(dt) {
+  const w = Math.max(1, G.wave), pow = G.mods.stormPow || 1;
+  for (const s of G.storms) {
+    if (s.dead || s.mael) continue;
+    s.fxT = (s.fxT == null ? STORM13.every * 0.5 : s.fxT) - dt; if (s.fxT > 0) continue;
+    s.fxT = STORM13.every;
+    const under = G.enemies.filter(e => !e.dead && dist2(e.x, e.y, s.x, s.y) <= s.r * s.r); if (!under.length) continue;
+    for (const ty of s.types) {
+      if (ty === 'ion') { for (let k = 0; k < STORM13.zapN && under.length; k++) { const e = under[Math.floor(G.r() * under.length)]; if (e.dead) continue;
+        Hooks.fx('stormZap', { x: e.x, y: e.y, col: STORMS.ion.col }); hit(e, e.maxHp * (e.boss || e.assault ? STORM13.zapBoss : STORM13.zap) * pow, 'A', null, { noStatus: 1, abil: 1 }); } }
+      else if (ty === 'solar') { const dps = STORM13.burn * hpMult(w) * pow; for (const e of under) if (!e.dead) { const st = e.st; if (!st.burn || st.burn.dps < dps) st.burn = { dps, t: STORM13.burnT, src: null }; else st.burn.t = Math.max(st.burn.t, STORM13.burnT); } Hooks.fx('stormFx', { x: s.x, y: s.y, r: s.r, k: 'solar' }); }
+      else if (ty === 'cryo') { for (const e of under) if (!e.dead) { e.st.chill = Math.min(5, e.st.chill + 1); e.st.chillT = 2.5; } Hooks.fx('stormFx', { x: s.x, y: s.y, r: s.r, k: 'cryo' }); }
+      else if (ty === 'void') { for (const e of under) if (!e.dead) { e.st.mark = Math.min(G.mods.markMax, e.st.mark + 1); e.st.markT = 4; } Hooks.fx('stormFx', { x: s.x, y: s.y, r: s.r, k: 'void' }); }
+      else if (ty === 'static') { for (const e of under) if (e.cloaked) e.revealed = Math.max(e.revealed || 0, STORM13.every + 0.2); Hooks.fx('stormFx', { x: s.x, y: s.y, r: s.r, k: 'static' }); }
+    }
+  }
+}
+// rules 13: the probe working a storm. Inside (within inR of its radius) for `harvest` s = one charge of the matching ability per type
+function prStorm(dt) {
+  const P = G.probe, s = G.storms.find(o => o.id === P.storm && !o.dead);
+  if (!s || s.mael) { P.storm = 0; if (!P.home && !P.ret) { P.ret = 1; P.tx = P.ty = null; } return; }
+  P.tx = s.x; P.ty = s.y;
+  if (Math.hypot(P.x - s.x, P.y - s.y) > s.r * STORM13.inR) return;
+  s.hT = (s.hT || 0) + dt; s.hv = s.hv || 0;
+  if (s.hT < STORM13.harvest) return;
+  s.hT = 0; const ty = s.types[s.hv]; s.hv++;
+  let k = STORM13.abil[ty] || 'strike'; if (!abilOnline(k)) k = abilPool()[0];
+  G.charges[k] = (G.charges[k] || 0) + 1; Hooks.abilReady && Hooks.abilReady(k);
+  Hooks.fx('stormHarvest', { x: s.x, y: s.y, col: STORMS[ty].col }); Hooks.sfx('pick');
+  Hooks.toast('STORM HARVESTED', `+1 ${ABILITIES[k].name} charge`, STORMS[ty].col, true); // draft text
+  rlog('stormHarvest', { t: ty, k });
+  s.r *= STORM13.shrink;
+  if (s.hv >= s.types.length) { s.dead = true; s.spent = 1; Hooks.fx('implode', { x: s.x, y: s.y, r: s.r }); P.storm = 0; P.ret = 1; P.tx = P.ty = null; }
 }
 function stormName(s) {
   if (s.mael) return 'Maelstrom';
@@ -4834,6 +4882,7 @@ function updateStorms(dt) {
       G.storms.push(n);
     }
   }
+  if (G.frV >= 13) stormAct(dt); // rules 13: storms act on the enemies under them
   for (const s of G.storms) {
     if (s.dead) continue;
     const Rg = G.region, out = s.x < Rg.x0 - 6 || s.y < Rg.y0 - 6 || s.x > Rg.x1 + 6 || s.y > Rg.y1 + 6;
@@ -4869,23 +4918,65 @@ function holeSpawn() {
   const ex = Math.abs(dx) < 1e-6 ? 1e9 : (dx > 0 ? tx - R.x0 : R.x1 - tx) / Math.abs(dx), ey = Math.abs(dy) < 1e-6 ? 1e9 : (dy > 0 ? ty - R.y0 : R.y1 - ty) / Math.abs(dy);
   const back = Math.min(ex, ey) + HOLE.off, x = tx - dx * back, y = ty - dy * back;
   G.hole = { x, y, tx, ty, dx, dy, ph: 0, t: 0, k: 1 };
+  const v13 = G.frV >= 13; // rules 13: an 8 s approach with its effects off, then it must be fed
+  if (v13) { const h = G.hole; h.v = 13; h.k = 0; h.spd = back / HOLE13.warn; h.m = 0; h.goal = Math.round(HOLE13.feed + Math.max(1, G.wave) * HOLE13.feedW); }
   const ang = Math.atan2(y - G.core.y, x - G.core.x), dir = COMPASS[((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8];
-  Hooks.toast('BLACK HOLE', `Inbound from the ${dir}. Arrives in ${Math.max(1, Math.round(back / HOLE.inSpd))}s. Towers at its edge +${Math.round(HOLE.ring * 100)}% Attack Speed`, '#b86cff');
+  if (v13) Hooks.toast('BLACK HOLE', `Lands in ${HOLE13.warn}s where the marker is. Feed it ${G.hole.goal} kills inside its reach and it collapses in your favour. Starve it and it spits the dark back out`, '#b86cff'); // draft text, Nic's to edit
+  else Hooks.toast('BLACK HOLE', `Inbound from the ${dir}. Arrives in ${Math.max(1, Math.round(back / HOLE.inSpd))}s. Towers at its edge +${Math.round(HOLE.ring * 100)}% Attack Speed`, '#b86cff');
   Hooks.sfx('hole', { x, y }); Hooks.fx('hole', { x, y });
   G.stats.holes = (G.stats.holes || 0) + 1; rlog('hole', { x: Math.round(tx), y: Math.round(ty) });
 }
 function holeUpdate(dt) {
   const h = G.hole; h.t += dt;
   if (h.ph === 0) {
-    const ddx = h.tx - h.x, ddy = h.ty - h.y, d = Math.hypot(ddx, ddy), st = HOLE.inSpd * dt;
-    if (d <= st) { h.x = h.tx; h.y = h.ty; h.ph = 1; h.t = 0; } else { h.x += ddx / d * st; h.y += ddy / d * st; }
+    const ddx = h.tx - h.x, ddy = h.ty - h.y, d = Math.hypot(ddx, ddy), st = (h.v >= 13 ? h.spd : HOLE.inSpd) * dt;
+    if (d <= st) { h.x = h.tx; h.y = h.ty; h.ph = 1; h.t = 0; if (h.v >= 13) { h.k = 1; Hooks.fx('holeLand', { x: h.x, y: h.y }); Hooks.sfx('holeEnd', { x: h.x, y: h.y }); } } else { h.x += ddx / d * st; h.y += ddy / d * st; }
   } else if (h.ph === 1) {
     h.x += h.dx * HOLE.drift * dt; h.y += h.dy * HOLE.drift * dt;
-    if (h.t >= HOLE.hold) { h.ph = 2; h.t = 0; }
+    if (h.t >= HOLE.hold) { h.ph = 2; h.t = 0; if (h.v >= 13) holeVerdict(h); }
   } else {
     h.k = Math.max(0, 1 - h.t / HOLE.out);
     if (h.t >= HOLE.out) { Hooks.fx('holeEnd', { x: h.x, y: h.y }); Hooks.sfx('holeEnd', { x: h.x, y: h.y }); G.hole = null; }
   }
+}
+// rules 13: a kill inside a landed hole's reach feeds it
+function holeFeed(e) {
+  const h = G.hole; if (!h || h.v !== 13 || h.ph !== 1 || dist2(e.x, e.y, h.x, h.y) > HOLE.r * HOLE.r) return;
+  const before = h.m; h.m += e.boss ? HOLE13.bossM : e.elite && e.elite.length ? HOLE13.eliteM : 1;
+  Hooks.fx('holeFeed', { x: e.x, y: e.y, hx: h.x, hy: h.y });
+  if (before < h.goal && h.m >= h.goal) { Hooks.toast('BLACK HOLE FED', 'It collapses in your favour when its time runs out', '#b86cff', true); Hooks.sfx('converge'); } // draft text
+}
+// rules 13: the end of the hold. Fed: a blast and a rich wreck. Starved: voidlings spill out of its centre
+function holeVerdict(h) {
+  const w = Math.max(1, G.wave), fed = h.m >= h.goal;
+  rlog('holeEnd', { m: h.m, goal: h.goal, fed: fed ? 1 : 0 });
+  if (fed) {
+    Hooks.fx('implode', { x: h.x, y: h.y, r: HOLE13.blastR }); Hooks.fx('shake', { v: 8 }); Hooks.sfx('implode');
+    for (const e of G.enemies.slice()) if (!e.dead && dist2(e.x, e.y, h.x, h.y) <= HOLE13.blastR * HOLE13.blastR) hit(e, e.maxHp * (e.boss || e.assault ? HOLE13.blastBoss : HOLE13.blast), 'V', null, { noStatus: 1, abil: 1 });
+    if (G.probe && G.sites) { const s = { id: G.eid++, k: 'wreck', x: h.x, y: h.y, t: PROBE.life.wreck * 1.5, life: PROBE.life.wreck * 1.5, val: prVal() * PROBE.loot.wreck * PROBE.loot.rich, rich: 1, prog: 0, g: [], z: 0, jp: PROBE.jack.base + PROBE.jack.rich, hole: 1 };
+      G.sites.push(s); Hooks.fx('site', { x: s.x, y: s.y, k: 'wreck' }); }
+    Hooks.toast('BLACK HOLE COLLAPSED', `It took the nearby swarm with it and left a rich wreck for your probe`, '#59f0b4', true); // draft text
+    G.stats.holesFed = (G.stats.holesFed || 0) + 1;
+  } else {
+    const n = Math.max(1, Math.ceil((HOLE13.spit + w / HOLE13.spitW) * (1 - h.m / Math.max(1, h.goal))));
+    for (let i = 0; i < n; i++) spawnEnemy('voidling', { fromPt: { x: h.x + (G.r() - 0.5) * 1.5, y: h.y + (G.r() - 0.5) * 1.5 } });
+    Hooks.fx('implode', { x: h.x, y: h.y, r: 2 }); Hooks.sfx('maelstrom');
+    Hooks.toast('BLACK HOLE STARVED', `It spat ${n} voidling${n === 1 ? '' : 's'} back out`, '#ff4d6a', true, 'alert'); // draft text
+  }
+}
+// rules 13: a Strike aimed inside a landed hole's reach. Drags everything in the reach toward the centre along its road, stuns, crushes
+function gravityBomb(dmg) {
+  const h = G.hole; if (!h) return;
+  Hooks.fx('gbomb', { x: h.x, y: h.y, r: HOLE.r }); Hooks.sfx('implode'); Hooks.fx('shake', { v: 7 });
+  for (const e of G.enemies.slice()) {
+    if (e.dead || dist2(e.x, e.y, h.x, h.y) > HOLE.r * HOLE.r) continue;
+    if (e.L && !e.boss) { let bd = e.d, bv = dist2(e.x, e.y, h.x, h.y); // the closest point to the centre within bombPull tiles along its road
+      for (let k = -HOLE13.bombPull; k <= HOLE13.bombPull; k += 0.25) { const d = Math.max(0, e.d + k); HOLE_P.seg = e.seg || 0; lanePos(e.L, d, HOLE_P); const v = dist2(HOLE_P.x, HOLE_P.y, h.x, h.y); if (v < bv) { bv = v; bd = d; } }
+      e.d = bd; lanePos(e.L, e.d, e); }
+    e.st.stun = Math.max(e.st.stun || 0, e.boss ? HOLE13.bombStun * 0.3 : HOLE13.bombStun);
+    hit(e, dmg * HOLE13.bombX, 'V', null, { noStatus: 1, abil: 1 });
+  }
+  rlog('gbomb', {});
 }
 // an enemy inside the reach: e.hk = its time factor (move and act), returns its speed factor (dilation × the drag along its road)
 const HOLE_P = { x: 0, y: 0, seg: 0 };
@@ -6686,6 +6777,7 @@ function kill(e, src, o) {
   if (G.mods.ks.horizon && !e.dead && (G.wells || (G.wells = [])).length < 24) { G.wells.push({ x: e.x, y: e.y, r: 1.2 * (1 + FX('hWell') / 100), t: 0.6 }); if (Math.random() < 0.35) Hooks.fx('implode', { x: e.x, y: e.y, r: 1.2 }); }
   if (e.dead) return;
   e.dead = true; e.hp = 0;
+  if (G.hole && G.hole.v === 13) holeFeed(e); // rules 13
   if (e.st.shock > 0) { const lw = sig('A'); if (lw) { let b = null, bd = SIGV.Ar * SIGV.Ar; // 6.10 Arc Leap: the Shock jumps on from a dead enemy
     for (const o2 of G.enemies) { if (o2.dead) continue; const d2 = dist2(o2.x, o2.y, e.x, e.y); if (d2 <= bd) { bd = d2; b = o2; } }
     if (b) { Hooks.fx('arcs', { x: e.x, y: e.y, r: Math.sqrt(bd) }); b.st.shock = Math.max(b.st.shock, 3); b.st.shockEff = Math.max(b.st.shockEff, G.mods.shockEff); fusPct(b, lw * SIGV.A, 'A', src); } } }
@@ -8159,6 +8251,7 @@ function probeUpdate(dt) {
     P.hp = Math.min(P.max, P.hp + P.max * PROBE.regen * dt);
     if (G.core.hp < G.core.max) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * PROBE.repair * dt);
   } else {
+    if (P.storm && !P.ret) prStorm(dt); // rules 13
     const s = P.task ? siteById(P.task) : null; let tx = P.tx, ty = P.ty, stop = 0;
     if (P.ret) { const h = prHomePt(); tx = h.x; ty = h.y; }
     else if (s) { tx = s.x; ty = s.y; stop = s.k === 'wreck' || s.k === 'lost' ? 0 : siteReach(s) * 0.55; }
@@ -8180,13 +8273,14 @@ function probeGo(x, y) {
   if (Math.hypot(x - G.core.x, y - G.core.y) <= 1.1) return probeRecall();
   let best = null, bd = 1e9;
   for (const s of G.sites) { if (s.done) continue; const d = Math.hypot(s.x - x, s.y - y), r = Math.max(1.3, s.k === 'cloud' ? PROBE.cloudR : 0); if (d <= r && d < bd) { bd = d; best = s; } }
-  P.task = best ? best.id : 0; P.tx = best ? best.x : x; P.ty = best ? best.y : y; P.home = 0; P.ret = 0;
+  P.task = best ? best.id : 0; P.tx = best ? best.x : x; P.ty = best ? best.y : y; P.home = 0; P.ret = 0; if (P.storm) P.storm = 0; // (no storm field on older rules, so their probe state stays the same)
+  if (!best && G.frV >= 13) { const st = G.storms.find(o => !o.dead && !o.mael && dist2(o.x, o.y, x, y) <= o.r * o.r); if (st) { P.storm = st.id; P.tx = st.x; P.ty = st.y; } } // rules 13: send it to harvest a storm
   return true;
 }
 function probeRecall() {
   const P = G.probe; if (!P || !P.alive || G.over) return false;
   if (P.home) return false;
-  P.ret = 1; P.task = 0; P.tx = P.ty = null;
+  P.ret = 1; P.task = 0; P.tx = P.ty = null; if (P.storm) P.storm = 0;
   return true;
 }
 function probeUpgrade(k) {
@@ -8222,6 +8316,8 @@ function useAbility(k, x, y) {
         Hooks.fx('boom', { x, y, r: 1.7, col: '#ffe9b0', big: 1 }); Hooks.sfx('strike'); Hooks.fx('shake', { v: 6 });
         for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, x, y) <= 1.7 * 1.7) hit(e, 30 * hpMult(w) * 4.5 * M.abilPower, 'K', null, { noStatus: 1, abil: 1 });
       };
+      const H = G.hole; // rules 13: a Strike inside a landed Black Hole's reach becomes a Gravity Bomb at its centre
+      if (H && H.v === 13 && H.ph === 1 && dist2(x, y, H.x, H.y) <= HOLE.r * HOLE.r) { Hooks.fx('strike', { x: H.x, y: H.y }); Hooks.sfx('strikecharge'); setTimeoutSim(0.6, () => gravityBomb(30 * hpMult(w) * 4.5 * M.abilPower)); break; }
       Hooks.fx('strike', { x, y });
       Hooks.sfx('strikecharge');
       setTimeoutSim(0.6, boom);
@@ -12473,8 +12569,18 @@ const RES = 2;
     return (holeSpr = { disk: cvD, core: cvC });
   }
   const holeVisible = () => !!(G && G.hole && (!fogLive || fogSeeR(G.hole.x, G.hole.y, 2.5)));
+  // rules 13: where it will land, pulsing, while it drifts in with its effects off. Drawn even through fog: it is the warning
+  function holeMarker(h) {
+    if (h.v !== 13 || h.ph !== 0) return;
+    const TX = h.tx * TILE, TY = h.ty * TILE, pu = 0.5 + 0.5 * Math.sin(rt * 6);
+    strokeRing(TX, TY, HOLE.r * TILE, '#b86cff', 0.35 + 0.35 * pu, 2, [4, 4]); strokeRing(TX, TY, HOLE.horizon * TILE, '#ff4d6a', 0.4 + 0.3 * pu, 1, [2, 3]);
+    b.globalAlpha = 0.5 + 0.4 * pu; b.fillStyle = '#c9b6ff'; b.fillRect(TX - 7, TY - 0.5, 14, 1); b.fillRect(TX - 0.5, TY - 7, 1, 14); b.globalAlpha = 1;
+  }
   function drawHole(vxI, vyI, vw, vh, dt0) {
     const h = G.hole; if (!h) return;
+    holeMarker(h); if (!holeVisible()) return;
+      const TX = h.tx * TILE, TY = h.ty * TILE, pu = 0.5 + 0.5 * Math.sin(rt * 6);
+      strokeRing(TX, TY, HOLE.r * TILE, '#b86cff', 0.35 + 0.35 * pu, 2, [4, 4]); strokeRing(TX, TY, HOLE.horizon * TILE, '#ff4d6a', 0.4 + 0.3 * pu, 1, [2, 3]);
     const X = h.x * TILE, Y = h.y * TILE, k = h.ph === 2 ? h.k : 1, RR = HOLE.r * TILE, LR = 2.7 * TILE * k;
     if (X + RR < vxI || Y + RR < vyI || X - RR > vxI + vw || Y - RR > vyI + vh) return;
     const S = holeSprites();
@@ -12488,7 +12594,7 @@ const RES = 2;
     }
     fillRing(X, Y, 1.5 * TILE * k, '#05030c', 0.45); // the dark around the hole
     // reach and horizon: where towers speed up and slow down
-    strokeRing(X, Y, RR, '#b86cff', 0.55 * k, 1, [3, 5]); strokeRing(X, Y, HOLE.horizon * TILE, '#ff4d6a', 0.6 * k, 1, [2, 3]);
+    if (!(h.v === 13 && h.ph === 0)) { strokeRing(X, Y, RR, '#b86cff', 0.55 * k, 1, [3, 5]); strokeRing(X, Y, HOLE.horizon * TILE, '#ff4d6a', 0.6 * k, 1, [2, 3]); } // 6.14: its rings appear when it lands
     for (let i = 0; i < 3; i++) { const f = ((rt * 0.5 + i / 3) % 1), rr = RR - (RR - HOLE.horizon * TILE) * f; strokeRing(X, Y, rr, '#9a7cff', 0.28 * f * k, 1); } // time dilation: rings closing in
     // motes spiral in: faster and hotter near the centre
     const dt = Math.min(0.05, dt0 || 0);
@@ -12499,7 +12605,10 @@ const RES = 2;
       R(b, X + Math.cos(p.a) * p.r * k, Y + Math.sin(p.a) * p.r * k, u < 0.4 ? 2 : 1, u < 0.4 ? 2 : 1, col);
     }
     // the disk turns (one sprite, rotated), then the core sits on top
-    const dw = S.disk.width * S.disk.u * k; b.save(); b.translate(X, Y); b.rotate(-rt * 0.9); b.drawImage(S.disk, -dw / 2, -dw / 2, dw, dw); b.restore();
+    const fedU = h.v === 13 ? Math.min(1, (h.m || 0) / Math.max(1, h.goal || 1)) : 1; // rules 13: the disk grows as it feeds
+    const dw = S.disk.width * S.disk.u * k * (h.v === 13 ? 0.65 + 0.6 * fedU : 1); b.save(); b.translate(X, Y); b.rotate(-rt * (h.v === 13 ? 0.9 + 1.4 * fedU : 0.9)); b.drawImage(S.disk, -dw / 2, -dw / 2, dw, dw); b.restore();
+    if (h.v === 13 && h.ph === 1) { const mr = 1.9 * TILE; b.lineWidth = 3; b.strokeStyle = 'rgba(20,14,40,0.8)'; b.beginPath(); b.arc(X, Y, mr, 0, 6.283); b.stroke(); // the feed meter
+      b.strokeStyle = fedU >= 1 ? '#59f0b4' : '#ffb03a'; b.beginPath(); b.arc(X, Y, mr, -Math.PI / 2, -Math.PI / 2 + 6.283 * fedU); b.stroke(); }
     const cw = S.core.width * S.core.u * Math.max(0.2, k); b.drawImage(S.core, X - cw / 2, Y - cw / 2, cw, cw);
   }
 
@@ -12859,6 +12968,13 @@ const RES = 2;
     if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.25 + 0.5 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 28, 0, 6.283); b.stroke(); }
     if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, 25, 0, 6.283); b.stroke(); }
   }
+  // 6.14 rules 13: enemies near a landed Black Hole stretch toward it as they fall in (drawing only)
+  function drawEnemyH(e) {
+    const h = G.hole; if (!h || h.v !== 13 || h.ph !== 1 || e.boss) return drawEnemy(e);
+    const dx = h.x - e.x, dy = h.y - e.y, d = Math.hypot(dx, dy), near = HOLE.horizon * 1.6; if (d >= near || d < 0.05) return drawEnemy(e);
+    const f = 1 - d / near, ex = e.x * TILE, ey = e.y * TILE, a = Math.atan2(dy, dx);
+    b.save(); b.translate(ex, ey); b.rotate(a); b.scale(1 + 0.6 * f, 1 - 0.35 * f); b.rotate(-a); b.translate(-ex, -ey); drawEnemy(e); b.restore();
+  }
   function drawEnemy(e) {
     const X = e.x * TILE, Y = e.y * TILE, st = e.st;
     const cloaked = e.cloaked && !(e.revealed > 0);
@@ -13179,7 +13295,7 @@ const RES = 2;
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     for (const L of G.map.lanes) drawWormhole(L);
-    if (G.hole && holeVisible()) drawHole(vxI, vyI, vwI, vhI, dt); // 6.5 Black Hole (under the enemies it drags)
+    if (G.hole && (holeVisible() || (G.hole.v === 13 && G.hole.ph === 0))) drawHole(vxI, vyI, vwI, vhI, dt); // 6.5 Black Hole (under the enemies it drags); 6.14: its landing marker even through fog
     const wfA = G.fr && wormFlashAt ? Math.max(0, Math.min(1, (2.5 - (performance.now() - wormFlashAt) / 1000) / 0.8)) : 0; // shown for 2.5 s after a refused build, fading over the last 0.8 s
     if (wfA > 0) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (frWormR() - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', (L.openWave ? 0.1 : 0.16) * wfA), 3, 0); strokeRing(X, Y, r, '#ff4d6a', (L.openWave ? 0.4 : 0.7) * wfA, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
@@ -13311,9 +13427,9 @@ const RES = 2;
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
     geneRanks();
-    for (const e of G.enemies) if (!e.fly && !e._fogH && !e._fogB) drawEnemy(e);
+    for (const e of G.enemies) if (!e.fly && !e._fogH && !e._fogB) drawEnemyH(e);
     if (G.capT && G.capT.length) drawCapField(); // 6.4 Rimewall walls (in front of the ground enemies they hold) and Entangler links
-    for (const e of G.enemies) if (e.fly && !e._fogH && !e._fogB) drawEnemy(e);
+    for (const e of G.enemies) if (e.fly && !e._fogH && !e._fogB) drawEnemyH(e);
     for (const q of pops) { q.life -= dt; const k = 1 - Math.max(0, q.life / q.max), z = 1 + 0.45 * k, w = q.w * z, h = q.h * z; b.globalAlpha = (1 - k) * 0.9; b.drawImage(tintOf(q.s, '#ffffff'), Math.round((q.x - w / 2) * RES) / RES, Math.round((q.y - h / 2) * RES) / RES, w, h); }
     if (pops.length) { b.globalAlpha = 1; pops = pops.filter(q => q.life > 0); }
     // pirate drop ships
@@ -13753,11 +13869,12 @@ const RES = 2;
       const els = st.mael ? ELS : st.types.map(ty => STORMS[ty].el), col = st.mael ? '#ff4d6a' : STORMS[st.types[0]].col, r2 = st.r * st.r;
       for (const t of G.towers) { if (dist2(t.cx, t.cy, st.x, st.y) > r2) continue;
         const boosted = t.s && els.includes(t.s.el), x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
+        if (boosted) { c.fillStyle = hexA(col, 0.16 + 0.08 * Math.sin(rt * 4)); c.fillRect(x0, y0, w, w); } // 6.14: a boosted tower glows
         c.lineWidth = boosted ? 2 : 1; c.strokeStyle = hexA(col, boosted ? 0.9 : 0.45); if (!boosted) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
     }
     // 6.5 Black Hole: towers in its ring wear a solid amber frame (+40% Attack Speed), towers inside the horizon a dashed red one
     // (−50%); the two numbers sit on top of the two rings
-    if (G.hole && holeVisible()) { const h = G.hole, R2 = HOLE.r * HOLE.r, H2 = HOLE.horizon * HOLE.horizon, u = clamp(Math.round(ws * 1.1), 2, 4);
+    if (G.hole && holeVisible() && !(G.hole.v === 13 && G.hole.ph === 0)) { const h = G.hole, R2 = HOLE.r * HOLE.r, H2 = HOLE.horizon * HOLE.horizon, u = clamp(Math.round(ws * 1.1), 2, 4); // 6.14: no tower frames or numbers before it lands
       for (const t of G.towers) { const d2 = dist2(t.cx, t.cy, h.x, h.y); if (d2 > R2) continue;
         const inner = d2 < H2, x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
         c.lineWidth = 2; c.strokeStyle = inner ? 'rgba(255,77,106,0.9)' : 'rgba(255,225,77,0.85)'; if (inner) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
@@ -13766,7 +13883,20 @@ const RES = 2;
           const x = Math.round(bx2s(h.x * TILE)), y = Math.round(by2s((h.y - rr) * TILE)), tw = c.measureText(txt).width;
           c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), Math.round(y - 2.5 * u), Math.round(tw + 2 * u), Math.round(5 * u)); c.fillStyle = col; c.fillText(txt, x, y); }
         c.textBaseline = 'alphabetic'; }
+      if (h.v === 13 && h.ph === 1) { // rules 13: the feed count, in screen pixels under the hole (the landing countdown is drawn below, even through fog)
+        const txt = h.ph === 0 ? `LANDS IN ${Math.max(1, Math.ceil(Math.hypot(h.tx - h.x, h.ty - h.y) / Math.max(0.01, h.spd)))}` : h.m >= h.goal ? 'FED' : `FEED ${h.m}/${h.goal}`;
+        const hx = h.ph === 0 ? h.tx : h.x, hy = h.ph === 0 ? h.ty : h.y, x = Math.round(bx2s(hx * TILE)), y = Math.round(by2s((hy + 2.3) * TILE));
+        c.font = `${Math.max(9, 4 * u)}px "Oxanium Head", monospace`; c.textAlign = 'center'; c.textBaseline = 'middle'; const tw = c.measureText(txt).width;
+        c.fillStyle = 'rgba(9,11,22,0.88)'; c.fillRect(Math.round(x - tw / 2 - u * 1.5), Math.round(y - 3 * u), Math.round(tw + 3 * u), Math.round(6 * u));
+        c.fillStyle = h.ph === 0 ? '#c9b6ff' : h.m >= h.goal ? '#59f0b4' : '#ffb03a'; c.fillText(txt, x, y); c.textBaseline = 'alphabetic'; }
     }
+    if (G.hole && G.hole.v === 13 && G.hole.ph === 0) { const h = G.hole, u = clamp(Math.round(ws * 1.1), 2, 4), txt = `LANDS IN ${Math.max(1, Math.ceil(Math.hypot(h.tx - h.x, h.ty - h.y) / Math.max(0.01, h.spd)))}`;
+      const x = Math.round(bx2s(h.tx * TILE)), y = Math.round(by2s((h.ty + 2.3) * TILE)); c.font = `${Math.max(9, 4 * u)}px "Oxanium Head", monospace`; c.textAlign = 'center'; c.textBaseline = 'middle'; const tw = c.measureText(txt).width;
+      c.fillStyle = 'rgba(9,11,22,0.88)'; c.fillRect(Math.round(x - tw / 2 - u * 1.5), Math.round(y - 3 * u), Math.round(tw + 3 * u), Math.round(6 * u)); c.fillStyle = '#c9b6ff'; c.fillText(txt, x, y); c.textBaseline = 'alphabetic'; }
+    // 6.14 rules 13: a storm the probe is harvesting shows its progress as an arc around it
+    if (G.probe && G.probe.storm) { const st = G.storms.find(o => o.id === G.probe.storm); if (st && st.hT > 0) { const x = bx2s(st.x * TILE), y = by2s(st.y * TILE), r = st.r * TILE * ws * 0.6;
+      c.lineWidth = 3; c.strokeStyle = 'rgba(9,11,22,0.7)'; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke();
+      c.strokeStyle = STORMS[st.types[Math.min(st.types.length - 1, st.hv || 0)]].col; c.beginPath(); c.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.min(1, st.hT / STORM13.harvest)); c.stroke(); } }
     { const u = clamp(Math.round(ws * 1.1), 2, 4);
       for (const t of G.towers) if (t.disabled > 0) {
         const tag = t.disCause || 'OFFLINE', x = Math.round(bx2s(t.cx * TILE)), y = Math.round(by2s(t.y * TILE)) - u;
@@ -13887,6 +14017,16 @@ const RES = 2;
   const K = TILE / 10;
   function fx(type, d) {
     switch (type) {
+      // 6.14 rules 13: the Black Hole lands, feeds, bombs; storms strike and get harvested
+      case 'holeLand': { const x = T2P(d.x), y = T2P(d.y); rings.push({ x, y, r0: HOLE.r * TILE, r1: 4, life: 0.5, max: 0.5, col: '#b86cff', w: 3 }); kick(2); break; }
+      case 'holeFeed': { if (texts.length > 40) break; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.hx), y: T2P(d.hy) }], life: 0.22, max: 0.22, col: '#c9b6ff', w: 1.5 }); break; }
+      case 'gbomb': { const x = T2P(d.x), y = T2P(d.y); rings.push({ x, y, r0: d.r * TILE, r1: 2, life: 0.45, max: 0.45, col: '#c9b6ff', w: 4 }); rings.push({ x, y, r0: 4, r1: d.r * TILE * 0.6, life: 0.6, max: 0.6, col: '#ffffff', w: 2 }); burst(x, y, LITE ? 8 : 24, '#b86cff', 120 * K, 0.5); kick(3); break; }
+      case 'stormZap': { if (fogLive && !fogSeeR(d.x, d.y, 1)) break; const x = T2P(d.x), y = T2P(d.y), pts = []; let px = x + (Math.random() - 0.5) * 20, py = y - 70;
+        for (let i = 0; i <= 6; i++) { const u = i / 6; pts.push({ x: px + (x - px) * u + (i && i < 6 ? (Math.random() - 0.5) * 12 : 0), y: py + (y - py) * u }); }
+        lines.push({ pts, life: 0.16, max: 0.16, col: d.col || '#ffe14d', core: 1, w: 2.5 }); rings.push({ x, y, r0: 2, r1: 12, life: 0.2, max: 0.2, col: d.col || '#ffe14d', w: 2 }); break; }
+      case 'stormFx': { if (fogLive && !fogSeeR(d.x, d.y, d.r)) break; const col = d.k === 'solar' ? '#ff7b39' : d.k === 'cryo' ? '#6ae2ff' : d.k === 'void' ? '#b86cff' : '#d8d2c0';
+        rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE * 0.3, r1: d.r * TILE, life: 0.6, max: 0.6, col, w: 1 }); break; }
+      case 'stormHarvest': { const x = T2P(d.x), y = T2P(d.y); rings.push({ x, y, r0: 26, r1: 2, life: 0.4, max: 0.4, col: d.col || '#ffffff', w: 3 }); burst(x, y, LITE ? 6 : 16, d.col || '#ffffff', 90 * K, 0.4); break; }
       case 'holeEnd': { if (fogLive && !fogSeeR(d.x, d.y, 2.5)) break; const x = T2P(d.x), y = T2P(d.y); // 6.5 the Black Hole collapses: a white pinch, then a ring and sparks thrown out
         stars.push({ x, y, life: 0.12, max: 0.12, col: '#ffffff', s: TILE * 0.7, disc: 1 }); rings.push({ x, y, r0: 4, r1: HOLE.r * TILE, life: 0.7, max: 0.7, col: '#b86cff', w: 3 });
         rings.push({ x, y, r0: 2, r1: TILE * 2.2, life: 0.35, max: 0.35, col: '#fff0c8', fill: 1, w: 2 }); burst(x, y, LITE ? 14 : 40, '#ff9a4a', 70 * K, 0.7); kick(3, 0.5); break; }
@@ -14960,9 +15100,11 @@ const UI = (() => {
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
-    if (G.hole && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the center. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
+    if (G.hole && G.hole.v === 13 && introCard('hole13', 'Black Hole', `It lands where the marker is, ${HOLE13.warn}s ahead, and stays ${HOLE.hold}s. Feed it: every kill inside its reach counts. Fed, it collapses in a blast that tears into nearby enemies and leaves a rich wreck for your probe. Starved, it spits voidlings back out. Aim a Strike inside it for a Gravity Bomb. Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster; closer, ${Math.round(-HOLE.inner * 100)}% slower.`)) return; // 6.14 rules 13, draft text
+    if (G.hole && !G.hole.v && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the center. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
     if (typeof fogOn === 'function' && fogOn() && G.wave >= 2 && G.time > 20 && introCard('fog', 'Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored, but enemies, crates and storms there are hidden. Bosses always show. Wormholes and the Threat Board still warn you.')) return;
-    if (G.storms.length && introCard('storm', 'Storms', 'Storms drift across the map and boost one element. Towers of that element inside a storm are stronger (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
+    if (G.storms.length && G.frV >= 13 && introCard('storm13', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside one glow and hit harder. Each storm also hits the enemies under it: lightning, burns, frost, Marks or a reveal. Send your probe into one to harvest it for an ability charge.', 'storms')) return; // 6.14 rules 13, draft text
+    if (G.storms.length && G.frV < 13 && introCard('storm', 'Storms', 'Storms drift across the map and boost one element. Towers of that element inside a storm are stronger (they get an outline). Tap the storm chip to see exactly what it does.', 'storms')) return;
     if (G.probe && G.probe.alive && (G.sites || []).some(s => !s.done) && introCard('probe', 'Probe', 'Your probe explores the whole map. Tap Probe, then tap a loot site or any spot: it flies there. Wreckage, gas clouds and asteroids pay credits, charges and Entropy. The probe carries loot home and deposits it when it docks at the core. Red guards shoot it. A lost probe drops its cargo and costs credits to rebuild.')) return; // 6.5
     if (G.caches.some(c => c.kind !== 'gold' && c.kind !== 'cursed') && introCard('crate', 'Salvage', 'Drop ships leave crates on the map. Tap one to claim it before it decays. A tower right next to a crate collects it for you.', 'salvage')) return;
     if (G.towers.some(t => t.pending > 0) && introCard('vet', 'Veterans', 'Towers that fight earn ranks. Tap the Ready button at the top right to pick each one a mutation.', 'veterans')) return;
@@ -17586,7 +17728,7 @@ const UI = (() => {
     const pctV = v => Math.round(v * 100) + '%';
     const pages = {
       general: sec('Gameplay')
-        + row('Boss slow-down', 'Drop to 1× speed when a boss arrives', flip(S.autoSlow !== false, 'autoslow'))
+        + row('Boss slow-down', 'Drop to 1× speed when a boss arrives or a checkpoint opens', flip(S.autoSlow !== false, 'autoslow'))
         + row('Briefings', 'Boss and bounty cards. Pause holds the game until you tap Fight', seg('briefs', [['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']], S.briefings || 'pause'))
         + row('Haptics', 'A buzz when the core is hit', flip(S.haptics !== false, 'haptic'))
         + sec('Save')
@@ -18758,6 +18900,12 @@ const UI = (() => {
     // Speeding up again by hand during the fight is respected
     if (bossOn && !G.over) { const b = G.bossAlive, key = b.id + (G.redAlert ? 'r' : '');
       if (G.speed > 1 && G.slowKey !== key && PROF.settings.autoSlow !== false) { G.slowKey = key; G.speedWas = Math.max(G.speedWas || 0, G.speed); G.speed = 1; slowTip = ['SPEED 1×', G.redAlert ? 'Red Alert: the boss is at your gate' : 'Boss on the field. Your speed comes back when it falls']; updateHud(); } }
+    // 6.14 (Nic, Nov 14: "Checkpoints should bring speed to 1x too"): a checkpoint drops fast-forward to 1x (the same Settings switch as
+    // bosses); speeding up again by hand during it is kept; the old speed comes back when the next wave starts
+    if (screen === 'game' && G && !G.over) {
+      if (G.checkpoint && G.speed > 1 && G.cpSlowKey !== G.checkpoint && PROF.settings.autoSlow !== false) { G.cpSlowKey = G.checkpoint; G.cpSpeedWas = Math.max(G.cpSpeedWas || 0, G.speed); G.speed = 1; slowTip = ['SPEED 1×', 'Checkpoint. Your speed comes back with the next wave']; updateHud(); }
+      else if (!G.checkpoint && G.cpSpeedWas) { if (G.speed === 1 && !G.speedWas) { G.speed = G.cpSpeedWas; updateHud(); } G.cpSpeedWas = 0; }
+    }
     // 6.6.1: the tip waits for the boss card to close (on iPad it sat over the card's Fight button for 3 s)
     if (slowTip && (!G || G.over)) slowTip = null;
     if (slowTip && !modalOpen && screen === 'game') { toast(slowTip[0], slowTip[1], '#ffb03a', true, 'tip'); slowTip = null; }
