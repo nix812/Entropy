@@ -81,7 +81,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 
 /* ---------- buttons ---------- */
 .btn { font-family: var(--f-pix); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; background: var(--panel2); border: 0; padding: 10px 12px;
-  clip-path: var(--cut); box-shadow: inset 0 0 0 2px var(--line2); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  clip-path: var(--cut); box-shadow: inset 0 0 0 2px var(--line2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 .btn small { font-family: var(--f-term); font-size: 15px; text-transform: var(--tt); letter-spacing: 0; color: var(--dim); }
 .btn.primary { background: var(--amber); color: #1a1004; box-shadow: none; }
 .btn.primary small { color: #5a3a08; }
@@ -927,6 +927,14 @@ details.more { margin: 6px 0 0; } details.more > summary { font-family: var(--f-
 .card { background: var(--panel); box-shadow: inset 0 0 0 2px var(--line2); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   padding: 14px 16px; width: min(720px, 100%); max-height: 100%; overflow-y: auto; touch-action: pan-y; }
 .card.narrow { width: min(400px, 100%); }
+/* 6.14 pause menu (Nic, Nov 14: fit one sheet in landscape): info left, buttons right in two columns; one column under 460 px wide */
+.card.pausec { width: min(720px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; align-items: center; overflow: hidden; }
+.card.pausec .pinfo { min-height: 0; max-height: calc(100dvh - 44px); overflow-y: auto; align-self: stretch; display: flex; flex-direction: column; }
+.card.pausec .pinfo > :first-child { margin-top: auto; } .card.pausec .pinfo > :last-child { margin-bottom: auto; } /* centres without clipping the top when the list is long */
+.card.pausec .pbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.card.pausec .pbtns .btn { min-height: 46px; min-width: 0; text-align: center; }
+.card.pausec .pbtns .w2 { grid-column: 1 / -1; }
+@media (max-width: 460px) { .card.pausec { grid-template-columns: 1fr; overflow-y: auto; } .card.pausec .pinfo { max-height: none; } }
 .foot { position: sticky; bottom: -14px; margin: 10px -16px -14px; padding: 10px 16px 14px; background: linear-gradient(rgba(14, 17, 33, 0.8), var(--panel) 10px); display: flex; gap: 10px; justify-content: flex-end; align-items: center; z-index: 2; }
 .foot .btn { min-height: 44px; justify-content: center; }
 .card .x { width: 40px; height: 40px; margin: -8px -8px -8px auto; font-size: 20px; }
@@ -1581,7 +1589,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + ENEMY KIT + CHECKPOINTS + NEW FONT + ABILITY RAIL';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + ENEMY KIT + CHECKPOINTS + FONT + ABILITY RAIL + PAUSE + CRITS';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -11497,6 +11505,7 @@ const RES = 2;
   let frSel = null, frArrows = [], keepOut = []; // keepOut: stage rects of buttons and banners the edge arrows slide clear of (set by the UI) // Frontier: the lift-off / move picker (from the UI) and the edge arrows drawn this frame
   let fullHud = false, showNums = true, doShake = true;
   const comboLast = {};
+  const NUM_MAX = 6; // 6.14: crit numbers on screen at once
   // v5.8 tower character (render-only): a render clock, small screen kicks for heavy hits, hop stars and pull streaks.
   // LITE skips decorative extras on a crowded field or at high speed
   let rt = 0, kickT = -9, stars = [], drags = [], LITE = false;
@@ -13854,7 +13863,11 @@ const RES = 2;
       case 'build': born.set(Math.floor(d.x) + ',' + Math.floor(d.y), rt); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 22, life: 0.35, max: 0.35, col: d.col }); burst(T2P(d.x), T2P(d.y), 14, d.col, 30 * K, 0.4); break;
       case 'upgrade': stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.08, max: 0.08, col: '#ffffff', s: 9, disc: 1 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 22, r1: 4, life: 0.4, max: 0.4, col: d.col }); burst(T2P(d.x), T2P(d.y), 18, d.col, 25 * K, 0.6, -30 * K); break;
       case 'sell': burst(T2P(d.x), T2P(d.y), 16, '#8a8aa6', 20 * K, 0.5, 30 * K); break;
-      case 'num': if (!showNums || (!fullHud && !d.crit && !d.combo) || texts.length > 22) return; text(d.x + (Math.random() - 0.5) * 0.4, d.y - 0.5, fmt(d.v) + (d.crit ? '!' : ''), d.crit ? '#ffffff' : d.col, d.crit ? 18 : 15, 0.7); if (d.crit || d.combo) texts[texts.length - 1].pop = 1; break;
+      // 6.14 (Nic, Nov 14: "way too spammy... just show crits"): only crits float a number, at most NUM_MAX at once. The Auditor's
+      // credit numbers (TAXED, FULL AUDIT, REFUND) are money, not damage, so they stay
+      case 'num': { const cash = d.combo === 'TAXED' || d.combo === 'FULL AUDIT' || d.combo === 'REFUND';
+        if (!showNums || !(d.crit || cash) || texts.length > 22 || texts.filter(T => T.num).length >= NUM_MAX) return;
+        text(d.x + (Math.random() - 0.5) * 0.4, d.y - 0.5, fmt(d.v) + (d.crit ? '!' : ''), d.crit ? '#ffffff' : d.col, d.crit ? 18 : 15, 0.7); const T = texts[texts.length - 1]; T.pop = 1; T.num = 1; break; }
       case 'combo': {
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 28, life: 0.3, max: 0.3, col: d.col });
         const now = performance.now();
@@ -17066,17 +17079,18 @@ const UI = (() => {
   function openPause() {
     if (!G || G.over) return;
     G.paused = true;
-    modal(`<div class="card narrow"><div class="ch"><h2>Paused</h2></div>
+    // 6.14 (Nic, Nov 14): fits one landscape screen. Run info on the left (scrolls if long), the buttons in a 2-column grid on the right
+    modal(`<div class="card pausec"><div class="pinfo"><div class="ch"><h2>Paused</h2></div>
       <p class="note">Wave ${G.wave} · Score ${fmt(G.score)} · Multiplier ×${(G.scoreMult * huntMult()).toFixed(2)}</p>
       <p class="note">${G.bounties.length ? `${G.bounties.length} bount${G.bounties.length === 1 ? 'y' : 'ies'} claimed · ` : ''}${G.wanted ? `Next bounty: ${esc(G.wanted.name)}, Wave ${G.wanted.w}` : ''}${G.nemesis && !G.nemesis.beaten ? ` · Nemesis: ${esc(G.nemesis.name)}` : ''}</p>
       ${G.fus && FUS[G.fus] ? `<p class="note">Fusion: <b>${esc(FUS[G.fus].name)}</b>. ${esc(FUS[G.fus].desc)}</p>` : ''}
       ${anomCount() ? `<div class="lbl">Anomalies</div><div class="anlist">${anomTaken().map(A => `<div><b style="color:${A.col}">${esc(A.name)}<i class="arar">${A.label}</i></b>${A.up.map(l => `<span class="good">${tipify(l)}</span>`).join('')}${A.dn.map(l => `<span class="bad">${tipify(l)}</span>`).join('')}</div>`).join('')}</div>` : ''}
-      <div class="stack"><button class="btn primary" data-act="resume">Resume</button>
+      </div><div class="pbtns"><button class="btn primary w2" data-act="resume">Resume</button>
       <button class="btn" data-act="tutPick">Training</button>
       <button class="btn" data-act="studio">Music Studio</button>
-      ${fbOn() ? '<div class="pair"><button class="btn" data-act="settings">Settings</button><button class="btn" data-act="feedback" data-v="pause">Feedback</button></div>' : '<button class="btn" data-act="settings">Settings</button>'}
+      ${fbOn() ? '<button class="btn" data-act="settings">Settings</button><button class="btn" data-act="feedback" data-v="pause">Feedback</button>' : '<button class="btn w2" data-act="settings">Settings</button>'}
       <button class="btn" data-act="exit">Save &amp; Quit</button>
-      <button class="btn danger" data-act="abandon">${confirmAbandon ? 'Tap again to confirm' : 'End Run'}</button></div></div>`, 'pause');
+      <button class="btn danger" data-act="abandon">${confirmAbandon ? 'Tap again' : 'End Run'}</button></div></div>`, 'pause');
   }
   function openAnomaly() {
     if (!G || !G.anomOffers) return;
@@ -17578,7 +17592,7 @@ const UI = (() => {
         + row('Interface size', 'Scale of buttons and text', seg('uis', [['auto', 'Auto'], ['0.85', 'Small'], ['1.2', 'Large']], String(S.uiScale || 'auto')))
         + sec('Information')
         + row('Notifications', 'Key keeps only what needs a reaction: Red Alert, wormholes, assaults, checkpoints, pirates', seg('notes', [['all', 'All'], ['key', 'Key'], ['off', 'Off']], S.notes || 'all'))
-        + row('Damage numbers', 'Floating damage over enemies', sw(!!S.dmgNums, 'nums')),
+        + row('Damage numbers', 'Critical hits only', sw(!!S.dmgNums, 'nums')),
     };
     modal(`<div class="card settings"><div class="ch"><h2>Settings</h2><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       <div class="setwrap"><nav class="setrail" role="tablist">${SET_TABS.map(([k, l, ic]) => `<button class="settab ${setTab === k ? 'on' : ''}" data-act="setTab" data-v="${k}" role="tab" aria-selected="${setTab === k}"><i data-svg="${ic}"></i><span>${l}</span></button>`).join('')}<span class="setver">v${VERSION}</span></nav>
