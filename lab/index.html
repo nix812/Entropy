@@ -1542,7 +1542,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.13.1 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + ENEMY KIT';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1671,7 +1671,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.13.1';
+const VERSION = '6.14.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2114,7 +2114,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 9; // 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 10; // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2474,26 +2474,31 @@ const CURSES = [
 // ---------- Enemies ----------
 // v5.1 Know Your Enemy: every enemy says what it does (desc) and what beats it (beat). Four late enemies arrive from Wave 18,
 // each announced the wave before it lands
-const ENEMIES = {
-  drone:    { name: 'Drone', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit', beat: 'Any tower. Drones are dangerous in large numbers' },
-  swarmer:  { name: 'Swarmer', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups', beat: 'Splash: Swarm Missile, Flame Projector, Arc Coil' },
-  tank:     { name: 'Juggernaut', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully', beat: 'Rail Lance, Void Lens or Burn' },
-  flyer:    { name: 'Skimmer', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc', beat: 'Arc, Pulse, Rail. Flame and Gravity can\'t reach it' },
-  splitter: { name: 'Splitter', hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash damage, to kill the Swarmers it bursts into' },
-  phantom:  { name: 'Phantom', hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, cloak: 1, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'A Relay Pylon or Sensor Sweep reveals it. Void damage is strong against it' },
-  medic:    { name: 'Mender', hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first with a Rail Lance or Strike. Burn stops all healing' },
-  shielder: { name: 'Aegis', hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 3×' },
-  reflector: { name: 'Reflector', hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flame Projector, EMP Mortar' },
-  carrier:  { name: 'Carrier', hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, drops: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air damage (Rail, Missile, Pulse) before it drops its Drones' },
-  sapper:   { name: 'Sapper', hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, sap: 1, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your towers' },
-  leech:    { name: 'Leech', hp: 55, spd: 1.35, cr: 8, leak: 2, from: 30, w: 2.5, leech: 1, desc: 'Steals credits if it reaches the core. It steals more when you hold more credits', beat: 'Kill it before it reaches the core. Spend your credits so it has less to steal' },
-  pirate: { name: 'Pirate Skiff', hp: 70, spd: 1.5, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core', beat: 'Anti-air towers, before it escapes' },
-  voidling: { name: 'Voidling', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'A flying enemy that a Maelstrom spawns', beat: 'Arc and anti-air' },
-};
 // v5.1: the drone a Carrier drops (a flying Drone, smaller)
 const CARRIER = { every: 4.5, n: 2, hp: 0.1 };
 const SAPPER = { range: 1.6, dur: 4, cd: 7 };
 const LEECH = { share: 0.1, cap: w => 60 + 18 * w };
+// 6.14 enemy kit. An enemy is a body (hp, spd, fly, armor, res), a family (fam), a role in a wave (role) and a list of
+// behaviours (kit). Each behaviour is a named block in KIT (sim.js) with its own numbers here, so a new enemy is mostly data:
+// pick blocks, set numbers, draw a sprite. Hooks a block can use: spawn (set up), tick (each step, after the shared timer),
+// hit (scales damage taken), death, leak (reaches the core). fromRules: the block only works from that rules version.
+// Families: swarm (the living swarm), scav (pirates). Roles: fodder, bruiser, flanker, support, specialist, raider.
+const ENEMIES = {
+  drone:    { name: 'Drone', fam: 'swarm', role: 'fodder', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit', beat: 'Any tower. Drones are dangerous in large numbers' },
+  swarmer:  { name: 'Swarmer', fam: 'swarm', role: 'fodder', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups', beat: 'Splash: Swarm Missile, Flame Projector, Arc Coil' },
+  tank:     { name: 'Juggernaut', fam: 'swarm', role: 'bruiser', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully', beat: 'Rail Lance, Void Lens or Burn' },
+  flyer:    { name: 'Skimmer', fam: 'swarm', role: 'flanker', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc', beat: 'Arc, Pulse, Rail. Flame and Gravity can\'t reach it' },
+  splitter: { name: 'Splitter', fam: 'swarm', role: 'bruiser', kit: [{ id: 'split', into: 'swarmer', n: 3, gap: 0.25 }], hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash damage, to kill the Swarmers it bursts into' },
+  phantom:  { name: 'Phantom', fam: 'swarm', role: 'specialist', kit: [{ id: 'cloak' }], hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'A Relay Pylon or Sensor Sweep reveals it. Void damage is strong against it' },
+  medic:    { name: 'Mender', fam: 'swarm', role: 'support', kit: [{ id: 'heal', every: 1, r: 1.5, amt: 0.04, boss: 0.005 }], hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first with a Rail Lance or Strike. Burn stops all healing' },
+  shielder: { name: 'Aegis', fam: 'swarm', role: 'support', kit: [{ id: 'shieldAura', every: 5, r: 1.5, amt: 0.25, boss: 0.04 }], hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 3×' },
+  reflector: { name: 'Reflector', fam: 'swarm', role: 'specialist', kit: [{ id: 'reflect', share: 0.75, kinds: ['bullet', 'beam', 'chain'], fromRules: 10 }], hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flame Projector, EMP Mortar' },
+  carrier:  { name: 'Carrier', fam: 'swarm', role: 'specialist', kit: [{ id: 'drop', into: 'drone', first: 2.5, every: CARRIER.every, n: CARRIER.n, hp: CARRIER.hp, leak: 3 }], hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air damage (Rail, Missile, Pulse) before it drops its Drones' },
+  sapper:   { name: 'Sapper', fam: 'swarm', role: 'specialist', kit: [{ id: 'sap', range: SAPPER.range, dur: SAPPER.dur, cd: SAPPER.cd }], hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your towers' },
+  leech:    { name: 'Leech', fam: 'swarm', role: 'specialist', kit: [{ id: 'steal', share: LEECH.share, cap: LEECH.cap }], hp: 55, spd: 1.35, cr: 8, leak: 2, from: 30, w: 2.5, desc: 'Steals credits if it reaches the core. It steals more when you hold more credits', beat: 'Kill it before it reaches the core. Spend your credits so it has less to steal' },
+  pirate: { name: 'Pirate Skiff', fam: 'scav', role: 'raider', hp: 70, spd: 1.5, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core', beat: 'Anti-air towers, before it escapes' },
+  voidling: { name: 'Voidling', fam: 'swarm', role: 'fodder', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'A flying enemy that a Maelstrom spawns', beat: 'Arc and anti-air' },
+};
 // what each boss's empowered ability does at a phase change (shown in the phase toast and the intro card)
 const BOSS_POWER = { behemoth: 'a quake and a swarm', queen: 'a skimmer storm', wraith: 'a long phase-jump', overmind: 'a massive EMP',
   titan: 'a shattering stomp', cat: 'the zoomies', whale: 'a healing chorus', duck: 'a mega-quack', fsm: 'every noodle at once',
@@ -4976,7 +4981,7 @@ const evoCfg = () => (G && G.CH && G.CH.evo) || { start: 8, press: 1 };
 function geneCap(w) { const E = evoCfg(), st = E.start; const base = w < st ? 0 : w < st + 14 ? 1 : w < st + 37 ? 2 : 3; return base + (base >= 2 ? E.capAdd || 0 : 0); }
 function geneKey(genes, el) { const g = genes.slice().sort(); return g.join('+') + (g.includes('ward') ? '|' + el : ''); }
 function parseGenes(k) { const [a, el] = k.split('|'); return { genes: a ? a.split('+') : [], el: el || null }; }
-function geneOk(type, g, w) { const D = ENEMIES[type]; if (GENES[g].from && (w || G.wave || 1) < GENES[g].from) return false; return !(g === 'wings' && D.fly) && !(g === 'cloak' && D.cloak) && !(g === 'brood' && (type === 'swarmer' || type === 'splitter')) && !(g === 'plating' && D.armor); }
+function geneOk(type, g, w) { const D = ENEMIES[type]; if (GENES[g].from && (w || G.wave || 1) < GENES[g].from) return false; return !(g === 'wings' && D.fly) && !(g === 'cloak' && kitHas(type, 'cloak')) && !(g === 'brood' && (type === 'swarmer' || type === 'splitter')) && !(g === 'plating' && D.armor); }
 function breedPlan(w) {
   const F = G.geneFit || (G.geneFit = {}), par = [];
   for (const k in F) { const v = F[k]; if (v.n >= 1.5) par.push({ k, adv: v.s / v.n }); }
@@ -5823,6 +5828,47 @@ function claimVet(t, i) {
   return true;
 }
 
+
+// ---------- 6.14 enemy kit: the behaviour blocks an enemy lists in ENEMIES[type].kit (data.js) ----------
+// Each block: spawn(e, P), tick(e, P, dtE, st), hit(e, P, o, src) returns a damage multiplier, death(e, P), leak(e, P, w).
+// P is the block's own numbers from data.js. A block with fromRules works only from that rules version (older runs replay as before).
+const kitOf = type => (ENEMIES[type] && ENEMIES[type].kit) || null;
+const kitHas = (type, id) => { const K = kitOf(type); return !!K && K.some(P => P.id === id); };
+const kitOn = P => !P.fromRules || G.frV >= P.fromRules;
+const KIT = {
+  // Mender: heals every enemy within r tiles each `every` s (bosses a smaller share)
+  heal: { tick(e, P) { if (e.timer > 0) return; e.timer = P.every;
+    const healed = [], r2 = P.r * P.r;
+    for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < r2) { if (o.hp < o.maxHp) healed.push({ x: o.x, y: o.y }); o.hp = Math.min(o.maxHp, o.hp + o.maxHp * (o.boss ? P.boss : P.amt)); }
+    Hooks.fx('heal', { x: e.x, y: e.y, to: healed.slice(0, 5) }); } },
+  // Aegis: gives every enemy within r tiles a shield worth `amt` of its HP each `every` s
+  shieldAura: { tick(e, P) { if (e.timer > 0) return; e.timer = P.every;
+    const sh = [], r2 = P.r * P.r;
+    for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < r2) { sh.push({ x: o.x, y: o.y }); o.shield = Math.max(o.shield, o.maxHp * (o.boss ? P.boss : P.amt)); }
+    Hooks.fx('shieldpulse', { x: e.x, y: e.y, to: sh.slice(0, 5) }); } },
+  // Carrier: drops n small flying `into` units every `every` s (not while cloaked)
+  drop: { tick(e, P, dtE) { e.dropT = (e.dropT === undefined ? P.first : e.dropT) - dtE;
+    if (e.dropT <= 0 && !e.cloaked) { e.dropT = P.every;
+      for (let i = 0; i < P.n; i++) { const m = spawnEnemy(P.into, { fromPt: { x: e.x + (i ? 0.35 : -0.35), y: e.y + 0.2 }, hpm: hpBase(e) * P.hp / ENEMIES[P.into].hp }); m.fly = true; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); m.leak = P.leak; }
+      Hooks.fx('drop', { x: e.x, y: e.y }); } } },
+  // Sapper: knocks the nearest working tower within range out for dur s, every cd s (not while stunned, frozen or in Stasis)
+  sap: { tick(e, P, dtE, st) { e.sapCD = (e.sapCD || 0) - dtE;
+    if (e.sapCD <= 0 && !(st.stun > 0) && !(st.frozen > 0) && !(G.stasisT > 0)) {
+      let tg = null, bd = P.range * P.range;
+      for (const t of G.towers) { if (t.disabled > 0) continue; const d = dist2(t.cx, t.cy, e.x, e.y); if (d < bd) { bd = d; tg = t; } }
+      if (tg) { e.sapCD = P.cd; tg.disabled = Math.max(tg.disabled, P.dur); tg.disCause = 'SAPPED'; Hooks.fx('sap', { x1: e.x, y1: e.y, x2: tg.cx, y2: tg.cy }); Hooks.sfx('crack', e);
+        if (!G.sapTold || G.time - G.sapTold > 20) { G.sapTold = G.time; Hooks.log(`A ${ENEMIES[e.type].name} knocked out your ${TOWERS[tg.type].name} for ${P.dur}s`, '#ff4d6a'); } } } } },
+  // Splitter: bursts into n `into` units, gap tiles apart
+  split: { death(e, P) { for (let i = 0; i < P.n; i++) spawnEnemy(P.into, { L: e.L, d: Math.max(0, e.d - i * P.gap) }); } },
+  // Leech: takes a share of your credits (capped by wave) when it reaches the core
+  steal: { leak(e, P, w) { if (G.credits <= 0) return; const c = G.core, st2 = Math.round(Math.min(G.credits * P.share, P.cap(w))); G.credits -= st2; G.stats.leeched = (G.stats.leeched || 0) + st2; Hooks.fx('coin', { x: c.x, y: c.y - 0.6, v: -st2 }); return st2; } },
+  // Phantom: cloaks on and off
+  cloak: { spawn(e) { e.cloak = 1; } },
+  // Reflector: bolts, beams and chains glance off (the damage code reads e.refl). Rules 10: before it the hull never got the number
+  reflect: { spawn(e, P) { if (kitOn(P)) { e.refl = P.share; e.reflK = P.kinds; } } },
+};
+function kitRun(e, hook, a, b, c) { const K = kitOf(e.type); if (!K) return; let out; for (const P of K) { const f = KIT[P.id][hook]; if (f) { const v = f(e, P, a, b, c); if (v !== undefined) out = v; } } return out; }
+
 // ---------- enemies ----------
 function spawnEnemy(type, q) {
   q = q || {};
@@ -5843,8 +5889,9 @@ function spawnEnemy(type, q) {
     armor: D.armor || 0, armorAll: 0, res: Object.assign({}, D.res || {}), size: type === 'tank' ? 0.42 : type === 'swarmer' ? 0.22 : 0.32,
     cr: D.cr * crMult(w), leak: D.leak, score: Math.round(D.cr * 10 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
-    cloak: D.cloak ? 1 : 0, cloakT: 2 + ((G.eid * 2654435761) >>> 0) % 1000 / 500, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0,
+    cloak: 0, cloakT: 2 + ((G.eid * 2654435761) >>> 0) % 1000 / 500, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0,
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
+  if (D.kit) kitRun(e, 'spawn'); // 6.14
   if (G.fr) { e.spd *= FRONTIER.spd; if (!q.fromPt && !q.L) { e.cr /= FRONTIER.count; e.score = Math.round(e.score / FRONTIER.count); } } // Frontier: slower; a wave pays what a Classic one does
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
@@ -6114,29 +6161,7 @@ function updateEnemies(dt) {
     // 6.10 (G.frV >= 7): the Phase Wraith needs a run-up. Its jump clock runs at its own pace: a slow delays the next jump by the same
     // share (never below a quarter speed) and a Freeze stops the clock. It ended 189 of 857 bot runs in sweep b, twice the next cause.
     e.timer -= e.boss === 'wraith' && G.frV >= 7 ? dtE * (st.frozen > 0 ? 0 : Math.max(0.25, 1 - enemySlow(e))) * (G.frV >= 9 && (st.shock > 0 || st.mark > 0) ? 0.5 : 1) : dtE; // FR_VER 9: Shock or a Mark halves its jump clock
-    if (e.type === 'medic' && e.timer <= 0) {
-      e.timer = 1;
-      const healed = [];
-      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) { if (o.hp < o.maxHp) healed.push({ x: o.x, y: o.y }); o.hp = Math.min(o.maxHp, o.hp + o.maxHp * (o.boss ? 0.005 : 0.04)); }
-      Hooks.fx('heal', { x: e.x, y: e.y, to: healed.slice(0, 5) });
-    }
-    if (e.type === 'shielder' && e.timer <= 0) {
-      e.timer = 5;
-      const sh = [];
-      for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, e.x, e.y) < 2.25) { sh.push({ x: o.x, y: o.y }); o.shield = Math.max(o.shield, o.maxHp * (o.boss ? 0.04 : 0.25)); }
-      Hooks.fx('shieldpulse', { x: e.x, y: e.y, to: sh.slice(0, 5) });
-    }
-    // v5.1 new enemies
-    if (e.type === 'carrier') { e.dropT = (e.dropT === undefined ? 2.5 : e.dropT) - dtE;
-      if (e.dropT <= 0 && !e.cloaked) { e.dropT = CARRIER.every;
-        for (let i = 0; i < CARRIER.n; i++) { const m = spawnEnemy('drone', { fromPt: { x: e.x + (i ? 0.35 : -0.35), y: e.y + 0.2 }, hpm: hpBase(e) * CARRIER.hp / ENEMIES.drone.hp }); m.fly = true; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); m.leak = 3; }
-        Hooks.fx('drop', { x: e.x, y: e.y }); } }
-    if (e.type === 'sapper') { e.sapCD = (e.sapCD || 0) - dtE;
-      if (e.sapCD <= 0 && !(st.stun > 0) && !(st.frozen > 0) && !(G.stasisT > 0)) {
-        let tg = null, bd = SAPPER.range * SAPPER.range;
-        for (const t of G.towers) { if (t.disabled > 0) continue; const d = dist2(t.cx, t.cy, e.x, e.y); if (d < bd) { bd = d; tg = t; } }
-        if (tg) { e.sapCD = SAPPER.cd; tg.disabled = Math.max(tg.disabled, SAPPER.dur); tg.disCause = 'SAPPED'; Hooks.fx('sap', { x1: e.x, y1: e.y, x2: tg.cx, y2: tg.cy }); Hooks.sfx('crack', e);
-          if (!G.sapTold || G.time - G.sapTold > 20) { G.sapTold = G.time; Hooks.log(`A Sapper knocked out your ${TOWERS[tg.type].name} for ${SAPPER.dur}s`, '#ff4d6a'); } } } }
+    kitRun(e, 'tick', dtE, st); // 6.14 enemy kit: heal, shieldAura, drop, sap, and every new block
     if (e.elite.includes('blink') && e.timer <= 0 && !e.boss) { e.timer = 5; e.d += 1.5; Hooks.fx('blink', { x: e.x, y: e.y }); }
     if (e.boss) bossBehavior(e, dt);
     if (ev.phase) { e.timer2 -= dt; if (e.timer2 <= 0) { e.timer2 = 4; if (G.r() < 0.3 && !e.boss) { e.d += 1; Hooks.fx('blink', { x: e.x, y: e.y }); } } }
@@ -6357,7 +6382,7 @@ function leak(e) {
   { const lk = e.boss ? 'boss:' + e.boss : e.genes && e.genes.length ? e.type + '+' + e.genes.join('+') : e.type; (G.leakBy || (G.leakBy = {}))[lk] = (G.leakBy[lk] || 0) + 1; (G.leakWave || (G.leakWave = {}))[lk] = (G.leakWave[lk] || 0) + 1; if (e.mite) G.leakMiteW = (G.leakMiteW || 0) + 1; } // 6.6.1: Carrier drops leak as 'drone'; this tally lets the warnings name them (messages only, no rules)
   const c = G.core, w = G.wave;
   let dmg = e.leak * (1 + 0.03 * w);
-  if (e.type === 'leech' && G.credits > 0) { const st2 = Math.round(Math.min(G.credits * LEECH.share, LEECH.cap(w))); G.credits -= st2; G.stats.leeched = (G.stats.leeched || 0) + st2; Hooks.fx('coin', { x: c.x, y: c.y - 0.6, v: -st2 }); if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech stole ${st2} credits. Leeches steal more when you hold more credits`, '#ffb03a'); } }
+  { const st2 = kitRun(e, 'leak', w); if (st2 !== undefined) { if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech stole ${st2} credits. Leeches steal more when you hold more credits`, '#ffb03a'); } } } // 6.14 kit: steal
   // v4.1: a boss that reaches the core ends the run outright (shields and Unbreakable don't save you). Gloop's splits still breach for a share
   if (e.boss && !e.gen) {
     Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
@@ -6409,7 +6434,7 @@ function hit(e, dmg, el, src, o) {
   if (e.armorAll) mult *= 1 - e.armorAll * (src && src.s && src.s.pierceArmor ? 0.5 : 1); // v5.8 Bunker Buster halves Armor
   // v5.1 Reflector: bolts, beams and chains glance off
   let glance = false;
-  if (e.refl && !o.dot && !o.abil && src && src.s && (src.s.kind === 'bullet' || src.s.kind === 'beam' || src.s.kind === 'chain')) { mult *= 1 - e.refl; glance = true; }
+  if (e.refl && !o.dot && !o.abil && src && src.s && (e.reflK || ['bullet', 'beam', 'chain']).includes(src.s.kind)) { mult *= 1 - e.refl; glance = true; } // 6.14: e.refl comes from the reflect block (rules 10)
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2 + ((e.lureT.s && e.lureT.s.netVuln) || 0);
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
@@ -6655,7 +6680,7 @@ function kill(e, src, o) {
     for (let i = 0; i < 2; i++) spawnBoss({ boss: 'gloop', L: e.L, d: Math.max(0, e.d - i * 0.5), gen: (e.gen || 0) + 1, hpAbs: e.maxHp * 0.35, hpm: 1 });
     Hooks.fx('say', { x: e.x, y: e.y, t: e.gen ? 'bloop!' : 'ow. but also: two of me' });
   }
-  if (e.type === 'splitter') for (let i = 0; i < 3; i++) spawnEnemy('swarmer', { L: e.L, d: Math.max(0, e.d - i * 0.25) });
+  kitRun(e, 'death'); // 6.14 kit: split, and every new on-death block
   if (e.elite.includes('split') && !e.boss) for (let i = 0; i < 2; i++) {
     const c = spawnEnemy(e.type, { L: e.L, d: Math.max(0, e.d - i * 0.3) }); c.maxHp = c.hp = hpBase(e) * 0.3;
   }
