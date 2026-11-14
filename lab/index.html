@@ -1589,7 +1589,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + ENEMY KIT + CHECKPOINTS + FONT + ABILITY RAIL + PAUSE + CRITS';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.14.0 + ENEMY KIT + CHECKPOINTS + FONT + ABILITY RAIL + PAUSE + CRITS + PROBE HOME';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2161,7 +2161,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 10; // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 11; // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -8013,7 +8013,7 @@ function prLoot(cr, ent, ch, tok, x, y) {
   if (cr > 0) Hooks.fx('num', { x: x == null ? G.probe.x : x, y: y == null ? G.probe.y : y, v: Math.round(cr * a), col: '#ffe14d', combo: 'LOOT' });
 }
 function siteDone(s) {
-  const P = G.probe; if (P.task === s.id) P.task = 0;
+  const P = G.probe, mine = P.task === s.id; if (mine) P.task = 0;
   if (s.tut) G.tutLoot = (G.tutLoot | 0) | (1 << s.tut); // 6.6 Training v2: the coach's checklist
   if (s.g.length) { s.done = 1; s.t = Math.min(s.t, 30); } else G.sites = G.sites.filter(o => o !== s); // the loot is gone; its living guards stay until they calm down
   const st = G.stats.pr || (G.stats.pr = { sites: 0, lost: 0, kills: 0, jp: 0, cr: 0, trips: 0 }); st.sites++;
@@ -8027,6 +8027,9 @@ function siteDone(s) {
   if (s.k === 'lost') { const c = P.cargo; c.ent += s.ent || 0; c.ch += s.ch || 0; c.tok += s.tok || 0; c.jp += s.jp2 || 0; } // your own wreck: everything it carried
   rlog('siteDone', { k: s.k, rich: s.rich });
   Hooks.fx('siteDone', { x: s.x, y: s.y, k: s.k }); Hooks.sfx('cash', { x: s.x, y: s.y });
+  // rules 11 (6.14, Nic Nov 14): a probe that finishes the site it was sent to flies home on its own and banks the cargo there.
+  // One it passed on the way to somewhere else (a cloud it drifted through) keeps going
+  if (G.frV >= 11 && mine && P.alive && !P.home && !P.ret) { P.ret = 1; P.tx = P.ty = null; rlog('prAuto', { k: s.k }); }
 }
 // the cargo banks at the core: credits, Entropy, charges, tokens; each jackpot is a boon pick or a full Entropy gauge
 function prBank() {
@@ -15294,8 +15297,10 @@ const UI = (() => {
           done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && G.probe.task !== site(1).id && 'prBtn' },
         { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'The probe is able to fly over the field. Once in range of a wreck or salvageable node, the probe will automatically salvage it.',
           done: () => looted(1), skip: () => !prOK(), back: () => !looted(1) && site(1) && G.probe.task !== site(1).id && 'prSend' },
-        { id: 'prHome', hold: 1, when: () => looted(1), skip: () => !prOK() || G.probe.home, at: () => appR(q('#prbar [data-pr=home]')) || appR(q('#bProbe')), t: 'Bring it home',
-          b: () => `Cargo is deposited only when the probe docks at the core. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Home under Probe.' : 'Tap Probe, then Home.'}`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
+        // 6.14 (rules 11): the probe flies home by itself once its site is done, so these two teach that instead of the Home tap.
+        // Draft text (Claude, Nov 14), flagged for Nic's Game Text page
+        info('prHome', () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, 'Coming home', () => `Site done, so the probe flies home on its own. Cargo counts only when it docks at the core. To call it back early, ${appR(q('#prbar [data-pr=home]')) ? 'tap Home under Probe' : 'tap Probe, then Home'}.`,
+          { hold: 0, when: () => looted(1), skip: () => !prOK(), leave: probeEnd }),
         info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits. The probe repairs itself and the core when docked. A lost probe drops its cargo and costs credits to rebuild.`,
           { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() && !((G.stats.pr || {}).trips) || W() >= 8, enter: probeEnd }),
         // 6.6 fog of war, on the way to a guarded wreck far out (TUT.b2.sites[1])
@@ -15305,8 +15310,8 @@ const UI = (() => {
         { id: 'fog', when: () => prOK() && !!site(2) && Math.hypot(G.probe.x - site(2).x, G.probe.y - site(2).y) < 9, skip: () => looted(2) || !prOK() || gone(2) || !!site(2) && G.probe.task !== site(2).id, hold: 1, ok: 'Next',
           at: () => worldR(G.probe.x, G.probe.y, 2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dark ground, enemies are hidden.' },
         info('fogFair', () => appR(q('#chips [data-threat]')), 'Enemy Tips', 'Bosses always show. Roads stay on the map. Edge arrows mark enemies near your core. The Threat Board lists each wave.', { hold: 0, skip: () => looted(2) || !prOK() }),
-        { id: 'prOut', hold: 1, when: () => looted(2) || !prOK(), skip: () => !prOK() || G.probe.home || G.probe.ret, at: () => appR(q('#prbar [data-pr=home]')) || appR(q('#bProbe')), t: 'Get out',
-          b: () => `The loot is in the hold. The drone shoots while the probe stays. ${appR(q('#prbar [data-pr=home]')) ? 'Tap Home.' : 'Tap Probe, then Home.'} Later, Upgrades buys a Lance: allowing it to attack and defend itself.`, done: () => !!(G.probe.ret || G.probe.home), leave: probeEnd },
+        info('prOut', () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, 'Heading out', 'The loot is in the hold and the probe is already leaving. The drone shoots while it is near. Later, Upgrades buys a Lance: allowing it to attack and defend itself.',
+          { hold: 0, when: () => looted(2), skip: () => !prOK(), leave: probeEnd }),
         info('prLost', sel('#bProbe'), 'Probe lost', () => `Its cargo lies in its wreck for ${PROBE.life.lost} s. Rebuild it from the Probe button: ${fmt(prRebuildCost())} credits, ${PROBE.rbT} s.`, { hold: 0, when: () => !!G.probe && !G.probe.alive, skip: () => !G.probe || G.probe.alive }),
         // 6.6 one Entropy draw (scripted: a Common, a Rare and an Exotic)
         { id: 'gauge', ls: 'ent', when: () => !!G.anomOffers && !panel, skip: () => !G.anomOffers && (used('anom') || used('stab')), hold: 1, at: sel('#bEnt'), t: 'Entropy',
@@ -15781,7 +15786,7 @@ const UI = (() => {
       btn.querySelector('.cdf').style.width = filling ? pct(clamp(1 - cd / mx, 0, 1)) : '0%';
       // 6.14 Cooldown Sweep: --fd is how far the sweep has cleared; .cdt shows the seconds left while it recharges
       { const fd = filling ? (clamp(1 - cd / mx, 0, 1) * 100).toFixed(1) + '%' : '0%'; if (btn.style.getPropertyValue('--fd') !== fd) btn.style.setProperty('--fd', fd);
-        btn.classList.toggle('cding', filling); setT(btn.querySelector('.cdt'), filling ? Math.ceil(cd) + 's' : ''); }
+        btn.classList.toggle('cding', filling); setT(btn.querySelector('.cdt'), filling ? String(Math.ceil(cd)) : '') /* no 's': in Oxanium caps '25S' read as '255' */; }
       btn.classList.toggle('aim', G.aimAbility === k);
       // v5.1.3: Scan lights up while cloaked enemies are on the field and it has a charge
       if (k === 'scan') { const hid = on && n > 0 && !(G.scanT > 0) && G.enemies.some(e => !e.dead && e.cloaked && !(e.revealed > 0)); btn.classList.toggle('want', hid);
