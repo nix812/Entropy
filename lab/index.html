@@ -1613,7 +1613,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.15.1 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.15.2 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1742,7 +1742,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.15.1';
+const VERSION = '6.15.2';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2185,7 +2185,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 14; // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 15; // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2487,7 +2487,7 @@ const LESSONS = [
     run: { start: 12, credits: 700, grid: 8, towers: ['pulse', 'rail', 'cryo', 'missile'], probe: 1, hole: { w: 1 }, abil: ['strike'], pre: [['towers', [['pulse', 3], ['rail', 3], ['missile', 2], ['cryo', 2]]], ['abil', ['strike'], 2]],
       waves: [[['drone', 16, 0.55, 0.9], ['swarmer', 12, 0.3, 0.8], ['drone', 10, 0.6, 0.9]], [['drone', 10, 0.8, 0.9], ['tank', 2, 2.5, 0.8]]] } },
   { id: 'wormholes', track: 'advanced', bench: { m: 'Cover the new road during the checkpoint and start early', s: null }, title: 'Wormholes and Checkpoints', blurb: 'New roads, a larger map and a pause.',
-    what: 'Every so often a wormhole opens a new road and the map grows. Nothing can be built within 4 tiles of a wormhole. The wave before it lands is a checkpoint: the next wave waits 90 s. Full refunds, a free respec and Lift Off with no cooldown until it starts.', when: 'At set waves (Normal: 15, 28, 42…).', todo: 'At a checkpoint, move towers (or sell and rebuild) to cover the new road, then tap Next. Resuming fast pays a bonus.',
+    what: 'Every so often a wormhole opens a new road and the map grows. Nothing can be built within 4 tiles of a wormhole. The wave before it lands is a checkpoint: the next wave waits 90 s. Full refunds, free tower moves, a free respec and Lift Off with no cooldown until it starts.', when: 'At set waves (Normal: 15, 28, 42…).', todo: 'At a checkpoint, move towers (or sell and rebuild) to cover the new road, then tap Next. Resuming fast pays a bonus.',
     real: 'In a run: at a checkpoint, move towers to cover both roads before you resume.',
     run: { credits: 400, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['pulse', 1]]], ['lane', 1]], waves: [[['drone', 6, 1.2, 1]], [['drone', 10, 0.9, 1]]] } },
   { id: 'assault', track: 'advanced', bench: { m: 'Build the counter tower before the strain lands', s: null }, title: 'Strain Assaults', blurb: 'The swarm commits a whole wave to beat you.',
@@ -8076,7 +8076,7 @@ function frReroute(old) {
   if (G.frV >= 9) for (const p of G.projs) if (p.k === 'saw' && !p.dead) { p.dead = true; Hooks.fx('boom', { x: p.x, y: p.y, r: 0.3, col: '#c8ccd8' }); }
 }
 // moving a tower: it is set down on the new tile at once (so nothing else can take it) and stays offline while it relocates
-const frMoveFee = t => Math.round(t.invested * FRONTIER.moveFee);
+const frMoveFee = t => G.frV >= 15 && G.checkpoint ? 0 : Math.round(t.invested * FRONTIER.moveFee); // rules 15: free during a checkpoint
 function frMoveOk(t, x, y) { return !!(G && G.fr && !G.over && t && G.towers.includes(t) && t !== frDockT() && !(t.mvT > 0) && canBuildAt(x, y)); }
 function frMoveTower(t, x, y) {
   if (!frMoveOk(t, x, y)) return false;
@@ -15890,7 +15890,7 @@ const UI = (() => {
         intro('in', 'Wormholes', 'Every so often a new road opens and the map grows.'),
         info('hole', () => { const L = G.map.lanes[1]; return L ? worldR(L.pts[0].x, L.pts[0].y, 1) : null; }, 'A wormhole', () => `A new road opens here at Wave 2. The map just grew to make room.${G.fr ? ` Nothing can be built within ${frWormR()} tiles of it.` : ''}`),
         call('c1', 1),
-        info('cp', sel('#cpBanner'), 'Checkpoint', 'The wave before a wormhole lands is a checkpoint: the next wave waits 90 s. Selling refunds 100%, talents respec free, and Lift Off has no cooldown.', { when: () => !!G.checkpoint }),
+        info('cp', sel('#cpBanner'), 'Checkpoint', 'The wave before a wormhole lands is a checkpoint: the next wave waits 90 s. Selling refunds 100%, moving a tower is free, talents respec free, and Lift Off has no cooldown.', { when: () => !!G.checkpoint }),
         build('cover', 'pulse', 'n', 'Cover the new road', 'Tap the marked tile.', { when: () => !!G.checkpoint, at: () => flowAt('pulse', 'n', G.map.lanes[1]), done: () => G.towers.length >= 3 }),
         { id: 'resume', when: () => !!G.checkpoint, hold: 0, at: sel('#bCall'), t: 'Start early', b: 'Tap Start. The sooner you start, the bigger the bonus.', done: () => !G.checkpoint }, // 6.15: the button says Start since 6.14
         info('wrap', null, 'Two roads', 'Now enemies come down both. Towers between roads cover two at once.', { when: () => after(2) }),
@@ -16206,7 +16206,7 @@ const UI = (() => {
     const cpb = G.checkpoint ? cpBonus() : null;
     setT(cb.querySelector('b'), G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall && !cb.disabled ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '');
     setHid($('#cpBanner'), !G.checkpoint || !!G.reloc);
-    if (G.checkpoint && cpLive()) { const t = Math.max(0, Math.ceil(CP_HOLD - G.cpT)); setT($('#cpBanner b'), G.fr ? 'Checkpoint · Full refunds · Free respec · Free Lift Off' : 'Checkpoint · Full refunds · Free respec'); setT($('#cpBanner').querySelector('span'), `Wave ${G.checkpoint} in ${t}s · Start now for +${fmt(cpb.cr)} credits${cpb.sc ? ` and +${fmt(cpb.sc)} score` : ''}`); $('#cpFill').style.width = pct(cpb.f); }
+    if (G.checkpoint && cpLive()) { const t = Math.max(0, Math.ceil(CP_HOLD - G.cpT)); setT($('#cpBanner b'), G.fr ? (G.frV >= 15 ? 'Checkpoint · Full refunds · Free moves · Free respec · Free Lift Off' : 'Checkpoint · Full refunds · Free respec · Free Lift Off') : 'Checkpoint · Full refunds · Free respec'); setT($('#cpBanner').querySelector('span'), `Wave ${G.checkpoint} in ${t}s · Start now for +${fmt(cpb.cr)} credits${cpb.sc ? ` and +${fmt(cpb.sc)} score` : ''}`); $('#cpFill').style.width = pct(cpb.f); }
     else if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); setT($('#cpBanner').querySelector('span'), cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'); $('#cpFill').style.width = pct(cpb.f); }
     $('#bCash').classList.toggle('on', !!(panel && panel.kind === 'cash')); $('#bCash').classList.toggle('nomkt', marketShut());
     const sp = $('#bSpeed'), ffOn = !!UI.walkFF; setT(sp.querySelector('b'), ffOn ? '»' : G.speed + '×'); sp.classList.toggle('fast', G.speed > 1 || ffOn);
@@ -16819,7 +16819,7 @@ const UI = (() => {
     const idle = idleWaves(t) >= 2 ? `<div class="sts bad">Idle for ${idleWaves(t)} waves: nothing has come in range. Sell it and build where the enemies are.</div>` : '';
     const head = `<div class="ph tabbed"><canvas class="ico" width="24" height="24" data-ico="${t.type}"></canvas><div class="pt"><b>${title}</b><small>${t.name ? `<em class="vname">"${esc(t.name)}"</em> · ` : ''}<b class="lvtag" style="background:${lvTier(towerLevel(t)).col}">LV ${towerLevel(t)}</b>${spec ? ' · ' + esc(spec) : ''} · <span style="color:${EL[s.el].col}">${EL[s.el].name}</span></small></div><button class="x" data-act="close" aria-label="Close">✕</button>${tabsHTML(t.affixes.length ? t.affixes.length : '')}</div>`;
     const foot = `<div class="pfoot">${t.lvl === 3 ? `<button class="btn wide lvup" disabled>Choose a Specialization<small>${(panel.tab || 'act') === 'info' ? 'on the Actions tab' : 'above'}</small></button>` : up}
-      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}${G.fr ? (t === frDockT() ? '<button class="btn frmove" disabled>Move<small>Docked</small></button>' : `<button class="btn frmove" data-act="frmove" ${t.mvT > 0 ? 'disabled' : costBtn(frMoveFee(t))}>Move · ${fmt(frMoveFee(t))}${t.mvT > 0 ? '<small>Moving</small>' : ''}</button>`) : ''}<button class="btn danger${sellArm === t ? ' armed' : ''}" data-act="sell">${sellArm === t ? 'Tap again' : 'Sell'} +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
+      <div class="row2"><button class="btn" data-act="reroll" ${costBtn(rc)}>Reroll · ${fmt(rc)}</button>${G.tokens > 0 ? `<button class="btn tokbtn" data-act="rerollTok">Reroll · 1 token<small>${G.tokens} left</small></button>` : ''}${G.fr ? (t === frDockT() ? '<button class="btn frmove" disabled>Move<small>Docked</small></button>' : `<button class="btn frmove" data-act="frmove" ${t.mvT > 0 ? 'disabled' : costBtn(frMoveFee(t))}>Move · ${frMoveFee(t) ? fmt(frMoveFee(t)) : 'Free'}${t.mvT > 0 ? '<small>Moving</small>' : !frMoveFee(t) ? '<small>Checkpoint</small>' : ''}</button>`) : ''}<button class="btn danger${sellArm === t ? ' armed' : ''}" data-act="sell">${sellArm === t ? 'Tap again' : 'Sell'} +${fmt(sellRefund(t))}${G.refit && !G.checkpoint ? '<small>Free refit · 100%</small>' : ''}</button></div></div>`;
     if ((panel.tab || 'act') === 'info') return `${head}
       ${vbar}
       ${stats}
@@ -17115,7 +17115,7 @@ const UI = (() => {
     const t = frSel && frSel.t; if (!t) return '';
     const fee = frMoveFee(t), d = frSel.dest;
     return `<div class="ph"><div class="pt"><b>Move ${esc(TOWERS[t.type].name)}</b><small>Paused while you choose</small></div><button class="x" data-act="frcancel" aria-label="Cancel">✕</button></div>
-      <p class="note">${d ? 'Tap another tile to compare, or confirm.' : 'Tap an open tile inside the sector.'} It flies over and is offline for ${FRONTIER.moveT} s. Fee ${fmt(fee)} (${pct(FRONTIER.moveFee)} of what it cost).</p>
+      <p class="note">${d ? 'Tap another tile to compare, or confirm.' : 'Tap an open tile inside the sector.'} It flies over and is offline for ${FRONTIER.moveT} s. ${fee ? `Fee ${fmt(fee)} (${pct(FRONTIER.moveFee)} of what it cost).` : 'Free during the checkpoint.'}</p>
       <div class="pfoot"><button class="btn primary wide" data-act="frmovego" ${d ? costBtn(fee) : 'disabled'}>Move here · ${fmt(fee)}</button><button class="btn" data-act="frcancel">Cancel</button></div>`;
   }
   const relocPrice = () => relocCost() ? `${fmt(RELOCATE_COST)}` : 'Free';
@@ -18577,7 +18577,7 @@ const UI = (() => {
       ['Lift Off', `The core flies. Tap Lift Off (top right, or in the core panel), then a tile to land on: the preview shows the new roads, what the core will fire and the towers it will link. Every road swings to the landing spot. In the air the gun is offline and the shield is down. After landing it recharges for ${FRONTIER.cd} waves.`],
       ['Dock', `Land the core on an attack tower and it becomes a second gun: ×${FRONTIER.dockDmg} Damage, +${FRONTIER.dockRange} Range${FRONTIER.dockBat6 ? `, +${pct(FRONTIER.dockBat6)} per Battery level` : ''}. The core's own gun keeps firing. Lift off again and the tower is set back down, intact.`],
       ['Links', `The landed core links its ${FRONTIER.links} nearest attack towers within ${FRONTIER.linkR} tiles: +${pct(FRONTIER.linkDmg)} Damage and Rate each, and the core +${pct(FRONTIER.linkCore)} per link. Flying breaks them.`],
-      ['Move', `Tap a tower, then Move, then a new tile. It is offline for ${FRONTIER.moveT} s and costs ${pct(FRONTIER.moveFee)} of what it cost. No towers within ${frWormR()} tiles of a wormhole.`],
+      ['Move', `Tap a tower, then Move, then a new tile. It is offline for ${FRONTIER.moveT} s and costs ${pct(FRONTIER.moveFee)} of what it cost (free during a checkpoint). No towers within ${frWormR()} tiles of a wormhole.`],
       ['Next Wave', 'Tap Next to call the wave early for bonus credits.'],
       ['Cash In', 'Tap Score to trade credits for score. The rate rises every wave.'],
       ['Zoom', 'Pinch to zoom, drag to pan, double-tap to zoom in or back out. Edge arrows point at what is off screen: bosses and enemies near the core, pirate treasure (yellow, with a chest) and the core itself (green). Tap one to look there; the green one brings the camera home.'],
