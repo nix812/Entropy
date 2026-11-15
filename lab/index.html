@@ -13060,14 +13060,13 @@ const RES = 2;
   // 6.15 keystone: the core's fortress deck, drawn before the towers (drawCore draws the reactor on top after them).
   // Twelve lights on the deck show the Battery level; a ring rolls out from the heart every 3 s, so the core reads at any zoom.
   // 6.15 the last fire: the light's radius in tiles (the sim's LIGHT14, shown in every run) and a flicker that grows as the hull falls
+  const DARK_AT = 0.35, DARK_MAX = 0.66; // the screen darkens below 35% core hull, up to 66% at none (more hides the enemies you need to see)
   function coreLightV() { const c = G.core; return LIGHT14.min + (LIGHT14.max - LIGHT14.min) * clamp(c.hp / Math.max(1, c.max), 0, 1); }
   function coreFlicker() { const c = G.core, low = 1 - clamp(c.hp / Math.max(1, c.max), 0, 1); return 1 - low * low * (0.35 + 0.35 * Math.sin(rt * 23) * Math.sin(rt * 7.3)); }
   function drawCoreBase(air) {
     const c = G.core; if (!c) return; const X = c.x * TILE, Y = c.y * TILE, hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
-    if (!air) { // the dark closes in as the hull falls: the ground past the light darkens, up to 55% at no hull
-      const LR = coreLightV() * TILE, dk = 0.55 * (1 - clamp(c.hp / Math.max(1, c.max), 0, 1)) * (2 - coreFlicker());
-      if (dk > 0.02) { const g = b.createRadialGradient(X, Y, LR * 0.8, X, Y, LR + 9 * TILE); g.addColorStop(0, 'rgba(2,2,8,0)'); g.addColorStop(0.25, `rgba(2,2,8,${(dk * 0.6).toFixed(3)})`); g.addColorStop(1, `rgba(2,2,8,${dk.toFixed(3)})`);
-        b.fillStyle = g; b.fillRect(X - LR - 9 * TILE, Y - LR - 9 * TILE, (LR + 9 * TILE) * 2, (LR + 9 * TILE) * 2); }
+    if (!air) { // (the dark that closes in below 35% hull is a screen overlay: see 'the dark closes in' below)
+      const LR = coreLightV() * TILE;
       { const g2 = b.createRadialGradient(X, Y, 0, X, Y, LR); const fa = coreFlicker(); // the pool of warm light on the ground
         g2.addColorStop(0, `rgba(255,192,97,${(0.16 * fa).toFixed(3)})`); g2.addColorStop(0.6, `rgba(255,170,80,${(0.07 * fa).toFixed(3)})`); g2.addColorStop(1, 'rgba(255,160,70,0)');
         b.save(); b.globalCompositeOperation = 'lighter'; b.fillStyle = g2; b.fillRect(X - LR, Y - LR, LR * 2, LR * 2); b.restore(); }
@@ -13753,6 +13752,12 @@ const RES = 2;
     }
     if (R_.glow !== false) { c.globalCompositeOperation = 'lighter'; c.drawImage(lightCv, ox, oy, DW, DH); }
     c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    // 6.15 the dark closes in (Nic, Nov 14: "as the core takes damage ... darken the screen getting darker after say 35% health"):
+    // below 35% hull everything past the core's light darkens, up to DARK_MAX at no hull; under 15% it breathes with a slow heartbeat
+    if (G.core && !G.over) { const hf = clamp(G.core.hp / Math.max(1, G.core.max), 0, 1), f = clamp((DARK_AT - hf) / DARK_AT, 0, 1);
+      if (f > 0) { const a = DARK_MAX * Math.pow(f, 1.15) * (2 - coreFlicker()) * (hf < 0.15 ? 1 + 0.1 * Math.sin(rt * 5.5) : 1), X = bx2s(G.core.x * TILE), Y = by2s(G.core.y * TILE), LR = coreLightV() * TILE * ws;
+        const g = c.createRadialGradient(X, Y, LR * 0.7, X, Y, LR + (7 - 3 * f) * TILE * ws); g.addColorStop(0, 'rgba(3,2,10,0)'); g.addColorStop(0.35, `rgba(3,2,10,${Math.min(0.9, a * 0.55).toFixed(3)})`); g.addColorStop(1, `rgba(3,2,10,${Math.min(0.9, a).toFixed(3)})`);
+        c.fillStyle = g; c.fillRect(-20, -20, DW + 40, DH + 40); } }
     // smooth overlays: ranges, selection, aim
     const ringS = (x, y, r, col, a, w, fill) => {
       c.beginPath(); c.arc(bx2s(x), by2s(y), r * ws, 0, 6.283);
