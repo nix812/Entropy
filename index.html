@@ -1604,6 +1604,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 @media (prefers-reduced-motion: reduce) { body.storyend #hangar *, body.storyrise #hangar .brand > h1 { transition: none !important; } }
 .card.over .storyend { margin: 2px 0 8px; font-size: 17px; color: #b9b3d6; font-style: normal; letter-spacing: 0.02em; }
 .lrow.lstory { box-shadow: inset 0 0 0 1px #4a3d6e; }
+.ecard .mc { color: var(--g, #59f0b4); font-style: italic; margin: 4px 0 6px; } .ecard .mcf { color: #ffb03a; margin: 4px 0; } /* 6.16 the Remnant: Mission Control lines on the new-enemy card */
 </style>
 
 
@@ -1696,7 +1697,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.15.2';
+const VERSION = '6.16.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2139,7 +2140,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 15; // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 16; // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2265,7 +2266,7 @@ const SECTORS = [
     lean: { swarmer: 3, splitter: 3, drone: 0.6 }, storm: 'solar', ev: { swarm: 3, breach: 1.5 }, boss: 'queen', mod: 'twins',
     up: '+1 Chain, +15% Thermal Damage', down: '+10% enemy speed', m: { chain: 1, dmgT: 15 }, af: { haste: 0.1 } },
   { id: 'iron', name: 'Iron Reach', col: '#c8ccd8', pitch: 'Juggernauts and Aegis walls push slowly down the road.',
-    lean: { tank: 2.5, shielder: 2.5, reflector: 1.5, swarmer: 0.6 }, storm: 'static', ev: { elite: 1.5, regen: 1.5 }, boss: 'titan', mod: 'armored',
+    lean: { tank: 2.5, shielder: 2.5, reflector: 1.5, swarmer: 0.6, bulwark: 2.2, welder: 2, husk: 1.5, adapter: 1.5 }, storm: 'static', ev: { elite: 1.5, regen: 1.5 }, boss: 'titan', mod: 'armored',
     up: '+15% armor piercing', down: '+6% enemy HP', m: { armorPen: 15 }, af: { hpx: 0.06 } },
   { id: 'skies', name: 'Open Skies', col: '#7fb4ff', pitch: 'No roads up here. Skimmers and Carriers fly straight in.',
     lean: { flyer: 2.2, carrier: 2.5, tank: 0.6, sapper: 0.6 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
@@ -2280,7 +2281,7 @@ const SECTORS = [
     lean: { flyer: 1.5, carrier: 1.5 }, storm: null, ev: { surge: 1.5, overcharge: 2 }, boss: 'fsm', mod: 'hasted',
     up: 'Storms arrive twice as often and are 40% stronger', down: '+10% enemy speed', m: { stormFreq: 100, stormPow: 40 }, af: { haste: 0.1 } },
   { id: 'demo', name: 'Demolition Row', col: '#ff7b39', pitch: 'Sappers knock your towers out. Splitters burst into Swarmers.',
-    lean: { sapper: 4, splitter: 1.5, reflector: 1.5 }, storm: 'cryo', ev: { emp: 2, elite: 1.5 }, boss: 'overmind', mod: 'hasted',
+    lean: { sapper: 4, splitter: 1.5, reflector: 1.5, crawler: 3, lodestone: 2, husk: 1.5 }, storm: 'cryo', ev: { emp: 2, elite: 1.5 }, boss: 'overmind', mod: 'hasted',
     up: '+10% Attack Speed', down: 'More Elites', m: { rate: 10 }, af: { elite: 0.08 } },
   { id: 'choir', name: 'Green Choir', col: '#8ee35a', pitch: 'Menders heal and enemies regrow. Anything you leave alive heals back.',
     lean: { medic: 4, shielder: 1.5 }, storm: 'solar', ev: { regen: 3 }, boss: 'snail', mod: 'colossal',
@@ -2527,6 +2528,21 @@ const CURSES = [
 const CARRIER = { every: 4.5, n: 2, hp: 0.1 };
 const SAPPER = { range: 1.6, dur: 4, cd: 7 };
 const LEECH = { share: 0.1, cap: w => 60 + 18 * w };
+// 6.16 rules 16: the Remnant (Nic, Nov 14: "Go it all sounds good"). Old war machines of the pilots before you, still running.
+// Family rule: every Remnant takes 20% less Kinetic and 20% more Arc (REM_RES, merged into each one's res). Their behaviour blocks
+// live in KIT (sim.js): rise, front, repair, siege, magnet, adapt, command. Draft numbers: bot pass in docs/notes/remnant616.md
+const REM_RES = { K: 0.2, A: -0.2 };
+const REM_FIRST = 'Contact. That\'s not the swarm. Old war machines, still running. Some of them were ours.'; // Mission Control, the first Remnant ever (draft)
+const REMNANT = {
+  rise: { after: 2, hp: 0.4, cr: 0.3 },                       // Husk: stands back up 2 s after it falls, at 40% HP (30% bounty), once
+  front: { cut: 0.6, cos: 0.34 },                              // Bulwark: hits from within 70 degrees of its heading do 60% less
+  repair: { every: 2.5, r: 2.5, amt: 0.2, boss: 0.01 },        // Welder: heals the most damaged Remnant in reach by 20% of its max HP
+  siege: { range: 4.5, aim: 1.5, every: 6, dur: 3, plant: 13, walk: 4 }, // Siege Crawler: plants for up to 13 s, then walks 4 s
+  magnet: { r: 2.5, cut: 0.5 },                                // Lodestone: pulls bolts and missiles within 2.5 tiles, takes 50% from them
+  adapt: { amt: 0.5, delay: 0.4 },                             // Adapter: resists the last element that hit it by 50%
+  command: { r: 4, cut: 0.25, panic: 1.5, n: 6, from: 28 },    // Warden: escort within 4 tiles takes 25% less; its death stuns them 1.5 s
+};
+
 // 6.14 enemy kit. An enemy is a body (hp, spd, fly, armor, res), a family (fam), a role in a wave (role) and a list of
 // behaviours (kit). Each behaviour is a named block in KIT (sim.js) with its own numbers here, so a new enemy is mostly data:
 // pick blocks, set numbers, draw a sprite. Hooks a block can use: spawn (set up), tick (each step, after the shared timer),
@@ -2545,6 +2561,14 @@ const ENEMIES = {
   carrier:  { name: 'Carrier', fam: 'swarm', role: 'specialist', kit: [{ id: 'drop', into: 'drone', first: 2.5, every: CARRIER.every, n: CARRIER.n, hp: CARRIER.hp, leak: 3 }], hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air damage (Rail, Missile, Pulse) before it drops its Drones' },
   sapper:   { name: 'Sapper', fam: 'swarm', role: 'specialist', kit: [{ id: 'sap', range: SAPPER.range, dur: SAPPER.dur, cd: SAPPER.cd }], hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your towers' },
   leech:    { name: 'Leech', fam: 'swarm', role: 'specialist', kit: [{ id: 'steal', share: LEECH.share, cap: LEECH.cap }], hp: 55, spd: 1.35, cr: 8, leak: 2, from: 30, w: 2.5, desc: 'Steals credits if it reaches the core. It steals more when you hold more credits', beat: 'Kill it before it reaches the core. Spend your credits so it has less to steal' },
+  // 6.16 the Remnant (rules 16; `rules` keeps them out of older runs)
+  husk:     { name: 'Husk', fam: 'remnant', role: 'fodder', rules: 16, kit: [{ id: 'rise' }], hp: 55, spd: 0.95, cr: 4, leak: 4, from: 8, w: 5, res: REM_RES, mc: 'Scrap that stands back up. Make sure it stays down.', desc: 'Remnant scrap. Falls apart when killed, then stands back up 2 s later at 40% HP, once', beat: 'Kill it with splash damage, Burn or an ability, and it stays down' },
+  bulwark:  { name: 'Bulwark', fam: 'remnant', role: 'bruiser', rules: 16, kit: [{ id: 'front' }], hp: 270, spd: 0.55, cr: 14, leak: 12, from: 14, w: 3, res: REM_RES, mc: 'Heavy plate on the front. Hit it from the side.', desc: 'A walking wall. Shots from towers ahead of it do 60% less damage', beat: 'Towers beside or behind it on the road, Swarm Missile, Burn and abilities' },
+  welder:   { name: 'Welder', fam: 'remnant', role: 'support', rules: 16, kit: [{ id: 'repair' }], hp: 125, spd: 0.85, cr: 11, leak: 8, from: 16, w: 2.5, res: REM_RES, mc: 'Repair unit. It fixes what you break. Break it first.', desc: 'Every 2.5 s repairs the most damaged Remnant near it by 20% of its HP, and stands a fallen Husk back up at once', beat: 'Kill it first. Scan marks it' },
+  lodestone: { name: 'Lodestone', fam: 'remnant', role: 'specialist', rules: 16, kit: [{ id: 'magnet' }], hp: 155, spd: 0.8, cr: 12, leak: 8, from: 18, w: 2, res: { K: 0.2, A: -1 }, mc: 'Magnetic core. It pulls your shots in. Arc shorts it out.', desc: 'Pulls bolts and missiles fired within 2.5 tiles into itself and takes 50% from them. Arc does double damage to it', beat: 'Arc, beams, chains and the Rail Lance' },
+  crawler:  { name: 'Siege Crawler', fam: 'remnant', role: 'specialist', rules: 16, kit: [{ id: 'siege' }], hp: 180, spd: 0.7, cr: 14, leak: 10, from: 20, w: 2, res: REM_RES, mc: 'Artillery. When it plants its legs, it shells your towers.', desc: 'Plants its legs 4.5 tiles from your nearest tower and shells it offline for 3 s every 6 s. A red laser marks the target first', beat: 'Long range: Rail Lance, Swarm Missile. It stands still while planted' },
+  adapter:  { name: 'Adapter', fam: 'remnant', role: 'specialist', rules: 16, kit: [{ id: 'adapt' }], hp: 160, spd: 0.85, cr: 12, leak: 8, from: 24, w: 2, res: REM_RES, mc: 'Its plating learns the last element that hit it. Mix it up.', desc: 'Its plating tunes to the last element that hit it and resists that element by 50%. Its colour shows which', beat: 'Towers of two or more elements in reach of it' },
+  warden:   { name: 'Warden', fam: 'remnant', role: 'commander', rules: 16, kit: [{ id: 'command' }], hp: 450, spd: 0.6, cr: 30, leak: 14, from: 28, w: 0, res: REM_RES, mc: 'Squad leader. Drop it and the rest lose their nerve.', desc: 'Leads a squad of 6 Remnant. Squad members within 4 tiles of it take 25% less damage. When it dies they are stunned for 1.5 s', beat: 'Focus it: Scan, Strike, Rail Lance' },
   pirate: { name: 'Pirate Skiff', fam: 'scav', role: 'raider', hp: 70, spd: 1.5, cr: 10, leak: 0, from: 9999, w: 0, fly: 1, desc: 'Swoops in to steal unclaimed salvage. Shoot it down to recover the loot. Never attacks the core', beat: 'Anti-air towers, before it escapes' },
   voidling: { name: 'Voidling', fam: 'swarm', role: 'fodder', hp: 25, spd: 1.6, cr: 1, leak: 4, from: 999, w: 0, fly: 1, desc: 'A flying enemy that a Maelstrom spawns', beat: 'Arc and anti-air' },
 };
@@ -4009,7 +4033,7 @@ function claimCache(c) {
   else { G.tokens += k2; msg = `+${k2} Recalibration token${k2 > 1 ? 's' : ''}`; }
   if (c.kind === 'cursed') {
     // the price: an elite climbs out of a wormhole
-    const lanes = G.map.lanes.filter(L => !L.openWave), types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && k !== 'swarmer');
+    const lanes = G.map.lanes.filter(L => !L.openWave), types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && k !== 'swarmer' && !(ENEMIES[k].rules > G.frV) && ENEMIES[k].w > 0);
     const e = spawnEnemy(pick(G.r, types), { lane: pick(G.r, lanes), elite: 2 + Math.floor(w / 30), hpm: hpMult(w) * (G.CH.hp || 1) * 1.5 });
     e.stowaway = true;
     G.stats.cursed = (G.stats.cursed || 0) + 1;
@@ -5155,7 +5179,7 @@ const evoCfg = () => (G && G.CH && G.CH.evo) || { start: 8, press: 1 };
 function geneCap(w) { const E = evoCfg(), st = E.start; const base = w < st ? 0 : w < st + 14 ? 1 : w < st + 37 ? 2 : 3; return base + (base >= 2 ? E.capAdd || 0 : 0); }
 function geneKey(genes, el) { const g = genes.slice().sort(); return g.join('+') + (g.includes('ward') ? '|' + el : ''); }
 function parseGenes(k) { const [a, el] = k.split('|'); return { genes: a ? a.split('+') : [], el: el || null }; }
-function geneOk(type, g, w) { const D = ENEMIES[type]; if (GENES[g].from && (w || G.wave || 1) < GENES[g].from) return false; return !(g === 'wings' && D.fly) && !(g === 'cloak' && kitHas(type, 'cloak')) && !(g === 'brood' && (type === 'swarmer' || type === 'splitter')) && !(g === 'plating' && D.armor); }
+function geneOk(type, g, w) { const D = ENEMIES[type]; if (GENES[g].from && (w || G.wave || 1) < GENES[g].from) return false; if (g === 'wings' && (type === 'crawler' || type === 'warden' || type === 'bulwark')) return false; /* rules 16: these Remnant stay on the ground */ return !(g === 'wings' && D.fly) && !(g === 'cloak' && kitHas(type, 'cloak')) && !(g === 'brood' && (type === 'swarmer' || type === 'splitter')) && !(g === 'plating' && D.armor); }
 function breedPlan(w) {
   const F = G.geneFit || (G.geneFit = {}), par = [];
   for (const k in F) { const v = F[k]; if (v.n >= 1.5) par.push({ k, adv: v.s / v.n }); }
@@ -5257,7 +5281,7 @@ function genWave(w, ev) {
   if (ev.swarm) { count *= 1.6; hpm *= 0.6; } // v5.1.3: was ×2 at 55% (Nic: an endless stream)
   if (G.fr) count = Math.max(3, Math.round(count * FRONTIER.count)); // Frontier: fewer, heavier units (their HP below, bosses in spawnBoss)
   const hpE = G.fr ? hpm * FRONTIER.hp : hpm;
-  const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && ENEMIES[k].w > 0);
+  const types = Object.keys(ENEMIES).filter(k => ENEMIES[k].from <= w && ENEMIES[k].w > 0 && !(ENEMIES[k].rules > G.frV)); // rules 16: the Remnant only in runs on those rules
   // v5.1 headline threats: each wave leans on one enemy (two from Wave 25), so you can see what it is and answer it.
   // A type that has just arrived always headlines its first wave
   const heads = [], fresh = types.filter(k => ENEMIES[k].from === w && w > 1);
@@ -5308,6 +5332,18 @@ function genWave(w, ev) {
       t += 2;
       // 5.8 Twin Bosses: a second copy right behind it, each at 65% (bounty waves keep their own Wanted mutation)
       if (G.twists && G.twists.twin && !(G.wanted && !G.wanted.done && G.wanted.w === w)) { q[q.length - 1].hpX = TWIN_HP; q.push({ t: t + 1, type: 'boss', boss: B.id, lane: bl, hpm, elite: w >= 40 ? Math.floor(w / 40) : 0, hpX: TWIN_HP, twinOf: 1 }); t += 2; }
+    }
+  }
+  // rules 16: a Warden leads a squad of Remnant (more likely when a Remnant headlines the wave); two squads from Wave 50
+  if (G.frV >= 16 && !isBoss && w >= REMNANT.command.from) {
+    const rem = types.filter(k => ENEMIES[k].fam === 'remnant');
+    if (rem.length) { const hot = heads.some(k => ENEMIES[k].fam === 'remnant');
+      for (let s2 = 0; s2 < (w >= 50 ? 2 : 1); s2++) { if (r() >= (hot ? 0.6 : 0.25)) continue;
+        const sq = w * 10 + s2, lane = laneFor(), t0 = (q.length ? q[Math.floor(r() * q.length)].t : 0) + 0.5;
+        q.push({ t: t0, type: 'warden', lane, hpm: hpE, elite: 0, sq, lead: 1 });
+        for (let i = 0; i < REMNANT.command.n; i++) q.push({ t: t0 + 0.35 * (i + 1), type: rem[Math.floor(r() * rem.length)], lane, hpm: hpE, elite: 0, sq });
+      }
+      q.sort((a2, b2) => a2.t - b2.t);
     }
   }
   const A = G.assault;
@@ -6047,7 +6083,66 @@ const KIT = {
   cloak: { spawn(e) { e.cloak = 1; } },
   // Reflector: bolts, beams and chains glance off (the damage code reads e.refl). Rules 10: before it the hull never got the number
   reflect: { spawn(e, P) { if (kitOn(P)) { e.refl = P.share; e.reflK = P.kinds; } } },
+  // ---- 6.16 the Remnant (rules 16; numbers in REMNANT, data.js) ----
+  // Husk: falls apart and stands back up once (a scrap pile, G.scrap), unless area damage, Burn or an ability killed it
+  rise: { death(e, P, src, o) { const R = REMNANT.rise; if (e.risen || e.gen) return;
+    const area = (o && (o.abil || o.area)) || e.st.burn || (src && src.s && (src.s.kind === 'missile' || src.s.kind === 'mortar' || src.s.kind === 'cone'));
+    if (area) { Hooks.fx('scrapgone', { x: e.x, y: e.y }); return; }
+    (G.scrap || (G.scrap = [])).push({ x: e.x, y: e.y, L: e.L, d: e.d, t: R.after, hp: e.maxHp * R.hp, cr: e.cr * R.cr, sq: e.squadOf == null ? null : e.squadOf, fly: e.fly, genes: e.genes || null, lane: e.L });
+    Hooks.fx('scrap', { x: e.x, y: e.y }); } },
+  // Bulwark: a front plate. A hit from a source within acos(cos) of its heading does `cut` less (not abilities, damage over time or missiles)
+  front: { spawn(e) { e.kh = 1; }, hit(e, P, o, src) { if (o.dot || o.abil || !src || src.cx === undefined && src !== G.core) return; if (src.s && (src.s.kind === 'missile' || src.s.kind === 'mortar')) return;
+    const L = e.L, i = Math.min(e.seg || 0, L.pts.length - 2), a = L.pts[i], b2 = L.pts[i + 1]; if (!a || !b2) return;
+    const hx = b2.x - a.x, hy = b2.y - a.y, hl = Math.hypot(hx, hy) || 1, sx = (src === G.core ? G.core.x : src.cx) - e.x, sy = (src === G.core ? G.core.y : src.cy) - e.y, sl = Math.hypot(sx, sy) || 1;
+    if ((hx * sx + hy * sy) / (hl * sl) >= REMNANT.front.cos) { e.frontT = G.time; return 1 - REMNANT.front.cut; } } },
+  // Welder: every `every` s heals the most damaged Remnant within r (by missing share), and stands the nearest scrap pile up at once
+  repair: { tick(e, P, dtE) { const R = REMNANT.repair; e.repT = (e.repT === undefined ? R.every * 0.5 : e.repT) - dtE; if (e.repT > 0) return; e.repT = R.every;
+    let best = null, bm = 0.02; const r2 = R.r * R.r;
+    for (const o of G.enemies) if (!o.dead && o !== e && ENEMIES[o.type] && ENEMIES[o.type].fam === 'remnant' && dist2(o.x, o.y, e.x, e.y) <= r2) { const m = 1 - o.hp / o.maxHp; if (m > bm) { bm = m; best = o; } }
+    if (best) { best.hp = Math.min(best.maxHp, best.hp + best.maxHp * (best.boss ? R.boss : R.amt)); Hooks.fx('repair', { x1: e.x, y1: e.y, x2: best.x, y2: best.y }); }
+    for (const p of G.scrap || []) if (p.t > 0 && dist2(p.x, p.y, e.x, e.y) <= r2) { p.t = 0; Hooks.fx('repair', { x1: e.x, y1: e.y, x2: p.x, y2: p.y }); break; } } },
+  // Siege Crawler: walks until a working tower is within range, plants, and every `every` s shells the nearest one offline for dur s
+  // (a red laser for `aim` s first). Planted at most `plant` s, then walks `walk` s before it can plant again
+  siege: { tick(e, P, dtE, st) { const R = REMNANT.siege, held = st.stun > 0 || st.frozen > 0 || G.stasisT > 0;
+    if (!e.sg) e.sg = { st: 0, t: 0, cd: 0, tg: null, aim: 0 }; const g = e.sg;
+    if (g.st === 0) { g.cd -= dtE; if (g.cd > 0 || held) return;
+      let tg = null, bd = R.range * R.range; for (const t of G.towers) { if (t.disabled > 0 || t.mvT > 0) continue; const d = dist2(t.cx, t.cy, e.x, e.y); if (d < bd) { bd = d; tg = t; } }
+      if (tg) { g.st = 1; g.t = 0; g.tg = tg; g.aim = R.aim; e.planted = 1; Hooks.fx('plant', { x: e.x, y: e.y }); }
+      return; }
+    g.t += dtE;
+    if (g.t >= R.plant || !g.tg || !G.towers.includes(g.tg)) { // pick up and walk on
+      const tg2 = !g.tg || !G.towers.includes(g.tg) ? (() => { let b3 = null, bd = R.range * R.range; for (const t of G.towers) { if (t.mvT > 0) continue; const d = dist2(t.cx, t.cy, e.x, e.y); if (d < bd) { bd = d; b3 = t; } } return b3; })() : null;
+      if (g.t < R.plant && tg2) { g.tg = tg2; g.aim = R.aim; return; }
+      g.st = 0; g.cd = R.walk; g.tg = null; e.planted = 0; e.sgAim = null; return; }
+    if (held) return;
+    g.aim -= dtE; e.sgAim = g.aim > 0 ? g.tg : null;
+    if (g.aim <= 0) { const t = g.tg; t.disabled = Math.max(t.disabled, R.dur); t.disCause = 'SHELLED'; g.aim = R.every; Hooks.fx('shell', { x1: e.x, y1: e.y, x2: t.cx, y2: t.cy }); Hooks.sfx('crack', e);
+      if (!G.shellTold || G.time - G.shellTold > 20) { G.shellTold = G.time; Hooks.log(`A Siege Crawler shelled your ${TOWERS[t.type].name} offline for ${R.dur}s`, '#ff4d6a'); }
+      let b3 = null, bd = R.range * R.range; for (const o of G.towers) { if (o.disabled > 0 || o.mvT > 0) continue; const d = dist2(o.cx, o.cy, e.x, e.y); if (d < bd) { bd = d; b3 = o; } } if (b3) g.tg = b3; } } },
+  // Lodestone: bolts and missiles in flight within r turn onto it (updateProjs keeps their new target); it takes `cut` less from them
+  magnet: { spawn(e) { e.kh = 1; }, tick(e) { const R = REMNANT.magnet, r2 = R.r * R.r; if (e.cloaked && !(e.revealed > 0)) return;
+    for (const p of G.projs) if (!p.dead && (p.k === 'bullet' || p.k === 'missile') && p.e && p.e !== e && !p.spent && !(p.hitSet && p.hitSet.has(e)) && dist2(p.x, p.y, e.x, e.y) <= r2) { p.e = e; p.mag = 1; } },
+    hit(e, P, o) { if (o.proj) return 1 - REMNANT.magnet.cut; } },
+  // Adapter: after `delay` s its plating takes the element of the last direct hit, and resists it by `amt`
+  adapt: { spawn(e) { e.kh = 1; }, tick(e, P, dtE) { if (e.adNext && e.adNext !== e.adEl) { e.adT = (e.adT || 0) - dtE; if (e.adT <= 0) { e.adEl = e.adNext; Hooks.fx('adapt', { x: e.x, y: e.y, el: e.adEl }); } } },
+    hit(e, P, o, src, el) { if (!el || el === 'N') return; if (!o.dot && el !== e.adNext) { e.adNext = el; e.adT = REMNANT.adapt.delay; } if (el === e.adEl) return 1 - REMNANT.adapt.amt; } },
+  // Warden: its squad (q.sq from genWave) takes `cut` less within r; when it dies the squad is stunned `panic` s and loses the link
+  command: { death(e) { const S = G.squads; if (!S || e.sq == null) return; S[e.sq] = null; const R = REMNANT.command; let n = 0;
+    for (const o of G.enemies) if (!o.dead && o.squadOf === e.sq) { o.squadOf = null; o.st.stun = Math.max(o.st.stun, R.panic); n++; }
+    if (n) { Hooks.fx('panic', { x: e.x, y: e.y }); Hooks.fx('say', { x: e.x, y: e.y, t: 'link lost' }); } } },
 };
+// rules 16: every kit block's damage multiplier on this hit, multiplied (e.kh marks enemies that have one)
+function kitHit(e, o, src, el) { const K = kitOf(e.type); let m = 1; if (K) for (const P of K) { const f = KIT[P.id].hit; if (f) { const v = f(e, P, o, src, el); if (v !== undefined) m *= v; } }
+  if (e.squadOf != null && G.squads) { const W = G.squads[e.squadOf]; if (W && !W.dead && dist2(W.x, W.y, e.x, e.y) <= REMNANT.command.r * REMNANT.command.r) m *= 1 - REMNANT.command.cut; }
+  return m; }
+// rules 16: Husk scrap piles stand back up (twice as fast in a living Warden's squad); a Welder can stand them up at once (KIT.repair)
+function scrapTick(dt) {
+  const A = G.scrap; if (!A || !A.length) return;
+  for (const p of A) { const W = p.sq != null && G.squads && G.squads[p.sq]; p.t -= dt * (W && !W.dead ? 2 : 1);
+    if (p.t <= 0) { p.done = 1; const e = spawnEnemy('husk', { L: p.L, d: p.d, hpm: 1 }); e.hp = e.maxHp = p.hp; e.cr = p.cr; e.score = Math.round(e.score * 0.3); e.risen = 1; e.fly = p.fly;
+      if (p.sq != null && W && !W.dead) e.squadOf = p.sq; lanePos(e.L, e.d, e); Hooks.fx('rise', { x: p.x, y: p.y }); } }
+  G.scrap = A.filter(p => !p.done);
+}
 function kitRun(e, hook, a, b, c) { const K = kitOf(e.type); if (!K) return; let out; for (const P of K) { const f = KIT[P.id][hook]; if (f) { const v = f(e, P, a, b, c); if (v !== undefined) out = v; } } return out; }
 
 // ---------- enemies ----------
@@ -6067,12 +6162,13 @@ function spawnEnemy(type, q) {
   const hp0 = hp;
   if (q.assault && G.assault && G.assault.hpx) hp *= G.assault.hpx;
   const e = { id: G.eid++, type, L, d: q.d || 0, seg: 0, x: 0, y: 0, hp, maxHp: hp, shield: 0, spd: D.spd, fly,
-    armor: D.armor || 0, armorAll: 0, res: Object.assign({}, D.res || {}), size: type === 'tank' ? 0.42 : type === 'swarmer' ? 0.22 : 0.32,
+    armor: D.armor || 0, armorAll: 0, res: Object.assign({}, D.res || {}), size: type === 'tank' || type === 'bulwark' ? 0.42 : type === 'warden' ? 0.45 : type === 'crawler' ? 0.38 : type === 'swarmer' ? 0.22 : 0.32,
     cr: D.cr * crMult(w), leak: D.leak, score: Math.round(D.cr * 10 * (1 + 0.1 * w)),
     st: { burn: null, chill: 0, chillT: 0, chillPot: 1, frozen: 0, freezeImm: 0, shock: 0, shockEff: 1, mark: 0, markT: 0, stun: 0 },
     cloak: 0, cloakT: 2 + ((G.eid * 2654435761) >>> 0) % 1000 / 500, cloaked: false, elite: [], dead: false, ovlCD: 0, supCD: 0,
     timer: 0, timer2: 0, hitFlash: 0, slow: 0, wob: Math.random() * 6 };
   if (D.kit) kitRun(e, 'spawn'); // 6.14
+  if (q.sq != null && G.frV >= 16) { const S = G.squads || (G.squads = {}); if (q.lead) { S[q.sq] = e; e.sq = q.sq; } else if (S[q.sq] && !S[q.sq].dead) { e.squadOf = q.sq; e.kh = 1; } } // rules 16: Warden squads
   if (G.fr) { e.spd *= FRONTIER.spd; if (!q.fromPt && !q.L) { e.cr /= FRONTIER.count; e.score = Math.round(e.score / FRONTIER.count); } } // Frontier: slower; a wave pays what a Classic one does
   if (genes) {
     e.genes = genes; e.gkey = geneKey(genes, q.gel);
@@ -6366,7 +6462,7 @@ function updateEnemies(dt) {
       }
     }
     if (e.netHold > 0) e.netHold -= dt;
-    if (st.stun > 0 || st.frozen > 0 || G.stasisT > 0 || e.napT > 0 || e.netHold > 0 || e.burrowT > 0) { /* held */ }
+    if (st.stun > 0 || st.frozen > 0 || G.stasisT > 0 || e.napT > 0 || e.netHold > 0 || e.burrowT > 0 || e.planted) { /* held */ }
     else {
       let spd = e.spd * (1 - Math.max(enemySlow(e), Math.min(0.75, sw.slow)));
       if (ev.surge) spd *= 1.35;
@@ -6404,6 +6500,7 @@ function updateEnemies(dt) {
   }
   G.redAlert = G.enemies.some(e => e.boss && e.redAlert && !e.dead);
   if (G.stasisT > 0) G.stasisT -= dt;
+  if (G.scrap && G.scrap.length) scrapTick(dt); // rules 16: Husk scrap piles
   if (G.dragT > 0) G.dragT -= dt;
   if (G.fusT > 0) G.fusT -= dt; if (G.fusCD > 0) G.fusCD -= dt; if (G.rhyT > 0) G.rhyT -= dt; // 6.10 Fusion timers (Called Shots, Cold Shell)
   if (G.slime && G.slime.length) { for (const p of G.slime) p.t -= dt; G.slime = G.slime.filter(p => p.t > 0); }
@@ -6625,6 +6722,7 @@ function hit(e, dmg, el, src, o) {
   // v5.1 Reflector: bolts, beams and chains glance off
   let glance = false;
   if (e.refl && !o.dot && !o.abil && src && src.s && (e.reflK || ['bullet', 'beam', 'chain']).includes(src.s.kind)) { mult *= 1 - e.refl; glance = true; } // 6.14: e.refl comes from the reflect block (rules 10)
+  if (e.kh) mult *= kitHit(e, o, src, el); // rules 16: Remnant blocks (front plate, magnet, adapting plating, a Warden's squad)
   if (st.shock > 0) mult *= 1 + 0.15 * st.shockEff;
   if (e.netted && e.fly && e.lureT && dist2(e.x, e.y, e.lureT.cx, e.lureT.cy) <= Math.pow((e.lureT.s && e.lureT.s.netR) || 1.3, 2)) mult *= 1.2 + ((e.lureT.s && e.lureT.s.netVuln) || 0);
   if (st.mark > 0) mult *= 1 + 0.05 * st.mark;
@@ -6873,7 +6971,7 @@ function kill(e, src, o) {
     for (let i = 0; i < 2; i++) spawnBoss({ boss: 'gloop', L: e.L, d: Math.max(0, e.d - i * 0.5), gen: (e.gen || 0) + 1, hpAbs: e.maxHp * 0.35, hpm: 1 });
     Hooks.fx('say', { x: e.x, y: e.y, t: e.gen ? 'bloop!' : 'ow. but also: two of me' });
   }
-  kitRun(e, 'death'); // 6.14 kit: split, and every new on-death block
+  kitRun(e, 'death', src, o); // 6.14 kit: split, and every new on-death block (6.16: rise and command read the killer)
   if (e.elite.includes('split') && !e.boss) for (let i = 0; i < 2; i++) {
     const c = spawnEnemy(e.type, { L: e.L, d: Math.max(0, e.d - i * 0.3) }); c.maxHp = c.hp = hpBase(e) * 0.3;
   }
@@ -7614,8 +7712,8 @@ function updateProjs(dt) {
         p.x = p.e.x; p.y = p.e.y;
         const e = p.e;
         p.hitSet.add(e);
-        hit(e, p.dmg, p.el, p.src, { crit: p.crit });
-        if (p.splash) { for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, p.x, p.y) <= p.splash * p.splash) hit(o, p.dmg * 0.5, p.el, p.src, { noStatus: 1 }); Hooks.fx('boom', { x: p.x, y: p.y, r: p.splash, col: EL[p.el].col }); }
+        hit(e, p.dmg, p.el, p.src, { crit: p.crit, proj: 1 });
+        if (p.splash) { for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, p.x, p.y) <= p.splash * p.splash) hit(o, p.dmg * 0.5, p.el, p.src, { noStatus: 1, area: 1 }); Hooks.fx('boom', { x: p.x, y: p.y, r: p.splash, col: EL[p.el].col }); }
         ricochet(p.src, e, p.dmg, p.el);
         if (G.af.fractal && !p.shard) shards(p, e);
         Hooks.fx('spark', { x: p.x, y: p.y, col: EL[p.el].col });
@@ -7669,7 +7767,7 @@ function explode(p) {
   Hooks.sfx(p.k === 'mortar' ? 'empboom' : p.k === 'bomblet' ? 'pop' : 'boomT', p); // cosmetic: each payload has its own impact
   for (const e of G.enemies) if (!e.dead && dist2(e.x, e.y, p.x, p.y) <= (r + e.size) * (r + e.size)) {
     if (p.k === 'mortar' && !p.frost && !p.jk && e.shield > 0) e.shield *= s.pkv.eater ? 0 : 0.5; // EMP strips shields (v5.8 Shield Eater: all of it)
-    hit(e, p.dmg, p.el, src, { crit: p.crit });
+    hit(e, p.dmg, p.el, src, { crit: p.crit, area: 1, proj: p.k === 'missile' ? 1 : 0 }); // 6.16: area (a Husk stays down), proj (the Lodestone's cut)
   }
   if (p.k === 'missile' && s.cluster) for (let i = 0; i < s.cluster; i++) {
     G.projs.push({ k: 'bomblet', x: p.x + (G.r() - 0.5) * 1.6, y: p.y + (G.r() - 0.5) * 1.6, t: 0.25 + i * 0.12, dmg: p.dmg * 0.45, el: p.el, src, splash: 0.6, crit: false });
@@ -9257,14 +9355,16 @@ const SFX = (() => {
     splat(c) { nz(c, { ft: 'lowpass', f0: 900, f1: 250, q: 3, d: 0.12, v: 0.55 }); tone(c, { w: 'sine', f0: 400, f1: 120, d: 0.1, v: 0.2 }); },
     ghost(c) { fmv(c, { f0: 880, f1: 220, r: 1.5, i: 2, d: 0.22, v: 0.14 }); nz(c, { ft: 'highpass', f0: 4000, f1: 1200, d: 0.18, v: 0.15, a: 0.02 }); },
     heal(c) { fmv(c, { f0: 1319, f1: 660, r: 2, i: 0.8, d: 0.16, v: 0.13 }); nz(c, { f0: 1600, f1: 600, q: 1.5, d: 0.07, v: 0.3 }); },
+    metal(c) { click(c, 0.45, 0, 2500); fmv(c, { f0: 220, f1: 110, r: 2.76, i: 3, d: 0.22, v: 0.16, cw: 'triangle' }); nz(c, { ft: 'lowpass', f0: 2400, f1: 300, d: 0.18, v: 0.45, lofi: 1 }); sub(c, 90, 45, 0.12, 0.3); }, // 6.16 a Remnant machine collapses
+    scrap(c) { click(c, 0.3, 0, 3500); for (let k = 0; k < 3; k++) fmv(c, { f0: rnd(700, 1400), r: 3.1, i: 1.5, d: 0.06, v: 0.06, at: k * 0.035 }); nz(c, { f0: 2000, f1: 600, q: 1.4, d: 0.1, v: 0.35, lofi: 1 }); }, // 6.16 a Husk falls apart
     glass(c) { click(c, 0.4, 0, 5000); fmv(c, { f0: 2349, r: 2.76, i: 1.6, d: 0.16, v: 0.13 }); fmv(c, { f0: 3136, r: 3.5, i: 1, d: 0.12, v: 0.08, at: 0.02 }); nz(c, { ft: 'highpass', f0: 5000, d: 0.12, v: 0.2 }); },
   };
-  const DIE_KIND = { swarmer: 'small', drone: 'bug', tank: 'heavy', flyer: 'air', splitter: 'splat', phantom: 'ghost', medic: 'heal', shielder: 'glass', voidling: 'air', pirate: 'heavy' };
+  const DIE_KIND = { swarmer: 'small', drone: 'bug', tank: 'heavy', flyer: 'air', splitter: 'splat', phantom: 'ghost', medic: 'heal', shielder: 'glass', voidling: 'air', pirate: 'heavy', husk: 'scrap', bulwark: 'metal', welder: 'metal', lodestone: 'glass', crawler: 'metal', adapter: 'metal', warden: 'heavy' };
   function die(e) {
     if (!allow('die', 0.03, 6)) return;
     const now2 = performance.now(); if (now2 - streakT < 450) streak = Math.min(7, streak + 1); else streak = 0; streakT = now2;
     const kind = e && e.meat ? 'splat' : e && e.mite ? 'small' : DIE_KIND[e && e.type] || 'bug';
-    const c = ev('die', busH, kind === 'heavy' ? 0.55 : 0.4, { room: 0.12, jit: 0.8, pitch: semi(streak), trim: { small: 10, bug: 2, heavy: -5.5, air: 3, splat: 1, ghost: 0, heal: 4, glass: 0 }[kind] }, e);
+    const c = ev('die', busH, kind === 'heavy' ? 0.55 : 0.4, { room: 0.12, jit: 0.8, pitch: semi(streak), trim: { small: 10, bug: 2, heavy: -5.5, air: 3, splat: 1, ghost: 0, heal: 4, glass: 0, metal: -3, scrap: 2 }[kind] }, e);
     DIE[kind](c); done(c);
   }
   const COMBO = {
@@ -11405,13 +11505,71 @@ const UNITS = (() => {
       for (let i = 3; i >= 0; i--) { const x = 6 - i * 4.5, y = Math.sin(f * 1.57 + i) * 1.4, r = 5.2 - i * 0.6; parts.push(P(S.dome(x, y, r, 5 - i * 0.6), 0, ramp(i ? mix(c, '#3a1a08', 0.22 * i) : c, 0.75), { e: (xx, yy) => (i === 0 && Math.hypot(xx - 9, yy - y) < 1.4) ? '#2a0a04' : (Math.hypot(xx - x, yy - y) < 1.2 && (f + i) % 2 ? '#fff4c0' : null) })); }
       return parts;
     },
+    // ---- 6.16 the Remnant: old war machines. Riveted plate, rust and brass, dim red optics (facing +x) ----
+    husk(c, f) { // Husk: a scrap frame on four stubby legs, mismatched plates, one red eye
+      const parts = [], st = [0, 1, 0, -1][f] * 1.4;
+      for (const s of [-1, 1]) for (const k of [-1, 1]) { const x0 = k * 4.5, x1 = x0 + st * s * k + k; parts.push(P(S.box(Math.min(x0, x1) - 1.2, Math.min(s * 3, s * 9), Math.max(x0, x1) + 1.2, Math.max(s * 3, s * 9), 2, 1), 0, ramp('#2a1a10', 0.5))); }
+      parts.push(P(S.rbox(-8, -6.5, 6, 6.5, 2, 6, 2), 2, ramp(c, 0.55), { d: (x, y) => (Math.abs(x + 1) < 0.6 ? -1.5 : 0) + (Math.hypot(x + 5, y - 4) < 0.8 || Math.hypot(x + 5, y + 4) < 0.8 ? 1.5 : 0) }));
+      parts.push(P(S.box(-6, -7.5, -1, -2, 3, 1), 6, ramp('#6a6a4a', 0.5)));
+      parts.push(P(S.rbox(3, -4, 9, 4, 2, 5, 1.5), 5, ramp('#3a3040', 0.6), { e: (x, y) => Math.hypot(x - 7.5, y) < 1.4 ? (f % 2 ? '#ff3b2f' : '#a01810') : null }));
+      return parts;
+    },
+    bulwark(c, f) { // Bulwark: a wide hull on treads behind a tall brass front plate
+      const parts = [];
+      for (const s of [-1, 1]) parts.push(P(S.rbox(-13, s * 8 - 3, 9, s * 8 + 3, 2, 4, 1.5), 0, ramp('#1e1a16', 0.45), { d: (x) => (((Math.floor(x + 30 + f * 2)) % 3) ? 0 : -1.5) }));
+      parts.push(P(S.rbox(-11, -7, 7, 7, 2.5, 8, 2.5), 3, ramp(c, 0.55), { d: (x, y) => (Math.hypot(x + 7, y) < 1 || Math.hypot(x - 2, y - 4) < 0.7 || Math.hypot(x - 2, y + 4) < 0.7 ? 1.5 : 0) }));
+      parts.push(P(S.poly([[8, -13], [13, -9], [13, 9], [8, 13], [6, 9], [6, -9]], 10, 2.5), 4, ramp('#b08a40', 0.75), { d: (x, y) => (Math.abs(y) < 0.6 || Math.abs(Math.abs(y) - 7) < 0.5 ? -1.2 : 0), e: (x, y) => (Math.abs(x - 10) < 0.8 && Math.abs(y) < 1.5) ? '#ff3b2f' : null }));
+      return parts;
+    },
+    welder(c, f) { // Welder: a small tracked unit with a jointed arm and a white-hot torch
+      const parts = [];
+      for (const s of [-1, 1]) parts.push(P(S.rbox(-8, s * 6 - 2, 5, s * 6 + 2, 1.5, 3, 1), 0, ramp('#1e1a16', 0.45)));
+      parts.push(P(S.rbox(-7, -5, 4, 5, 2, 6, 2), 2, ramp(c, 0.6), { d: (x, y) => (Math.abs(y) < 0.5 ? -1 : 0) }));
+      parts.push(P(S.box(1, -1.2, 9, 1.2, 3, 1), 8, ramp('#9aa0b0', 0.7)));
+      parts.push(P(S.dome(10, 0, 2.2, 2), 9, ramp('#cfe6ff', 1), { e: () => f % 2 ? '#ffffff' : '#7ad8ff' }));
+      parts.push(P(S.dome(-3, 0, 2.6, 3), 8, ramp('#3a3040', 0.6), { e: (x, y) => Math.hypot(x + 2, y) < 1 ? '#ff3b2f' : null }));
+      return parts;
+    },
+    lodestone(c, f) { // Lodestone: a dark magnet core in a horseshoe frame, red and blue poles, a ring that hums
+      const parts = [P(S.ring(0, 0, 9, 12, 0), 0, ramp('#4a4050', 0.6), { e: (x, y) => { const a = Math.atan2(y, x); return Math.abs(Math.sin(a * 3 + f * 1.57)) > 0.97 ? '#c8b8ff' : null; } })];
+      parts.push(P(S.dome(0, 0, 7.5, 9), 3, ramp(c, 0.7), { d: (x, y) => (Math.abs(x) < 0.6 ? -1.5 : 0) }));
+      parts.push(P(S.box(5, -6, 9, -2.5, 6, 1), 6, ramp('#d8281a', 0.8)));
+      parts.push(P(S.box(5, 2.5, 9, 6, 6, 1), 6, ramp('#2a6ad8', 0.8)));
+      parts.push(P(S.dome(-1, 0, 2.5, 3), 10, ramp('#ffffff', 1), { e: () => f % 2 ? '#e8dcff' : '#b8a8ff' }));
+      return parts;
+    },
+    crawler(c, f) { // Siege Crawler: four long jointed legs, a plated body and a long gun barrel forward
+      const parts = [], st = [0, 1.5, 0, -1.5][f];
+      for (const s of [-1, 1]) for (const k of [-1, 1]) { const kx = k * 6 + st * s * k, kn = k * 3; parts.push(P(S.poly([[kn - 1, s * 4], [kn + 1, s * 4], [kx + 1.2, s * 15], [kx - 1.2, s * 15]], 3, 1), 0, ramp('#2a1a10', 0.5))); }
+      parts.push(P(S.rbox(-9, -6, 6, 6, 2.5, 7, 2), 3, ramp(c, 0.55), { d: (x, y) => (Math.abs(x + 3) < 0.5 ? -1.2 : 0) + (Math.hypot(x + 6, y - 3.5) < 0.7 || Math.hypot(x + 6, y + 3.5) < 0.7 ? 1.5 : 0) }));
+      parts.push(P(S.tube(2, 18, 0, 1.7, 0), 9, ramp('#6a6050', 0.7), { d: (x) => (Math.abs(x - 12) < 0.6 ? -1.5 : 0) }));
+      parts.push(P(S.dome(-2, 0, 3, 3), 10, ramp('#3a3040', 0.6), { e: (x, y) => Math.hypot(x - 0.5, y) < 1 ? '#ff3b2f' : null }));
+      return parts;
+    },
+    adapter(c, f) { // Adapter: a hex-plated walker; the plates shift as it tunes (the colour of its element is drawn live by render.js)
+      const parts = [], st = [0, 1, 0, -1][f] * 1.2;
+      for (const s of [-1, 1]) for (const k of [-1, 1]) parts.push(P(S.box(k * 5 - 1 + st * s * k, Math.min(s * 4, s * 10), k * 5 + 1 + st * s * k, Math.max(s * 4, s * 10), 2, 1), 0, ramp('#2a1a10', 0.5)));
+      parts.push(P(S.hexgem(0, 0, 10, 9), 2, ramp(c, 0.7), { d: (x, y) => { const q = Math.max(Math.abs(x) * 0.866 + Math.abs(y) * 0.5, Math.abs(y)); return Math.abs(q - 6) < 0.6 ? -1.5 : 0; } }));
+      parts.push(P(S.hexgem(0, 0, 4.5, 6), 9, ramp('#d8d0b8', 0.9), { e: (x, y) => Math.hypot(x - 1.5, y) < 1 ? '#ff3b2f' : null }));
+      return parts;
+    },
+    warden(c, f) { // Warden: a heavy command walker with a sensor mast and a red command light
+      const parts = [], st = [0, 1.6, 0, -1.6][f];
+      for (const s of [-1, 1]) for (const k of [-1, 1]) { const x0 = k * 7, x1 = x0 + st * s * k + k * 2; parts.push(P(S.poly([[x0 - 2, s * 6], [x0 + 2, s * 6], [x1 + 2, s * 16], [x1 - 2, s * 16]], 4, 1.5), 0, ramp('#1e1a16', 0.45))); }
+      parts.push(P(S.rbox(-14, -10, 11, 10, 4, 10, 3), 3, ramp(c, 0.6), { d: (x, y) => (Math.abs(y) < 0.6 || Math.abs(x + 2) < 0.6 ? -1.3 : 0) + (Math.hypot(Math.abs(x) - 9, Math.abs(y) - 7) < 0.9 ? 1.5 : 0) }));
+      parts.push(P(S.poly([[11, -8], [17, -4], [17, 4], [11, 8]], 8, 2), 6, ramp('#b08a40', 0.75)));
+      parts.push(P(S.box(-10, -1, -4, 1, 6, 1), 13, ramp('#9aa0b0', 0.7)));
+      parts.push(P(S.dome(-12, 0, 2.8, 3), 19, ramp('#ff3b2f', 1), { e: () => f % 2 ? '#ffd0c8' : '#ff3b2f' }));
+      parts.push(P(S.dome(4, 0, 3.5, 3), 13, ramp('#3a3040', 0.6), { e: (x, y) => Math.hypot(x - 5.5, y) < 1.3 ? '#ff3b2f' : null }));
+      return parts;
+    },
     voidling(c, f) { // a void bat
       const w = [9, 6, 3, 6][f];
       return [P(S.poly([[7, 0], [-1, -w - 2], [-4, -2], [-7, 0], [-4, 2], [-1, w + 2]], 3, 3), 0, ramp(c, 0.8)),
         P(S.gem(1, 0, 4, 3, 6), 2, ramp('#2a1050', 0.8), { e: (x, y) => Math.hypot(x - 2, y) < 1.1 ? '#ffffff' : null })];
     },
   };
-  const ESZ = { drone: 42, swarmer: 24, tank: 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30, reflector: 36, carrier: 58, sapper: 32, leech: 34 };
+  const ESZ = { drone: 42, swarmer: 24, tank: 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30, reflector: 36, carrier: 58, sapper: 32, leech: 34, husk: 34, bulwark: 48, welder: 38, lodestone: 40, crawler: 50, adapter: 38, warden: 60 };
   const EA = 16;
   function enemy(type, ang, fr) {
     if (!ENEMY[type]) return null;
@@ -11668,6 +11826,7 @@ const ENEMY_COL = {
   drone: '#ff5470', swarmer: '#ff9ad5', tank: '#c9405a', flyer: '#ff86b0', splitter: '#ff6f3c', phantom: '#d6d2ff',
   medic: '#ff7c9c', shielder: '#8ab6ff', voidling: '#b86cff', boss: '#ff3355', pirate: '#d8281a',
   reflector: '#cfe6ff', carrier: '#e0607a', sapper: '#ffa860', leech: '#ffd24a',
+  husk: '#9a6a48', bulwark: '#8a7a5a', welder: '#7a8a9a', lodestone: '#6a5a7a', crawler: '#8a6040', adapter: '#7a7a6a', warden: '#a08048', // 6.16 the Remnant
 };
 
 const Render = (() => {
@@ -12004,7 +12163,7 @@ const RES = 2;
     },
     voidling(g, c) { diamond(g, 5, 5, 5, '#1a0830'); diamond(g, 5, 5, 4, c); P(g, 4, 3, '#ffffff'); P(g, 5, 5, '#ffffff'); },
   };
-  const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11, reflector: 15, carrier: 22, sapper: 13, leech: 14 };
+  const EN_SIZE = { drone: 15, swarmer: 9, tank: 20, flyer: 16, splitter: 14, phantom: 15, medic: 15, shielder: 17, voidling: 11, reflector: 15, carrier: 22, sapper: 13, leech: 14, husk: 14, bulwark: 20, welder: 15, lodestone: 16, crawler: 20, adapter: 15, warden: 24 };
   const pirateSprite = gold => UNITS.pirate(gold);
   function enemySprite(type) {
     if (type === 'pirate') return pirateSprite(false);
@@ -13060,6 +13219,26 @@ const RES = 2;
     if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.18 + 0.4 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 1.5; b.beginPath(); for (let k = 0; k <= 8; k++) { const a8 = (k + 0.5) / 8 * 6.283, r8 = 33.5 / Math.cos(Math.PI / 8); b[k ? 'lineTo' : 'moveTo'](X + Math.cos(a8) * r8, Y + Math.sin(a8) * r8); } b.stroke(); } // 6.15 keystone: the shield hugs the deck
     if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, 30, 0, 6.283); b.stroke(); }
   }
+  // 6.16 the Remnant: a sparking scrap pile with a ring that closes as it gets ready to stand back up
+  function drawScrap() {
+    for (const p of G.scrap) { const X = p.x * TILE, Y = p.y * TILE, k = clamp(p.t / REMNANT.rise.after, 0, 1);
+      for (const [dx, dy, w, h, col] of [[-5, 1, 5, 3, '#5a3a24'], [-1, -2, 6, 3, '#8a6040'], [1, 2, 5, 2, '#3a2a1a'], [-3, -4, 3, 2, '#6a6a4a']]) R(b, X + dx, Y + dy, w, h, col);
+      if (frame % 6 < 3) { const a = (frame * 1.7 + p.x * 9) % 6.283; R(b, X + Math.cos(a) * 4, Y + Math.sin(a) * 3 - 2, 1, 1, '#ffe14d'); }
+      b.strokeStyle = hexA('#ff7b39', 0.7); b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, 8, -1.5708, -1.5708 + 6.283 * (1 - k)); b.stroke(); }
+  }
+  function drawRemnantTells() {
+    const R2 = REMNANT;
+    for (const e of G.enemies) { if (e.dead || e._fogH || (e.cloaked && !(e.revealed > 0))) continue; const X = e.x * TILE, Y = e.y * TILE - (e.fly ? 7 : 0);
+      if (e.type === 'bulwark') { const a = e._ha || 0, hot = G.time - (e.frontT || -9) < 0.25; b.strokeStyle = hexA('#ffd27a', hot ? 0.95 : 0.4 + 0.15 * Math.sin(frame / 8)); b.lineWidth = hot ? 3 : 2; b.beginPath(); b.arc(X, Y, 14, a - 1.2, a + 1.2); b.stroke(); }
+      else if (e.type === 'crawler' && e.planted) { const t = e.sgAim; R(b, X - 9, Y + 8, 18, 1, hexA('#ff3b2f', 0.5));
+        if (t && G.towers.includes(t)) { const on = frame % 8 < 5, tx = t.cx * TILE, ty = t.cy * TILE; b.strokeStyle = hexA('#ff3b2f', on ? 0.85 : 0.35); b.lineWidth = 1; b.setLineDash([3, 2]); b.beginPath(); b.moveTo(X, Y); b.lineTo(tx, ty); b.stroke(); b.setLineDash([]);
+          b.strokeStyle = hexA('#ff3b2f', 0.9); b.beginPath(); b.arc(tx, ty, 9 + (frame % 10) * 0.4, 0, 6.283); b.stroke(); R(b, tx - 1, ty - 1, 2, 2, '#ffd0c8'); } }
+      else if (e.type === 'lodestone') { b.strokeStyle = hexA('#b8a8ff', 0.22 + 0.08 * Math.sin(frame / 6)); b.lineWidth = 1; b.setLineDash([2, 6]); b.lineDashOffset = -frame / 2; b.beginPath(); b.arc(X, Y, R2.magnet.r * TILE, 0, 6.283); b.stroke(); b.setLineDash([]); }
+      else if (e.type === 'adapter' && e.adEl && EL[e.adEl]) { b.strokeStyle = hexA(EL[e.adEl].col, 0.85); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 11, 0, 6.283); b.stroke(); R(b, X - 2, Y - 14, 4, 2, EL[e.adEl].col); }
+      else if (e.type === 'warden' && e.sq != null) { const r2 = R2.command.r * R2.command.r; b.lineWidth = 1;
+        for (const o of G.enemies) if (!o.dead && o.squadOf === e.sq && !o._fogH) { const near = dist2(o.x, o.y, e.x, e.y) <= r2; b.strokeStyle = hexA('#ff7b39', near ? 0.45 : 0.12); b.beginPath(); b.moveTo(X, Y); b.lineTo(o.x * TILE, o.y * TILE); b.stroke(); if (near) R(b, o.x * TILE - 1, o.y * TILE - 12, 3, 2, '#ff7b39'); } }
+    }
+  }
   // 6.14 rules 13: enemies near a landed Black Hole stretch toward it as they fall in (drawing only)
   function drawEnemyH(e) {
     const h = G.hole; if (!h || h.v !== 13 || h.ph !== 1 || e.boss) return drawEnemy(e);
@@ -13520,9 +13699,11 @@ const RES = 2;
       for (const ph of [k, (k + 0.5) % 1]) { b.strokeStyle = hexA(PAL.core, 0.75 * (1 - ph)); b.lineWidth = 2; b.beginPath(); b.arc(cx, cy, 17 + ph * 14, 0, 6.2832); b.stroke(); } }
     if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
     geneRanks();
+    if (G.scrap && G.scrap.length) drawScrap(); // 6.16 Husk scrap piles (under the units)
     for (const e of G.enemies) if (!e.fly && !e._fogH && !e._fogB) drawEnemyH(e);
     if (G.capT && G.capT.length) drawCapField(); // 6.4 Rimewall walls (in front of the ground enemies they hold) and Entangler links
     for (const e of G.enemies) if (e.fly && !e._fogH && !e._fogB) drawEnemyH(e);
+    if (G.frV >= 16) drawRemnantTells(); // 6.16 the Remnant's tells (front plate, siege laser, magnet field, adapted element, Warden links)
     for (const q of pops) { q.life -= dt; const k = 1 - Math.max(0, q.life / q.max), z = 1 + 0.45 * k, w = q.w * z, h = q.h * z; b.globalAlpha = (1 - k) * 0.9; b.drawImage(tintOf(q.s, '#ffffff'), Math.round((q.x - w / 2) * RES) / RES, Math.round((q.y - h / 2) * RES) / RES, w, h); }
     if (pops.length) { b.globalAlpha = 1; pops = pops.filter(q => q.life > 0); }
     // pirate drop ships
@@ -14243,6 +14424,15 @@ const RES = 2;
       case 'sap': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.5, max: 0.5, col: '#ff3355', core: 1, w: 2 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 4, r1: 20, life: 0.4, max: 0.4, col: '#ff3355', w: 2, fill: 1 }); burst(T2P(d.x2), T2P(d.y2), 14, '#ffa860', 40 * K, 0.4); break;
       case 'drop': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 18, life: 0.35, max: 0.35, col: '#ffe14d', w: 2 }); burst(T2P(d.x), T2P(d.y), 6, '#ffe14d', 25 * K, 0.3, 30 * K); break;
       case 'blink': burst(T2P(d.x), T2P(d.y), 14, '#b86cff', 40 * K, 0.3); break;
+      // 6.16 the Remnant
+      case 'scrap': burst(T2P(d.x), T2P(d.y), 10, '#c08050', 30 * K, 0.35, 60 * K); break;
+      case 'scrapgone': burst(T2P(d.x), T2P(d.y), 14, '#ffb03a', 45 * K, 0.4, 40 * K); text(d.x, d.y - 0.5, 'scrapped', '#ffb03a', 11, 0.6, -0.6); break;
+      case 'rise': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 16, life: 0.35, max: 0.35, col: '#ff7b39', w: 2 }); burst(T2P(d.x), T2P(d.y), 8, '#ffe14d', 25 * K, 0.3); break;
+      case 'repair': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.4, max: 0.4, col: '#9ad8ff', core: 1, w: 2 }); burst(T2P(d.x2), T2P(d.y2), 6, '#ffffff', 25 * K, 0.25); text(d.x2, d.y2 - 0.5, '+', '#9ad8ff', 14, 0.5, -0.8); break;
+      case 'plant': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: 18, life: 0.35, max: 0.35, col: '#ff3b2f', w: 2 }); break;
+      case 'shell': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.3, max: 0.3, col: '#ffb03a', core: 1, w: 3 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 4, r1: 22, life: 0.45, max: 0.45, col: '#ff3b2f', w: 3, fill: 1 }); burst(T2P(d.x2), T2P(d.y2), 12, '#ffb03a', 50 * K, 0.4); break;
+      case 'adapt': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 6, life: 0.3, max: 0.3, col: EL[d.el] ? EL[d.el].col : '#ffffff', w: 2 }); break;
+      case 'panic': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 6, r1: REMNANT.command.r * TILE, life: 0.5, max: 0.5, col: '#ff7b39', w: 2 }); break;
       case 'lure': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.35, max: 0.35, col: '#59f0b4', core: 0, w: 1 });
         if (d.t && d.t.spec === 2) rings.push({ x: T2P(d.x1), y: T2P(d.y1), r0: 4, r1: 30, life: 0.5, max: 0.5, col: '#59f0b4', w: 1, a: 0.6, nl: 1 }); break;
       case 'net': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 3, life: 0.35, max: 0.35, col: '#59f0b4', w: 2 }); burst(T2P(d.x), T2P(d.y), 8, '#c9fff0', 20 * K, 0.3);
@@ -16466,10 +16656,12 @@ const UI = (() => {
     const D = ENEMIES[k]; if (!D) return;
     if (screen === 'game' && G && !G.over && !teachOK()) { if (!enemyCards.includes(k)) enemyCards.push(k); return; } // 6.2: waits its turn like every first-time card
     teachMark();
-    if (briefMode() !== 'pause' || screen !== 'game') { toast('NEW ENEMY · ' + D.name.toUpperCase(), `${D.desc}. Beat it: ${D.beat}`, '#ff4d6a', true); return; }
+    const fam = D.fam === 'remnant' && !(PROF.codex.fams && PROF.codex.fams.remnant) ? REM_FIRST : ''; // 6.16: the first Remnant brings the family's line
+    if (fam) { PROF.codex.fams = Object.assign({}, PROF.codex.fams, { remnant: 1 }); }
+    if (briefMode() !== 'pause' || screen !== 'game') { toast('NEW ENEMY · ' + D.name.toUpperCase(), `${fam ? fam + ' ' : ''}${D.mc ? D.mc + ' ' : ''}${D.desc}. Beat it: ${D.beat}`, '#ff4d6a', true); return; }
     if (modalOpen || Tree.isOpen || (G && G.draft)) { if (!enemyCards.includes(k)) enemyCards.push(k); return; }
     closePanel(); if (G && !G.over) { G.paused = true; G.briefing = true; }
-    modal(`<div class="card narrow brief ecard"><div class="erow"><canvas width="88" height="88" data-eico="${k}"></canvas><div class="bi"><em>${G && G.enemies.some(e => e.type === k && !e.dead) ? 'New enemy · on the field' : 'New enemy · next wave'}</em><h3>${esc(D.name)}</h3><p class="desc">${tipify(D.desc)}.</p><p class="ph good">Beat it: ${tipify(D.beat)}</p></div></div>
+    modal(`<div class="card narrow brief ecard"><div class="erow"><canvas width="88" height="88" data-eico="${k}"></canvas><div class="bi"><em>${G && G.enemies.some(e => e.type === k && !e.dead) ? 'New enemy · on the field' : 'New enemy · next wave'}</em><h3>${esc(D.name)}</h3>${fam ? `<p class="mcf">${esc(fam)}</p>` : ''}${D.mc ? `<p class="mc">${esc(D.mc)}</p>` : ''}<p class="desc">${tipify(D.desc)}.</p><p class="ph good">Beat it: ${tipify(D.beat)}</p></div></div>
       <div class="foot"><span class="note">Tap any enemy on the field to inspect it</span><button class="btn primary" data-act="brief">Got it</button></div></div>`, 'brief');
     const cv = $('#modal canvas[data-eico]'); if (cv) Render.enemyIcon(k, cv);
   }
