@@ -1613,7 +1613,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.15.0 + 6.15 PILOT CERTIFICATION + KEYSTONE CORE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.15.0 + 6.15 CERTIFICATION + KEYSTONE CORE + RULES 14';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2185,7 +2185,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 13; // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 14; // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2482,7 +2482,7 @@ const LESSONS = [
     real: 'In a run: build into storms of your element; draw Anomalies that match your towers.',
     run: { start: 8, credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo', 'missile'], probe: 1, abil: ['strike', 'overclock'], pre: [['towers', [['missile', 2], ['pulse', 2]]], ['storm', 'solar'], ['entropy', 100], ['abil', ['overclock'], 1]], waves: [[['drone', 10, 0.9, 0.7]], [['drone', 10, 0.9, 0.7]]] } },
   { id: 'blackhole', track: 'advanced', bench: { m: 'Feed the Black Hole and hit 3 enemies with one Gravity Bomb', s: null }, title: 'Black Hole', blurb: 'Feed it or fear it.',
-    what: 'A marker shows where a Black Hole will land, 8 seconds ahead. Once it lands, every kill inside its reach feeds it. Fed when its 30 seconds run out, it collapses in a blast and leaves a rich wreck for the probe. Starved, it spits voidlings back out. A Strike aimed inside its reach becomes a Gravity Bomb that drags enemies to its center and crushes them.', when: 'From Wave 10, now and then.', todo: 'Move towers into its fast-firing ring. Fire a Strike into it when enemies crowd its reach.',
+    what: 'A marker shows where a Black Hole will land, 8 seconds ahead. Once it lands, it hunts: it drifts toward the biggest pack of enemies your towers can reach, and every kill inside its reach feeds it. Fed when its 30 seconds run out, it collapses in a blast and leaves a rich wreck for the probe. Starved, it spits voidlings back out. A Strike aimed inside its reach becomes a Gravity Bomb that drags enemies to its center and crushes them.', when: 'From Wave 10, now and then.', todo: 'Move towers into its fast-firing ring. Fire a Strike into it when enemies crowd its reach.',
     real: 'In a run: when the marker appears, move a tower or two into its ring and save a Strike for it.',
     run: { start: 12, credits: 700, grid: 8, towers: ['pulse', 'rail', 'cryo', 'missile'], probe: 1, hole: { w: 1 }, abil: ['strike'], pre: [['towers', [['pulse', 3], ['rail', 3], ['missile', 2], ['cryo', 2]]], ['abil', ['strike'], 2]],
       waves: [[['drone', 16, 0.55, 0.9], ['swarmer', 12, 0.3, 0.8], ['drone', 10, 0.6, 0.9]], [['drone', 10, 0.8, 0.9], ['tank', 2, 2.5, 0.8]]] } },
@@ -2614,7 +2614,7 @@ const GENES = {
   shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.65, desc: 'Shield worth 60% of HP. It recharges when left alone, unless Arc has hit it in the last 3s', counter: 'Arc Coil, EMP' },
   regen:   { name: 'Regrowth', col: '#59f0b4', hp: 0.75, desc: 'Heals 2.5%/s unless Burning', counter: 'Flame, Missile' },
   ward:    { name: 'Ward', col: '#d6a6ff', hp: 0.85, desc: '50% resist to one element', counter: 'any other element' },
-  cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon' },
+  cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon, the core\'s light' },
 };
 const GENE_IDS = Object.keys(GENES);
 // Swarm Codex: every evolved strain gets a name
@@ -2730,6 +2730,14 @@ const HOLE = {
 // becomes a Gravity Bomb: everything in the reach is dragged up to bombPull tiles along its road toward the centre, stunned bombStun
 // s and hit for bombX × the Strike
 const HOLE13 = { warn: 8, feed: 6, feedW: 0.25, eliteM: 3, bossM: 10, blastR: 8, blast: 0.3, blastBoss: 0.06, spit: 3, spitW: 10, bombX: 1.5, bombPull: 4, bombStun: 1.2 };
+// 6.15 rules 14 (Nic, Nov 14: "it needs to drift to enemies or it will never really get fed"). Every `every` s a landed hole picks
+// the enemy with the most others within `pack` tiles (worth more for each attack tower in reach of it, up to 4), looking up to `look` tiles out, and steers toward it at up to `spd` tiles/s
+// (turning at `turn` per s). It keeps `coreGap` tiles from the core. No enemies in sight: the old slow drift. Towers inside its
+// horizon are no longer slowed (HOLE.inner is rules 13 and older): it now parks on your kill zone, and the smart bot lost 25 waves to that.
+const HOLE14 = { every: 0.25, look: 12, pack: 2.5, spd: 0.75, turn: 2.5, coreGap: 3.5 };
+// 6.15 rules 14: the last fire. Cloaked enemies within the core's light are revealed. Its radius runs from `min` tiles at no hull
+// to `max` at full hull (render.js draws the same light); in flight it keeps its light.
+const LIGHT14 = { min: 3, max: 6 };
 // 6.14 rules 13 storms: every `every` s a storm acts on the enemies under it. Ion strikes up to zapN of them for zap of max HP (bosses
 // zapBoss); Solar sets them burning (burn × the wave's HP scale per s for burnT s); Cryo chills (+1 stack); Void Marks (+1);
 // Static reveals cloaked ones. The probe harvests a storm it is sent to: harvest s inside (within inR of its radius) gives one charge
@@ -4963,6 +4971,7 @@ function holeSpawn(near) {
   G.hole = { x, y, tx, ty, dx, dy, ph: 0, t: 0, k: 1 };
   const v13 = G.frV >= 13; // rules 13: an 8 s approach with its effects off, then it must be fed
   if (v13) { const h = G.hole; h.v = 13; h.k = 0; h.spd = back / HOLE13.warn; h.m = 0; h.goal = Math.round(HOLE13.feed + Math.max(1, G.wave) * HOLE13.feedW); }
+  if (G.frV >= 14) { const h = G.hole; h.hunt = 1; h.vx = 0; h.vy = 0; h.hT = 0; } // rules 14: it hunts crowds
   const ang = Math.atan2(y - G.core.y, x - G.core.x), dir = COMPASS[((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8];
   if (v13) Hooks.toast('BLACK HOLE', `Lands in ${HOLE13.warn}s where the marker is. Feed it ${G.hole.goal} kills inside its reach and it collapses in your favour. Starve it and it spits the dark back out`, '#b86cff'); // draft text, Nic's to edit
   else Hooks.toast('BLACK HOLE', `Inbound from the ${dir}. Arrives in ${Math.max(1, Math.round(back / HOLE.inSpd))}s. Towers at its edge +${Math.round(HOLE.ring * 100)}% Attack Speed`, '#b86cff');
@@ -4975,14 +4984,37 @@ function holeUpdate(dt) {
     const ddx = h.tx - h.x, ddy = h.ty - h.y, d = Math.hypot(ddx, ddy), st = (h.v >= 13 ? h.spd : HOLE.inSpd) * dt;
     if (d <= st) { h.x = h.tx; h.y = h.ty; h.ph = 1; h.t = 0; if (h.v >= 13) { h.k = 1; Hooks.fx('holeLand', { x: h.x, y: h.y }); Hooks.sfx('holeEnd', { x: h.x, y: h.y }); } } else { h.x += ddx / d * st; h.y += ddy / d * st; }
   } else if (h.ph === 1) {
-    h.x += h.dx * HOLE.drift * dt; h.y += h.dy * HOLE.drift * dt;
+    if (h.hunt) holeHunt(h, dt); else { h.x += h.dx * HOLE.drift * dt; h.y += h.dy * HOLE.drift * dt; }
     if (h.t >= HOLE.hold) { h.ph = 2; h.t = 0; if (h.v >= 13) holeVerdict(h); }
   } else {
     h.k = Math.max(0, 1 - h.t / HOLE.out);
     if (h.t >= HOLE.out) { Hooks.fx('holeEnd', { x: h.x, y: h.y }); Hooks.sfx('holeEnd', { x: h.x, y: h.y }); G.hole = null; }
   }
 }
+// rules 14: steer toward the thickest pack of enemies in sight that your towers can reach (re-picked every HOLE14.every s), never within coreGap of the core
+function holeHunt(h, dt) {
+  h.hT -= dt;
+  if (h.hT <= 0) {
+    h.hT = HOLE14.every; h.tgt = null;
+    const L2 = HOLE14.look * HOLE14.look, P2 = HOLE14.pack * HOLE14.pack, near = [];
+    for (const e of G.enemies) if (!e.dead && !(e.burrowT > 0) && dist2(e.x, e.y, h.x, h.y) <= L2) near.push(e);
+    let best = 0; const att = G.towers.filter(t => t.s && t.s.range > 0 && t.s.kind !== 'support' && t.s.kind !== 'eco');
+    for (const e of near) { let n = 0, c = 0; for (const o of near) if (dist2(e.x, e.y, o.x, o.y) <= P2) n++;
+      for (const t of att) if (dist2(e.x, e.y, t.cx, t.cy) <= (t.s.range + 1) * (t.s.range + 1)) c++; // a pack your towers can reach is worth more: kills there feed it
+      const sc = n * (1 + Math.min(4, c)) - Math.sqrt(dist2(e.x, e.y, h.x, h.y)) * 0.05; if (sc > best) { best = sc; h.tgt = { x: e.x, y: e.y }; } }
+  }
+  let wx = 0, wy = 0;
+  if (h.tgt) { const dx = h.tgt.x - h.x, dy = h.tgt.y - h.y, d = Math.hypot(dx, dy); if (d > 0.3) { const sp = HOLE14.spd * Math.min(1, d / 1.5); wx = dx / d * sp; wy = dy / d * sp; } }
+  else { wx = h.dx * HOLE.drift; wy = h.dy * HOLE.drift; }
+  const k = Math.min(1, HOLE14.turn * dt); h.vx += (wx - h.vx) * k; h.vy += (wy - h.vy) * k;
+  let nx = h.x + h.vx * dt, ny = h.y + h.vy * dt;
+  const c = G.core, cd = Math.hypot(nx - c.x, ny - c.y);
+  if (cd < HOLE14.coreGap) { const f = HOLE14.coreGap / Math.max(0.01, cd); nx = c.x + (nx - c.x) * f; ny = c.y + (ny - c.y) * f; } // the cold never reaches the fire
+  const R = G.region; h.x = clamp(nx, R.x0 + 0.5, R.x1 - 0.5); h.y = clamp(ny, R.y0 + 0.5, R.y1 - 0.5);
+}
 // rules 13: a kill inside a landed hole's reach feeds it
+// rules 14: the radius of the core's light, LIGHT14.min at no hull to LIGHT14.max at full
+function coreLightR() { const c = G.core; return LIGHT14.min + (LIGHT14.max - LIGHT14.min) * clamp(c.hp / Math.max(1, c.max), 0, 1); }
 function holeFeed(e) {
   const h = G.hole; if (!h || h.v !== 13 || h.ph !== 1 || dist2(e.x, e.y, h.x, h.y) > HOLE.r * HOLE.r) return;
   const before = h.m; h.m += e.boss ? HOLE13.bossM : e.elite && e.elite.length ? HOLE13.eliteM : 1;
@@ -5037,7 +5069,7 @@ function holeEnemy(e) {
 function holeRate(t) {
   const h = G.hole, d2 = dist2(t.cx, t.cy, h.x, h.y);
   if (d2 > HOLE.r * HOLE.r) return 1;
-  return 1 + (d2 < HOLE.horizon * HOLE.horizon ? HOLE.inner : HOLE.ring) * h.k;
+  return 1 + (d2 < HOLE.horizon * HOLE.horizon ? (h.hunt ? 0 : HOLE.inner) : HOLE.ring) * h.k; // rules 14: a hunting hole parks on your kill zone, so it no longer slows the towers under it (the bot lost 25 waves to that)
 }
 const holeZone = t => { const h = G && G.hole; if (!h || !t) return 0; const d2 = dist2(t.cx, t.cy, h.x, h.y); return d2 > HOLE.r * HOLE.r ? 0 : d2 < HOLE.horizon * HOLE.horizon ? -1 : 1; };
 
@@ -6425,6 +6457,7 @@ function updateEnemies(dt) {
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
   // reveal cloak near pylons
   if (G.pylons && G.pylons.length) for (const e of G.enemies) if (e.cloaked) for (const p of G.pylons) if (dist2(e.x, e.y, p.cx, p.cy) <= p.s.range * p.s.range) { e.revealed = 0.3; break; }
+  if (G.frV >= 14 && G.core) { const r = coreLightR(), r2 = r * r, c = G.core; for (const e of G.enemies) if (e.cloaked && !e.dead && dist2(e.x, e.y, c.x, c.y) <= r2) e.revealed = Math.max(e.revealed || 0, 0.3); } // rules 14: the core's light
   for (const e of G.enemies) {
     if (G.scanT > 0 && !e.dead && !(e.scanned > 0)) e.scanned = G.scanT; // v5.4: the sweep stays up its full time, so enemies arriving mid-Scan are caught too
     if (e.revealed > 0) e.revealed -= dt; if (e.scanned > 0) { e.scanned -= dt; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.2); }
@@ -7041,7 +7074,7 @@ function updateTowers(dt) {
     if (dpsTick) { t.dps = t.dps * 0.6 + t.dpsAcc * 0.4; t.dpsAcc = 0; }
     t.flash = Math.max(0, t.flash - dt);
     const s = t.s;
-    if (s.kind === 'support' || (s.kind === 'eco' && !s.fdmg) || s.kind === 'snare') continue;
+    if (s.kind === 'support' || (s.kind === 'eco' && !s.fdmg) || s.kind === 'snare') { if (G.frV >= 14 && t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) { t.disabled = 0; t.stalled = false; t.disCause = null; } } continue; } // rules 14: they recover from EMP (before, the timer never ran)
     if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) { t.stalled = false; t.disCause = null; } t.ramp = 0; t.beamTargets = null; continue; }
     const sw = stormAt(t.cx, t.cy);
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
@@ -11632,8 +11665,9 @@ const UNITS = (() => {
       for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283, cx = Math.cos(an) * 16.5, cy = Math.sin(an) * 16.5;
         parts.push(P(S.rbox(cx - 3.5, cy - 3.5, cx + 3.5, cy + 3.5, 1.5, 6, 1.5), 9, ramp(h ? '#6b1f33' : '#1f6b55', 0.6), { e: (x, y) => Math.hypot(x - cx, y - cy) < 1.8 ? (k % 2 ? (h ? '#ffd0d8' : '#b8ffe6') : G0) : null })); }
       parts.push(P(S.ring(0, 0, 9.5, 13, 0), 10, ramp(h ? '#8a2a44' : '#2a8a70', 0.6)));
-      parts.push(P(S.dome(0, 0, 9.5, 12), 9, ramp(h ? '#ff6f8a' : G0, 1), { e: (x, y, t) => t >= 4 ? (h ? '#ffd0d8' : '#e6fff6') : null }));
-      parts.push(P(S.hexgem(0, 0, 5.5, 12), 19, ramp(h ? '#ffb0c0' : '#b8ffe6', 1), { e: (x, y, t) => t >= 4 ? '#ffffff' : null }));
+      // the heart is the last fire (Nic: "warm heart, green shell"): white-gold inside the green machine
+      parts.push(P(S.dome(0, 0, 9.5, 12), 9, ramp(h ? '#ff6f8a' : '#ffb347', 1), { e: (x, y, t) => t >= 4 ? (h ? '#ffd0d8' : '#fff1c8') : t >= 3 ? (h ? null : '#ffd27a') : null }));
+      parts.push(P(S.hexgem(0, 0, 5.5, 12), 19, ramp(h ? '#ffb0c0' : '#ffe6a8', 1), { e: (x, y, t) => t >= 4 ? '#ffffff' : t >= 2 ? (h ? null : '#fff4d6') : null }));
       return raster(parts, 56, 56, angOf(ai), { sc: CORE_SC });
     });
   }
@@ -12664,7 +12698,7 @@ const RES = 2;
     }
     fillRing(X, Y, 1.5 * TILE * k, '#05030c', 0.45); // the dark around the hole
     // reach and horizon: where towers speed up and slow down
-    if (!(h.v === 13 && h.ph === 0)) { strokeRing(X, Y, RR, '#b86cff', 0.55 * k, 1, [3, 5]); strokeRing(X, Y, HOLE.horizon * TILE, '#ff4d6a', 0.6 * k, 1, [2, 3]); } // 6.14: its rings appear when it lands
+    if (!(h.v === 13 && h.ph === 0)) { strokeRing(X, Y, RR, '#b86cff', 0.55 * k, 1, [3, 5]); strokeRing(X, Y, HOLE.horizon * TILE, h.hunt ? '#b86cff' : '#ff4d6a', 0.6 * k, 1, [2, 3]); } // 6.14: its rings appear when it lands (rules 14: the horizon no longer slows towers, so it is not red)
     for (let i = 0; i < 3; i++) { const f = ((rt * 0.5 + i / 3) % 1), rr = RR - (RR - HOLE.horizon * TILE) * f; strokeRing(X, Y, rr, '#9a7cff', 0.28 * f * k, 1); } // time dilation: rings closing in
     // motes spiral in: faster and hotter near the centre
     const dt = Math.min(0.05, dt0 || 0);
@@ -13025,8 +13059,20 @@ const RES = 2;
   }
   // 6.15 keystone: the core's fortress deck, drawn before the towers (drawCore draws the reactor on top after them).
   // Twelve lights on the deck show the Battery level; a ring rolls out from the heart every 3 s, so the core reads at any zoom.
+  // 6.15 the last fire: the light's radius in tiles (the sim's LIGHT14, shown in every run) and a flicker that grows as the hull falls
+  function coreLightV() { const c = G.core; return LIGHT14.min + (LIGHT14.max - LIGHT14.min) * clamp(c.hp / Math.max(1, c.max), 0, 1); }
+  function coreFlicker() { const c = G.core, low = 1 - clamp(c.hp / Math.max(1, c.max), 0, 1); return 1 - low * low * (0.35 + 0.35 * Math.sin(rt * 23) * Math.sin(rt * 7.3)); }
   function drawCoreBase(air) {
     const c = G.core; if (!c) return; const X = c.x * TILE, Y = c.y * TILE, hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
+    if (!air) { // the dark closes in as the hull falls: the ground past the light darkens, up to 55% at no hull
+      const LR = coreLightV() * TILE, dk = 0.55 * (1 - clamp(c.hp / Math.max(1, c.max), 0, 1)) * (2 - coreFlicker());
+      if (dk > 0.02) { const g = b.createRadialGradient(X, Y, LR * 0.8, X, Y, LR + 9 * TILE); g.addColorStop(0, 'rgba(2,2,8,0)'); g.addColorStop(0.25, `rgba(2,2,8,${(dk * 0.6).toFixed(3)})`); g.addColorStop(1, `rgba(2,2,8,${dk.toFixed(3)})`);
+        b.fillStyle = g; b.fillRect(X - LR - 9 * TILE, Y - LR - 9 * TILE, (LR + 9 * TILE) * 2, (LR + 9 * TILE) * 2); }
+      { const g2 = b.createRadialGradient(X, Y, 0, X, Y, LR); const fa = coreFlicker(); // the pool of warm light on the ground
+        g2.addColorStop(0, `rgba(255,192,97,${(0.16 * fa).toFixed(3)})`); g2.addColorStop(0.6, `rgba(255,170,80,${(0.07 * fa).toFixed(3)})`); g2.addColorStop(1, 'rgba(255,160,70,0)');
+        b.save(); b.globalCompositeOperation = 'lighter'; b.fillStyle = g2; b.fillRect(X - LR, Y - LR, LR * 2, LR * 2); b.restore(); }
+      if (G.frV >= 14) { b.strokeStyle = hexA('#ffc061', 0.22 * coreFlicker()); b.lineWidth = 1; b.setLineDash([2, 5]); b.lineDashOffset = -rt * 4; b.beginPath(); b.arc(X, Y, LR, 0, 6.283); b.stroke(); b.setLineDash([]); } // where cloaked enemies show
+    }
     if (!air) { b.fillStyle = 'rgba(2,3,10,0.4)'; b.beginPath(); b.ellipse(X + 2, Y + 4, 32, 30, 0, 0, 6.283); b.fill(); }
     blit(UNITS.coreBase(hurt), X, Y);
     const lv = Math.min(12, c.wLvl || 1), on = hurt ? '#ff4d6a' : '#59f0b4';
@@ -13044,6 +13090,18 @@ const RES = 2;
     const el = c.s ? c.s.el : c.el, a = c.angle || 0;
     if (dock) { const dc = EL[dock.s.el].col; b.strokeStyle = hexA(dc, 0.55 + 0.3 * pulse); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 19, 0, 6.283); b.stroke(); drawTower0(dock, true); }
     else blit(UNITS.coreGun(el, a), X, Y);
+    { // 6.15 the fortress grows with the Battery: bastion guns at Twin Battery (LV 4), all four heavy at Siege Shells (LV 8),
+      // three satellites at Orbital Uplink (LV 12). Drawing only: the core's own modules do the work (CORE_MODULES)
+      const lv = c.wLvl || 1, aa = c.angle || 0, ca = Math.cos(aa), sa = Math.sin(aa), Bp = [[1, -1], [-1, 1], [1, 1], [-1, -1]];
+      for (let k = 0; k < (lv >= 8 ? 4 : lv >= 4 ? 2 : 0); k++) { const bx = X + Bp[k][0] * 15.3, by = Y + Bp[k][1] * 15.3, heavy = lv >= 8, L = heavy ? 8 : 6, w = heavy ? 2 : 1.5;
+        R(b, bx - 2.5, by - 2.5, 5, 5, '#0d1a24'); R(b, bx - 1.5, by - 1.5, 3, 3, heavy ? '#7a86b8' : '#56639e');
+        b.strokeStyle = heavy ? '#c8d0ec' : '#9aa6d6'; b.lineWidth = w; b.beginPath(); b.moveTo(bx, by); b.lineTo(bx + ca * L, by + sa * L); b.stroke();
+        R(b, bx + ca * L - 1, by + sa * L - 1, 2, 2, heavy ? '#ffc061' : '#59f0b4'); }
+      if (lv >= 12) for (let k = 0; k < 3; k++) { const a3 = k / 3 * 6.283 + rt * 0.35, sx = X + Math.cos(a3) * 40, sy = Y + Math.sin(a3) * 40 * 0.9;
+        b.strokeStyle = hexA('#ffc061', 0.12 + 0.1 * Math.sin(rt * 3 + k)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, Y); b.lineTo(sx, sy); b.stroke();
+        for (let q = -3; q <= 3; q++) { const hh = 3 - Math.abs(q); R(b, sx + q, sy - hh, 1, hh * 2 + 1, Math.abs(q) < 2 ? '#fff1c8' : '#7a86b8'); }
+        R(b, sx - 5, sy, 3, 1, '#59f0b4'); R(b, sx + 3, sy, 3, 1, '#59f0b4'); }
+    }
     { const wt = typeof warTier === 'function' ? warTier() : 0; // War Economy: a turret per stack of banked credits
       for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 36, ty = Y + Math.sin(a2) * 36; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
     if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.18 + 0.4 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 1.5; b.beginPath(); for (let k = 0; k <= 8; k++) { const a8 = (k + 0.5) / 8 * 6.283, r8 = 33.5 / Math.cos(Math.PI / 8); b[k ? 'lineTo' : 'moveTo'](X + Math.cos(a8) * r8, Y + Math.sin(a8) * r8); } b.stroke(); } // 6.15 keystone: the shield hugs the deck
@@ -13614,7 +13672,8 @@ const RES = 2;
     // ---------- light sources (buffer coords) ----------
     lights.length = 0;
     const pz = (Math.sin(frame / 10) + 1) / 2;
-    light(G.core.x * TILE, G.core.y * TILE, TILE * (2.6 + pz * 0.4), PAL.core, 0.38);
+    { const LR = coreLightV(), fl = coreFlicker(); // 6.15 the last fire: a warm light as wide as the core's reveal (LIGHT14), the green glow of the machine inside it
+      light(G.core.x * TILE, G.core.y * TILE, TILE * LR * 1.15, '#ffc061', 0.42 * fl); light(G.core.x * TILE, G.core.y * TILE, TILE * (2.2 + pz * 0.3), PAL.core, 0.3); }
     for (const t of G.towers) { const c0 = EL[t.s.el].col; light(t.cx * TILE, t.cy * TILE, TILE * 1.15, c0, 0.13 + (t.flash > 0 ? 0.28 : 0) + (t.asc ? 0.08 : 0)); }
     for (const t of G.towers) if (t.beamTargets && t.disabled <= 0) for (const e of t.beamTargets) light(e.x * TILE, e.y * TILE, TILE * (0.8 + Math.min(1, t.ramp / 4) * 0.6), EL[t.s.el].col, 0.35);
     let np = 0;
@@ -13959,10 +14018,10 @@ const RES = 2;
     // (−50%); the two numbers sit on top of the two rings
     if (G.hole && holeVisible() && !(G.hole.v === 13 && G.hole.ph === 0)) { const h = G.hole, R2 = HOLE.r * HOLE.r, H2 = HOLE.horizon * HOLE.horizon, u = clamp(Math.round(ws * 1.1), 2, 4); // 6.14: no tower frames or numbers before it lands
       for (const t of G.towers) { const d2 = dist2(t.cx, t.cy, h.x, h.y); if (d2 > R2) continue;
-        const inner = d2 < H2, x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
+        const inner = d2 < H2; if (inner && h.hunt) continue; const x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
         c.lineWidth = 2; c.strokeStyle = inner ? 'rgba(255,77,106,0.9)' : 'rgba(255,225,77,0.85)'; if (inner) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
       if (h.ph !== 2) { c.font = `${Math.max(8, 3.5 * u)}px "Oxanium Head", monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
-        for (const [rr, txt, col] of [[HOLE.r, `+${Math.round(HOLE.ring * 100)}%`, '#ffe14d'], [HOLE.horizon, `${Math.round(HOLE.inner * 100)}%`.replace('-', '−'), '#ff4d6a']]) {
+        for (const [rr, txt, col] of [[HOLE.r, `+${Math.round(HOLE.ring * 100)}%`, '#ffe14d']].concat(h.hunt ? [] : [[HOLE.horizon, `${Math.round(HOLE.inner * 100)}%`.replace('-', '−'), '#ff4d6a']])) { // rules 14: no slow inside the horizon
           const x = Math.round(bx2s(h.x * TILE)), y = Math.round(by2s((h.y - rr) * TILE)), tw = c.measureText(txt).width;
           c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), Math.round(y - 2.5 * u), Math.round(tw + 2 * u), Math.round(5 * u)); c.fillStyle = col; c.fillText(txt, x, y); }
         c.textBaseline = 'alphabetic'; }
@@ -15184,7 +15243,7 @@ const UI = (() => {
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
-    if (G.hole && G.hole.v === 13 && introCard('hole13', 'Black Hole', `It lands where the marker is, ${HOLE13.warn}s ahead, and stays ${HOLE.hold}s. Feed it: every kill inside its reach counts. Fed, it collapses in a blast that tears into nearby enemies and leaves a rich wreck for your probe. Starved, it spits voidlings back out. Aim a Strike inside it for a Gravity Bomb. Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster; closer, ${Math.round(-HOLE.inner * 100)}% slower.`)) return; // 6.14 rules 13, draft text
+    if (G.hole && G.hole.v === 13 && introCard(G.hole.hunt ? 'hole14' : 'hole13', 'Black Hole', `It lands where the marker is, ${HOLE13.warn}s ahead, and stays ${HOLE.hold}s. Feed it: every kill inside its reach counts. Fed, it collapses in a blast that tears into nearby enemies and leaves a rich wreck for your probe. Starved, it spits voidlings back out. Aim a Strike inside it for a Gravity Bomb. ${G.hole.hunt ? `Once it lands it hunts: it drifts toward the biggest pack of enemies your towers can reach. Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster.` : `Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster; closer, ${Math.round(-HOLE.inner * 100)}% slower.`}`)) return; // 6.14 rules 13, 6.15 rules 14 (it hunts), draft text
     if (G.hole && !G.hole.v && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the center. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
     if (typeof fogOn === 'function' && fogOn() && G.wave >= 2 && G.time > 20 && introCard('fog', 'Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored, but enemies, crates and storms there are hidden. Bosses always show. Wormholes and the Threat Board still warn you.')) return;
     if (G.storms.length && G.frV >= 13 && introCard('storm13', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside one glow and hit harder. Each storm also hits the enemies under it: lightning, burns, frost, Marks or a reveal. Send your probe into one to harvest it for an ability charge.', 'storms')) return; // 6.14 rules 13, draft text
@@ -18536,6 +18595,7 @@ const UI = (() => {
       ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned 2 waves ahead.'],
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
       ['Abilities', 'The left rail. Each ability comes online at its wave and recharges on its own timer (the bar under it fills). Crates, chests, bosses and milestones add extra charges on top, with no cap. Command talents and the core\'s Command Uplink cut cooldowns and add charge slots.'],
+      ['The core\'s light', `The warm light around the core. Cloaked enemies inside it are revealed. It reaches ${LIGHT14.max} tiles at full hull and shrinks to ${LIGHT14.min} as the hull falls, and the map past it darkens.`],
       ['Sensor Sweep', `Scan: reveals cloaked enemies for ${SCAN.dur}s, Marks everything it sweeps (+${SCAN.mark}% damage taken) and flags the largest threat with a reticle. Short cooldown.`],
       ['Know your enemy', 'Tap (or hover) any enemy to see its HP, what it does and what beats it. Each wave leans on a headline enemy, shown as an amber chip. New enemies are announced the wave before they land.'],
       ['Command Uplink', `A core upgrade line: −${UPLINK.cd}% ability cooldowns per level. ${UPLINK.mods.map(m => `LV ${m.lv} ${m.name}: ${m.desc}`).join('. ')}.`],
