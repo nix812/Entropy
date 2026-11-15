@@ -818,7 +818,7 @@ details.more { margin: 6px 0 0; } details.more > summary { font-family: var(--f-
 .ptabs { flex: 0 0 100%; display: flex; gap: 4px; }
 .ptabs .chip { flex: 1; min-height: 30px; padding: 4px 6px; font-size: 9px; letter-spacing: 0.08em; }
 .ph.tabbed .pt { flex: 1 1 0; min-width: 0; }
-.ph.tabbed .pt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph.tabbed .pt small { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.15; } /* 6.16.1: wraps to a second line instead of cutting off ("SHIELD L...") */
 .panel .pfoot { gap: 5px; padding-top: 6px; padding-bottom: 8px; }
 .panel .pfoot .btn { min-height: 40px; padding-block: 6px; }
 .panel .pfoot .row2 .btn { min-height: 34px; }
@@ -1330,7 +1330,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .qih h3 { margin: 0 0 6px; font-family: var(--f-pix); font-weight: 400; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c); line-height: 1.25; }
 .qih .qkind { font-family: var(--f-pix); font-size: 8px; letter-spacing: 0.08em; color: var(--dim); text-transform: uppercase; }
 .qbpips { display: flex; gap: 3px; margin-bottom: 6px; } .qbpips i { width: 18px; height: 5px; border-radius: 2px; background: #080914; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.08); } .qbpips i.qon { background: color-mix(in srgb, var(--c) 60%, #fff); box-shadow: 0 0 6px var(--c); }
-.qln { font-size: 19px; line-height: 1.08; } .qln.qnext { color: var(--good); } .qln.qdim { color: var(--dim); font-size: 17px; } .qln.qwarn { color: var(--amber); font-size: 17px; }
+.qln { font-size: 19px; line-height: 1.08; } .qln.qnext { color: var(--good); } .qln.qdim { color: var(--dim); font-size: 17px; } .qln.qwarn { color: var(--amber); font-size: 17px; } .qln.qlast { color: #ffb03a; font-size: 17px; } .qln.qlast b, .qln.qdim b { font-weight: 600; } /* 6.16.1 a talent's last rank */
 .qact { flex: none; height: 42px; margin-bottom: 3px; border-radius: 8px; background: linear-gradient(180deg, #ffd98c, #ffb03a 48%, #ee9620); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -2px 0 rgba(130, 66, 0, 0.3), 0 3px 0 #8a4f0c, 0 7px 16px rgba(255, 176, 58, 0.28); color: #2a1702; font-family: var(--f-pix); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35); }
 .qact:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 1px 0 #8a4f0c; }
 .qact.qoff { background: linear-gradient(180deg, #161b38, #0f1228); color: var(--dim); box-shadow: inset 0 0 0 1px #343b6c; text-shadow: none; cursor: default; } .qact.qghost { background: linear-gradient(180deg, #2c2614, #17130a); color: #ffd58a; box-shadow: inset 0 0 0 1.5px var(--amber), 0 0 12px rgba(255, 176, 58, 0.2); text-shadow: none; }
@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 2';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2186,7 +2186,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 17; // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 18; // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2455,6 +2455,11 @@ const LESSONS = [
     real: 'In a run: when the Threat chip pulses, open it and answer the top gene.',
     run: { start: 10, credits: 500, grid: 6, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil'], pre: [['towers', [['pulse', 3], ['pulse', 2], ['rail', 2]]]],
       waves: [[['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.6 }], ['swarmer', 8, 0.25, 0.8, { genes: ['haste'], share: 0.5 }]], [['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.7 }], ['tank', 2, 2, 0.6]]] } },
+  { id: 'remnant', track: 'advanced', bench: { m: 'Kill a Warden while its squad still stands', s: ['reach', 0.85] }, title: 'The Remnant', blurb: 'Old war machines, each with one trick.', // 6.16.1 (draft text: Game Text page)
+    what: 'From Wave 28 the Remnant march with the swarm: war machines left by the pilots before you. Each has one trick. A Husk stands back up once unless area damage, Burn or an ability finishes it. A Bulwark\u2019s front plate blocks shots from ahead. A Welder repairs the others. A Lodestone drags bolts in and shrugs them off; Arc hurts it double. A Siege Crawler plants and shells a tower offline. An Adapter armours up against the element that hit it last. A Warden\u2019s squad takes less damage near it.', when: 'From Wave 28 on Normal. Mission Control names each one the first time you meet it.', todo: 'Kill the Warden first: its squad is stunned when it falls. Finish Husks with area damage. Mix elements against Adapters. Kill a planted Crawler or move the tower it aims at.',
+    real: 'In a run: when a Warden walks in, focus it, then sweep the squad.',
+    run: { start: 30, credits: 900, grid: 8, towers: ['pulse', 'rail', 'missile', 'flame', 'coil'], abil: ['strike'], pre: [['towers', [['missile', 3], ['pulse', 3], ['rail', 3], ['coil', 2], ['flame', 2]]], ['abil', ['strike'], 1]],
+      waves: [[['husk', 6, 0.7, 0.35], ['bulwark', 2, 1.6, 0.35], ['welder', 1, 1, 0.35], ['husk', 4, 0.6, 0.35]], [['warden', 1, 0.6, 0.3, { sq: 1, lead: 1 }], ['husk', 4, 0.35, 0.3, { sq: 1 }], ['bulwark', 2, 0.6, 0.3, { sq: 1 }], ['crawler', 1, 2, 0.3]]] } },
   { id: 'hunt', track: 'advanced', bench: { m: 'Kill the bounty boss and extract', s: null }, title: 'Bounties and the Purse', blurb: 'Most Wanted, the Bounty Purse, Extract or jump.',
     what: 'Each run posts a Most Wanted boss. Killing it claims the bounty. Some of your XP is held in the Bounty Purse. Extract deposits all of it and ends the run as a win. A jump door takes you to a new zone for a larger purse. If the core falls later, you keep 30%.', when: 'Every 20 waves.', todo: 'Extract when the run is at risk. Jump when your defense is strong: Steady, Hot and Deadly doors multiply the purse more.',
     real: 'In a run: extract when your last waves were close calls; jump when they were easy.',
@@ -2571,6 +2576,17 @@ const CURSES = [
 // v5.1 Know Your Enemy: every enemy says what it does (desc) and what beats it (beat). Four late enemies arrive from Wave 18,
 // each announced the wave before it lands
 // v5.1: the drone a Carrier drops (a flying Drone, smaller)
+// 6.16.1 rules 18: talent last ranks. The last rank of seven multi-rank talents adds one small behaviour you can see (checklist: "rework the
+// weakest of the 33 flat-percentage talents"; Nic, Nov 11: every point must be felt). G.mods.full lists the talents at their last rank; TLR(id) in sim.js
+const TLAST = {
+  kDmg: { name: 'Stagger', push: 0.3, cd: 2, txt: 'Kinetic crits knock small ground enemies back a step (once every 2 s each)' },
+  tBurn: { name: 'Cinders', r: 1, share: 0.25, txt: 'A Burning enemy that dies bursts: a quarter of its Burn left hits enemies within 1 tile and sets them alight' },
+  aShock: { name: 'Jumper', r: 1.2, txt: 'A fresh Shock also Shocks the nearest enemy within 1.2 tiles' },
+  cStill: { name: 'Lockdown', txt: 'Frozen enemies cannot use their abilities: no healing, no drones, no shelling' },
+  vMark: { name: 'Hand-off', r: 2, txt: 'When a Marked enemy dies, its Marks pass to the nearest enemy within 2 tiles' },
+  eShield: { name: 'Rebound', r: 2, push: 1, stun: 0.5, txt: 'Once a wave, when the core shield breaks it throws enemies within 2 tiles back and stuns them for 0.5 s' },
+  xCharge: { name: 'Boss Protocol', boss: 1.5, txt: 'While a boss is on the field, ability cooldowns recover 50% faster' },
+};
 const CARRIER = { every: 4.5, n: 2, hp: 0.1, own: 6, all: 36 }; // own/all: the drone caps (rules 17)
 const SAPPER = { range: 1.6, dur: 4, cd: 7 };
 const LEECH = { share: 0.1, cap: w => 60 + 18 * w };
@@ -3557,7 +3573,7 @@ function updateAbils(dt) {
     const mx = abilCdMax(k);
     if ((G.charges[k] || 0) >= slots) { G.abilCd[k] = mx; continue; }
     if (G.abilCd[k] === undefined || G.abilCd[k] > mx) G.abilCd[k] = mx;
-    G.abilCd[k] -= dt;
+    G.abilCd[k] -= dt * (G.bossAlive && TLR('xCharge') ? TLAST.xCharge.boss : 1); // rules 18 Telemetry last rank
     if (G.abilCd[k] <= 0) { G.charges[k] = (G.charges[k] || 0) + 1; G.abilCd[k] = mx; Hooks.abilReady && Hooks.abilReady(k); }
   }
   if (G.scanT > 0) { G.scanT -= dt; if (G.scanT <= 0) G.scanThreat = null; }
@@ -3579,6 +3595,8 @@ const abilLeft = k => ABIL_TIMER[k] && G[ABIL_TIMER[k]] > 0 ? G[ABIL_TIMER[k]] :
 const eProg = e => e.L.pre ? (e.L.pre + e.d) / (e.L.pre + e.L.len) : e.d / e.L.len;
 function threatScore(e) { const prog = e.L && e.L.len ? eProg(e) : 0.5; return e.hp * (0.4 + prog) * (e.boss ? 4 : 1) * (e.elite && e.elite.length ? 1.6 : 1) * (e.genes ? 1 + 0.25 * e.genes.length : 1); }
 const FX = k => (G && G.mods && G.mods.fx && G.mods.fx[k]) || 0;
+// 6.16.1 rules 18: a talent's last rank adds one small behaviour you can see (TLAST in data.js)
+const TLR = id => !!(G && G.frV >= 18 && G.mods && G.mods.full && G.mods.full[id]);
 // 6.10 Fusions (data.js FUSIONS; G.frV >= 7). fus('KT'): is that Fusion active in this run. fusionsOpen(): the pairs the build has
 // opened. fusionNow(): the one a new run takes.
 // 6.10 Tree Signatures (data.js SIGS): sig('K') = the tree's units in this run, 0 under older rules. M.sig is set in computeMods
@@ -3620,9 +3638,9 @@ function computeMods(alloc, runMods) {
   const orb = { dmg: {}, rate: {}, status: {}, range: {}, reson: {}, vxp: {}, flux: {}, storm: {}, vol: {}, ent: {}, rift: {}, combo: {} };
   const add = fx => { for (const k in fx) m[k] = (m[k] || 0) + fx[k]; };
   const SRC = TS();
-  const tech = {};
+  const tech = {}, full = {}; // full: talents at their last rank (6.16.1 rules 18 last ranks: TLAST in data.js)
   const v7 = typeof G !== 'undefined' && G && G.fr && G.frV > 0 && G.frV < 9; // FR_VER 9: Command's old numbers for older rules (TAL_V7)
-  for (const id in SRC.tal || {}) { const T = TAL[id], r = Math.min(T ? T.max : 0, SRC.tal[id] || 0); if (!T || T.cap || !r) continue; if (T.tech) tech[id] = 1; const fx = (v7 && TAL_V7[id]) || T.fx; for (const k in fx) m[k] = (m[k] || 0) + fx[k] * r; }
+  for (const id in SRC.tal || {}) { const T = TAL[id], r = Math.min(T ? T.max : 0, SRC.tal[id] || 0); if (!T || T.cap || !r) continue; if (T.tech) tech[id] = 1; if (r >= T.max && T.max > 1) full[id] = 1; const fx = (v7 && TAL_V7[id]) || T.fx; for (const k in fx) m[k] = (m[k] || 0) + fx[k] * r; }
   for (const id of activeCaps()) { const T = TAL[id]; if (T.ks) ks[T.ks] = 1; if (T.fx) add((v7 && TAL_V7[id]) || T.fx); }
   // legacy remnants from the old web: that tree's one-point notables stay on
   for (const r of SRC.remnants || []) if (/^s[0-5]$/.test(r)) { const tr = TALENTS[+r.slice(1)]; if (tr) for (const row of tr.rows) for (const t of row) if (t.max === 1) add(t.fx); }
@@ -3655,7 +3673,7 @@ function computeMods(alloc, runMods) {
     knock: g('knock') / 100, xp: 1 + g('xp') / 100, chainIgnite: g('chainIgnite') > 0, loneWolf: g('loneWolf') / 100,
     kBurn: g('kBurn'), chillVoid: g('chillVoid'),
   };
-  M.fx = m; M.orb = orb; M.tech = tech; // v5.8: the Techniques learned (talent ids), read by fireDef
+  M.fx = m; M.orb = orb; M.tech = tech; M.full = full; // v5.8: the Techniques learned (talent ids), read by fireDef
   if (m.infernoCore) { M.burnDmg *= 2; M.burnDur *= 0.6; }
   if (ks.conflag) { M.burnDmg *= 2.5; M.el.T *= 1.5; }
   // v5.8 play-style Capstones: their stat sides (their field behaviour lives in the code it changes: grep ks.<id>)
@@ -5462,6 +5480,7 @@ function tutWave(w) {
       if (type === 'boss') { const B = (X && X.boss) || T.boss; q.push({ t, type: 'boss', boss: B.id, lane, hpm: hpMult(w) * hx, elite: 0, hpAbs: B.hp * hx }); t += gap; continue; }
       const carry = X && X.genes && Math.floor((i + 1) * X.share) > Math.floor(i * X.share);
       q.push({ t, type, lane, hpm: hpMult(w) * hx, elite: 0, genes: carry ? X.genes.slice() : null, gel: carry ? (X.gel === 'top' ? tutTopEl() : X.gel) : null });
+      if (X && X.sq != null) { q[q.length - 1].sq = X.sq; if (X.lead) q[q.length - 1].lead = 1; } // 6.16.1: the Remnant lesson's Warden squad
       t += gap;
     }
     t += 1.2;
@@ -6176,7 +6195,7 @@ const KIT = {
   // Warden: its squad (q.sq from genWave) takes `cut` less within r; when it dies the squad is stunned `panic` s and loses the link
   command: { death(e) { const S = G.squads; if (!S || e.sq == null) return; S[e.sq] = null; const R = REMNANT.command; let n = 0;
     for (const o of G.enemies) if (!o.dead && o.squadOf === e.sq) { o.squadOf = null; o.st.stun = Math.max(o.st.stun, R.panic); n++; }
-    if (n) { Hooks.fx('panic', { x: e.x, y: e.y }); Hooks.fx('say', { x: e.x, y: e.y, t: 'link lost' }); } } },
+    if (n) { G.stats.wardenBreak = (G.stats.wardenBreak || 0) + 1; Hooks.fx('panic', { x: e.x, y: e.y }); Hooks.fx('say', { x: e.x, y: e.y, t: 'link lost' }); } } }, // wardenBreak: the Remnant lesson's check (stats are not in the run hash)
 };
 // rules 16: every kit block's damage multiplier on this hit, multiplied (e.kh marks enemies that have one)
 function kitHit(e, o, src, el) { const K = kitOf(e.type); let m = 1; if (K) for (const P of K) { const f = KIT[P.id].hit; if (f) { const v = f(e, P, o, src, el); if (v !== undefined) m *= v; } }
@@ -6491,8 +6510,8 @@ function updateEnemies(dt) {
     // behaviors
     // 6.10 (G.frV >= 7): the Phase Wraith needs a run-up. Its jump clock runs at its own pace: a slow delays the next jump by the same
     // share (never below a quarter speed) and a Freeze stops the clock. It ended 189 of 857 bot runs in sweep b, twice the next cause.
-    e.timer -= e.boss === 'wraith' && G.frV >= 7 ? dtE * (st.frozen > 0 ? 0 : Math.max(0.25, 1 - enemySlow(e))) * (G.frV >= 9 && (st.shock > 0 || st.mark > 0) ? 0.5 : 1) : dtE; // FR_VER 9: Shock or a Mark halves its jump clock
-    kitRun(e, 'tick', dtE, st); // 6.14 enemy kit: heal, shieldAura, drop, sap, and every new block
+    e.timer -= e.boss === 'wraith' && G.frV >= 7 ? dtE * (st.frozen > 0 ? 0 : Math.max(0.25, 1 - enemySlow(e))) * (G.frV >= 9 && (st.shock > 0 || st.mark > 0) ? 0.5 : 1) : st.frozen > 0 && TLR('cStill') ? 0 : dtE; // FR_VER 9: Shock or a Mark halves its jump clock
+    kitRun(e, 'tick', st.frozen > 0 && TLR('cStill') ? 0 : dtE, st); // 6.14 enemy kit (rules 18 Stillness last rank: a Frozen enemy's kit stops): heal, shieldAura, drop, sap, and every new block
     if (e.elite.includes('blink') && e.timer <= 0 && !e.boss) { e.timer = 5; e.d += 1.5; Hooks.fx('blink', { x: e.x, y: e.y }); }
     if (e.boss) bossBehavior(e, dt);
     if (ev.phase) { e.timer2 -= dt; if (e.timer2 <= 0) { e.timer2 = 4; if (G.r() < 0.3 && !e.boss) { e.d += 1; Hooks.fx('blink', { x: e.x, y: e.y }); } } }
@@ -6742,7 +6761,8 @@ function leak(e) {
   c.sinceHit = 0;
   if (G.mods.ks.bulwark && G.time >= (G.bulwarkT || 0)) bulwarkWave(c);
   G.leakDmgW = (G.leakDmgW || 0) + dmg; // v5.4: the breach forecast weighs a wave's leak damage against shield + hull
-  const abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs;
+  const sh0 = c.shield, abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs;
+  if (sh0 > 0 && c.shield <= 0.01 && TLR('eShield') && G.reboundW !== G.wave) { const R = TLAST.eShield; G.reboundW = G.wave; Hooks.fx('boom', { x: c.x, y: c.y, r: R.r, col: '#7fd8ff', big: 1 }); for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, c.x, c.y) <= R.r * R.r) { gPull(o, R.push * (o.boss ? 0.3 : 1)); if (!o.boss && !o.elite.includes('jugg')) o.st.stun = Math.max(o.st.stun || 0, R.stun); } } // rules 18 Barrier last rank
   c.hp -= dmg;
   Hooks.fx('leak', { x: c.x, y: c.y, boss: !!e.boss });
   Hooks.sfx(e.boss ? 'bigleak' : 'leak');
@@ -6823,6 +6843,7 @@ function hit(e, dmg, el, src, o) {
   if (el === 'K' && src && src.s && FX('kSlow')) e.kSlowT = 1;
   if (src && src.s && src.s.supSlow && !o.dot && !e.elite.includes('jugg')) slowTag(e, src.s.supSlow, src.s.supDur); // v5.8 Suppressor
   if (src && src.s && src.s.exec && !e.boss && e.hp / e.maxHp < src.s.exec / 100) { Hooks.fx('num', { x: e.x, y: e.y, v: e.hp, combo: 'EXECUTE', col: '#ff4d6a' }); e.hp = 0; kill(e, src, o); return dealt; }
+  if (el === 'K' && o.crit && !o.dot && src && src.s && !e.dead && TLR('kDmg') && !e.boss && !e.fly && (e.size || 1) <= 1 && !e.elite.includes('jugg') && !e.planted && !(e.stagT > G.time)) { e.stagT = G.time + TLAST.kDmg.cd; if (gPull(e, TLAST.kDmg.push)) Hooks.fx('stagger', { x: e.x, y: e.y }); } // rules 18 Heavy Rounds last rank
   if (!o.noStatus && src && src.s) {
     if (el === 'K' && o.crit && FX('critSplash')) for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= 1) hit(o2, dmg * FX('critSplash') / 100, 'K', src, { noStatus: 1 });
     applyStatuses(e, dmg, el, src, o);
@@ -6918,6 +6939,7 @@ function applyStatuses(e, dmg, el, src, o) {
     }
   }
   if (shockP > 0 && r() < shockP) {
+    if (!(st.shock > 0) && TLR('aShock')) { let b = null, bd = TLAST.aShock.r * TLAST.aShock.r; for (const o2 of G.enemies) if (!o2.dead && o2 !== e && !(o2.st.shock > 0)) { const d = dist2(o2.x, o2.y, e.x, e.y); if (d < bd) { bd = d; b = o2; } } if (b) { b.st.shock = FX('shockLong') ? 6 : 3; b.st.shockEff = Math.max(b.st.shockEff, s.shockX * M.shockEff); Hooks.fx('jump', { x: e.x, y: e.y, x2: b.x, y2: b.y }); } } // rules 18 Static last rank
     st.shock = FX('shockLong') ? 6 : 3; st.shockEff = Math.max(st.shockEff, s.shockX * M.shockEff);
     if (s.stun && r() < s.stun && !jugg) { st.stun = Math.max(st.stun, e.boss ? 0.2 : 0.6); Hooks.fx('ovstun', { x: e.x, y: e.y }); }
   }
@@ -6960,6 +6982,10 @@ function kill(e, src, o) {
   if (e.st.shock > 0) { const lw = sig('A'); if (lw) { let b = null, bd = SIGV.Ar * SIGV.Ar; // 6.10 Arc Leap: the Shock jumps on from a dead enemy
     for (const o2 of G.enemies) { if (o2.dead) continue; const d2 = dist2(o2.x, o2.y, e.x, e.y); if (d2 <= bd) { bd = d2; b = o2; } }
     if (b) { Hooks.fx('arcs', { x: e.x, y: e.y, r: Math.sqrt(bd) }); b.st.shock = Math.max(b.st.shock, 3); b.st.shockEff = Math.max(b.st.shockEff, G.mods.shockEff); fusPct(b, lw * SIGV.A, 'A', src); } } }
+  if (e.st.burn && e.st.burn.t > 0 && TLR('tBurn')) { const R = TLAST.tBurn, B = e.st.burn, d = B.dps * B.t * R.share; Hooks.fx('cinders', { x: e.x, y: e.y, r: R.r }); // rules 18 Fuel last rank: a Burning death bursts
+    for (const o2 of G.enemies) if (!o2.dead && o2 !== e && dist2(o2.x, o2.y, e.x, e.y) <= R.r * R.r) { hit(o2, d, 'T', B.src || null, { dot: 1, noStatus: 1 }); if (!o2.dead && !o2.st.burn) o2.st.burn = { dps: B.dps * 0.5, t: 2, src: B.src || null }; } }
+  if (e.st.mark > 0 && TLR('vMark')) { let b = null, bd = TLAST.vMark.r * TLAST.vMark.r; for (const o2 of G.enemies) if (!o2.dead && o2 !== e) { const d = dist2(o2.x, o2.y, e.x, e.y); if (d < bd) { bd = d; b = o2; } } // rules 18 Mark last rank: Marks pass on
+    if (b) { b.st.mark = Math.min(G.mods.markMax, b.st.mark + e.st.mark); b.st.markT = 4; Hooks.fx('handoff', { x: e.x, y: e.y, x2: b.x, y2: b.y }); } }
   geneRecord(e, false); assaultHit(e, false);
   if (e.brood) { // Brood: bursts into mites
     const mh = hpBase(e) * 0.12 / ENEMIES.swarmer.hp;
@@ -14495,6 +14521,11 @@ const RES = 2;
       case 'noodle': { const out = []; for (let k = 0; k <= 10; k++) { const t = k / 10, w = Math.sin(t * Math.PI * 3) * 8 * Math.sin(t * Math.PI); const dx = d.x2 - d.x1, dy = d.y2 - d.y1, L = Math.hypot(dx, dy) || 1; out.push({ x: T2P(lerp(d.x1, d.x2, t)) - dy / L * w, y: T2P(lerp(d.y1, d.y2, t)) + dx / L * w }); } lines.push({ pts: out, life: 0.7, max: 0.7, col: '#f2d27a', core: 0, w: 4 }); break; }
       case 'emp': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: d.r * TILE, life: 0.4, max: 0.4, col: '#ffe14d', w: 3 }); burst(T2P(d.x), T2P(d.y), 10, '#ffffff', 40 * K, 0.25); break;
       case 'freeze': burst(T2P(d.x), T2P(d.y), 12, '#d8f8ff', 25 * K, 0.4); break;
+      // 6.16.1 rules 18 talent last ranks: Stagger (a Kinetic crit knocks back), Jumper (a Shock jumps on), Cinders (a Burning death bursts), Hand-off (Marks pass on)
+      case 'stagger': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 3, r1: 12, life: 0.22, max: 0.22, col: '#e8eef8', w: 2 }); break;
+      case 'jump': { const x1 = T2P(d.x), y1 = T2P(d.y), x2 = T2P(d.x2), y2 = T2P(d.y2); lines.push({ pts: [{ x: x1, y: y1 }, { x: (x1 + x2) / 2 + (Math.random() - 0.5) * 8, y: (y1 + y2) / 2 + (Math.random() - 0.5) * 8 }, { x: x2, y: y2 }], life: 0.2, max: 0.2, col: '#ffe14d', core: 1, w: 2 }); break; }
+      case 'cinders': burst(T2P(d.x), T2P(d.y), 14, '#ff7b39', 45 * K, 0.45); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.r * TILE, life: 0.3, max: 0.3, col: '#ffb03a', w: 2 }); break;
+      case 'handoff': lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.35, max: 0.35, col: '#b86cff', core: 1, w: 2 }); burst(T2P(d.x2), T2P(d.y2), 6, '#d8b0ff', 20 * K, 0.3); break;
       case 'implode': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: d.r * TILE, r1: 0, life: 0.6, max: 0.6, col: '#b86cff', fill: 1, w: 3 }); for (let i = 0; i < 40; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; parts.push({ x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr, vx: -Math.cos(a) * rr * 2, vy: -Math.sin(a) * rr * 2, life: 0.45, max: 0.45, col: '#d6a6ff', s: 2 }); } break;
       case 'leak': coreKick = d.boss ? 1 : Math.max(coreKick, 0.6); rings.push({ x: d.x * TILE, y: d.y * TILE, r0: 14, r1: d.boss ? 70 : 42, life: 0.4, max: 0.4, col: '#ff3355', w: d.boss ? 4 : 2.5 }); flashes.push({ col: '#ff3355', life: d.boss ? 0.6 : 0.25, max: d.boss ? 0.6 : 0.25, a: d.boss ? 0.45 : 0.2 }); shakeAt(d.boss ? 10 : 4, d.boss ? 0.6 : 0.2); burst(T2P(d.x), T2P(d.y), 18, '#ff3355', 50 * K, 0.5); break;
       case 'strike': lines.push({ pts: [{ x: T2P(d.x), y: -10 }, { x: T2P(d.x), y: T2P(d.y) }], life: 0.6, max: 0.6, col: '#ffe9b0', core: 1, w: 6 }); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 1.7 * TILE, r1: 2, life: 0.6, max: 0.6, col: '#ffe9b0', w: 3 }); break;
@@ -15549,6 +15580,7 @@ const UI = (() => {
     salvage: () => binp('cache').length > 0,
     probe: () => !!((G.tutLoot | 0) & 2) && !!((G.tutLoot | 0) & 4) && !((G.stats.pr || {}).lost),
     swarm: () => binp('build').some(x => x[2] === 'rail'),
+    remnant: () => (G.stats.wardenBreak || 0) > 0, // 6.16.1
     hunt: () => !!G.extracted && (G.bounties || []).length > 0,
     veterans: () => binp('vet').length > 0,
     support: () => G.towers.some(t => t.type === 'pylon') && G.towers.some(t => t.type === 'forge'),
@@ -16068,6 +16100,16 @@ const UI = (() => {
         { id: 'harvest', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, t: 'Harvesting', b: 'Six seconds inside gives one charge. A Solar Flare gives Frenzy. The arc around the storm shows how long is left.', done: () => (G.stats.harvests || 0) > 0, skip: () => !prOK() },
         info('got', sel('#abils [data-abil=overclock]'), 'Frenzy +1', 'Harvested out, the storm breaks up and the probe flies home. Merged storms give one charge per type.', { hold: 0, when: () => (G.stats.harvests || 0) > 0 }),
         call('c2', 2),
+        end(),
+      ],
+      // 6.16.1 the Remnant: a Husk standing back up, the Warden and its squad, the Siege Crawler (draft text)
+      remnant: [
+        intro('in', 'The Remnant', 'Old war machines of the pilots before you. Each one has one trick. Watch for it, then break it.'),
+        call('c1', 1, 'Send the wave.'),
+        info('husk', () => { const e = G.enemies.find(o => !o.dead && o.type === 'husk'); return e ? worldR(e.x, e.y, 1) : null; }, 'Husk', 'It stands back up once. Missiles, Burn or a Strike finish it for good.', { when: () => G.enemies.some(o => !o.dead && o.type === 'husk' && o.d > 3), skip: () => W() >= 2 || (G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'husk')) }),
+        call('c2', 2, 'Send the Warden and its squad.'),
+        info('ward', () => { const e = G.enemies.find(o => !o.dead && o.type === 'warden'); return e ? worldR(e.x, e.y, 1.6) : null; }, 'Warden', 'Its squad takes less damage near it. Kill the Warden first and the squad is stunned. A Strike on it works.', { when: () => G.enemies.some(o => !o.dead && o.type === 'warden' && o.d > 2), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'warden') }),
+        info('crawl', () => { const e = G.enemies.find(o => !o.dead && o.type === 'crawler'); return e ? worldR(e.x, e.y, 1.2) : null; }, 'Siege Crawler', 'Planted, it shells one tower offline for a few seconds. Kill it there, or move the tower it aims at.', { hold: 0, when: () => G.enemies.some(o => !o.dead && o.type === 'crawler' && o.planted), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'crawler') }),
         end(),
       ],
       // 6.15 the Black Hole: the marker, feeding it, the Gravity Bomb, the verdict (draft text)
@@ -18910,7 +18952,7 @@ const UI = (() => {
       { id: 'laws', name: 'Cosmic Laws', rows: LAWS.map(L => [L.name, `${esc(L.up)}. <span class="bad">Cost: ${esc(L.down)}.</span>`, '#ff9adf']) },
       { id: 'anom', name: 'Anomalies', rows: [['How cards are made', `Most cards are built at each draw: 1 boon and 1 cost, sized to a fair trade. <span style="color:${ANOM_RARITY[1].col}">Rare</span> and <span style="color:${ANOM_RARITY[2].col}">Exotic</span> cards swing harder. Exotic cards carry 2 boons. Later draws swing harder. Offers favor the elements you field. Each slot has a 1 in 4 chance to hold a Classic card. A Classic card never repeats in a run.`, '#d6a6ff']]
         .concat(ANOMALIES.map(A => [A.name, `Classic. ${A.up}. <span class="bad">Cost: ${esc(A.down)}.</span>`, '#d6a6ff'])) },
-      { id: 'talent', name: 'Talents', rows: TALENTS.flatMap(tr => tr.rows.flat().map(T => [T.name, `${talentLines(T, T.max).join('. ')}. <em>${esc(tr.name)} · ${T.max > 1 ? 'at ' + T.max + ' ranks' : 'one rank'}</em>`, tr.col])) },
+      { id: 'talent', name: 'Talents', rows: TALENTS.flatMap(tr => tr.rows.flat().map(T => [T.name, `${talentLines(T, T.max).join('. ')}.${TLAST[T.id] ? ` Last rank, ${esc(TLAST[T.id].name)}: ${TLAST[T.id].txt}.` : ''} <em>${esc(tr.name)} · ${T.max > 1 ? 'at ' + T.max + ' ranks' : 'one rank'}</em>`, tr.col])) },
       { id: 'cap', name: 'Capstones', rows: TALENTS.flatMap(tr => tr.caps.map(T => [T.name, `${talentLines(T).join('. ')}. <em>${esc(tr.name)} Capstone</em>`, tr.col])) },
       { id: 'abil', name: 'Abilities', rows: ABIL_ORDER.map(k => [ABILITIES[k].name, ABILITIES[k].desc, PAL.warn]) },
       { id: 'tower', name: 'Towers', rows: TOWER_ORDER.map(k => { const D = TOWERS[k]; return [D.name, `${D.blurb} <em>${EL[D.el].name} · ${D.capT ? `Unlock: ${TREE_BY_ID[D.capT].name} capstone tier` : `Unlocks at Wave ${D.unlock}`}</em>`, EL[D.el].col]; }) },
@@ -19627,6 +19669,7 @@ const Tree = (() => {
       const li = (a, c) => a.map(l => `<div class="qln ${c || ''}">${tipify(l)}</div>`).join('');
       if (T.cap) h += li(talentLines(T));
       else { if (now) h += li(now); if (next) h += r ? `<div class="qln qnext">Next point: ${next.map(tipify).join(' · ')}</div>` : li(next); }
+      if (TLAST[T.id]) { const L = TLAST[T.id]; h += `<div class="qln ${r >= T.max ? 'qlast' : 'qdim'}"><b>${r >= T.max ? '' : `At ${T.max} of ${T.max} · `}${esc(L.name)}:</b> ${tipify(L.txt)}</div>`; } // 6.16.1 rules 18: the last rank's behaviour (draft text: Game Text page)
       const rmB = !rem && r > 0 ? `<button class="qact qrm" data-tact="rem" data-v="${T.id}" aria-label="Take a point back" ${rw && rw !== 'tokens' ? 'disabled' : ''}>−${refundFree() ? '' : `<small>${refundCost(T.id)}</small>`}</button>` : '';
       const off = { max: 'Full', have: 'Yours', points: 'No points', row: 'Locked', tree: 'One per tree', slots: 'Slots full', locked: 'Fixed build', today: 'Fixed build', daily: 'Not in Daily Hunts' };
       foot = `<div class="qacts">${rmB}${!why ? `<button class="qact" data-tact="add" data-v="${T.id}">${T0.unlockT ? 'Unlock tower' : T.cap ? 'Take Capstone' : T.tech ? 'Learn Technique' : 'Add point'}</button>` : `<button class="qact qoff" disabled>${off[why] || 'Can\'t sit together'}</button>`}</div>`;
