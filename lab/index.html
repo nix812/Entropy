@@ -1399,7 +1399,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .stmeta em { font-style: normal; color: var(--gc, var(--amber)); font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; overflow: hidden; text-overflow: ellipsis; }
 .stbar { height: 3px; background: var(--line); margin-top: 3px; } .stbar i { display: block; height: 100%; width: 0; background: var(--gc, var(--amber)); }
 .sttr { display: flex; gap: 6px; }
-.stb { width: 40px; height: 40px; display: grid; place-items: center; background: var(--panel); border: 0; padding: 0; box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; font-family: var(--f-term); font-size: 16px; flex: none; }
+.stb { width: 44px; height: 44px; display: grid; place-items: center; background: var(--panel); border: 0; padding: 0; box-shadow: inset 0 0 0 1px var(--line2); color: #c9c6dc; font-family: var(--f-term); font-size: 16px; flex: none; }
 .stb .svgi { width: 18px; height: 18px; }
 .stb.on { box-shadow: inset 0 0 0 2px var(--gc, var(--amber)); color: var(--gc, var(--amber)); }
 .stb.keep.on { box-shadow: inset 0 0 0 2px #ff5fa8; color: #ff5fa8; }
@@ -1430,9 +1430,9 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .stgen { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
 .gw { display: flex; min-width: 0; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--c); }
 .gw.on { background: var(--c); }
-.gch { flex: 1; min-width: 0; border: 0; background: none; font-family: var(--f-pix); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c); padding: 0 4px; min-height: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gch { flex: 1; min-width: 0; border: 0; background: none; font-family: var(--f-pix); font-size: 10px; letter-spacing: 0; text-transform: uppercase; color: var(--c); padding: 0 3px; min-height: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gw.on .gch { color: #0b0b12; }
-.gpl { width: 30px; flex: none; border: 0; padding: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.3); color: var(--c); }
+.gpl { width: 40px; flex: none; border: 0; padding: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.3); color: var(--c); }
 .gw.on .gpl { color: #0b0b12; background: rgba(0, 0, 0, 0.14); }
 .gpl .svgi { width: 11px; height: 11px; }
 .stblurb { font-size: 15px; margin: 8px 0 0; }
@@ -1442,7 +1442,7 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .stft .dim { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stnm { background: none; border: 0; padding: 0; text-align: left; color: var(--ink); min-width: 0; }
 .stnm b { display: block; font-family: var(--f-pix); font-size: 11px; font-weight: 400; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stfav .stb { width: 36px; height: 36px; }
+.stfav .stb { width: 44px; height: 44px; }
 .stfav .stb .svgi { width: 14px; height: 14px; }
 .stb.del { width: auto; min-width: 36px; padding: 0 8px; }
 .stb.del.arm { background: var(--bad); color: #1a0008; box-shadow: none; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; }
@@ -1536,8 +1536,8 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 .cell.ph.on::after { opacity: 1; background: #fff; }
 @media (max-width: 760px) {
   .stlisten, .stshape { grid-template-columns: minmax(0, 1fr); gap: 4px; }
-  .stnow { grid-template-columns: 100px minmax(0, 1fr) auto; gap: 8px; } #stViz { width: 100px; height: 40px; }
-  .stb { width: 36px; height: 36px; } .sttr { gap: 4px; }
+  .stnow { grid-template-columns: 76px minmax(0, 1fr) auto; gap: 8px; padding: 3px 6px; margin-top: 2px; } #stViz { width: 76px; height: 44px; } /* 6.16 polish: room for 44 px player buttons */
+  .stb { width: 44px; height: 44px; } .sttr { gap: 2px; } /* 6.16 polish: 44 px on phones too (was 36) */
   .stcompose { grid-template-columns: minmax(0, 1fr); } .cpright { order: -1; } /* the grid first on small phones */
 }
 /* 6.5.2 ui652: bigger tap areas in the Music Studio and the pause menu. Invisible hit boxes reach into the gaps around each control
@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1743,7 +1743,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.0';
+const VERSION = '6.16.1';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2186,7 +2186,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 16; // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 17; // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2571,7 +2571,7 @@ const CURSES = [
 // v5.1 Know Your Enemy: every enemy says what it does (desc) and what beats it (beat). Four late enemies arrive from Wave 18,
 // each announced the wave before it lands
 // v5.1: the drone a Carrier drops (a flying Drone, smaller)
-const CARRIER = { every: 4.5, n: 2, hp: 0.1 };
+const CARRIER = { every: 4.5, n: 2, hp: 0.1, own: 6, all: 36 }; // own/all: the drone caps (rules 17)
 const SAPPER = { range: 1.6, dur: 4, cd: 7 };
 const LEECH = { share: 0.1, cap: w => 60 + 18 * w };
 // 6.16 rules 16: the Remnant (Nic, Nov 14: "Go it all sounds good"). Old war machines of the pilots before you, still running.
@@ -6112,7 +6112,8 @@ const KIT = {
   // Carrier: drops n small flying `into` units every `every` s (not while cloaked)
   drop: { tick(e, P, dtE) { e.dropT = (e.dropT === undefined ? P.first : e.dropT) - dtE;
     if (e.dropT <= 0 && !e.cloaked) { e.dropT = P.every;
-      for (let i = 0; i < P.n; i++) { const m = spawnEnemy(P.into, { fromPt: { x: e.x + (i ? 0.35 : -0.35), y: e.y + 0.2 }, hpm: hpBase(e) * P.hp / ENEMIES[P.into].hp }); m.fly = true; m.mite = 1; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); m.leak = P.leak; }
+      let n = P.n; if (G.frV >= 17) { let own = 0, all = 0; for (const o of G.enemies) if (o.mite && !o.dead) { all++; if (o.par === e.id) own++; } n = Math.max(0, Math.min(n, CARRIER.own - own, CARRIER.all - all)); if (!n) return; } /* rules 17: drone caps */
+      for (let i = 0; i < n; i++) { const m = spawnEnemy(P.into, { fromPt: { x: e.x + (i ? 0.35 : -0.35), y: e.y + 0.2 }, hpm: hpBase(e) * P.hp / ENEMIES[P.into].hp }); m.fly = true; m.mite = 1; m.par = e.id; m.cr *= 0.3; m.score = Math.round(m.score * 0.3); m.leak = P.leak; }
       Hooks.fx('drop', { x: e.x, y: e.y }); } } },
   // Sapper: knocks the nearest working tower within range out for dur s, every cd s (not while stunned, frozen or in Stasis)
   sap: { tick(e, P, dtE, st) { e.sapCD = (e.sapCD || 0) - dtE;
@@ -8396,7 +8397,7 @@ function prWork(dt, S) {
       if (d > PROBE.cloudR) continue;
       const k = Math.min(1 - s.prog, dt * S.rig / PROBE.cloudT); s.prog += k;
       const c = P.cargo, a = S.assay; c.cr += s.val * k * a; c.ent += s.ent * k;
-      s.acc = (s.acc || 0) + s.val * k * a; if (s.acc >= 25 || s.prog >= 1) { Hooks.fx('num', { x: P.x, y: P.y, v: Math.round(s.acc), col: '#c58cff', combo: 'GAS' }); s.acc = 0; }
+      s.acc = (s.acc || 0) + s.val * k * a; if (s.acc >= 25 || s.prog >= 1) { Hooks.fx('num', { x: P.x, y: P.y, v: Math.round(s.acc), col: '#c58cff', combo: 'GAS' }); Hooks.sfx('prGas', { x: P.x, y: P.y }); s.acc = 0; }
       P.hp -= S.max * PROBE.cloudZap * dt;
       if (s.prog >= 1 - 1e-9) siteDone(s);
       continue;
@@ -9156,7 +9157,7 @@ const SFX = (() => {
   // loudness trims (dB), set from offline renders so each role lands in its tier (loudest 50 ms, dBFS):
   // UI -28 · rapid weapons -28 to -31 · single-shot weapons -24 · hits -36 · deaths -30 (heavy -24) · combos -22 ·
   // player actions -22 · notices -20 to -24 · big events -12. Measured with test/sfxrender.py.
-  const TRIM = { open: 12, close: 18, tab: 21, on: 18, off: 18, pick: 12, whoosh: 10, prGo: 8, prZap: 8, prHit: 4, prPop: -1, prChunk: 4, prDown: -3.5, prUp: 3, /* 6.8, from sfxrender */ ui: 20, deny: 12, rail: -2.3, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -9, hit: 13, hitcrit: -2, hitshield: 2,
+  const TRIM = { open: 12, close: 18, tab: 21, on: 18, off: 18, pick: 12, whoosh: 10, prGo: 8, prZap: 8, prHit: 4, prPop: -1, prChunk: 4, prGas: 7, prDown: -3.5, prUp: 3, /* 6.8, from sfxrender */ ui: 20, deny: 12, rail: -2.3, pulse: -1, missile: -2, flame: 1, mortar: -3.5, grav: -9, hit: 13, hitcrit: -2, hitshield: 2,
     build: -3, upgrade: 4, reroll: 15, sell: 12, cash: 4, wave: -2, call: 11, milestone: 6, freeze: 2, net: 15, boom: -2, blink: 3, storm: 7, levelup: 2, unbreak: 4,
     converge: 4, crack: 1, stasis: 5, strikecharge: 3, overclock: 12, quack: 5, nuke: -1.5, // 6.2 the Nuke: the loudest big event, by a dB
     // v5.8 tower character (measured with sfxrender.py; spec variants sit level with their base sound, grav trimmed 3 dB into its tier)
@@ -9459,6 +9460,7 @@ const SFX = (() => {
     prZap(p) { if (!allow('prZap', 0.1, 2)) return; const c = ev('prZap', busW, 0.4, { jit: 0.8 }, p); fmv(c, { f0: 1480, f1: 880, r: 2.01, i: 2.2, d: 0.07, v: 0.16 }); done(c); },
     prHit(p) { if (!allow('prHit', 0.14, 2)) return; const c = ev('prHit', busH, 0.45, { jit: 0.6 }, p); nz(c, { ft: 'bandpass', f0: 1400, f1: 500, q: 1.5, d: 0.07, v: 0.3, lofi: 1 }); tone(c, { w: 0.125, f0: 196, f1: 147, d: 0.06, v: 0.14, lp: 1800 }); done(c); },
     prPop(p) { const c = ev('prPop', busH, 0.5, { room: 0.25 }, p); sub(c, 150, 60, 0.12, 0.4); nz(c, { ft: 'lowpass', f0: 3200, f1: 500, d: 0.16, v: 0.32, lofi: 1 }); tone(c, { w: 0.25, f0: 880, f1: 1320, slide: 0.06, d: 0.07, v: 0.07, at: 0.05 }); done(c); },
+    prGas(p) { if (!allow('prGas', 0.3, 1)) return; const c = ev('prGas', busE, 0.4, { room: 0.35, jit: 0.5 }, p); nz(c, { ft: 'bandpass', f0: 2600, f1: 1200, q: 1.4, d: 0.22, v: 0.16, a: 0.05, curve: 'lin' }); arp(c, [84, 91], 0.05, { at: 0.06, v: 0.06, d: 0.08, bell: 1 }); done(c); }, // 6.16 polish: a gas cloud draining into the hold (a soft inhale, a coin glint)
     prChunk(p) { if (!allow('prChunk', 0.15, 2)) return; const c = ev('prChunk', busE, 0.45, { room: 0.3 }, p); nz(c, { ft: 'bandpass', f0: 900, f1: 350, q: 0.9, d: 0.1, v: 0.34, lofi: 1 }); click(c, 0.25, 0, 3000); arp(c, [88, 93], 0.04, { at: 0.08, v: 0.08, d: 0.06, bell: 1 }); done(c); },
     prDown(p) { duck(-3, 0.02, 0.3, 0.6); const c = ev('prDown', busE, 0.6, { hall: 0.35, jit: 0 }, p); tone(c, { w: 0.25, f0: 660, f1: 82, slide: 0.45, d: 0.5, v: 0.14, lp: 2600, crush: 1 }); sub(c, 120, 45, 0.3, 0.45); nz(c, { ft: 'lowpass', f0: 2600, f1: 200, d: 0.4, v: 0.3, lofi: 1 }); done(c); },
     prUp(p) { const c = ev('prUp', busE, 0.5, { room: 0.35, jit: 0 }, p); arp(c, [69, 76, 81], 0.06, { v: 0.1, d: 0.1, bell: 1 }); sub(c, 110, 70, 0.07, 0.3, 0.2); click(c, 0.25, 0.2, 3500); done(c); },
@@ -9724,7 +9726,7 @@ const SFX = (() => {
         drums: { K: '9000000605000000', S: '0000900203009000', H: '6040604060406040', P: '0000000000000030' },
         fill: 'drop', bass: { kind: 'dub', line: 'dubby', lv: 0.2 }, pad: { kind: 'strings', lv: 0 }, keys: { kind: 'rhodes', rhythm: 'comp', lv: 0.3 }, arp: null,
         lead: { kind: 'theremin', grammar: 'long', scale: 'mode', lv: 0.55, oct: 74 }, mix: { rev: 0.5, revS: 2.2, echo: 0.3, div: 0.75, fb: 0.4, side: 0.15, tone: 9000, tape: 0.45, crackle: 0.45, pump: 0.15 } },
-      synthwave: { trim: 1.25, name: 'Synthwave', col: '#ff5fa8', bpm: [88, 104, 128], swing: 0.5, human: 0, form: 'dance', keyR: [45, 52],
+      synthwave: { trim: 1.25, name: 'Synthwave', short: 'Synth', col: '#ff5fa8', bpm: [88, 104, 128], swing: 0.5, human: 0, form: 'dance', keyR: [45, 52],
         blurb: 'Gated-reverb snares, 8th-note saw bass, Juno arps and a big 80s lead',
         flavours: {
           outrun: { name: 'Outrun', hard: 0.6, modes: ['aeolian'], drums: { K: '9000900090009000' }, loops: [C([0, 5, 2, 6]), C([0, 6, 5, 3], ['m', '6', 'M', 'm']), C([0, 5, 6, 5], ['m', 'M7', 'M', 'M7']), C([5, 6, 4, 5], ['M', 'M', 'm', 'M'])] },
@@ -9762,14 +9764,14 @@ const SFX = (() => {
         ext: 4, voicing: 'plane', kit: '909',
         drums: { K: '9000900090009000', R: '0060000600600060', H: '0000000000000000', O: '0080008000800080', C: '0000300000003000', D: '2222222222222222' },
         fill: 'none', bass: { kind: 'sub', line: 'rumble', lv: 0.1 }, pad: null, keys: { kind: 'stab', rhythm: 'techno', lv: 0 }, arp: null,
-        lead: { kind: 'bleep', grammar: 'bleep', scale: 'pent', lv: 0.75, oct: 76 }, mix: { rev: 0.4, revS: 3, echo: 0.4, div: 0.75, fb: 0.45, side: 0.4, tone: 16000, tape: 0.05, crackle: 0, pump: 0.35 } },
+        lead: { kind: 'bleep', grammar: 'bleep', scale: 'pent', lv: 0.75, lv2: 0.55, oct: 76 }, /* 6.16 polish: v2 pieces bring the lead in at 0.55 (at 0.75 it never played at mid energy); old saved tracks keep 0.75 */ mix: { rev: 0.4, revS: 3, echo: 0.4, div: 0.75, fb: 0.45, side: 0.4, tone: 16000, tape: 0.05, crackle: 0, pump: 0.35 } },
       trance: { trim: 0.66, name: 'Trance', col: '#9a8cff', bpm: [128, 138, 142], swing: 0.5, human: 0, form: 'trance', keyR: [42, 49],
         blurb: 'Rolling offbeat bass, gated supersaw chords, a long breakdown and a snare-roll build',
         flavours: {
           uplifting: { name: 'Uplifting', hard: 0.8, ftrim: 0.85, modes: ['aeolian'], loops: [C([0, 5, 2, 6]), C([5, 6, 0, 0]), C([0, 3, 5, 4], ['m', 'm', 'M', 'm']), C([0, 6, 5, 4], ['m', 'M', 'M', 'M'])] },
           psy: { name: 'Psy', ftrim: 2.0, hard: 0.95, modes: ['phrygian', 'harmonic'], bpmX: 1.04, bass: { kind: 'acid', line: 'rolling' }, pad: { kind: 'dark', lv: 0.2 }, keys: null, lead: { kind: 'saw', grammar: 'riff', lv: 0.45 }, arp: { kind: 'pluck', rate: 16, oct: 1, lv: 0.3 }, drums: { O: '0080008000800080', H: '3333333333333333', C: '0000600000006000' }, loops: [C([0], [], 4), C([0, 1], [], 2), C([0, 1, 0, 6])] }, // 6.3
           techtrance: { name: 'Tech Trance', ftrim: 1.9, hard: 0.65, modes: ['aeolian'], bpmX: 0.98, keys: { kind: 'stab', rhythm: 'techno', lv: 0 }, arp: { kind: 'juno', rate: 8, oct: 2, lv: 0.4 }, drums: { R: '0060000600600060', H: '0303030303030303' }, loops: [C([0, 5], [], 2), C([0, 6, 5, 6]), C([0], [], 4)] }, // 6.3
-          progressive: { name: 'Progressive', hard: 0.45, ftrim: 1.25, filterLoop: 1, modes: ['aeolian', 'dorian'], bpmX: 0.94, bass: { kind: 'saw', line: 'offbeat' }, keys: { kind: 'pluck', rhythm: 'trancepluck', lv: 0.2 }, loops: [C([0, 5], [], 2), C([0, 5, 2, 6], [], 2), C([0, 3], [], 2)] },
+          progressive: { name: 'Progressive', hard: 0.45, ftrim: 2.4, /* 6.16 polish: was 1.25; measured 7 dB under the other trance styles */ filterLoop: 1, modes: ['aeolian', 'dorian'], bpmX: 0.94, bass: { kind: 'saw', line: 'offbeat' }, keys: { kind: 'pluck', rhythm: 'trancepluck', lv: 0.2 }, loops: [C([0, 5], [], 2), C([0, 5, 2, 6], [], 2), C([0, 3], [], 2)] },
         },
         ext: 3, voicing: 'pad', kit: '909',
         drums: { K: '9000900090009000', O: '0080008000800080', H: '3434343434343434', C: '0000700000007000' },
@@ -10704,7 +10706,7 @@ const SFX = (() => {
           if (A0.kind === 'glass') lead(ns[idx] + 12, tt, 1.2, 0.5 * lvl(A0.lv), 'glass'); else pluck(ns[idx] + (A0.kind === 'juno' ? 0 : 12), tt, 0.55 * lvl(A0.lv)); }
       }
       // ---- lead (motif-based phrases) ----
-      const Ld = S.lead, ll = Ld ? lvl(Ld.lv) * (ph.lead === 0.5 ? (barInPh >= 4 ? 1 : 0) : ph.lead) : 0;
+      const Ld = S.lead, ll = Ld ? lvl(P.v2 && Ld.lv2 != null ? Ld.lv2 : Ld.lv) * (ph.lead === 0.5 ? (barInPh >= 4 ? 1 : 0) : ph.lead) : 0;
       if (P.boss) bossLead(tt, ph, barInPh, ll); // 6.3: the theme's own hook, exact notes
       else if (Ld && ll > 0 && !(P.dropouts && P.dropouts.lead)) {
         let mot = (ph.motif || (barInPh >= 6 && phIdx % 2 === 1)) ? P.motifs[1] : P.motifs[0], up = 0; const st = (barInPh % 2) * 16 + s16;
@@ -12669,6 +12671,10 @@ const RES = 2;
   // Sites sit on the ground layer (after salvage crates); guards and the probe fly (after the flying enemies). A few rects and
   // arcs each, culled to the camera view (v: buffer px). Sites outside the sector draw over the veil, so they read as beacons.
   const PR_COL = { site: '#ff6ad5', probe: '#9fd8ff', body: '#d8ecff', trim: '#3f8fe0', glow: '#7fe8ff', guard: '#ff5a7a', cloud: '#b98cff', gold: '#ffd84a' };
+  // 6.16 polish: each zone's gas looks its own (cloud colour, spark colour); The Odd Belt cycles. A rich cloud stays gold everywhere
+  const PR_GAS = { drift: ['#b98cff', '#f4e8ff'], hive: ['#ff9ad5', '#ffe0f2'], iron: ['#9aa6b8', '#e6ecf4'], skies: ['#9fd0ff', '#ffffff'], ghost: ['#d0a8ff', '#f4ecff'],
+    salvage: ['#e0a458', '#fff0d0'], tempest: ['#6ef0c8', '#ffffff'], demo: ['#ff7b39', '#ffd0a0'], choir: ['#8ee35a', '#e4ffd0'] };
+  const prGas = () => { if (G.sector === 'oddball') { const h = (frame * 0.6) % 360; return [`hsl(${h},90%,70%)`, `hsl(${(h + 180) % 360},90%,88%)`]; } return PR_GAS[G.sector] || PR_GAS.drift; };
   let prSelOn = false;
   const prIn = (x, y, m, v) => x * TILE > v.vx - m && x * TILE < v.vx + v.vw + m && y * TILE > v.vy - m && y * TILE < v.vy + v.vh + m;
   function drawSites(v) {
@@ -12676,11 +12682,12 @@ const RES = 2;
       if (s.done || !prIn(s.x, s.y, 60, v)) continue;
       const X = s.x * TILE, Y = s.y * TILE, fade = s.t < 10 ? ((frame >> 2) % 2 ? 0.45 : 1) : 1, gold = s.rich;
       if (s.k === 'cloud') {
-        const r = PROBE.cloudR * TILE * (1 - 0.45 * s.prog), col = gold ? PR_COL.gold : PR_COL.cloud;
+        const r = PROBE.cloudR * TILE * (1 - 0.45 * s.prog), gz = prGas(), col = gold ? PR_COL.gold : gz[0], spk = gold ? '#fff4c0' : gz[1];
         for (let k = 0; k < 3; k++) { const a = s.z + k * 2.1 + frame / 140, rr = r * (0.62 + 0.12 * k);
-          b.fillStyle = hexA(col, (0.1 + 0.05 * k) * fade); b.beginPath(); b.arc(X + Math.cos(a) * r * 0.32, Y + Math.sin(a) * r * 0.25, rr, 0, 6.283); b.fill(); }
-        for (let k = 0; k < 4; k++) { const a = s.z * 3 + k * 1.7 + frame / 60; if ((frame + k * 7) % 24 < 12) P(b, X + Math.cos(a) * r * 0.7, Y + Math.sin(a * 1.3) * r * 0.5, '#f4e8ff'); }
-        if ((frame + (s.id % 40)) % 90 < 3) { b.strokeStyle = hexA('#f4e8ff', 0.8); b.lineWidth = 1; b.beginPath(); b.moveTo(X - r * 0.4, Y - 3); b.lineTo(X - 2, Y + 2); b.lineTo(X + r * 0.3, Y - 1); b.stroke(); } // static
+          b.globalAlpha = (0.1 + 0.05 * k) * fade; b.fillStyle = col; b.beginPath(); b.arc(X + Math.cos(a) * r * 0.32, Y + Math.sin(a) * r * 0.25, rr, 0, 6.283); b.fill(); }
+        b.globalAlpha = 1;
+        for (let k = 0; k < 4; k++) { const a = s.z * 3 + k * 1.7 + frame / 60; if ((frame + k * 7) % 24 < 12) P(b, X + Math.cos(a) * r * 0.7, Y + Math.sin(a * 1.3) * r * 0.5, spk); }
+        if ((frame + (s.id % 40)) % 90 < 3) { b.globalAlpha = 0.8; b.strokeStyle = spk; b.lineWidth = 1; b.beginPath(); b.moveTo(X - r * 0.4, Y - 3); b.lineTo(X - 2, Y + 2); b.lineTo(X + r * 0.3, Y - 1); b.stroke(); b.globalAlpha = 1; } // static
       } else if (s.k === 'rock') {
         const r = Math.round(5 + 5 * Math.max(0.25, s.hp / s.max)) + (gold ? 1 : 0), by = Math.round(Math.sin(frame / 30 + s.z) * 1);
         R(b, X - r, Y + r - 1, r * 2, 2, 'rgba(0,0,0,0.35)');
@@ -13872,7 +13879,7 @@ const RES = 2;
     for (const q of G.nodes || []) light(q.x * TILE + 12, q.y * TILE + 12, TILE * 1.1, '#6ae2ff', 0.16 + 0.06 * Math.sin(frame / 12 + q.x));
     for (const cc of G.caches || []) if (!FOGON || fogSee(cc.x + 0.5, cc.y + 0.5)) light(cc.x * TILE + 12, cc.y * TILE + 12, TILE * (cc.kind === 'gold' ? 1.8 : 1.3), CACHE_PAL[cc.kind || 'normal'][3], cc.kind === 'gold' ? 0.4 : 0.22);
     for (const [a, b2] of G.links || []) light((a.cx + b2.cx) / 2 * TILE, (a.cy + b2.cy) / 2 * TILE, TILE * 1.2, '#6ae2ff', 0.12);
-    if (G.probe) { for (const s2 of G.sites || []) if (!s2.done) light(s2.x * TILE, s2.y * TILE, TILE * (s2.k === 'cloud' ? 2.2 : 1.4), s2.rich ? PR_COL.gold : s2.k === 'cloud' ? PR_COL.cloud : s2.k === 'wreck' ? '#ff9a3c' : PR_COL.site, s2.k === 'cloud' ? 0.2 : 0.16);
+    if (G.probe) { for (const s2 of G.sites || []) if (!s2.done) light(s2.x * TILE, s2.y * TILE, TILE * (s2.k === 'cloud' ? 2.2 : 1.4), s2.rich ? PR_COL.gold : s2.k === 'cloud' ? (PR_GAS[G.sector] || PR_GAS.drift)[0] : s2.k === 'wreck' ? '#ff9a3c' : PR_COL.site, s2.k === 'cloud' ? 0.2 : 0.16);
       const Pb = G.probe; if (Pb.alive && !Pb.home) light(Pb.x * TILE, Pb.y * TILE - 8, TILE * 1.3, PR_COL.glow, 0.3); } // 6.5
     if (nuke) { const t = nuke.t; light(nuke.x, nuke.y, TILE * (3 + 3 * Math.min(1, t / 0.4)), t < 0.6 ? '#fff0c0' : '#ff8a2a', Math.max(0, 0.9 - t * 0.3)); light(nuke.x, nuke.y - TILE * 3.5 * Math.min(1, t / 1.5), TILE * 3, '#ff7b29', Math.max(0, 0.45 - t * 0.14)); }
     if (odReady()) light(G.core.x * TILE, G.core.y * TILE, TILE * 3.4, PAL.core, 0.25 + 0.15 * Math.sin(frame / 4));
@@ -14105,7 +14112,7 @@ const RES = 2;
           const ux = Math.cos(an), uy = Math.sin(an), qx = Math.round(px - ux * (r + 9)), qy = Math.round(py - uy * (r + 9));
           c.fillStyle = 'rgba(7,8,15,0.85)'; c.fillRect(qx - 6, qy - 6, 12, 12);
           if (A.prb) { c.fillStyle = PR_COL.body; c.fillRect(qx - 3, qy - 3, 6, 6); c.fillStyle = PR_COL.trim; c.fillRect(qx - 5, qy - 1, 2, 2); c.fillRect(qx + 3, qy - 1, 2, 2); }
-          else if (A.sk === 'cloud') { c.fillStyle = PR_COL.cloud; c.fillRect(qx - 4, qy - 2, 8, 5); c.fillRect(qx - 2, qy - 4, 5, 2); }
+          else if (A.sk === 'cloud') { c.fillStyle = prGas()[0]; c.fillRect(qx - 4, qy - 2, 8, 5); c.fillRect(qx - 2, qy - 4, 5, 2); }
           else if (A.sk === 'rock') { c.fillStyle = '#8c7a66'; c.fillRect(qx - 4, qy - 3, 8, 7); c.fillStyle = '#4c4038'; c.fillRect(qx - 1, qy, 2, 2); }
           else { c.fillStyle = '#8a96ad'; c.fillRect(qx - 5, qy - 2, 6, 4); c.fillRect(qx + 1, qy - 1, 4, 3); c.fillStyle = '#ffb03a'; c.fillRect(qx, qy - 1, 1, 2); }
           if (A.n > 1) { c.font = '9px "Oxanium Head", monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(7,8,15,0.9)'; c.fillRect(qx + 4, qy - 12, 10, 9); c.fillStyle = PR_COL.site; c.fillText(String(A.n), qx + 9, qy - 7); c.textBaseline = 'alphabetic'; }
@@ -16747,8 +16754,20 @@ const UI = (() => {
     box.style.setProperty('--zc', S.col); box.querySelector('h3').textContent = S.name; box.querySelector('span').textContent = S.pitch;
     const cp = G && G.core ? Render.tileToScreen(G.core.x, G.core.y) : null; box.classList.toggle('low', !!cp && cp.y < Render.layout.H * 0.5 && !panel); // keep clear of the core (beside an open panel it already sits in the other half)
     box.classList.remove('out'); box.hidden = false; box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
+    box.style.top = ''; zoneDodge();
     clearTimeout(zoneT); zoneT = setTimeout(() => { box.classList.add('out'); zoneT = setTimeout(() => { box.hidden = true; box.classList.remove('out'); }, 350); }, 2500);
     SFX.play('zone', id);
+  }
+  // 6.16 polish: the banner steps below a news line, tip or toast it would cover (seen at 667x375: ENTERING over CREDITS PILING UP)
+  function zoneDodge() {
+    const box = $('#zoneBan'); if (!box || box.hidden) return;
+    const b = box.getBoundingClientRect(), H = innerHeight; let low = 0;
+    for (const el of [$('#ticker'), $('#tip'), ...document.querySelectorAll('#toasts > *')]) {
+      if (!el || el.hidden || !el.offsetParent) continue;
+      const r = el.getBoundingClientRect(); if (!r.height || r.right < b.left || r.left > b.right || r.top > H * 0.5) continue;
+      if (r.bottom > b.top - 4 && r.top < b.bottom + 4) low = Math.max(low, r.bottom);
+    }
+    if (low) box.style.top = Math.min(H - b.height / 2 - 8, low + 8 + b.height / 2) + 'px';
   }
   // Settings · Zone effects: on unless the player turned it off (or the device asks for reduced motion and they never chose)
   const zfxOn = () => PROF.settings.zfx !== undefined ? PROF.settings.zfx !== false : !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -19365,6 +19384,7 @@ const UI = (() => {
     if (enemyCards.length && screen === 'game' && G && !G.over && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) enemyCard(enemyCards.shift());
     if (evoWait && screen === 'game' && G && !G.over && !G.tut && !modalOpen && !Tree.isOpen && !G.draft && teachOK()) { evoWait = false; if (!PROF.seenEvo) { teachMark(); openEvo(true); } }
     if (screen === 'game' && G && !G.over && (G.sector || null) !== zoneSeen && !modalOpen && !Tree.isOpen && !G.draft && !G.huntChoice) { zoneSeen = G.sector || null; if (zoneSeen && !G.tut) zoneBanner(zoneSeen); } // 6.3
+    if (screen === 'game' && !$('#zoneBan').hidden) zoneDodge();
     onboardingTick(); Coach.tick();
     const bossOn = !!(screen === 'game' && G && G.bossAlive && !G.bossAlive.dead); if (bossOn !== document.body.classList.contains('bossbar')) document.body.classList.toggle('bossbar', bossOn);
     bossMusic();
@@ -19422,7 +19442,7 @@ const UI = (() => {
     fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
-    _dbg: { keepOutRects, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
+    _dbg: { keepOutRects, zoneBanner, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
   };
 })();
 
