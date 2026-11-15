@@ -1696,7 +1696,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.15.0';
+const VERSION = '6.15.1';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -13122,7 +13122,7 @@ const RES = 2;
     if (cloaked) b.globalAlpha = 0.25;
     else if (e.cloak && e.cloakT < 0.6 && frame % 6 < 3) b.globalAlpha = 0.6; // v5.1 tell: it flickers just before it cloaks
     if (e.pirate) { const fl = e.L.pts[e.L.pts.length - 1].x < e.L.pts[0].x; b.save(); b.translate(Math.round(X), Math.round(y)); if (fl) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
-    else if (e.boss) { const fl = Math.cos(e._ha) < -0.3; b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); if (fl && !e.burrowT) b.scale(-1, 1); b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
+    else if (e.boss) { const fl = Math.cos(e._ha) < -0.3; b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); if (fl && !(e.burrowT > 0)) b.scale(-1, 1); // 6.15.1: burrowT ends a little below 0, so !e.burrowT kept the Wormhole Worm from ever facing left again after its first burrow b.drawImage(s, -hw, -hh, sw, hh * 2); b.restore(); }
     else b.drawImage(s, Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2);
     if (e.stowaway) { R(b, X - 5, y - hh - 1, 10, 2, '#d8281a'); R(b, X + 5, y - hh - 1, 2, 1, '#d8281a'); P(b, X + 7, y - hh, '#d8281a'); }
     const ovl = col => { const tc = tintOf(s, col); if (e.boss && Math.cos(e._ha) < -0.3) { b.save(); b.translate(Math.round(X * RES) / RES, Math.round(y * RES) / RES); b.scale(-1, 1); b.drawImage(tc, -hw, -hh, sw, hh * 2); b.restore(); } else b.drawImage(tc, Math.round((X - hw) * RES) / RES, Math.round((y - hh) * RES) / RES, sw, hh * 2); };
