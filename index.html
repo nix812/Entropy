@@ -929,6 +929,28 @@ details.more { margin: 6px 0 0; } details.more > summary { font-family: var(--f-
 .card { background: var(--panel); box-shadow: inset 0 0 0 2px var(--line2); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   padding: 14px 16px; width: min(720px, 100%); max-height: 100%; overflow-y: auto; touch-action: pan-y; }
 .card.narrow { width: min(400px, 100%); }
+/* 6.15 Pilot Certification (Field Manual) */
+.cert { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 14px; align-items: center; margin: 2px 0 10px; padding: 8px 10px; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); clip-path: var(--cut); }
+.crank { display: flex; flex-direction: column; gap: 2px; min-width: 110px; }
+.crank span { font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.08em; color: var(--dim); }
+.crank b { font-family: var(--f-pix); font-size: 18px; color: var(--amber); letter-spacing: 0.06em; }
+.crank small { font-size: 13px; color: var(--dim); text-transform: none; line-height: 1.15; }
+.ctracks { display: flex; flex-direction: column; gap: 5px; }
+.ctr { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.ctr b { font-family: var(--f-pix); font-size: 9px; font-weight: 400; letter-spacing: 0.06em; color: var(--ink); }
+.ctr span { font-size: 13px; color: var(--dim); white-space: nowrap; }
+.cbar { height: 8px; background: #0b0d1d; box-shadow: inset 0 0 0 1px var(--line); position: relative; }
+.cbar i { position: absolute; inset: 1px auto 1px 1px; background: var(--amber); max-width: calc(100% - 2px); }
+.ctr.full .cbar i { background: var(--core); } .ctr.full span { color: var(--core); }
+.lsec { grid-column: 1 / -1; font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.1em; color: var(--dim); margin: 6px 0 -2px; }
+.lrow.cert > i { color: var(--amber); }
+.bchk { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 8px; }
+.bchk span { display: grid; grid-template-columns: 18px 76px minmax(0, 1fr); gap: 6px; align-items: baseline; font-size: 15px; color: var(--dim); text-transform: none; }
+.bchk span i { font-style: normal; color: var(--bad); } .bchk span.ok i { color: var(--core); } .bchk span.ok { color: var(--ink); }
+.bchk span b { font-family: var(--f-pix); font-size: 9px; font-weight: 400; letter-spacing: 0.06em; color: var(--dim); text-transform: uppercase; }
+.hrank { font-style: normal; color: var(--amber); margin-left: 4px; }
+.hrank:empty { display: none; }
+@media (max-width: 560px) { .cert { grid-template-columns: 1fr; } }
 /* 6.14 pause menu (Nic, Nov 14: fit one sheet in landscape): info left, buttons right in two columns; one column under 460 px wide */
 .card.pausec { width: min(720px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; align-items: center; overflow: hidden; }
 .card.pausec .pinfo { min-height: 0; max-height: calc(100dvh - 44px); overflow-y: auto; align-self: stretch; display: flex; flex-direction: column; }
@@ -1605,7 +1627,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
       <div class="brand">
         <h1 aria-label="Last Gradient"><span class="t1" aria-hidden="true">LAST</span><span class="t2" data-word="GRADIENT" aria-hidden="true"></span></h1>
         <div class="hmeta">
-          <div class="lv"><span class="lbl">Level</span><b id="hLevel">0</b><div class="xpbar"><i id="hXpFill"></i></div></div>
+          <div class="lv"><span class="lbl">Level <i class="hrank" id="hRank"></i></span><b id="hLevel">0</b><div class="xpbar"><i id="hXpFill"></i></div></div>
           <div><span class="lbl">Best Wave</span><b id="hBest">—</b></div>
           <div id="hNovaBox" hidden><span class="lbl">Supernova</span><b id="hNova">0</b></div>
         </div>
@@ -1674,7 +1696,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.14.0';
+const VERSION = '6.15.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2117,7 +2139,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 13; // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 14; // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2356,91 +2378,111 @@ const TUT = {
 const DAILY_LVL = 20;
 const dailyOpen = () => typeof PROF === 'undefined' || !PROF || profLevel().level >= DAILY_LVL || !!(PROF.runSnap && PROF.runSnap.rec);
 const LESSONS = [
-  { id: 'towers', title: 'Towers and Elements', blurb: 'What each tower is for, and why element matters.',
+  { id: 'towers', track: 'basics', bench: { m: 'Build two towers of different elements', s: ['reach', 0.7] }, title: 'Towers and Elements', blurb: 'What each tower is for, and why element matters.',
     what: 'Every tower has an element: Kinetic, Thermal, Cryo, Arc or Void. Enemies resist some and are weak to others.', when: 'Every build. The Threat Board says what the next wave is weak to.', todo: 'Read the role line on each card. Build the counter the Threat Board names. Mix elements.',
     real: 'In a run: check the Threat Board between waves and build the counter it names.',
     run: { credits: 380, grid: 6, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil', 'flame'], waves: [[['flyer', 7, 1.3, 0.9], ['drone', 4, 1.2, 0.8]], [['swarmer', 16, 0.2, 1], ['drone', 4, 1, 0.8]]] } },
-  { id: 'upgrades', title: 'Upgrades, Specs and Selling', blurb: 'Make a tower stronger, pick its spec, and sell towers you do not use.',
+  { id: 'upgrades', track: 'basics', bench: { m: 'Specialize the Pulse Blaster and sell the Cryo Emitter', s: null }, title: 'Upgrades, Specs and Selling', blurb: 'Make a tower stronger, pick its spec, and sell towers you do not use.',
     what: 'Tap a built tower to open its panel. Upgrade raises its level: more damage and a random bonus (an affix). At LV 3 you pick one of two specs permanently. LV 5 is the highest level. After that, a tower can Ascend to gain a perk.', when: 'When power is full, or a tower already sits in the right spot.', todo: 'Upgrade the tower doing the most work. The arrow over a tower means you can afford its best upgrade. Sell towers that stay idle.',
     real: 'In a run: follow the arrow. When power is full, upgrade instead of building.',
     run: { credits: 1400, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 3], ['rail', 5, 1], ['cryo', 1]]]], waves: [[['drone', 8, 1, 1.2], ['tank', 2, 2, 1]]] } },
-  { id: 'power', title: 'Power, Reactor and Core', blurb: 'The power grid, expanding it, and upgrading the core.',
+  { id: 'power', track: 'basics', bench: { m: 'Expand the reactor', s: null }, title: 'Power, Reactor and Core', blurb: 'The power grid, expanding it, and upgrading the core.',
     what: 'Each tower draws 1 power. Capacity grows by 1 every 3 waves; the reactor adds more for credits. The core has its own upgrades: Battery (its gun, and a docked tower), Shield, Hull and Uplink.', when: 'When the power readout is full and you still have credits.', todo: 'Upgrade towers first. Expand the reactor when you have credits to spare. Hull makes the core sturdier, Uplink recharges abilities faster.',
     real: 'In a run: when the grid is full, upgrade. Late in the run, spend spare credits on the reactor and the core’s Hull.',
     run: { credits: 1600, grid: 3, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['rail', 1], ['cryo', 1]]]], waves: [[['drone', 10, 1, 1.2]]] } },
-  { id: 'lift', title: 'Lift Off and Docking', blurb: 'Fly the core, dock it on a tower, link and move towers.',
+  { id: 'lift', track: 'basics', bench: { m: 'Dock the core on a tower and move a tower', s: null }, title: 'Lift Off and Docking', blurb: 'Fly the core, dock it on a tower, link and move towers.',
     what: 'Your core can fly. Tap Lift Off, pick a landing spot and read the preview. Land on an attack tower to dock it as a second gun at ×2 damage and +1 range. The core’s own gun keeps firing. The landed core links its 3 nearest attack towers within 4 tiles (+10% damage and attack rate each). Any tower can Move from its panel.', when: 'Whenever the swarm changes: a new road, a strain warded against your main element, a boss on the way. After a landing, Lift Off recharges for 3 waves.', todo: 'Dock on the tower that answers the next wave. Read the road line in the preview: a shorter road means enemies arrive sooner. Move stranded towers instead of selling them.',
     real: 'In a run: dock where the next wave hurts most, then move towers into link reach.',
     run: { credits: 260, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['road', [['rail', 3, 0.78, 1], ['pulse', 2, 0.66], ['pulse', 2, 0.42]]]], waves: [[['drone', 6, 1.6, 1.4], ['tank', 2, 3.2, 1.2]]] } },
-  { id: 'overcharge', title: 'Overcharge', blurb: 'Put spare power into one tower.',
+  { id: 'overcharge', track: 'basics', bench: { m: 'Overcharge a tower', s: null }, title: 'Overcharge', blurb: 'Put spare power into one tower.',
     what: 'Overcharge spends spare power on a tower: +35% damage per step, 1 power per step.', when: 'When you have power left over and one tower doing most of the work.', todo: 'Open the tower panel and tap +1, +2 or +3. Tap the power readout to Overcharge your top tower in one go.',
     real: 'In a run: never leave power unused. Overcharge your best tower.',
     run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 2], ['pulse', 1]]]], waves: [[['drone', 10, 0.9, 1.4], ['tank', 2, 2, 1]]] } },
-  { id: 'abilities', title: 'Abilities and Charges', blurb: 'Strike, Stasis, Frenzy, Nova and Scan.',
+  { id: 'abilities', track: 'basics', bench: { m: 'Use all five abilities', s: ['akills', 8] }, title: 'Abilities and Charges', blurb: 'Strike, Stasis, Frenzy, Nova and Scan.',
     what: 'Five abilities on the left rail, each on its own cooldown. Strike hits an area, Stasis freezes everything, Frenzy speeds up your towers, Nova damages every enemy, Scan reveals cloaked enemies and marks the largest threat.', when: 'On a dense pack, a boss, or a wave that is leaking.', todo: 'A full charge slot does not recharge further. Crates and bosses add extra charges that stack.',
     real: 'In a run: use charges on the waves that leak. Charges recharge.',
     run: { start: 12, credits: 200, grid: 6, towers: ['pulse', 'rail', 'cryo'], abil: ['strike', 'nova', 'stasis', 'overclock', 'scan'], pre: [['towers', [['pulse', 3], ['rail', 3], ['cryo', 2]]], ['abil', ['strike', 'nova', 'stasis', 'overclock', 'scan'], 1]],
       waves: [[['swarmer', 16, 0.15, 0.8], ['phantom', 4, 1.4, 0.8], ['drone', 8, 0.7, 0.8]]] } },
-  { id: 'swarm', title: 'The Swarm Adapts', blurb: 'Genes, the Threat Board, Arms Race and DNA.',
+  { id: 'swarm', track: 'advanced', bench: { m: 'Build a Rail Lance against the Plating', s: null }, title: 'The Swarm Adapts', blurb: 'Genes, the Threat Board, Arms Race and DNA.',
     what: 'The swarm breeds against your defense. Enemies that get furthest pass on their genes (Plating, Shell, Ward, Haste…). Marks on each enemy show its genes.', when: 'From Wave 8 on Normal. The Threat Board shows what it is breeding and why.', todo: 'Open the Threat Board between waves. When a gene climbs, build its counter. Mixed elements give the swarm less to adapt to.',
     real: 'In a run: when the Threat chip pulses, open it and answer the top gene.',
     run: { start: 10, credits: 500, grid: 6, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil'], pre: [['towers', [['pulse', 3], ['pulse', 2], ['rail', 2]]]],
       waves: [[['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.6 }], ['swarmer', 8, 0.25, 0.8, { genes: ['haste'], share: 0.5 }]], [['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.7 }], ['tank', 2, 2, 0.6]]] } },
-  { id: 'hunt', title: 'Bounties and the Purse', blurb: 'Most Wanted, the Bounty Purse, Extract or jump.',
+  { id: 'hunt', track: 'advanced', bench: { m: 'Kill the bounty boss and extract', s: null }, title: 'Bounties and the Purse', blurb: 'Most Wanted, the Bounty Purse, Extract or jump.',
     what: 'Each run posts a Most Wanted boss. Killing it claims the bounty. Some of your XP is held in the Bounty Purse. Extract deposits all of it and ends the run as a win. A jump door takes you to a new zone for a larger purse. If the core falls later, you keep 30%.', when: 'Every 20 waves.', todo: 'Extract when the run is at risk. Jump when your defense is strong: Steady, Hot and Deadly doors multiply the purse more.',
     real: 'In a run: extract when your last waves were close calls; jump when they were easy.',
     run: { start: 18, credits: 300, grid: 7, towers: ['pulse', 'rail', 'cryo'], boss: { id: 'behemoth', mod: 'hasted', hp: 4000, w: 2 }, pre: [['towers', [['rail', 4, 1], ['pulse', 4, 1], ['pulse', 3], ['cryo', 3]]]],
       waves: [[['drone', 10, 0.8, 0.5]], [['drone', 4, 1, 0.5], ['boss', 1, 3, 1]]] } },
-  { id: 'salvage', title: 'Crates and Salvage', blurb: 'Loot on the map, and the pirates who want it.',
+  { id: 'salvage', track: 'basics', bench: { m: 'Claim a crate', s: null }, title: 'Crates and Salvage', blurb: 'Loot on the map, and the pirates who want it.',
     what: 'Drop ships leave crates on the map: credits, ability charges or tokens. Crates disappear after a while. Golden crates pay more. Cursed crates carry a penalty.', when: 'From Wave 3, between and during waves.', todo: 'Tap a crate to claim it. A tower next to a crate collects it for you. Shoot down pirate skiffs before they fly off with one.',
     real: 'In a run: tap crates as they land, or build next to where they drop.',
     run: { credits: 200, grid: 4, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2]]], ['cache']], waves: [[['drone', 6, 1.2, 1]]] } },
-  { id: 'veterans', title: 'Veterans, Affixes, Resonance', blurb: 'Towers that earn ranks, and where to put them.',
+  { id: 'probe', track: 'basics', bench: { m: 'Loot two sites, one of them guarded, without losing the probe', s: null }, title: 'Probe and Loot Sites', blurb: 'Your free scout: wrecks, gas clouds, rocks and the drones guarding them.',
+    what: 'The probe sits on the core. Select it and tap a site to send it: it salvages a wreck, harvests a gas cloud or mines a rock, then flies home on its own and banks the cargo at the core. Red drones guard some sites and shoot it. Upgrades (Armor, Engine, Lance and more) make it tougher and let it fight back.', when: 'From Wave 4, all run long.', todo: 'Keep it busy between waves. Send it to unguarded sites first. Buy the Lance before you send it to a guarded one.',
+    real: 'In a run: whenever the probe is home and a site is up, send it.',
+    run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], probe: 1, pre: [['towers', [['pulse', 3], ['rail', 2]]]],
+      sites: [{ n: 1, w: 1, k: 'wreck', dx: 6, dy: 5, val: 160, g: 0 }, { n: 2, w: 2, k: 'wreck', dx: -9, dy: -6, val: 240, g: 1 }],
+      waves: [[['drone', 8, 1.6, 1.2]], [['drone', 10, 1.4, 1.2], ['swarmer', 6, 0.4, 1]], [['drone', 8, 1.2, 1.3]]] } },
+  { id: 'veterans', track: 'advanced', bench: { m: 'Pick a veteran mutation', s: null }, title: 'Veterans, Affixes, Resonance', blurb: 'Towers that earn ranks, and where to put them.',
     what: 'Towers that fight earn veteran ranks; each rank offers a mutation. Affixes are the bonuses a tower rolls on upgrades. Towers of different elements side by side resonate: +8% damage each.', when: 'Whenever the Ready button shows a count; whenever you place a tower.', todo: 'Tap Ready: it walks you through every waiting tower (a gold star marks each). Pick a mutation. Build mixed elements next to each other.',
     real: 'In a run: clear veteran picks between waves; pair Kinetic with Cryo or Arc side by side.',
     run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['cryo', 1]]], ['vet', 0]], waves: [[['drone', 8, 1, 1]]] } },
-  { id: 'support', title: 'Pylon and Forge', blurb: 'Towers that never shoot.',
+  { id: 'support', track: 'advanced', bench: { m: 'Build a Relay Pylon and a Credit Forge', s: null }, title: 'Pylon and Forge', blurb: 'Towers that never shoot.',
     what: 'The Relay Pylon boosts damage and attack speed of towers in its range and reveals cloaked enemies. The Credit Forge pays credits every wave.', when: 'Pylon: when towers are clustered. Forge: early in a long run.', todo: 'Build a Pylon in the middle of a cluster. Build Forges early; they pay for themselves in a few waves.',
     real: 'In a run: one Pylon per tower cluster; Forges before Wave 20.',
     run: { start: 12, credits: 500, grid: 6, towers: ['pulse', 'rail', 'cryo', 'pylon', 'forge'], pre: [['towers', [['pulse', 3], ['rail', 3]]]], waves: [[['drone', 10, 0.8, 0.6], ['phantom', 3, 1.5, 0.6]]] } },
-  { id: 'storms', title: 'Storms and Anomalies', blurb: 'Weather that boosts an element, and the Entropy gauge.',
-    what: 'Storms drift across the map and boost one element: towers of that element inside a storm are stronger. Kills fill the Entropy gauge; when it is full you draw an Anomaly, a permanent twist with an upside and a downside.', when: 'Storms from Wave 6. Anomalies whenever the gauge fills.', todo: 'Tap a storm chip to see what it boosts. Tap the full gauge and pick the Anomaly that suits your build, or Stabilize for score.',
+  { id: 'storms', track: 'advanced', bench: { m: 'Harvest a storm with the probe and draw an Anomaly', s: null }, title: 'Storms and Anomalies', blurb: 'Weather that boosts an element, and the Entropy gauge.',
+    what: 'Storms drift across the map and boost one element: towers of that element inside a storm glow and hit harder. Each storm also hits the enemies under it (lightning, burns, frost, Marks or a reveal), and your probe can harvest a storm for an ability charge. Kills fill the Entropy gauge; when it is full you draw an Anomaly, a permanent twist with an upside and a downside.', when: 'Storms from Wave 6. Anomalies whenever the gauge fills.', todo: 'Tap a storm chip to see what it boosts. Tap the full gauge and pick the Anomaly that suits your build, or Stabilize for score.',
     real: 'In a run: build into storms of your element; draw Anomalies that match your towers.',
-    run: { start: 8, credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo', 'missile'], pre: [['towers', [['missile', 2], ['pulse', 2]]], ['storm', 'solar'], ['entropy', 100]], waves: [[['drone', 10, 0.9, 0.7]]] } },
-  { id: 'wormholes', title: 'Wormholes and Checkpoints', blurb: 'New roads, a larger map and a pause.',
+    run: { start: 8, credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo', 'missile'], probe: 1, abil: ['strike', 'overclock'], pre: [['towers', [['missile', 2], ['pulse', 2]]], ['storm', 'solar'], ['entropy', 100], ['abil', ['overclock'], 1]], waves: [[['drone', 10, 0.9, 0.7]], [['drone', 10, 0.9, 0.7]]] } },
+  { id: 'blackhole', track: 'advanced', bench: { m: 'Feed the Black Hole and hit 3 enemies with one Gravity Bomb', s: null }, title: 'Black Hole', blurb: 'Feed it or fear it.',
+    what: 'A marker shows where a Black Hole will land, 8 seconds ahead. Once it lands, it hunts: it drifts toward the biggest pack of enemies your towers can reach, and every kill inside its reach feeds it. Fed when its 30 seconds run out, it collapses in a blast and leaves a rich wreck for the probe. Starved, it spits voidlings back out. A Strike aimed inside its reach becomes a Gravity Bomb that drags enemies to its center and crushes them.', when: 'From Wave 10, now and then.', todo: 'Move towers into its fast-firing ring. Fire a Strike into it when enemies crowd its reach.',
+    real: 'In a run: when the marker appears, move a tower or two into its ring and save a Strike for it.',
+    run: { start: 12, credits: 700, grid: 8, towers: ['pulse', 'rail', 'cryo', 'missile'], probe: 1, hole: { w: 1 }, abil: ['strike'], pre: [['towers', [['pulse', 3], ['rail', 3], ['missile', 2], ['cryo', 2]]], ['abil', ['strike'], 2]],
+      waves: [[['drone', 16, 0.55, 0.9], ['swarmer', 12, 0.3, 0.8], ['drone', 10, 0.6, 0.9]], [['drone', 10, 0.8, 0.9], ['tank', 2, 2.5, 0.8]]] } },
+  { id: 'wormholes', track: 'advanced', bench: { m: 'Cover the new road during the checkpoint and start early', s: null }, title: 'Wormholes and Checkpoints', blurb: 'New roads, a larger map and a pause.',
     what: 'Every so often a wormhole opens a new road and the map grows. Nothing can be built within 4 tiles of a wormhole. The wave before it lands is a checkpoint: the next wave waits 90 s. Full refunds, a free respec and Lift Off with no cooldown until it starts.', when: 'At set waves (Normal: 15, 28, 42…).', todo: 'At a checkpoint, move towers (or sell and rebuild) to cover the new road, then tap Next. Resuming fast pays a bonus.',
     real: 'In a run: at a checkpoint, move towers to cover both roads before you resume.',
     run: { credits: 400, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 2], ['pulse', 1]]], ['lane', 1]], waves: [[['drone', 6, 1.2, 1]], [['drone', 10, 0.9, 1]]] } },
-  { id: 'assault', title: 'Strain Assaults', blurb: 'The swarm commits a whole wave to beat you.',
+  { id: 'assault', track: 'advanced', bench: { m: 'Build the counter tower before the strain lands', s: null }, title: 'Strain Assaults', blurb: 'The swarm commits a whole wave to beat you.',
     what: 'Every few waves the swarm reads your defense and sends one strain built to beat it. It is announced a wave ahead, and selling is free (a refit) until it lands. If you hold it, the strain is defeated: +1 power and a bounty.', when: 'Normal: from Wave 14, every 8 waves.', todo: 'When the Threat chip turns red, open it, read the strain’s genes, and swap towers for their counters while selling is free.',
     real: 'In a run: a red Threat chip means refit now, while selling is free.',
     run: { start: 14, credits: 600, grid: 7, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil'], pre: [['towers', [['pulse', 3], ['pulse', 3], ['rail', 2]]], ['assault']], waves: [[['drone', 14, 0.6, 0.45], ['swarmer', 6, 0.3, 0.5]], [['drone', 6, 1, 0.4]]] } },
-  { id: 'bosses', title: 'Bosses, Boons and Nemesis', blurb: 'Every tenth wave, and what it pays.',
+  { id: 'bosses', track: 'advanced', bench: { m: 'Kill the boss and pick a boon', s: ['core', 0.5] }, title: 'Bosses, Boons and Nemesis', blurb: 'Every tenth wave, and what it pays.',
     what: 'A boss lands every 10 waves. It has phases and powers, and if it reaches the core the run ends. Killing one pays a boon: one of three permanent bonuses. A boss or strain that ends your run becomes your Nemesis and comes back next run.', when: 'Wave 10, 20, 30…', todo: 'Save Strike and Stasis for bosses. Plated bosses need Rail, Lens or Burn. Pick the boon that fits your build.',
     real: 'In a run: hold your abilities for the boss wave.',
     run: { start: 10, credits: 300, grid: 6, towers: ['pulse', 'rail', 'cryo'], abil: ['strike', 'stasis'], boss: { id: 'queen', hp: 2600 }, pre: [['towers', [['rail', 3], ['pulse', 3], ['pulse', 2], ['cryo', 2]]], ['abil', ['strike', 'stasis'], 1]], waves: [[['drone', 4, 1, 0.6], ['boss', 1, 3, 1]]] } },
-  { id: 'market', title: 'Black Market and Cash In', blurb: 'What to do with banked credits.',
+  { id: 'market', track: 'advanced', bench: { m: 'Open the Exchange', s: null }, title: 'Black Market and Cash In', blurb: 'What to do with banked credits.',
     what: 'From Wave 10 the Score button opens the Exchange: the Black Market sells three items (restocked after boss waves), and Cash In turns credits into score.', when: 'When credits build up and the grid is full.', todo: 'Check the Market after each boss wave. Cash In only what you can’t spend on towers.',
     real: 'In a run: spend on towers first, the Market second, Cash In last.',
     run: { start: 12, credits: 2500, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 3], ['rail', 2]]]], waves: [[['drone', 8, 1, 0.6]]] } },
-  { id: 'techniques', title: 'Techniques', blurb: 'Alternate fire modes from your talents.',
+  { id: 'techniques', track: 'endgame', bench: { m: 'Switch a tower to its Technique', s: null }, title: 'Techniques', blurb: 'Alternate fire modes from your talents.',
     what: 'A Technique is an alternate fire mode for one tower type, learned with a one-point talent. Each tower then has a Fire row: Standard or the Technique. It is a different job, not an upgrade.', when: 'After you learn one in Talents.', todo: 'Open a tower and switch its Fire mode. Mix modes: one Suppressor slows the group and the Standard Pulse Blasters finish it.',
     real: 'In a run: switch one tower of a type to its Technique when the wave calls for that job.',
     need: () => typeof TOWER_FIRE !== 'undefined',
     run: { credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo'], build: { tal: { kSupp: 1 }, caps: [], remnants: [], lvl: 1 }, pre: [['towers', [['pulse', 2], ['pulse', 2]]]], waves: [[['drone', 8, 0.8, 1.2], ['swarmer', 8, 0.25, 1]]] } },
-  { id: 'mastery', title: 'Ascend Perks and Mastery', blurb: 'Past LV 5, and what each tower earns across runs.',
+  { id: 'mastery', track: 'endgame', bench: { m: 'Ascend a tower and pick a perk', s: null }, title: 'Ascend Perks and Mastery', blurb: 'Past LV 5, and what each tower earns across runs.',
     what: 'Past LV 5 a tower Ascends: ×1.15 damage and a choice of three perks that change how it works (a forking beam, ricochets, shattering freezes). Every tower type also has a Mastery: 5 ranks earned across runs from its share of the damage.', when: 'Late in a run, when your best towers are maxed. Mastery: after every run.', todo: 'Ascend the tower doing the most work and pick the perk that fixes its weakness. Try different towers: Mastery pays most for towers that are not your top one.',
     real: 'In a run: pick a perk the moment the Ascend lands; between runs, check Mastery in the Archive.',
     need: () => typeof PERKS !== 'undefined',
     run: { start: 12, credits: 2600, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 5, 1], ['pulse', 3]]]], waves: [[['drone', 10, 0.8, 0.8], ['tank', 2, 2, 0.8]]] } },
-  { id: 'daily', title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1, need: () => dailyOpen(),
+  { id: 'daily', track: 'endgame', bench: { m: "Look at today's build", s: null }, title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1, need: () => dailyOpen(),
     what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis, talent build and dice for everyone. The build has two Capstones and their towers. Your first run of the day is ranked: best wave first, then score.', when: 'Once a day, from the hangar. Opens at Level ' + DAILY_LVL + '.', todo: 'Look at today’s build, then start the ranked run. Extract to lock it in, or Push for more score. Share its code to race friends.',
     real: 'Every day: check today’s build, then play your ranked run.' },
-  { id: 'meta', title: 'Talents and Progression', blurb: 'XP, levels, Talents, Capstones, Supernova, the Archive.',
+  { id: 'meta', track: 'endgame', bench: { m: 'Open Talents and the Archive', s: null }, title: 'Talents and Progression', blurb: 'XP, levels, Talents, Capstones, Supernova, the Archive.',
     what: 'Runs pay XP (from score and the Bounty Purse). Each level is a talent point. Seven trees: rows open every 3 points, a Capstone at 12 changes how you play. Supernova resets your talents for a permanent bonus. The Archive keeps what you have met.', when: 'Between runs.', todo: 'Spend points after each run. Go deep in one tree for its Capstone. Check the Archive’s Swarm Collection.',
     real: 'Between runs: spend your points, then pick a zone and go.', tour: 1 },
+  { id: 'talents2', track: 'endgame', bench: { m: 'Open the Fusion map', s: null }, title: 'Talents Deep Dive', blurb: 'Signatures, Fusions and Capstones.', tour: 1,
+    what: 'Every point in a tree also raises its Signature, an effect only that tree has; deeper points count more. 8 points in each of two trees opens their Fusion: 21 in all, one active per run. 12 points in a tree opens a Capstone, a new way to play, and 16 its tier tower.', when: 'Between runs, once you have points in two trees.', todo: 'Pick two trees that suit your towers and push both to 8 for their Fusion. Read the Signature line on each tree before you commit.',
+    real: 'Between runs: open the Fusion map and plan your next two trees.' },
 ];
 const LESSON_BY = Object.fromEntries(LESSONS.map(L => [L.id, L]));
+// 6.15 Pilot Certification (Nic, Nov 14): three tracks, each lesson a Mechanic check (did the thing it teaches) and a Skill check measured
+// from the run (reach: the furthest any enemy got along its road, at most v; core: core health at the end, at least v; share: the docked
+// tower's share of tower damage, at least v). Passing both pays LESSON_XP of the current level's XP once (about a quarter of a talent
+// point; all of training is about 6). A track passed in full raises the rank
+const TRACKS = [{ id: 'basics', name: 'Basics', rank: 'Pilot' }, { id: 'advanced', name: 'Advanced', rank: 'Ace' }, { id: 'endgame', name: 'Endgame', rank: 'Commander' }];
+const RANK0 = 'Cadet', LESSON_XP = 0.26;
 const lessonsOpen = () => LESSONS.filter(L => !L.stub && (!L.need || L.need()));
 const NEMESIS_CRIME = ['the fall of your last core','breaking and entering (your core)', 'gloating', 'returning to the scene of the crime', 'holding a grudge'];
 
@@ -2526,7 +2568,7 @@ const GENES = {
   shell:   { name: 'Shell', col: '#7fd4ff', hp: 0.65, desc: 'Shield worth 60% of HP. It recharges when left alone, unless Arc has hit it in the last 3s', counter: 'Arc Coil, EMP' },
   regen:   { name: 'Regrowth', col: '#59f0b4', hp: 0.75, desc: 'Heals 2.5%/s unless Burning', counter: 'Flame, Missile' },
   ward:    { name: 'Ward', col: '#d6a6ff', hp: 0.85, desc: '50% resist to one element', counter: 'any other element' },
-  cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon' },
+  cloak:   { name: 'Cloak', col: '#b86cff', hp: 0.75, from: 12, desc: 'Cloaks on and off', counter: 'Relay Pylon, the core\'s light' },
 };
 const GENE_IDS = Object.keys(GENES);
 // Swarm Codex: every evolved strain gets a name
@@ -2642,6 +2684,14 @@ const HOLE = {
 // becomes a Gravity Bomb: everything in the reach is dragged up to bombPull tiles along its road toward the centre, stunned bombStun
 // s and hit for bombX × the Strike
 const HOLE13 = { warn: 8, feed: 6, feedW: 0.25, eliteM: 3, bossM: 10, blastR: 8, blast: 0.3, blastBoss: 0.06, spit: 3, spitW: 10, bombX: 1.5, bombPull: 4, bombStun: 1.2 };
+// 6.15 rules 14 (Nic, Nov 14: "it needs to drift to enemies or it will never really get fed"). Every `every` s a landed hole picks
+// the enemy with the most others within `pack` tiles (worth more for each attack tower in reach of it, up to 4), looking up to `look` tiles out, and steers toward it at up to `spd` tiles/s
+// (turning at `turn` per s). It keeps `coreGap` tiles from the core. No enemies in sight: the old slow drift. Towers inside its
+// horizon are no longer slowed (HOLE.inner is rules 13 and older): it now parks on your kill zone, and the smart bot lost 25 waves to that.
+const HOLE14 = { every: 0.25, look: 12, pack: 2.5, spd: 0.75, turn: 2.5, coreGap: 3.5 };
+// 6.15 rules 14: the last fire. Cloaked enemies within the core's light are revealed. Its radius runs from `min` tiles at no hull
+// to `max` at full hull (render.js draws the same light); in flight it keeps its light.
+const LIGHT14 = { min: 3, max: 6 };
 // 6.14 rules 13 storms: every `every` s a storm acts on the enemies under it. Ion strikes up to zapN of them for zap of max HP (bosses
 // zapBoss); Solar sets them burning (burn × the wave's HP scale per s for burnT s); Cryo chills (+1 stack); Void Marks (+1);
 // Static reveals cloaked ones. The probe harvests a storm it is sent to: harvest s inside (within inR of its radius) gives one charge
@@ -4750,7 +4800,7 @@ function prStorm(dt) {
   G.charges[k] = (G.charges[k] || 0) + 1; Hooks.abilReady && Hooks.abilReady(k);
   Hooks.fx('stormHarvest', { x: s.x, y: s.y, col: STORMS[ty].col }); Hooks.sfx('pick');
   Hooks.toast('STORM HARVESTED', `+1 ${ABILITIES[k].name} charge`, STORMS[ty].col, true); // draft text
-  rlog('stormHarvest', { t: ty, k });
+  rlog('stormHarvest', { t: ty, k }); G.stats.harvests = (G.stats.harvests || 0) + 1; // 6.15: the Storms lesson's check
   s.r *= STORM13.shrink;
   if (s.hv >= s.types.length) { s.dead = true; s.spent = 1; Hooks.fx('implode', { x: s.x, y: s.y, r: s.r }); P.storm = 0; P.ret = 1; P.tx = P.ty = null; }
 }
@@ -4860,12 +4910,13 @@ function updateStorms(dt) {
 // the sector edge, stops on a road point, drifts slowly for HOLE.hold s, then collapses. One draw of G.r per number at the spawn,
 // nothing after, so it adds no hidden randomness to the tick
 const COMPASS = ['east', 'south-east', 'south', 'south-west', 'west', 'north-west', 'north', 'north-east'];
-function holeSpawn() {
+function holeSpawn(near) {
   if (G.hole) return; // one at a time: a second roll while one is still out does nothing
   const R = G.region, cand = [];
   for (const L of G.map.lanes) { if (L.openWave && L.openWave > G.wave) continue; const n = L.tiles.length;
     for (let i = Math.floor(n * 0.25); i < Math.floor(n * 0.85); i++) { const p = L.tiles[i]; if (inRegion(p.x, p.y, R)) cand.push(p); } }
   if (!cand.length) return;
+  if (near) { const dn = p => Math.hypot(p.x + 0.5 - near.x, p.y + 0.5 - near.y); cand.sort((a, b) => dn(a) - dn(b)); cand.length = Math.min(cand.length, 3); } // 6.15 the lesson: the road nearest where your towers are killing
   const p = pick(G.r, cand), a = G.r() * 6.2832, dx = Math.cos(a), dy = Math.sin(a);
   const tx = clamp(p.x + 0.5 + (G.r() - 0.5) * 2, R.x0 + 1, R.x1 - 1), ty = clamp(p.y + 0.5 + (G.r() - 0.5) * 2, R.y0 + 1, R.y1 - 1);
   // back along the drift line to the sector edge, then HOLE.off tiles past it
@@ -4874,6 +4925,7 @@ function holeSpawn() {
   G.hole = { x, y, tx, ty, dx, dy, ph: 0, t: 0, k: 1 };
   const v13 = G.frV >= 13; // rules 13: an 8 s approach with its effects off, then it must be fed
   if (v13) { const h = G.hole; h.v = 13; h.k = 0; h.spd = back / HOLE13.warn; h.m = 0; h.goal = Math.round(HOLE13.feed + Math.max(1, G.wave) * HOLE13.feedW); }
+  if (G.frV >= 14) { const h = G.hole; h.hunt = 1; h.vx = 0; h.vy = 0; h.hT = 0; } // rules 14: it hunts crowds
   const ang = Math.atan2(y - G.core.y, x - G.core.x), dir = COMPASS[((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8];
   if (v13) Hooks.toast('BLACK HOLE', `Lands in ${HOLE13.warn}s where the marker is. Feed it ${G.hole.goal} kills inside its reach and it collapses in your favour. Starve it and it spits the dark back out`, '#b86cff'); // draft text, Nic's to edit
   else Hooks.toast('BLACK HOLE', `Inbound from the ${dir}. Arrives in ${Math.max(1, Math.round(back / HOLE.inSpd))}s. Towers at its edge +${Math.round(HOLE.ring * 100)}% Attack Speed`, '#b86cff');
@@ -4886,14 +4938,37 @@ function holeUpdate(dt) {
     const ddx = h.tx - h.x, ddy = h.ty - h.y, d = Math.hypot(ddx, ddy), st = (h.v >= 13 ? h.spd : HOLE.inSpd) * dt;
     if (d <= st) { h.x = h.tx; h.y = h.ty; h.ph = 1; h.t = 0; if (h.v >= 13) { h.k = 1; Hooks.fx('holeLand', { x: h.x, y: h.y }); Hooks.sfx('holeEnd', { x: h.x, y: h.y }); } } else { h.x += ddx / d * st; h.y += ddy / d * st; }
   } else if (h.ph === 1) {
-    h.x += h.dx * HOLE.drift * dt; h.y += h.dy * HOLE.drift * dt;
+    if (h.hunt) holeHunt(h, dt); else { h.x += h.dx * HOLE.drift * dt; h.y += h.dy * HOLE.drift * dt; }
     if (h.t >= HOLE.hold) { h.ph = 2; h.t = 0; if (h.v >= 13) holeVerdict(h); }
   } else {
     h.k = Math.max(0, 1 - h.t / HOLE.out);
     if (h.t >= HOLE.out) { Hooks.fx('holeEnd', { x: h.x, y: h.y }); Hooks.sfx('holeEnd', { x: h.x, y: h.y }); G.hole = null; }
   }
 }
+// rules 14: steer toward the thickest pack of enemies in sight that your towers can reach (re-picked every HOLE14.every s), never within coreGap of the core
+function holeHunt(h, dt) {
+  h.hT -= dt;
+  if (h.hT <= 0) {
+    h.hT = HOLE14.every; h.tgt = null;
+    const L2 = HOLE14.look * HOLE14.look, P2 = HOLE14.pack * HOLE14.pack, near = [];
+    for (const e of G.enemies) if (!e.dead && !(e.burrowT > 0) && dist2(e.x, e.y, h.x, h.y) <= L2) near.push(e);
+    let best = 0; const att = G.towers.filter(t => t.s && t.s.range > 0 && t.s.kind !== 'support' && t.s.kind !== 'eco');
+    for (const e of near) { let n = 0, c = 0; for (const o of near) if (dist2(e.x, e.y, o.x, o.y) <= P2) n++;
+      for (const t of att) if (dist2(e.x, e.y, t.cx, t.cy) <= (t.s.range + 1) * (t.s.range + 1)) c++; // a pack your towers can reach is worth more: kills there feed it
+      const sc = n * (1 + Math.min(4, c)) - Math.sqrt(dist2(e.x, e.y, h.x, h.y)) * 0.05; if (sc > best) { best = sc; h.tgt = { x: e.x, y: e.y }; } }
+  }
+  let wx = 0, wy = 0;
+  if (h.tgt) { const dx = h.tgt.x - h.x, dy = h.tgt.y - h.y, d = Math.hypot(dx, dy); if (d > 0.3) { const sp = HOLE14.spd * Math.min(1, d / 1.5); wx = dx / d * sp; wy = dy / d * sp; } }
+  else { wx = h.dx * HOLE.drift; wy = h.dy * HOLE.drift; }
+  const k = Math.min(1, HOLE14.turn * dt); h.vx += (wx - h.vx) * k; h.vy += (wy - h.vy) * k;
+  let nx = h.x + h.vx * dt, ny = h.y + h.vy * dt;
+  const c = G.core, cd = Math.hypot(nx - c.x, ny - c.y);
+  if (cd < HOLE14.coreGap) { const f = HOLE14.coreGap / Math.max(0.01, cd); nx = c.x + (nx - c.x) * f; ny = c.y + (ny - c.y) * f; } // the cold never reaches the fire
+  const R = G.region; h.x = clamp(nx, R.x0 + 0.5, R.x1 - 0.5); h.y = clamp(ny, R.y0 + 0.5, R.y1 - 0.5);
+}
 // rules 13: a kill inside a landed hole's reach feeds it
+// rules 14: the radius of the core's light, LIGHT14.min at no hull to LIGHT14.max at full
+function coreLightR() { const c = G.core; return LIGHT14.min + (LIGHT14.max - LIGHT14.min) * clamp(c.hp / Math.max(1, c.max), 0, 1); }
 function holeFeed(e) {
   const h = G.hole; if (!h || h.v !== 13 || h.ph !== 1 || dist2(e.x, e.y, h.x, h.y) > HOLE.r * HOLE.r) return;
   const before = h.m; h.m += e.boss ? HOLE13.bossM : e.elite && e.elite.length ? HOLE13.eliteM : 1;
@@ -4921,16 +4996,17 @@ function holeVerdict(h) {
 // rules 13: a Strike aimed inside a landed hole's reach. Drags everything in the reach toward the centre along its road, stuns, crushes
 function gravityBomb(dmg) {
   const h = G.hole; if (!h) return;
-  Hooks.fx('gbomb', { x: h.x, y: h.y, r: HOLE.r }); Hooks.sfx('implode'); Hooks.fx('shake', { v: 7 });
+  Hooks.fx('gbomb', { x: h.x, y: h.y, r: HOLE.r }); Hooks.sfx('implode'); Hooks.fx('shake', { v: 7 }); let nHit = 0;
   for (const e of G.enemies.slice()) {
     if (e.dead || dist2(e.x, e.y, h.x, h.y) > HOLE.r * HOLE.r) continue;
     if (e.L && !e.boss) { let bd = e.d, bv = dist2(e.x, e.y, h.x, h.y); // the closest point to the centre within bombPull tiles along its road
       for (let k = -HOLE13.bombPull; k <= HOLE13.bombPull; k += 0.25) { const d = Math.max(0, e.d + k); HOLE_P.seg = e.seg || 0; lanePos(e.L, d, HOLE_P); const v = dist2(HOLE_P.x, HOLE_P.y, h.x, h.y); if (v < bv) { bv = v; bd = d; } }
       e.d = bd; lanePos(e.L, e.d, e); }
     e.st.stun = Math.max(e.st.stun || 0, e.boss ? HOLE13.bombStun * 0.3 : HOLE13.bombStun);
-    hit(e, dmg * HOLE13.bombX, 'V', null, { noStatus: 1, abil: 1 });
+    hit(e, dmg * HOLE13.bombX, 'V', null, { noStatus: 1, abil: 1 }); nHit++;
   }
-  rlog('gbomb', {});
+  G.stats.gbombMax = Math.max(G.stats.gbombMax || 0, nHit); // 6.15: the Black Hole lesson's check (stats are not in the run hash)
+  rlog('gbomb', { n: nHit });
 }
 // an enemy inside the reach: e.hk = its time factor (move and act), returns its speed factor (dilation × the drag along its road)
 const HOLE_P = { x: 0, y: 0, seg: 0 };
@@ -4947,7 +5023,7 @@ function holeEnemy(e) {
 function holeRate(t) {
   const h = G.hole, d2 = dist2(t.cx, t.cy, h.x, h.y);
   if (d2 > HOLE.r * HOLE.r) return 1;
-  return 1 + (d2 < HOLE.horizon * HOLE.horizon ? HOLE.inner : HOLE.ring) * h.k;
+  return 1 + (d2 < HOLE.horizon * HOLE.horizon ? (h.hunt ? 0 : HOLE.inner) : HOLE.ring) * h.k; // rules 14: a hunting hole parks on your kill zone, so it no longer slows the towers under it (the bot lost 25 waves to that)
 }
 const holeZone = t => { const h = G && G.hole; if (!h || !t) return 0; const d2 = dist2(t.cx, t.cy, h.x, h.y); return d2 > HOLE.r * HOLE.r ? 0 : d2 < HOLE.horizon * HOLE.horizon ? -1 : 1; };
 
@@ -5031,7 +5107,7 @@ function prepareWave(w) {
   if (G.wanted && !G.wanted.done && !G.wanted.spawned && w > G.wanted.w) planWanted(Math.ceil((w + 10) / 10) * 10); // its boss never showed: post it again
   assaultTick(w);
   if (G.tut && G.tutS.vetAt === tutIdx(w) && w > G.wave && !G.lesson && !G.towers.some(t => t.rank > 0)) { const t = topTower() || (G.tut >= 2 ? G.towers.filter(canOvercharge).sort((a, b) => b.lvl - a.lvl || a.id - b.id)[0] : null); if (t) grantVxp(t, Math.max(0, vetThreshold(1) - t.vxp)); } // Frontier Training: fewer kills, so the busiest tower is a Veteran by Wave 5 (the Ready step; 6.6 v2: the core gun can do every kill, so any attack tower)
-  if (G.tut && w > G.wave && (G.tutS.sites || G.tutS.ent)) tutScript(tutIdx(w)); // 6.6 v2: scripted loot sites and the Entropy draw
+  if (G.tut && w > G.wave && (G.tutS.sites || G.tutS.ent || G.tutS.hole)) tutScript(tutIdx(w)); // 6.6 v2: scripted loot sites and the Entropy draw
   if (G.tut && G.tutS.grant && G.tutS.grant[tutIdx(w)] && w > G.wave) { const cr = G.tutS.grant[tutIdx(w)]; G.credits += cr; Hooks.toast('SUPPLY DROP', `+${cr} credits for Training`, '#ffb03a'); Hooks.fx('coin', { x: G.core.x, y: G.core.y - 0.6, v: cr }); }
   const E = rollEvents(w);
   const g = genWave(w, E.ev);
@@ -5330,6 +5406,7 @@ function tutScript(k) {
   const T = G.tutS;
   for (const sp of T.sites || []) if (sp.w === k && !((G.tutSites | 0) & (1 << sp.n))) tutSite(sp);
   if (T.ent && T.ent.w === k && !G.tutEnt && !G.anomOffers) { G.tutEnt = 1; G.entropy = 100; addEntropy(0); }
+  if (T.hole && T.hole.w === k && !G.tutHole && G.frV >= 13) { G.tutHole = 1; G.tutHoleK = []; } // 6.15 the Black Hole lesson: it comes once your towers make 4 kills, where they made them (kill())
 }
 // a loot site at a set spot (tiles from the core, nudged off roads and towers), a set value, drone guards, no jackpot
 function tutSite(sp) {
@@ -6334,6 +6411,7 @@ function updateEnemies(dt) {
   if (G.bossAlive && G.bossAlive.dead) G.bossAlive = null;
   // reveal cloak near pylons
   if (G.pylons && G.pylons.length) for (const e of G.enemies) if (e.cloaked) for (const p of G.pylons) if (dist2(e.x, e.y, p.cx, p.cy) <= p.s.range * p.s.range) { e.revealed = 0.3; break; }
+  if (G.frV >= 14 && G.core) { const r = coreLightR(), r2 = r * r, c = G.core; for (const e of G.enemies) if (e.cloaked && !e.dead && dist2(e.x, e.y, c.x, c.y) <= r2) e.revealed = Math.max(e.revealed || 0, 0.3); } // rules 14: the core's light
   for (const e of G.enemies) {
     if (G.scanT > 0 && !e.dead && !(e.scanned > 0)) e.scanned = G.scanT; // v5.4: the sweep stays up its full time, so enemies arriving mid-Scan are caught too
     if (e.revealed > 0) e.revealed -= dt; if (e.scanned > 0) { e.scanned -= dt; if (e.cloaked) e.revealed = Math.max(e.revealed || 0, 0.2); }
@@ -6731,6 +6809,8 @@ function kill(e, src, o) {
   if (G.mods.ks.horizon && !e.dead && (G.wells || (G.wells = [])).length < 24) { G.wells.push({ x: e.x, y: e.y, r: 1.2 * (1 + FX('hWell') / 100), t: 0.6 }); if (Math.random() < 0.35) Hooks.fx('implode', { x: e.x, y: e.y, r: 1.2 }); }
   if (e.dead) return;
   e.dead = true; e.hp = 0;
+  if (o && o.abil) G.stats.abilKills = (G.stats.abilKills || 0) + 1; // 6.15: the Abilities lesson's Skill check (stats are not in the run hash)
+  if (G.tutHoleK) { const K = G.tutHoleK; K.push(e.x, e.y); if (K.length >= 8) { G.tutHoleK = null; let x = 0, y = 0; for (let i = 0; i < 8; i += 2) { x += K[i]; y += K[i + 1]; } holeSpawn({ x: x / 4, y: y / 4 }); } } // 6.15 the Black Hole lesson
   if (G.hole && G.hole.v === 13) holeFeed(e); // rules 13
   if (e.st.shock > 0) { const lw = sig('A'); if (lw) { let b = null, bd = SIGV.Ar * SIGV.Ar; // 6.10 Arc Leap: the Shock jumps on from a dead enemy
     for (const o2 of G.enemies) { if (o2.dead) continue; const d2 = dist2(o2.x, o2.y, e.x, e.y); if (d2 <= bd) { bd = d2; b = o2; } }
@@ -6948,7 +7028,7 @@ function updateTowers(dt) {
     if (dpsTick) { t.dps = t.dps * 0.6 + t.dpsAcc * 0.4; t.dpsAcc = 0; }
     t.flash = Math.max(0, t.flash - dt);
     const s = t.s;
-    if (s.kind === 'support' || (s.kind === 'eco' && !s.fdmg) || s.kind === 'snare') continue;
+    if (s.kind === 'support' || (s.kind === 'eco' && !s.fdmg) || s.kind === 'snare') { if (G.frV >= 14 && t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) { t.disabled = 0; t.stalled = false; t.disCause = null; } } continue; } // rules 14: they recover from EMP (before, the timer never ran)
     if (t.disabled > 0) { t.disabled -= dt; if (t.disabled <= 0) { t.stalled = false; t.disCause = null; } t.ramp = 0; t.beamTargets = null; continue; }
     const sw = stormAt(t.cx, t.cy);
     let range = s.range * sw.range * (ev.blackout ? 0.8 : 1);
@@ -11509,16 +11589,40 @@ const UNITS = (() => {
   function meat() { return get('bs:meat', () => raster([P(S.dome(0, 0, 11, 10), 0, ramp('#8a3a1a', 0.6), { d: (x, y) => nz(x * 2, y * 2) * 0.9 }), P(S.ell(2, -6, 6, 3, 3), 10, ramp('#d8281a', 0.7))], 28, 28, 0)); }
 
   const CORE_SC = 1.4; // v4.7: the base reads as the heart of the map, 40% larger
-  // ---------- the core: a reactor drum with eight fuel cells around a living green heart ----------
+  // 6.15 keystone (Nic, Nov 14: "a more signature tower... larger and more defined as the keystone piece"): the core is two sprites.
+  // coreBase is the fortress, which does not turn: an octagonal deck 2.6 tiles across, a rampart ring, four tall bastions
+  // with beacon lights and four lit conduits. It is drawn under the towers, so a tower beside the core stands on its deck.
+  // core is the reactor on top of it, which turns: a drum with eight fuel cells, a torus and a crystal heart.
+  const octR = (x, y) => Math.max(Math.abs(x), Math.abs(y), (Math.abs(x) + Math.abs(y)) * 0.7071); // octagon "radius" (flat sides on the axes)
+  function coreBase(hurt) {
+    const h = hurt ? 1 : 0;
+    return get(`coreB:${h}`, () => {
+      const G0 = h ? '#ff4d6a' : '#59f0b4', G1 = h ? '#ffd0d8' : '#c8fff0', DIM = h ? '#8a2a3a' : '#1f8a68', parts = [];
+      const pad = (x, y) => { const d = 44 - octR(x, y); return d < 0 ? -1 : 3 * Math.min(1, Math.sqrt(Math.min(1, (d + 0.4) / 2))); }; pad.bb = [-45, -45, 45, 45];
+      parts.push(P(pad, 0, ramp('#262e52', 0.5), { d: (x, y) => { const r = octR(x, y); return Math.abs(r - 34.5) < 0.7 || (r > 33 && (Math.abs(x) < 0.7 || Math.abs(y) < 0.7 || Math.abs(Math.abs(x) - Math.abs(y)) < 0.9)) ? -1.5 : 0; },
+        e: (x, y) => (Math.abs(octR(x, y) - 42.6) < 0.7 ? DIM : null) })); // the Battery lights sit between the groove and the lit rim (drawn live)
+      const wall = (x, y) => { const r = octR(x, y), d = Math.min(r - 25.5, 32 - r); return d < 0 ? -1 : 8 * Math.min(1, Math.sqrt(Math.min(1, (d + 0.4) / 2.2))); }; wall.bb = [-33, -33, 33, 33];
+      parts.push(P(wall, 3, ramp('#3a4878', 0.6), { d: (x, y) => (Math.abs(octR(x, y) - 28.75) < 0.6 ? -1 : 0) }));
+      for (let k = 0; k < 4; k++) { const an = (k + 0.5) / 4 * Math.PI * 2, cx = Math.cos(an) * 31, cy = Math.sin(an) * 31; // bastions on the diagonals
+        parts.push(P(S.rbox(cx - 7, cy - 7, cx + 7, cy + 7, 3, 18, 2.5), 3, ramp('#56639e', 0.7), { d: (x, y) => (Math.abs(Math.hypot(x - cx, y - cy) - 4.5) < 0.6 ? -1 : 0), e: (x, y) => { const r = Math.hypot(x - cx, y - cy); return r < 1.8 ? G1 : r < 3 ? G0 : null; } })); }
+      for (let k = 0; k < 4; k++) { const an = k / 4 * Math.PI * 2, ca = Math.cos(an), sa = Math.sin(an); // conduits on the axes, through the rampart
+        const f = (x, y) => { const u = x * ca + y * sa, v = -x * sa + y * ca; return u < 18 || u > 38 || Math.abs(v) > 3.2 ? -1 : 5 * Math.sqrt(1 - (v / 3.2) ** 2); }; f.bb = [-39, -39, 39, 39];
+        parts.push(P(f, 6, ramp('#24304f', 0.6), { e: (x, y) => { const v = -x * sa + y * ca, u = x * ca + y * sa; return Math.abs(v) < 0.9 && (u < 25 || u > 32.5) ? G0 : null; } })); }
+      return raster(parts, 100, 100, 0, { sc: CORE_SC });
+    });
+  }
+  // ---------- the reactor: a drum with eight fuel cells around a crystal heart ----------
   function core(spin, hurt) {
     const ai = idxOf(spin), h = hurt ? 1 : 0;
     return get(`core:${ai}:${h}`, () => {
-      const G0 = '#59f0b4', parts = [P(S.puck(0, 0, 33, 8, 4), 0, ramp('#123a30', 0.5), { d: (x, y) => { const r = Math.hypot(x, y); return Math.abs(r - 29) < 0.8 ? -1.5 : 0; }, e: (x, y) => { const r = Math.hypot(x, y), a = Math.atan2(y, x); return Math.abs(r - 31) < 0.9 && (Math.floor((a + 3.1416) * 4) % 2) ? (h ? '#ff4d6a' : G0) : null; } })];
-      for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283, cx = Math.cos(an) * 22, cy = Math.sin(an) * 22;
-        parts.push(P(S.rbox(cx - 4, cy - 4, cx + 4, cy + 4, 2, 5, 2), 8, ramp('#1f6b55', 0.6), { e: (x, y) => Math.hypot(x - cx, y - cy) < 2.2 ? (k % 2 ? '#b8ffe6' : G0) : null })); }
-      parts.push(P(S.ring(0, 0, 13, 17, 0), 9, ramp('#2a8a70', 0.6)));
-      parts.push(P(S.dome(0, 0, 13, 13), 8, ramp(h ? '#ff6f8a' : G0, 1), { e: (x, y, t) => t >= 4 ? (h ? '#ffd0d8' : '#e6fff6') : null }));
-      return raster(parts, 72, 72, angOf(ai), { sc: CORE_SC });
+      const G0 = h ? '#ff4d6a' : '#59f0b4', parts = [P(S.puck(0, 0, 23, 9, 3), 0, ramp(h ? '#3a1220' : '#123a30', 0.5), { d: (x, y) => { const r = Math.hypot(x, y); return Math.abs(r - 20.5) < 0.7 ? -1.5 : 0; }, e: (x, y) => { const r = Math.hypot(x, y), a = Math.atan2(y, x); return Math.abs(r - 22) < 0.8 && (Math.floor((a + 3.1416) * 4) % 2) ? G0 : null; } })];
+      for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283, cx = Math.cos(an) * 16.5, cy = Math.sin(an) * 16.5;
+        parts.push(P(S.rbox(cx - 3.5, cy - 3.5, cx + 3.5, cy + 3.5, 1.5, 6, 1.5), 9, ramp(h ? '#6b1f33' : '#1f6b55', 0.6), { e: (x, y) => Math.hypot(x - cx, y - cy) < 1.8 ? (k % 2 ? (h ? '#ffd0d8' : '#b8ffe6') : G0) : null })); }
+      parts.push(P(S.ring(0, 0, 9.5, 13, 0), 10, ramp(h ? '#8a2a44' : '#2a8a70', 0.6)));
+      // the heart is the last fire (Nic: "warm heart, green shell"): white-gold inside the green machine
+      parts.push(P(S.dome(0, 0, 9.5, 12), 9, ramp(h ? '#ff6f8a' : '#ffb347', 1), { e: (x, y, t) => t >= 4 ? (h ? '#ffd0d8' : '#fff1c8') : t >= 3 ? (h ? null : '#ffd27a') : null }));
+      parts.push(P(S.hexgem(0, 0, 5.5, 12), 19, ramp(h ? '#ffb0c0' : '#ffe6a8', 1), { e: (x, y, t) => t >= 4 ? '#ffffff' : t >= 2 ? (h ? null : '#fff4d6') : null }));
+      return raster(parts, 56, 56, angOf(ai), { sc: CORE_SC });
     });
   }
   function coreGun(el, ang) {
@@ -11552,7 +11656,7 @@ const UNITS = (() => {
   function warmTower(type, el, spec) {
     if (ROT[type]) for (let i = 0; i < NA; i++) for (const rk of [0, 1]) ART.warm(`tt:${type}:${el}:${spec}:${i}:${rk}:0:${type === 'missile' ? 1 : 0}`, () => raster(TOP[type](EL[el].col, spec || 0, { rk, ph: 0, ld: type === 'missile' ? 1 : 0 }), 60, 60, angOf(i)));
   }
-  return { base, top, icon, enemy, boss, wormSeg, meat, core, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
+  return { base, top, icon, enemy, boss, wormSeg, meat, core, coreBase, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
 })();
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
@@ -12548,7 +12652,7 @@ const RES = 2;
     }
     fillRing(X, Y, 1.5 * TILE * k, '#05030c', 0.45); // the dark around the hole
     // reach and horizon: where towers speed up and slow down
-    if (!(h.v === 13 && h.ph === 0)) { strokeRing(X, Y, RR, '#b86cff', 0.55 * k, 1, [3, 5]); strokeRing(X, Y, HOLE.horizon * TILE, '#ff4d6a', 0.6 * k, 1, [2, 3]); } // 6.14: its rings appear when it lands
+    if (!(h.v === 13 && h.ph === 0)) { strokeRing(X, Y, RR, '#b86cff', 0.55 * k, 1, [3, 5]); strokeRing(X, Y, HOLE.horizon * TILE, h.hunt ? '#b86cff' : '#ff4d6a', 0.6 * k, 1, [2, 3]); } // 6.14: its rings appear when it lands (rules 14: the horizon no longer slows towers, so it is not red)
     for (let i = 0; i < 3; i++) { const f = ((rt * 0.5 + i / 3) % 1), rr = RR - (RR - HOLE.horizon * TILE) * f; strokeRing(X, Y, rr, '#9a7cff', 0.28 * f * k, 1); } // time dilation: rings closing in
     // motes spiral in: faster and hotter near the centre
     const dt = Math.min(0.05, dt0 || 0);
@@ -12900,16 +13004,38 @@ const RES = 2;
     const F = G.fr && G.frFly, dock = G.fr && !F ? frDockT() : null;
     if (F) {
       const k = clamp(F.t / F.dur, 0, 1), h = 6 + Math.sin(k * Math.PI) * 10;
-      b.fillStyle = 'rgba(2,3,10,0.35)'; b.beginPath(); b.ellipse(G.core.x * TILE + 3, G.core.y * TILE + 6, 20, 15, 0, 0, 6.283); b.fill();
-      b.save(); b.translate(0, -h);
+      b.fillStyle = 'rgba(2,3,10,0.35)'; b.beginPath(); b.ellipse(G.core.x * TILE + 3, G.core.y * TILE + 6, 30, 26, 0, 0, 6.283); b.fill();
+      b.save(); b.translate(0, -h); drawCoreBase(true);
       for (let i = 0; i < 3; i++) { const a = i * 2.094 + frame / 9; parts.push({ x: G.core.x * TILE + Math.cos(a) * 14, y: G.core.y * TILE + Math.sin(a) * 10 + 8, vx: (Math.random() - 0.5) * 20, vy: 50 + Math.random() * 40, life: 0.25, max: 0.25, col: i ? '#59f0b4' : '#e6fff6', s: 2 }); }
       drawCore0(null); b.restore(); return;
     }
     drawCore0(dock);
   }
+  // 6.15 keystone: the core's fortress deck, drawn before the towers (drawCore draws the reactor on top after them).
+  // Twelve lights on the deck show the Battery level; a ring rolls out from the heart every 3 s, so the core reads at any zoom.
+  // 6.15 the last fire: the light's radius in tiles (the sim's LIGHT14, shown in every run) and a flicker that grows as the hull falls
+  const DARK_AT = 0.35, DARK_MAX = 0.66; // the screen darkens below 35% core hull, up to 66% at none (more hides the enemies you need to see)
+  function coreLightV() { const c = G.core; return LIGHT14.min + (LIGHT14.max - LIGHT14.min) * clamp(c.hp / Math.max(1, c.max), 0, 1); }
+  function coreFlicker() { const c = G.core, low = 1 - clamp(c.hp / Math.max(1, c.max), 0, 1); return 1 - low * low * (0.35 + 0.35 * Math.sin(rt * 23) * Math.sin(rt * 7.3)); }
+  function drawCoreBase(air) {
+    const c = G.core; if (!c) return; const X = c.x * TILE, Y = c.y * TILE, hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
+    if (!air) { // (the dark that closes in below 35% hull is a screen overlay: see 'the dark closes in' below)
+      const LR = coreLightV() * TILE;
+      { const g2 = b.createRadialGradient(X, Y, 0, X, Y, LR); const fa = coreFlicker(); // the pool of warm light on the ground
+        g2.addColorStop(0, `rgba(255,192,97,${(0.16 * fa).toFixed(3)})`); g2.addColorStop(0.6, `rgba(255,170,80,${(0.07 * fa).toFixed(3)})`); g2.addColorStop(1, 'rgba(255,160,70,0)');
+        b.save(); b.globalCompositeOperation = 'lighter'; b.fillStyle = g2; b.fillRect(X - LR, Y - LR, LR * 2, LR * 2); b.restore(); }
+      if (G.frV >= 14) { b.strokeStyle = hexA('#ffc061', 0.22 * coreFlicker()); b.lineWidth = 1; b.setLineDash([2, 5]); b.lineDashOffset = -rt * 4; b.beginPath(); b.arc(X, Y, LR, 0, 6.283); b.stroke(); b.setLineDash([]); } // where cloaked enemies show
+    }
+    if (!air) { b.fillStyle = 'rgba(2,3,10,0.4)'; b.beginPath(); b.ellipse(X + 2, Y + 4, 32, 30, 0, 0, 6.283); b.fill(); }
+    blit(UNITS.coreBase(hurt), X, Y);
+    const lv = Math.min(12, c.wLvl || 1), on = hurt ? '#ff4d6a' : '#59f0b4';
+    for (let k = 0; k < 12; k++) { const a = -Math.PI / 2 + (k + 0.5) / 12 * 6.283, x = Math.round(X + Math.cos(a) * 27), y = Math.round(Y + Math.sin(a) * 27);
+      R(b, x - 1, y - 1, 3, 3, k < lv ? hexA(on, 0.35) : '#0b1022'); R(b, x - 0.5, y - 0.5, 2, 2, k < lv ? on : '#1a2240'); if (k < lv) R(b, x - 0.5, y - 0.5, 1, 1, '#e6fff6'); }
+    const ph = (rt % 3) / 3, rr = 16 + ph * 30; b.strokeStyle = hexA(hurt ? PAL.bad : PAL.core, 0.45 * (1 - ph) * (1 - ph)); b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, rr, 0, 6.283); b.stroke();
+  }
   function drawCore0(dock) {
     const c = G.core, X = c.x * TILE, Y = c.y * TILE, pulse = (Math.sin(frame / 10) + 1) / 2;
-    b.fillStyle = 'rgba(2,3,10,0.45)'; b.beginPath(); b.ellipse(X + 2, Y + 4, 25, 22, 0, 0, 6.283); b.fill();
+    b.fillStyle = 'rgba(2,3,10,0.35)'; b.beginPath(); b.ellipse(X + 2, Y + 3, 17, 16, 0, 0, 6.283); b.fill();
     const hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
     const kick = coreKick; coreKick = Math.max(0, coreKick - 0.06); // a hit makes the reactor flinch and flare red
     blit(UNITS.core(frame / 70, hurt || kick > 0.35), X, Y, 1 - 0.07 * kick * Math.sin(kick * 9));
@@ -12917,10 +13043,22 @@ const RES = 2;
     const el = c.s ? c.s.el : c.el, a = c.angle || 0;
     if (dock) { const dc = EL[dock.s.el].col; b.strokeStyle = hexA(dc, 0.55 + 0.3 * pulse); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 19, 0, 6.283); b.stroke(); drawTower0(dock, true); }
     else blit(UNITS.coreGun(el, a), X, Y);
+    { // 6.15 the fortress grows with the Battery: bastion guns at Twin Battery (LV 4), all four heavy at Siege Shells (LV 8),
+      // three satellites at Orbital Uplink (LV 12). Drawing only: the core's own modules do the work (CORE_MODULES)
+      const lv = c.wLvl || 1, aa = c.angle || 0, ca = Math.cos(aa), sa = Math.sin(aa), Bp = [[1, -1], [-1, 1], [1, 1], [-1, -1]];
+      for (let k = 0; k < (lv >= 8 ? 4 : lv >= 4 ? 2 : 0); k++) { const bx = X + Bp[k][0] * 15.3, by = Y + Bp[k][1] * 15.3, heavy = lv >= 8, L = heavy ? 8 : 6, w = heavy ? 2 : 1.5;
+        R(b, bx - 2.5, by - 2.5, 5, 5, '#0d1a24'); R(b, bx - 1.5, by - 1.5, 3, 3, heavy ? '#7a86b8' : '#56639e');
+        b.strokeStyle = heavy ? '#c8d0ec' : '#9aa6d6'; b.lineWidth = w; b.beginPath(); b.moveTo(bx, by); b.lineTo(bx + ca * L, by + sa * L); b.stroke();
+        R(b, bx + ca * L - 1, by + sa * L - 1, 2, 2, heavy ? '#ffc061' : '#59f0b4'); }
+      if (lv >= 12) for (let k = 0; k < 3; k++) { const a3 = k / 3 * 6.283 + rt * 0.35, sx = X + Math.cos(a3) * 40, sy = Y + Math.sin(a3) * 40 * 0.9;
+        b.strokeStyle = hexA('#ffc061', 0.12 + 0.1 * Math.sin(rt * 3 + k)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, Y); b.lineTo(sx, sy); b.stroke();
+        for (let q = -3; q <= 3; q++) { const hh = 3 - Math.abs(q); R(b, sx + q, sy - hh, 1, hh * 2 + 1, Math.abs(q) < 2 ? '#fff1c8' : '#7a86b8'); }
+        R(b, sx - 5, sy, 3, 1, '#59f0b4'); R(b, sx + 3, sy, 3, 1, '#59f0b4'); }
+    }
     { const wt = typeof warTier === 'function' ? warTier() : 0; // War Economy: a turret per stack of banked credits
-      for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 30, ty = Y + Math.sin(a2) * 30; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
-    if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.25 + 0.5 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 2; b.beginPath(); b.arc(X, Y, 28, 0, 6.283); b.stroke(); }
-    if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, 25, 0, 6.283); b.stroke(); }
+      for (let k = 0; k < wt; k++) { const a2 = k / wt * 6.283 - frame / 120, tx = X + Math.cos(a2) * 36, ty = Y + Math.sin(a2) * 36; R(b, tx - 3, ty - 3, 6, 6, '#071812'); R(b, tx - 2, ty - 2, 4, 4, '#59f0b4'); const aa = c.angle || 0; R(b, Math.round(tx + Math.cos(aa) * 3) - 1, Math.round(ty + Math.sin(aa) * 3) - 1, 2, 2, '#e6fff6'); } }
+    if (c.shield > 1) { b.strokeStyle = hexA('#7fd4ff', 0.18 + 0.4 * (c.shield / Math.max(1, c.smax))); b.lineWidth = 1.5; b.beginPath(); for (let k = 0; k <= 8; k++) { const a8 = (k + 0.5) / 8 * 6.283, r8 = 33.5 / Math.cos(Math.PI / 8); b[k ? 'lineTo' : 'moveTo'](X + Math.cos(a8) * r8, Y + Math.sin(a8) * r8); } b.stroke(); } // 6.15 keystone: the shield hugs the deck
+    if (c.hp / c.max < 0.35 && frame % 20 < 10) { b.strokeStyle = PAL.bad; b.lineWidth = 1.5; b.beginPath(); b.arc(X, Y, 30, 0, 6.283); b.stroke(); }
   }
   // 6.14 rules 13: enemies near a landed Black Hole stretch toward it as they fall in (drawing only)
   function drawEnemyH(e) {
@@ -13227,6 +13365,7 @@ const RES = 2;
     for (const e of G.enemies) { const see = !FOGON || fogSee(e.x, e.y); e._fogH = !see && !e.boss && !(e.scanned > 0); e._fogB = !see && !!e.boss; }
     // animated path glow running toward the core
     if (frame % 2 === 0) { const dc = hexA((ZLOOK[mapZone] || ZL0).dot, 0.35); for (const L of G.map.lanes) if (!L.openWave) { const k = (frame >> 1) % L.tiles.length; for (let j = k; j < L.tiles.length; j += 9) { const p = L.tiles[j]; R(b, p.x * TILE + 11, p.y * TILE + 11, 2, 2, dc); } } }
+    if (!(G.fr && G.frFly)) drawCoreBase(false); // 6.15 keystone: the core's deck, under the towers, nodes, salvage and field effects
     if (window.__rdbg & 16) { const t0 = performance.now(); zoneAmb(v); zMs += performance.now() - t0; } else zoneAmb(v); // 6.3: the zone's weather and particles, under everything that matters (__rdbg 16: timed for drawbench)
     if (G.rift && !G.spawningDone) { const p = G.rift.pts[0]; strokeRing(p.x * TILE, p.y * TILE, 9 + Math.sin(frame / 5) * 2, '#b86cff', 0.9, 2); strokeRing(p.x * TILE, p.y * TILE, 5 + Math.sin(frame / 3), '#ff4d6a', 0.9, 2); }
     if (G.spawningDone && G.prep && G.prep.fly) for (const L of G.map.lanes) if (!L.openWave) {
@@ -13486,7 +13625,8 @@ const RES = 2;
     // ---------- light sources (buffer coords) ----------
     lights.length = 0;
     const pz = (Math.sin(frame / 10) + 1) / 2;
-    light(G.core.x * TILE, G.core.y * TILE, TILE * (2.6 + pz * 0.4), PAL.core, 0.38);
+    { const LR = coreLightV(), fl = coreFlicker(); // 6.15 the last fire: a warm light as wide as the core's reveal (LIGHT14), the green glow of the machine inside it
+      light(G.core.x * TILE, G.core.y * TILE, TILE * LR * 1.15, '#ffc061', 0.42 * fl); light(G.core.x * TILE, G.core.y * TILE, TILE * (2.2 + pz * 0.3), PAL.core, 0.3); }
     for (const t of G.towers) { const c0 = EL[t.s.el].col; light(t.cx * TILE, t.cy * TILE, TILE * 1.15, c0, 0.13 + (t.flash > 0 ? 0.28 : 0) + (t.asc ? 0.08 : 0)); }
     for (const t of G.towers) if (t.beamTargets && t.disabled <= 0) for (const e of t.beamTargets) light(e.x * TILE, e.y * TILE, TILE * (0.8 + Math.min(1, t.ramp / 4) * 0.6), EL[t.s.el].col, 0.35);
     let np = 0;
@@ -13566,6 +13706,12 @@ const RES = 2;
     }
     if (R_.glow !== false) { c.globalCompositeOperation = 'lighter'; c.drawImage(lightCv, ox, oy, DW, DH); }
     c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    // 6.15 the dark closes in (Nic, Nov 14: "as the core takes damage ... darken the screen getting darker after say 35% health"):
+    // below 35% hull everything past the core's light darkens, up to DARK_MAX at no hull; under 15% it breathes with a slow heartbeat
+    if (G.core && !G.over) { const hf = clamp(G.core.hp / Math.max(1, G.core.max), 0, 1), f = clamp((DARK_AT - hf) / DARK_AT, 0, 1);
+      if (f > 0) { const a = DARK_MAX * Math.pow(f, 1.15) * (2 - coreFlicker()) * (hf < 0.15 ? 1 + 0.1 * Math.sin(rt * 5.5) : 1), X = bx2s(G.core.x * TILE), Y = by2s(G.core.y * TILE), LR = coreLightV() * TILE * ws;
+        const g = c.createRadialGradient(X, Y, LR * 0.7, X, Y, LR + (7 - 3 * f) * TILE * ws); g.addColorStop(0, 'rgba(3,2,10,0)'); g.addColorStop(0.35, `rgba(3,2,10,${Math.min(0.9, a * 0.55).toFixed(3)})`); g.addColorStop(1, `rgba(3,2,10,${Math.min(0.9, a).toFixed(3)})`);
+        c.fillStyle = g; c.fillRect(-20, -20, DW + 40, DH + 40); } }
     // smooth overlays: ranges, selection, aim
     const ringS = (x, y, r, col, a, w, fill) => {
       c.beginPath(); c.arc(bx2s(x), by2s(y), r * ws, 0, 6.283);
@@ -13651,6 +13797,7 @@ const RES = 2;
           if (P.dock) ringS(gx, gy, (P.dock.s.range + FRONTIER.dockRange) * TILE, EL[P.dock.s.el].col, 0.85, 1.5, 0.06);
           ringS(gx, gy, FRONTIER.linkR * TILE, PAL.core, 0.35, 1, 0);
           ringS(gx, gy, TILE * (0.62 + 0.08 * Math.sin(frame / 5)), PAL.core, 1, 2.5, 0.25);
+          { const r8 = 31 / Math.cos(Math.PI / 8) * ws; c.beginPath(); for (let k = 0; k <= 8; k++) { const a8 = (k + 0.5) / 8 * 6.283; c[k ? 'lineTo' : 'moveTo'](bx2s(gx) + Math.cos(a8) * r8, by2s(gy) + Math.sin(a8) * r8); } c.fillStyle = hexA(PAL.core, 0.08); c.fill(); c.strokeStyle = hexA(PAL.core, 0.7); c.lineWidth = 1.5; c.stroke(); } // 6.15 keystone: the core's deck where it would land
         }
       } else if (frSel.t && frSel.dest) {
         const t = frSel.t, gx = (frSel.dest.x + 0.5) * TILE, gy = (frSel.dest.y + 0.5) * TILE;
@@ -13830,10 +13977,10 @@ const RES = 2;
     // (−50%); the two numbers sit on top of the two rings
     if (G.hole && holeVisible() && !(G.hole.v === 13 && G.hole.ph === 0)) { const h = G.hole, R2 = HOLE.r * HOLE.r, H2 = HOLE.horizon * HOLE.horizon, u = clamp(Math.round(ws * 1.1), 2, 4); // 6.14: no tower frames or numbers before it lands
       for (const t of G.towers) { const d2 = dist2(t.cx, t.cy, h.x, h.y); if (d2 > R2) continue;
-        const inner = d2 < H2, x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
+        const inner = d2 < H2; if (inner && h.hunt) continue; const x0 = Math.round(bx2s(t.x * TILE)) + 1.5, y0 = Math.round(by2s(t.y * TILE)) + 1.5, w = Math.round(TILE * ws) - 3;
         c.lineWidth = 2; c.strokeStyle = inner ? 'rgba(255,77,106,0.9)' : 'rgba(255,225,77,0.85)'; if (inner) c.setLineDash([3, 3]); c.strokeRect(x0, y0, w, w); c.setLineDash([]); }
       if (h.ph !== 2) { c.font = `${Math.max(8, 3.5 * u)}px "Oxanium Head", monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
-        for (const [rr, txt, col] of [[HOLE.r, `+${Math.round(HOLE.ring * 100)}%`, '#ffe14d'], [HOLE.horizon, `${Math.round(HOLE.inner * 100)}%`.replace('-', '−'), '#ff4d6a']]) {
+        for (const [rr, txt, col] of [[HOLE.r, `+${Math.round(HOLE.ring * 100)}%`, '#ffe14d']].concat(h.hunt ? [] : [[HOLE.horizon, `${Math.round(HOLE.inner * 100)}%`.replace('-', '−'), '#ff4d6a']])) { // rules 14: no slow inside the horizon
           const x = Math.round(bx2s(h.x * TILE)), y = Math.round(by2s((h.y - rr) * TILE)), tw = c.measureText(txt).width;
           c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x - tw / 2 - u), Math.round(y - 2.5 * u), Math.round(tw + 2 * u), Math.round(5 * u)); c.fillStyle = col; c.fillText(txt, x, y); }
         c.textBaseline = 'alphabetic'; }
@@ -14824,6 +14971,7 @@ const UI = (() => {
     a2hsUI(); // 6.9
     const L = profLevel(), free = pointsFree();
     $('#hLevel').textContent = L.level;
+    { const hr = $('#hRank'); if (hr) hr.textContent = rankNow() === RANK0 ? '' : '· ' + rankNow(); } // 6.15 the Pilot Certification rank (from Pilot up)
     $('#hXpFill').style.width = pct(L.into / L.need);
     $('#hBest').textContent = PROF.bestWave || '—';
     const hp = $('#hPts'); hp.hidden = free <= 0; hp.textContent = free + ' pt' + (free === 1 ? '' : 's');
@@ -15054,7 +15202,7 @@ const UI = (() => {
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
-    if (G.hole && G.hole.v === 13 && introCard('hole13', 'Black Hole', `It lands where the marker is, ${HOLE13.warn}s ahead, and stays ${HOLE.hold}s. Feed it: every kill inside its reach counts. Fed, it collapses in a blast that tears into nearby enemies and leaves a rich wreck for your probe. Starved, it spits voidlings back out. Aim a Strike inside it for a Gravity Bomb. Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster; closer, ${Math.round(-HOLE.inner * 100)}% slower.`)) return; // 6.14 rules 13, draft text
+    if (G.hole && G.hole.v === 13 && introCard(G.hole.hunt ? 'hole14' : 'hole13', 'Black Hole', `It lands where the marker is, ${HOLE13.warn}s ahead, and stays ${HOLE.hold}s. Feed it: every kill inside its reach counts. Fed, it collapses in a blast that tears into nearby enemies and leaves a rich wreck for your probe. Starved, it spits voidlings back out. Aim a Strike inside it for a Gravity Bomb. ${G.hole.hunt ? `Once it lands it hunts: it drifts toward the biggest pack of enemies your towers can reach. Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster.` : `Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster; closer, ${Math.round(-HOLE.inner * 100)}% slower.`}`)) return; // 6.14 rules 13, 6.15 rules 14 (it hunts), draft text
     if (G.hole && !G.hole.v && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the center. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
     if (typeof fogOn === 'function' && fogOn() && G.wave >= 2 && G.time > 20 && introCard('fog', 'Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored, but enemies, crates and storms there are hidden. Bosses always show. Wormholes and the Threat Board still warn you.')) return;
     if (G.storms.length && G.frV >= 13 && introCard('storm13', 'Storms', 'Storms drift across the map and boost one element: towers of that element inside one glow and hit harder. Each storm also hits the enemies under it: lightning, burns, frost, Marks or a reveal. Send your probe into one to harvest it for an ability charge.', 'storms')) return; // 6.14 rules 13, draft text
@@ -15139,30 +15287,107 @@ const UI = (() => {
     Coach.stop();
   }
   const lessonPct = () => { const L = lessonsOpen(), D = tutState().lessons || {}; return Math.round(100 * (L.filter(x => D[x.id]).length + (tutState().done ? 1 : 0)) / (L.length + 1)); };
+  // ---------- 6.15 Pilot Certification (Nic, Nov 14): every lesson has a Mechanic check (did the thing it teaches, read from the run's
+  // recorded inputs and stats) and a Skill check measured from the run (LESSONS[].bench.s). Both passed: the lesson is certified and pays
+  // LESSON_XP of a level once. A track certified in full raises the rank (TRACKS). PROF.tut.res[id] = { m, s, pass, paid, best }
+  // the Strain Assault lesson's counter tower for a strain's first gene (its towers: Pulse, Rail, Cryo, Missile, Coil)
+  const AS_CTR = { plating: 'rail', bulk: 'rail', haste: 'cryo', brood: 'missile', regen: 'missile', wings: 'missile', shell: 'coil', ward: 'coil', cloak: 'coil' };
+  const lessonCtr = genes => { const k = AS_CTR[genes && genes[0]] || 'missile'; return G && G.tutS && G.tutS.towers && !G.tutS.towers.includes(k) ? G.tutS.towers[0] : k; };
+  let benchR = 0, benchG = null; // the furthest any enemy got along its road in this lesson run (0..1), tracked by UI.tick
+  function benchTrack() { if (!G || !G.lesson || G.over) return; if (benchG !== G) { benchG = G; benchR = 0; } for (const e of G.enemies) if (!e.dead && e.L && e.L.len) { const f = e.d / e.L.len; if (f > benchR) benchR = f; } }
+  const binp = n => ((G && G.inputs) || []).filter(x => x[1] === n);
+  const BENCH_M = {
+    towers: () => new Set(binp('build').map(x => TOWERS[x[2]] && TOWERS[x[2]].el).filter(Boolean)).size >= 2,
+    upgrades: () => G.towers.some(t => t.type === 'pulse' && t.spec) && binp('sell').length > 0,
+    power: () => binp('reactor').length > 0,
+    lift: () => !!(G.fr && frDockT()) && binp('frMove').length > 0,
+    overcharge: () => G.towers.some(t => t.oc > 0),
+    abilities: () => new Set(binp('abil').map(x => x[2])).size >= 5,
+    salvage: () => binp('cache').length > 0,
+    probe: () => !!((G.tutLoot | 0) & 2) && !!((G.tutLoot | 0) & 4) && !((G.stats.pr || {}).lost),
+    swarm: () => binp('build').some(x => x[2] === 'rail'),
+    hunt: () => !!G.extracted && (G.bounties || []).length > 0,
+    veterans: () => binp('vet').length > 0,
+    support: () => G.towers.some(t => t.type === 'pylon') && G.towers.some(t => t.type === 'forge'),
+    storms: () => (G.stats.harvests || 0) >= 1 && binp('anom').length > 0,
+    blackhole: () => (G.stats.holesFed || 0) >= 1 && (G.stats.gbombMax || 0) >= 3,
+    wormholes: () => binp('cpResume').length > 0 && !!G.map.lanes[1] && G.towers.some(t => t.s && t.s.range && G.map.lanes[1].tiles.some(p => Math.hypot(p.x + 0.5 - t.cx, p.y + 0.5 - t.cy) <= t.s.range)),
+    assault: () => { const L0 = (G.stats.assaults && G.stats.assaults.list[0]) || G.assault; const k = L0 && lessonCtr(L0.genes); return !!k && binp('build').some(x => x[2] === k); }, // built the counter (Skill: hold it)
+    bosses: () => (G.stats.bossKills || 0) > 0 && binp('boon').length > 0,
+    market: () => Coach.opened('items') || binp('buy').length > 0 || binp('cash').length > 0,
+    techniques: () => binp('fire').length > 0,
+    mastery: () => binp('ascPick').length > 0,
+  };
+  // the result of the lesson being played now (a tour lesson has no run: finishing it is its check)
+  function benchEval(id) {
+    const L = LESSON_BY[id], B = L && L.bench; if (!B) return null;
+    const m = L.tour ? true : !!(G && BENCH_M[id] && (() => { try { return BENCH_M[id](); } catch (e) { return false; } })());
+    let s = null, sv = null; const k = B.s ? B.s[0] : null, v = B.s ? B.s[1] : null;
+    if (k && G) {
+      if (k === 'reach') { sv = benchG === G ? benchR : 0; s = sv <= v + 1e-9; }
+      else if (k === 'core') { sv = G.core.hp / G.core.max; s = sv >= v - 1e-9; }
+      else if (k === 'akills') { sv = G.stats.abilKills || 0; s = sv >= v; }
+      else if (k === 'held') { sv = ((G.stats.assaults || {}).won || 0) > 0 ? 1 : 0; s = sv >= v; }
+      else if (k === 'share') { const d = G.fr ? frDockT() : null, tot = G.towers.reduce((a, t) => a + (t.dmgDone || 0), 0); sv = d && tot ? (d.dmgDone || 0) / tot : 0; s = sv >= v - 1e-9; }
+    }
+    return { m, s, sv, k, v, pass: m && s !== false };
+  }
+  const BENCH_K = { reach: ['Closest call', 'furthest an enemy got', 'or less'], core: ['Core', 'core health at the end', 'or more'], share: ['Docked gun', "the docked tower's share of damage", 'or more'], akills: ['Ability kills', 'enemies your abilities finished', 'or more'], held: ['Hold it', 'the assault breaks against your defense', ''] };
+  const pc = x => Math.round(x * 100) + '%';
+  const bfmt = (k, x) => k === 'akills' ? String(Math.round(x)) : k === 'held' ? (x >= 1 ? 'held' : 'not held') : pc(x); // a count, yes/no, or a share
+  // the two check lines: r = a live result (benchEval) or a saved one (PROF.tut.res[id]); draft text, Nic's to edit
+  function benchHTML(L, r) {
+    const B = L.bench; if (!B) return '';
+    const m = !!(r && r.m), sk = B.s && BENCH_K[B.s[0]], sv = r && (r.sv != null ? r.sv : r.best);
+    const sOk = r && (r.s != null ? r.s : r.sp);
+    return `<div class="bchk"><span class="${m ? 'ok' : ''}"><i>${m ? '✓' : r ? '✗' : '·'}</i><b>Mechanic</b>${esc(B.m)}</span>`
+      + (sk ? `<span class="${sOk ? 'ok' : ''}"><i>${sOk ? '✓' : r && sv != null ? '✗' : '·'}</i><b>Skill</b>${esc(sk[0])}: ${bfmt(B.s[0], B.s[1])} ${sk[2]} (${esc(sk[1])})${sv != null ? ` · yours ${bfmt(B.s[0], sv)}` : ''}</span>` : `<span class="ok"><i>–</i><b>Skill</b>${L.tour ? 'None on a walk-through' : 'None: this lesson sets the board up for you, so the Mechanic is the test'}</span>`) + '</div>';
+  }
+  const benchRes = () => tutState().res || (tutState().res = {});
+  const lessonXP = () => Math.round(LESSON_XP * xpForLevel(profLevel().level));
+  const certL = (L) => { const R = benchRes()[L.id]; return !!(R && R.pass); };
+  const trackLessons = tr => lessonsOpen().filter(L => L.track === tr);
+  const trackDone = tr => (tr !== 'basics' || !!tutState().done) && trackLessons(tr).every(certL);
+  function rankNow() { let r = RANK0; for (const T of TRACKS) { if (trackDone(T.id)) r = T.rank; else break; } return r; }
   function lessonDone(id) {
-    id = id || (G && G.lesson); const S = tutState(); (S.lessons || (S.lessons = {}))[id] = 1; Save.save();
+    id = id || (G && G.lesson); const S = tutState(); (S.lessons || (S.lessons = {}))[id] = 1;
+    const r = benchEval(id); let gain = 0, rankUp = null;
+    if (r) { const R = benchRes()[id] || (benchRes()[id] = {}), before = rankNow();
+      R.m = !!(R.m || r.m); if (r.s != null) { R.sp = !!(R.sp || r.s); R.best = R.best == null ? r.sv : r.k === 'reach' ? Math.min(R.best, r.sv) : Math.max(R.best, r.sv); }
+      R.pass = !!(R.pass || r.pass);
+      if (R.pass && !R.paid) { R.paid = 1; gain = lessonXP(); PROF.xp += gain; }
+      const after = rankNow(); if (after !== before) rankUp = after; R.last = { m: r.m, s: r.s, sv: r.sv }; }
+    Save.save();
     Coach.stop(); closePanel(); if (G) G = null;
-    show('hangar'); renderHangar(); openManual(id, true);
+    show('hangar'); renderHangar(); openManual(id, true, { gain, rankUp });
   }
   // the Field Manual: Basic Training, every lesson (done marks, %), and the Dictionary
   let manTab = 'lessons';
-  function openManual(id, justDone) {
+  function openManual(id, justDone, got) {
     if (G && !G.over) G.paused = true;
     const S = tutState(), D = S.lessons || {}, inRun = !!(G && !G.over);
     if (id && LESSON_BY[id]) {
-      const L = LESSON_BY[id];
-      modal(`<div class="card narrow manual lpage"><div class="ch"><h2>${esc(L.title)}</h2>${D[id] ? '<span class="note good">Done</span>' : ''}<button class="x" data-act="close2" aria-label="Close">✕</button></div>
-        ${justDone ? `<p class="good">Lesson complete. ${esc(L.real)}</p>` : ''}
+      const L = LESSON_BY[id], R = benchRes()[id], last = justDone && R && R.last ? Object.assign({}, R.last) : null;
+      const tag = R && R.pass ? '<span class="note good">Certified</span>' : D[id] ? '<span class="note">Done · not certified</span>' : `<span class="note">+${fmt(lessonXP())} XP when certified</span>`;
+      modal(`<div class="card narrow manual lpage"><div class="ch"><h2>${esc(L.title)}</h2>${tag}<button class="x" data-act="close2" aria-label="Close">✕</button></div>
+        ${justDone ? `<p class="${R && R.pass ? 'good' : ''}">${got && got.gain ? `Certified. +${fmt(got.gain)} XP. ` : R && R.pass ? 'Lesson complete. ' : 'Lesson complete, not certified yet: pass both checks to earn its XP. '}${got && got.rankUp ? `New rank: <b>${esc(got.rankUp)}</b>. ` : ''}${esc(L.real)}</p>` : ''}
+        ${L.bench ? benchHTML(L, last || (R ? { m: R.m, s: R.sp, best: R.best } : null)) : ''}
         <div class="lwhat"><b>What it is</b><span>${tipify(L.what)}</span><b>When it matters</b><span>${tipify(L.when)}</span><b>What to do</b><span>${tipify(L.todo)}</span></div>
         <div class="foot"><button class="btn" data-act="manual">All lessons</button><button class="btn primary" data-act="lesson" data-v="${id}">${inRun ? 'Play lesson · saves your run' : D[id] ? 'Play again' : 'Play lesson'}</button></div></div>`, 'manual');
       return;
     }
-    const row = (L, done) => `<button class="lrow${done ? ' done' : ''}" data-act="lpage" data-v="${L.id}"><i>${done ? '✓' : ''}</i><b>${esc(L.title)}</b><span>${esc(L.blurb)}</span></button>`;
+    const RS = benchRes();
+    const row = (L, done) => { const R = RS[L.id], ok = !!(R && R.pass); return `<button class="lrow${ok ? ' done cert' : done ? ' done' : ''}" data-act="lpage" data-v="${L.id}"><i>${ok ? '★' : done ? '✓' : ''}</i><b>${esc(L.title)}</b><span>${esc(L.blurb)}${ok ? '' : ` · +${fmt(lessonXP())} XP`}</span></button>`; };
     if (manTab === 'dict') return openHelp('dict');
-    const body = `<div class="lgrid">
-        <button class="lrow basic${S.done ? ' done' : ''}" data-act="tutStart"><i>${S.done ? '✓' : ''}</i><b>Basic Training</b><span>The whole loop in one guided run, about 10 minutes${S.paid ? '' : ` · +${fmt(tutReward())} XP`}.</span></button>
-        ${lessonsOpen().map(L => row(L, D[L.id])).join('')}
-        ${inRun ? '' : '<button class="lrow lstory" data-act="story"><i></i><b>The Last Gradient</b><span>What you are guarding, and why they come. 30 seconds.</span></button>'}</div>`;
+    // 6.15 Pilot Certification: the rank, a bar per track, then each track's lessons (★ certified, ✓ done but not certified)
+    const rank = rankNow(), nxt = TRACKS.find(T => !trackDone(T.id));
+    const bar = T => { const Ls = trackLessons(T.id), n = Ls.filter(certL).length + (T.id === 'basics' && S.done ? 1 : 0), of = Ls.length + (T.id === 'basics' ? 1 : 0);
+      return `<div class="ctr${n >= of ? ' full' : ''}"><b>${esc(T.name)}</b><div class="cbar"><i style="width:${Math.round(n / Math.max(1, of) * 100)}%"></i></div><span>${n}/${of} · ${esc(T.rank)}</span></div>`; };
+    const cert = `<div class="cert"><div class="crank"><span>Rank</span><b>${esc(rank)}</b><small>${nxt ? `Certify every ${esc(nxt.name)} lesson for ${esc(nxt.rank)}` : 'Fully certified'}</small></div><div class="ctracks">${TRACKS.map(bar).join('')}</div></div>`;
+    const sec = T => `<div class="lsec">${esc(T.name)}</div>` + (T.id === 'basics' ? `<button class="lrow basic${S.done ? ' done cert' : ''}" data-act="tutStart"><i>${S.done ? '★' : ''}</i><b>Basic Training</b><span>The whole loop in one guided run, about 10 minutes${S.paid ? '' : ` · +${fmt(tutReward())} XP`}.</span></button>` : '') + trackLessons(T.id).map(L => row(L, D[L.id])).join('');
+    const body = `${cert}<div class="lgrid">
+        ${TRACKS.map(sec).join('')}
+        ${inRun ? '' : '<div class="lsec">Story</div><button class="lrow lstory" data-act="story"><i></i><b>The Last Gradient</b><span>What you are guarding, and why they come. 30 seconds.</span></button>'}</div>`;
     modal(`<div class="card help manual"><div class="ch"><h2>Field Manual</h2><span class="note">${lessonPct()}% complete</span><button class="x" data-act="close2" aria-label="Close">✕</button></div>
       <div class="chips gtabs"><button class="chip on" data-act="mtab" data-v="lessons">Lessons</button><button class="chip" data-act="htab" data-v="dict">Dictionary</button></div>
       ${body}</div>`, 'help');
@@ -15307,7 +15532,10 @@ const UI = (() => {
       b: () => !afford(type) ? `${TOWERS[type].name} costs ${fmt(towerCost(type))} credits. Killing enemies earns credits.` : gridFree() < 1 ? 'When the grid is full, spend credits on upgrading towers.' : flowText(type, first), done: () => has(type), leave: shut }, x || {});
     const tapTw = (id, get, t, b, x) => { const S = Object.assign({ id, hold: 1, at: () => towerR(get()), t, b, done: () => !!get() && panT() === get() }, x || {}), e = S.enter; S.enter = () => { probeEnd(); if (e) e(); }; return S; }; // 6.6: with the probe selected a map tap sends it, so a tower step lets it go first
     const intro = (id, t, b) => ({ id, hold: 1, ok: 'Start', t, b });
-    const end = id => ({ id: 'end', hold: 1, ok: 'Finish', t: 'Lesson Complete', b: () => LESSON_BY[plan].real, okFn: () => lessonDone(plan) });
+    const asCtr = () => lessonCtr(G.assault && G.assault.genes);
+    // 6.15: the last card waits until the lesson's last wave is cleared, so the Skill check measures a whole fight (tours: at once)
+    const lastClear = () => !G || G.over || !G.tutS || (W() >= (G.tutS.waves || []).length && cleared());
+    const end = id => ({ id: 'end', hold: 1, when: lastClear, ok: 'Finish', t: 'Lesson Complete', b: () => { const L = LESSON_BY[plan], r = benchEval(plan); return r ? `${r.pass ? 'Certified: both checks passed.' : 'Not certified yet: pass both checks to earn its XP.'} ${r.m ? '✓' : '✗'} ${L.bench.m}.${r.k ? ` ${r.s ? '✓' : '✗'} ${BENCH_K[r.k][0]} ${bfmt(r.k, r.sv)} (target ${bfmt(r.k, r.v)} ${BENCH_K[r.k][2]}).` : ''}` : L.real; }, okFn: () => lessonDone(plan) }); // 6.15: the checks, before Finish
     const threatOpen = (id, t, b, x) => Object.assign({ id, hold: 1, at: () => appR(q('#chips [data-threat]')), t, b, done: () => modalOpen === 'evo',
       ok: () => appR(q('#chips [data-threat]')) ? null : 'Show the next wave', okFn: () => openThreat() }, x || {}); // on a narrow top bar the chip can fold into +N: the card opens the board itself
     const inThreat = (id, at, t, b, x) => Object.assign({ id, hold: 1, modal: 'evo', ok: 'Got it', at, t, b, okFn: closeM, skip: () => modalOpen !== 'evo' }, x || {});
@@ -15527,7 +15755,7 @@ const UI = (() => {
         inThreat('dna', () => appR(q('#modal .evlist .evrow')) || appR(q('#modal .evlist')), 'Swarm DNA', 'Every gene in the swarm right now, with its counter.', { enter: scrollTo('#modal .evlist') }),
         call('c1', 1),
         info('mark', () => enemyR(mem.pe), 'Plating', 'Steel plates on its flanks: Plating. Pulse loses a third against it; Rail ignores it. Every gene has its own mark.', { when: () => !!geneEnemy('plating'), enter: () => { mem.pe = geneEnemy('plating'); } }),
-        build('rail', 'rail', 'b', 'Counter it', 'Plating is spreading. Build a Rail Lance on the marked tile.', { when: () => after(1), skip: () => W() >= 2 }),
+        build('rail', 'rail', 'b', 'Counter it', 'Plating is spreading. Build a Rail Lance on the marked tile.', { when: () => after(1) || W() >= 2, enter: () => { mem.r0 = G.towers.filter(t => t.type === 'rail').length; }, done: () => G.towers.filter(t => t.type === 'rail').length > (mem.r0 | 0) }), // 6.15: a new Rail (the board starts with one, so the old check passed at once and the step taught nothing)
         call('c2', 2, null, { when: () => after(1) }),
         info('wrap', sel('#chips [data-threat]'), 'Keep reading it', 'The chip pulses when a gene climbs a tier. Open it between waves.', { when: () => after(2) }),
         end(),
@@ -15551,6 +15779,20 @@ const UI = (() => {
         call('c1', 1),
         end(),
       ],
+      // 6.15 Probe and Loot Sites (draft text)
+      probe: [
+        intro('in', 'The probe', 'Your free scout. It flies anywhere, loots sites and brings the cargo home.'),
+        call('c1', 1, 'Send the wave. A wreck appears with it.'),
+        { id: 'prBtn', when: () => !!site(1) && prOK() && !panel, skip: () => looted(1) || !prOK() || (!!site(1) && G.probe.task === site(1).id), hold: 1, at: sel('#bProbe'), t: 'Select it', b: 'Tap Probe.', done: () => !!prCmd },
+        { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1), b: 'Tap the wreck.', done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && !!site(1) && G.probe.task !== site(1).id && 'prBtn' },
+        { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'It salvages the wreck, then flies home on its own and banks the cargo at the core.', done: () => looted(1) && (G.probe.home || G.probe.ret), skip: () => !prOK() },
+        info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits so far. Docked, it repairs itself and the core.`, { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() }),
+        call('c2', 2, 'Next wave. A guarded wreck appears with it.'),
+        { id: 'guard', when: () => !!site(2) && prOK() && G.probe.home && !panel, skip: () => looted(2) || gone(2) || !prOK(), hold: 1, at: () => worldR(site(2).x, site(2).y, 1.7), t: 'A guarded site', b: () => prCmd ? 'Tap the wreck to send the probe.' : 'A red drone guards this one and shoots the probe near it. Tap Probe, then the wreck.', done: () => !site(2) || G.probe.task === site(2).id },
+        info('lance', sel('#prbar [data-pr=up]'), 'Upgrades', 'Upgrades make it tougher: Armor, Engine, and a Lance that shoots back. Buy them between waves.', { hold: 0, skip: () => !appR(q('#prbar [data-pr=up]')) }),
+        { id: 'prOut', hold: 0, when: () => looted(2), at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Heading out', b: 'The loot is in the hold. It leaves on its own; the drone shoots while it is near.', done: () => !prOK() || G.probe.home, skip: () => !prOK() },
+        end(),
+      ],
       veterans: [
         intro('in', 'Veterans', 'Towers that fight earn ranks. Each rank lets you pick a mutation for that tower.'),
         { id: 'chip', hold: 1, at: sel('#bReady'), t: 'Ready', b: 'This button counts towers with a pick waiting (veteran mutations and Ascend perks). A gold star marks each one on the board. Tap it.', done: () => modalOpen === 'vets' || !G.towers.some(t => t.pending > 0) },
@@ -15571,12 +15813,31 @@ const UI = (() => {
         info('paid', sel('#hud .hs.cr'), 'Paid', 'The Forge paid at the start of the wave. Early Forges pay for themselves.', { when: () => W() >= 1 }),
         end(),
       ],
-      storms: [
-        intro('in', 'Storms and anomalies', 'Weather that boosts one element, and the gauge that brings permanent twists.'),
-        info('storm', () => appR(q('#chips [data-storm]')) || appR(q('#chips [data-more]')), 'A storm', 'This chip is the storm over your Missile: a Solar Flare, +40% Thermal damage inside it. Towers it boosts get an outline.'),
+      storms: [ // 6.15: what a storm does to enemies, and the probe harvest (draft text)
+        intro('in', 'Storms and anomalies', 'Weather that boosts one element and hits the enemies under it, and the gauge that brings permanent twists.'),
+        info('storm', () => appR(q('#chips [data-storm]')) || appR(q('#chips [data-more]')), 'A storm', 'This chip is the storm over your Missile: a Solar Flare. Thermal towers inside it glow and deal +40% damage.'),
         { id: 'gauge', hold: 1, at: sel('#bEnt'), t: 'Entropy', b: 'Kills fill this gauge. It is full: tap it.', done: () => modalOpen === 'anomaly' || !G.anomOffers },
         { id: 'anom', hold: 1, modal: 'anomaly', at: () => appR(q('#modal [data-act=anom]')) || appR(q('#modal .card')), t: 'Anomalies', b: 'Each has an upside and a downside for the rest of the run. Pick one, or Stabilize for score.', done: () => !G.anomOffers },
-        call('c1', 1),
+        call('c1', 1, 'Send the wave. Watch the storm.'),
+        info('fx', () => { const st = G.storms[0]; return st ? worldR(st.x, st.y, st.r) : null; }, 'It hits them too', 'Enemies under a Solar Flare burn. An Ion Storm strikes with lightning, a Cryo Front chills, a Void Tide Marks, Static Haze reveals cloaked enemies.', { when: () => W() >= 1 && G.storms.length > 0 && G.enemies.some(e => !e.dead && e.st.burn), skip: () => after(1) || W() >= 2 || !G.storms.length }),
+        { id: 'prBtn', when: () => prOK() && G.storms.length > 0 && !panel, skip: () => (G.stats.harvests || 0) > 0 || !prOK() || !G.storms.length || !!G.probe.storm, hold: 1, at: sel('#bProbe'), t: 'Harvest it', b: 'Your probe can harvest a storm for an ability charge. Tap Probe.', done: () => !!prCmd || !!G.probe.storm },
+        { id: 'prStorm', hold: 1, at: () => { const st = G.storms[0]; return st ? worldR(st.x, st.y, st.r * 0.6) : null; }, t: 'Into the storm', b: 'Tap inside the storm.', done: () => !!G.probe.storm || (G.stats.harvests || 0) > 0, back: () => !prCmd && !G.probe.storm && !(G.stats.harvests > 0) && 'prBtn', skip: () => !G.storms.length || (G.stats.harvests || 0) > 0 },
+        { id: 'harvest', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, t: 'Harvesting', b: 'Six seconds inside gives one charge. A Solar Flare gives Frenzy. The arc around the storm shows how long is left.', done: () => (G.stats.harvests || 0) > 0, skip: () => !prOK() },
+        info('got', sel('#abils [data-abil=overclock]'), 'Frenzy +1', 'Harvested out, the storm breaks up and the probe flies home. Merged storms give one charge per type.', { hold: 0, when: () => (G.stats.harvests || 0) > 0 }),
+        call('c2', 2),
+        end(),
+      ],
+      // 6.15 the Black Hole: the marker, feeding it, the Gravity Bomb, the verdict (draft text)
+      blackhole: [
+        intro('in', 'Black Hole', 'One lands during this wave. Feed it kills, then crush the crowd with a Strike.'),
+        call('c1', 1, 'Send the wave.'),
+        info('mark', () => G.hole ? worldR(G.hole.tx, G.hole.ty, 2.2) : null, 'Incoming', 'The marker shows where it lands, 8 seconds ahead. Its pull and slow stay off until then.', { when: () => !!(G.hole && G.hole.ph === 0) }),
+        info('feed', () => G.hole ? worldR(G.hole.x, G.hole.y, 2.2) : null, 'Feed it', () => `Every kill inside its reach feeds it. ${G.hole ? G.hole.goal : 9} kills fill the meter. Towers 2.5 to 6 tiles from it fire 40% faster.`, { when: () => !!(G.hole && G.hole.ph === 1) }),
+        { id: 'bomb', when: () => !!(G.hole && G.hole.ph === 1) && (n => n >= 5 || (n >= 3 && G.hole.t >= 6) || (n >= 1 && G.hole.t >= 20))(G.enemies.filter(e => !e.dead && Math.hypot(e.x - G.hole.x, e.y - G.hole.y) <= HOLE.r).length), /* 6.15 wait for a crowd, but never stall */ skip: () => !(G.hole && G.hole.ph === 1) || !(G.charges.strike > 0) || (G.stats.gbombMax || 0) > 0, hold: 1, enter: () => { mem.c0 = G.charges.strike; }, at: sel('#abils [data-abil=strike]'), t: 'Gravity Bomb', b: 'Enemies crowd its reach. Tap Strike.', done: () => G.aimAbility === 'strike' || G.charges.strike < mem.c0 },
+        { id: 'aimH', hold: 1, at: () => G.hole ? worldR(G.hole.x, G.hole.y, HOLE.r * 0.6) : null, t: 'Aim inside it', b: 'Tap inside its reach. The Strike becomes a Gravity Bomb at its center.', done: () => G.charges.strike < mem.c0 || (G.stats.gbombMax || 0) > 0, back: () => G.aimAbility !== 'strike' && G.charges.strike >= mem.c0 && 'bomb', skip: () => !(G.hole && G.hole.ph === 1) },
+        info('crush', () => G.hole ? worldR(G.hole.x, G.hole.y, 2) : null, 'Crushed', () => `It dragged ${G.stats.gbombMax || 0} enemies to its center, stunned them and hit them hard.`, { hold: 0, when: () => (G.stats.gbombMax || 0) > 0, skip: () => !(G.stats.gbombMax > 0) && !(G.hole && G.hole.ph === 1) }),
+        info('verdict', null, 'Its time ran out', () => (G.stats.holesFed || 0) ? 'Fed: it collapsed in a blast and left a rich wreck for the probe.' : 'Starved: it spat voidlings back out. Feed it next time.', { when: () => !!G.tutHole && !(G.hole && G.hole.ph < 2) }),
+        call('c2', 2),
         end(),
       ],
       wormholes: [
@@ -15585,7 +15846,7 @@ const UI = (() => {
         call('c1', 1),
         info('cp', sel('#cpBanner'), 'Checkpoint', 'The wave before a wormhole lands is a checkpoint: the next wave waits 90 s. Selling refunds 100%, talents respec free, and Lift Off has no cooldown.', { when: () => !!G.checkpoint }),
         build('cover', 'pulse', 'n', 'Cover the new road', 'Tap the marked tile.', { when: () => !!G.checkpoint, at: () => flowAt('pulse', 'n', G.map.lanes[1]), done: () => G.towers.length >= 3 }),
-        { id: 'resume', when: () => !!G.checkpoint, hold: 0, at: sel('#bCall'), t: 'Resume', b: 'Tap Next. Resuming fast pays a bonus.', done: () => !G.checkpoint },
+        { id: 'resume', when: () => !!G.checkpoint, hold: 0, at: sel('#bCall'), t: 'Start early', b: 'Tap Start. The sooner you start, the bigger the bonus.', done: () => !G.checkpoint }, // 6.15: the button says Start since 6.14
         info('wrap', null, 'Two roads', 'Now enemies come down both. Towers between roads cover two at once.', { when: () => after(2) }),
         end(),
       ],
@@ -15594,16 +15855,22 @@ const UI = (() => {
         threatOpen('threat', 'Red chip', 'A red Threat chip means an assault is coming. Tap it.'),
         inThreat('strain', () => appR(q('#modal .asname')), 'The strain', 'Its name and genes, and why it chose them.', { ok: 'Next', okFn: null, enter: scrollTo('#modal .asname') }),
         inThreat('refit', () => appR(q('#modal .note.hl')), 'Refit', 'Selling is free until it lands. Swap towers for the counters. Hold it and it breaks: +1 power and a bounty.', { enter: scrollTo('#modal .note.hl') }),
+        // 6.15: build the counter to the strain's first gene, so following the coach gives a fair chance to hold it (draft text)
+        { id: 'counter', when: () => !!(G.assault && G.assault.state === 'warn'), hold: () => afford(asCtr()) && gridFree() >= 1, enter: () => { mem.k0 = G.towers.filter(t => t.type === asCtr()).length; }, at: () => flowAt(asCtr(), 'c'), t: 'Build the counter',
+          b: () => { const k = asCtr(), g = G.assault && GENES[G.assault.genes[0]]; return !afford(k) ? `${TOWERS[k].name} costs ${fmt(towerCost(k))} credits.` : gridFree() < 1 ? 'Sell a tower first: selling is free until it lands.' : `${TOWERS[k].name} counters ${g ? g.name : 'it'}. ${flowText(k, 'Tap the marked tile.')}`; },
+          done: () => G.towers.filter(t => t.type === asCtr()).length > (mem.k0 | 0), skip: () => !G.assault || G.assault.state !== 'warn', leave: shut },
         call('c1', 1),
         info('wrap', sel('#chips [data-threat]'), 'Hold it', 'During the assault the chip counts its units and your leaks.', { when: () => W() >= 1 && !cleared(), hold: 0 }),
         { id: 'res', when: () => after(1), at: sel('#bCall'), t: 'Wave 2', b: 'The assault resolves when its last unit is gone.', done: () => W() >= 2, skip: () => W() >= 2 },
         end(),
       ],
       bosses: [
-        intro('in', 'Bosses', 'A boss lands every 10 waves. If it reaches the core, the run ends.'),
+        intro('in', 'Bosses', 'A boss lands every 10 waves. If it reaches the core, the run ends. Spend spare credits on upgrades before it lands.'),
         call('c1', 1),
         { id: 'boss', when: () => G.enemies.some(e => e.boss && onField(e)), hold: 1, ok: 'Next', enter: () => { mem.boss = G.enemies.find(e => e.boss && onField(e)); }, at: () => enemyR(mem.boss), t: () => mem.boss.bossName, b: 'Phases at 66% and 33%: each unleashes its power. The Hive Queen flies.' },
         { id: 'stasis', hold: 1, at: sel('#abils [data-abil=stasis]'), t: 'Stasis', b: 'Save abilities for bosses. Tap Stasis.', done: () => G.stasisT > 0, skip: () => !G.charges.stasis },
+        { id: 'bstrike', hold: 1, enter: () => { mem.s0 = G.charges.strike; }, at: sel('#abils [data-abil=strike]'), t: 'Strike', b: 'Frozen, it is an easy target. Tap Strike, then tap the boss.', done: () => G.charges.strike < mem.s0 || G.aimAbility === 'strike', skip: () => !G.charges.strike || !G.enemies.some(e => e.boss && !e.dead) }, // 6.15 (draft text)
+        { id: 'baim', hold: 1, at: () => { const b = G.enemies.find(e => e.boss && !e.dead); return b ? enemyR(b) : null; }, t: 'On the boss', b: 'Tap the boss.', done: () => G.charges.strike < mem.s0, skip: () => !G.enemies.some(e => e.boss && !e.dead) || (G.charges.strike < mem.s0), back: () => G.aimAbility !== 'strike' && G.charges.strike >= mem.s0 && 'bstrike' },
         { id: 'boon', when: () => modalOpen === 'draft', hold: 1, modal: 'draft', at: sel('#modal .boons'), t: 'Boon', b: 'A boss kill pays a boon: pick one of three. It lasts the whole run.', done: () => !G.draft },
         info('nem', null, 'Nemesis', 'A boss or strain that ends your run becomes your Nemesis. It comes back next run, stronger, for double the bounty.'),
         end(),
@@ -15647,6 +15914,18 @@ const UI = (() => {
         { id: 'done', hold: 1, tree: 1, at: sel('#tree [data-tact=close]'), t: 'Back', b: 'Tap Done.', done: () => !Tree.isOpen },
         info('arch', sel('#bArchive'), 'Archive', 'Everything you have met: enemies, bosses, the Swarm Collection.', { ok: 'Next' }),
         info('nova', null, 'Supernova', 'At a high level with two Capstones, Supernova resets your talents for a permanent bonus and a Cosmic Law.'),
+        end(),
+      ],
+      // 6.15 Talents Deep Dive: Signatures, Fusions, Capstones (a walk through the Talents screen; draft text)
+      talents2: [
+        { id: 'tal', hold: 1, at: sel('#bWebH'), t: 'Talents', b: 'Tap Talents.', done: () => Tree.isOpen },
+        info('sig', sel('#tree .qsigc'), 'Signature', 'Every point in this tree raises its Signature, an effect only this tree has. Deeper points count more.', { tree: 1, ok: 'Next', skip: () => !appR(q('#tree .qsigc')) }),
+        { id: 'map', tree: 1, hold: 1, at: sel('#tree [data-tact=view]'), t: 'The Fusion map', b: 'Tap Map.', done: () => !!q('#tree #tmap'), skip: () => !!q('#tree #tmap') },
+        { id: 'fus', tree: 1, hold: 1, at: () => appR(q('#tree .qmd.qopen')) || appR(q('#tree .qmd.qnear')) || appR(q('#tree .qmd')), t: 'A Fusion', b: 'Each line joins two trees. 8 points in both opens their Fusion. Tap a diamond.', done: () => !!q('#tree .qmd.qsel'), skip: () => !q('#tree .qmd') },
+        info('fusNone', sel('#tree .qmn'), 'Fusions', 'Each tree sits on this ring, and each line joins two trees. Put points into both and a diamond appears on their line; 8 in each opens their Fusion. Tap a diamond to read it.', { tree: 1, ok: 'Next', skip: () => !!q('#tree .qmd') }),
+        info('fusInfo', sel('#tinfo'), 'One per run', 'Only one Fusion works in a run: the one you pick, or the open pair with the most points.', { tree: 1, ok: 'Next' }),
+        info('cap', sel('#tinfo'), 'Capstones', '12 points in a tree open its Capstone, a new way to play. 16 open its tier tower.', { tree: 1, ok: 'Next' }),
+        { id: 'done', tree: 1, hold: 1, at: sel('#tree [data-tact=close]'), t: 'Back', b: 'Tap Done.', done: () => !Tree.isOpen },
         end(),
       ],
     };
@@ -15800,7 +16079,7 @@ const UI = (() => {
         for (const t of G.towers) if (t.s && Math.hypot(e.x - t.cx, e.y - t.cy) <= t.s.range) return false; }
       return any;
     }
-    return { start, stop, tick, get hold() { return on && held; }, get ff() { return walkFF() ? FF_X : 0; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
+    return { start, stop, tick, opened: id => !!(mem.op && mem.op[id]), get hold() { return on && held; }, get ff() { return walkFF() ? FF_X : 0; }, get on() { return on; }, get step() { return on && cur ? cur.id : null; }, get plan() { return plan; }, get miss() { return on && !!cur && miss; },
       get chain() { return on && cur ? lessonOf(i) : null; }, // 6.2: the lesson the current step belongs to (test/tutcadence.py)
       steps: p => (PLANS[p || plan] || []).map(s => s.id), plans: () => Object.keys(PLANS), taught, locked, lockTip,
       checks: () => (G && G.tut && plan === 'basic' ? ckState() : null), checkNames: () => CHECK.map(c => c[0]) }; // 6.5.2: test/tutcheck.py
@@ -18275,6 +18554,7 @@ const UI = (() => {
       ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned 2 waves ahead.'],
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
       ['Abilities', 'The left rail. Each ability comes online at its wave and recharges on its own timer (the bar under it fills). Crates, chests, bosses and milestones add extra charges on top, with no cap. Command talents and the core\'s Command Uplink cut cooldowns and add charge slots.'],
+      ['The core\'s light', `The warm light around the core. Cloaked enemies inside it are revealed. It reaches ${LIGHT14.max} tiles at full hull and shrinks to ${LIGHT14.min} as the hull falls, and the map past it darkens.`],
       ['Sensor Sweep', `Scan: reveals cloaked enemies for ${SCAN.dur}s, Marks everything it sweeps (+${SCAN.mark}% damage taken) and flags the largest threat with a reticle. Short cooldown.`],
       ['Know your enemy', 'Tap (or hover) any enemy to see its HP, what it does and what beats it. Each wave leans on a headline enemy, shown as an amber chip. New enemies are announced the wave before they land.'],
       ['Command Uplink', `A core upgrade line: −${UPLINK.cd}% ability cooldowns per level. ${UPLINK.mods.map(m => `LV ${m.lv} ${m.name}: ${m.desc}`).join('. ')}.`],
@@ -18866,6 +19146,7 @@ const UI = (() => {
     // 6.14 fix (Nic, Nov 14: the speed button flickered in boss fights): restore only once the boss is down. Before, this ran on the
     // next frame while the boss was still alive, and the line above slowed it again: 3x, 1x, 3x... every frame
     else if (G && !G.over && G.speedWas && screen === 'game' && !bossOn) { if (G.speed === 1) { G.speed = G.speedWas; toast(`SPEED ${G.speed}×`, 'Boss down', '#59f0b4', true, 'tip'); } G.speedWas = 0; G.slowKey = null; updateHud(); }
+    benchTrack(); // 6.15 lesson benchmarks
     hudClock += dt;
     if (screen === 'game' && G && hudClock > 0.1) { hudClock = 0; updateHud(); }
     { const mf = screen === 'game' && !!G && modalOpen === 'pause'; if (mf !== SFX.muffled) SFX.muffle(mf); } // 6.8: the music goes dull on the pause menu
@@ -18897,6 +19178,7 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
+    cert: { rankNow: () => rankNow(), lessonXP: () => lessonXP(), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
     fbFlush, openFeedback, // 6.9 Send Feedback
