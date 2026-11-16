@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 9';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 10';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -5196,10 +5196,13 @@ function prepareWave(w) {
   }
   for (const L of G.map.lanes) if (L.openWave && L.openWave === w) {
     openLane(L);
-    G.cpDue = w;
-    Hooks.toast('WORMHOLE OPEN', `Enemies arrive through it in Wave ${w}`, '#ff4d6a');
-    Hooks.log('Wormhole open · new lane active', '#ff4d6a');
-    Hooks.fx('lane', { lane: L });
+    G.cpDue = w; L.cpW = w; /* cpW: presentation only (the opening plays when this checkpoint ends) */
+    // 6.16.1 (Nic, Nov 16: "Wormholes need to open right after a checkpoint ... the opportunity to move and answer it before it opens"): the rules
+    // are unchanged (the road is laid now, the checkpoint comes when the field clears, enemies use it in Wave w), but the red "WORMHOLE OPEN"
+    // moment used to play here, a wave early, so it read as open before the checkpoint. Now this is a warning, and the opening plays in resumeCheckpoint.
+    Hooks.toast('WORMHOLE CHARGING', `Checkpoint first: clear this wave. It opens in Wave ${w}`, '#b86cff');
+    Hooks.log(`Wormhole charging · checkpoint, then it opens in Wave ${w}`, '#b86cff');
+    Hooks.fx('wormhole', { lane: L });
     Hooks.sfx('lane');
   }
   if (G.wanted && !G.wanted.done && !G.wanted.spawned && w > G.wanted.w) planWanted(Math.ceil((w + 10) / 10) * 10); // its boss never showed: post it again
@@ -5770,7 +5773,9 @@ function resumeCheckpoint() {
   if (!G.checkpoint) return null;
   const B = cpBonus();
   G.credits += B.cr; if (B.sc) addScore(B.sc);
+  const cw = G.checkpoint;
   G.checkpoint = 0; G.cpT = 0; G.next = Math.max(G.next, 3);
+  for (const L of G.map.lanes) if (L.cpW === cw) { L.cpW = 0; Hooks.toast('WORMHOLE OPEN', `Enemies arrive through it in Wave ${cw}`, '#ff4d6a'); Hooks.log('Wormhole open · new lane active', '#ff4d6a'); Hooks.fx('lane', { lane: L }); Hooks.sfx('lane'); }
   Hooks.sfx('call');
   return B;
 }
@@ -19411,7 +19416,7 @@ const UI = (() => {
     Hooks.onChange = () => { if (G && panel) renderPanel(); Save.save(); };
     Hooks.onSave = () => Save.save();
     Hooks.onWave = () => {};
-    Hooks.onCheckpoint = w => { toast('CHECKPOINT', 'A wormhole opens next wave. Rebuild, then Resume fast for a bonus.', '#59f0b4'); if (panel && panel.kind === 'tower') renderPanel(); Save.save(); };
+    Hooks.onCheckpoint = w => { toast('CHECKPOINT', 'The wormhole opens when this ends. Move, rebuild, then Start for a bonus.', '#59f0b4'); if (panel && panel.kind === 'tower') renderPanel(); Save.save(); };
     Hooks.onEntropy = () => {};
     Hooks.newEnemy = k => { if (!(G && G.tut)) setTimeout(() => enemyCard(k), 400); }; // 5.8: Training's coach covers its enemies
     let collToldW = -1;
