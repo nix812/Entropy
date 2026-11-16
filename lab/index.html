@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 3';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 4';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2540,7 +2540,11 @@ const RANK0 = 'Cadet', LESSON_XP = 0.26;
 // 101 (the class), 1-2-3, 404 (not found), 420. Total 1337.14159: leet, with pi's decimals left over. Basics and Endgame keep the LESSON_XP rule.
 const ADV_XP = [3.14159, 7, 13, 42, 67, 69, 88, 101, 123, 404, 420];
 const ADV_XP_SUM = 1337.14159;
-const advXp = id => { const A = LESSONS.filter(L => L.track === 'advanced'), i = A.findIndex(L => L.id === id); return i >= 0 && i < ADV_XP.length ? ADV_XP[i] : null; };
+// 6.16.1 (Nic, 21:11: "more math funnies on all the other training sessions"). Basics: the Lost numbers (4 8 15 16 23 42), then the Commodore 64
+// and the Commodore 128. Total 300 (Sparta). Endgame, all science fiction: THX 1138, NCC-1701, 2001, Blade Runner 2049, Rush's 2112. Total 9001 (over 9000).
+const TRACK_XP = { basics: [4, 8, 15, 16, 23, 42, 64, 128], advanced: ADV_XP, endgame: [1138, 1701, 2001, 2049, 2112] };
+const TRACK_XP_SUM = { basics: 300, advanced: ADV_XP_SUM, endgame: 9001 };
+const advXp = id => { const L0 = LESSON_BY[id], T = L0 && TRACK_XP[L0.track]; if (!T) return null; const i = LESSONS.filter(L => L.track === L0.track).findIndex(L => L.id === id); return i >= 0 && i < T.length ? T[i] : null; };
 const lessonsOpen = () => LESSONS.filter(L => !L.stub && (!L.need || L.need()));
 const NEMESIS_CRIME = ['the fall of your last core','breaking and entering (your core)', 'gloating', 'returning to the scene of the crime', 'holding a grudge'];
 
@@ -15688,7 +15692,7 @@ const UI = (() => {
     const bar = T => { const Ls = trackLessons(T.id), n = Ls.filter(certL).length + (T.id === 'basics' && S.done ? 1 : 0), of = Ls.length + (T.id === 'basics' ? 1 : 0);
       return `<div class="ctr${n >= of ? ' full' : ''}"><b>${esc(T.name)}</b><div class="cbar"><i style="width:${Math.round(n / Math.max(1, of) * 100)}%"></i></div><span>${n}/${of} · ${esc(T.rank)}</span></div>`; };
     const cert = `<div class="cert"><div class="crank"><span>Rank</span><b>${esc(rank)}</b><small>${nxt ? `Certify every ${esc(nxt.name)} lesson for ${esc(nxt.rank)}` : 'Fully certified'}</small></div><div class="ctracks">${TRACKS.map(bar).join('')}</div></div>`;
-    const sec = T => `<div class="lsec">${esc(T.name)}${T.id === 'advanced' ? ` <small class="lsum">${ADV_XP_SUM} XP in all</small>` : ''}</div>` + (T.id === 'basics' ? `<button class="lrow basic${S.done ? ' done cert' : ''}" data-act="tutStart"><i>${S.done ? '★' : ''}</i><b>Basic Training</b><span>The whole loop in one guided run, about 10 minutes${S.paid ? '' : ` · +${fmt(tutReward())} XP`}.</span></button>` : '') + trackLessons(T.id).map(L => row(L, D[L.id])).join('');
+    const sec = T => `<div class="lsec">${esc(T.name)}${TRACK_XP_SUM[T.id] ? ` <small class="lsum">${TRACK_XP_SUM[T.id]} XP in all</small>` : ''}</div>` + (T.id === 'basics' ? `<button class="lrow basic${S.done ? ' done cert' : ''}" data-act="tutStart"><i>${S.done ? '★' : ''}</i><b>Basic Training</b><span>The whole loop in one guided run, about 10 minutes${S.paid ? '' : ` · +${fmt(tutReward())} XP`}.</span></button>` : '') + trackLessons(T.id).map(L => row(L, D[L.id])).join('');
     const body = `${cert}<div class="lgrid">
         ${TRACKS.map(sec).join('')}
         ${inRun ? '' : '<div class="lsec">Story</div><button class="lrow lstory" data-act="story"><i></i><b>The Last Gradient</b><span>What you are guarding, and why they come. 30 seconds.</span></button>'}</div>`;
