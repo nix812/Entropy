@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 12';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 13';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -16142,7 +16142,7 @@ const UI = (() => {
         info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits so far. Docked, it repairs itself and the core.`, { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() }),
         call('c2', 2, 'Next wave. A guarded wreck appears with it.'),
         { id: 'guard', when: () => !!site(2) && prOK() && G.probe.home && !panel, skip: () => looted(2) || gone(2) || !prOK(), hold: 1, at: () => worldR(site(2).x, site(2).y, 1.7), t: 'A guarded site', b: () => prCmd ? 'Tap the wreck to send the probe.' : 'A red drone guards this one and shoots the probe near it. Tap Probe, then the wreck.', done: () => !site(2) || G.probe.task === site(2).id },
-        info('lance', sel('#prbar [data-pr=up]'), 'Upgrades', 'Upgrades make it tougher: Armor, Engine, and a Lance that shoots back. Buy them between waves.', { hold: 0, skip: () => !appR(q('#prbar [data-pr=up]')) }),
+        info('lance', () => appR(q('#prbar [data-pr=up]')) || appR(q('#bProbe')), 'Upgrades', () => appR(q('#prbar [data-pr=up]')) ? 'Upgrades make it tougher: Armor, Engine, and a Lance that shoots back. Buy them between waves.' : 'Tap Probe to select it, then Upgrades: Armor, Engine, and a Lance that shoots back. Buy them between waves.', { hold: 0 }), // 6.16.1: the probe lets go once sent, so the bar may be closed here
         { id: 'prOut', hold: 0, when: () => looted(2), at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Heading out', b: 'The loot is in the hold. It leaves on its own; the drone shoots while it is near.', done: () => !prOK() || G.probe.home, skip: () => !prOK() },
         end(),
       ],
@@ -17354,6 +17354,9 @@ const UI = (() => {
       SFX.play('ui');
       if (prCmd) prCmd.site = P.task || 0;
       if (inPanel) { panel.site = P.task || 0; renderPanel(); }
+      // 6.16.1 (Nic, Nov 16: "it's on autopilot at that point so shouldn't need me to intervene"): sent to a site, a storm or home, the probe has
+      // its job, so the selection lets go and the next tap builds or opens a tower as usual. Sent to open space, it stays selected (to steer it).
+      if (prCmd && !inPanel && (P.task || P.storm || P.ret)) { probeEnd(); return true; }
       prBarUI(); return true;
     }
     if (onP) { SFX.play('ui'); selectProbe(); return true; }
@@ -17391,7 +17394,7 @@ const UI = (() => {
   function prBarAction(k) {
     if (!prCmd || !G || !G.probe) return;
     if (k === 'home') { if (!window.act('prHome')) SFX.play('deny'); else SFX.play('prGo', G.probe); }
-    else if (k === 'ups') { SFX.play('ui'); openProbe(prCmd.site && siteById(prCmd.site) ? prCmd.site : 0); }
+    else if (k === 'ups') { SFX.play('ui'); { const sid = prCmd.site || G.probe.task || 0; openProbe(sid && siteById(sid) ? sid : 0); } } // 6.16.1: or the site it is working
     prBarUI(); updateHud();
   }
   function probeAction(act, b) {
