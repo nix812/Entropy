@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 6';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 7';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -15429,6 +15429,11 @@ const UI = (() => {
   }
   // the body class and the Lift Off button follow the run's rules (a resumed pre-6.1 run or an old recording plays Classic)
   function frModeUI() { document.body.classList.toggle('fr', !!(G && G.fr)); const lb = $('#bLift'); if (lb) { lb.hidden = !(G && G.fr); lb.dataset.l = ''; } const pb = $('#bProbe'); if (pb) { pb.hidden = true; pb.dataset.l = ''; document.body.classList.remove('prb'); } } // 6.5: prBtnUI shows the probe button
+  let wakeLk = null, wakeAsk = 0; // the screen wake lock (UI only; nothing in G)
+  function keepAwake() {
+    try { if (wakeLk || wakeAsk || document.hidden || !navigator.wakeLock) return; wakeAsk = 1;
+      navigator.wakeLock.request('screen').then(l => { wakeAsk = 0; wakeLk = l; l.addEventListener('release', () => { wakeLk = null; }); }, () => { wakeAsk = 0; }); } catch (e) { wakeAsk = 0; }
+  }
   function launch(snap, tut) {
     closeModal();
     show('game');
@@ -15455,7 +15460,7 @@ const UI = (() => {
     buildAbilityBar();
     updateHud(true);
     Save.save();
-    try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
+    keepAwake();
     // v5.3: no wall of rules on the first run. Glowing tiles show where to build; How to Play waits in the pause menu
     // (6.2: the WELCOME line and the camera tip now wait their turn in onboardingTick, with every other first-time card)
     G.wantedTold = !!snap || briefMode() === 'off' || !!G.tut;
@@ -19350,6 +19355,12 @@ const UI = (() => {
     window.addEventListener('orientationchange', () => setTimeout(fitVV, 250));
     fitVV();
     document.addEventListener('fullscreenchange', fitVV); document.addEventListener('webkitfullscreenchange', fitVV);
+    // 6.16.1 (Nic, Nov 16: "make the app prevent phone sleep while in focus"): the lock used to be asked for once, at a run's start; the phone
+    // drops it whenever the app leaves the screen, so after one switch away the screen could sleep again. Now it is held on every screen
+    // while the app is in front: asked again on coming back, on a tap (some phones want one), and when the phone lets it go.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) keepAwake(); });
+    document.addEventListener('pointerdown', keepAwake, { passive: true });
+    keepAwake();
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { if (G && !G.over && screen === 'game') { snapshotNow(); if (!modalOpen) openPause(); } Save.save(); }
     });
