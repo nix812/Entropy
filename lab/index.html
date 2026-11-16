@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 10';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 11';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -15434,6 +15434,18 @@ const UI = (() => {
   }
   // the body class and the Lift Off button follow the run's rules (a resumed pre-6.1 run or an old recording plays Classic)
   function frModeUI() { document.body.classList.toggle('fr', !!(G && G.fr)); const lb = $('#bLift'); if (lb) { lb.hidden = !(G && G.fr); lb.dataset.l = ''; } const pb = $('#bProbe'); if (pb) { pb.hidden = true; pb.dataset.l = ''; document.body.classList.remove('prb'); } } // 6.5: prBtnUI shows the probe button
+  // 6.16.1 (Nic, Nov 16: "weird timing behaviors with when the next wave starts"): the countdown showed the wave clock itself, and that clock runs
+  // at a third speed while a boss walks (up to BOSS_HOLD 45 s) and at half speed while more than 6 of the last wave remain (up to 12 s). So "next in
+  // 13s" could take 41 real seconds, then speed up. Now it shows real seconds (as updateWaves will spend them) and says what is holding the wave.
+  function nextTxt() {
+    let n = Math.max(0, G.next), why = '';
+    const bossUp = G.enemies.some(e => e.boss && !e.gen && !e.dead), left = G.enemies.reduce((k, e) => k + (!e.dead && !e.gen ? 1 : 0), 0);
+    const slow = (hold, div) => { if (hold > 0) n = n <= hold / div ? n * div : hold + (n - hold / div); };
+    if (G.tut) { if (G.enemies.some(e => !e.dead)) return `${G.enemies.length} left`; }
+    else if (bossUp) { const h = BOSS_HOLD - (G.bossHold || 0); if (h > 0) { slow(h, 3); why = 'boss · '; } }
+    else if (left > 6) { const h = 12 - (G.lagHold || 0); if (h > 0) { slow(h, 2); why = `${left} left · `; } }
+    return `${why}next in ${Math.ceil(n)}s`;
+  }
   let wakeLk = null, wakeAsk = 0, wakeErr = '', wakeN = 0; // the screen wake lock (UI only; nothing in G)
   function keepAwake() {
     try { if (wakeLk || wakeAsk || document.hidden || !navigator.wakeLock) return; wakeAsk = 1; wakeN++;
@@ -16481,7 +16493,7 @@ const UI = (() => {
     setT($('#cr'), fmt(G.credits));
     setT($("#wave"), G.wave || "—");
     const cpWait = G.spawningDone && cpPending();
-    setT($('#nextw'), G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? `next in ${Math.max(0, Math.ceil(G.next))}s` : `${G.queue.length + G.enemies.length} left`);
+    setT($('#nextw'), G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? nextTxt() : `${G.queue.length + G.enemies.length} left`);
     setT($('#score'), fmt(G.score));
     const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint && !cpWait;
     const cb = $('#bCall');
