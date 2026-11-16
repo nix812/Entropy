@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 11';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 12';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2186,7 +2186,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 18; // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 19; // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2550,6 +2550,12 @@ const NEMESIS_CRIME = ['the fall of your last core','breaking and entering (your
 
 // ---------- v4.4 Red Alert: a boss within this many tiles of the core puts the core on Last Stand (shells hit it much harder) ----------
 const RED_ALERT = { tiles: 8, coreDmg: 2.5, coreRate: 1.6 };
+// 6.16.1 rules 19 (Nic, Nov 16: "Why are we basing a hold on time at all? Shouldn't we wait until the enemies are all dead before releasing the next
+// wave? ... call wave early needs to work as a function of mobs left on the field"). The 13 s timer still runs after a wave finishes spawning, but the
+// wave does not start while enemies live. Once the field is clear it starts when the timer is done (at least `breath` seconds after the last kill).
+// `cap`/`capBoss`: the longest it waits past the timer (so one slowed or frozen enemy can't be kept alive to farm salvage and cooldowns).
+// Next: pays the timer's seconds as before plus `mob` "seconds" per enemy on the field (a boss counts `boss`; Carrier drones count 0; at most `max`).
+const WAVE19 = { breath: 3, cap: 60, capBoss: 120, mob: 1, boss: 8, max: 40 };
 const BOSS_HOLD = 45; // seconds the next wave's countdown runs slow while a boss is still on the field
 // ---------- v4.4 The Black Market: a pirate trader with 3 items in stock, restocked after every boss wave ----------
 // Prices scale with the wave, so late-run credits (Nic banks 25–60k) have somewhere to go. Each item sells once per stock.
@@ -5848,14 +5854,18 @@ function marketPlaceNode(x, y) {
 }
 // a checkpoint is due after this wave: it waits for the field to clear first
 const cpPending = () => !!(G.cpDue && G.cpDue === G.wave + 1 && !G.checkpoint);
+// rules 19: what Next is worth right now, in "seconds": the timer's seconds left plus the enemies still on the field
+const callMobs = () => { let n = 0; for (const e of G.enemies) if (!e.dead && !e.mite) n += e.boss && !e.gen ? WAVE19.boss : 1; return Math.min(WAVE19.max, n) * WAVE19.mob; };
+const callUnits = () => Math.ceil(Math.max(0, G.next)) + (G.frV >= 19 ? callMobs() : 0);
+const canCallNow = () => !!(G && !G.over && G.spawningDone && !G.checkpoint && !cpPending() && (G.frV >= 19 ? (G.next > 0.5 || G.enemies.some(e => !e.dead)) : G.next > 0.5));
+const callBonus = () => Math.round(callUnits() * (2 + G.wave * 0.6) * G.mods.credits);
 function callEarly() {
-  if (G.checkpoint || cpPending()) return 0;
-  if (!G.spawningDone || G.next <= 0.5) return 0;
-  const secs = Math.ceil(G.next);
+  if (!canCallNow()) return 0;
+  const secs = callUnits();
   const bonus = Math.round(secs * (2 + G.wave * 0.6) * G.mods.credits);
   G.credits += bonus;
   addScore(secs * (5 + G.wave * 2));
-  G.next = 0;
+  G.next = 0; G.called = 1; /* rules 19: a called wave does not wait for the field */
   Hooks.sfx('call');
   return bonus;
 }
@@ -5878,6 +5888,15 @@ function updateWaves(dt) {
     const crowd = !bossUp && G.enemies.reduce((n, e) => n + (!e.dead && !e.gen ? 1 : 0), 0) > 6 && (G.lagHold = (G.lagHold || 0) + dt) < 12;
     if (G.tut && tutIdx(G.wave) >= G.tutS.waves.length) return; // the script is over: Training ends at the bounty, a lesson at its last step
     if (G.tut && G.enemies.some(e => !e.dead)) return; // Training: the next wave waits for a clear field, so every between-wave lesson gets its moment
+    if (G.frV >= 19) { // rules 19: the timer runs at full speed; the wave waits for a clear field (WAVE19)
+      const live = G.enemies.some(e => !e.dead);
+      if (!live && G.wasLive) G.next = Math.max(G.next, WAVE19.breath); // a breath after the last kill
+      G.wasLive = live ? 1 : 0;
+      G.next -= dt;
+      if (G.next <= 0 && live && !G.called && (G.holdT = (G.holdT || 0) + dt) < (bossUp ? WAVE19.capBoss : WAVE19.cap)) return;
+      if (G.next <= 0) { G.holdT = 0; G.called = 0; G.wasLive = 0; G.bossHold = 0; G.lagHold = 0; startWave(); }
+      return;
+    }
     if (bossUp && (G.bossHold = (G.bossHold || 0) + dt) < BOSS_HOLD) G.next -= dt / 3; else G.next -= crowd ? dt / 2 : dt;
     if (G.next <= 0) { G.bossHold = 0; G.lagHold = 0; startWave(); }
     return;
@@ -15442,6 +15461,7 @@ const UI = (() => {
     const bossUp = G.enemies.some(e => e.boss && !e.gen && !e.dead), left = G.enemies.reduce((k, e) => k + (!e.dead && !e.gen ? 1 : 0), 0);
     const slow = (hold, div) => { if (hold > 0) n = n <= hold / div ? n * div : hold + (n - hold / div); };
     if (G.tut) { if (G.enemies.some(e => !e.dead)) return `${G.enemies.length} left`; }
+    else if (G.frV >= 19) { const all = G.enemies.reduce((k, e) => k + (e.dead ? 0 : 1), 0); return all ? `${all} left · wave waits` : `next in ${Math.ceil(n)}s`; } // rules 19: the wave waits for a clear field
     else if (bossUp) { const h = BOSS_HOLD - (G.bossHold || 0); if (h > 0) { slow(h, 3); why = 'boss · '; } }
     else if (left > 6) { const h = 12 - (G.lagHold || 0); if (h > 0) { slow(h, 2); why = `${left} left · `; } }
     return `${why}next in ${Math.ceil(n)}s`;
@@ -16495,13 +16515,13 @@ const UI = (() => {
     const cpWait = G.spawningDone && cpPending();
     setT($('#nextw'), G.checkpoint ? 'Checkpoint' : cpWait ? `${G.enemies.length} left · Checkpoint next` : G.spawningDone ? nextTxt() : `${G.queue.length + G.enemies.length} left`);
     setT($('#score'), fmt(G.score));
-    const canCall = G.spawningDone && G.next > 0.5 && !G.checkpoint && !cpWait;
+    const canCall = canCallNow();
     const cb = $('#bCall');
     cb.disabled = (!canCall && !G.checkpoint) || Coach.locked('call');
     cb.classList.toggle('cp', !!G.checkpoint);
     setT(cb.querySelector('span'), G.checkpoint ? (cpLive() ? 'Start' : 'Resume') : 'Next');
     const cpb = G.checkpoint ? cpBonus() : null;
-    setT(cb.querySelector('b'), G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall && !cb.disabled ? '+' + fmt(Math.round(Math.ceil(G.next) * (2 + G.wave * 0.6) * G.mods.credits)) : '');
+    setT(cb.querySelector('b'), G.checkpoint ? (cpb.cr ? '+' + fmt(cpb.cr) : '') : canCall && !cb.disabled ? '+' + fmt(callBonus()) : '');
     setHid($('#cpBanner'), !G.checkpoint || !!G.reloc);
     if (G.checkpoint && cpLive()) { const t = Math.max(0, Math.ceil(CP_HOLD - G.cpT)); setT($('#cpBanner b'), G.fr ? (G.frV >= 15 ? 'Checkpoint · Full refunds · Free moves · Free respec · Free Lift Off' : 'Checkpoint · Full refunds · Free respec · Free Lift Off') : 'Checkpoint · Full refunds · Free respec'); setT($('#cpBanner').querySelector('span'), `Wave ${G.checkpoint} in ${t}s · Start now for +${fmt(cpb.cr)} credits${cpb.sc ? ` and +${fmt(cpb.sc)} score` : ''}`); $('#cpFill').style.width = pct(cpb.f); }
     else if (G.checkpoint) { const t = Math.max(0, Math.ceil(CP_WINDOW - G.cpT)); setT($('#cpBanner').querySelector('span'), cpb.f > 0 ? `Resume within ${t}s for +${fmt(cpb.cr)} credits and +${fmt(cpb.sc)} score` : 'Speed bonus expired · Full refunds and free respec still active'); $('#cpFill').style.width = pct(cpb.f); }
