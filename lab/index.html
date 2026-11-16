@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 2';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 3';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2455,11 +2455,6 @@ const LESSONS = [
     real: 'In a run: when the Threat chip pulses, open it and answer the top gene.',
     run: { start: 10, credits: 500, grid: 6, towers: ['pulse', 'rail', 'cryo', 'missile', 'coil'], pre: [['towers', [['pulse', 3], ['pulse', 2], ['rail', 2]]]],
       waves: [[['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.6 }], ['swarmer', 8, 0.25, 0.8, { genes: ['haste'], share: 0.5 }]], [['drone', 12, 0.8, 0.8, { genes: ['plating'], share: 0.7 }], ['tank', 2, 2, 0.6]]] } },
-  { id: 'remnant', track: 'advanced', bench: { m: 'Kill a Warden while its squad still stands', s: ['reach', 0.85] }, title: 'The Remnant', blurb: 'Old war machines, each with one trick.', // 6.16.1 (draft text: Game Text page)
-    what: 'From Wave 28 the Remnant march with the swarm: war machines left by the pilots before you. Each has one trick. A Husk stands back up once unless area damage, Burn or an ability finishes it. A Bulwark\u2019s front plate blocks shots from ahead. A Welder repairs the others. A Lodestone drags bolts in and shrugs them off; Arc hurts it double. A Siege Crawler plants and shells a tower offline. An Adapter armours up against the element that hit it last. A Warden\u2019s squad takes less damage near it.', when: 'From Wave 28 on Normal. Mission Control names each one the first time you meet it.', todo: 'Kill the Warden first: its squad is stunned when it falls. Finish Husks with area damage. Mix elements against Adapters. Kill a planted Crawler or move the tower it aims at.',
-    real: 'In a run: when a Warden walks in, focus it, then sweep the squad.',
-    run: { start: 30, credits: 900, grid: 8, towers: ['pulse', 'rail', 'missile', 'flame', 'coil'], abil: ['strike'], pre: [['towers', [['missile', 3], ['pulse', 3], ['rail', 3], ['coil', 2], ['flame', 2]]], ['abil', ['strike'], 1]],
-      waves: [[['husk', 6, 0.7, 0.35], ['bulwark', 2, 1.6, 0.35], ['welder', 1, 1, 0.35], ['husk', 4, 0.6, 0.35]], [['warden', 1, 0.6, 0.3, { sq: 1, lead: 1 }], ['husk', 4, 0.35, 0.3, { sq: 1 }], ['bulwark', 2, 0.6, 0.3, { sq: 1 }], ['crawler', 1, 2, 0.3]]] } },
   { id: 'hunt', track: 'advanced', bench: { m: 'Kill the bounty boss and extract', s: null }, title: 'Bounties and the Purse', blurb: 'Most Wanted, the Bounty Purse, Extract or jump.',
     what: 'Each run posts a Most Wanted boss. Killing it claims the bounty. Some of your XP is held in the Bounty Purse. Extract deposits all of it and ends the run as a win. A jump door takes you to a new zone for a larger purse. If the core falls later, you keep 30%.', when: 'Every 20 waves.', todo: 'Extract when the run is at risk. Jump when your defense is strong: Steady, Hot and Deadly doors multiply the purse more.',
     real: 'In a run: extract when your last waves were close calls; jump when they were easy.',
@@ -2508,6 +2503,11 @@ const LESSONS = [
     what: 'From Wave 10 the Score button opens the Exchange: the Black Market sells three items (restocked after boss waves), and Cash In turns credits into score.', when: 'When credits build up and the grid is full.', todo: 'Check the Market after each boss wave. Cash In only what you can’t spend on towers.',
     real: 'In a run: spend on towers first, the Market second, Cash In last.',
     run: { start: 12, credits: 2500, grid: 6, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['pulse', 3], ['rail', 2]]]], waves: [[['drone', 8, 1, 0.6]]] } },
+  { id: 'remnant', track: 'advanced', bench: { m: 'Kill a Warden while its squad still stands', s: ['reach', 0.85] }, title: 'The Remnant', blurb: 'Old war machines, each with one trick.', // 6.16.1 (draft text: Game Text page)
+    what: 'From Wave 28 the Remnant march with the swarm: war machines left by the pilots before you. Each has one trick. A Husk stands back up once unless area damage, Burn or an ability finishes it. A Bulwark\u2019s front plate blocks shots from ahead. A Welder repairs the others. A Lodestone drags bolts in and shrugs them off; Arc hurts it double. A Siege Crawler plants and shells a tower offline. An Adapter armours up against the element that hit it last. A Warden\u2019s squad takes less damage near it.', when: 'From Wave 28 on Normal. Mission Control names each one the first time you meet it.', todo: 'Kill the Warden first: its squad is stunned when it falls. Finish Husks with area damage. Mix elements against Adapters. Kill a planted Crawler or move the tower it aims at.',
+    real: 'In a run: when a Warden walks in, focus it, then sweep the squad.',
+    run: { start: 30, credits: 900, grid: 8, towers: ['pulse', 'rail', 'missile', 'flame', 'coil'], abil: ['strike'], pre: [['towers', [['missile', 3], ['pulse', 3], ['rail', 3], ['coil', 2], ['flame', 2]]], ['abil', ['strike'], 1]],
+      waves: [[['husk', 6, 0.7, 0.35], ['bulwark', 2, 1.6, 0.35], ['welder', 1, 1, 0.35], ['husk', 4, 0.6, 0.35]], [['warden', 1, 0.6, 0.3, { sq: 1, lead: 1 }], ['husk', 4, 0.35, 0.3, { sq: 1 }], ['bulwark', 2, 0.6, 0.3, { sq: 1 }], ['crawler', 1, 2, 0.3]]] } },
   { id: 'techniques', track: 'endgame', bench: { m: 'Switch a tower to its Technique', s: null }, title: 'Techniques', blurb: 'Alternate fire modes from your talents.',
     what: 'A Technique is an alternate fire mode for one tower type, learned with a one-point talent. Each tower then has a Fire row: Standard or the Technique. It is a different job, not an upgrade.', when: 'After you learn one in Talents.', todo: 'Open a tower and switch its Fire mode. Mix modes: one Suppressor slows the group and the Standard Pulse Blasters finish it.',
     real: 'In a run: switch one tower of a type to its Technique when the wave calls for that job.',
@@ -2535,6 +2535,12 @@ const LESSON_BY = Object.fromEntries(LESSONS.map(L => [L.id, L]));
 // point; all of training is about 6). A track passed in full raises the rank
 const TRACKS = [{ id: 'basics', name: 'Basics', rank: 'Pilot' }, { id: 'advanced', name: 'Advanced', rank: 'Ace' }, { id: 'endgame', name: 'Endgame', rank: 'Commander' }];
 const RANK0 = 'Cadet', LESSON_XP = 0.26;
+// 6.16.1 (Nic, Nov 15: "Scale up the advanced training xp as one progresses ... funny pop culture numbers ... add up to some other funny number"):
+// the 11 Advanced lessons pay a fixed, rising amount in Field Manual order. Pi, lucky 7, unlucky 13, 42 (the Answer), 6-7, 69, 88 (miles per hour),
+// 101 (the class), 1-2-3, 404 (not found), 420. Total 1337.14159: leet, with pi's decimals left over. Basics and Endgame keep the LESSON_XP rule.
+const ADV_XP = [3.14159, 7, 13, 42, 67, 69, 88, 101, 123, 404, 420];
+const ADV_XP_SUM = 1337.14159;
+const advXp = id => { const A = LESSONS.filter(L => L.track === 'advanced'), i = A.findIndex(L => L.id === id); return i >= 0 && i < ADV_XP.length ? ADV_XP[i] : null; };
 const lessonsOpen = () => LESSONS.filter(L => !L.stub && (!L.need || L.need()));
 const NEMESIS_CRIME = ['the fall of your last core','breaking and entering (your core)', 'gloating', 'returning to the scene of the crime', 'holding a grudge'];
 
@@ -9698,6 +9704,11 @@ const SFX = (() => {
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
     // 6.14 (Nic, Nov 14): ceilings for generated v2 songs (MIDI). A lead phrase tops out at E6 (88); no lead, arp or piano note goes past G6 (91)
     const LEAD_CEIL = 88, LEAD_HARD = 91;
+    // 6.16.1 (version 3): Ambient holds its notes for seconds, so high ones read as a whine (audit: Glass 37% of notes at or above C6, one pitch near 1400 Hz held 4 s). Its songs stay a fifth lower: phrases under A5, single notes under C6
+    // The slow genres (Lo-fi, Downtempo, Dub) hold or repeat a top note too: the audit heard E6 for 7 s in Chillout and 5 s in Bedroom, D#6 for 4.5 s in Steppers,
+    // each a melody parked on the old ceiling. Their phrases stay under C6. Fast genres keep E6 (short notes).
+    const SLOW_CEIL = { ambient: [81, 84], lofi: [83, 86], downtempo: [83, 86], dub: [83, 86] };
+    const ceilNow = () => P && P.v >= 3 && SLOW_CEIL[P.g] ? SLOW_CEIL[P.g][0] : LEAD_CEIL, hardNow = () => P && P.v >= 3 && SLOW_CEIL[P.g] ? SLOW_CEIL[P.g][1] : LEAD_HARD;
     let R = Math.random;
     const pick = a => a[Math.floor(R() * a.length)], chance = p => R() < p, rr = (a, b) => a + R() * (b - a);
     const wpick = (a, w) => { let t = 0; for (const x of w) t += x; let r = R() * t; for (let i = 0; i < a.length; i++) { r -= w[i]; if (r <= 0) return a[i]; } return a[0]; };
@@ -9708,6 +9719,15 @@ const SFX = (() => {
     // v5.5.8 musician's pass: a triad's quality on a degree of a mode; a loop fits a mode when it lands on no diminished or
     // augmented triad it did not ask for (the audit found 30 such combinations, e.g. Lydian I-iv°, Dorian i-vi°, minor i-ii°)
     function triadQ(mode, d) { const sc = MODES[mode] || MODES.aeolian, dd = ((d % 7) + 7) % 7, t = (sc[(dd + 2) % 7] - sc[dd] + 12) % 12, f = (sc[(dd + 4) % 7] - sc[dd] + 12) % 12; return t === 3 && f === 6 ? 'dim' : t === 4 && f === 8 ? 'aug' : t === 3 ? 'm' : 'M'; }
+    // 6.16.1 (version 3): a loop's written chord qualities were made for one kind of scale. In another mode some turn foreign:
+    // dnb Liquid's IV-V-iii-vi in dorian played B-flat minor 7 (D-flat, A-flat) in G dorian; Piano House's bVII landed a major
+    // chord on the 7th degree of a major key; Rockers put a major tonic on a minor key. qMiss counts the bad tones: a chord with two
+    // or more notes outside the mode, or a tonic whose third leaves it. One borrowed note (a minor key's V or V7, the minor iv, the
+    // line cliche i - i(maj7) - i7 - i6) is fine and kept. The music audit (test/musaudit.py) found the bad ones.
+    const QT = { M: [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], M7: [0, 4, 7, 11], m7: [0, 3, 7, 10], m9: [0, 3, 7, 10, 14], '6': [0, 4, 7, 9], m6: [0, 3, 7, 9], mM7: [0, 3, 7, 11], s2: [0, 2, 7], s4: [0, 5, 7] };
+    const qBad = (d, q, mode) => { const sc = MODES[mode], T = q && QT[q]; if (!sc || !T) return 0; const dd = ((d % 7) + 7) % 7, r = sc[dd], out = T.filter(iv => !sc.includes((r + iv) % 12));
+      return out.length >= 2 || (dd === 0 && T[1] !== 2 && T[1] !== 5 && out.includes(T[1])) ? out.length : 0; };
+    const qMiss = (L0, mode) => L0.q ? L0.degs.reduce((a, d, i) => a + qBad(d, L0.q[i], mode), 0) : 0;
     const loopOK = (L0, mode) => L0.degs.every((d, i) => (L0.q && L0.q[i]) || !/dim|aug/.test(triadQ(mode, d)));
     const PENT = { major: [0, 2, 4, 7, 9], minor: [0, 3, 5, 7, 10] };
     // a chord loop: degrees (0 = i/I) in the mode, optional per-chord quality override ('M' major triad, 'm' minor, '7' dominant 7,
@@ -9795,7 +9815,7 @@ const SFX = (() => {
         blurb: 'Rolling offbeat bass, gated supersaw chords, a long breakdown and a snare-roll build',
         flavours: {
           uplifting: { name: 'Uplifting', hard: 0.8, ftrim: 0.85, modes: ['aeolian'], loops: [C([0, 5, 2, 6]), C([5, 6, 0, 0]), C([0, 3, 5, 4], ['m', 'm', 'M', 'm']), C([0, 6, 5, 4], ['m', 'M', 'M', 'M'])] },
-          psy: { name: 'Psy', ftrim: 2.0, hard: 0.95, modes: ['phrygian', 'harmonic'], bpmX: 1.04, bass: { kind: 'acid', line: 'rolling' }, pad: { kind: 'dark', lv: 0.2 }, keys: null, lead: { kind: 'saw', grammar: 'riff', lv: 0.45 }, arp: { kind: 'pluck', rate: 16, oct: 1, lv: 0.3 }, drums: { O: '0080008000800080', H: '3333333333333333', C: '0000600000006000' }, loops: [C([0], [], 4), C([0, 1], [], 2), C([0, 1, 0, 6])] }, // 6.3
+          psy: { name: 'Psy', ftrim: 2.0, hard: 0.95, modes: ['phrygian', 'harmonic'], bpmX: 1.04, bass: { kind: 'acid', line: 'rolling' }, pad: { kind: 'dark', lv: 0 } /* 6.16.1 audit: was 0.2, so nothing at all played in the breakdown: 10 s of silence */, keys: null, lead: { kind: 'saw', grammar: 'riff', lv: 0.45 }, arp: { kind: 'pluck', rate: 16, oct: 1, lv: 0.3 }, drums: { O: '0080008000800080', H: '3333333333333333', C: '0000600000006000' }, loops: [C([0], [], 4), C([0, 1], [], 2), C([0, 1, 0, 6])] }, // 6.3
           techtrance: { name: 'Tech Trance', ftrim: 1.9, hard: 0.65, modes: ['aeolian'], bpmX: 0.98, keys: { kind: 'stab', rhythm: 'techno', lv: 0 }, arp: { kind: 'juno', rate: 8, oct: 2, lv: 0.4 }, drums: { R: '0060000600600060', H: '0303030303030303' }, loops: [C([0, 5], [], 2), C([0, 6, 5, 6]), C([0], [], 4)] }, // 6.3
           progressive: { name: 'Progressive', hard: 0.45, ftrim: 2.4, /* 6.16 polish: was 1.25; measured 7 dB under the other trance styles */ filterLoop: 1, modes: ['aeolian', 'dorian'], bpmX: 0.94, bass: { kind: 'saw', line: 'offbeat' }, keys: { kind: 'pluck', rhythm: 'trancepluck', lv: 0.2 }, loops: [C([0, 5], [], 2), C([0, 5, 2, 6], [], 2), C([0, 3], [], 2)] },
         },
@@ -9833,7 +9853,7 @@ const SFX = (() => {
         flavours: {
           onedrop: { name: 'One Drop', hard: 0.35, modes: ['aeolian', 'dorian'], drums: { K: '0000000090000000', H: '6050605060506050' }, loops: [C([0, 6], [], 2), C([0, 3], [], 2), C([0, 5, 6, 0])] },
           rockers: { name: 'Rockers', hard: 0.6, modes: ['aeolian', 'mixolydian'], drums: { K: '9000000090000000', H: '5353535353535353' }, loops: [C([0, 3], [], 1), C([0, 6], [], 2), C([0, 3, 4, 0], ['M', 'M', 'M', 'M'])] },
-          digital: { name: 'Digital', ftrim: 0.86, hard: 0.7, modes: ['aeolian', 'dorian'], bpmX: 1.1, kit: '909', bass: { kind: 'tri', line: 'dub' }, keys: { kind: 'organ', rhythm: 'skank', lv: 0 }, lead: { kind: 'chip', grammar: 'call', duty: 0.25, lv: 0.45 }, drums: { K: '9000000090000000', S: '0000900000009000', R: '0000000000000000', H: '0303030303030303' }, loops: [C([0, 6], [], 2), C([0, 3, 4, 0], ['m', 'm', 'M', 'm']), C([0], [], 4)] }, // 6.3
+          digital: { name: 'Digital', ftrim: 1.6, /* 6.16.1 audit: was 0.86; measured 5 to 7 dB under the other Dub styles */ hard: 0.7, modes: ['aeolian', 'dorian'], bpmX: 1.1, kit: '909', bass: { kind: 'tri', line: 'dub' }, keys: { kind: 'organ', rhythm: 'skank', lv: 0 }, lead: { kind: 'chip', grammar: 'call', duty: 0.25, lv: 0.45 }, drums: { K: '9000000090000000', S: '0000900000009000', R: '0000000000000000', H: '0303030303030303' }, loops: [C([0, 6], [], 2), C([0, 3, 4, 0], ['m', 'm', 'M', 'm']), C([0], [], 4)] }, // 6.3
           steppers: { name: 'Steppers', hard: 0.85, modes: ['aeolian', 'phrygian'], drums: { K: '9000900090009000' }, loops: [C([0, 6], [], 2), C([0, 1], [], 2), C([0], [], 4)] },
         },
         ext: 3, voicing: 'triad', kit: 'dub',
@@ -10030,7 +10050,7 @@ const SFX = (() => {
       mute: {}, fx: { reverb: 0.5, echo: 0.5, tone: 0.5, tape: 0, pump: 0.5 }, favs: [], favOnly: false, calmBpm: 72, bossThemes: true, tape0: 1 }; // 6.5.2: Tape & Vinyl off by default (Nic)
     const CHN = ['pads', 'keys', 'arp', 'bass', 'drums', 'lead'];
     let cfg = JSON.parse(JSON.stringify(DEF));
-    const VCUR = 2; // 6.3: the generator version new pieces get (saved tracks without a v are version 1 and keep the old path)
+    const VCUR = 3; // 6.16.1: version 3 = version 2 + chord loops that fit their mode (qMiss); 6.3: the generator version new pieces get (saved tracks without a v are version 1 and keep the old path)
     let bossNow = null, bossPhase = 0, bossRet = null; // 6.3: the boss on the field (UI.tick), its phase, and what to go back to after the fight
     let P = null, lastG = '', lastF = '', bar = 0, s16 = 0, forceNext = null, favIdx = 0, tempoNow = 0, EV = null;
     const pieceLog = [];
@@ -10070,6 +10090,11 @@ const SFX = (() => {
         const i0 = S.loops.indexOf(loop), alt = S.loops.map((_, k) => S.loops[(i0 + 1 + k) % S.loops.length]).find(L0 => loopOK(L0, mode));
         if (alt) loop = alt; else { const m2 = S.modes.find(m => loopOK(loop, m)); if (m2) mode = m2; }
       }
+      if (ver >= 3 && qMiss(loop, mode)) { // 6.16.1: a loop whose chords don't belong in this mode: another loop that does, else a mode that suits the loop, else its foreign chords play as the mode's own (no extra dice)
+        const i0 = S.loops.indexOf(loop), alt = S.loops.map((_, k) => S.loops[(i0 + 1 + k) % S.loops.length]).find(L0 => loopOK(L0, mode) && !qMiss(L0, mode));
+        const m2 = alt ? null : S.modes.find(m => loopOK(loop, m) && !qMiss(loop, m) && !(mood === 'boss' && /ionian|lydian|mixolydian/.test(m) && !force));
+        if (alt) loop = alt; else if (m2) mode = m2; else { const m0 = mode; loop = Object.assign({}, loop, { q: loop.degs.map((d, i) => qBad(d, loop.q[i], m0) ? null : loop.q[i] || null) }); }
+      }
       let root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
       if (vv) root = Math.round((S.keyR[0] + S.keyR[1]) / 2) - 5 + vv.keyOff; // v2: any of the 12 keys, centred on the genre's register
       if (force && force.name) name = String(force.name).slice(0, 32); // renamed or composed tracks keep their own name
@@ -10078,7 +10103,7 @@ const SFX = (() => {
         swing: S.swing, motifs: null, bassPat: null, keysPat: null, gatePat: pick(['xx.xx.x.xx.xx.x.', 'x.xxx.xxx.xxx.x.', 'xxx.xx.xxx.xx.x.', 'x.x.xx.xx.x.xx.x']),
         acc: [], lastChordV: null, form: makeForm(S.form), stabShape: pick([[0, 3, 7, 10], [0, 3, 7, 10, 14], [0, 3, 10, 14], [0, 7, 10, 15]]), drop: {} };
       P.motifs = [makeMotif(S.lead), makeMotif(S.lead)];
-      if (vv) { P.v = 2; P.v2 = 1; P.bpmJ = vv.tempo; P.arpShape = vv.arpShape; P.arpRate = vv.arpRate; P.fv = vv.fv; P.liftBy = vv.liftBy; P.form = makeForm(S.form, null, vv.fv); P.motifs = makeHook(S.lead); }
+      if (vv) { P.v = ver; P.v2 = 1; P.bpmJ = vv.tempo; P.arpShape = vv.arpShape; P.arpRate = vv.arpRate; P.fv = vv.fv; P.liftBy = vv.liftBy; P.form = makeForm(S.form, null, vv.fv); P.motifs = makeHook(S.lead); }
       P.bassPat = makeBass(S.bass); P.keysPat = makeKeys(S.keys); P.dense = {};
       if (force && force.comp) applyComp(P, force.comp);
       if (force && force.snd) loadSnd(force.snd, g);
@@ -10431,7 +10456,7 @@ const SFX = (() => {
       const e = t + dec + 0.4; for (const o of [car, m1, m2]) { o.start(t); o.stop(e); }
       sendFx(g, 0.35, 0.12);
     }
-    function piano(n, t, v, dec) { if (P && P.v2 && !P.comp && !P.boss) while (n > LEAD_HARD) n -= 12; /* 6.14: under G6 in generated songs */ evlog('keys', 'piano', t, n, v); const f = mtof(n), g = vca(t, 0.002, dec, v * 0.9, L.keys), fl = lp(Math.min(9000, f * 9), 0.5, g); fl.frequency.setTargetAtTime(f * 3, t, 0.25); osc('triangle', f, t, t + dec + 0.4, fl, -3); osc('triangle', f, t, t + dec + 0.4, fl, 3); osc('sine', f * 2, t, t + dec + 0.4, gainN(0.3, fl)); nhit(t, 'bandpass', f * 4, 1, 0.015, v * 0.06, g); sendFx(g, 0.35, 0.1); }
+    function piano(n, t, v, dec) { if (P && P.v2 && !P.comp && !P.boss) while (n > hardNow()) n -= 12; /* 6.14: under G6 in generated songs */ evlog('keys', 'piano', t, n, v); const f = mtof(n), g = vca(t, 0.002, dec, v * 0.9, L.keys), fl = lp(Math.min(9000, f * 9), 0.5, g); fl.frequency.setTargetAtTime(f * 3, t, 0.25); osc('triangle', f, t, t + dec + 0.4, fl, -3); osc('triangle', f, t, t + dec + 0.4, fl, 3); osc('sine', f * 2, t, t + dec + 0.4, gainN(0.3, fl)); nhit(t, 'bandpass', f * 4, 1, 0.015, v * 0.06, g); sendFx(g, 0.35, 0.1); }
     function stab(ns, t, v, how) {
       for (const n of ns) evlog('keys', 'stab', t, n, v);
       const E = effE(), fl = lp(1, how === 'dubtechno' ? 3 : 2.5, null, how === 'dubtechno' ? 'bandpass' : 'lowpass'), g = vca(t, 0.003, how === 'dubtechno' ? 0.25 : 0.32, v, L.keys);
@@ -10443,7 +10468,7 @@ const SFX = (() => {
     }
     function organ(ns, t, v, dur) { for (const n of ns) { evlog('keys', 'organ', t, n, v); const g = vca(t, 0.004, dur, v * 0.32, L.keys); for (const [h, a] of [[1, 1], [2, 0.5], [3, 0.3], [4, 0.22]]) osc('sine', mtof(n) * h, t, t + dur + 0.3, gainN(a, g)); nhit(t, 'bandpass', mtof(n) * 6, 2, 0.008, v * 0.08, g); sendFx(g, 0.25, 0.2); } }
     function skank(ns, t, v) { for (const n of ns) evlog('keys', 'skank', t, n, v); const fl = lp(1400, 0.8, null, 'bandpass'), g = vca(t, 0.002, 0.12, v * 0.6, L.keys); fl.connect(g); for (const n of ns) { osc(0.25, mtof(n), t, t + 0.2, fl); osc('triangle', mtof(n), t, t + 0.2, fl); } sendFx(g, 0.5, 0.75); }
-    function pluck(n, t, v, dest, role) { if (P && P.v2 && !P.comp && !P.boss) { const cap = (role || 'arp') === 'arp' ? LEAD_CEIL : LEAD_HARD; while (n > cap) n -= 12; } /* 6.14: arps stay under E6, plucked keys under G6 */ evlog(role || 'arp', 'pluck', t, n, v); const fl = lp(1, 2.4, vca(t, 0.002, 0.45, v, dest || L.arp)); fl.frequency.setValueAtTime(1200 + 4000 * effE(), t); fl.frequency.setTargetAtTime(420, t, 0.07); osc('sawtooth', mtof(n), t, t + 0.5, fl, 0); }
+    function pluck(n, t, v, dest, role) { if (P && P.v2 && !P.comp && !P.boss) { const cap = (role || 'arp') === 'arp' ? ceilNow() : hardNow(); while (n > cap) n -= 12; } /* 6.14: arps stay under E6, plucked keys under G6 */ evlog(role || 'arp', 'pluck', t, n, v); const fl = lp(1, 2.4, vca(t, 0.002, 0.45, v, dest || L.arp)); fl.frequency.setValueAtTime(1200 + 4000 * effE(), t); fl.frequency.setTargetAtTime(420, t, 0.07); osc('sawtooth', mtof(n), t, t + 0.5, fl, 0); }
     function chipNote(n, t, dur, v, duty, dest, role) { evlog(role, 'chip', t, n, v); const g = ctx.createGain(); g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v * 0.75, t + Math.min(dur * 0.5, 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + dur); g.connect(dest); osc(duty, mtof(n), t, t + dur + 0.02, g); }
     // gated supersaw chord: one sustained 3-voice stack per note, chopped by the trance gate pattern
     function gateChord(ns, t, sp16, bars, v) {
@@ -10455,7 +10480,7 @@ const SFX = (() => {
     }
     // ---- pads ----
     function pad(ns, t, dur, v, kind) {
-      if (!kind) return; if (P && P.v2 && !P.comp && !P.boss) ns = ns.map(n => { while (n > LEAD_CEIL) n -= 12; return n; }); /* 6.14: sustained pad notes stay under E6 */ for (const n of ns) evlog('pads', kind, t, n, v);
+      if (!kind) return; if (P && P.v2 && !P.comp && !P.boss) ns = ns.map(n => { while (n > ceilNow()) n -= 12; return n; }); /* 6.14: sustained pad notes stay under E6 */ for (const n of ns) evlog('pads', kind, t, n, v);
       const E = effE(), atk = kind === 'warm' || kind === 'strings' ? Math.min(2.2, dur * 0.35) : kind === 'supersaw' ? 0.4 : 0.6, top = kind === 'dark' ? 500 + 500 * E : kind === 'juno' ? 900 + 2000 * E : kind === 'supersaw' ? 3000 + 5000 * E : kind === 'strings' ? 1400 + 1600 * E : 800 + 1400 * E;
       const fl = lp(300, kind === 'juno' ? 1.4 : 0.7), g = ctx.createGain();
       fl.frequency.setValueAtTime(300, t); fl.frequency.linearRampToValueAtTime(top, t + dur * 0.45); fl.frequency.linearRampToValueAtTime(top * 0.6, t + dur + 1.5);
@@ -10471,7 +10496,7 @@ const SFX = (() => {
     }
     // ---- leads ----
     function lead(n, t, dur, v, kind, duty) {
-      if (P && P.v2 && !P.comp && !P.boss) while (n > LEAD_HARD) n -= 12;
+      if (P && P.v2 && !P.comp && !P.boss) while (n > hardNow()) n -= 12;
       evlog('lead', kind, t, n, v);
       const dest = L.lead, f = mtof(n);
       if (kind === 'bell' || kind === 'glass') { const g = vca(t, 0.003, kind === 'glass' ? 1.6 : 2.8, v, L.spark), car = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(); car.frequency.value = f; m.frequency.value = f * (kind === 'glass' ? 7 : 3.5); mg.gain.setValueAtTime(f * 1.2, t); mg.gain.setTargetAtTime(f * 0.05, t, 0.4); m.connect(mg); mg.connect(car.frequency); car.connect(g); car.start(t); m.start(t); car.stop(t + 3.4); m.stop(t + 3.4); sendFx(g, 0.6, 0.35); return; }
@@ -10631,7 +10656,10 @@ const SFX = (() => {
       const bias = { K: 0.2, S: 0.15, C: 0.1, H: 0.05, O: -0.05, R: 0, D: -0.15, P: -0.1 }[vk] || 0;
       return Math.max(0, Math.min(1, base + bias)) * (ph.drums === 0 ? 0 : ph.drums || 1);
     }
-    const lvl = (thr) => { if (P.comp) return 0.85; const E = Math.max(0, effE() + phAt(bar).d); return E >= thr ? Math.min(1, 0.55 + (E - thr) * 1.5) : 0; };
+    // 6.16.1 (version 3): a breakdown takes the energy down (-0.35 to -0.6) and mutes drums and bass by design. On a calm field that put
+    // every other part under its threshold too, so nothing played: the audit measured 11 s of silence in Chiptune NES and Speedrun,
+    // 5 s in Disco and Tech House, 4 s in Acid and Neuro at energy 0.3. In a breakdown the parts its phase allows now play softly.
+    const lvl = (thr) => { if (P.comp) return 0.85; const ph0 = phAt(bar), E = Math.max(0, effE() + ph0.d); return E >= thr ? Math.min(1, 0.55 + (E - thr) * 1.5) : P.v >= 3 && (ph0.brk || effE() >= thr) ? 0.45 : 0; }; // ...and a part the field's own energy allows keeps playing softly through a quiet section (Chiptune's intro and outro were 11 s of nothing)
 
     function scheduleStep(t) {
       if (API._fault) { API._fault = 0; throw new Error('test fault'); }
@@ -10749,7 +10777,7 @@ const SFX = (() => {
           const sc0 = Ld.scale === 'pent' || Ld.scale === 'pentmajor' ? (P.scale[2] === 3 ? PENT.minor : PENT.major) : P.scale, off0 = sc0.length === 5 ? Math.round(C0.deg * 5 / 7) : C0.deg;
           let hiD = -99; for (const nn of mot) if (nn.d > hiD) hiD = nn.d;
           let top = degTo(P.root + 12 * Math.round((Ld.oct - P.root) / 12), off0 + hiD, sc0) + up;
-          while (top > LEAD_CEIL && shift > -36) { if (up) up = 0; else shift -= 12; top -= 12; }
+          while (top > ceilNow() && shift > -36) { if (up) up = 0; else shift -= 12; top -= 12; }
         }
         for (const nn of mot) if (nn.st === st) {
           if (tail && s16 >= 8 && !P.fixedMel && !P.v2 && chance(0.5)) continue;
@@ -13914,7 +13942,7 @@ const RES = 2;
 
     // ---------- composite ----------
     let sx = 0, sy = 0;
-    if (shakeT > 0 && doShake) { shakeT -= dt; sx = (Math.random() - 0.5) * shake; sy = (Math.random() - 0.5) * shake; }
+    if (shakeT > 0 && doShake && dt > 0) { shakeT -= dt; /* 6.16.1: a frozen field (a card, Pause) holds still; the shake's clock only runs with the field */ sx = (Math.random() - 0.5) * shake; sy = (Math.random() - 0.5) * shake; }
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     // sharp-bilinear: integer nearest-neighbour upscale first, then one smooth resample to the exact size,
     // so every art pixel lands the same width on screen (no shimmer from uneven nearest-neighbour scaling)
@@ -14592,7 +14620,7 @@ const RES = 2;
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     fit();
   }
-  function reset() { pops = []; decals = []; born.clear(); mapZone = null; wipe = null; zoneAmbReset(); nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
+  function reset() { shake = 0; shakeT = 0; coreKick = 0; /* 6.16.1: a shake left over from the last run (the core's death, Training's end) kept shaking the next run's frozen field */ pops = []; decals = []; born.clear(); mapZone = null; wipe = null; zoneAmbReset(); nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
 
   // build-menu card art: the tower on a lit plinth against its element's colour
   function towerCard(type, canvas, locked) {
@@ -14646,7 +14674,7 @@ const RES = 2;
     zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
-    set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
+    get shaking() { return shakeT > 0; }, set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
     get fxCounts() { return { parts: parts.length, rings: rings.length, lines: lines.length, stars: stars.length, drags: drags.length, lite: LITE }; }, // v5.8 test hook
     get layout() { return { ox, oy, scale, W, H, z: cam.z }; }, get zoom() { return cam.z; }, get home() { return atHome; }, get homeZoom() { return homeZ(); }, overview, markMap() { mapDirty = true; },
     set onCam(f) { onCam = f; },
@@ -15619,7 +15647,8 @@ const UI = (() => {
       + (sk ? `<span class="${sOk ? 'ok' : ''}"><i>${sOk ? '✓' : r && sv != null ? '✗' : '·'}</i><b>Skill</b>${esc(sk[0])}: ${bfmt(B.s[0], B.s[1])} ${sk[2]} (${esc(sk[1])})${sv != null ? ` · yours ${bfmt(B.s[0], sv)}` : ''}</span>` : `<span class="ok"><i>–</i><b>Skill</b>${L.tour ? 'None on a walk-through' : 'None: this lesson sets the board up for you, so the Mechanic is the test'}</span>`) + '</div>';
   }
   const benchRes = () => tutState().res || (tutState().res = {});
-  const lessonXP = () => Math.round(LESSON_XP * xpForLevel(profLevel().level));
+  const lessonXP = id => { const a = id ? advXp(id) : null; return a != null ? a : Math.round(LESSON_XP * xpForLevel(profLevel().level)); }; // 6.16.1: Advanced lessons pay ADV_XP
+  const xpTxt = v => Number.isInteger(v) ? fmt(v) : String(v); // pi keeps its decimals
   const certL = (L) => { const R = benchRes()[L.id]; return !!(R && R.pass); };
   const trackLessons = tr => lessonsOpen().filter(L => L.track === tr);
   const trackDone = tr => (tr !== 'basics' || !!tutState().done) && trackLessons(tr).every(certL);
@@ -15630,7 +15659,7 @@ const UI = (() => {
     if (r) { const R = benchRes()[id] || (benchRes()[id] = {}), before = rankNow();
       R.m = !!(R.m || r.m); if (r.s != null) { R.sp = !!(R.sp || r.s); R.best = R.best == null ? r.sv : r.k === 'reach' ? Math.min(R.best, r.sv) : Math.max(R.best, r.sv); }
       R.pass = !!(R.pass || r.pass);
-      if (R.pass && !R.paid) { R.paid = 1; gain = lessonXP(); PROF.xp += gain; }
+      if (R.pass && !R.paid) { R.paid = 1; gain = lessonXP(id); PROF.xp += gain; }
       const after = rankNow(); if (after !== before) rankUp = after; R.last = { m: r.m, s: r.s, sv: r.sv }; }
     Save.save();
     Coach.stop(); closePanel(); if (G) G = null;
@@ -15643,23 +15672,23 @@ const UI = (() => {
     const S = tutState(), D = S.lessons || {}, inRun = !!(G && !G.over);
     if (id && LESSON_BY[id]) {
       const L = LESSON_BY[id], R = benchRes()[id], last = justDone && R && R.last ? Object.assign({}, R.last) : null;
-      const tag = R && R.pass ? '<span class="note good">Certified</span>' : D[id] ? '<span class="note">Done · not certified</span>' : `<span class="note">+${fmt(lessonXP())} XP when certified</span>`;
+      const tag = R && R.pass ? '<span class="note good">Certified</span>' : D[id] ? '<span class="note">Done · not certified</span>' : `<span class="note">+${xpTxt(lessonXP(id))} XP when certified</span>`;
       modal(`<div class="card narrow manual lpage"><div class="ch"><h2>${esc(L.title)}</h2>${tag}<button class="x" data-act="close2" aria-label="Close">✕</button></div>
-        ${justDone ? `<p class="${R && R.pass ? 'good' : ''}">${got && got.gain ? `Certified. +${fmt(got.gain)} XP. ` : R && R.pass ? 'Lesson complete. ' : 'Lesson complete, not certified yet: pass both checks to earn its XP. '}${got && got.rankUp ? `New rank: <b>${esc(got.rankUp)}</b>. ` : ''}${esc(L.real)}</p>` : ''}
+        ${justDone ? `<p class="${R && R.pass ? 'good' : ''}">${got && got.gain ? `Certified. +${xpTxt(got.gain)} XP. ` : R && R.pass ? 'Lesson complete. ' : 'Lesson complete, not certified yet: pass both checks to earn its XP. '}${got && got.rankUp ? `New rank: <b>${esc(got.rankUp)}</b>. ` : ''}${esc(L.real)}</p>` : ''}
         ${L.bench ? benchHTML(L, last || (R ? { m: R.m, s: R.sp, best: R.best } : null)) : ''}
         <div class="lwhat"><b>What it is</b><span>${tipify(L.what)}</span><b>When it matters</b><span>${tipify(L.when)}</span><b>What to do</b><span>${tipify(L.todo)}</span></div>
         <div class="foot"><button class="btn" data-act="manual">All lessons</button><button class="btn primary" data-act="lesson" data-v="${id}">${inRun ? 'Play lesson · saves your run' : D[id] ? 'Play again' : 'Play lesson'}</button></div></div>`, 'manual');
       return;
     }
     const RS = benchRes();
-    const row = (L, done) => { const R = RS[L.id], ok = !!(R && R.pass); return `<button class="lrow${ok ? ' done cert' : done ? ' done' : ''}" data-act="lpage" data-v="${L.id}"><i>${ok ? '★' : done ? '✓' : ''}</i><b>${esc(L.title)}</b><span>${esc(L.blurb)}${ok ? '' : ` · +${fmt(lessonXP())} XP`}</span></button>`; };
+    const row = (L, done) => { const R = RS[L.id], ok = !!(R && R.pass); return `<button class="lrow${ok ? ' done cert' : done ? ' done' : ''}" data-act="lpage" data-v="${L.id}"><i>${ok ? '★' : done ? '✓' : ''}</i><b>${esc(L.title)}</b><span>${esc(L.blurb)}${ok ? '' : ` · +${xpTxt(lessonXP(L.id))} XP`}</span></button>`; };
     if (manTab === 'dict') return openHelp('dict');
     // 6.15 Pilot Certification: the rank, a bar per track, then each track's lessons (★ certified, ✓ done but not certified)
     const rank = rankNow(), nxt = TRACKS.find(T => !trackDone(T.id));
     const bar = T => { const Ls = trackLessons(T.id), n = Ls.filter(certL).length + (T.id === 'basics' && S.done ? 1 : 0), of = Ls.length + (T.id === 'basics' ? 1 : 0);
       return `<div class="ctr${n >= of ? ' full' : ''}"><b>${esc(T.name)}</b><div class="cbar"><i style="width:${Math.round(n / Math.max(1, of) * 100)}%"></i></div><span>${n}/${of} · ${esc(T.rank)}</span></div>`; };
     const cert = `<div class="cert"><div class="crank"><span>Rank</span><b>${esc(rank)}</b><small>${nxt ? `Certify every ${esc(nxt.name)} lesson for ${esc(nxt.rank)}` : 'Fully certified'}</small></div><div class="ctracks">${TRACKS.map(bar).join('')}</div></div>`;
-    const sec = T => `<div class="lsec">${esc(T.name)}</div>` + (T.id === 'basics' ? `<button class="lrow basic${S.done ? ' done cert' : ''}" data-act="tutStart"><i>${S.done ? '★' : ''}</i><b>Basic Training</b><span>The whole loop in one guided run, about 10 minutes${S.paid ? '' : ` · +${fmt(tutReward())} XP`}.</span></button>` : '') + trackLessons(T.id).map(L => row(L, D[L.id])).join('');
+    const sec = T => `<div class="lsec">${esc(T.name)}${T.id === 'advanced' ? ` <small class="lsum">${ADV_XP_SUM} XP in all</small>` : ''}</div>` + (T.id === 'basics' ? `<button class="lrow basic${S.done ? ' done cert' : ''}" data-act="tutStart"><i>${S.done ? '★' : ''}</i><b>Basic Training</b><span>The whole loop in one guided run, about 10 minutes${S.paid ? '' : ` · +${fmt(tutReward())} XP`}.</span></button>` : '') + trackLessons(T.id).map(L => row(L, D[L.id])).join('');
     const body = `${cert}<div class="lgrid">
         ${TRACKS.map(sec).join('')}
         ${inRun ? '' : '<div class="lsec">Story</div><button class="lrow lstory" data-act="story"><i></i><b>The Last Gradient</b><span>What you are guarding, and why they come. 30 seconds.</span></button>'}</div>`;
@@ -19478,13 +19507,13 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
-    cert: { rankNow: () => rankNow(), lessonXP: () => lessonXP(), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
+    cert: { rankNow: () => rankNow(), lessonXP: id => lessonXP(id), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
     wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
     fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
-    _dbg: { keepOutRects, zoneBanner, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
+    _dbg: { keepOutRects, zoneBanner, startLesson: id => startTut(id), openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
   };
 })();
 
