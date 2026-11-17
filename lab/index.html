@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 13';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 14';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -8422,7 +8422,7 @@ function guardsUpdate(dt) {
       if (g.k === 'drone') {
         g.a += dt * (fight ? 1.4 : 0.7); g.x = s.x + Math.cos(g.a) * D.orbit; g.y = s.y + Math.sin(g.a) * D.orbit;
         g.cd -= dt;
-        if (fight && dp <= D.r && g.cd <= 0) { g.cd = D.cd; P.hp -= D.dmg * ws; P.hitT = G.time; Hooks.fx('rail', { x1: g.x, y1: g.y, x2: P.x, y2: P.y, col: '#ff5a7a' }); Hooks.sfx('prHit', { x: P.x, y: P.y }); }
+        if (fight && dp <= D.r && g.cd <= 0) { g.cd = D.cd; P.hp -= D.dmg * ws; P.hitT = G.time; Hooks.fx('rail', { x1: g.x, y1: g.y, x2: P.x, y2: P.y, col: '#ff5a7a', guard: 1 }); Hooks.sfx('prHit', { x: P.x, y: P.y }); }
       } else {
         const chase = fight && Math.hypot(P.x - s.x, P.y - s.y) <= Gd.leash, tx = chase ? P.x : g.hx, ty = chase ? P.y : g.hy, d = Math.hypot(tx - g.x, ty - g.y), stop = chase ? D.r * 0.8 : 0;
         if (d > stop + 0.01) { const m = Math.min(D.spd * dt, d - stop); g.x += (tx - g.x) / d * m; g.y += (ty - g.y) / d * m; }
@@ -14476,7 +14476,9 @@ const RES = 2;
         rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: Math.max(6, d.r * TILE), life: d.big ? 0.6 : 0.25, max: d.big ? 0.6 : 0.25, col: d.col, fill: 1, w: d.big ? 3 : 2 }); burst(T2P(d.x), T2P(d.y), d.big ? 70 : 10, d.col, (d.big ? 90 : 35) * K, d.big ? 0.8 : 0.35); if (d.big) flashes.push({ col: '#ffe9b0', life: 0.25, max: 0.25, a: 0.35 }); break;
       case 'spark': burst(T2P(d.x), T2P(d.y), 3, d.col, 30 * K, 0.15); stars.push({ x: T2P(d.x), y: T2P(d.y), life: 0.03, max: 0.03, col: '#ffffff', s: 2 }); break; // v5.8: a one-frame white + on each bolt impact
       case 'rail': {
-        if (!d.t) { lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.18, max: 0.18, col: d.col, core: 1, w: d.crit ? 5 : 3 }); break; }
+        if (!d.t) { lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.18, max: 0.18, col: d.col, core: 1, w: d.crit ? 5 : 3 });
+          if (d.guard) { rings.push({ x: T2P(d.x1), y: T2P(d.y1), r0: 2, r1: 9, life: 0.25, max: 0.25, col: '#ff5a7a', w: 2 }); burst(T2P(d.x1), T2P(d.y1), 5, '#ffd0d8', 20 * K, 0.2); burst(T2P(d.x2), T2P(d.y2), 5, '#ff5a7a', 25 * K, 0.25); } /* 6.16.1 (Nic: "a red laser coming out of the top left of her head" on Leia): a site guard's shot at the probe now flashes at the guard and sparks on the probe, so it reads as a shot between those two */
+          break; }
         // v5.8 Rail Lance: the beam fades over ~0.25 s with small rings rippling along it and a white burst on each enemy it pierces.
         // Gauss Spire burns thicker and longer; Splinter Rail throws splinters off each pierced enemy. A crit kicks the screen
         const sp = d.t.spec || 0, big = d.t.asc ? 1 : 0, x1 = T2P(d.x1), y1 = T2P(d.y1), x2 = T2P(d.x2), y2 = T2P(d.y2), life = sp === 1 ? 0.32 : 0.25, dx = x2 - x1, dy = y2 - y1, dl = Math.hypot(dx, dy) || 1;
@@ -14556,7 +14558,7 @@ const RES = 2;
       case 'ping': burst(T2P(d.x), T2P(d.y), 4, '#e9e4d4', 35 * K, 0.18); if (texts.filter(T => T.ping).length < 3) { text(d.x + 0.3, d.y - 0.6, 'tink', '#c8c4b8', 11, 0.4, -0.6, '"Oxanium Head", monospace'); texts[texts.length - 1].ping = 1; } break;
       case 'glance': { const x = T2P(d.x), y = T2P(d.y), a = d.sx !== undefined ? Math.atan2(d.y - d.sy, d.x - d.sx) + Math.PI * (0.7 + Math.random() * 0.6) : Math.random() * 6.283;
         lines.push({ pts: [{ x, y }, { x: x + Math.cos(a) * 22, y: y + Math.sin(a) * 22 }], life: 0.2, max: 0.2, col: '#ffffff', core: 1, w: 2 }); burst(x, y, 5, '#cfe6ff', 40 * K, 0.2); break; }
-      case 'sap': lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.5, max: 0.5, col: '#ff3355', core: 1, w: 2 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 4, r1: 20, life: 0.4, max: 0.4, col: '#ff3355', w: 2, fill: 1 }); burst(T2P(d.x2), T2P(d.y2), 14, '#ffa860', 40 * K, 0.4); break;
+      case 'sap': rings.push({ x: T2P(d.x1), y: T2P(d.y1), r0: 2, r1: 9, life: 0.3, max: 0.3, col: '#ff3355', w: 2 }); lines.push({ pts: [{ x: T2P(d.x1), y: T2P(d.y1) }, { x: T2P(d.x2), y: T2P(d.y2) }], life: 0.5, max: 0.5, col: '#ff3355', core: 1, w: 2 }); rings.push({ x: T2P(d.x2), y: T2P(d.y2), r0: 4, r1: 20, life: 0.4, max: 0.4, col: '#ff3355', w: 2, fill: 1 }); burst(T2P(d.x2), T2P(d.y2), 14, '#ffa860', 40 * K, 0.4); break;
       case 'drop': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 18, life: 0.35, max: 0.35, col: '#ffe14d', w: 2 }); burst(T2P(d.x), T2P(d.y), 6, '#ffe14d', 25 * K, 0.3, 30 * K); break;
       case 'blink': burst(T2P(d.x), T2P(d.y), 14, '#b86cff', 40 * K, 0.3); break;
       // 6.16 the Remnant
@@ -18086,8 +18088,18 @@ const UI = (() => {
   }
   // ---- v3.1 run log export ----
   const LOG_KEY = 'lastgradient.lab.runlog';
-  function storeRunLog() { try { if (G && G.rlog) localStorage.setItem(LOG_KEY, 'ENTROPY RUN LOG · ' + VERSION + ' · ' + new Date().toISOString() + '\n' + G.rlog.map(e => JSON.stringify(e)).join('\n')); } catch (e) {} }
-  function lastLogText() { try { return localStorage.getItem(LOG_KEY) || ''; } catch (e) { return ''; } }
+  // 6.16.1 (Nic, Nov 16: "pull the current game log if one is in progress ... logging for the last few games"): Copy and Save give the run in
+  // progress when there is one, and the log keeps the last LOG_KEEP finished runs (newest first; capped in size so it can't crowd out the save).
+  const LOGS_KEY = 'entropy.runlogs', LOG_KEEP = 4, LOG_CAP = 700000;
+  const logTxt = () => 'ENTROPY RUN LOG · ' + VERSION + ' · ' + new Date().toISOString() + '\n' + G.rlog.map(e => JSON.stringify(e)).join('\n');
+  function oldLogs() { try { const a = JSON.parse(localStorage.getItem(LOGS_KEY) || '[]'); return Array.isArray(a) ? a.filter(t => typeof t === 'string') : []; } catch (e) { return []; } }
+  function storeRunLog() { try { if (!(G && G.rlog)) return; const t = logTxt(); localStorage.setItem(LOG_KEY, t);
+    let a = [t, ...oldLogs()].slice(0, LOG_KEEP); while (a.length > 1 && a.reduce((n, x) => n + x.length, 0) > LOG_CAP) a.pop();
+    try { localStorage.setItem(LOGS_KEY, JSON.stringify(a)); } catch (e) { try { localStorage.setItem(LOGS_KEY, JSON.stringify(a.slice(0, 1))); } catch (e2) {} } } catch (e) {} }
+  const liveLog = () => !!(G && G.rlog && G.rlog.length && !G.over && !G.tut && !G.watch && screen === 'game');
+  function lastLogText() { try { return liveLog() ? logTxt() + '\n{"k":"inProgress","w":' + (G.wave || 0) + ',"t":' + Math.round(G.time || 0) + '}' : localStorage.getItem(LOG_KEY) || ''; } catch (e) { return ''; } }
+  // the earlier finished runs (not the one Copy gives), newest first, in one text
+  function earlierLogs() { const a = oldLogs(); return liveLog() ? a : a.slice(1); }
   function copyText(txt, onDone) {
     const done = onDone || (() => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · paste it into a chat with Claude`, '#59f0b4', true));
     const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
@@ -18353,7 +18365,8 @@ const UI = (() => {
         + (inRun ? '' : row('Reset progress', 'Erase everything on this device. There is no undo', `<button class="btn small danger" data-act="wipe">${confirmReset ? 'Tap again to erase' : 'Reset'}</button>`, 'danger')),
       support: sec('Feedback')
         + (fbOn() ? row('Feedback', 'Report a bug or share an idea', '<button class="btn small" data-act="feedback" data-v="settings">Send Feedback</button>') : '')
-        + row('Run log', lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
+        + row('Run log', liveLog() ? 'This run so far, for analysis' : lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
+        + (earlierLogs().length ? row('Earlier runs', `The ${earlierLogs().length} before that, in one text`, '<button class="btn small" data-act="logsCopy">Copy</button>') : '')
         + row('Keep screen awake', wakeState(), '')
         + sec('About')
         + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>'),
@@ -19251,6 +19264,7 @@ const UI = (() => {
       case 'fs': toggleFs(); break;
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
+      case 'logsCopy': { const t = earlierLogs().join('\n\n==== EARLIER RUN ====\n'); if (t) copyText(t); break; }
       case 'logSave': { const t = lastLogText(); if (t) saveText(t); break; }
       case 'assaultDone': PROF.seenAssault = true; Save.save(); closeModal(); if (G && !G.over) G.paused = false; break;
       case 'evoDone': PROF.seenEvo = true; Save.save(); closeModal(); if (G && !G.over) G.paused = false; break;
