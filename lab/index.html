@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 22';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 23';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1751,6 +1751,11 @@ const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfyca
 let UIS = 1;
 // Rows are set per run by the Chaos level; the width adapts to the screen so there is no letterboxing.
 let COLS = 36;
+// 6.16.1 FINE: how fine the field and its sprites are drawn. 1 = as always (2 px per world unit). 1.5 = half again finer (3 px).
+// ONE SWITCH TO FALL BACK: set FINE_DEFAULT to 1. A device can also choose for itself in Settings > Support ("Fine sprites"),
+// stored as entropy.fine ('1' or '1.5'); the page reloads on change. Drawing only: the sim never reads it.
+const FINE_DEFAULT = 1.5;
+const FINE = (() => { try { if (typeof localStorage !== 'undefined') { const v = localStorage.getItem('entropy.fine'); if (v === '1') return 1; if (v === '1.5') return 1.5; } } catch (e) {} return FINE_DEFAULT; })();
 let ROWS = 26; const TILE = 24;
 let BW = COLS * TILE, BH = ROWS * TILE;
 function setRows(n) { ROWS = n; BH = ROWS * TILE; }
@@ -11268,7 +11273,10 @@ const ART = (() => {
   // parts: [{ f, z, r: ramp, d?: (lx, ly) => tone delta, e?: (lx, ly) => hex | null (emissive), k?: steepness }]
   function raster(parts, W, H, ang, opt) {
     opt = opt || {};
-    const sc = opt.sc || 1; if (sc !== 1) { W = Math.round(W * sc); H = Math.round(H * sc); } // sc: render the design larger, at full detail
+    // sc: render the design larger, at full detail (the core). fine: the same design on a finer grid (6.16.1): slopes, cast shadows and the
+    // outline are measured in design units, so the shading matches. opt.fine names a factor; without it the game's own FINE applies.
+    const fine = opt.fine || (typeof FINE !== 'undefined' ? FINE : 1), fr = Math.max(1, Math.round(fine));
+    const sc = (opt.sc || 1) * fine; if (sc !== 1) { W = Math.round(W * sc); H = Math.round(H * sc); }
     const cx = W / 2, cy = H / 2, ca = Math.cos(ang || 0), sa = Math.sin(ang || 0), n = W * H;
     const hm = new Float32Array(n).fill(-1e9), pid = new Int16Array(n).fill(-1), lx = new Float32Array(n), ly = new Float32Array(n);
     const ox = opt.ox || 0, oy = opt.oy || 0;
@@ -11280,17 +11288,17 @@ const ART = (() => {
       if (best >= 0) { hm[i] = bh; pid[i] = best; }
     }
     const out = new Uint8ClampedArray(n * 4), tone = new Int8Array(n).fill(-1);
-    const loc = (x, y) => { const dx = x + 0.5 - cx - ox, dy = y + 0.5 - cy - oy; return [dx * ca + dy * sa, -dx * sa + dy * ca]; };
+    const loc = (x, y) => { const dx = (x + 0.5 - cx) / fine - ox, dy = (y + 0.5 - cy) / fine - oy; return [dx * ca + dy * sa, -dx * sa + dy * ca]; };
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x, p = pid[i]; if (p < 0) continue;
       const P = parts[p], h0 = hm[i] - P.z, k = P.k || 1;
       const hs = (xx, yy) => { const [a, bq] = loc(xx, yy), v = P.f(a, bq); return v < 0 ? h0 - 2.5 : v; };
-      const gx = (hs(x + 1, y) - hs(x - 1, y)) * 0.5 * k, gy = (hs(x, y + 1) - hs(x, y - 1)) * 0.5 * k;
+      const gx = (hs(x + 1, y) - hs(x - 1, y)) * 0.5 * k * fine, gy = (hs(x, y + 1) - hs(x, y - 1)) * 0.5 * k * fine;
       const nl = Math.hypot(gx, gy, 1), d = (-gx * L[0] - gy * L[1] + L[2]) / nl;
       // a flat top lands in the middle of tone 3; facing the light climbs to 4-5, facing away drops to 2-0. Dither only near tone edges.
       let t = 3.5 + (d - L[2]) * 5.2 + (BAY[(x & 1) + ((y & 1) << 1)] - 0.375) * 0.55;
       // cast shadow from anything taller up and to the left
-      for (const s of [1, 2, 3]) { const j = (y - s) * W + (x - s); if (y - s >= 0 && x - s >= 0 && hm[j] > hm[i] + 1.6 * s + 0.5) { t -= 1.4; break; } }
+      for (const s of [1, 2, 3]) { const q = Math.round(s * fine), j = (y - q) * W + (x - q); if (y - q >= 0 && x - q >= 0 && hm[j] > hm[i] + 1.6 * s + 0.5) { t -= 1.4; break; } }
       if (P.d) t += P.d(lx[i], ly[i]) || 0;
       let ti = Math.max(0, Math.min(5, Math.floor(t)));
       // contact line where this surface meets a taller neighbour
@@ -11302,18 +11310,22 @@ const ART = (() => {
     }
     // sel-out: a dark rim on empty pixels touching the sprite, tinted by the neighbour's darkest tone
     if (opt.outline !== false) {
-      const oc = rgb(opt.outline || '#04040a'), add = [];
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        const i = y * W + x; if (pid[i] >= 0) continue;
-        let q = -1;
-        if (x > 0 && pid[i - 1] >= 0) q = i - 1; else if (x < W - 1 && pid[i + 1] >= 0) q = i + 1; else if (y > 0 && pid[i - W] >= 0) q = i - W; else if (y < H - 1 && pid[i + W] >= 0) q = i + W;
-        if (q >= 0) add.push(i, q);
+      const oc = rgb(opt.outline || '#04040a'), src = fr > 1 ? Int32Array.from(pid, (v, i) => v >= 0 ? i : -1) : null;
+      for (let pass = 0; pass < fr; pass++) { const add = []; // a fine sprite gets an outline as thick as the game-size one
+        const has = src ? i => src[i] >= 0 : i => pid[i] >= 0;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const i = y * W + x; if (has(i)) continue;
+          let q = -1;
+          if (x > 0 && has(i - 1)) q = i - 1; else if (x < W - 1 && has(i + 1)) q = i + 1; else if (y > 0 && has(i - W)) q = i - W; else if (y < H - 1 && has(i + W)) q = i + W;
+          if (q >= 0) add.push(i, src ? src[q] : q);
+        }
+        for (let k = 0; k < add.length; k += 2) { const i = add[k], c = rgb(parts[pid[add[k + 1]]].r[0]); out[i * 4] = (c[0] + oc[0]) >> 1; out[i * 4 + 1] = (c[1] + oc[1]) >> 1; out[i * 4 + 2] = (c[2] + oc[2]) >> 1; out[i * 4 + 3] = 255; }
+        if (src) for (let k = 0; k < add.length; k += 2) src[add[k]] = add[k + 1];
       }
-      for (let k = 0; k < add.length; k += 2) { const i = add[k], c = rgb(parts[pid[add[k + 1]]].r[0]); out[i * 4] = (c[0] + oc[0]) >> 1; out[i * 4 + 1] = (c[1] + oc[1]) >> 1; out[i * 4 + 2] = (c[2] + oc[2]) >> 1; out[i * 4 + 3] = 255; }
     }
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     cv.getContext('2d').putImageData(new ImageData(out, W, H), 0, 0);
-    cv.u = 1 / RESA; // world units per pixel
+    cv.u = 1 / RESA / fine; // world units per pixel
     return cv;
   }
   // flat overlays painted after shading (emissive lights, decals), in local coords
@@ -11349,8 +11361,8 @@ const UNITS = (() => {
   const glow = (col, test) => (x, y) => test(x, y) ? col : null;
 
   // ---------- bases: an octagonal deck plate per element, with lit seams ----------
-  function base(el) {
-    return get('tb:' + el, () => {
+  function base(el, sc) {
+    return get('tb:' + el + (sc ? ':' + sc : ''), () => {
       const c = EL[el].col, oct = [];
       for (let k = 0; k < 8; k++) { const a = (k + 0.5) / 8 * Math.PI * 2; oct.push([Math.cos(a) * 25, Math.sin(a) * 25]); }
       const plate = cut(S.poly(oct, 5, 3), S.dome(0, 0, 15.5, 1));
@@ -11359,7 +11371,7 @@ const UNITS = (() => {
           e: (x, y) => (Math.abs(x) < 2.6 && Math.abs(y) > 19 && Math.abs(y) < 22.5) || (Math.abs(y) < 2.6 && Math.abs(x) > 19 && Math.abs(x) < 22.5) ? (Math.abs(x) + Math.abs(y) < 21.5 ? mix(c, '#ffffff', 0.4) : c) : null }),
         P(S.puck(0, 0, 15.5, 1.5, 1), 0, DARKSTEEL, { d: (x, y) => { const r = Math.hypot(x, y); return r > 13.5 ? 1 : 0; } }),
       ];
-      return raster(parts, 52, 52, 0);
+      return raster(parts, 52, 52, 0, sc ? { fine: sc } : null);
     });
   }
 
@@ -11367,6 +11379,7 @@ const UNITS = (() => {
   // each returns parts for heading ang; a = { rk: recoil 0..1, ph: animation phase, ld: loaded }
   const TOP = {
     pulse(c, v, a) {
+      if (FINE > 1 && !v) return HD.pulse(c, a); // 6.16.1 quality sample: the redrawn Pulse Blaster (base form) on the finer grid
       const C = ramp(c), rk = a.rk * 4, parts = [
         P(S.rbox(-13, -11, 5, 11, 5, 7, 3), 3, HULL, { d: (x, y) => Math.abs(y) < 0.7 && x < 2 ? -1 : 0 }),
         P(S.dome(-3, 0, 8.5, 7), 8, GUNM, { e: glow(c, (x, y) => Math.hypot(x + 6, y + 3) < 1.6) }),
@@ -11381,6 +11394,7 @@ const UNITS = (() => {
       return parts;
     },
     rail(c, v, a) {
+      if (FINE > 1 && !v) return HD.rail(c, a); // 6.16.1 quality sample: the redrawn Rail Lance (base form)
       const C = ramp(c), rk = a.rk * 3, L = v === 1 ? 26 : 23, parts = [
         P(S.rbox(-16, -10, -1, 10, 3, 7, 2), 3, ramp('#2a3156', 0.5), { d: stripes(3, 1) , e: glow(c, (x, y) => Math.abs(y) < 1.2 && x < -3 && x > -14) }),
         P(S.box(-6, -8.5, L - rk, -3.5, 5, 1.6), 7, GUN, { d: (x, y) => x > L - rk - 3 ? 1 : 0 }),
@@ -11558,8 +11572,8 @@ const UNITS = (() => {
   // build-menu card / icon art: one composite at a fixed heading
   function icon(type, el) {
     return get('ti:' + type + ':' + el, () => {
-      const cv = document.createElement('canvas'); cv.width = cv.height = 60; const g = cv.getContext('2d');
-      g.drawImage(base(el), 4, 4); g.drawImage(top(type, el, 0, ROT[type] ? -0.6 : 0, { ld: 1 }), 0, 0); cv.u = 0.5; return cv;
+      const cv = document.createElement('canvas'); cv.width = cv.height = Math.round(60 * FINE); const g = cv.getContext('2d');
+      g.drawImage(base(el), Math.round(4 * FINE), Math.round(4 * FINE)); g.drawImage(top(type, el, 0, ROT[type] ? -0.6 : 0, { ld: 1 }), 0, 0); cv.u = 0.5 / FINE; return cv;
     });
   }
   const ROT = { pulse: 1, rail: 1, missile: 1, flame: 1, emp: 1, saw: 1, aegis: 1 };
@@ -11589,7 +11603,8 @@ const UNITS = (() => {
       parts.push(P(S.dome(4.5, 0, 3, 4), 2, hive(c, 0.8), { e: (x, y) => x > 5.6 && Math.abs(Math.abs(y) - 1.4) < 0.7 ? '#e6dcc8' : null }));
       return parts;
     },
-    tank(c, f) { // Juggernaut: a giant armoured louse. Overlapping black plates, a row of rippling legs, a blunt head that opens on light
+    tank(c, f) { if (FINE > 1) return HD.tank(c, f); // 6.16.1 quality sample: the redrawn Shellback
+      // Juggernaut: a giant armoured louse. Overlapping black plates, a row of rippling legs, a blunt head that opens on light
       const parts = [], g = f % 2 ? mix(c, '#ffffff', 0.3) : c;
       for (const s of [-1, 1]) for (let k = -3; k <= 3; k++) { const x = k * 5 - 1 + (((k + f) & 1) ? 0.9 : -0.9); parts.push(P(S.box(x - 1, Math.min(s * 9, s * 16), x + 1, Math.max(s * 9, s * 16), 2, 1), 0, LEG)); }
       for (const s of [-1, 1]) parts.push(P(S.poly([[-16, s * 3], [-22, s * 6], [-17, s * 7]], 3, 1), 1, BONE));
@@ -11727,7 +11742,7 @@ const UNITS = (() => {
         P(S.gem(1, 0, 4, 3, 6), 2, ramp('#2a1050', 0.8), { e: (x, y) => Math.hypot(x - 2, y) < 1.1 ? '#ffffff' : null })];
     },
   };
-  const ESZ = { drone: 42, swarmer: 24, tank: 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30, reflector: 36, carrier: 58, sapper: 32, leech: 34, husk: 34, bulwark: 48, welder: 38, lodestone: 40, crawler: 50, adapter: 38, warden: 60 };
+  const ESZ = { drone: 42, swarmer: 24, tank: FINE > 1 ? 50 : 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30, reflector: 36, carrier: 58, sapper: 32, leech: 34, husk: 34, bulwark: 48, welder: 38, lodestone: 40, crawler: 50, adapter: 38, warden: 60 };
   const EA = 16;
   // 6.16.1 elites are Overgrown (Nic, Nov 16: "The crown is silly. The elites need a dark creepy visual"; he picked Overgrown from
   // test/elitesheet.py). The same creature with bone spines pushed out through its back, longer on one side, and two swollen
@@ -11765,6 +11780,59 @@ const UNITS = (() => {
     const ai = ((Math.round(ang / (Math.PI * 2) * EA) % EA) + EA) % EA, f = fr & 3, sz = ESZ[type] + (og ? ogPad(type) * 2 : 0), o = og ? ':o' : '';
     const mk = (a2, f2) => () => raster(og ? ogParts(type, ENEMY_COL[type], f2) : ENEMY[type](ENEMY_COL[type], f2), sz, sz, a2 / EA * Math.PI * 2);
     return ART.getB(`en:${type}:${ai}:${f}${o}`, mk(ai, f), () => { for (let d = 0; d <= EA / 2; d++) for (const a2 of [(ai + d) % EA, (ai - d + EA) % EA]) for (const f2 of [f, 0, 1, 2, 3]) { const c = ART.has(`en:${type}:${a2}:${f2}${o}`); if (c) return c; } return null; });
+  }
+  // 6.16.1 quality samples (Nic, Nov 16: "do a few of the new enemies and towers just as samples"): three designs redrawn with detail
+  // that only a finer grid can hold (rivets, ribs, joints, teeth). Samples only: the game does not draw these yet.
+  const HD = {
+    pulse(c, a) {
+      const C = ramp(c), rk = a && a.rk ? a.rk * 4 : 0, parts = [
+        P(S.rbox(-14, -12, 6, 12, 5, 7, 3), 3, HULL, { d: (x, y) => (Math.abs(y) < 0.5 && x < 2 ? -1.5 : 0) + (Math.abs(Math.abs(y) - 8.6) < 0.45 && x < 3 && x > -11 ? -1 : 0),
+          e: (x, y) => x < -8.5 && x > -12 && Math.abs(y) < 7 && (((y + 20) % 2.4) < 0.9) ? mix(c, '#12142a', 0.35) : null }),
+        P(S.ring(-3, 0, 8.6, 10.6, 5), 3, GUNM, { d: (x, y) => (((Math.atan2(y, x + 3) + 6.3) * 4) % 1 < 0.18 ? -1.5 : 0) }),
+        P(S.dome(-3, 0, 8.2, 7), 8, GUNM, { d: (x, y) => (Math.abs(Math.hypot(x + 3, y) - 5.2) < 0.4 ? -1 : 0), e: glow(c, (x, y) => Math.hypot(x + 6, y + 3) < 1.5) }),
+        P(S.dome(-6, -3, 1.5, 1.2), 15, ramp(mix(c, '#ffffff', 0.5), 1)),
+        P(S.tube(2, 20 - rk, 0, 2.6, 0), 9, GUN, { d: (x) => (((x + rk + 40) % 2.6) < 0.8 ? -1.4 : 0.3) }),
+        P(S.tube(3, 13, 4.4, 0.9, 6), 3, ramp('#2a2f52', 0.4)),
+        P(S.tube(15 - rk, 21.5 - rk, 0, 4, 0), 9, C, { d: (x) => (Math.abs(x + rk - 17) < 0.5 || Math.abs(x + rk - 19) < 0.5 ? -2 : 0), e: glow(mix(c, '#ffffff', 0.55), (x) => x + rk > 20.6) }),
+      ];
+      for (const [x, y] of [[-12, -10], [-12, 10], [4, -10], [4, 10], [-4, -10.4], [-4, 10.4]]) parts.push(P(S.dome(x, y, 0.9, 1), 9.6, ramp('#8d97cb', 0.9)));
+      return parts;
+    },
+    rail(c, a) {
+      const C = ramp(c), L = 23 - (a && a.rk ? a.rk * 3 : 0), parts = [
+        P(S.rbox(-17, -11, -1, 11, 3, 7, 2), 3, ramp('#2a3156', 0.5), { d: (x, y) => (((x + 40) % 3) < 0.7 ? -1.2 : 0), e: (x, y) => x < -3.5 && x > -15 && Math.abs(Math.abs(y) - 4.5) < 2.2 && (((x + 40) % 3) > 1) ? (((x + y * 0.3 + 40) % 6) < 3 ? c : mix(c, '#12142a', 0.4)) : null }),
+        P(S.box(-6, -9, L, -3.4, 5, 1.6), 7, GUN, { d: (x, y) => (x > L - 3 ? 1 : 0) + (((x + 40) % 4) < 0.7 && x > -3 ? -1.6 : 0) }),
+        P(S.box(-6, 3.4, L, 9, 5, 1.6), 7, GUN, { d: (x, y) => (x > L - 3 ? 1 : 0) + (((x + 40) % 4) < 0.7 && x > -3 ? -1.6 : 0) }),
+        P(S.box(-4, -2.2, L - 3, 2.2, 2, 1), 5, C, { e: (x, y) => Math.abs(y) < 0.55 + 0.5 * Math.abs(Math.sin(x * 0.9)) ? mix(c, '#ffffff', 0.75) : null }),
+        P(S.box(-9, -5, -3, 5, 6, 1.5), 9, ramp('#3d4672', 0.6), { d: (x, y) => (Math.abs(y) < 0.5 ? -1.4 : 0), e: glow(mix(c, '#ffffff', 0.4), (x, y) => Math.hypot(x + 6, y) < 1.1) }),
+      ];
+      for (const x of [2, 10, 18]) for (const s of [-1, 1]) parts.push(P(S.box(x, s * 6.2 - 3.6, x + 1.6, s * 6.2 + 3.6, 2, 0.8), 11.2, ramp(mix(c, '#5d6798', 0.55))));
+      for (const s of [-1, 1]) { parts.push(P(S.poly([[L - 5, s * 9], [L + 2, s * 12.5], [L, s * 9]], 4, 1), 7, GUN)); for (const x of [-15, -3]) parts.push(P(S.dome(x, s * 9.4, 0.9, 1), 9.6, ramp('#8d97cb', 0.9))); }
+      return parts;
+    },
+    tank(c, f) {
+      const parts = [], g = f % 2 ? mix(c, '#ffffff', 0.3) : c, seg = x => ((x + 60) % 6);
+      for (const s of [-1, 1]) for (let k = -3; k <= 3; k++) { const x = k * 5 - 1 + (((k + f) & 1) ? 0.9 : -0.9), kx = x + (((k + f) & 1) ? 1.2 : -1.2);
+        parts.push(P(S.poly([[x - 1, s * 9], [x + 1, s * 9], [kx + 0.9, s * 13], [kx - 0.9, s * 13]], 2.4, 0.8), 0, LEG)); parts.push(P(S.poly([[kx - 0.8, s * 12.6], [kx + 0.8, s * 12.6], [x + 0.4, s * 17], [x - 0.4, s * 17]], 1.8, 0.7), 0, LEG)); parts.push(P(S.dome(kx, s * 12.8, 1.1, 1.6), 1, hive(c, 0.5))); }
+      for (const s of [-1, 1]) parts.push(P(S.poly([[-16, s * 3], [-23, s * 6.5], [-17, s * 7.5]], 3, 1), 1, BONE));
+      parts.push(P(S.ell(-1, 0, 18, 12.5, 11), 2, hive(c, 0.58), { d: (x, y) => { const q = seg(x); return (q < 0.7 ? -2.4 : q < 1.5 ? 1.1 : q / 6 * 1.1 - 0.4) + (Math.sin(x * 2.3 + y * 1.7) * Math.cos(y * 2.9 - x) > 0.72 ? -1 : 0); },
+        e: (x, y) => Math.abs(y) < 0.8 && seg(x) > 2.8 && seg(x) < 4.2 && x < 10 ? (f % 2 ? mix(c, '#ffffff', 0.25) : c) : Math.abs(Math.abs(y) - 6.5 - Math.sin(x * 0.8) * 0.8) < 0.3 && seg(x) > 2 && x < 9 && x > -14 ? mix(c, '#120818', 0.35) : null }));
+      for (let k = -2; k <= 2; k++) parts.push(P(S.gem(k * 6 - 1.6, 0, 1.6, 1.1, 2.6), 12.2, BONE));
+      parts.push(P(S.ell(15, 0, 6.5, 8.5, 8), 5, hive(c, 0.8), { d: (x, y) => (Math.abs(x - 13.5) < 0.4 ? -1.2 : 0), e: (x, y) => Math.abs(x - 18.7) < 0.8 && Math.abs(y) < 4.4 ? g : null }));
+      for (let k = -3; k <= 3; k++) parts.push(P(S.poly([[19.3, k * 1.3 - 0.5], [21.4, k * 1.3], [19.3, k * 1.3 + 0.5]], 2, 0.5), 12, BONE));
+      for (const s of [-1, 1]) parts.push(P(S.poly([[18, s * 5.4], [23.5, s * 2.4], [20.4, s * 7]], 3, 1), 6, BONE));
+      return parts;
+    },
+  };
+  // design aid (test/qualitysheet.py): any enemy, elite form or tower top drawn finer. sc = 1 is the game's own size (2 px per world unit)
+  function sample(kind, type, sc, ang, f) {
+    const o = { fine: sc || 1 };
+    if (kind === 'enemy') return raster(ENEMY[type](ENEMY_COL[type], f || 0), ESZ[type], ESZ[type], ang || 0, o);
+    if (kind === 'elite') { const z = ESZ[type] + ogPad(type) * 2; return raster(ogParts(type, ENEMY_COL[type], f || 0), z, z, ang || 0, o); }
+    if (kind === 'hdtop') return raster(HD[type](EL[TOWERS[type].el].col), 60, 60, ang || 0, o);
+    if (kind === 'hdenemy') return raster(HD[type](ENEMY_COL[type], f || 0), 50, 50, ang || 0, o);
+    if (kind === 'top') return raster(TOP[type](EL[TOWERS[type].el].col, 0, { rk: 0, ph: 0, ld: 1 }), 60, 60, ang || 0, o);
+    return null;
   }
   const enemyAng = ang => ((Math.round(ang / (Math.PI * 2) * EA) % EA) + EA) % EA / EA * Math.PI * 2;
   // ---------- bosses: 72 world units (144 px), two-frame idle animation, drawn facing right and flipped by heading ----------
@@ -12004,7 +12072,7 @@ const UNITS = (() => {
   function warmTower(type, el, spec) {
     if (ROT[type]) for (let i = 0; i < NA; i++) for (const rk of [0, 1]) ART.warm(`tt:${type}:${el}:${spec}:${i}:${rk}:0:${type === 'missile' ? 1 : 0}`, () => raster(TOP[type](EL[el].col, spec || 0, { rk, ph: 0, ld: type === 'missile' ? 1 : 0 }), 60, 60, angOf(i)));
   }
-  return { base, top, icon, enemy, enemyAng, ogTip, ogTips, ogPad, boss, wormSeg, meat, core, coreBase, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
+  return { base, top, icon, enemy, enemyAng, sample, ogTip, ogTips, ogPad, boss, wormSeg, meat, core, coreBase, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
 })();
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
@@ -12023,7 +12091,7 @@ const Render = (() => {
   // the Marksman sight line is for direct-fire towers only; area towers (Cryo, Gravity Well, Arc Coil) and lobbed shots (Missile, Mortar) don't point
 const TW_K = 1.12, EN_K = 1.15; // v4.8 sprite scale-up (towers still sit inside their tile)
 const SIGHTED = { bullet: 1, rail: 1, beam: 1, cone: 1 };
-const RES = 2;
+const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 px per world unit as always, 3 at 1.5)
   const R_ = { glow: true, sharp: true, zfx: true, bloom: true }; // v5.3 graphics switches (Settings · Glow, Pixel scaling; 6.3 Zone effects)
   let cv, ctx, buf, b, lightCv, lctx, mapLayer, mapKey = '', mapDirty = true, bufW = 0, mid, mctx, glowLayer, conduits = [], vignette = null, vigKey = '';
   let W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
@@ -14748,7 +14816,7 @@ const RES = 2;
     else g.drawImage(ic, 6, -0.5, 22, 22);
   }
   function towerIcon(type, canvas) {
-    if (!canvas.dataset.sized) { const cs = getComputedStyle(canvas); canvas.style.width = cs.width && cs.width !== 'auto' ? cs.width : canvas.width + 'px'; canvas.style.height = cs.height && cs.height !== 'auto' ? cs.height : canvas.height + 'px'; canvas.width = canvas.height = 60; canvas.dataset.sized = 1; }
+    if (!canvas.dataset.sized) { const cs = getComputedStyle(canvas); canvas.style.width = cs.width && cs.width !== 'auto' ? cs.width : canvas.width + 'px'; canvas.style.height = cs.height && cs.height !== 'auto' ? cs.height : canvas.height + 'px'; canvas.width = canvas.height = Math.round(60 * FINE); canvas.dataset.sized = 1; }
     const g = canvas.getContext('2d'), el = TOWERS[type].el;
     g.imageSmoothingEnabled = false; g.clearRect(0, 0, canvas.width, canvas.height);
     g.drawImage(UNITS.icon(type, el), 0, 0);
@@ -14786,7 +14854,7 @@ const RES = 2;
     // draws a boss sprite, pixel-scaled, centred on a canvas (the boss intro card)
     // v5.1 an enemy's portrait for the inspect panel, the intro card and the Dictionary
     enemyIcon(type, cv) { const sp = type === 'pirate' ? UNITS.pirate(false) : UNITS.enemy(type, 0, 0) || enemySprite(type), g = cv.getContext('2d');
-      if (!cv.dataset.sized) { cv.dataset.sized = 1; const cs = getComputedStyle(cv); if (cs.width && cs.width !== 'auto') { cv.style.width = cs.width; cv.style.height = cs.height; } cv.width = cv.height = 64; }
+      if (!cv.dataset.sized) { cv.dataset.sized = 1; const cs = getComputedStyle(cv); if (cs.width && cs.width !== 'auto') { cv.style.width = cs.width; cv.style.height = cs.height; } cv.width = cv.height = Math.round(64 * FINE); }
       const k = Math.min(cv.width / sp.width, cv.height / sp.height) * 0.9;
       g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false; g.drawImage(sp, Math.round((cv.width - sp.width * k) / 2), Math.round((cv.height - sp.height * k) / 2), sp.width * k, sp.height * k); },
     // v5.8: a gene's mark on a Drone, for the Threat Board, the recap and the Archive (canvas width attribute = CSS size)
@@ -18442,6 +18510,7 @@ const UI = (() => {
         + row('Run log', liveLog() ? 'This run so far, for analysis' : lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
         + (earlierLogs().length ? row('Earlier runs', `The ${earlierLogs().length} before that, in one text`, '<button class="btn small" data-act="logsCopy">Copy</button>') : '')
         + row('Keep screen awake', wakeState(), '')
+        + row('Fine sprites', FINE > 1 ? 'On: sharper sprites (test). Turn off to get the old drawing back. Change it between runs' : 'Off: the old drawing', `<button class="btn small" data-act="fineSet">${FINE > 1 ? 'Turn off' : 'Turn on'}</button>`) // 6.16.1 test switch (DRAFT text). The page reloads
         + sec('About')
         + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>'),
       sound: sec('Volume')
@@ -19338,6 +19407,7 @@ const UI = (() => {
       case 'fs': toggleFs(); break;
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
+      case 'fineSet': { try { localStorage.setItem('entropy.fine', FINE > 1 ? '1' : '1.5'); } catch (e) {} location.reload(); break; }
       case 'logsCopy': { const t = earlierLogs().join('\n\n==== EARLIER RUN ====\n'); if (t) copyText(t); break; }
       case 'logSave': { const t = lastLogText(); if (t) saveText(t); break; }
       case 'assaultDone': PROF.seenAssault = true; Save.save(); closeModal(); if (G && !G.over) G.paused = false; break;
