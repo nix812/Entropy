@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 20';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 21';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -11729,12 +11729,35 @@ const UNITS = (() => {
   };
   const ESZ = { drone: 42, swarmer: 24, tank: 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30, reflector: 36, carrier: 58, sapper: 32, leech: 34, husk: 34, bulwark: 48, welder: 38, lodestone: 40, crawler: 50, adapter: 38, warden: 60 };
   const EA = 16;
-  function enemy(type, ang, fr) {
-    if (!ENEMY[type]) return null;
-    const ai = ((Math.round(ang / (Math.PI * 2) * EA) % EA) + EA) % EA, f = fr & 3, sz = ESZ[type];
-    const mk = (a2, f2) => () => raster(ENEMY[type](ENEMY_COL[type], f2), sz, sz, a2 / EA * Math.PI * 2);
-    return ART.getB(`en:${type}:${ai}:${f}`, mk(ai, f), () => { for (let d = 0; d <= EA / 2; d++) for (const a2 of [(ai + d) % EA, (ai - d + EA) % EA]) for (const f2 of [f, 0, 1, 2, 3]) { const c = ART.has(`en:${type}:${a2}:${f2}`); if (c) return c; } return null; });
+  // 6.16.1 elites are Overgrown (Nic, Nov 16: "The crown is silly. The elites need a dark creepy visual"; he picked Overgrown from
+  // test/elitesheet.py). The same creature with bone spines pushed out through its back, longer on one side, and two swollen
+  // growths on the body. OGB = the body's half-size per type (local px); render.js lights the spine tips in the affix colours.
+  const OGB = { drone: [11, 9], swarmer: [5.5, 5], tank: [18, 12], flyer: [8, 10], splitter: [10, 10], phantom: [9, 8], medic: [9, 9], shielder: [8, 8], voidling: [5, 6], reflector: [12, 9], carrier: [22, 9], sapper: [7, 5.5], leech: [9, 5],
+    husk: [9, 8], bulwark: [15, 12], welder: [10, 8], lodestone: [11, 11], crawler: [12, 9], adapter: [10, 10], warden: [17, 13] };
+  const OGS = [[1.15, 1.35], [2.05, 1.0], [2.8, 0.7], [0.5, 0.55], [-1.5, 0.85], [-2.45, 1.2]]; // angle from the facing, length. Uneven on purpose: it grew wrong
+  const ogPad = type => Math.ceil(ESZ[type] * 0.2) + 6;
+  function ogSpines(type) { // [base left, base right, tip] per spine, local px
+    const [rx, ry] = OGB[type] || [ESZ[type] * 0.3, ESZ[type] * 0.24], L = Math.max(5.5, ESZ[type] * 0.21);
+    return OGS.map(([an, ln]) => { const sw = an + (an > 0 ? 0.45 : -0.45), bx = Math.cos(an) * rx * 0.7, by = Math.sin(an) * ry * 0.7, ex = Math.cos(an) * rx, ey = Math.sin(an) * ry, wd = Math.max(1.8, L * 0.36) * (0.7 + ln * 0.3),
+      tx = ex + Math.cos(sw) * L * ln, ty = ey + Math.sin(sw) * L * ln, nx = -Math.sin(an) * wd, ny = Math.cos(an) * wd; return [[bx + nx, by + ny], [bx - nx, by - ny], [tx, ty]]; });
   }
+  const ogTipC = {};
+  function ogTips(type) { return ogTipC[type] || (ogTipC[type] = ogSpines(type).map(t => t[2])); }
+  function ogParts(type, c, f) {
+    const parts = ENEMY[type](c, f), [rx, ry] = OGB[type] || [ESZ[type] * 0.3, ESZ[type] * 0.24], top = parts.reduce((m, p) => Math.max(m, p.z), 0);
+    for (const tri of ogSpines(type)) parts.push(P(S.poly(tri, 4, 1.2), 0.5, BONE, { d: (x, y) => (Math.hypot(x - tri[2][0], y - tri[2][1]) < 2.2 ? 1 : 0) }));
+    const G = ramp(mix(c, '#3a1226', 0.55), 0.6);
+    parts.push(P(S.dome(-rx * 0.35, -ry * 0.45, Math.max(2.4, rx * 0.3), 4), top + 5, G, { e: (x, y) => Math.hypot(x + rx * 0.35, y + ry * 0.45) < Math.max(0.8, rx * 0.08) ? (f % 2 ? '#fff2e0' : mix(c, '#ffffff', 0.3)) : null }));
+    parts.push(P(S.dome(rx * 0.2, ry * 0.5, Math.max(1.6, rx * 0.18), 3), top + 5, G));
+    return parts;
+  }
+  function enemy(type, ang, fr, og) {
+    if (!ENEMY[type]) return null;
+    const ai = ((Math.round(ang / (Math.PI * 2) * EA) % EA) + EA) % EA, f = fr & 3, sz = ESZ[type] + (og ? ogPad(type) * 2 : 0), o = og ? ':o' : '';
+    const mk = (a2, f2) => () => raster(og ? ogParts(type, ENEMY_COL[type], f2) : ENEMY[type](ENEMY_COL[type], f2), sz, sz, a2 / EA * Math.PI * 2);
+    return ART.getB(`en:${type}:${ai}:${f}${o}`, mk(ai, f), () => { for (let d = 0; d <= EA / 2; d++) for (const a2 of [(ai + d) % EA, (ai - d + EA) % EA]) for (const f2 of [f, 0, 1, 2, 3]) { const c = ART.has(`en:${type}:${a2}:${f2}${o}`); if (c) return c; } return null; });
+  }
+  const enemyAng = ang => ((Math.round(ang / (Math.PI * 2) * EA) % EA) + EA) % EA / EA * Math.PI * 2;
   // ---------- bosses: 72 world units (144 px), two-frame idle animation, drawn facing right and flipped by heading ----------
   const nz = (x, y) => Math.sin(x * 0.71 + Math.sin(y * 0.53) * 2.1) * Math.cos(y * 0.67 - x * 0.19) ; // soft organic texture
   const eye = (cx, cy, r, iris, pupil, look) => [P(S.dome(cx, cy, r, r * 0.8), 40, ramp('#f4f0ff', 1), { e: (x, y) => { const q = Math.hypot(x - cx - (look || 0), y - cy); return q < r * 0.5 ? (q < r * 0.26 ? pupil : iris) : (Math.hypot(x - cx + r * 0.35, y - cy + r * 0.35) < r * 0.22 ? '#ffffff' : null); } })];
@@ -11972,7 +11995,7 @@ const UNITS = (() => {
   function warmTower(type, el, spec) {
     if (ROT[type]) for (let i = 0; i < NA; i++) for (const rk of [0, 1]) ART.warm(`tt:${type}:${el}:${spec}:${i}:${rk}:0:${type === 'missile' ? 1 : 0}`, () => raster(TOP[type](EL[el].col, spec || 0, { rk, ph: 0, ld: type === 'missile' ? 1 : 0 }), 60, 60, angOf(i)));
   }
-  return { base, top, icon, enemy, boss, wormSeg, meat, core, coreBase, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
+  return { base, top, icon, enemy, enemyAng, ogTips, ogPad, boss, wormSeg, meat, core, coreBase, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
 })();
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
@@ -13439,7 +13462,7 @@ const RES = 2;
       if (md > 0.02) { const ta = Math.atan2(my, mx); let da = ta - e._ha; da = Math.atan2(Math.sin(da), Math.cos(da)); e._ha += da * Math.min(1, md * 6); e._wd += md; e._hx = e.x; e._hy = e.y; } }
     let k = 1, hiS = null;
     if (e.pirate) hiS = UNITS.pirate(false);
-    else if (!e.boss && !e.meat) hiS = UNITS.enemy(e.type, e._ha, e.fly ? (frame >> 2) + (e.wob * 4 | 0) : Math.floor(e._wd * 9));
+    else if (!e.boss && !e.meat) hiS = UNITS.enemy(e.type, e._ha, e.fly ? (frame >> 2) + (e.wob * 4 | 0) : Math.floor(e._wd * 9), e.elite.length && !e.mite ? 1 : 0); // 6.16.1: an elite is the Overgrown form
     if (hiS) s = hiS;
     else if (e.boss) s = UNITS.boss(e.boss, (frame >> 4) + (e.id & 1), e.boss === 'cat' && e.napT > 0) || scaledSpr('B:' + e.boss, bossSprite(e.boss), BOSS_SCALE);
     else if (e.meat) s = UNITS.meat(); else s = enemySprite(e.type);
@@ -13456,13 +13479,9 @@ const RES = 2;
     b.fillStyle = e.fly ? 'rgba(0,0,0,0.3)' : 'rgba(2,3,10,0.4)';
     b.beginPath(); b.ellipse(X + 1, e.fly ? Y + 4 : y + hh * 0.55, hw * 0.75, Math.max(1.5, hh * (e.fly ? 0.25 : 0.4)), 0, 0, 6.283); b.fill();
     if (elite && !cloaked) {
-      // v4.7 elite read: a turning sigil on the ground in the affix colour, then a glowing rim around the body
-      const gy = e.fly ? Y + 4 : y + hh * 0.55, rx = hw * 1.05 + 3, ry = Math.max(3, rx * 0.42), rot = frame / 40;
-      b.fillStyle = hexA(eCols[0], 0.16 + 0.06 * Math.sin(frame / 6)); b.beginPath(); b.ellipse(X, gy, rx, ry, 0, 0, 6.283); b.fill();
-      b.strokeStyle = hexA(eCols[0], 0.8); b.lineWidth = 1.5; b.beginPath(); b.ellipse(X, gy, rx, ry, 0, 0, 6.283); b.stroke();
-      b.fillStyle = eCols[0]; for (let i = 0; i < 6; i++) { const a = rot + i * 1.0472; b.fillRect(X + Math.cos(a) * rx - 1, gy + Math.sin(a) * ry - 1, 2, 2); }
-      const rim = tintOf(s, eCols[0]), gw = sw * 1.2, gh = hh * 2 * 1.2;
-      b.globalAlpha = 0.55 + 0.3 * Math.sin(frame / 5 + e.wob); b.drawImage(rim, Math.round((X - gw / 2) * RES) / RES, Math.round((y - gh / 2) * RES) / RES, gw, gh); b.globalAlpha = 1;
+      // 6.16.1: the ground sigil is gone (elites are Overgrown now); a faint rim in the first affix colour keeps them findable in a crowd
+      const rim = tintOf(s, eCols[0]), gw = sw * 1.08, gh = hh * 2 * 1.08;
+      b.globalAlpha = 0.3 + 0.15 * Math.sin(frame / 5 + e.wob); b.drawImage(rim, Math.round((X - gw / 2) * RES) / RES, Math.round((y - gh / 2) * RES) / RES, gw, gh); b.globalAlpha = 1;
     }
     // v5.8: which genes get a mark (screen-space overlay pass), and an outline in the strain's colour on Strain Assault units
     const gm = e.genes && e.genes.length && !cloaked ? geneMarks(e) : null; e._gmOn = gm && gm.length ? gm : null; e._hw = hw;
@@ -13500,9 +13519,12 @@ const RES = 2;
     }
     if (e.type === 'reflector' && !cloaked && frame % 40 < 4) { b.fillStyle = 'rgba(255,255,255,0.8)'; b.fillRect(Math.round(X - hw * 0.4), Math.round(y - hh * 0.5), 2, 2); }
     if (e.shield > 0 && !cloaked && !(gm && gm.includes('shell'))) { b.strokeStyle = 'rgba(127,212,255,0.55)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, hw + 3, 0, 6.283); b.stroke(); }
-    e._hh = hh; e._crown = elite && !cloaked ? eCols : null; // the crown is drawn in the overlay pass, above every unit
-    if (false) {
-    } else if (e.elite.length && !cloaked) {
+    e._hh = hh; e._crown = null; // 6.16.1: no crown (Nic: "The crown is silly"). An elite is Overgrown: bone spines, their tips lit in the affix colours
+    if (elite && !cloaked && !e.mite && UNITS.ESZ[e.type]) {
+      const tips = UNITS.ogTips(e.type), ha = UNITS.enemyAng(e._ha), ca = Math.cos(ha), sa = Math.sin(ha), n = eCols.length;
+      for (let i = 0; i < tips.length; i++) { const tx = tips[i][0], ty = tips[i][1], px = X + (tx * ca - ty * sa) * su, py = y + (tx * sa + ty * ca) * su, hot = ((frame >> 3) + i) % 5 === 0;
+        R(b, Math.round(px) - 1, Math.round(py) - 1, 2, 2, eCols[i % n]); if (hot) P(b, Math.round(px), Math.round(py) - 1, '#ffffff'); }
+    } else if (e.elite.length && e.boss && !cloaked) {
       const ec = ELITE_AFFIXES.find(a => a.id === e.elite[0]).col, r = hw + 4;
       b.strokeStyle = hexA(ec, frame % 12 < 9 ? 0.9 : 0.4); b.lineWidth = 2; b.setLineDash([3, 3]); b.lineDashOffset = -frame / 2;
       b.beginPath(); b.arc(X, y, r, 0, 6.283); b.stroke(); b.setLineDash([]);
