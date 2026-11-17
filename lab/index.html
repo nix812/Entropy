@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 19';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 20';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2311,10 +2311,10 @@ const SECTORS = [
   { id: 'hive', name: 'The Hive', col: '#ff9ad5', pitch: 'Brood nests on every lane. Swarmers come by the hundred.',
     lean: { swarmer: 3, splitter: 3, drone: 0.6 }, storm: 'solar', ev: { swarm: 3, breach: 1.5 }, boss: 'queen', mod: 'twins',
     up: '+1 Chain, +15% Thermal Damage', down: '+10% enemy speed', m: { chain: 1, dmgT: 15 }, af: { haste: 0.1 } },
-  { id: 'iron', name: 'Iron Reach', col: '#c8ccd8', pitch: 'Juggernauts and Aegis walls push slowly down the road.',
+  { id: 'iron', name: 'Iron Reach', col: '#c8ccd8', pitch: 'Shellbacks and Bonewalls push slowly down the road.',
     lean: { tank: 2.5, shielder: 2.5, reflector: 1.5, swarmer: 0.6, bulwark: 2.2, welder: 2, husk: 1.5, adapter: 1.5 }, storm: 'static', ev: { elite: 1.5, regen: 1.5 }, boss: 'titan', mod: 'armored',
     up: '+15% armor piercing', down: '+6% enemy HP', m: { armorPen: 15 }, af: { hpx: 0.06 } },
-  { id: 'skies', name: 'Open Skies', col: '#7fb4ff', pitch: 'No roads up here. Skimmers and Carriers fly straight in.',
+  { id: 'skies', name: 'Open Skies', col: '#7fb4ff', pitch: 'No roads up here. Skimmers and Matrons fly straight in.',
     lean: { flyer: 2.2, carrier: 2.5, tank: 0.6, sapper: 0.6 }, storm: 'ion', ev: { phase: 1.5, surge: 1.5 }, boss: 'whale', mod: 'spectral',
     up: '+20% Arc Damage, +8% Range', down: '+10% tower cost', m: { dmgA: 20, range: 8 }, af: { costX: 0.1 } },
   { id: 'ghost', name: 'Ghost Lanes', col: '#b86cff', pitch: 'Phantoms cloak in and out. Bring a Relay Pylon to reveal them.',
@@ -2323,13 +2323,13 @@ const SECTORS = [
   { id: 'salvage', name: 'Salvage Belt', col: '#e0a458', pitch: 'Rich wrecks and pirate traffic. Leeches steal your banked credits.',
     lean: { leech: 3, sapper: 2, drone: 1.3 }, storm: 'static', ev: { gold: 3, emp: 1.5 }, boss: 'auditor', mod: 'loaded',
     up: '+25% Credits', down: '+15% upgrade cost', m: { credits: 25 }, af: { upgX: 0.15 } },
-  { id: 'tempest', name: 'Tempest Front', col: '#ffe14d', pitch: 'Storms come one after another. Skimmers and Carriers come with them.',
+  { id: 'tempest', name: 'Tempest Front', col: '#ffe14d', pitch: 'Storms come one after another. Skimmers and Matrons come with them.',
     lean: { flyer: 1.5, carrier: 1.5 }, storm: null, ev: { surge: 1.5, overcharge: 2 }, boss: 'fsm', mod: 'hasted',
     up: 'Storms arrive twice as often and are 40% stronger', down: '+10% enemy speed', m: { stormFreq: 100, stormPow: 40 }, af: { haste: 0.1 } },
-  { id: 'demo', name: 'Demolition Row', col: '#ff7b39', pitch: 'Sappers knock your towers out. Splitters burst into Swarmers.',
+  { id: 'demo', name: 'Demolition Row', col: '#ff7b39', pitch: 'Bile Ticks knock your towers out. Clutches burst into Swarmers.',
     lean: { sapper: 4, splitter: 1.5, reflector: 1.5, crawler: 3, lodestone: 2, husk: 1.5 }, storm: 'cryo', ev: { emp: 2, elite: 1.5 }, boss: 'overmind', mod: 'hasted',
     up: '+10% Attack Speed', down: 'More Elites', m: { rate: 10 }, af: { elite: 0.08 } },
-  { id: 'choir', name: 'Green Choir', col: '#8ee35a', pitch: 'Menders heal and enemies regrow. Anything you leave alive heals back.',
+  { id: 'choir', name: 'Green Choir', col: '#8ee35a', pitch: 'Nurses heal and enemies regrow. Anything you leave alive heals back.',
     lean: { medic: 4, shielder: 1.5 }, storm: 'solar', ev: { regen: 3 }, boss: 'snail', mod: 'colossal',
     up: '+15% Thermal Damage, Burn +30%', down: 'Enemies regenerate 0.5% HP per second', m: { dmgT: 15, burnDmg: 30 }, af: { regen: 0.005 } },
   { id: 'oddball', name: 'The Odd Belt', col: '#ff4d6a', pitch: 'The strange bosses live here. Expect the cat.',
@@ -2351,7 +2351,7 @@ const TWISTS = [
   { id: 'affix', name: 'Elite Plating', desc: 'Elites carry one more affix', max: 2, score: 0.12, af: { affN: 1 } },
   { id: 'storms', name: 'Hostile Weather', desc: 'Enemies inside storms move 25% faster. Storms come 50% more often', max: 1, score: 0.12, m: { stormFreq: 50 }, af: { stormHaste: 0.25 } },
   { id: 'learn', name: 'Quick Study', desc: 'The swarm learns twice as fast', max: 1, score: 0.12, af: { learn: 1 } },
-  { id: 'carriers', name: 'Carrier Fleet', desc: 'Carriers headline every wave', max: 1, score: 0.15, af: { carrierHead: 1 } },
+  { id: 'carriers', name: 'Matron Flight', desc: 'Matrons headline every wave', max: 1, score: 0.15, af: { carrierHead: 1 } },
   { id: 'blitz', name: 'Blitz', desc: 'Enemies spawn 25% faster and move 6% faster', max: 2, score: 0.15, af: { gap: 0.25, haste: 0.06 } },
   { id: 'worm', name: 'New Wormhole', desc: 'A new wormhole opens in 2 waves', max: 2, score: 0.15 },
 ];
@@ -2628,17 +2628,17 @@ const REMNANT = {
 // hit (scales damage taken), death, leak (reaches the core). fromRules: the block only works from that rules version.
 // Families: swarm (the living swarm), scav (pirates). Roles: fodder, bruiser, flanker, support, specialist, raider.
 const ENEMIES = {
-  drone:    { name: 'Drone', fam: 'swarm', role: 'fodder', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit', beat: 'Any tower. Drones are dangerous in large numbers' },
+  drone:    { name: 'Gnawer', fam: 'swarm', role: 'fodder', hp: 30, spd: 1.15, cr: 4, leak: 4, from: 1, w: 10, desc: 'Basic ground unit', beat: 'Any tower. Gnawers are dangerous in large numbers' },
   swarmer:  { name: 'Swarmer', fam: 'swarm', role: 'fodder', hp: 11, spd: 1.8, cr: 2, leak: 2, from: 2, w: 7, group: 4, desc: 'Fast and fragile. Arrives in groups', beat: 'Splash: Swarm Missile, Flame Projector, Arc Coil' },
-  tank:     { name: 'Juggernaut', fam: 'swarm', role: 'bruiser', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully', beat: 'Rail Lance, Void Lens or Burn' },
+  tank:     { name: 'Shellback', fam: 'swarm', role: 'bruiser', hp: 150, spd: 0.6, cr: 12, leak: 12, from: 3, w: 4, armor: 0.35, desc: 'Slow and heavily Plated: only piercing fire (Rail, Void Lens, Burn) gets through fully', beat: 'Rail Lance, Void Lens or Burn' },
   flyer:    { name: 'Skimmer', fam: 'swarm', role: 'flanker', hp: 38, spd: 1.2, cr: 6, leak: 6, from: 4, w: 5, fly: 1, res: { A: -0.25 }, desc: 'Flies straight at the core. Weak to Arc', beat: 'Arc, Pulse, Rail. Flame and Gravity can\'t reach it' },
-  splitter: { name: 'Splitter', fam: 'swarm', role: 'bruiser', kit: [{ id: 'split', into: 'swarmer', n: 3, gap: 0.25 }], hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'Splits into 3 Swarmers on death', beat: 'Splash damage, to kill the Swarmers it bursts into' },
+  splitter: { name: 'Clutch', fam: 'swarm', role: 'bruiser', kit: [{ id: 'split', into: 'swarmer', n: 3, gap: 0.25 }], hp: 80, spd: 0.85, cr: 8, leak: 8, from: 6, w: 4, desc: 'An egg cluster. Bursts into 3 Swarmers on death', beat: 'Splash damage, to kill the Swarmers it bursts into' },
   phantom:  { name: 'Phantom', fam: 'swarm', role: 'specialist', kit: [{ id: 'cloak' }], hp: 52, spd: 1.25, cr: 8, leak: 6, from: 7, w: 4, res: { V: -0.3 }, desc: 'Cloaks periodically: towers can\'t target it while it flickers out. Weak to Void', beat: 'A Relay Pylon or Sensor Sweep reveals it. Void damage is strong against it' },
-  medic:    { name: 'Mender', fam: 'swarm', role: 'support', kit: [{ id: 'heal', every: 1, r: 1.5, amt: 0.04, boss: 0.005 }], hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first with a Rail Lance or Strike. Burn stops all healing' },
-  shielder: { name: 'Aegis', fam: 'swarm', role: 'support', kit: [{ id: 'shieldAura', every: 5, r: 1.5, amt: 0.25, boss: 0.04 }], hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 3×' },
-  reflector: { name: 'Reflector', fam: 'swarm', role: 'specialist', kit: [{ id: 'reflect', share: 0.75, kinds: ['bullet', 'beam', 'chain'], fromRules: 10 }], hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored hull: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flame Projector, EMP Mortar' },
-  carrier:  { name: 'Carrier', fam: 'swarm', role: 'specialist', kit: [{ id: 'drop', into: 'drone', first: 2.5, every: CARRIER.every, n: CARRIER.n, hp: CARRIER.hp, leak: 3 }], hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, desc: 'A flying mothership. Drops a pair of Drones every few seconds until it falls', beat: 'Burst anti-air damage (Rail, Missile, Pulse) before it drops its Drones' },
-  sapper:   { name: 'Sapper', fam: 'swarm', role: 'specialist', kit: [{ id: 'sap', range: SAPPER.range, dur: SAPPER.dur, cd: SAPPER.cd }], hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, desc: 'Plants a charge on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your towers' },
+  medic:    { name: 'Nurse', fam: 'swarm', role: 'support', kit: [{ id: 'heal', every: 1, r: 1.5, amt: 0.04, boss: 0.005 }], hp: 70, spd: 0.95, cr: 10, leak: 8, from: 9, w: 3, desc: 'Heals nearby enemies every second (green beams)', beat: 'Kill it first with a Rail Lance or Strike. Burn stops all healing' },
+  shielder: { name: 'Bonewall', fam: 'swarm', role: 'support', kit: [{ id: 'shieldAura', every: 5, r: 1.5, amt: 0.25, boss: 0.04 }], hp: 90, spd: 0.85, cr: 10, leak: 10, from: 12, w: 3, res: { K: 0.2 }, desc: 'Shields nearby enemies (blue rings). Resists Kinetic', beat: 'Arc tears shields at 3×' },
+  reflector: { name: 'Mirrorshell', fam: 'swarm', role: 'specialist', kit: [{ id: 'reflect', share: 0.75, kinds: ['bullet', 'beam', 'chain'], fromRules: 10 }], hp: 120, spd: 0.85, cr: 13, leak: 10, from: 18, w: 3, refl: 0.75, desc: 'Mirrored shell: Pulse bolts, Void Lens beams and Arc chains glance off it (−75%)', beat: 'Rail Lance, Swarm Missile, Flame Projector, EMP Mortar' },
+  carrier:  { name: 'Matron', fam: 'swarm', role: 'specialist', kit: [{ id: 'drop', into: 'drone', first: 2.5, every: CARRIER.every, n: CARRIER.n, hp: CARRIER.hp, leak: 3 }], hp: 280, spd: 0.5, cr: 34, leak: 16, from: 22, w: 1.4, fly: 1, desc: 'A flying brood-mother. Drops a pair of Gnawers every few seconds until it falls', beat: 'Burst anti-air damage (Rail, Missile, Pulse) before it drops its Gnawers' },
+  sapper:   { name: 'Bile Tick', fam: 'swarm', role: 'specialist', kit: [{ id: 'sap', range: SAPPER.range, dur: SAPPER.dur, cd: SAPPER.cd }], hp: 70, spd: 1.05, cr: 11, leak: 6, from: 26, w: 2.5, desc: 'Spits bile on a tower it passes: that tower is knocked out for 4s', beat: 'Kill it at range (Rail, Missile, the core) or slow it before it reaches your towers' },
   leech:    { name: 'Leech', fam: 'swarm', role: 'specialist', kit: [{ id: 'steal', share: LEECH.share, cap: LEECH.cap }], hp: 55, spd: 1.35, cr: 8, leak: 2, from: 30, w: 2.5, desc: 'Steals credits if it reaches the core. It steals more when you hold more credits', beat: 'Kill it before it reaches the core. Spend your credits so it has less to steal' },
   // 6.16 the Remnant (rules 16; `rules` keeps them out of older runs)
   husk:     { name: 'Husk', fam: 'remnant', role: 'fodder', rules: 16, kit: [{ id: 'rise' }], hp: 55, spd: 0.95, cr: 4, leak: 4, from: 8, w: 5, res: REM_RES, mc: 'Scrap that stands back up. Make sure it stays down.', desc: 'Remnant scrap. Falls apart when killed, then stands back up 2 s later at 40% HP, once', beat: 'Kill it with splash damage, Burn or an ability, and it stays down' },
@@ -2677,7 +2677,7 @@ const GENE_IDS = Object.keys(GENES);
 // Swarm Codex: every evolved strain gets a name
 const GENE_ADJ = { plating: 'Plated', wings: 'Winged', haste: 'Zippy', bulk: 'Chonky', brood: 'Broody', shell: 'Bubbled', regen: 'Unkillable', cloak: 'Sneaky' };
 const WARD_ADJ = { K: 'Bulletproof', T: 'Fireproof', C: 'Frostproof', A: 'Insulated', V: 'Grounded' };
-const SPECIES_NICK = { drone: 'Drone', swarmer: 'Gremlin', tank: 'Juggernaut', flyer: 'Skimmer', splitter: 'Splitter', phantom: 'Phantom', medic: 'Mender', shielder: 'Aegis' };
+const SPECIES_NICK = { drone: 'Gnawer', swarmer: 'Gremlin', tank: 'Shellback', flyer: 'Skimmer', splitter: 'Clutch', phantom: 'Phantom', medic: 'Nurse', shielder: 'Bonewall' };
 const STRAIN_COMBO = { 'haste+wings': 'Zoomwing', 'bulk+plating': 'Fortress', 'brood+bulk': 'Momma', 'cloak+haste': 'Ninja', 'regen+shell': 'Immortal-ish', 'plating+wings': 'Gunship',
   'brood+wings': 'Swarmcarrier', 'cloak+wings': 'Ghostbird', 'bulk+regen': 'Troll', 'haste+shell': 'Bumper Car', 'brood+cloak': 'Surprise Party', 'bulk+haste': 'Freight Train' };
 function strainName(type, genes, el) {
@@ -5724,7 +5724,7 @@ function startWave() {
       const now = G.leakWave || {}, top = Object.keys(now).map(k => [k, now[k]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1])[0];
       let who = '', counter = '';
       const mites = top && top[0] === 'drone' && (G.leakMiteW || 0) * 2 >= top[1]; // 6.6.1: mostly Carrier drops, not ground Drones
-      if (mites) { who = 'drones dropped by Carriers'; counter = ' Counter: anti-air (Rail, Missile, Pulse) that kills Carriers before they unload.'; }
+      if (mites) { who = 'Gnawers dropped by Matrons'; counter = ' Counter: anti-air (Rail, Missile, Pulse) that kills Matrons before they unload.'; }
       else if (top) { const [ty, ...gs] = top[0].split('+'); who = (ENEMIES[ty] ? ENEMIES[ty].name : ty.replace('boss:', '')) + (gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''); const g0 = gs.find(g => GENES[g]); if (g0) counter = ` Counter: ${GENES[g0].counter}.`; }
       const lk = G.stats.leaks - G.leaksAtStart;
       Hooks.toast('BREACH WARNING', band === 2 ? `Last wave's ${lk} leaks hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. One more wave like it ends the run.${counter}` : `Leaks are wearing down your defenses: last wave's ${lk} hit for ${Math.round(P * 100)}% of your shield and hull${who ? ', mostly ' + who : ''}. The shield absorbs this damage until it runs out.${counter}`, '#ff4d6a', true);
@@ -16022,9 +16022,9 @@ const UI = (() => {
         info('coreMore', sel('#panel [data-act=ch]'), 'Shield, Hull, Uplink', () => G.fr ? `Shield soaks leaks. Hull adds health. Uplink speeds up abilities. Every ${FRONTIER.linkUplink} Uplink levels add a link.` : 'Shield soaks leaks. Hull adds health. Uplink speeds up abilities.',
           { hold: 0, when: () => panel && panel.kind === 'core', skip: () => W() >= 5 || !(panel && panel.kind === 'core'), okFn: () => closePanel(), enter: scrollTo('#panel [data-act=ch]') }),
         threatOpen('threat', 'Threat Board', 'This chip shows the next wave. Different enemies are coming. Tap it to check what is coming.', { ls: 'threat', when: () => after(3), skip: () => W() >= 4, enter: () => { if (panel && panel.kind === 'core') closePanel(); } }),
-        inThreat('jugg', rowOf('tank'), 'Juggernaut', 'Plated: Pulse shots lose a third of their damage. A Rail Lance pierces Plating.', { when: () => after(3), skip: () => W() >= 4 || modalOpen !== 'evo', enter: () => { const c = q('#modal canvas[data-eico=tank]'); if (c) c.closest('.threv').scrollIntoView({ block: 'center' }); } }),
+        inThreat('jugg', rowOf('tank'), 'Shellback', 'Plated: Pulse shots lose a third of their damage. A Rail Lance pierces Plating.', { when: () => after(3), skip: () => W() >= 4 || modalOpen !== 'evo', enter: () => { const c = q('#modal canvas[data-eico=tank]'); if (c) c.closest('.threv').scrollIntoView({ block: 'center' }); } }),
         build('rail', 'rail', 'c', 'Build a Rail Lance', 'Tap the marked tile.', { when: () => after(3), skip: () => W() >= 4, at: () => flowAt('rail', 'c', null, false, frOn() ? dockable : null) }),
-        call('call4', 4, 'Juggernauts are slow. Let them walk into the Rail.', { when: () => after(3) }),
+        call('call4', 4, 'Shellbacks are slow. Let them walk into the Rail.', { when: () => after(3) }),
         ...frSteps(() => W() >= 4, () => W() >= 5), // 6.1: dock on the Rail, links, Move (6.2: during Wave 4, one lesson at a time)
         // veterans (6.6: as Wave 4 ends, before Strike, so two lessons never meet in one break)
         { id: 'ready', ls: 'vets', when: () => (after(4) || W() >= 5) && vetsReady().length > 0 && !panel, skip: () => W() >= 8 || used('vet') || (W() >= 5 && !vetsReady().length), hold: 1, at: sel('#bReady'), t: 'Veterans ready',
@@ -18193,8 +18193,8 @@ const UI = (() => {
     if (!top) return '';
     const n = Object.values(L).reduce((a, b) => a + b, 0), [ty, ...gs] = top[0].split('+'), D = ENEMIES[ty];
     const mites = top[0] === 'drone' && (G.leakMiteW || 0) * 2 >= top[1]; // 6.6.1: mostly Carrier drops, not ground Drones
-    const nm = mites ? 'drones dropped by Carriers' : D ? D.name : ty.replace('boss:', ''), g0 = gs.find(g => GENES[g]);
-    const beat = mites ? 'anti-air (Rail, Missile, Pulse) that kills Carriers before they unload' : g0 ? GENES[g0].counter : D && D.beat;
+    const nm = mites ? 'Gnawers dropped by Matrons' : D ? D.name : ty.replace('boss:', ''), g0 = gs.find(g => GENES[g]);
+    const beat = mites ? 'anti-air (Rail, Missile, Pulse) that kills Matrons before they unload' : g0 ? GENES[g0].counter : D && D.beat;
     return `<div class="why"><b>Why</b><span>${n} got through in Wave ${G.wave}, mostly ${esc(nm)}${gs.length ? ' with ' + gs.map(g => GENES[g] ? GENES[g].name : g).join(', ') : ''} (${top[1]}).</span>${beat ? `<span class="good">Beat it: ${tipify(beat)}</span>` : ''}</div>`;
   }
   // ---------- v5.3 The Hunt: the choice after a bounty, hunt codes, and watching a recorded run ----------
