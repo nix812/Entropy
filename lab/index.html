@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 15';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 16';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2186,7 +2186,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 19; // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 20; // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -5186,18 +5186,23 @@ function prepareWave(w) {
   // build the next wave during the countdown so the player can see it coming
   frNodeFix(); // FR_VER 3: a node freed since the last wave (the core lifted off it, a resumed older save) leaves the zone
   // a wormhole appears two waves before its lane opens
-  if (G.laneWaves[G.lanesOpened] === w + 1) {
+  // 6.16.1 rules 20 (Nic, Nov 16: "Next wave warning for wormhole. It shows with its new proposed path. The wormhole opens the following wave and a
+  // checkpoint is hit ... then the game resumes with the next wave"): one wave of warning, not two. The wormhole is found at the start of the wave
+  // before it opens (its road shown as proposed), the checkpoint comes when that wave is clear, and its enemies come in the wave after.
+  const lead = G.frV >= 20 ? 0 : 1;
+  if (G.laneWaves[G.lanesOpened] === w + lead) {
     const P0 = G.region, grew = growRegion(G.lanesOpened + 1);
-    const L = genExtraLane(G.r, w + 1);
+    const L = genExtraLane(G.r, w + lead);
     G.lanesOpened++;
     frNodeFix();
     if (grew && placeNodes(1, G.region, P0)) Hooks.log('New Power Node in the expanded sector', '#6ae2ff');
     if (L) {
       G.mapRev = (G.mapRev || 0) + 1;
-      Hooks.toast('WORMHOLE DETECTED', `${grew ? 'Sector expanding · ' : ''}Lane opens at Wave ${w + 1}`, '#b86cff');
-      Hooks.log(`Wormhole detected · opens at Wave ${w + 1}`, '#b86cff');
-      Hooks.fx('wormhole', { lane: L });
-      Hooks.sfx('lane');
+      if (lead) { Hooks.toast('WORMHOLE DETECTED', `${grew ? 'Sector expanding · ' : ''}Lane opens at Wave ${w + 1}`, '#b86cff');
+        Hooks.log(`Wormhole detected · opens at Wave ${w + 1}`, '#b86cff');
+        Hooks.fx('wormhole', { lane: L });
+        Hooks.sfx('lane'); }
+      else if (grew) Hooks.log('Sector expanding', '#b86cff');
     }
   }
   for (const L of G.map.lanes) if (L.openWave && L.openWave === w) {
@@ -5206,8 +5211,8 @@ function prepareWave(w) {
     // 6.16.1 (Nic, Nov 16: "Wormholes need to open right after a checkpoint ... the opportunity to move and answer it before it opens"): the rules
     // are unchanged (the road is laid now, the checkpoint comes when the field clears, enemies use it in Wave w), but the red "WORMHOLE OPEN"
     // moment used to play here, a wave early, so it read as open before the checkpoint. Now this is a warning, and the opening plays in resumeCheckpoint.
-    Hooks.toast('WORMHOLE CHARGING', `Checkpoint first: clear this wave. It opens in Wave ${w}`, '#b86cff');
-    Hooks.log(`Wormhole charging · checkpoint, then it opens in Wave ${w}`, '#b86cff');
+    Hooks.toast(G.frV >= 20 ? 'WORMHOLE DETECTED' : 'WORMHOLE CHARGING', G.frV >= 20 ? `Opens in Wave ${w}. Checkpoint first` : `Checkpoint first: clear this wave. It opens in Wave ${w}`, '#b86cff');
+    Hooks.log(G.frV >= 20 ? `Wormhole detected · checkpoint, then it opens in Wave ${w}` : `Wormhole charging · checkpoint, then it opens in Wave ${w}`, '#b86cff');
     Hooks.fx('wormhole', { lane: L });
     Hooks.sfx('lane');
   }
@@ -12759,6 +12764,15 @@ const RES = 2;
   const prGas = () => { if (G.sector === 'oddball') { const h = (frame * 0.6) % 360; return [`hsl(${h},90%,70%)`, `hsl(${(h + 180) % 360},90%,88%)`]; } return PR_GAS[G.sector] || PR_GAS.drift; };
   let prSelOn = false;
   const prIn = (x, y, m, v) => x * TILE > v.vx - m && x * TILE < v.vx + v.vw + m && y * TILE > v.vy - m && y * TILE < v.vy + v.vh + m;
+  // 6.16.1 (Nic: the warning "shows with its new proposed path"): until its checkpoint ends, a wormhole's new road pulses purple with a moving dashed
+  // outline, and its mouth shows the wave it opens in. Lane flag cpW (set in prepareWave, cleared in resumeCheckpoint); drawing only.
+  function drawProposed() {
+    for (const L of G.map.lanes) { if (!L.cpW || !L.tiles) continue; const n = L.branch || L.tiles.length, pu = 0.16 + 0.1 * Math.sin(frame / 9);
+      b.fillStyle = hexA('#b86cff', pu); for (let i = 0; i < n; i++) { const p = L.tiles[i]; b.fillRect(p.x * TILE, p.y * TILE, TILE, TILE); }
+      b.strokeStyle = hexA('#e0c8ff', 0.8); b.lineWidth = 1.5; b.setLineDash([5, 5]); b.lineDashOffset = -frame / 3; b.beginPath();
+      for (let i = 0; i < n; i++) { const p = L.tiles[i], x = (p.x + 0.5) * TILE, y = (p.y + 0.5) * TILE; i ? b.lineTo(x, y) : b.moveTo(x, y); } b.stroke(); b.setLineDash([]);
+      const p0 = L.tiles[0]; b.font = '700 9px Oxanium, sans-serif'; b.textAlign = 'center'; b.fillStyle = '#12091f'; b.fillText(`OPENS WAVE ${L.cpW}`, (p0.x + 0.5) * TILE + 1, p0.y * TILE - 5); b.fillStyle = '#e0c8ff'; b.fillText(`OPENS WAVE ${L.cpW}`, (p0.x + 0.5) * TILE, p0.y * TILE - 6); b.textAlign = 'left'; }
+  }
   function drawSites(v) {
     for (const s of G.sites || []) {
       if (s.done || !prIn(s.x, s.y, 60, v)) continue;
@@ -13748,6 +13762,7 @@ const RES = 2;
       const f = Math.max(0, cc.t / CACHE_LIFE), rr = 12;
       b.strokeStyle = hexA(late ? '#ff4d6a' : P2[3], 0.8); b.lineWidth = 1.5; b.beginPath(); b.arc(cc.x * TILE + 12, cc.y * TILE + 12, rr, -1.5708, -1.5708 + 6.2832 * f); b.stroke();
     }
+    drawProposed(); // 6.16.1 a wormhole's road before it opens
     if (G.sites && G.sites.length) drawSites(v); // 6.5 loot sites
     // Node Links: a jittering cyan beam between linked node towers
     for (const [a, b2] of G.links || []) {
@@ -18950,7 +18965,7 @@ const UI = (() => {
       ['Ascend', `Max-level towers can Ascend: ×${ASC_DMG} Damage (Void Lens ×${ASC_DMG_T.lens}) and a perk you choose from 3.`],
       ['Entropy', 'Fills as you fight. When full, draw an Anomaly or Stabilize.'],
       ['Storms', 'Boost one element. Storms merge; 3 types form a Maelstrom.'],
-      ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned 2 waves ahead.'],
+      ['Wormholes', 'New lanes open from wormholes anywhere around the core. Warned one wave ahead, with a checkpoint before it opens.'],
       ['Skimmers', 'Fly straight at the core. Pink lines show their route.'],
       ['Abilities', 'The left rail. Each ability comes online at its wave and recharges on its own timer (the bar under it fills). Crates, chests, bosses and milestones add extra charges on top, with no cap. Command talents and the core\'s Command Uplink cut cooldowns and add charge slots.'],
       ['The core\'s light', `The warm light around the core. Cloaked enemies inside it are revealed. It reaches ${LIGHT14.max} tiles at full hull and shrinks to ${LIGHT14.min} as the hull falls, and the map past it darkens.`],
@@ -18999,7 +19014,7 @@ const UI = (() => {
         ['Ascend', `Upgrade past max level: ×${ASC_DMG} Damage (Void Lens ×${ASC_DMG_T.lens}), a new affix and a perk you choose from 3 (4 at Mastery 4).`], ['Mastery', 'Each tower type ranks up from its share of your runs. Towers that are not your top damage dealer earn nearly as much. Ranks 1 to 5: badge, +5% stat, trim, a fourth perk choice, its own legendary.'], ['Elite', 'Enemy with 1 or more elite affixes.'], ['Boon', 'Run-long bonus chosen after a boss.'],
         ['Milestone', 'Score threshold. Grants an extra ability charge and a small bonus.'], ['Conditions', 'In a tower\'s panel: every live modifier on it (storms, events, Frenzy, outages) with numbers.'], ['Headline', 'The enemy a wave leans on. Amber chip in the top bar; tap it for what beats it.'], ['IDLE', 'Tag on a tower that hasn\'t fired for three waves. Move it to where the enemies are.'], ['Entropy', 'Gauge that fills as you fight. Full: draw an Anomaly.'],
         ['Anomaly', 'Run modifier with a bonus and a cost.'], ['Stabilize', 'Decline an Anomaly for +10% score and a token.'], ['Recalibration token', 'Pays for respecs during a run.'],
-        ['Wormhole', `Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. Forming wormholes show their future route and open 2 waves later. Nothing can be built within ${frWormR()} tiles of one, and the core lands at least ${FRONTIER.wormGap} tiles away. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.`],
+        ['Wormhole', `Origin of a lane. New ones can open on any side of the core, even behind it, and their paths may cross others. A forming wormhole shows its future route for one wave; then a checkpoint, then it opens. Nothing can be built within ${frWormR()} tiles of one, and the core lands at least ${FRONTIER.wormGap} tiles away. How many open, and when, depends on Chaos: Normal opens them at Waves 15, 28, 42, 58 and 78.`],
         ['Checkpoint', `Before a wormhole's first wave, once the field is clear, the next wave waits ${CP_HOLD} s. The game keeps running: Lift Off has no cooldown and flies at its normal speed, selling refunds 100% and talents respec free. Start early for bonus credits and score; the bonus drains over the ${CP_HOLD} s.`],
         ['Power', `Every tower draws 1 power from your grid; capacity is ${GRID.base} plus 1 every ${GRID.perWaves} waves (shown next to your credits). Towers on Power Nodes draw none. When it's full, make towers better instead of adding more.`],
         ['Overcharge', `Spend spare power on one tower: +${OVERCHARGE.dmg * 100}% Damage and +${OVERCHARGE.rate * 100}% Attack Speed per point, up to ${OVERCHARGE.max}. Free to change at any time, so shift it to whatever the wave needs.`],
