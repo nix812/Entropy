@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 27';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 28';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -9021,11 +9021,49 @@ const SFX = (() => {
   let recent = [];
   const now = () => ctx.currentTime;
 
+  // ================= 6.16.1 the reaper =================
+  // Nic's phone (Nov 17): a perfect 2 minute benchmark (60 frames a second, no sound lost, 40 towers, 110 enemies, 80 sounds a
+  // second), yet the sound "cutting out badly" 40 minutes into a real run. Something builds up. The engine never unplugged a
+  // finished sound: every voice's last node stayed connected to its bus until the browser's garbage collector found it, and
+  // filters, delays and reverbs keep being processed after their input ends. A long run makes several hundred thousand nodes.
+  // The reaper unplugs each voice from its bus once every source made with it has ended.
+  //   A "turn" is one run of script (a tap, a timer, one music step). Nodes made in the same turn are one group.
+  //   A connection from a node of this turn into an older node is a voice entering a bus: remembered as a pair.
+  //   When all of the group's sources have ended, each pair is disconnected.
+  //   Never cut: a node that is fed by a node from another turn (a bus, a room, a filter that was patched in), or anything behind one.
+  //   A group with a source that never ends (loops, the music's own oscillators) is never reaped.
+  //   If something later connects into a node that was cut, the node is plugged back in (and never cut again).
+  // SFX.reaper = false switches it off (Settings > Support, a test switch); SFX.reapStats counts pairs, cuts, repairs, open groups.
+  let reapOn = (() => { try { return localStorage.getItem('entropy.reap') !== '0'; } catch (e) { return true; } })(); const RST = { pairs: 0, reaped: 0, healed: 0, skipped: 0, open: 0 };
+  function installReaper(c) {
+    if (offline || typeof AudioNode === 'undefined') return;
+    let turn = 1, open = false; const groups = new Map(), micro = window.queueMicrotask ? f => window.queueMicrotask(f) : f => Promise.resolve().then(f);
+    const tick = () => { if (!open) { open = true; turn++; micro(() => { open = false; }); } return turn; };
+    const grp = t => { let g = groups.get(t); if (!g) { g = { pend: 0, pairs: [], t }; groups.set(t, g); } return g; };
+    const WR = typeof WeakRef !== 'undefined', wr = n => WR ? new WeakRef(n) : n, un = r => WR ? r.deref() : r; // a bus must not keep every voice it ever saw alive
+    const guarded = (n, seen) => { if (n._late) return true; if (!n._ups) return false; seen = seen || new Set(); if (seen.has(n)) return false; seen.add(n); for (const r of n._ups) { const u = un(r); if (u && guarded(u, seen)) return true; } return false; };
+    const rawConnect = AudioNode.prototype._lgRaw || AudioNode.prototype.connect;
+    const reap = g => { groups.delete(g.t); RST.open = groups.size; if (!reapOn) return;
+      for (const [a, b] of g.pairs) { if (guarded(a)) { RST.skipped++; continue; } try { a.disconnect(b); (a._cut || (a._cut = [])).push(b); RST.reaped++; } catch (e) {} } };
+    c.destination._turn = tick();
+    const SRC = { createOscillator: 1, createBufferSource: 1, createConstantSource: 1 };
+    for (let o = c; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) for (const m of Object.getOwnPropertyNames(o)) {
+      if (!/^create/.test(m) || m === 'createBuffer' || m === 'createPeriodicWave' || Object.prototype.hasOwnProperty.call(c, m) || typeof c[m] !== 'function') continue; const f = c[m];
+      c[m] = function () { const n = f.apply(c, arguments); try { if (n && typeof n.connect === 'function') { n._turn = tick();
+        if (SRC[m]) { const g = grp(n._turn); g.pend++; RST.open = groups.size; n.addEventListener('ended', () => { if (--g.pend <= 0) setTimeout(() => { if (g.pend <= 0 && groups.get(g.t) === g) reap(g); }, 250); }); } } } catch (e) {} return n; }; }
+    AudioNode.prototype._lgRaw = rawConnect; AudioNode.prototype._lgCtx = c;
+    AudioNode.prototype.connect = function (b) { const r = rawConnect.apply(this, arguments);
+      try { if (this.context === AudioNode.prototype._lgCtx && b instanceof AudioNode) { const t = tick();
+        if (b._cut) { for (const d of b._cut) { try { rawConnect.call(b, d); } catch (e) {} } b._cut = null; b._late = true; RST.healed++; }
+        if (this._turn === b._turn) (b._ups || (b._ups = [])).push(wr(this));
+        else { b._late = true; if (this._turn === t) { grp(t).pairs.push([this, b]); RST.pairs++; } } } } catch (e) {}
+      return r; };
+  }
   function init() {
     if (ctx) { wake(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    ctx = new AC();
+    ctx = new AC(); installReaper(ctx);
     // master: a brickwall limiter just under 0 dBFS. The SFX glue compressor (in buildBuses) does the gentle work.
     limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -3; limiter.knee.value = 1; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.12;
@@ -11185,7 +11223,7 @@ const SFX = (() => {
       if (!offline) setTimeout(() => { for (const n of ns) { try { n.stop(); } catch (e) {} } try { o.disconnect(); } catch (e) {} }, fade * 1000 + 1500); }
     return { begin, stage, line, hit, stop, pump, get on() { return on; }, get at() { return st; } };
   })();
-  return { health, setLean, kick, set quiet(v) { benchQuiet = !!v; }, get quiet() { return benchQuiet; }, get lean() { return leanLv; }, clock() { return ctx ? { st: ctx.state, ct: ctx.currentTime, inF: inFlight, played } : null; }, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { health, setLean, kick, set reaper(v) { reapOn = !!v; }, get reaper() { return reapOn; }, get reapStats() { return Object.assign({}, RST); }, set quiet(v) { benchQuiet = !!v; }, get quiet() { return benchQuiet; }, get lean() { return leanLv; }, clock() { return ctx ? { st: ctx.state, ct: ctx.currentTime, inF: inFlight, played } : null; }, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -17085,12 +17123,18 @@ const UI = (() => {
       { id: 'x3', name: 'Heavy at 3x speed', tw: 40, en: 110, spd: 3 },
       { id: 'lean', name: 'Heavy, lean sound on', tw: 40, en: 110, gov: 1 },
     ];
+    // the soak (Nic's phone passed the 2 minute run clean; his cuts come 40 minutes into a game): 10 minutes of the heavy field at 3x,
+    // measured in 20 windows of 30 s, so a problem that builds up shows as sound lost in the later windows. Run it with
+    // Sound clean-up on, then off (Settings > Support), and compare.
+    const SOAK = Array.from({ length: 20 }, (_, i) => ({ id: 'w' + i, name: `${Math.floor((i + 1) / 2)}:${i % 2 ? '00' : '30'}`, tw: 40, en: 110, spd: 3, secs: 30, settle: i ? 0 : 3 }));
+    let PLAN = STAGES, MODE = 'short';
     const TT = ['emp', 'lens', 'flame', 'coil', 'pulse', 'rail', 'grav', 'missile', 'cryo', 'pulse', 'lens', 'emp', 'flame', 'coil'], ET = ['drone', 'swarmer', 'tank', 'flyer', 'splitter', 'medic', 'shielder', 'phantom', 'reflector', 'carrier', 'husk', 'bulwark', 'swarmer', 'drone'];
     let B = null;
     const label = () => { const r = document.getElementById('labRib'); return ((r && r.textContent) || ('v' + VERSION)).replace('TEST ENVIRONMENT · ', ''); };
     const hist = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
-    function start() {
+    function start(mode) {
       if (G && !G.over) return;
+      MODE = mode === 'soak' ? 'soak' : 'short'; PLAN = MODE === 'soak' ? SOAK : STAGES;
       const keep = { seed: setup.seed, mode: setup.mode, sw: setup.startWave, ch: setup.chaos, last: PROF.lastSetup, snap: PROF.runSnap, runs: PROF.runs };
       setRows(frRows(1)); setCols(frCols(ROWS)); setup.mode = 'std'; setup.seed = 616161; setup.startWave = 1; setup.chaos = 1;
       launch(); G.bench = 1;
@@ -17107,38 +17151,41 @@ const UI = (() => {
       B.pot = Math.max(1, G.towers.reduce((a, t) => a + (t.dps || 0), 0));
     }
     function next() {
-      B.i++; const S = STAGES[B.i]; if (!S) { B.done = 1; setTimeout(finish, 0); return; } // not inside the frame: the frame still reads G
+      B.i++; const S = PLAN[B.i]; if (!S) { B.done = 1; setTimeout(finish, 0); return; } // not inside the frame: the frame still reads G
       field(S); SFX.quiet = S.sfx === 0; SFX.music.setHold(S.mus === 0); G.speed = S.spd || 1; AW.gov = !!S.gov;
       const plain = !!S.plain, P = PROF.settings; Render.glow = !plain && P.glow !== false; Render.bloom = !plain && P.bloom !== false; Render.zfx = !plain && zfxOn();
-      B.phase = 'settle'; B.t = 0; toast('BENCHMARK', `${B.i + 1} of ${STAGES.length}: ${S.name}`, '#6ae2ff', true, 'tip');
+      B.phase = 'settle'; B.t = 0; B.rs = SFX.reapStats; toast('BENCHMARK', MODE === 'soak' ? `Soak: ${B.i + 1} of ${PLAN.length}. Leave the phone alone` : `${B.i + 1} of ${PLAN.length}: ${S.name}`, '#6ae2ff', true, 'tip');
     }
     function tick(dt) {
       if (!B || B.done || !G || !G.bench) return;
       if (modalOpen) closeModal(); G.paused = false; G.next = 1e9; G.core.hp = G.core.max = 1e12; G.checkpoint = 0;
-      const S = STAGES[B.i]; B.t += dt; B.feed -= dt;
+      const S = PLAN[B.i]; B.t += dt; B.feed -= dt;
       if (B.feed <= 0) { B.feed = 0.4; let live = 0; for (const e of G.enemies) if (!e.dead) live++;
         for (let n = 0; live < S.en && n < 14; live++, n++) { const L = G.map.lanes[B.k % G.map.lanes.length], e = spawnEnemy(ET[B.k++ % ET.length], { lane: L }); if (!e) continue;
           e.d = (B.k * 1.7) % Math.max(4, L.len * 0.6); e.maxHp = e.hp = B.pot * 22 / S.en * (0.5 + (B.k % 5) * 0.25); if (B.k % 7 === 0) e.elite = [ELITE_AFFIXES[B.k % ELITE_AFFIXES.length].id]; } }
-      if (B.phase === 'settle' && B.t >= SETTLE) { B.phase = 'run'; B.t = 0; AW.take(); }
-      else if (B.phase === 'run' && B.t >= SECS) { const r = AW.take(); r.id = S.id; r.name = S.name; r.secs = SECS; r.en = G.enemies.filter(e => !e.dead).length; r.tw = G.towers.length; B.res.push(r); next(); }
+      const secs = (S.secs || SECS) * (window.__benchK || 1), settle = S.settle !== undefined ? S.settle : SETTLE; // __benchK: the test shortens the stages
+      if (B.phase === 'settle' && B.t >= settle) { B.phase = 'run'; B.t = 0; AW.take(); }
+      else if (B.phase === 'run' && B.t >= secs) { const r = AW.take(), q = SFX.reapStats; r.id = S.id; r.name = S.name; r.secs = secs; r.cut = q.reaped - B.rs.reaped; r.grp = q.open; r.en = G.enemies.filter(e => !e.dead).length; r.tw = G.towers.length; B.res.push(r); next(); }
     }
     function finish() {
-      const res = { at: new Date().toISOString(), build: label(), fine: FINE, ua: navigator.userAgent.slice(0, 120), px: [innerWidth, innerHeight, window.devicePixelRatio || 1], stages: B.res };
+      const res = { at: new Date().toISOString(), mode: MODE, reap: SFX.reaper ? 1 : 0, build: label(), fine: FINE, ua: navigator.userAgent.slice(0, 120), px: [innerWidth, innerHeight, window.devicePixelRatio || 1], stages: B.res };
       const keep = B.keep; B = null; SFX.quiet = false; SFX.music.setHold(false); AW.gov = true; SFX.setLean(0);
       Render.glow = PROF.settings.glow !== false; Render.bloom = PROF.settings.bloom !== false; Render.zfx = zfxOn();
       const h = hist(); h.unshift(res); try { localStorage.setItem(KEY, JSON.stringify(h.slice(0, 4))); } catch (e) {}
       G = null; closePanel(); PROF.lastSetup = keep.last; PROF.runSnap = keep.snap; PROF.runs = keep.runs; Save.save(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); open();
     }
-    const text = r => `LAST GRADIENT BENCHMARK · ${r.build} · Fine sprites ${r.fine > 1 ? 'on (' + r.fine + ')' : 'off'} · ${r.at}\n${r.ua}\nscreen ${r.px.join(' x ')}\n`
-      + r.stages.map(s => `${s.name}: sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms} ms (95th ${s.f95}), ${s.frames} frames, ${s.inF} sounds in flight, ${s.sfx} sounds started, ${s.tw} towers, ${s.en} enemies${s.lean ? ', lean ' + s.lean : ''}`).join('\n');
+    const head = r => `${r.mode === 'soak' ? '10 minute soak' : '2 minute run'} · Sound clean-up ${r.reap === 0 ? 'off' : 'on'} · Fine sprites ${r.fine > 1 ? 'on' : 'off'}`;
+    const text = r => `LAST GRADIENT BENCHMARK · ${r.build} · ${head(r)} · ${r.at}\n${r.ua}\nscreen ${r.px.join(' x ')}\n`
+      + (r.mode === 'soak' ? r.stages.map(s => `${s.name}  lost ${s.lost} s (${s.slips} slips)  frame ${s.fms}/${s.f95} ms  inF ${s.inF}  started ${s.sfx}  cut ${s.cut}  groups ${s.grp}`).join('\n') + `\nTOTAL sound lost ${Math.round(r.stages.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${r.stages.reduce((a, s) => a + s.secs, 0)}` : '')
+      + (r.mode === 'soak' ? '' : r.stages.map(s => `${s.name}: sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms} ms (95th ${s.f95}), ${s.frames} frames, ${s.inF} sounds in flight, ${s.sfx} sounds started, ${s.tw} towers, ${s.en} enemies${s.lean ? ', lean ' + s.lean : ''}`).join('\n'));
     function open() {
       const h = hist(); if (!h.length) return;
-      const tbl = r => `<div class="lbl">${esc(r.build)} · Fine sprites ${r.fine > 1 ? 'on' : 'off'}</div><table class="bench"><tr><th>Stage</th><th>Sound lost</th><th>Frame</th></tr>`
+      const tbl = r => `<div class="lbl">${esc(head(r))}</div>${r.mode === 'soak' ? `<p class="note">Total sound lost: ${Math.round(r.stages.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${r.stages.reduce((a, s) => a + s.secs, 0)}</p>` : ''}<table class="bench"><tr><th>${r.mode === 'soak' ? 'Time' : 'Stage'}</th><th>Sound lost</th><th>Frame</th></tr>`
         + r.stages.map(s => `<tr><td>${esc(s.name)}</td><td class="${s.lost >= 1 ? 'bad' : s.lost >= 0.3 ? 'warn' : ''}">${s.lost} s</td><td class="${s.f95 > 50 ? 'bad' : s.f95 > 34 ? 'warn' : ''}">${s.fms} ms <small>(${s.f95})</small></td></tr>`).join('') + '</table>';
       modal(`<div class="card narrow benchc"><div class="ch"><h2>Benchmark</h2><button class="x" data-act="close" aria-label="Close">✕</button></div>
-        <p class="note">Sound lost: seconds the phone's sound fell behind in each ${SECS} s stage. Frame: typical time to draw one frame, and the slow ones in brackets. 17 ms is smooth.</p>
+        <p class="note">Sound lost: seconds the phone's sound fell behind in each stage. Frame: typical time to draw one frame, and the slow ones in brackets. 17 ms is smooth.</p>
         ${tbl(h[0])}${h[1] ? '<p class="note">The run before:</p>' + tbl(h[1]) : ''}
-        <div class="row2"><button class="btn" data-act="benchCopy">Copy results</button><button class="btn" data-act="benchRun">Run again</button></div></div>`);
+        <div class="row2"><button class="btn" data-act="benchCopy">Copy results</button><button class="btn" data-act="close">Close</button></div></div>`);
     }
     return { start, tick, open, get on() { return !!B; }, copy() { const h = hist(); if (h.length) copyText(h.map(text).join('\n\n')); }, has: () => hist().length > 0 };
   })();
@@ -18622,7 +18669,8 @@ const UI = (() => {
         + row('Run log', liveLog() ? 'This run so far, for analysis' : lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
         + (earlierLogs().length ? row('Earlier runs', `The ${earlierLogs().length} before that, in one text`, '<button class="btn small" data-act="logsCopy">Copy</button>') : '')
         + row('Keep screen awake', wakeState(), '')
-        + (inRun ? '' : row('Benchmark', 'About 2 minutes. A heavy late-game field, measured for sound and speed', `<button class="btn small" data-act="benchRun">Run</button>${Bench.has() ? '<button class="btn small" data-act="benchOpen">Results</button>' : ''}`)) // 6.16.1 test tool (DRAFT text)
+        + (inRun ? '' : row('Benchmark', 'A heavy late-game field, measured for sound and speed. 2 minutes, or a 10 minute soak', `<button class="btn small" data-act="benchRun">2 min</button><button class="btn small" data-act="benchSoak">10 min</button>${Bench.has() ? '<button class="btn small" data-act="benchOpen">Results</button>' : ''}`)) // 6.16.1 test tool (DRAFT text)
+        + row('Sound clean-up', SFX.reaper ? 'On: finished sounds are unplugged at once (test)' : 'Off: the old way', `<button class="btn small" data-act="reapSet">${SFX.reaper ? 'Turn off' : 'Turn on'}</button>`) // 6.16.1 test switch (DRAFT text)
         + sec('About')
         + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>'),
       sound: sec('Volume')
@@ -19521,6 +19569,8 @@ const UI = (() => {
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
       case 'benchRun': closeModal(); Bench.start(); break;
+      case 'benchSoak': closeModal(); Bench.start('soak'); break;
+      case 'reapSet': { SFX.reaper = !SFX.reaper; try { localStorage.setItem('entropy.reap', SFX.reaper ? '1' : '0'); } catch (e) {} openSettings(); break; }
       case 'benchOpen': Bench.open(); break;
       case 'benchCopy': Bench.copy(); break;
       case 'fineSet': { try { localStorage.setItem('entropy.fine', FINE > 1 ? '1' : '1.5'); } catch (e) {} location.reload(); break; }
@@ -20281,7 +20331,7 @@ function talentsToast(kind) {
     function check() {
       if (!SFX.health || document.hidden) return;
       const h = SFX.health(); if (h.st === 'none') return;
-      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE }); }
+      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
       if (!on()) return;
       const w = performance.now() / 1000;
       if (lastCt >= 0) {
@@ -20309,7 +20359,7 @@ function talentsToast(kind) {
       if (FT.length < 4000) FT.push(dtMs);
       const w = performance.now() / 1000; if (fW >= 0 && w - fW < 0.5) return;
       const c = SFX.clock(); if (!c || document.hidden) { fW = -1; return; }
-      if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1 }); } P0 = pNew(); pw = G.wave; FT.length = 0; }
+      if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, cut: SFX.reapStats.reaped, grp: SFX.reapStats.open, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1 }); } P0 = pNew(); pw = G.wave; FT.length = 0; }
       if (fW >= 0 && c.st === 'running' && w - fW < 1.5) {
         const dw = w - fW, dc = c.ct - fCt, slip = dc < dw * 0.75; P0.lost += Math.max(0, dw - dc - 0.02); P0.sfx += Math.max(0, c.played - fPl); P0.inF = Math.max(P0.inF, c.inF); P0.spd = Math.max(P0.spd, G.speed || 1);
         if (!gov) { if (slip) P0.slipN++; } else
