@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 25';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 26';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -18544,7 +18544,6 @@ const UI = (() => {
         + row('Run log', liveLog() ? 'This run so far, for analysis' : lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
         + (earlierLogs().length ? row('Earlier runs', `The ${earlierLogs().length} before that, in one text`, '<button class="btn small" data-act="logsCopy">Copy</button>') : '')
         + row('Keep screen awake', wakeState(), '')
-        + row('Fine sprites', FINE > 1 ? 'On: sharper sprites (test). Turn off to get the old drawing back. Change it between runs' : 'Off: the old drawing', `<button class="btn small" data-act="fineSet">${FINE > 1 ? 'Turn off' : 'Turn on'}</button>`) // 6.16.1 test switch (DRAFT text). The page reloads
         + sec('About')
         + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>'),
       sound: sec('Volume')
@@ -18564,6 +18563,7 @@ const UI = (() => {
         + row('Zone effects', 'Weather and particles in each zone. The zone colors stay on', flip(zfxOn(), 'gfx', 'data-k="zfx"'))
         + sec('Display')
         + row('Pixel scaling', 'Sharp is crisper. Simple is lighter work for older devices', seg('gfx', [['1', 'Sharp'], ['0', 'Simple']], S.sharp !== false ? '1' : '0', 'data-k="sharp"'))
+        + row('Fine sprites', FINE > 1 ? 'On: sharper sprites (test). Turn off to get the old drawing back. Change it between runs' : 'Off: the old drawing', `<button class="btn small" data-act="fineSet">${FINE > 1 ? 'Turn off' : 'Turn on'}</button>`) // 6.16.1 test switch (DRAFT text). The page reloads
         + (fsOK() ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
       interface: sec('Layout')
         + row('HUD', 'Detailed shows more numbers during a run', seg('hud', [['lean', 'Minimal'], ['full', 'Detailed']], S.hud === 'full' ? 'full' : 'lean'))
