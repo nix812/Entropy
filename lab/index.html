@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 31';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 32';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -17221,6 +17221,12 @@ const UI = (() => {
     // first with the Nov 17 safeguards off (crowd budget, lean sound, clean-up: the state of the build that cut out), then with
     // them on. Sound lost in the first half and none in the second = the cause is proven on the phone and the fix holds.
     const REAL = [{ id: 'r0', name: 'Real waves from 40, safeguards off', real: 1, safe: 0, secs: 100, settle: 2, spd: 3 }, { id: 'r1', name: 'Real waves from 40, safeguards on', real: 1, safe: 1, secs: 100, settle: 2, spd: 3 }];
+    // the 30 minute real-wave test (polish 32). The phone ran the test above clean in both halves (Nov 18), so the load alone is
+    // not the cause: something builds up over about 30 minutes on the phone (heat, Low Power Mode, iOS). This one can be left on a
+    // desk: the same real Wave 40 again and again, 30 windows of 60 s, safeguards off in the odd minutes and on in the even ones
+    // (the phone's state is shared, so a slip that shows only in the "off" minutes proves the cause and the fix in one sitting).
+    const RSOAK = Array.from({ length: 30 }, (_, i) => ({ id: 'q' + i, name: `${i + 1}:00 ${i % 2 ? 'on' : 'off'}`, real: 1, safe: i % 2, secs: 60, settle: 2, spd: 3 }));
+    const isReal = () => MODE === 'real' || MODE === 'rsoak';
     const RT = ['cryo', 'pulse', 'rail', 'lens', 'lens', 'emp', 'rail', 'pylon', 'rail', 'lens', 'emp', 'pylon', 'pylon', 'pulse', 'lens', 'coil', 'missile', 'missile', 'pylon', 'pulse', 'missile', 'emp', 'coil', 'emp', 'rail', 'rail', 'cryo', 'lens', 'rail', 'snare', 'pulse', 'cryo', 'rail', 'lens', 'emp', 'flame'];
     const RAB = ['strike', 'stasis', 'scan', 'overclock', 'nova'];
     const TT = ['emp', 'lens', 'flame', 'coil', 'pulse', 'rail', 'grav', 'missile', 'cryo', 'pulse', 'lens', 'emp', 'flame', 'coil'], ET = ['drone', 'swarmer', 'tank', 'flyer', 'splitter', 'medic', 'shielder', 'phantom', 'reflector', 'carrier', 'husk', 'bulwark', 'swarmer', 'drone'];
@@ -17229,18 +17235,18 @@ const UI = (() => {
     const hist = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     function start(mode) {
       if (G && !G.over) return;
-      MODE = mode === 'soak' ? 'soak' : mode === 'auto' ? 'auto' : mode === 'real' ? 'real' : 'short'; PLAN = MODE === 'soak' ? SOAK : MODE === 'auto' ? AUTO : MODE === 'real' ? REAL : STAGES;
+      MODE = mode === 'soak' ? 'soak' : mode === 'auto' ? 'auto' : mode === 'real' ? 'real' : mode === 'rsoak' ? 'rsoak' : 'short'; PLAN = MODE === 'soak' ? SOAK : MODE === 'auto' ? AUTO : MODE === 'real' ? REAL : MODE === 'rsoak' ? RSOAK : STAGES;
       const keep = { seed: setup.seed, mode: setup.mode, sw: setup.startWave, ch: setup.chaos, last: PROF.lastSetup, snap: PROF.runSnap, runs: PROF.runs, reap: SFX.reaper };
       B = { keep, i: -1, t: 0, phase: 'settle', spots: boot(keep), si: 0, k: 0, feed: 0, res: [], t0: performance.now(), tw: 0, ti: 0, ab: 6, an: 0 };
       AW.gov = false; next();
     }
     // a fresh ghost run for the plan: the fixed field's empty Wave 45 board, or (real-wave test) a normal run that starts at Wave 40
     function boot(keep) {
-      setRows(frRows(1)); setCols(frCols(ROWS)); setup.mode = 'std'; setup.seed = 616161; setup.startWave = MODE === 'real' ? 40 : 1; setup.chaos = 1;
+      setRows(frRows(1)); setCols(frCols(ROWS)); setup.mode = 'std'; setup.seed = 616161; setup.startWave = isReal() ? 40 : 1; setup.chaos = 1;
       launch(); G.bench = 1;
       setup.seed = keep.seed; setup.mode = keep.mode; setup.startWave = keep.sw; setup.chaos = keep.ch; PROF.lastSetup = keep.last; PROF.runSnap = keep.snap; PROF.runs = keep.runs;
       G.credits = 1e9; G.gridBonus = 500; G.core.max = G.core.hp = 1e12; G.paused = false; G.speed = 1;
-      if (MODE === 'real') G.next = Math.min(G.next, 1.5); else { G.wave = 45; G.next = 1e9; G.spawningDone = 1; G.queue = []; }
+      if (isReal()) G.next = Math.min(G.next, 1.5); else { G.wave = 45; G.next = 1e9; G.spawningDone = 1; G.queue = []; }
       const R = G.region, spots = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) spots.push([x, y]);
       const near = (x, y) => { let b = 1e9; for (const L of G.map.lanes) for (let i = 0; i < L.tiles.length; i += 3) { const p = L.tiles[i]; b = Math.min(b, Math.hypot(p.x - x, p.y - y)); } return b; };
       spots.sort((a, b) => near(a[0], a[1]) - near(b[0], b[1]));
@@ -17264,7 +17270,7 @@ const UI = (() => {
       if (S.real) { SFX.budget = !!S.safe; SFX.reaper = !!S.safe; B.w0 = G.wave + 1; SFX.quiet = true; } // (quiet: 36 towers built and upgraded in one frame would start about 200 sounds)
       field(S); SFX.quiet = S.sfx === 0; SFX.music.setHold(S.mus === 0); G.speed = S.spd || 1; AW.gov = S.real ? !!S.safe : !!S.gov;
       const plain = !!S.plain, P = PROF.settings; Render.glow = !plain && P.glow !== false; Render.bloom = !plain && P.bloom !== false; Render.zfx = !plain && zfxOn();
-      B.phase = S.auto !== undefined ? 'load' : 'settle'; B.lt0 = performance.now(); B.loadMs = 0; B.t = 0; B.rs = SFX.reapStats; toast('BENCHMARK', MODE === 'auto' ? `Event lists: ${B.i + 1} of ${PLAN.length}` : MODE === 'soak' ? `Soak: ${B.i + 1} of ${PLAN.length}. Leave the phone alone` : `${B.i + 1} of ${PLAN.length}: ${S.name}`, '#6ae2ff', true, 'tip');
+      B.phase = S.auto !== undefined ? 'load' : 'settle'; B.lt0 = performance.now(); B.loadMs = 0; B.t = 0; B.rs = SFX.reapStats; toast('BENCHMARK', MODE === 'auto' ? `Event lists: ${B.i + 1} of ${PLAN.length}` : MODE === 'soak' || MODE === 'rsoak' ? `${MODE === 'soak' ? 'Soak' : 'Real waves'}: ${B.i + 1} of ${PLAN.length}. Leave the phone alone` : `${B.i + 1} of ${PLAN.length}: ${S.name}`, '#6ae2ff', true, 'tip');
     }
     function tick(dt) {
       if (!B || B.done || !G || !G.bench) return;
@@ -17292,15 +17298,17 @@ const UI = (() => {
       const h = hist(); h.unshift(res); try { localStorage.setItem(KEY, JSON.stringify(h.slice(0, 4))); } catch (e) {}
       G = null; closePanel(); PROF.lastSetup = keep.last; PROF.runSnap = keep.snap; PROF.runs = keep.runs; Save.save(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); open();
     }
-    const head = r => `${r.mode === 'soak' ? '10 minute soak' : r.mode === 'auto' ? 'Event-list test' : r.mode === 'real' ? 'Real-wave test' : '2 minute run'}${r.mode === 'real' ? '' : ` · Sound clean-up ${r.reap === 0 ? 'off' : 'on'}`} · Fine sprites ${r.fine > 1 ? 'on' : 'off'}`;
+    const head = r => `${r.mode === 'soak' ? '10 minute soak' : r.mode === 'auto' ? 'Event-list test' : r.mode === 'real' ? 'Real-wave test' : r.mode === 'rsoak' ? '30 minute real-wave test' : '2 minute run'}${r.mode === 'real' || r.mode === 'rsoak' ? '' : ` · Sound clean-up ${r.reap === 0 ? 'off' : 'on'}`} · Fine sprites ${r.fine > 1 ? 'on' : 'off'}`;
+    const rsum = r => { const f = k => { const v = r.stages.filter((s, i) => i % 2 === k); return `${Math.round(v.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${v.reduce((a, s) => a + s.secs, 0)}`; }; return `TOTAL sound lost, safeguards off: ${f(0)} · safeguards on: ${f(1)}`; };
     const text = r => `LAST GRADIENT BENCHMARK · ${r.build} · ${head(r)} · ${r.at}\n${r.ua}\nscreen ${r.px.join(' x ')}\n`
       + (r.mode === 'soak' ? r.stages.map(s => `${s.name}  lost ${s.lost} s (${s.slips} slips)  frame ${s.fms}/${s.f95} ms  inF ${s.inF}  started ${s.sfx}  cut ${s.cut}  groups ${s.grp}  compacted ${s.comp}`).join('\n') + `\nTOTAL sound lost ${Math.round(r.stages.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${r.stages.reduce((a, s) => a + s.secs, 0)}` : '')
       + (r.mode === 'auto' ? r.stages.map(s => `${s.ev.toLocaleString('en-US')} events x 12 params (asked ${s.name.split(' ')[0]}, loaded in ${s.loadMs} ms): sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms}/${s.f95} ms`).join('\n') : '')
+      + (r.mode === 'rsoak' ? r.stages.map(s => `${s.name}  lost ${s.lost} s (${s.slips} slips)  frame ${s.fms}/${s.f95} ms  inF ${s.inF}  started ${s.sfx}  lean ${s.lean || 0}`).join('\n') + '\n' + rsum(r) : '')
       + (r.mode === 'real' ? r.stages.map(s => `${s.name}: sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms} ms (95th ${s.f95}), Waves ${s.wv ? s.wv.join(' to ') : '?'}, ${s.inF} sounds in flight, ${s.sfx} sounds started, ${s.tw} towers, ${s.en} enemies at the end, lean ${s.lean || 0}`).join('\n') : '')
       + (r.mode !== 'short' && r.mode ? '' : r.stages.map(s => `${s.name}: sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms} ms (95th ${s.f95}), ${s.frames} frames, ${s.inF} sounds in flight, ${s.sfx} sounds started, ${s.tw} towers, ${s.en} enemies${s.lean ? ', lean ' + s.lean : ''}`).join('\n'));
     function open() {
       const h = hist(); if (!h.length) return;
-      const tbl = r => `<div class="lbl">${esc(head(r))}</div>${r.mode === 'soak' ? `<p class="note">Total sound lost: ${Math.round(r.stages.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${r.stages.reduce((a, s) => a + s.secs, 0)}</p>` : ''}<table class="bench"><tr><th>${r.mode === 'soak' ? 'Time' : 'Stage'}</th><th>Sound lost</th><th>Frame</th></tr>`
+      const tbl = r => `<div class="lbl">${esc(head(r))}</div>${r.mode === 'rsoak' ? `<p class="note">${esc(rsum(r))}</p>` : ''}${r.mode === 'soak' ? `<p class="note">Total sound lost: ${Math.round(r.stages.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${r.stages.reduce((a, s) => a + s.secs, 0)}</p>` : ''}<table class="bench"><tr><th>${r.mode === 'soak' || r.mode === 'rsoak' ? 'Time' : 'Stage'}</th><th>Sound lost</th><th>Frame</th></tr>`
         + r.stages.map(s => `<tr><td>${esc(s.name)}</td><td class="${s.lost >= 1 ? 'bad' : s.lost >= 0.3 ? 'warn' : ''}">${s.lost} s</td><td class="${s.f95 > 50 ? 'bad' : s.f95 > 34 ? 'warn' : ''}">${s.fms} ms <small>(${s.f95})</small></td></tr>`).join('') + '</table>';
       modal(`<div class="card narrow benchc"><div class="ch"><h2>Benchmark</h2><button class="x" data-act="close" aria-label="Close">✕</button></div>
         <p class="note">Sound lost: seconds the phone's sound fell behind in each stage. Frame: typical time to draw one frame, and the slow ones in brackets. 17 ms is smooth.</p>
@@ -18790,7 +18798,8 @@ const UI = (() => {
         + row('Run log', liveLog() ? 'This run so far, for analysis' : lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
         + (earlierLogs().length ? row('Earlier runs', `The ${earlierLogs().length} before that, in one text`, '<button class="btn small" data-act="logsCopy">Copy</button>') : '')
         + row('Keep screen awake', wakeState(), '')
-        + (inRun ? '' : row('Benchmark', 'Sound and speed under a late-game load. Wave 40 plays real waves for 4 minutes', `<button class="btn small" data-act="benchRun">2 min</button><button class="btn small" data-act="benchSoak">10 min</button><button class="btn small" data-act="benchAuto">Events</button><button class="btn small" data-act="benchReal">Wave 40</button>${Bench.has() ? '<button class="btn small" data-act="benchOpen">Results</button>' : ''}`)) // 6.16.1 test tool (DRAFT text)
+        + (inRun ? '' : row('Benchmark', 'A heavy late-game field, measured for sound and speed. 2 minutes, or a 10 minute soak', `<button class="btn small" data-act="benchRun">2 min</button><button class="btn small" data-act="benchSoak">10 min</button><button class="btn small" data-act="benchAuto">Events</button>${Bench.has() ? '<button class="btn small" data-act="benchOpen">Results</button>' : ''}`))
+        + (inRun ? '' : row('Real-wave test', 'Real waves from Wave 40, safeguards off and on. 4 minutes, or 30 minutes with the phone left alone', `<button class="btn small" data-act="benchReal">Wave 40</button><button class="btn small" data-act="benchRSoak">30 min</button>`)) // 6.16.1 test tools (DRAFT text)
         + row('Sound clean-up', SFX.reaper ? 'On: finished sounds are unplugged at once (test)' : 'Off: the old way', `<button class="btn small" data-act="reapSet">${SFX.reaper ? 'Turn off' : 'Turn on'}</button>`) // 6.16.1 test switch (DRAFT text)
         + sec('About')
         + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>'),
@@ -19693,6 +19702,7 @@ const UI = (() => {
       case 'benchSoak': closeModal(); Bench.start('soak'); break;
       case 'benchAuto': closeModal(); Bench.start('auto'); break;
       case 'benchReal': closeModal(); Bench.start('real'); break;
+      case 'benchRSoak': closeModal(); Bench.start('rsoak'); break;
       case 'reapSet': { SFX.reaper = !SFX.reaper; try { localStorage.setItem('entropy.reap', SFX.reaper ? '1' : '0'); } catch (e) {} openSettings(); break; }
       case 'benchOpen': Bench.open(); break;
       case 'benchCopy': Bench.copy(); break;
