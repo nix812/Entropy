@@ -1614,7 +1614,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 23';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 24';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -13721,8 +13721,13 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   let atHome = true;
   function fit() { const rw = reg.w || BW, rh = reg.h || BH; scale = Math.min(W / rw, H / rh); ox = 0; oy = 0; }
   function zMin() { return Math.min(1, Math.min(W / (BW + 2 * MARGIN), H / (BH + 2 * MARGIN)) / scale); }
+  // 6.16.1 (Nic, Nov 17: "the move overlay can keep you from moving to one side of the map... I should be able to scroll off the map
+  // with the ui panel"): the camera may pan past each map edge by as much as the interface covers on that side (ins, screen px, set
+  // by ui.js camInsets: the side panel, Lift Off / Probe, the stats, the banners), so every tile can be brought into the clear.
+  let ins = { l: 0, r: 0, t: 0, b: 0 };
   function view() {
-    const ws = scale * cam.z, vw = W / ws, vh = H / ws, bx0 = -MARGIN, by0 = -MARGIN, bx1 = BW + MARGIN, by1 = BH + MARGIN;
+    const ws = scale * cam.z, vw = W / ws, vh = H / ws, mini = cam.z > 1.01 && reg.w ? 64 * reg.h / reg.w + 12 : 0;
+    const bx0 = -MARGIN - ins.l / ws, by0 = -MARGIN - ins.t / ws, bx1 = BW + MARGIN + ins.r / ws, by1 = BH + MARGIN + Math.max(ins.b, mini) / ws;
     const vx = vw >= bx1 - bx0 ? (bx0 + bx1 - vw) / 2 : clamp(cam.x - vw / 2, bx0, bx1 - vw);
     const vy = vh >= by1 - by0 ? (by0 + by1 - vh) / 2 : clamp(cam.y - vh / 2, by0, by1 - vh);
     return { vx, vy, vw, vh, ws };
@@ -14873,6 +14878,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
      set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
     lookAt(x, y) { cam.x = x * TILE; cam.y = y * TILE; clampCam(); atHome = false; if (onCam) onCam(); },
+    setInsets(o) { const q = { l: Math.max(0, o.l || 0), r: Math.max(0, o.r || 0), t: Math.max(0, o.t || 0), b: Math.max(0, o.b || 0) }; if (q.l === ins.l && q.r === ins.r && q.t === ins.t && q.b === ins.b) return; ins = q; if (!atHome) clampCam(); }, get insets() { return ins; },
     bossPortrait(id, cv) { const sp = UNITS.boss(id, 0) || bossSprite(id), g = cv.getContext('2d');
       if (cv.width < sp.width * 2) { const cs = getComputedStyle(cv); cv.style.width = cs.width; cv.style.height = cs.height; cv.width = cv.height = sp.width * 2; }
       const k = Math.max(1, Math.floor(Math.min(cv.width / sp.width, cv.height / sp.height)));
@@ -17043,6 +17049,19 @@ const UI = (() => {
   }
 
   // ---------- Panels ----------
+  // 6.16.1: how much of the stage the interface covers on each side, in the camera's units. Each visible piece counts toward the
+  // edge it hugs (the nearest edge to its far side). render.js lets the camera pan that much further (Render.setInsets).
+  const INSET_SEL = ['#panel', '#bLift', '#bProbe', '#bReady', '#prbar', '#dps', '#asbar', '#docbar', '#mdeck', '#watchbar', '#cpBanner', '#zoneBan'];
+  let insT = 0;
+  function camInsets() {
+    const st = $('#stage'); if (!st) return { l: 0, r: 0, t: 0, b: 0 };
+    const S = st.getBoundingClientRect(), W = Render.layout.W, k = S.width > 0 && W > 0 ? W / S.width : 1, o = { l: 0, r: 0, t: 0, b: 0 };
+    for (const q of INSET_SEL) { const el = $(q); if (!el || el.hidden || !el.offsetParent) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) continue;
+      const d = { l: r.right - S.left, r: S.right - r.left, t: r.bottom - S.top, b: S.bottom - r.top }; let best = 'l'; for (const e of ['r', 't', 'b']) if (d[e] < d[best]) best = e;
+      const cap = (best === 'l' || best === 'r' ? S.width : S.height) * 0.6; o[best] = Math.max(o[best], Math.min(cap, d[best]) + 6); }
+    return { l: o.l * k, r: o.r * k, t: o.t * k, b: o.b * k };
+  }
+  function syncInsets(force) { const now = performance.now(); if (!force && now - insT < 300) return; insT = now; if (Render.setInsets) Render.setInsets(camInsets()); }
   function closePanel() { sellArm = null;
     if (panel) SFX.play('close');
     panel = null; pick = null; capPeek = null;
@@ -17050,7 +17069,7 @@ const UI = (() => {
     Render.sel = null; Render.selT = null; Render.prev = null; Render.selE = null;
     if (G) { G.selCore = false; G.reloc = null; }
     frEnd(); Render.prSel = !!prCmd; // 6.5.2: with the probe selected, closing its panel returns to the bar
-    document.body.classList.remove('panel-l', 'panel-r');
+    document.body.classList.remove('panel-l', 'panel-r'); syncInsets(1);
   }
   function openPanel(p) {
     if (!panel) SFX.play('open');
@@ -17060,7 +17079,7 @@ const UI = (() => {
     el.hidden = false;
     el.className = 'panel ' + (left ? 'left' : 'right');
     document.body.classList.toggle('panel-l', left);
-    document.body.classList.toggle('panel-r', !left);
+    document.body.classList.toggle('panel-r', !left); syncInsets(1);
     renderPanel();
   }
   // v5.0.2: a re-render between finger-down and finger-up swallowed the tap (Nic: two Sell taps did nothing while a veteran
@@ -19725,7 +19744,7 @@ const UI = (() => {
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
     cert: { rankNow: () => rankNow(), lessonXP: id => lessonXP(id), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
+    wire, tick, show, renderHangar, toast, flushToasts, closePanel, syncInsets, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
     fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
@@ -20189,6 +20208,7 @@ function talentsToast(kind) {
     requestAnimationFrame(frame);
     const dt = Math.min(0.1, Math.max(0, (ts - last) / 1000)); last = ts;
     if (UI.screen === 'game' && G) {
+      UI.syncInsets(); // 6.16.1: the camera's pan room follows what the interface covers (measured about 3 times a second)
       if (G.checkpoint && !cpLive() && !G.paused && !G.reloc && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt; // rules 10: the sim counts
       if (UI.slowmo > 0) UI.slowmo -= dt;
       if (UI.beat > 0) UI.beat -= dt;
