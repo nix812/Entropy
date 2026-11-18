@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 30';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 31';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -9295,7 +9295,8 @@ const SFX = (() => {
   }
   // last resort for a clock that stays stuck: suspend and resume the context once (the same nudge that wakes an interrupted phone)
   function kick() { if (!ctx || offline || ctx.state !== 'running') return; try { const p = ctx.suspend(); const back = () => { try { const q = ctx.resume(); if (q && q.catch) q.catch(() => {}); } catch (e) {} }; if (p && p.then) p.then(back, back); else back(); emit('kick', {}); } catch (e) { noteErr(e, 'kick'); } }
-  function crowd() { if (offline || inFlight < BUSY.soft) return true; if (inFlight >= BUSY.hard) return false; return allow('~crowd', BUSY.gap); }
+  let noBudget = false; // the Benchmark's real-wave test switches the crowd budget off for its first half (the build that cut out on Nic's phone)
+  function crowd() { if (offline || noBudget || inFlight < BUSY.soft) return true; if (inFlight >= BUSY.hard) return false; return allow('~crowd', BUSY.gap); }
   // where a sound happens: pan from screen x, quieter and duller off-screen
   function place(arg) {
     const x = arg && (arg.cx !== undefined ? arg.cx : arg.x), y = arg && (arg.cy !== undefined ? arg.cy : arg.y);
@@ -11265,7 +11266,7 @@ const SFX = (() => {
       if (!offline) setTimeout(() => { for (const n of ns) { try { n.stop(); } catch (e) {} } try { o.disconnect(); } catch (e) {} }, fade * 1000 + 1500); }
     return { begin, stage, line, hit, stop, pump, get on() { return on; }, get at() { return st; } };
   })();
-  return { health, setLean, kick, set reaper(v) { reapOn = !!v; }, get reaper() { return reapOn; }, get reapStats() { return Object.assign({ compacted: compactN }, RST); }, rawParam: PRAW, set quiet(v) { benchQuiet = !!v; }, get quiet() { return benchQuiet; }, get lean() { return leanLv; }, clock() { return ctx ? { st: ctx.state, ct: ctx.currentTime, inF: inFlight, played } : null; }, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { health, setLean, kick, set reaper(v) { reapOn = !!v; }, get reaper() { return reapOn; }, get reapStats() { return Object.assign({ compacted: compactN }, RST); }, rawParam: PRAW, set budget(v) { noBudget = !v; }, get budget() { return !noBudget; }, set quiet(v) { benchQuiet = !!v; }, get quiet() { return benchQuiet; }, get lean() { return leanLv; }, clock() { return ctx ? { st: ctx.state, ct: ctx.currentTime, inF: inFlight, played } : null; }, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -17212,57 +17213,90 @@ const UI = (() => {
       return A.n >= target;
     }
     function autoEnd() { if (!B || !B.au) return; try { const R = SFX.rawParam; for (const g of B.au.ps) { R.cancel.call(g.gain, 0); g.disconnect(); } B.au.o.stop(); B.au.z.disconnect(); } catch (e) {} B.au = null; }
+    // the real-wave test (6.16.1 polish 31). Nic's cuts come in Waves 37 to 41 of a real run, and the three tests above were clean on
+    // his phone. test/audcap.py (a bot plays a whole 52 minute run; Chrome reports the sound thread's load): no leak, but on the
+    // Nov 16 build the sound thread is at its limit from Wave 37 (sounds started double to 78 a second, up to 38 in flight), and the
+    // fixed "heavy field" above makes about half that load. So: a NORMAL run from Wave 40 on Nic's own Wave 40 field (36 towers at
+    // level 5), the game's own waves at 3x for 100 s (the Wave 40 boss, twists, storms, an ability every 6 s). Twice, same seed:
+    // first with the Nov 17 safeguards off (crowd budget, lean sound, clean-up: the state of the build that cut out), then with
+    // them on. Sound lost in the first half and none in the second = the cause is proven on the phone and the fix holds.
+    const REAL = [{ id: 'r0', name: 'Real waves from 40, safeguards off', real: 1, safe: 0, secs: 100, settle: 2, spd: 3 }, { id: 'r1', name: 'Real waves from 40, safeguards on', real: 1, safe: 1, secs: 100, settle: 2, spd: 3 }];
+    const RT = ['cryo', 'pulse', 'rail', 'lens', 'lens', 'emp', 'rail', 'pylon', 'rail', 'lens', 'emp', 'pylon', 'pylon', 'pulse', 'lens', 'coil', 'missile', 'missile', 'pylon', 'pulse', 'missile', 'emp', 'coil', 'emp', 'rail', 'rail', 'cryo', 'lens', 'rail', 'snare', 'pulse', 'cryo', 'rail', 'lens', 'emp', 'flame'];
+    const RAB = ['strike', 'stasis', 'scan', 'overclock', 'nova'];
     const TT = ['emp', 'lens', 'flame', 'coil', 'pulse', 'rail', 'grav', 'missile', 'cryo', 'pulse', 'lens', 'emp', 'flame', 'coil'], ET = ['drone', 'swarmer', 'tank', 'flyer', 'splitter', 'medic', 'shielder', 'phantom', 'reflector', 'carrier', 'husk', 'bulwark', 'swarmer', 'drone'];
     let B = null;
     const label = () => { const r = document.getElementById('labRib'); return ((r && r.textContent) || ('v' + VERSION)).replace('TEST ENVIRONMENT · ', ''); };
     const hist = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     function start(mode) {
       if (G && !G.over) return;
-      MODE = mode === 'soak' ? 'soak' : mode === 'auto' ? 'auto' : 'short'; PLAN = MODE === 'soak' ? SOAK : MODE === 'auto' ? AUTO : STAGES;
-      const keep = { seed: setup.seed, mode: setup.mode, sw: setup.startWave, ch: setup.chaos, last: PROF.lastSetup, snap: PROF.runSnap, runs: PROF.runs };
-      setRows(frRows(1)); setCols(frCols(ROWS)); setup.mode = 'std'; setup.seed = 616161; setup.startWave = 1; setup.chaos = 1;
+      MODE = mode === 'soak' ? 'soak' : mode === 'auto' ? 'auto' : mode === 'real' ? 'real' : 'short'; PLAN = MODE === 'soak' ? SOAK : MODE === 'auto' ? AUTO : MODE === 'real' ? REAL : STAGES;
+      const keep = { seed: setup.seed, mode: setup.mode, sw: setup.startWave, ch: setup.chaos, last: PROF.lastSetup, snap: PROF.runSnap, runs: PROF.runs, reap: SFX.reaper };
+      B = { keep, i: -1, t: 0, phase: 'settle', spots: boot(keep), si: 0, k: 0, feed: 0, res: [], t0: performance.now(), tw: 0, ti: 0, ab: 6, an: 0 };
+      AW.gov = false; next();
+    }
+    // a fresh ghost run for the plan: the fixed field's empty Wave 45 board, or (real-wave test) a normal run that starts at Wave 40
+    function boot(keep) {
+      setRows(frRows(1)); setCols(frCols(ROWS)); setup.mode = 'std'; setup.seed = 616161; setup.startWave = MODE === 'real' ? 40 : 1; setup.chaos = 1;
       launch(); G.bench = 1;
       setup.seed = keep.seed; setup.mode = keep.mode; setup.startWave = keep.sw; setup.chaos = keep.ch; PROF.lastSetup = keep.last; PROF.runSnap = keep.snap; PROF.runs = keep.runs;
-      G.credits = 1e9; G.gridBonus = 500; G.wave = 45; G.next = 1e9; G.spawningDone = 1; G.queue = []; G.core.max = G.core.hp = 1e12; G.paused = false; G.speed = 1;
+      G.credits = 1e9; G.gridBonus = 500; G.core.max = G.core.hp = 1e12; G.paused = false; G.speed = 1;
+      if (MODE === 'real') G.next = Math.min(G.next, 1.5); else { G.wave = 45; G.next = 1e9; G.spawningDone = 1; G.queue = []; }
       const R = G.region, spots = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) spots.push([x, y]);
       const near = (x, y) => { let b = 1e9; for (const L of G.map.lanes) for (let i = 0; i < L.tiles.length; i += 3) { const p = L.tiles[i]; b = Math.min(b, Math.hypot(p.x - x, p.y - y)); } return b; };
       spots.sort((a, b) => near(a[0], a[1]) - near(b[0], b[1]));
-      B = { keep, i: -1, t: 0, phase: 'settle', spots, si: 0, k: 0, feed: 0, res: [], t0: performance.now(), tw: 0 };
-      AW.gov = false; next();
+      return spots;
     }
     function field(S) {
+      if (S.real) { // Nic's Wave 40 field: 36 towers, each to level 5 through a specialisation (a type this profile cannot build is skipped)
+        while (B.ti < RT.length && B.si < B.spots.length) { const sp = B.spots[B.si]; B.si += 2; if (!TOWERS[RT[B.ti]] || !canBuildAt(sp[0], sp[1])) { if (!TOWERS[RT[B.ti]]) B.ti++; continue; }
+          const t = buildTower(RT[B.ti], sp[0], sp[1]); B.ti++; if (t) { B.tw++; upgradeTower(t); upgradeTower(t); upgradeTower(t, 1 + B.tw % 2); upgradeTower(t); } }
+        return;
+      }
       while (B.tw < S.tw && B.si < B.spots.length) { const s = B.spots[B.si]; B.si += 2; const t = TOWERS[TT[B.tw % TT.length]] ? buildTower(TT[B.tw % TT.length], s[0], s[1]) : null; if (t) { B.tw++; for (let l = 1; l < 4; l++) upgradeTower(t); } }
       B.pot = Math.max(1, G.towers.reduce((a, t) => a + (t.dps || 0), 0));
     }
     function next() {
       B.i++; const S = PLAN[B.i]; if (!S) { B.done = 1; setTimeout(finish, 0); return; } // not inside the frame: the frame still reads G
-      field(S); SFX.quiet = S.sfx === 0; SFX.music.setHold(S.mus === 0); G.speed = S.spd || 1; AW.gov = !!S.gov;
+      if (S.real && B.i > 0) { B.phase = 'boot'; setTimeout(() => { if (!B || B.done) return; B.spots = boot(B.keep); B.si = B.k = B.tw = B.ti = B.an = 0; B.ab = 6; stage(S); }, 0); return; } // the same run again from Wave 40 (a new run is not started inside the frame)
+      stage(S);
+    }
+    function stage(S) {
+      if (S.real) { SFX.budget = !!S.safe; SFX.reaper = !!S.safe; B.w0 = G.wave + 1; SFX.quiet = true; } // (quiet: 36 towers built and upgraded in one frame would start about 200 sounds)
+      field(S); SFX.quiet = S.sfx === 0; SFX.music.setHold(S.mus === 0); G.speed = S.spd || 1; AW.gov = S.real ? !!S.safe : !!S.gov;
       const plain = !!S.plain, P = PROF.settings; Render.glow = !plain && P.glow !== false; Render.bloom = !plain && P.bloom !== false; Render.zfx = !plain && zfxOn();
       B.phase = S.auto !== undefined ? 'load' : 'settle'; B.lt0 = performance.now(); B.loadMs = 0; B.t = 0; B.rs = SFX.reapStats; toast('BENCHMARK', MODE === 'auto' ? `Event lists: ${B.i + 1} of ${PLAN.length}` : MODE === 'soak' ? `Soak: ${B.i + 1} of ${PLAN.length}. Leave the phone alone` : `${B.i + 1} of ${PLAN.length}: ${S.name}`, '#6ae2ff', true, 'tip');
     }
     function tick(dt) {
       if (!B || B.done || !G || !G.bench) return;
-      if (modalOpen) closeModal(); G.paused = false; G.next = 1e9; G.core.hp = G.core.max = 1e12; G.checkpoint = 0;
-      const S = PLAN[B.i]; B.t += dt; B.feed -= dt;
-      if (B.feed <= 0) { B.feed = 0.4; let live = 0; for (const e of G.enemies) if (!e.dead) live++;
+      const S = PLAN[B.i]; if (B.phase === 'boot') return;
+      if (S.real) { // the game runs its own waves: the test only answers what would stop them, keeps the core alive and uses an ability every 6 s
+        G.core.hp = G.core.max = 1e12; G.credits = 1e9;
+        if (G.draft) act('boon', 0); if (G.huntChoice) act('push'); if (G.anomOffers) act('stab'); if (G.checkpoint && !G.enemies.length) act('cpResume', 5);
+        if (modalOpen) closeModal(); G.paused = false; G.speed = S.spd;
+        B.ab -= dt; if (B.ab <= 0) { B.ab = 6; const al = G.enemies.filter(e => !e.dead), e = al[al.length >> 1]; if (e) act('abil', RAB[B.an++ % RAB.length], e.x, e.y); }
+      } else { if (modalOpen) closeModal(); G.paused = false; G.next = 1e9; G.core.hp = G.core.max = 1e12; G.checkpoint = 0; }
+      B.t += dt; B.feed -= dt;
+      if (!S.real && B.feed <= 0) { B.feed = 0.4; let live = 0; for (const e of G.enemies) if (!e.dead) live++;
         for (let n = 0; live < S.en && n < 14; live++, n++) { const L = G.map.lanes[B.k % G.map.lanes.length], e = spawnEnemy(ET[B.k++ % ET.length], { lane: L }); if (!e) continue;
           e.d = (B.k * 1.7) % Math.max(4, L.len * 0.6); e.maxHp = e.hp = B.pot * 22 / S.en * (0.5 + (B.k % 5) * 0.25); if (B.k % 7 === 0) e.elite = [ELITE_AFFIXES[B.k % ELITE_AFFIXES.length].id]; } }
       const secs = (S.secs || SECS) * (window.__benchK || 1), settle = S.settle !== undefined ? S.settle : SETTLE; // __benchK: the test shortens the stages
       if (B.phase === 'load') { const el = performance.now() - B.lt0; if (autoLoad(S.auto) || el > 40000 * (window.__benchK || 1)) { B.loadMs = Math.round(el); B.phase = 'settle'; B.t = 0; } return; }
       if (B.phase === 'settle' && B.t >= settle) { B.phase = 'run'; B.t = 0; AW.take(); }
-      else if (B.phase === 'run' && B.t >= secs) { const r = AW.take(), q = SFX.reapStats; r.id = S.id; r.name = S.name; r.secs = secs; r.cut = q.reaped - B.rs.reaped; r.grp = q.open; r.comp = q.compacted - B.rs.compacted; if (S.auto !== undefined) { r.ev = B.au ? B.au.n : 0; r.loadMs = B.loadMs; } r.en = G.enemies.filter(e => !e.dead).length; r.tw = G.towers.length; B.res.push(r); next(); }
+      else if (B.phase === 'run' && B.t >= secs) { const r = AW.take(), q = SFX.reapStats; r.id = S.id; r.name = S.name; r.secs = secs; r.cut = q.reaped - B.rs.reaped; r.grp = q.open; r.comp = q.compacted - B.rs.compacted; if (S.auto !== undefined) { r.ev = B.au ? B.au.n : 0; r.loadMs = B.loadMs; } r.en = G.enemies.filter(e => !e.dead).length; r.tw = G.towers.length; if (S.real) r.wv = [B.w0, G.wave]; B.res.push(r); next(); }
     }
     function finish() {
+      SFX.budget = true; SFX.reaper = B.keep.reap;
       const res = { at: new Date().toISOString(), mode: MODE, reap: SFX.reaper ? 1 : 0, build: label(), fine: FINE, ua: navigator.userAgent.slice(0, 120), px: [innerWidth, innerHeight, window.devicePixelRatio || 1], stages: B.res };
       autoEnd(); const keep = B.keep; B = null; SFX.quiet = false; SFX.music.setHold(false); AW.gov = true; SFX.setLean(0);
       Render.glow = PROF.settings.glow !== false; Render.bloom = PROF.settings.bloom !== false; Render.zfx = zfxOn();
       const h = hist(); h.unshift(res); try { localStorage.setItem(KEY, JSON.stringify(h.slice(0, 4))); } catch (e) {}
       G = null; closePanel(); PROF.lastSetup = keep.last; PROF.runSnap = keep.snap; PROF.runs = keep.runs; Save.save(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); open();
     }
-    const head = r => `${r.mode === 'soak' ? '10 minute soak' : r.mode === 'auto' ? 'Event-list test' : '2 minute run'} · Sound clean-up ${r.reap === 0 ? 'off' : 'on'} · Fine sprites ${r.fine > 1 ? 'on' : 'off'}`;
+    const head = r => `${r.mode === 'soak' ? '10 minute soak' : r.mode === 'auto' ? 'Event-list test' : r.mode === 'real' ? 'Real-wave test' : '2 minute run'}${r.mode === 'real' ? '' : ` · Sound clean-up ${r.reap === 0 ? 'off' : 'on'}`} · Fine sprites ${r.fine > 1 ? 'on' : 'off'}`;
     const text = r => `LAST GRADIENT BENCHMARK · ${r.build} · ${head(r)} · ${r.at}\n${r.ua}\nscreen ${r.px.join(' x ')}\n`
       + (r.mode === 'soak' ? r.stages.map(s => `${s.name}  lost ${s.lost} s (${s.slips} slips)  frame ${s.fms}/${s.f95} ms  inF ${s.inF}  started ${s.sfx}  cut ${s.cut}  groups ${s.grp}  compacted ${s.comp}`).join('\n') + `\nTOTAL sound lost ${Math.round(r.stages.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${r.stages.reduce((a, s) => a + s.secs, 0)}` : '')
       + (r.mode === 'auto' ? r.stages.map(s => `${s.ev.toLocaleString('en-US')} events x 12 params (asked ${s.name.split(' ')[0]}, loaded in ${s.loadMs} ms): sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms}/${s.f95} ms`).join('\n') : '')
+      + (r.mode === 'real' ? r.stages.map(s => `${s.name}: sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms} ms (95th ${s.f95}), Waves ${s.wv ? s.wv.join(' to ') : '?'}, ${s.inF} sounds in flight, ${s.sfx} sounds started, ${s.tw} towers, ${s.en} enemies at the end, lean ${s.lean || 0}`).join('\n') : '')
       + (r.mode !== 'short' && r.mode ? '' : r.stages.map(s => `${s.name}: sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms} ms (95th ${s.f95}), ${s.frames} frames, ${s.inF} sounds in flight, ${s.sfx} sounds started, ${s.tw} towers, ${s.en} enemies${s.lean ? ', lean ' + s.lean : ''}`).join('\n'));
     function open() {
       const h = hist(); if (!h.length) return;
@@ -18756,7 +18790,7 @@ const UI = (() => {
         + row('Run log', liveLog() ? 'This run so far, for analysis' : lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
         + (earlierLogs().length ? row('Earlier runs', `The ${earlierLogs().length} before that, in one text`, '<button class="btn small" data-act="logsCopy">Copy</button>') : '')
         + row('Keep screen awake', wakeState(), '')
-        + (inRun ? '' : row('Benchmark', 'A heavy late-game field, measured for sound and speed. 2 minutes, or a 10 minute soak', `<button class="btn small" data-act="benchRun">2 min</button><button class="btn small" data-act="benchSoak">10 min</button><button class="btn small" data-act="benchAuto">Events</button>${Bench.has() ? '<button class="btn small" data-act="benchOpen">Results</button>' : ''}`)) // 6.16.1 test tool (DRAFT text)
+        + (inRun ? '' : row('Benchmark', 'Sound and speed under a late-game load. Wave 40 plays real waves for 4 minutes', `<button class="btn small" data-act="benchRun">2 min</button><button class="btn small" data-act="benchSoak">10 min</button><button class="btn small" data-act="benchAuto">Events</button><button class="btn small" data-act="benchReal">Wave 40</button>${Bench.has() ? '<button class="btn small" data-act="benchOpen">Results</button>' : ''}`)) // 6.16.1 test tool (DRAFT text)
         + row('Sound clean-up', SFX.reaper ? 'On: finished sounds are unplugged at once (test)' : 'Off: the old way', `<button class="btn small" data-act="reapSet">${SFX.reaper ? 'Turn off' : 'Turn on'}</button>`) // 6.16.1 test switch (DRAFT text)
         + sec('About')
         + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>'),
@@ -19658,6 +19692,7 @@ const UI = (() => {
       case 'benchRun': closeModal(); Bench.start(); break;
       case 'benchSoak': closeModal(); Bench.start('soak'); break;
       case 'benchAuto': closeModal(); Bench.start('auto'); break;
+      case 'benchReal': closeModal(); Bench.start('real'); break;
       case 'reapSet': { SFX.reaper = !SFX.reaper; try { localStorage.setItem('entropy.reap', SFX.reaper ? '1' : '0'); } catch (e) {} openSettings(); break; }
       case 'benchOpen': Bench.open(); break;
       case 'benchCopy': Bench.copy(); break;
