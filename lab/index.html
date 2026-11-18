@@ -970,6 +970,7 @@ details.more { margin: 6px 0 0; } details.more > summary { font-family: var(--f-
 .card.framed > .ch:first-child { position: static; flex: none; margin: -12px -14px 0; padding: 12px 14px 8px; } /* 2px in: the card's border stays visible */
 .card.framed > .cbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; margin: 0 -14px; padding: 2px 14px 4px; }
 .card.framed > .foot { position: static; flex: none; margin: 6px -14px -12px; padding: 10px 14px 12px; background: var(--panel); box-shadow: 0 -1px 0 var(--line); }
+table.bench { width: 100%; border-collapse: collapse; font-size: 13px; margin: 4px 0 10px; } table.bench th { text-align: left; color: var(--dim); font-weight: 400; padding: 2px 4px; } table.bench td { padding: 3px 4px; border-top: 1px solid var(--line2); } table.bench td.warn { color: #ffb03a; } table.bench td.bad { color: #ff5a6e; } table.bench small { color: var(--dim); }
 .panel.framed { overflow: hidden; }
 .panel.framed > .pbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; display: flex; flex-direction: column; gap: 8px; margin: 0 -10px; padding: 0 10px 8px; }
 .panel.framed > .ph:first-child { position: static; flex: none; margin: -7px -9px 0; padding: 7px 9px 6px; }
@@ -1614,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 26';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 27';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -3419,7 +3420,7 @@ const profLevel = () => levelFromXP(PROF.xp);
 // daily ladder is about play, not hours). TAL_EDIT is the build being edited on the Talents screen; a live Hunt run locks its own copy.
 let TAL_EDIT = null;
 const huntRun = () => !!(G && !G.over && G.huntBuild);
-const ghostRun = () => !!(G && (G.replaying || G.watch || G.tut)); // 5.8: Training never touches the profile either (the coach pays its reward)
+const ghostRun = () => !!(G && (G.replaying || G.watch || G.tut || G.bench)); // 6.16.1: the benchmark (ui.js Bench) never touches the profile either // 5.8: Training never touches the profile either (the coach pays its reward)
 const TS = () => huntRun() ? G.huntBuild : TAL_EDIT || PROF;
 const talLevel = () => { const S = TS(); return S === PROF ? profLevel().level : S.lvl; };
 const talRank = id => (TS().tal && TS().tal[id]) || 0;
@@ -9629,8 +9630,9 @@ const SFX = (() => {
     blorp(e) { if (!allow('blorp', 0.2)) return; const c = ev('blorp', busE, 0.6, { room: 0.3, jit: 2 }, e); tone(c, { w: 'sine', f0: 440, f1: 70, d: 0.18, v: 0.3 }); nz(c, { ft: 'lowpass', f0: 700, q: 6, f1: 200, d: 0.12, v: 0.25 }); done(c); },
   };
   const UIPRI = { ui: 1, tab: 2, on: 3, off: 3, open: 4, close: 4, pick: 5 }; let uiPend = null;
+  let benchQuiet = false; // 6.16.1 the benchmark's "battle sounds off" stage: nothing is built at all
   function play(name, arg, arg2) {
-    if (!ctx || (!offline && ctx.state !== 'running') || !busW) return;
+    if (!ctx || (!offline && ctx.state !== 'running') || !busW || benchQuiet) return;
     if (WEAP[name] || HIT[name] || name === 'die') { // 6.2: placed once by camera distance; a far one is thinned out before it builds anything
       const P = prox(arg); if (P && P.far && !allow(name + '~far', 0.25, 1)) return;
       if (!crowd()) return;
@@ -11183,7 +11185,7 @@ const SFX = (() => {
       if (!offline) setTimeout(() => { for (const n of ns) { try { n.stop(); } catch (e) {} } try { o.disconnect(); } catch (e) {} }, fade * 1000 + 1500); }
     return { begin, stage, line, hit, stop, pump, get on() { return on; }, get at() { return st; } };
   })();
-  return { health, setLean, kick, get lean() { return leanLv; }, clock() { return ctx ? { st: ctx.state, ct: ctx.currentTime, inF: inFlight, played } : null; }, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { health, setLean, kick, set quiet(v) { benchQuiet = !!v; }, get quiet() { return benchQuiet; }, get lean() { return leanLv; }, clock() { return ctx ? { st: ctx.state, ct: ctx.currentTime, inF: inFlight, played } : null; }, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -17064,6 +17066,82 @@ const UI = (() => {
   }
 
   // ---------- Panels ----------
+  // ---------- 6.16.1 the benchmark (Nic, Nov 17: "Can you create some sort of benchmark scenario... I can't play 45 min games to get
+  // to that point. We need something to test performance") ----------
+  // Settings > Support > Benchmark, from the hangar. A real run on a fixed seed is filled with a late-game field (towers along the
+  // roads, a stream of enemies that die and are replaced, some of them elites) and measured in stages of 14 s. Each stage changes one
+  // thing, so the result says what the sound cuts follow: battle sounds, music, drawing, speed. Measured: seconds of sound lost
+  // (the sound clock against the wall clock), frame time, sounds in flight. The run is a ghost run (sim.js ghostRun): no XP, no
+  // records, no save. Results: a card, a Copy button, and the last 4 kept on the device (entropy.bench) to compare Fine sprites on/off.
+  let AW = null; // the sound watch lives in the boot code below the UI; it hands itself over (UI.setAudWatch)
+  const Bench = (() => {
+    const KEY = 'entropy.bench', SECS = 14, SETTLE = 3;
+    const STAGES = [
+      { id: 'calm', name: 'Calm field', tw: 8, en: 20 },
+      { id: 'heavy', name: 'Heavy field', tw: 40, en: 110 },
+      { id: 'nosfx', name: 'Heavy, battle sounds off', tw: 40, en: 110, sfx: 0 },
+      { id: 'nomus', name: 'Heavy, music off', tw: 40, en: 110, mus: 0 },
+      { id: 'plain', name: 'Heavy, plain drawing', tw: 40, en: 110, plain: 1 },
+      { id: 'x3', name: 'Heavy at 3x speed', tw: 40, en: 110, spd: 3 },
+      { id: 'lean', name: 'Heavy, lean sound on', tw: 40, en: 110, gov: 1 },
+    ];
+    const TT = ['emp', 'lens', 'flame', 'coil', 'pulse', 'rail', 'grav', 'missile', 'cryo', 'pulse', 'lens', 'emp', 'flame', 'coil'], ET = ['drone', 'swarmer', 'tank', 'flyer', 'splitter', 'medic', 'shielder', 'phantom', 'reflector', 'carrier', 'husk', 'bulwark', 'swarmer', 'drone'];
+    let B = null;
+    const label = () => { const r = document.getElementById('labRib'); return ((r && r.textContent) || ('v' + VERSION)).replace('TEST ENVIRONMENT · ', ''); };
+    const hist = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+    function start() {
+      if (G && !G.over) return;
+      const keep = { seed: setup.seed, mode: setup.mode, sw: setup.startWave, ch: setup.chaos, last: PROF.lastSetup, snap: PROF.runSnap, runs: PROF.runs };
+      setRows(frRows(1)); setCols(frCols(ROWS)); setup.mode = 'std'; setup.seed = 616161; setup.startWave = 1; setup.chaos = 1;
+      launch(); G.bench = 1;
+      setup.seed = keep.seed; setup.mode = keep.mode; setup.startWave = keep.sw; setup.chaos = keep.ch; PROF.lastSetup = keep.last; PROF.runSnap = keep.snap; PROF.runs = keep.runs;
+      G.credits = 1e9; G.gridBonus = 500; G.wave = 45; G.next = 1e9; G.spawningDone = 1; G.queue = []; G.core.max = G.core.hp = 1e12; G.paused = false; G.speed = 1;
+      const R = G.region, spots = []; for (let y = R.y0; y < R.y1; y++) for (let x = R.x0; x < R.x1; x++) if (canBuildAt(x, y)) spots.push([x, y]);
+      const near = (x, y) => { let b = 1e9; for (const L of G.map.lanes) for (let i = 0; i < L.tiles.length; i += 3) { const p = L.tiles[i]; b = Math.min(b, Math.hypot(p.x - x, p.y - y)); } return b; };
+      spots.sort((a, b) => near(a[0], a[1]) - near(b[0], b[1]));
+      B = { keep, i: -1, t: 0, phase: 'settle', spots, si: 0, k: 0, feed: 0, res: [], t0: performance.now(), tw: 0 };
+      AW.gov = false; next();
+    }
+    function field(S) {
+      while (B.tw < S.tw && B.si < B.spots.length) { const s = B.spots[B.si]; B.si += 2; const t = TOWERS[TT[B.tw % TT.length]] ? buildTower(TT[B.tw % TT.length], s[0], s[1]) : null; if (t) { B.tw++; for (let l = 1; l < 4; l++) upgradeTower(t); } }
+      B.pot = Math.max(1, G.towers.reduce((a, t) => a + (t.dps || 0), 0));
+    }
+    function next() {
+      B.i++; const S = STAGES[B.i]; if (!S) { B.done = 1; setTimeout(finish, 0); return; } // not inside the frame: the frame still reads G
+      field(S); SFX.quiet = S.sfx === 0; SFX.music.setHold(S.mus === 0); G.speed = S.spd || 1; AW.gov = !!S.gov;
+      const plain = !!S.plain, P = PROF.settings; Render.glow = !plain && P.glow !== false; Render.bloom = !plain && P.bloom !== false; Render.zfx = !plain && zfxOn();
+      B.phase = 'settle'; B.t = 0; toast('BENCHMARK', `${B.i + 1} of ${STAGES.length}: ${S.name}`, '#6ae2ff', true, 'tip');
+    }
+    function tick(dt) {
+      if (!B || B.done || !G || !G.bench) return;
+      if (modalOpen) closeModal(); G.paused = false; G.next = 1e9; G.core.hp = G.core.max = 1e12; G.checkpoint = 0;
+      const S = STAGES[B.i]; B.t += dt; B.feed -= dt;
+      if (B.feed <= 0) { B.feed = 0.4; let live = 0; for (const e of G.enemies) if (!e.dead) live++;
+        for (let n = 0; live < S.en && n < 14; live++, n++) { const L = G.map.lanes[B.k % G.map.lanes.length], e = spawnEnemy(ET[B.k++ % ET.length], { lane: L }); if (!e) continue;
+          e.d = (B.k * 1.7) % Math.max(4, L.len * 0.6); e.maxHp = e.hp = B.pot * 22 / S.en * (0.5 + (B.k % 5) * 0.25); if (B.k % 7 === 0) e.elite = [ELITE_AFFIXES[B.k % ELITE_AFFIXES.length].id]; } }
+      if (B.phase === 'settle' && B.t >= SETTLE) { B.phase = 'run'; B.t = 0; AW.take(); }
+      else if (B.phase === 'run' && B.t >= SECS) { const r = AW.take(); r.id = S.id; r.name = S.name; r.secs = SECS; r.en = G.enemies.filter(e => !e.dead).length; r.tw = G.towers.length; B.res.push(r); next(); }
+    }
+    function finish() {
+      const res = { at: new Date().toISOString(), build: label(), fine: FINE, ua: navigator.userAgent.slice(0, 120), px: [innerWidth, innerHeight, window.devicePixelRatio || 1], stages: B.res };
+      const keep = B.keep; B = null; SFX.quiet = false; SFX.music.setHold(false); AW.gov = true; SFX.setLean(0);
+      Render.glow = PROF.settings.glow !== false; Render.bloom = PROF.settings.bloom !== false; Render.zfx = zfxOn();
+      const h = hist(); h.unshift(res); try { localStorage.setItem(KEY, JSON.stringify(h.slice(0, 4))); } catch (e) {}
+      G = null; closePanel(); PROF.lastSetup = keep.last; PROF.runSnap = keep.snap; PROF.runs = keep.runs; Save.save(); show('hangar'); renderHangar(); SFX.music.setIntensity(0.15); open();
+    }
+    const text = r => `LAST GRADIENT BENCHMARK · ${r.build} · Fine sprites ${r.fine > 1 ? 'on (' + r.fine + ')' : 'off'} · ${r.at}\n${r.ua}\nscreen ${r.px.join(' x ')}\n`
+      + r.stages.map(s => `${s.name}: sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms} ms (95th ${s.f95}), ${s.frames} frames, ${s.inF} sounds in flight, ${s.sfx} sounds started, ${s.tw} towers, ${s.en} enemies${s.lean ? ', lean ' + s.lean : ''}`).join('\n');
+    function open() {
+      const h = hist(); if (!h.length) return;
+      const tbl = r => `<div class="lbl">${esc(r.build)} · Fine sprites ${r.fine > 1 ? 'on' : 'off'}</div><table class="bench"><tr><th>Stage</th><th>Sound lost</th><th>Frame</th></tr>`
+        + r.stages.map(s => `<tr><td>${esc(s.name)}</td><td class="${s.lost >= 1 ? 'bad' : s.lost >= 0.3 ? 'warn' : ''}">${s.lost} s</td><td class="${s.f95 > 50 ? 'bad' : s.f95 > 34 ? 'warn' : ''}">${s.fms} ms <small>(${s.f95})</small></td></tr>`).join('') + '</table>';
+      modal(`<div class="card narrow benchc"><div class="ch"><h2>Benchmark</h2><button class="x" data-act="close" aria-label="Close">✕</button></div>
+        <p class="note">Sound lost: seconds the phone's sound fell behind in each ${SECS} s stage. Frame: typical time to draw one frame, and the slow ones in brackets. 17 ms is smooth.</p>
+        ${tbl(h[0])}${h[1] ? '<p class="note">The run before:</p>' + tbl(h[1]) : ''}
+        <div class="row2"><button class="btn" data-act="benchCopy">Copy results</button><button class="btn" data-act="benchRun">Run again</button></div></div>`);
+    }
+    return { start, tick, open, get on() { return !!B; }, copy() { const h = hist(); if (h.length) copyText(h.map(text).join('\n\n')); }, has: () => hist().length > 0 };
+  })();
   // 6.16.1: how much of the stage the interface covers on each side, in the camera's units. Each visible piece counts toward the
   // edge it hugs (the nearest edge to its far side). render.js lets the camera pan that much further (Render.setInsets).
   const INSET_SEL = ['#panel', '#bLift', '#bProbe', '#bReady', '#prbar', '#dps', '#asbar', '#docbar', '#mdeck', '#watchbar', '#cpBanner', '#zoneBan'];
@@ -18544,6 +18622,7 @@ const UI = (() => {
         + row('Run log', liveLog() ? 'This run so far, for analysis' : lastLogText() ? 'Your last run, for analysis' : 'No run log yet', lastLogText() ? '<button class="btn small" data-act="logCopy">Copy</button><button class="btn small" data-act="logSave">Save</button>' : '')
         + (earlierLogs().length ? row('Earlier runs', `The ${earlierLogs().length} before that, in one text`, '<button class="btn small" data-act="logsCopy">Copy</button>') : '')
         + row('Keep screen awake', wakeState(), '')
+        + (inRun ? '' : row('Benchmark', 'About 2 minutes. A heavy late-game field, measured for sound and speed', `<button class="btn small" data-act="benchRun">Run</button>${Bench.has() ? '<button class="btn small" data-act="benchOpen">Results</button>' : ''}`)) // 6.16.1 test tool (DRAFT text)
         + sec('About')
         + row('Legal', '© 2026 Nic Carter (Nigel Industries)', '<button class="btn small" data-act="legal">Read</button>'),
       sound: sec('Volume')
@@ -19441,6 +19520,9 @@ const UI = (() => {
       case 'fs': toggleFs(); break;
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
+      case 'benchRun': closeModal(); Bench.start(); break;
+      case 'benchOpen': Bench.open(); break;
+      case 'benchCopy': Bench.copy(); break;
       case 'fineSet': { try { localStorage.setItem('entropy.fine', FINE > 1 ? '1' : '1.5'); } catch (e) {} location.reload(); break; }
       case 'logsCopy': { const t = earlierLogs().join('\n\n==== EARLIER RUN ====\n'); if (t) copyText(t); break; }
       case 'logSave': { const t = lastLogText(); if (t) saveText(t); break; }
@@ -19759,7 +19841,7 @@ const UI = (() => {
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
     cert: { rankNow: () => rankNow(), lessonXP: id => lessonXP(id), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, syncInsets, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
+    wire, tick, show, renderHangar, toast, flushToasts, closePanel, syncInsets, benchTick: dt => Bench.tick(dt), setAudWatch(a) { AW = a; }, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
     fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
@@ -20199,7 +20281,7 @@ function talentsToast(kind) {
     function check() {
       if (!SFX.health || document.hidden) return;
       const h = SFX.health(); if (h.st === 'none') return;
-      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st }); }
+      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE }); }
       if (!on()) return;
       const w = performance.now() / 1000;
       if (lastCt >= 0) {
@@ -20220,7 +20302,7 @@ function talentsToast(kind) {
     // half second, down one per 20 clean seconds), a single 'kick' if it stays stuck 4 s at the top level, and one 'perf' line a wave
     // in the run log: seconds of sound lost, frame time (median and 95th), game speed, the highest lean level, the most sounds in
     // flight and sounds started. The next phone log shows whether the cuts follow the sounds, the drawing, or neither.
-    let fW = -1, fCt = 0, fPl = 0, good = 0, bad = 0, kickAt = -99, pw = -1, P0 = null; const FT = [];
+    let fW = -1, fCt = 0, fPl = 0, good = 0, bad = 0, kickAt = -99, pw = -1, P0 = null, gov = true; const FT = [];
     const pNew = () => ({ lost: 0, lean: 0, inF: 0, sfx: 0, slipN: 0, spd: 0 });
     function fast(dtMs) {
       if (!on() || !SFX.clock) { fW = -1; return; }
@@ -20230,14 +20312,18 @@ function talentsToast(kind) {
       if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1 }); } P0 = pNew(); pw = G.wave; FT.length = 0; }
       if (fW >= 0 && c.st === 'running' && w - fW < 1.5) {
         const dw = w - fW, dc = c.ct - fCt, slip = dc < dw * 0.75; P0.lost += Math.max(0, dw - dc - 0.02); P0.sfx += Math.max(0, c.played - fPl); P0.inF = Math.max(P0.inF, c.inF); P0.spd = Math.max(P0.spd, G.speed || 1);
+        if (!gov) { if (slip) P0.slipN++; } else
         if (slip) { P0.slipN++; bad += dw; good = 0; SFX.setLean(SFX.lean + 1); if (SFX.lean >= 3 && bad >= 4 && w - kickAt > 30) { kickAt = w; SFX.kick(); } }
         else { bad = 0; good += dw; if (good >= 20 && SFX.lean > 0) { good = 0; SFX.setLean(SFX.lean - 1); } }
         P0.lean = Math.max(P0.lean, SFX.lean);
       }
       fW = w; fCt = c.ct; fPl = c.played;
     }
-    return { check, fast };
+    // the benchmark reads and clears the running numbers itself (the wave never changes there), and can hold the governor off
+    function take() { const f = FT.slice().sort((a, b) => a - b), o = P0 || pNew(), n = f.length; const r = { lost: Math.round(o.lost * 10) / 10, slips: o.slipN, lean: o.lean, inF: o.inF, sfx: o.sfx, fms: n ? Math.round(f[n >> 1]) : 0, f95: n ? Math.round(f[Math.floor(n * 0.95)]) : 0, frames: n }; P0 = pNew(); pw = G ? G.wave : -1; FT.length = 0; return r; }
+    return { check, fast, take, set gov(v) { gov = !!v; if (!gov) { SFX.setLean(0); good = bad = 0; } }, get gov() { return gov; } };
   })();
+  UI.setAudWatch(AudWatch);
   let last = performance.now(), acc = 0, wakeT = 2, veilOdd = false; const modalEl = $('#modal');
   const STEP = 1 / 30;
   function frame(ts) {
@@ -20245,6 +20331,7 @@ function talentsToast(kind) {
     const rawMs = ts - last, dt = Math.min(0.1, Math.max(0, rawMs / 1000)); last = ts;
     if (UI.screen === 'game' && G) {
       try { AudWatch.fast(rawMs); } catch (e) {}
+      if (G.bench) { try { UI.benchTick(dt); } catch (e) { console.error(e); } }
       UI.syncInsets(); // 6.16.1: the camera's pan room follows what the interface covers (measured about 3 times a second)
       if (G.checkpoint && !cpLive() && !G.paused && !G.reloc && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt; // rules 10: the sim counts
       if (UI.slowmo > 0) UI.slowmo -= dt;
