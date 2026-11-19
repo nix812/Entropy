@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 39';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 40';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -12529,11 +12529,78 @@ const UNITS = (() => {
       return parts;
     },
   };
+  // ---------- 6.16.1 polish 40: fine detail for the oddball bosses (runs only when FINE > 1; the shapes Nic knows do not change) ----------
+  const dots = (pts, col) => (x, y) => { for (const [px, py, r] of pts) if (Math.hypot(x - px, y - py) < (r || 1)) return col; return null; };
+  const FB = {
+    cat(parts, f, v) { // Leia: toes on her white mitts and whisker dots on her muzzle. Nothing else changes
+      [-1, 1].forEach((s, i) => addD(parts[3 + i], (x, y) => (y > 62.5 && y < 68.5 && Math.abs(Math.abs(x - s * 20) - 2.6) < 0.5 ? -1.3 : 0))); // two soft grooves: three toes
+      overE(parts[5], dots([[8, 1.5, 0.8], [11.5, 4, 0.8], [8.5, 6.5, 0.8], [-8, 1.5, 0.8], [-11.5, 4, 0.8], [-8.5, 6.5, 0.8]], '#a9a2b8'));
+    },
+    gloop(parts, f) { // bubbles and a fish bone inside the slime; a rim of light; a glint on each drip; two loose droplets
+      const B = [[-44, 34, 4], [42, 36, 4.5], [-30, 54, 3], [30, 56, 2.5], [50, 56, 2]];
+      addE(parts[0], (x, y) => { for (const [bx, by, r] of B) { const q = Math.hypot(x - bx, y - by); if (Math.abs(q - r) < 0.7) return '#b8ffc8'; if (Math.hypot(x - bx + r * 0.4, y - by + r * 0.4) < 0.9) return '#ffffff'; }
+        if (y > 46 && y < 58 && x > -8 && x < 12 && (Math.abs(y - 52) < 0.6 || (Math.abs(((x + 20) % 4) - 2) < 0.55 && Math.abs(y - 52) < 3.4 - (x + 8) * 0.12 && x < 8) || (x > 8 && Math.abs(y - 52) < (x - 8) * 0.9))) return '#1e7a3a';
+        return Math.abs(Math.hypot(x / 0.95, y - 64) - 60) < 0.9 && x < -22 && y < 44 ? '#b8ffc8' : null; });
+      for (const [x, l] of [[-34, 10], [-12, 14], [20, 7], [40, 12]]) parts.push(P(S.dome(x - 1, 64 + l, 1.2, 1), 5.4, ramp('#d8ffe0', 1)));
+      parts.push(P(S.dome(64, 61, 3, 3), 0, ramp('#5cff7a', 0.8))); parts.push(P(S.dome(-66, 62, 2.2, 2.2), 0, ramp('#5cff7a', 0.8)));
+    },
+    whale(parts, f) { // a mouth line, a blowhole, two old scars, stars on its back, three barnacles near the tail; ridges on the fluke and the fin
+      const wz = (x, y) => 4 + 34 * Math.sqrt(Math.max(0, 1 - ((x - 6) / 60) ** 2 - ((y - 2) / 34) ** 2));
+      addD(parts[0], (x, y) => (Math.abs(Math.abs(y) - (-(x + 48)) * 0.9) < 0.8 ? -1 : 0));
+      addD(parts[2], (x) => (((x + 100) % 4) < 0.7 ? -0.8 : 0));
+      overE(parts[1], (x, y) => x > 26 && x < 62 && Math.abs(y - (10 + (x - 30) * 0.22)) < 0.8 ? '#1f3f8a' : Math.hypot((x - 18) / 3.4, (y + 20) / 1.6) < 1 ? '#16306a' : null);
+      addE(parts[1], (x, y) => (x > -20 && x < 8 && Math.abs((y + 8) - (x + 10) * 0.18) < 0.55) || (x > -12 && x < 10 && Math.abs((y + 14) - (x + 6) * 0.18) < 0.5) ? '#7fb0ff' : dots([[-30, -10, 0.9], [-8, -22, 0.9], [36, -18, 0.9], [-40, 2, 0.9], [2, -4, 0.9], [26, 0, 0.9], [-22, -24, 0.7], [48, -4, 0.7]], '#e8f4ff')(x, y));
+      for (const [x, y, r] of [[-34, -6, 2.2], [-29, -9, 1.6], [-37, -11, 1.4]]) parts.push(P(S.dome(x, y, r, r * 0.8), wz(x, y) - 0.3, ramp('#d8d0c0', 0.8)));
+    },
+    duck(parts, f) { // a mould seam, a gloss spot on the body and the head, a blush, nostrils, more feather lines, a tuft on top
+      const b = f ? -3 : 0;
+      addD(parts[0], (x, y) => (Math.abs(y - 31 - b) < 0.6 && x < 30 ? -0.8 : 0));
+      addE(parts[0], (x, y) => Math.hypot(x + 32, y - 9 - b) < 5 ? '#fff6c0' : null);
+      addD(parts[1], (x, y) => (Math.abs((y - 6 - b) - (x + 56) * 0.5) < 0.7 ? -1 : 0));
+      addD(parts[2], (x, y) => (y > 21 + b && Math.abs(((x + 64) % 8) - 4) < 0.6 ? -0.7 : 0));
+      addE(parts[3], (x, y) => Math.hypot(x - 15, y + 38 - b) < 4.5 ? '#fff6c0' : Math.hypot(x - 43, y + 13 - b) < 4 ? '#ffb070' : null);
+      addE(parts[4], (x, y) => Math.hypot(x - 54, y + 22 - b) < 1.1 ? '#a04a08' : null);
+      parts.push(P(S.poly([[22, -49 + b], [24, -60 + b], [30, -57 + b], [29, -49 + b]], 4, 1.5), 16, ramp('#ffd83a', 0.8)));
+    },
+    fsm(parts, f) { // a highlight down each noodle; sauce on the body; a cap of sauce and herbs on each meatball
+      for (let k = 0; k < 11; k++) { const x0 = -50 + k * 10; addE(parts[k], (x, y) => Math.abs(x - x0 - Math.sin(y * 0.1 + k * 1.7 + f * 0.8) * 7) < 0.8 ? '#fff0b8' : null); }
+      addE(parts[11], (x, y) => Math.sin(x * 0.21 + 1) + Math.sin(y * 0.33 - x * 0.08) > 1.25 ? '#c8401a' : null);
+      [-1, 1].forEach((s, i) => addE(parts[12 + i], (x, y) => dots([[s * 26 - 5, -4, 1.2], [s * 26 + 5, 1, 1.2], [s * 26 + 8, -9, 1.1], [s * 26 - 2, 4, 1.1], [s * 26 - 9, -12, 1]], '#3f9a2a')(x, y) || (Math.hypot(x - s * 26 + 2, y + 11) < 7 + Math.sin(Math.atan2(y + 11, x - s * 26 + 2) * 5) * 1.6 ? '#b8301a' : null)));
+    },
+    worm(parts, f) { // claws on the twelve legs; dapples and three spikes down the back; ridges on the head plate; faceted eyes; a ring of teeth
+      for (const s of [-1, 1]) for (let k = 0; k < 6; k++) parts.push(P(S.dome(s * 59, -3.5 + k * 9 + (f && k % 2 ? 2 : 0), 2.2, 2), 3, ramp('#e8d8ff', 0.9)));
+      addE(parts[12], dots([[-26, -4, 3], [28, 2, 3.5], [-18, 18, 2.5], [20, 20, 3], [-36, 14, 2.5], [36, -12, 2.5], [-8, -12, 2], [10, -14, 2.2]], '#6a22b0'));
+      addD(parts[13], (x) => (((x + 100) % 5) < 0.8 ? -0.8 : 0));
+      for (const q of [14, 15]) addE(parts[q], (x, y) => (((x + 100) % 3) < 0.6 || ((y + 100) % 3) < 0.6 ? '#2ab8c8' : null));
+      for (const y of [-8, 6, 19]) parts.push(P(S.dome(0, y, 2.6, 3.5), 3.6 + 34 * Math.sqrt(1 - ((y - 6) / 50) ** 2), ramp('#e8d8ff', 0.9)));
+      for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283 + 0.39; parts.push(P(S.dome(Math.cos(an) * 11.5, 36 + Math.sin(an) * 6, 1.4, 1.4), 33, ramp('#ffffff', 1))); }
+    },
+    auditor(parts, f) { // pinstripes, two buttons and a pocket square on the suit; stripes on the tie; a monocle chain; straps, a handle and brass corners on the briefcase; a header and a signature on the form
+      const dy = f ? 2 : 0;
+      addD(parts[0], (x) => (((x + 100) % 5) < 0.5 ? -0.6 : 0));
+      addE(parts[2], (x, y) => (((x + y + 100) % 6) < 1.6 ? '#8a1408' : null));
+      for (const y of [48, 57]) parts.push(P(S.dome(0, y, 1.6, 1), 27.8, ramp('#1a1e2a', 0.5)));
+      parts.push(P(S.poly([[-27, 20], [-18, 20], [-22.5, 25.5]], 1.2, 0.4), 27.6, ramp('#f0f0f0', 1)));
+      parts.push(P(seg(21, -10, 26, 10, 0.7, 1), 34, ramp('#ffd83a', 1)));
+      addD(parts[9], (x) => (Math.abs(x - 43) < 1 || Math.abs(x - 59) < 1 ? -1.5 : 0));
+      parts.push(P(S.ring(51, 22 + dy, 4.5, 6.5, 0), 8, ramp('#3a2410', 0.5)));
+      for (const [x, y] of [[38.6, 24.6], [63.4, 24.6], [38.6, 49.4], [63.4, 49.4]]) parts.push(P(S.dome(x, y + dy, 1.7, 1.2), 17.5, ramp('#c89a3a', 0.8)));
+      addE(parts[10], (x, y) => (y > 12 && y < 15.6 && Math.abs(x + 54) < 9 ? '#4a5266' : x > -65 && x < -52 && Math.abs(y - 44 - Math.sin(x * 1.3) * 1.3) < 0.6 ? '#1a2a6a' : null));
+    },
+    snail(parts, f) { // growth lines, speckles and a glint on the shell; spots and a frilled edge on the foot; a smile; a slime trail
+      const sh = parts[parts.length - 1];
+      addD(sh, (x, y) => (Math.hypot(x + 6, y - 4) > 10 && angf(x + 6, y - 4, 28) < 0.12 ? -0.7 : 0));
+      addE(sh, (x, y) => Math.hypot(x + 24, y + 14) < 3.5 ? '#c8a8ff' : dots([[10, -18, 2], [-28, 20, 2.2], [18, 22, 1.8], [-34, -8, 1.6], [0, 30, 1.6], [26, 0, 1.5]], '#7a3ab0')(x, y));
+      addD(parts[0], (x, y) => (y < 40 && ((x + 100) % 6) < 1 ? -1 : 0));
+      addE(parts[0], (x, y) => { for (let i = 0; i < 9; i++) if (Math.hypot(x + 50 - i * 12, y - 44 - (i % 2) * 5) < 1.3) return '#6aa84a'; return y > 46 && Math.abs(Math.hypot(x - 57, y - 44) - 4) < 0.7 ? '#3a6a2a' : null; });
+      parts.unshift(P(S.ell(-65.5, 54, 7.5, 2.4, 0.8), 0, ramp('#e6ffe0', 1)));
+    },
+  };
   const BOSS_FR = { cat: 2 };
   function boss(id, fr, v) {
     if (!BOSS_ART[id]) return null;
     const f = fr & 1, vv = v === true ? 1 : (v | 0);
-    return get(`bs:${id}:${f}:${vv}`, () => raster(BOSS_ART[id](f, vv), 148, 148, 0));
+    return get(`bs:${id}:${f}:${vv}`, () => { const parts = BOSS_ART[id](f, vv); if (FINE > 1 && FB[id]) FB[id](parts, f, vv); return raster(parts, 148, 148, 0); });
   }
   function wormSeg() { return get('bs:wseg', () => raster([P(S.dome(0, 0, 26, 20), 0, ramp('#7a2ec4', 0.6), { d: (x, y) => (Math.abs(x) < 1.4 ? -1.5 : 0) }), P(S.ell(0, -8, 18, 8, 6), 14, ramp('#9a5ae0', 0.7))].concat([-1, 1].map(s => P(S.box(s * 28 - 3, -4, s * 28 + 3, 14, 4, 1), 0, ramp('#e8d8ff', 0.8)))), 66, 66, 0)); }
   function meat() { return get('bs:meat', () => raster([P(S.dome(0, 0, 11, 10), 0, ramp('#8a3a1a', 0.6), { d: (x, y) => nz(x * 2, y * 2) * 0.9 }), P(S.ell(2, -6, 6, 3, 3), 10, ramp('#d8281a', 0.7))], 28, 28, 0)); }
@@ -12558,6 +12625,13 @@ const UNITS = (() => {
       for (let k = 0; k < 4; k++) { const an = k / 4 * Math.PI * 2, ca = Math.cos(an), sa = Math.sin(an); // conduits on the axes, through the rampart
         const f = (x, y) => { const u = x * ca + y * sa, v = -x * sa + y * ca; return u < 18 || u > 38 || Math.abs(v) > 3.2 ? -1 : 5 * Math.sqrt(1 - (v / 3.2) ** 2); }; f.bb = [-39, -39, 39, 39];
         parts.push(P(f, 6, ramp('#24304f', 0.6), { e: (x, y) => { const v = -x * sa + y * ca, u = x * ca + y * sa; return Math.abs(v) < 0.9 && (u < 25 || u > 32.5) ? G0 : null; } })); }
+      if (FINE > 1) { // 6.16.1 polish 40: battlements on the rampart, four bolts on each bastion, an end cap on both ends of each conduit (the lit line between them stays whole)
+        addD(parts[1], (x, y) => (octR(x, y) > 30.3 && angf(x, y, 40) < 0.4 ? -1.8 : 0));
+        for (let k = 0; k < 4; k++) { const an = (k + 0.5) / 4 * Math.PI * 2, cx = Math.cos(an) * 31, cy = Math.sin(an) * 31; rivets(parts, [[cx - 4.6, cy - 4.6], [cx + 4.6, cy - 4.6], [cx - 4.6, cy + 4.6], [cx + 4.6, cy + 4.6]], 20.2, 0.85); }
+        for (let k = 0; k < 4; k++) { const an = k / 4 * Math.PI * 2, ca = Math.cos(an), sa = Math.sin(an);
+          const cl = (x, y) => { const u = x * ca + y * sa, v = -x * sa + y * ca; return (Math.abs(u - 18.9) < 0.8 || Math.abs(u - 37.2) < 0.8) && Math.abs(v) < 3.9 ? 5.8 * Math.sqrt(1 - (v / 3.9) ** 2) : -1; }; cl.bb = [-39, -39, 39, 39];
+          parts.push(P(cl, 6, ramp('#56639e', 0.7))); }
+      }
       return raster(parts, 100, 100, 0, { sc: CORE_SC });
     });
   }
@@ -12572,6 +12646,13 @@ const UNITS = (() => {
       // the heart is the last fire (Nic: "warm heart, green shell"): white-gold inside the green machine
       parts.push(P(S.dome(0, 0, 9.5, 12), 9, ramp(h ? '#ff6f8a' : '#ffb347', 1), { e: (x, y, t) => t >= 4 ? (h ? '#ffd0d8' : '#fff1c8') : t >= 3 ? (h ? null : '#ffd27a') : null }));
       parts.push(P(S.hexgem(0, 0, 5.5, 12), 19, ramp(h ? '#ffb0c0' : '#ffe6a8', 1), { e: (x, y, t) => t >= 4 ? '#ffffff' : t >= 2 ? (h ? null : '#fff4d6') : null }));
+      if (FINE > 1) { // 6.16.1 polish 40: a bezel on each fuel cell, cooling fins between the cells, notches on the torus, facets on the crystal
+        for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283, cx = Math.cos(an) * 16.5, cy = Math.sin(an) * 16.5, a2 = (k + 0.5) / 8 * 6.283;
+          addD(parts[1 + k], (x, y) => (Math.abs(Math.hypot(x - cx, y - cy) - 2.6) < 0.3 ? -0.8 : 0));
+          parts.push(P(seg(Math.cos(a2) * 14, Math.sin(a2) * 14, Math.cos(a2) * 20, Math.sin(a2) * 20, 0.7, 1.6), 9, ramp(h ? '#8a2a44' : '#2a8a70', 0.6))); }
+        addD(parts[9], (x, y) => (angf(x, y, 12) < 0.14 ? -1 : 0));
+        addD(parts[11], (x, y) => (Math.hypot(x, y) > 0.8 && Math.abs(angf(x, y, 6) - 0.5) < 0.05 ? -1 : 0));
+      }
       return raster(parts, 56, 56, angOf(ai), { sc: CORE_SC });
     });
   }
@@ -12579,6 +12660,20 @@ const UNITS = (() => {
     const ai = idxOf(ang);
     return get(`cgun:${el}:${ai}`, () => { const c = EL[el].col; return raster([P(S.tube(10, 32, -3.5, 2.4, 0), 18, GUNM, { d: stripes(5, 1) }), P(S.tube(10, 32, 3.5, 2.4, 0), 18, GUNM, { d: stripes(5, 1) }),
       P(S.box(28, -6.5, 33, 6.5, 4, 1.5), 18, ramp(c), { e: (x) => x > 31.5 ? mix(c, '#ffffff', 0.5) : null }), P(S.box(6, -7, 14, 7, 5, 2), 16, HULL)], 76, 76, angOf(ai), { sc: CORE_SC }); });
+  }
+  // 6.16.1 polish 40: the probe as a sprite (used only when FINE > 1; the old probe is nine flat squares drawn live in render.js).
+  // The same ship, the same colours: a pale round hull, two blue side pods, a lit canopy toward its heading, an engine bell behind.
+  function probe(ang, hit) {
+    const ai = ((Math.round(ang / (Math.PI * 2) * 16) % 16) + 16) % 16, h = hit ? 1 : 0;
+    return get(`prb:${ai}:${h}`, () => { const HUL = ramp(h ? '#ff5a7a' : '#d8ecff', 0.9), TR = ramp('#3f8fe0', 0.8), DK = ramp('#1c3a66', 0.5), parts = [];
+      for (const s of [-1, 1]) { parts.push(P(seg(0, s * 4.5, 0, s * 9, 1.1, 1.6), 2, DK));
+        parts.push(P(S.tube(-5.5, 3.5, s * 9.6, 2.7, 0), 1, TR, { d: (x) => (Math.abs(x + 1) < 0.4 ? -0.8 : 0), e: (x) => x > 2.4 ? '#bfe4ff' : null }));
+        parts.push(P(S.dome(-5.6, s * 9.6, 1.5, 1.2), 2.2, DK)); }
+      parts.push(P(S.tube(-11, -6.5, 0, 2.8, 0), 2, DK, { e: (x) => x < -9.8 ? '#7fe8ff' : null }));
+      parts.push(P(S.dome(0, 0, 8, 7), 2, HUL, { d: (x, y) => (Math.abs(Math.hypot(x, y) - 5.8) < 0.35 ? -0.8 : 0) + (x < -1 && Math.abs(y) < 0.35 ? -0.6 : 0) }));
+      parts.push(P(S.ell(3.8, 0, 3.4, 2.9, 2.6), 6.6, ramp('#7fe8ff', 1), { e: (x, y) => Math.hypot(x - 2.8, y + 1) < 0.9 ? '#ffffff' : null }));
+      parts.push(P(S.dome(-3.4, -3.4, 1.2, 1.4), 7.6, ramp('#ffffff', 1))); parts.push(P(S.dome(-3.4, 3.4, 0.8, 0.8), 7.6, TR));
+      return raster(parts, 30, 30, ai / 16 * Math.PI * 2); });
   }
   function pirate(gold) {
     return get('pship:' + (gold ? 1 : 0), () => {
@@ -12606,7 +12701,7 @@ const UNITS = (() => {
   function warmTower(type, el, spec) {
     if (ROT[type]) for (let i = 0; i < NA; i++) for (const rk of [0, 1]) ART.warm(`tt:${type}:${el}:${spec}:${i}:${rk}:0:${type === 'missile' ? 1 : 0}`, () => raster(topParts(type, el, spec || 0, { rk, ph: 0, ld: type === 'missile' ? 1 : 0 }), 60, 60, angOf(i)));
   }
-  return { base, top, icon, enemy, enemyAng, sample, ogTip, ogTips, ogPad, boss, wormSeg, meat, core, coreBase, coreGun, pirate, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
+  return { base, top, icon, enemy, enemyAng, sample, ogTip, ogTips, ogPad, boss, wormSeg, meat, core, coreBase, coreGun, pirate, probe, missile, shell, warmTower, warmEnemies, ROT, SPIN, NA, ESZ };
 })();
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
@@ -13488,8 +13583,11 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     const X = Pb.x * TILE, Y = Pb.y * TILE - (Pb.home ? 4 : 8), a = Pb.home ? -0.6 : Pb.ang, ca = Math.cos(a), sa = Math.sin(a), hit = G.time - Pb.hitT < 0.12;
     if (!prIn(Pb.x, Pb.y, 30, v)) return;
     if (!Pb.home) R(b, X - 4, Pb.y * TILE + 3, 8, 2, 'rgba(0,0,0,0.3)');
-    for (const o of [-1, 1]) { R(b, X - sa * 5 * o - 2 - ca, Y + ca * 5 * o - 2 - sa, 4, 4, '#1c3a66'); R(b, X - sa * 5 * o - 1 - ca, Y + ca * 5 * o - 1 - sa, 3, 3, PR_COL.trim); } // side pods
-    D(b, X, Y, 5, '#1c3a66'); D(b, X, Y, 4, hit ? '#ff5a7a' : PR_COL.body); D(b, X - 1, Y - 1, 2, '#ffffff'); R(b, X - 1 + ca * 2.5, Y - 1 + sa * 2.5, 3, 3, PR_COL.glow); // body (dark outline), cockpit toward its heading
+    if (FINE > 1) blit(UNITS.probe(a, hit), X, Y); // 6.16.1 polish 40: with fine sprites the probe is a drawn ship (units.js probe); the squares below are the old one
+    else {
+      for (const o of [-1, 1]) { R(b, X - sa * 5 * o - 2 - ca, Y + ca * 5 * o - 2 - sa, 4, 4, '#1c3a66'); R(b, X - sa * 5 * o - 1 - ca, Y + ca * 5 * o - 1 - sa, 3, 3, PR_COL.trim); } // side pods
+      D(b, X, Y, 5, '#1c3a66'); D(b, X, Y, 4, hit ? '#ff5a7a' : PR_COL.body); D(b, X - 1, Y - 1, 2, '#ffffff'); R(b, X - 1 + ca * 2.5, Y - 1 + sa * 2.5, 3, 3, PR_COL.glow); // body (dark outline), cockpit toward its heading
+    }
     if (!Pb.home || frame % 30 < 15) R(b, X - ca * 5.5 - 1, Y - sa * 5.5 - 1, 3, 3, frame % 4 < 2 ? '#ffffff' : PR_COL.glow); // engine
     if (!Pb.home && frame % 3 === 0 && !LITE) parts.push({ x: X - ca * 5, y: Y - sa * 5, vx: -ca * 12, vy: -sa * 12, life: 0.3, max: 0.3, col: PR_COL.glow, s: 1 });
   }
