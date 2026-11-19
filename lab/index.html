@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 35';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 36';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -11686,6 +11686,9 @@ const UNITS = (() => {
   // FINE_DEFAULT = 1 in data.js skips all of it (the fallback Nic asked for).
   const RIV = ramp('#8d97cb', 0.9), FBRASS = ramp('#c89a3a', 0.8), FDARK = ramp('#12142a', 0.4);
   const rivets = (parts, pts, z, r) => { for (const [x, y] of pts) parts.push(P(S.dome(x, y, r || 0.9, 1), z, RIV)); };
+  const seg = (x0, y0, x1, y1, w, h) => (x, y) => { const dx = x1 - x0, dy = y1 - y0, u = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / (dx * dx + dy * dy))), d = Math.hypot(x - x0 - u * dx, y - y0 - u * dy); return d > w ? -1 : h * Math.sqrt(1 - d * d / (w * w)); };
+  const angf = (x, y, n) => ((Math.atan2(y, x) + 6.2832) * n / 6.2832) % 1; // 0..1 saw-tooth, n times round the centre
+  const overE = (p, f) => { const o = p.e; p.e = o ? (x, y, t) => f(x, y, t) || o(x, y, t) : f; }; // like addE, but the new detail wins
   const addD = (p, f) => { const o = p.d; p.d = o ? (x, y) => o(x, y) + f(x, y) : f; };
   const addE = (p, f) => { const o = p.e; p.e = o ? (x, y, t) => o(x, y, t) || f(x, y, t) : f; };
   const FD = {
@@ -11769,6 +11772,126 @@ const UNITS = (() => {
       for (let k = 0; k < 3; k++) { const an = k / 3 * 6.283 + 0.5; rivets(parts, [[Math.cos(an) * 8, Math.sin(an) * 8], [Math.cos(an) * 12.5, Math.sin(an) * 12.5]], 9.4, 0.6); }
       parts.push(P(S.ring(0, 0, 4.4, 5.5, 1), 12, GUNM), P(S.ring(0, 0, 4.4, 5.3, 1), 17, GUNM));
       const nd = (v || 0) + 1; for (let k = 0; k < nd; k++) { const an = k / nd * 6.283; parts.push(P(S.dome(Math.cos(an) * 9, Math.sin(an) * 9, 1.1, 1), 21, ramp(mix(c, '#ffffff', 0.5), 1), { e: () => mix(c, '#ffffff', 0.6) })); }
+    },
+    flame(parts, c, v, a) { // the body gets a seam, rear vents and bolts; each tank a valve cap and a hose to the nozzle; a blue pilot light at the muzzle
+      const tr = v === 1 ? 6.5 : 5.5;
+      addD(parts[0], (x, y) => (Math.abs(x + 2.5) < 0.4 ? -1 : 0));
+      addE(parts[0], (x, y) => x < -12.4 && x > -14.2 && Math.abs(y) < 3.2 && (((y + 20) % 1.6) < 0.7) ? '#14100a' : null);
+      for (const q of [1, 2]) addD(parts[q], (x, y) => { const r = Math.hypot(x + 9, Math.abs(y) - 7); return Math.abs(r - tr * 0.62) < 0.35 ? -1.2 : 0; });
+      if (v === 1) for (const q of [1, 2]) overE(parts[q], (x, y) => { const dy = Math.abs(y) - 7, r = Math.hypot(x + 9, dy); return r > tr * 0.68 && r < tr * 0.86 && angf(x + 9, dy, 8) < 0.5 ? '#ffcf3a' : null; }); // Inferno: hazard bands on the big tanks
+      for (const s of [-1, 1]) { parts.push(P(S.dome(-9, s * 7, 1.7, 1.4), 14.7, FBRASS));
+        parts.push(P(seg(-5.5, s * 5.2, 0.5, s * 2.3, 1.1, 1.3), 10.4, FDARK)); }
+      rivets(parts, [[0, -8.6], [0, 8.6], [-12.5, 0]], 9, 0.8);
+      addD(parts[4], (x, y) => (x > 15.5 && x < 21 && (((x + 40) % 2.2) < 0.8) && (((Math.abs(y) + 0.5) % 2.4) < 1) ? -1.4 : 0));
+      parts.push(P(S.dome(13.4, 0, 1.2, 1), 11.5, ramp('#7fd0ff', 1), { e: () => (a.ph % 2 ? '#c8ecff' : '#7fd0ff') }));
+      if (v === 2) for (const x of [4, 9]) parts.push(P(S.dome(x, 0, 0.9, 0.8), 15.5, ramp(mix(EL.A.col, '#ffffff', 0.5), 1))); // Cryo-mix rings: a lit stud on each
+    },
+    forge(parts, c, v, a) { // plate seams and edge bolts on the casing; grate bars and a brass lintel on the firebox; a rim on the chimney; a hub on the gear; a gauge
+      addD(parts[0], (x, y) => (Math.abs(x) < 0.4 && y < -1 ? -1 : 0) + (Math.abs(Math.max(Math.abs(x) - 2, Math.abs(y))- 12.6) < 0.3 && Math.abs(x) < 15 ? -0.6 : 0));
+      overE(parts[1], (x, y) => y > 1.4 && (((x + 40) % 3.6) < 0.8) ? '#1a0c04' : null);
+      parts.push(P(S.box(-12, -1.6, 12, 0.6, 1.8, 0.6), 10.2, FBRASS, { d: (x) => (((x + 41) % 4) < 0.6 ? -0.8 : 0) }));
+      parts.push(P(S.ring(10, -8, 3.4, 5.3, 0), 17.4, GUNM, { d: (x, y) => (angf(x - 10, y + 8, 6) < 0.16 ? -1.2 : 0) }));
+      overE(parts[2], (x, y) => Math.hypot(x - 10.4, y + 7.6) < 1 && a.ph % 2 ? '#ff8a2a' : null);
+      parts.push(P(S.dome(-8, -8, 1.7, 1.3), 10.5, FBRASS));
+      parts.push(P(S.puck(14, 5.5, 2.3, 1.4, 0.6), 7.7, ramp('#e8e4d0', 0.9), { e: (x, y) => Math.abs((x - 14) + (y - 5.5) * 0.7) < 0.4 && y < 5.9 ? '#b0202a' : Math.hypot(x - 14, y - 5.5) > 1.8 ? '#3a3020' : null }));
+      rivets(parts, [[-7, -13], [7, -13], [-15, 5], [15, -1], [-15, -3], [0, 13.2]], 7.6, 0.75);
+      if (v === 2) for (let k = 0; k < 8; k++) { const an = Math.floor(k / 2) * 1.5708 + (k % 2 ? 0.2 : -0.2); parts.push(P(S.dome(Math.cos(an) * 19.5, Math.sin(an) * 19.5, 1, 0.9), 2.4, ramp(mix(c, '#ffffff', 0.5), 1), { e: () => mix(c, '#ffffff', 0.5) })); } // the element ring: lit studs where it shows past the casing
+    },
+    snare(parts, c, v, a) { // spoke seams and rim bolts on the deck; ribs on the arm; a collar under the cap; wound cable and an axle on each spool
+      addD(parts[0], (x, y) => { const r = Math.hypot(x, y); return (Math.abs(r - 9.6) < 0.35 ? -1 : 0) + (r > 5 && r < 11 && Math.abs(angf(x, y, 8) - 0.5) < 0.035 ? -0.9 : 0); });
+      for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283 + 0.39; rivets(parts, [[Math.cos(an) * 14, Math.sin(an) * 14]], 3, 0.6); }
+      addD(parts[2], (x, y) => (Math.abs(y) < 10 && (((y + 40) % 2.6) < 0.6) ? -0.8 : 0) + (Math.abs(x) < 0.35 ? -0.5 : 0));
+      for (const q of [4, 5]) addD(parts[q], (x, y) => (angf(Math.abs(x) - 9, y, 10) < 0.3 ? -0.8 : 0));
+      for (const s of [-1, 1]) parts.push(P(S.dome(s * 9, 0, 1.7, 1.5), 5, FDARK, { e: (x, y) => Math.hypot(x - s * 9, y) < 0.8 ? c : null }));
+      parts.push(P(S.ring(0, 0, 4.2, 5.5, 1), 12.6, GUNM, { d: (x, y) => (angf(x, y, 6) < 0.18 ? -1 : 0) }));
+      parts.push(P(S.ring(0, 0, 3.5, 4.5, 0.4), 18, GUNM));
+      if (v === 2) { addD(parts[6], (x, y) => (angf(x, y, 12) < 0.14 ? -1.2 : 0)); for (let k = 0; k < 6; k++) { const an = k / 6 * 6.283 + 0.26; parts.push(P(S.dome(Math.cos(an) * 16.5, Math.sin(an) * 16.5, 0.9, 0.8), 3.4, ramp(mix(c, '#ffffff', 0.5), 1), { e: () => mix(c, '#ffffff', 0.5) })); } } // Wide Net: notches and six lit studs on the outer ring
+    },
+    grav(parts, c, v, a) { // a collar round each post lamp, a claw strut from each post to the singularity, tick marks on the ring, a bent-light arc on the hole
+      const R = v === 1 ? 10 : 8.5;
+      for (let k = 0; k < 4; k++) { const an = k * 1.5708 + 0.785, px = Math.cos(an), py = Math.sin(an);
+        parts.push(P(S.ring(px * 17, py * 17, 1.9, 3, 0.4), 8.8, GUNM));
+        parts.push(P(seg(px * 13.6, py * 13.6, px * (R - 0.6), py * (R - 0.6), 1, 1.4), 4.8, GUNM, { e: (x, y) => Math.abs(Math.hypot(x, y) - (R + 2.6)) < 0.7 ? mix(c, '#ffffff', 0.4) : null })); }
+      addD(parts[4], (x, y) => (Math.hypot(x, y) > (v === 2 ? 15.4 : 13.4) && angf(x, y, 24) < 0.3 ? -1 : 0));
+      addE(parts[5], (x, y) => { const r = Math.hypot(x, y), an = Math.atan2(y, x); return Math.abs(r - R * 0.74) < 0.5 && an > -2.7 && an < -1.1 ? mix(c, '#ffffff', 0.55) : Math.abs(r - R * 0.5) < 0.35 && an > 0.4 && an < 1.6 ? mix(c, '#160c2a', 0.45) : null; });
+      if (v === 1) addE(parts[5], (x, y) => { const r = Math.hypot(x, y), an = Math.atan2(y, x); return Math.abs(r - R * 0.9) < 0.4 && an > 1.9 && an < 3 ? mix(c, '#ffffff', 0.35) : null; }); // Singularity: a second arc on the bigger hole
+      if (v === 2) for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283; parts.push(P(S.dome(Math.cos(an) * 14.6, Math.sin(an) * 14.6, 0.9, 0.8), 4.6, ramp(mix(c, '#ffffff', 0.5), 1), { e: () => mix(c, '#ffffff', 0.5) })); } // Tidal Field: eight lit studs on the wide ring
+    },
+    saw(parts, c, v, a) { // a seam, rear vents, bolts and a finned motor on the body; a slide groove on the arm; drilled holes in each blade; a striped guard behind it
+      const rk = a.rk * 4, B = v === 2 ? [[7 - rk, -7, 7.5], [7 - rk, 7, 7.5]] : [[8 - rk, 0, v === 1 ? 13 : 11]];
+      addD(parts[0], (x, y) => (Math.abs(x + 6.5) < 0.4 ? -1 : 0));
+      addE(parts[0], (x, y) => x < -11.4 && x > -13.4 && Math.abs(y) < 6.5 && (((y + 20) % 2.2) < 0.9) ? '#0c0e1c' : null);
+      addD(parts[1], (x, y) => (Math.abs(y) < 0.4 ? -0.8 : 0));
+      B.forEach(([bx, by, R], i) => { addD(parts[2 + i * 2], (x, y) => { for (let k = 0; k < 5; k++) { const an = k * 1.2566 + 0.4; if (Math.hypot(x - bx - Math.cos(an) * R * 0.72, y - by - Math.sin(an) * R * 0.72) < 0.95) return -1.6; } return 0; });
+        parts.push(P((x, y) => { const dx = x - bx, dy = y - by, r = Math.hypot(dx, dy); return r < R + 0.5 || r > R + 2.4 || Math.abs(Math.atan2(dy, dx)) < 2.05 ? -1 : 2.6; }, 9.4, FBRASS, { e: (x, y) => angf(x - bx, y - by, 22) < 0.5 ? '#ffcf3a' : '#14100a' })); });
+      parts.splice(2, 0, P(S.puck(-8.5, 0, 4.4, 2.4, 1), 7.8, GUNM, { d: (x, y) => (angf(x + 8.5, y, 9) < 0.25 ? -0.9 : 0), e: glow(mix(c, '#ffffff', 0.4), (x, y) => Math.hypot(x + 8.5, y) < 1) }));
+      rivets(parts, [[-12.2, -7.6], [-12.2, 7.6], [1.2, -7.6], [1.2, 7.6]], 7.6, 0.8);
+    },
+    flashover(parts, c, v, a) { // a groove and rim bolts on the deck; a soot collar on each vent; a brass heat pipe from each vent to the heart; glowing cracks in the heart
+      const heart = parts[parts.length - 1];
+      addD(parts[0], (x, y) => (Math.abs(Math.hypot(x, y) - 13.6) < 0.35 ? -1 : 0));
+      for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283 + 0.39; rivets(parts, [[Math.cos(an) * 13.2, Math.sin(an) * 13.2]], 3.6, 0.7); }
+      for (let k = 0; k < 4; k++) { const an = k * 1.5708, px = Math.cos(an), py = Math.sin(an);
+        parts.push(P(S.ring(px * 12, py * 12, 2.1, 3.3, 0.5), 8.1, ramp('#2a1810', 0.5)));
+        parts.push(P(seg(px * 9.8, py * 9.8, px * 6.6, py * 6.6, 1.1, 1.5), 9.6, FBRASS)); }
+      addE(heart, (x, y) => { const r = Math.hypot(x, y); return r > 5.4 && r < 7.7 && angf(x, y, 11) < 0.13 ? '#ff9a3c' : null; });
+      if (v === 1) for (let k = 0; k < 4; k++) { const an = k * 1.5708 + 0.785; parts.push(P(S.dome(Math.cos(an) * 11, Math.sin(an) * 11, 1, 1), 8.3, ramp(mix(EL.A.col, '#ffffff', 0.6), 1), { e: () => mix(EL.A.col, '#ffffff', 0.6) })); } // Chain Reaction: a lit tip in each igniter coil
+      if (v === 2) for (let k = 0; k < 6; k++) { const an = k / 6 * 6.283 + 0.52; rivets(parts, [[Math.cos(an) * 9.5, Math.sin(an) * 9.5]], 8.3, 0.7); } // Furnace: six bolts on the chimney ring
+    },
+    surge(parts, c, v, a) { // spoke seams on the deck; four cables with brass terminals; flutes on each capacitor cell; a brass collar under the sphere; two sparks round it
+      const sphere = parts[parts.length - 1], nc = (v === 1 ? 6 : 3);
+      addD(parts[0], (x, y) => { const r = Math.hypot(x, y); return (Math.abs(r - 10.4) < 0.35 ? -0.9 : 0); });
+      for (let q = 1; q <= nc; q++) { const ox = v === 1 ? (q <= 3 ? -5 : 5) : 0; addD(parts[q], (x, y) => (angf(x - ox, y, 12) < 0.22 ? -0.7 : 0)); }
+      for (let k = 0; k < 4; k++) { const an = k * 1.5708 + 0.785, px = Math.cos(an), py = Math.sin(an);
+        parts.push(P(seg(px * 13, py * 13, px * 8.2, py * 8.2, 0.8, 1.2), 2.7, FDARK)); parts.push(P(S.dome(px * 13.2, py * 13.2, 1.3, 1.3), 2.8, FBRASS)); }
+      if (v === 1) parts.push(P(S.box(-5, -1.5, 5, 1.5, 1.6, 0.5), 14.6, FBRASS, { d: (x) => (Math.abs(Math.abs(x) - 3) < 0.35 ? -0.8 : 0) })); // Deep Cell: a bus bar joins the two stacks
+      parts.push(P(S.ring(0, 0, 3.4, 5, 1), 15, FBRASS, { d: (x, y) => (angf(x, y, 8) < 0.16 ? -0.9 : 0) }));
+      addE(sphere, (x, y) => { const r = Math.hypot(x, y); return r > 2.6 && r < 3.6 && angf(x, y, 5) < 0.12 ? '#ffffff' : null; });
+      for (let k = 0; k < 2; k++) { const an = (a.ph || 0) * 1.3 + k * 3.1416 + 0.6; parts.push(P(S.dome(Math.cos(an) * 6.4, Math.sin(an) * 6.4, 0.8, 0.7), 18, ramp('#ffffff', 1), { e: () => '#ffffff' })); }
+      if (v === 2) for (let k = 0; k < 3; k++) { const an = k / 3 * 6.283 - 1.57; parts.push(P(S.dome(Math.cos(an) * 7 - 0.5, Math.sin(an) * 7 - 0.5, 0.8, 0.7), 18.6, ramp('#ffffff', 1), { e: () => '#ffffff' })); } // Forked Surge: a hot point on each prong
+    },
+    rime(parts, c, v, a) { // a frost ring and four coolant studs on the deck; a second crack and a white flaw in each ice block; facets on the top crystal; corner clamps
+      const gemP = parts[parts.length - 1], nb = v === 1 ? 3 : 1, b0 = parts.length - 1 - nb, blocks = v === 1 ? [[-6, -6, 7], [6, -6, 7], [0, 6, 8]] : [[0, 0, 10]];
+      addD(parts[0], (x, y) => (Math.abs(Math.hypot(x, y) - 11) < 0.35 ? -0.9 : 0));
+      addE(parts[0], (x, y) => { const r = Math.hypot(x, y); return Math.abs(r - 12.5) < 0.55 && angf(x, y, 7) < 0.62 ? mix(c, '#ffffff', 0.55) : null; });
+      blocks.forEach(([bx, by, r], i) => { const p = parts[b0 + i];
+        addD(p, (x, y) => (Math.abs((x - bx) * 0.6 - (y - by) + r * 0.35) < 0.4 ? 1.2 : 0) + (Math.abs((x - bx) + (y - by) * 0.5 - r * 0.5) < 0.35 ? -1 : 0));
+        addE(p, (x, y) => Math.abs((x - bx) * 0.3 + (y - by) + r * 0.3) < 0.35 && Math.abs(x - bx) < r * 0.5 ? '#ffffff' : null); });
+      addD(gemP, (x, y) => (Math.hypot(x, y) > 0.8 && Math.abs(angf(x, y, 6) - 0.5) < 0.06 ? -1.3 : 0));
+      for (let k = 0; k < 4; k++) { const an = k * 1.5708 + 0.785; rivets(parts, [[Math.cos(an) * 12.4, Math.sin(an) * 12.4]], 2.5, 1.1); }
+      if (!v) for (const sx of [-1, 1]) for (const sy of [-1, 1]) parts.push(P(S.box(sx * 9.6 - 1.7, sy * 7.7 - 1.7, sx * 9.6 + 1.7, sy * 7.7 + 1.7, 6, 0.8), 3, GUNM, { e: glow(mix(c, '#ffffff', 0.4), (x, y) => Math.hypot(x - sx * 9.6, y - sy * 7.7) < 0.7) }));
+      if (v === 2) parts.splice(1, 0, P(S.ring(0, 0, 13.2, 14.8, 1), 2.2, GUNM, { d: (x, y) => (angf(x, y, 16) < 0.2 ? -1 : 0) })); // Rime Spikes: a metal ring seats the eight spikes
+    },
+    tangle(parts, c, v, a) { // finer teeth and lit runes on the loom ring; a barb on each anchor hook; a bead on each thread; cross threads make a web; an iris in the core
+      const n = v === 1 ? 5 : 3, core = parts[parts.length - 1], TH = ramp(mix(c, '#ffffff', 0.2), 0.9);
+      addD(parts[0], (x, y) => (Math.hypot(x, y) > 14.4 && angf(x, y, 30) < 0.3 ? -0.8 : 0));
+      addE(parts[0], (x, y) => { const r = Math.hypot(x, y); return Math.abs(r - 12.6) < 0.5 && angf(x, y, n * 4) > 0.42 && angf(x, y, n * 4) < 0.58 ? mix(c, '#2e2448', 0.3) : null; });
+      for (let k = 0; k < n; k++) { const an = k / n * 6.283, an2 = (k + 1) / n * 6.283, hx = Math.cos(an), hy = Math.sin(an);
+        parts.push(P(seg(hx * 15.5, hy * 15.5, hx * 18 - hy * 2.4, hy * 18 + hx * 2.4, 0.9, 1.6), 5, ramp('#8a7ab0', 0.7)));
+        parts.push(P(S.dome(hx * 7.4, hy * 7.4, 1, 0.9), 7.1, ramp(mix(c, '#ffffff', 0.6), 1), { e: () => mix(c, '#ffffff', 0.6) }));
+        parts.push(P(seg(hx * 9.4, hy * 9.4, Math.cos(an2) * 9.4, Math.sin(an2) * 9.4, 0.5, 0.8), 5.6, TH)); }
+      addE(core, (x, y) => Math.abs(Math.hypot(x, y) - 3.5) < 0.4 ? mix(c, '#160c2a', 0.45) : null);
+      if (v === 2) { const q = parts.length - 1 - n * 3 - 1; addD(parts[q], (x, y) => (angf(x, y, 10) < 0.2 ? -1 : 0)); } // Shared Fate: notches on the second ring
+    },
+    aegis(parts, c, v, a) { // a seam, rear vents and bolts on the hull; a mount ring and a faint lattice on the shield dome; five lit nodes on the projector arc; a breech block
+      const rk = a.rk * 3, L = v === 2 ? 21 : 16, dome = parts[parts.length - 1];
+      addD(parts[0], (x, y) => (Math.abs(x + 9.5) < 0.4 ? -1 : 0));
+      addE(parts[0], (x, y) => x < -11 && x > -13 && Math.abs(y) < 8 && (((y + 20) % 2.2) < 0.9) ? '#0c0e1c' : null);
+      addE(dome, (x, y) => { const dx = x + 4, r = Math.hypot(dx, y); return (Math.abs(r - 4.5) < 0.3 && angf(dx, y, 6) > 0.14) || (r > 4.8 && r < 6.4 && angf(dx, y, 6) < 0.09) ? mix(c, '#ffffff', 0.32) : null; });
+      parts.push(P(S.ring(-4, 0, 7.1, 8.7, 1), 7.4, GUNM, { d: (x, y) => (angf(x + 4, y, 10) < 0.16 ? -1 : 0) }));
+      for (let k = -2; k <= 2; k++) { const an = k * 0.45; parts.push(P(S.dome(-2 + Math.cos(an) * 16.5, Math.sin(an) * 16.5, 0.9, 0.8), 9, ramp(mix(c, '#ffffff', 0.6), 1), { e: () => mix(c, '#ffffff', 0.6) })); }
+      parts.push(P(S.box(2.4, -5.3, 5.6, 5.3, 2.4, 0.8), 9, GUNM, { d: (x, y) => (Math.abs(y) < 0.4 ? -0.9 : 0) }));
+      for (const y of [-3, 3]) parts.push(P(S.tube(L - 3.4 - rk, L - 1.6 - rk, y, 2.6, 0), 9, GUNM));
+      rivets(parts, [[-11, 9.6], [-11, -9.6], [3.4, -9.6], [3.4, 9.6]], 7.6, 0.75);
+      if (v === 1) rivets(parts, [[-9, -14], [1, -14], [-9, 14], [1, 14], [-4, -14], [-4, 14]], 9.7, 0.7); // Bulkhead: bolts along each armour plate
+      if (v === 2) parts.push(P(S.box(6, -0.7, 17 - rk, 0.7, 1.1, 0.4), 9.6, FDARK, { e: (x) => x > 15.4 - rk ? mix(c, '#ffffff', 0.7) : null })); // Interceptor: a sight rail between the long barrels
+    },
+    joker(parts, c, v, a) { // seams on the turntable; a brass setting round each element gem; an inner frame on the die
+      const die = parts[parts.length - 1];
+      addD(parts[0], (x, y) => { const r = Math.hypot(x, y); return (Math.abs(r - 9.8) < 0.35 ? -0.9 : 0) + (r > 9.8 && angf(x, y, 10) < 0.07 ? -0.8 : 0); });
+      for (let k = 0; k < 5; k++) { const an = k / 5 * 6.283 - 1.57; parts.splice(1, 0, P(S.ring(Math.cos(an) * 12.5, Math.sin(an) * 12.5, 2.3, 3.5, 0.3), 2.6, FBRASS)); }
+      addD(die, (x, y) => (Math.abs(Math.max(Math.abs(x), Math.abs(y)) - 6.3) < 0.3 ? -0.7 : 0));
+      if (v === 2) for (let k = 0; k < 5; k++) { const an = k / 5 * 6.283 - 1.57 + 0.63; parts.push(P(S.dome(Math.cos(an) * 12, Math.sin(an) * 12, 0.8, 0.7), 11.8, ramp('#ffffff', 1), { e: () => '#fff6c8' })); } // High Roller: a bright bead on each crown point
     },
   };
   const topParts = (type, el, spec, a) => { const parts = TOP[type](EL[el].col, spec, a); if (FINE > 1 && FD[type] && !(HD[type] && !spec)) FD[type](parts, EL[el].col, spec, a); return parts; };
@@ -13840,7 +13963,6 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     b.globalAlpha = 1;
     if (false) { const ox = Math.round(X - hw), oy = Math.round(y - hh); const q = v => Math.round(v * BOSS_SCALE); R(b, ox + q(16), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(27), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(16), oy + q(18), q(6), 2, '#3a1606'); R(b, ox + q(27), oy + q(18), q(6), 2, '#3a1606'); }
     // (6.16.1: the grey armor bars are gone with the hive redraw: the Titan's sprite now shows its shell plates and loses them as they break)
-    if (0 && e.boss === 'titan' && e.plates > 0) { const q = v => Math.round(v * BOSS_SCALE); const pl = (x, y, w, h) => { R(b, x, y, w, h, '#3a3f58'); R(b, x + 0.5, y + 0.5, w - 1, h - 1, '#6a7094'); b.fillStyle = '#9aa0c0'; b.fillRect(x + 0.5, y + 0.5, w - 1, 0.5); }; pl(X - q(22), y - q(22), q(44), q(5)); pl(X - q(22), y + q(17), q(44), q(5)); if (e.plates > 1) { pl(X - q(22), y - q(17), q(5), q(34)); pl(X + q(17), y - q(17), q(5), q(34)); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
     if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA(G.assault ? strainCol(G.assault.genes) : '#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
