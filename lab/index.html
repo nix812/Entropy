@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 37';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 38';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -14185,7 +14185,9 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     return { l: Math.max(ins.l, f.l + (ins.l - f.l) * e), r: Math.max(ins.r, f.r + (ins.r - f.r) * e), t: Math.max(ins.t, f.t + (ins.t - f.t) * e), b: Math.max(ins.b, f.b + (ins.b - f.b) * e) }; }
   function view() {
     const ws = scale * cam.z, vw = W / ws, vh = H / ws, mini = cam.z > 1.01 && reg.w ? 64 * reg.h / reg.w + 12 : 0, ins = insNow();
-    const bx0 = -MARGIN - ins.l / ws, by0 = -MARGIN - ins.t / ws, bx1 = BW + MARGIN + ins.r / ws, by1 = BH + MARGIN + Math.max(ins.b, mini) / ws;
+    // 6.16.1 polish 38: the pan room never drops below what the stage's own buttons need (insS). A side panel hides Lift Off and Probe;
+    // without this floor the room at their edge shrank and a home view framed near that edge slid 23 px when the panel opened.
+    const bx0 = -MARGIN - Math.max(ins.l, insS.l) / ws, by0 = -MARGIN - Math.max(ins.t, insS.t) / ws, bx1 = BW + MARGIN + Math.max(ins.r, insS.r) / ws, by1 = BH + MARGIN + Math.max(ins.b, insS.b, mini) / ws;
     const vx = vw >= bx1 - bx0 ? (bx0 + bx1 - vw) / 2 : clamp(cam.x - vw / 2, bx0, bx1 - vw);
     const vy = vh >= by1 - by0 ? (by0 + by1 - vh) / 2 : clamp(cam.y - vh / 2, by0, by1 - vh);
     return { vx, vy, vw, vh, ws };
@@ -17684,7 +17686,10 @@ const UI = (() => {
     for (const q of INSET_SEL) { const el = $(q); if (!el || el.hidden || !el.offsetParent) continue; const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) continue;
       const d = { l: r.right - S.left, r: S.right - r.left, t: r.bottom - S.top, b: S.bottom - r.top }; let best = 'l'; for (const e of ['r', 't', 'b']) if (d[e] < d[best]) best = e;
       const cap = (best === 'l' || best === 'r' ? S.width : S.height) * 0.6, v = Math.min(cap, d[best]) + 6; o[best] = Math.max(o[best], v); if (HOME_SEL[q]) s[best] = Math.max(s[best], v); }
-    return { l: o.l * k, r: o.r * k, t: o.t * k, b: o.b * k, s: { l: s.l * k, r: s.r * k, t: s.t * k, b: s.b * k } }; // s: the fixed stage buttons only (the home view keeps the core clear of them)
+    // 6.16.1 polish 38: with a side panel open, Lift Off, Probe and Ready slide inward to clear it, so they would measure as covering more
+    // of the stage and the home view would shift by up to 27 px the first time a panel opened on that side. Measure them only with no panel open.
+    const pan = document.body.classList.contains('panel-l') || document.body.classList.contains('panel-r');
+    return { l: o.l * k, r: o.r * k, t: o.t * k, b: o.b * k, s: pan ? null : { l: s.l * k, r: s.r * k, t: s.t * k, b: s.b * k } }; // s: the fixed stage buttons only (the home view keeps the core clear of them)
   }
   function syncInsets(force) { const now = performance.now(); if (!force && now - insT < 300) return; insT = now; if (Render.setInsets) Render.setInsets(camInsets()); }
   function closePanel() { sellArm = null;
