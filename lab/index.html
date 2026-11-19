@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 36';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 37';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -11685,7 +11685,7 @@ const UNITS = (() => {
   // seams, rivets, vents, lenses, wiring. FD[type](parts, c, v, a) runs after TOP[type] when FINE > 1 and adds to its part list.
   // FINE_DEFAULT = 1 in data.js skips all of it (the fallback Nic asked for).
   const RIV = ramp('#8d97cb', 0.9), FBRASS = ramp('#c89a3a', 0.8), FDARK = ramp('#12142a', 0.4);
-  const rivets = (parts, pts, z, r) => { for (const [x, y] of pts) parts.push(P(S.dome(x, y, r || 0.9, 1), z, RIV)); };
+  const rivets = (parts, pts, z, r, rm) => { for (const [x, y] of pts) parts.push(P(S.dome(x, y, r || 0.9, 1), z, rm || RIV)); };
   const seg = (x0, y0, x1, y1, w, h) => (x, y) => { const dx = x1 - x0, dy = y1 - y0, u = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / (dx * dx + dy * dy))), d = Math.hypot(x - x0 - u * dx, y - y0 - u * dy); return d > w ? -1 : h * Math.sqrt(1 - d * d / (w * w)); };
   const angf = (x, y, n) => ((Math.atan2(y, x) + 6.2832) * n / 6.2832) % 1; // 0..1 saw-tooth, n times round the centre
   const overE = (p, f) => { const o = p.e; p.e = o ? (x, y, t) => f(x, y, t) || o(x, y, t) : f; }; // like addE, but the new detail wins
@@ -12074,6 +12074,82 @@ const UNITS = (() => {
         P(S.gem(1, 0, 4, 3, 6), 2, ramp('#2a1050', 0.8), { e: (x, y) => Math.hypot(x - 2, y) < 1.1 ? '#ffffff' : null })];
     },
   };
+  // ---------- 6.16.1 fine detail for enemies (same rule as FD for towers: runs only when FINE > 1, adds to the part list) ----------
+  // The Remnant first: old war machines get what the old grid could not hold: brass bolts, rust, grilles, wheels, feet, cables.
+  const RBR = ramp('#8a6a30', 0.8), RST = '#6a3418', RDK = ramp('#1a1410', 0.4), RGR = ramp('#6a6050', 0.7);
+  const FE = {
+    husk(parts, c, f) { // a second seam and two rust patches on the frame; brass bolts on the patch plate; a brow and a brass socket for the eye; feet; a loose cable
+      const st = [0, 1, 0, -1][f] * 1.4;
+      addD(parts[4], (x, y) => (Math.abs(y - 1.6) < 0.4 && x < 1.5 ? -1 : 0));
+      addE(parts[4], (x, y) => Math.hypot(x + 3, y - 4.6) < 1.5 || Math.hypot(x - 2.4, y + 5) < 1.1 ? RST : null);
+      rivets(parts, [[-5.2, -6.7], [-1.8, -6.7], [-5.2, -2.8], [-1.8, -2.8]], 8.7, 0.55, RBR);
+      parts.push(P(S.box(4.6, -3.7, 5.8, 3.7, 1.3, 0.4), 9.5, RDK));
+      parts.push(P(S.ring(7.5, 0, 1.5, 2.4, 0.3), 9.4, RBR));
+      for (const s of [-1, 1]) for (const k of [-1, 1]) parts.push(P(S.dome(k * 4.5 + st * s * k + k, s * 8.6, 1.4, 1.1), 1.6, RGR));
+      parts.push(P(seg(-7.6, 2.2, -9.6, 4.6, 0.55, 1), 5.4, RDK));
+    },
+    bulwark(parts, c, f) { // road wheels in the treads; an engine grille, two exhaust stacks and a hatch on the hull; bolts, a gouge and a dent on the brass front plate
+      for (const s of [-1, 1]) for (const x of [-10, -5, 0, 5]) parts.push(P(S.dome(x, s * 9.4, 1.15, 0.9), 3.5, RGR));
+      addE(parts[2], (x, y) => x < -7.6 && x > -10 && Math.abs(y) < 3.6 && (((y + 20) % 1.8) < 0.7) ? '#0c0a08' : null);
+      for (const s of [-1, 1]) parts.push(P(S.puck(-8.6, s * 5.3, 1.4, 2.6, 0.5), 10, RDK, { e: (x, y) => Math.hypot(x + 8.6, y - s * 5.3) < 0.6 ? (f % 2 ? '#ff8a2a' : '#7a2a10') : null }));
+      parts.push(P(S.ring(-2.4, 0, 2.3, 3.3, 0.4), 10.7, RGR, { d: (x, y) => (angf(x + 2.4, y, 4) < 0.14 ? -0.8 : 0) }));
+      addD(parts[3], (x, y) => (Math.abs(x - 10) < 1.5 && Math.abs(y) < 2.3 ? -1 : 0) + (Math.hypot(x - 11, y + 4.6) < 1.2 ? -1.2 : 0));
+      addE(parts[3], (x, y) => Math.abs((y - 6.2) - (x - 10) * 1.3) < 0.4 && x > 8.6 && x < 12 ? '#5a4420' : null);
+      rivets(parts, [[8.3, -10.4], [8.3, -4.8], [8.3, 4.8], [8.3, 10.4], [11.9, -7.6], [11.9, 7.6]], 13.3, 0.6, RBR);
+    },
+    welder(parts, c, f) { // lugs on the treads; hazard stripes at the front; a brass gas tank and a hose; an elbow joint and a nozzle collar on the arm; sparks at the torch
+      for (const q of [0, 1]) addD(parts[q], (x) => (((x + 30 + f * 0.6) % 2.2) < 0.7 ? -0.8 : 0));
+      addE(parts[2], (x, y) => x > 2.1 && x < 3.5 && (((y + 20) % 2.4) < 1.2) ? '#d8a020' : null);
+      parts.push(P(S.tube(-6.6, -2.6, 3.1, 1.5, 0), 7.2, RBR, { d: (x) => (Math.abs(x + 4.6) < 0.35 ? -0.8 : 0) }));
+      parts.push(P(seg(-2.8, 3, 2, 1, 0.5, 0.9), 8.3, RDK));
+      parts.push(P(S.dome(4.6, 0, 1.6, 1.2), 10.6, RBR));
+      parts.push(P(S.tube(7.6, 9.2, 0, 1.8, 0), 8.6, RDK));
+      rivets(parts, [[-5.6, -3.7], [0.6, -3.7]], 7.6, 0.5, RBR);
+      parts.push(P(S.dome(12, f % 2 ? 1.7 : -1.5, 0.65, 0.6), 9, ramp('#ffffff', 1), { e: () => '#fff2c0' }));
+      if (f % 2) parts.push(P(S.dome(11.2, -2.6, 0.55, 0.5), 9, ramp('#ffffff', 1), { e: () => '#ffb03a' }));
+    },
+    lodestone(parts, c, f) { // six bolts on the horseshoe ring; copper windings round the core; a pit of rust; worn steel tips on the poles; a spark jumping between them
+      for (let k = 0; k < 6; k++) { const an = k / 6 * 6.283 + 0.52; rivets(parts, [[Math.cos(an) * 10.5, Math.sin(an) * 10.5]], 1.2, 0.65, RBR); }
+      parts.splice(2, 0, P(S.ring(0, 0, 5.5, 7.2, 0), 7.2, ramp('#b0703a', 0.8), { d: (x, y) => (angf(x, y, 16) < 0.3 ? -0.8 : 0) }));
+      addE(parts[1], (x, y) => Math.hypot(x + 3, y - 2.6) < 1.3 ? mix(c, '#1a0c08', 0.6) : null);
+      for (const q of [3, 4]) { addD(parts[q], (x) => (Math.abs(x - 6.5) < 0.35 ? -1 : 0)); addE(parts[q], (x) => x > 8.1 ? '#e0d8c8' : null); }
+      parts.push(P(S.dome(10.4, f % 2 ? 0.9 : -0.9, 0.7, 0.6), 11, ramp('#ffffff', 1), { e: () => (f % 2 ? '#ffffff' : '#c8b8ff') }));
+    },
+    crawler(parts, c, f) { // a claw pad on each foot and a brass piston on each leg; a side seam and an ammo box on the hull; a recoil sleeve and a slotted muzzle brake on the gun
+      const st = [0, 1.5, 0, -1.5][f];
+      for (const s of [-1, 1]) for (const k of [-1, 1]) { const kx = k * 6 + st * s * k, kn = k * 3;
+        parts.push(P(S.dome(kx, s * 14.6, 1.7, 1.4), 2.4, RGR));
+        parts.push(P(seg(kn + (kx - kn) * 0.25, s * 6.8, kn + (kx - kn) * 0.62, s * 10.8, 0.55, 0.9), 2.8, RBR)); }
+      addD(parts[4], (x, y) => (Math.abs(Math.abs(y) - 3.4) < 0.35 && x > -2 ? -0.9 : 0));
+      addE(parts[4], (x, y) => Math.hypot(x - 3.4, y - 4.4) < 1.1 ? RST : null);
+      parts.push(P(S.box(-8.5, -2.2, -5.5, 2.2, 2, 0.6), 9.5, ramp('#4a4a30', 0.6), { e: (x, y) => Math.abs(y) < 0.45 ? '#d8a020' : null }));
+      parts.push(P(S.tube(4, 7.4, 0, 2.5, 0), 8.6, ramp('#4a4438', 0.6), { d: (x) => (Math.abs(x - 5.7) < 0.35 ? -0.9 : 0) }));
+      parts.push(P(S.tube(15.4, 18.4, 0, 2.6, 0), 8.4, RDK, { e: (x, y) => Math.abs(y) < 1.9 && (((x + 40) % 1.5) < 0.6) ? '#05060c' : null }));
+      parts.push(P(S.ring(-2, 0, 2.8, 3.8, 0.3), 10.5, RBR));
+    },
+    adapter(parts, c, f) { // the hex shell splits into six plates, each with a brass bolt; a dark collar under the head; feet
+      const st = [0, 1, 0, -1][f] * 1.2;
+      addD(parts[4], (x, y) => { const q = Math.max(Math.abs(x) * 0.866 + Math.abs(y) * 0.5, Math.abs(y)), u = angf(x, y, 6); return q > 6.7 && (u < 0.05 || u > 0.95) ? -1.3 : 0; });
+      for (let k = 0; k < 6; k++) { const an = k / 6 * 6.283 + 0.5236; rivets(parts, [[Math.cos(an) * 7.4, Math.sin(an) * 7.4]], 5.9, 0.6, RBR); }
+      parts.splice(5, 0, P(S.ring(0, 0, 4.5, 5.7, 0.4), 7.8, RDK));
+      for (const s of [-1, 1]) for (const k of [-1, 1]) parts.push(P(S.dome(k * 5 + st * s * k, s * 9.6, 1.4, 1.1), 1.6, RGR));
+    },
+    warden(parts, c, f) { // more panel seams and rear grilles on the hull; a housing on each leg joint; claws; rank chevrons and bolts on the brass prow; a crossbar on the mast; two small optics; exhaust stacks
+      const st = [0, 1.6, 0, -1.6][f];
+      addD(parts[4], (x, y) => (Math.abs(x - 5.4) < 0.4 && Math.abs(y) > 2.4 ? -1 : 0) + (Math.abs(Math.abs(y) - 5.6) < 0.35 && x < -3 ? -0.9 : 0));
+      addE(parts[4], (x, y) => x < -9.4 && x > -12.4 && Math.abs(y) > 2.6 && Math.abs(y) < 5 && (((Math.abs(y) + 20) % 1.6) < 0.65) ? '#0c0a08' : Math.hypot(x - 1, y - 7.4) < 1.4 ? RST : null);
+      for (const s of [-1, 1]) for (const k of [-1, 1]) { const x1 = k * 7 + st * s * k + k * 2;
+        parts.push(P(S.dome(k * 7, s * 9.4, 2.7, 2.2), 11.2, ramp('#5a5040', 0.6))); parts.push(P(S.dome(k * 7, s * 9.4, 0.8, 0.7), 13.3, RBR));
+        parts.push(P(S.dome(x1, s * 15.6, 2.1, 1.6), 3.4, RGR)); }
+      addE(parts[5], (x, y) => Math.abs(y) < 3.8 && (Math.abs(x - 12.6 - Math.abs(y) * 0.45) < 0.4 || Math.abs(x - 14.3 - Math.abs(y) * 0.45) < 0.4) ? '#3a2a10' : null);
+      rivets(parts, [[12.3, -6], [12.3, 6], [16, -2.8], [16, 2.8]], 13.5, 0.6, RBR);
+      parts.push(P(S.box(-8, -4.2, -6.6, 4.2, 1, 0.4), 18.6, ramp('#9aa0b0', 0.7), { e: (x, y) => Math.abs(y) > 3.3 ? (f % 2 ? '#ff3b2f' : '#a01810') : null }));
+      parts.push(P(S.ring(4, 0, 3.6, 4.9, 0.5), 13, RBR, { d: (x, y) => (angf(x - 4, y, 6) < 0.14 ? -0.8 : 0) }));
+      for (const s of [-1, 1]) { parts.push(P(S.dome(8, s * 4.8, 1.1, 0.9), 12.8, RDK, { e: (x, y) => Math.hypot(x - 8.3, y - s * 4.8) < 0.6 ? '#a01810' : null }));
+        parts.push(P(S.puck(-12.2, s * 7, 1.5, 2.4, 0.5), 12.4, RDK, { e: (x, y) => Math.hypot(x + 12.2, y - s * 7) < 0.65 ? (f % 2 ? '#ff8a2a' : '#7a2a10') : null })); }
+    },
+  };
+  const eParts = (type, c, f) => { const parts = ENEMY[type](c, f); if (FINE > 1 && FE[type]) FE[type](parts, c, f); return parts; };
   const ESZ = { drone: 42, swarmer: 24, tank: FINE > 1 ? 50 : 46, flyer: 40, splitter: 34, phantom: 40, medic: 38, shielder: 40, voidling: 30, reflector: 36, carrier: 58, sapper: 32, leech: 34, husk: 34, bulwark: 48, welder: 38, lodestone: 40, crawler: 50, adapter: 38, warden: 60 };
   const EA = 16;
   // 6.16.1 elites are Overgrown (Nic, Nov 16: "The crown is silly. The elites need a dark creepy visual"; he picked Overgrown from
@@ -12091,7 +12167,7 @@ const UNITS = (() => {
   const ogTipC = {};
   function ogTips(type) { return ogTipC[type] || (ogTipC[type] = ogSpines(type).map(t => t[2])); }
   function ogParts(type, c, f) {
-    const parts = ENEMY[type](c, f), [rx, ry] = OGB[type] || [ESZ[type] * 0.3, ESZ[type] * 0.24], top = parts.reduce((m, p) => Math.max(m, p.z), 0);
+    const parts = eParts(type, c, f), [rx, ry] = OGB[type] || [ESZ[type] * 0.3, ESZ[type] * 0.24], top = parts.reduce((m, p) => Math.max(m, p.z), 0);
     for (const tri of ogSpines(type)) parts.push(P(S.poly(tri, 4, 1.2), 0.5, BONE, { d: (x, y) => (Math.hypot(x - tri[2][0], y - tri[2][1]) < 2.2 ? 1 : 0) }));
     const G = ramp(mix(c, '#3a1226', 0.55), 0.6);
     parts.push(P(S.dome(-rx * 0.35, -ry * 0.45, Math.max(2.4, rx * 0.3), 4), top + 5, G, { e: (x, y) => Math.hypot(x + rx * 0.35, y + ry * 0.45) < Math.max(0.8, rx * 0.08) ? (f % 2 ? '#fff2e0' : mix(c, '#ffffff', 0.3)) : null }));
@@ -12110,7 +12186,7 @@ const UNITS = (() => {
   function enemy(type, ang, fr, og) {
     if (!ENEMY[type]) return null;
     const ai = ((Math.round(ang / (Math.PI * 2) * EA) % EA) + EA) % EA, f = fr & 3, sz = ESZ[type] + (og ? ogPad(type) * 2 : 0), o = og ? ':o' : '';
-    const mk = (a2, f2) => () => raster(og ? ogParts(type, ENEMY_COL[type], f2) : ENEMY[type](ENEMY_COL[type], f2), sz, sz, a2 / EA * Math.PI * 2);
+    const mk = (a2, f2) => () => raster(og ? ogParts(type, ENEMY_COL[type], f2) : eParts(type, ENEMY_COL[type], f2), sz, sz, a2 / EA * Math.PI * 2);
     return ART.getB(`en:${type}:${ai}:${f}${o}`, mk(ai, f), () => { for (let d = 0; d <= EA / 2; d++) for (const a2 of [(ai + d) % EA, (ai - d + EA) % EA]) for (const f2 of [f, 0, 1, 2, 3]) { const c = ART.has(`en:${type}:${a2}:${f2}${o}`); if (c) return c; } return null; });
   }
   // 6.16.1 quality samples (Nic, Nov 16: "do a few of the new enemies and towers just as samples"): three designs redrawn with detail
@@ -12159,7 +12235,7 @@ const UNITS = (() => {
   // design aid (test/qualitysheet.py): any enemy, elite form or tower top drawn finer. sc = 1 is the game's own size (2 px per world unit)
   function sample(kind, type, sc, ang, f) {
     const o = { fine: sc || 1 };
-    if (kind === 'enemy') return raster(ENEMY[type](ENEMY_COL[type], f || 0), ESZ[type], ESZ[type], ang || 0, o);
+    if (kind === 'enemy') return raster(eParts(type, ENEMY_COL[type], f || 0), ESZ[type], ESZ[type], ang || 0, o);
     if (kind === 'elite') { const z = ESZ[type] + ogPad(type) * 2; return raster(ogParts(type, ENEMY_COL[type], f || 0), z, z, ang || 0, o); }
     if (kind === 'hdtop') return raster(HD[type](EL[TOWERS[type].el].col), 60, 60, ang || 0, o);
     if (kind === 'hdenemy') return raster(HD[type](ENEMY_COL[type], f || 0), 50, 50, ang || 0, o);
@@ -12442,7 +12518,7 @@ const UNITS = (() => {
   function shell(el) { return get('psh:' + el, () => raster([P(S.dome(0, 0, 4.5, 4), 0, ramp('#4a4836', 0.6), { e: (x, y) => Math.abs(x) < 1 || Math.abs(y) < 1 ? EL[el].col : null })], 12, 12, 0)); }
 
   function warmEnemies() { for (const id of Object.keys(BOSS_ART)) for (const f of [0, 1]) ART.warm(`bs:${id}:${f}:0`, () => raster(BOSS_ART[id](f, 0), 148, 148, 0)); ART.warm('bs:cat:0:1', () => raster(BOSS_ART.cat(0, 1), 148, 148, 0)); ART.warm('bs:cat:1:1', () => raster(BOSS_ART.cat(1, 1), 148, 148, 0));
-    for (const ty of Object.keys(ENEMY)) for (let f = 0; f < 4; f++) for (let i = 0; i < EA; i++) ART.warm(`en:${ty}:${i}:${f}`, () => raster(ENEMY[ty](ENEMY_COL[ty], f), ESZ[ty], ESZ[ty], i / EA * Math.PI * 2)); }
+    for (const ty of Object.keys(ENEMY)) for (let f = 0; f < 4; f++) for (let i = 0; i < EA; i++) ART.warm(`en:${ty}:${i}:${f}`, () => raster(eParts(ty, ENEMY_COL[ty], f), ESZ[ty], ESZ[ty], i / EA * Math.PI * 2)); }
   function warmTower(type, el, spec) {
     if (ROT[type]) for (let i = 0; i < NA; i++) for (const rk of [0, 1]) ART.warm(`tt:${type}:${el}:${spec}:${i}:${rk}:0:${type === 'missile' ? 1 : 0}`, () => raster(topParts(type, el, spec || 0, { rk, ph: 0, ld: type === 'missile' ? 1 : 0 }), 60, 60, angOf(i)));
   }
