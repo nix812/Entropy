@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 33';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 34';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -11956,45 +11956,87 @@ const UNITS = (() => {
   const nz = (x, y) => Math.sin(x * 0.71 + Math.sin(y * 0.53) * 2.1) * Math.cos(y * 0.67 - x * 0.19) ; // soft organic texture
   const eye = (cx, cy, r, iris, pupil, look) => [P(S.dome(cx, cy, r, r * 0.8), 40, ramp('#f4f0ff', 1), { e: (x, y) => { const q = Math.hypot(x - cx - (look || 0), y - cy); return q < r * 0.5 ? (q < r * 0.26 ? pupil : iris) : (Math.hypot(x - cx + r * 0.35, y - cy + r * 0.35) < r * 0.22 ? '#ffffff' : null); } })];
   const BOSS_ART = {
-    behemoth(f) {
-      const c = '#ff3355', parts = [];
-      for (const s of [-1, 1]) parts.push(P(S.rbox(s * 54 - 12, -50, s * 54 + 12, 58, 6, 16, 4), 0, ramp('#2a0e18', 0.4), { d: (x, y) => ((Math.floor((y + 80 + f * 3) / 6)) % 2 ? -1.4 : 0.6) }));
-      parts.push(P(S.rbox(-44, -46, 44, 60, 14, 26, 8), 6, ramp(c, 0.55), { d: (x, y) => (Math.abs(((y + 60) % 19) - 9.5) < 1 ? -2 : 0) + nz(x, y) * 0.35 }));
-      for (const s of [-1, 1]) parts.push(P(S.poly([[s * 16, -38], [s * 34, -70], [s * 28, -36]], 18, 4), 18, ramp('#e8d8c0', 0.8)));
-      parts.push(P(S.rbox(-24, -44, 24, -14, 8, 10, 4), 28, ramp(mix(c, '#2a0a12', 0.35), 0.6)));
-      for (const s of [-1, 1]) parts.push(P(S.dome(s * 11, -30, 5.5, 4), 38, ramp('#ffe14d', 1), { e: (x, y) => f && Math.hypot(x - s * 11 + 1.5, y + 31.5) < 1.6 ? '#ffffff' : '#ffe14d' }));
-      for (let k = 0; k < 4; k++) parts.push(P(S.poly([[-6, -2 + k * 15], [0, -12 + k * 15], [6, -2 + k * 15], [0, 2 + k * 15]], 10, 3), 30, ramp('#7a1428', 0.6)));
+    behemoth(f) { // 6.16.1 hive (Nic: "behemoth looks like a tank"): a brood beast. It spawns Swarmers, and they ripen in sacs on its back. Head toward -y
+      const c = '#ff3355', parts = [], st = f ? 2.5 : -2.5, hot = f ? '#fff0a0' : '#ffd24a';
+      for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { const y0 = -26 + k * 21, sw = k % 2 ? st : -st; // four pairs of legs: thigh, shin, claw
+        parts.push(P(S.poly([[s * 28, y0 - 5], [s * 50, y0 - 12 + sw], [s * 55, y0 - 4 + sw], [s * 30, y0 + 6]], 8, 3), 1, LEG));
+        parts.push(P(S.poly([[s * 49, y0 - 12 + sw], [s * 66, y0 + 3 + sw], [s * 62, y0 + 9 + sw], [s * 52, y0 - 3 + sw]], 6, 2), 2, LEG));
+        parts.push(P(S.poly([[s * 62, y0 + 2 + sw], [s * 71, y0 + 13 + sw], [s * 63, y0 + 9 + sw]], 4, 1), 3, BONE)); }
+      parts.push(P(S.ell(0, 20, 41, 48, 30), 4, hive(c, 0.5), { d: (x, y) => (Math.abs(((y + 100) % 14) - 7) < 1.2 ? -1.8 : 0) + nz(x, y) * 0.4 })); // the swollen abdomen, ribbed
+      for (let k = 0; k < 7; k++) { const a = 0.5 + k * 0.36, ex = Math.cos(a) * 41, ey = 20 + Math.sin(a) * 48; for (const s of [-1, 1]) parts.push(P(S.poly([[s * ex * 0.9, ey - 4], [s * ex * 1.16, ey + 3], [s * ex * 0.9, ey + 4]], 5, 1), 12, BONE)); } // bone spurs along its flanks
+      const SAC = [[-19, 4, 10], [17, 1, 9], [0, 22, 12], [-21, 36, 9], [21, 38, 10], [0, 52, 8], [-1, -8, 7]]; // brood sacs: a Swarmer curls in each, and they glow in turn
+      SAC.forEach(([sx, sy, r], i) => parts.push(P(S.dome(sx, sy, r, r * 0.9), 30, ramp(mix('#ff9a3a', c, 0.4), 0.85), { d: (x, y) => Math.abs(Math.hypot(x - sx, y - sy) - r * 0.72) < 0.6 ? -1 : 0,
+        e: (x, y) => { const q = Math.hypot(x - sx + r * 0.1, y - sy), on = (i + f) % 2; return q < r * 0.34 ? (on ? hot : '#ffb03a') : q < r * 0.5 && on ? '#ffb03a' : (Math.abs(x - sx) < r * 0.5 && Math.abs(y - sy + r * 0.05) < 0.7 && on) ? '#5a1020' : null; } })));
+      parts.push(P(S.ell(0, -30, 29, 21, 24), 8, hive(c, 0.68), { d: (x, y) => (Math.abs(x) < 1.2 ? -1.6 : 0) + nz(x, y) * 0.3 })); // thorax
+      for (const s of [-1, 1]) { parts.push(P(S.ell(s * 19, -33, 14, 11, 9), 27, hive(c, 0.62), { d: (x, y) => (Math.abs(((Math.hypot(x - s * 19, y + 33) * 1.1) % 4) - 2) < 0.5 ? -1.1 : 0) })); // shoulder humps of dark chitin, a bone spur on each
+        parts.push(P(S.poly([[s * 24, -40], [s * 37, -50], [s * 30, -36]], 6, 2), 30, BONE)); }
+      const EY = [[6, -54], [11, -50], [7, -46]];
+      parts.push(P(S.ell(0, -50, 17, 12, 14), 22, hive(c, 0.82), { e: (x, y) => { for (const s of [-1, 1]) for (const [ex, ey] of EY) { const q = Math.hypot(x - s * ex, y - ey); if (q < 2.1) return q < 0.9 && f ? '#ffffff' : '#ffe14d'; } return null; } })); // head: six eyes
+      for (const s of [-1, 1]) parts.push(P(S.poly([[s * 7, -57], [s * 19, -62], [s * 15, -72], [s * 5, -69], [s * 11, -64]], 6, 2), 28, BONE)); // pincers
       return parts;
     },
-    queen(f) {
-      const c = '#ff3355', w = f ? 0.82 : 1, parts = [];
-      for (const s of [-1, 1]) for (const k of [0, 1]) parts.push(P(S.ell(s * (34 + k * 6) * w, -14 + k * 24, 30 * w, 14, 4), 4, ramp('#ffd6e8', 0.9), { d: (x, y) => (Math.abs(((x * s + 100) % 9) - 4.5) < 0.6 ? -1 : 0), e: (x, y, t) => t >= 4 ? '#fff0f6' : null }));
-      parts.push(P(S.ell(0, 26, 20, 40, 24), 8, ramp(c, 0.5), { d: (x, y) => (Math.abs(((y + 100) % 13) - 6.5) < 2.4 ? -1.6 : 0) }));
-      parts.push(P(S.dome(0, -16, 17, 20), 14, ramp(mix(c, '#2a0616', 0.35), 0.6)));
-      parts.push(P(S.dome(0, -40, 12, 14), 18, ramp(c, 0.6), { e: (x, y) => (Math.hypot(x - 5, y + 42) < 2.6 || Math.hypot(x + 5, y + 42) < 2.6) ? '#ffe14d' : null }));
-      for (let k = -2; k <= 2; k++) parts.push(P(S.poly([[k * 6 - 3, -50], [k * 6, -64 + Math.abs(k) * 4], [k * 6 + 3, -50]], 8, 2), 26, ramp('#ffe14d', 1)));
+    queen(f) { // 6.16.1 hive, finer: the same queen (wings, striped abdomen, crown). It flies and spawns Skimmers: eggs glow in bands down its abdomen. Head toward -y
+      const c = '#ff3355', w = f ? 0.84 : 1, parts = [], WING = ramp(mix('#ffd6e8', '#7a3a6a', 0.22), 0.9), hot = f ? '#fff0a0' : '#ffd24a';
+      for (const s of [-1, 1]) for (const k of [0, 1]) { const cx = s * (35 + k * 5) * w, cy = -15 + k * 25, rx = (31 - k * 4) * w, ry = 14 - k * 2; // two pairs of wings: veined, a dark leading edge
+        parts.push(P(S.ell(cx, cy, rx, ry, 4), 4, WING, { d: (x, y) => { const u = (x - cx) * s, v = y - cy; return (Math.abs(((u * 0.9 + v * 0.6 + 200) % 8) - 4) < 0.55 || Math.abs(v + u * 0.12) < 0.6) ? -1.2 : 0; },
+          e: (x, y, t) => t >= 4 ? '#fff0f6' : (y - cy) < -ry * 0.62 ? '#8a3a5e' : null })); }
+      for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { const y0 = -26 + k * 9; parts.push(P(S.poly([[s * 8, y0], [s * 20, y0 - 5 + k * 3], [s * 27, y0 + 4 + k * 5], [s * 24, y0 + 6 + k * 5], [s * 19, y0 - 1 + k * 3], [s * 8, y0 + 3]], 5, 2), 6, LEG)); } // three pairs of thin legs, tucked in flight
+      parts.push(P(S.ell(0, 28, 19, 40, 24), 8, hive(c, 0.5), { d: (x, y) => (Math.abs(((y + 100) % 11) - 5.5) < 1.5 ? -1.8 : 0) + nz(x, y) * 0.3, // the long abdomen: segments, an egg band glowing in every second groove
+        e: (x, y) => { const b = Math.floor((y + 100) / 11), g = Math.abs(((y + 100) % 11) - 5.5) < 1.1; return g && Math.abs(x) < 15 - Math.max(0, y - 30) * 0.3 && (b + f) % 2 === 0 ? (Math.abs(x) < 9 ? hot : '#ffb03a') : null; } }));
+      parts.push(P(S.poly([[-4, 62], [0, 73], [4, 62]], 6, 2), 12, BONE)); // sting
+      parts.push(P(S.ell(0, -17, 16, 19, 20), 14, hive(c, 0.7), { d: (x, y) => (Math.abs(x) < 1.1 ? -1.5 : 0) + (Math.abs(((Math.hypot(x, y + 17) * 1.2) % 6) - 3) < 0.5 ? -0.8 : 0) })); // thorax
+      const EY = [[5, -43], [9, -39], [6, -36]];
+      parts.push(P(S.ell(0, -40, 12, 11, 14), 18, hive(c, 0.82), { e: (x, y) => { for (const s of [-1, 1]) for (const [ex, ey] of EY) { const q = Math.hypot(x - s * ex, y - ey); if (q < 2) return q < 0.9 && f ? '#ffffff' : '#ffe14d'; } return null; } })); // head: six eyes
+      for (const s of [-1, 1]) parts.push(P(S.poly([[s * 4, -48], [s * 12, -52], [s * 9, -58], [s * 3, -55]], 5, 2), 24, BONE)); // jaws
+      for (let k = -2; k <= 2; k++) { const tip = -66 + Math.abs(k) * 4; parts.push(P(S.poly([[k * 5.5 - 2.6, -49], [k * 5.5 * 1.25, tip], [k * 5.5 + 2.6, -49]], 8, 2), 28, BONE, { e: (x, y) => y < tip + 5 ? '#ffe14d' : null })); } // the crown: five bone spines, lit at the tips
       return parts;
     },
-    wraith(f) {
-      const c = '#d6ceff', parts = [P(S.dome(0, -12, 40, 30), 4, ramp(c, 0.95), { d: (x, y) => nz(x * 0.6, y * 0.6) * 0.5 })];
-      parts.push(P((x, y) => { if (Math.abs(x) > 38 || y < -12 || y > 50) return -1; const tat = 40 + Math.sin(x * 0.32 + f * 1.7) * 6 + (Math.floor((x + 40) / 9) % 2 ? 6 : -2); return y > tat ? -1 : Math.max(0.5, 18 * (1 - Math.abs(x) / 40)); }, 2, ramp(c, 0.8)));
-      parts.push(P(S.ell(0, -8, 26, 16, 6), 34, ramp('#1a1440', 0.3), { e: (x, y) => { for (const s of [-1, 1]) { const q = Math.hypot(x - s * 11, y + 7); if (q < 5) return q < 2 ? '#ffffff' : '#ff4d6a'; } return null; } }));
+    wraith(f) { // 6.16.1, finer: still a ghost (the unknown). A hooded shroud with folds and a torn hem, a void for a face, two eyes, bone fingers, wisps that trail off
+      const c = '#d6ceff', parts = [];
+      for (let k = 0; k < 5; k++) { const wx = (k - 2) * 15 + (f ? 3 : -3), wy = 54 + (k % 2) * 7 + (f ? 2 : 0); parts.push(P(S.ell(wx, wy, 4 - (k % 2), 7, 3), 1, ramp(mix(c, '#3a2a70', 0.45), 0.7))); } // wisps under the hem
+      parts.push(P(S.dome(0, -12, 40, 30), 4, ramp(c, 0.95), { d: (x, y) => nz(x * 0.6, y * 0.6) * 0.5 + (Math.abs(((Math.atan2(y + 60, x) * 14 + 100) % 2) - 1) < 0.16 ? -1.1 : 0) })); // the hood, folds running down from its peak
+      parts.push(P((x, y) => { if (Math.abs(x) > 38 || y < -12 || y > 52) return -1; const tat = 40 + Math.sin(x * 0.32 + f * 1.7) * 6 + (Math.floor((x + 40) / 9) % 2 ? 6 : -2); return y > tat ? -1 : Math.max(0.5, 18 * (1 - Math.abs(x) / 40)); }, 2, ramp(c, 0.8),
+        { d: (x, y) => (Math.abs(((x + 100) % 9) - 4.5) < 0.7 ? -1.4 : 0) + nz(x * 0.5, y * 0.5) * 0.4, e: (x, y) => y > 30 && Math.abs(((x + 100) % 9) - 4.5) < 0.7 ? '#8f84d6' : null })); // the shroud: pleats, a torn hem that moves
+      for (const s of [-1, 1]) for (let k = 0; k < 3; k++) parts.push(P(S.poly([[s * (30 + k * 3), 8 + k * 5], [s * (45 + k * 2), 14 + k * 7 + (f ? 2 : 0)], [s * (31 + k * 3), 12 + k * 5]], 4, 1), 20, BONE)); // three bone fingers each side
+      parts.push(P(S.ell(0, -8, 26, 16, 6), 34, ramp('#1a1440', 0.3), { d: (x, y) => nz(x * 0.8, y * 0.8) * 0.3,
+        e: (x, y) => { for (const s of [-1, 1]) { const q = Math.hypot(x - s * 11, y + 7); if (q < 5) return q < 1.8 ? '#ffffff' : q < 3.6 ? '#ff4d6a' : '#a01f3c'; } return Math.abs(x) < 7 && Math.abs(y - 2 - Math.abs(x) * 0.3) < 0.8 ? '#3a2f78' : null; } })); // the void under the hood: two eyes, a faint mouth line
       return parts;
     },
-    overmind(f) {
-      const c = '#ff3355', parts = [];
-      for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283 + (f ? 0.12 : 0); for (let i = 0; i < 5; i++) { const r = 50 + i * 4.5; parts.push(P(S.dome(Math.cos(an + i * 0.18) * r, Math.sin(an + i * 0.18) * r, 6 - i, 7 - i), 0, ramp(mix(c, '#5a1438', 0.5), 0.6))); } }
-      parts.push(P(S.dome(0, 0, 54, 46), 4, ramp(c, 0.55), { d: (x, y) => (Math.sin(Math.hypot(x, y) * 0.5 + Math.atan2(y, x) * 3) > 0.75 ? -1.6 : 0) + nz(x, y) * 0.4 }));
+    overmind(f) { // 6.16.1 hive, finer: the same brain and eye. Eight jointed arms with lit tips (it shuts towers down), deep folds, a ring of bone teeth round a slit-pupil eye
+      const c = '#ff3355', parts = [], ARM = ramp(mix(c, '#5a1438', 0.5), 0.6), tipc = f ? '#ffe14d' : '#ff9a3a';
+      for (let k = 0; k < 8; k++) { const an = k / 8 * 6.283 + (f ? 0.12 : 0); for (let i = 0; i < 6; i++) { const r = 47 + i * 4.2, a2 = an + i * 0.17 + Math.sin(i * 1.3 + k) * 0.04, ax = Math.cos(a2) * r, ay = Math.sin(a2) * r, last = i === 5;
+        parts.push(P(S.dome(ax, ay, 6.4 - i * 0.9, 7 - i), 0, last ? ramp(tipc, 1) : ARM, last ? { e: () => tipc } : { d: (x, y) => Math.hypot(x - ax, y - ay) > (6.4 - i * 0.9) * 0.72 ? -0.8 : 0 })); } }
+      parts.push(P(S.dome(0, 0, 53, 45), 4, hive(c, 0.5), { d: (x, y) => { const r = Math.hypot(x, y), a = Math.atan2(y, x); return (Math.sin(r * 0.55 + Math.sin(a * 5) * 1.6 + a * 3) > 0.62 ? -2 : 0) + (Math.abs(x) < 1.3 && r > 20 ? -2.4 : 0) + nz(x, y) * 0.4; }, // the brain: folds, and the cleft between its halves
+        e: (x, y) => { const r = Math.hypot(x, y); return r > 22 && r < 46 && Math.abs(Math.sin(Math.atan2(y, x) * 6 + r * 0.21)) < 0.05 && (Math.floor(r / 6) + f) % 2 ? '#ff7b39' : null; } }));
+      for (let k = 0; k < 10; k++) { const a = k / 10 * 6.283 + 0.31; parts.push(P(S.poly([[Math.cos(a - 0.14) * 19, Math.sin(a - 0.14) * 17], [Math.cos(a) * 26, Math.sin(a) * 23], [Math.cos(a + 0.14) * 19, Math.sin(a + 0.14) * 17]], 5, 1), 38, BONE)); } // bone teeth round the socket
       parts.push(P(S.dome(0, 0, 18, 16), 40, ramp('#2a0010', 0.4)));
-      parts.push(P(S.dome(f ? 2 : -1, 0, 12, 12), 46, ramp('#ffe14d', 1), { e: (x, y) => Math.hypot(x - (f ? 2 : -1), y) < 4 ? '#1a0806' : Math.hypot(x + 4, y + 5) < 2.5 ? '#ffffff' : null }));
+      const ex = f ? 2 : -1;
+      parts.push(P(S.dome(ex, 0, 12, 12), 46, ramp('#ffe14d', 1), { d: (x, y) => Math.abs(Math.sin(Math.atan2(y, x - ex) * 9)) < 0.22 && Math.hypot(x - ex, y) > 4.5 ? -1 : 0,
+        e: (x, y) => { const q = Math.hypot((x - ex) / 0.45, y); return q < 7.5 ? '#1a0806' : Math.hypot(x - ex + 4, y + 5) < 2.2 ? '#ffffff' : Math.hypot(x - ex, y) > 10.4 ? '#ff9a3a' : null; } })); // the eye: a slit pupil, rays in the iris, a glint
       return parts;
     },
-    titan(f) {
-      const c = '#ff3355', parts = [P(S.rbox(-60, -60, 60, 60, 10, 22, 6), 0, ramp('#4a1626', 0.5), { d: (x, y) => (Math.abs(x) < 1 || Math.abs(y) < 1 ? -1.5 : 0) + nz(x, y) * 0.3 })];
-      parts.push(P(S.rbox(-50, -50, 50, 50, 8, 10, 5), 18, ramp(c, 0.5)));
-      for (const [x, y] of [[-40, -40], [40, -40], [-40, 40], [40, 40]]) parts.push(P(S.dome(x, y, 6, 6), 28, ramp('#c8ccd8', 0.9)));
-      parts.push(P(S.rbox(-24, -24, 24, 24, 4, 8, 3), 26, ramp('#2a0a12')));
-      parts.push(P(S.dome(0, 0, 18, 10), 30, ramp('#ffe14d', 1), { e: (x, y) => Math.hypot(x, y) < (f ? 9 : 7) ? '#fff6c0' : null }));
+    titan(f, v) { // 6.16.1 hive: a shelled giant. v = shell plates lost (0, 1, 2): its armor breaks at 66% and 33% health, front plate first. Head toward -y
+      const c = '#ff3355', parts = [], SH = ramp(mix('#a3968c', '#40202e', 0.22), 0.72), heart = f ? '#fff6c0' : '#ffe14d';
+      const crack = (x, y, o) => Math.abs(x - o - Math.sin(y * 0.34 + o) * 5 - (Math.floor((y + 80) / 9) % 2 ? 2.5 : -2.5)) < 1.1;
+      for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { const y0 = -24 + k * 28, sw = (k % 2 ? 2 : -2) * (f ? 1 : -1); // three pairs of short, thick legs
+        parts.push(P(S.poly([[s * 38, y0 - 8], [s * 60, y0 - 6 + sw], [s * 67, y0 + 6 + sw], [s * 40, y0 + 9]], 9, 3), 1, LEG));
+        parts.push(P(S.poly([[s * 61, y0 - 3 + sw], [s * 72, y0 + 3 + sw], [s * 65, y0 + 9 + sw]], 4, 1), 3, BONE)); }
+      parts.push(P(S.ell(0, 6, 46, 58, 20), 3, hive(c, 0.6), { d: (x, y) => nz(x, y) * 0.5 + (Math.abs(((y + 100) % 16) - 8) < 1 ? -1.2 : 0), // the soft body under the shell, and the heart that shows as the shell goes
+        e: (x, y) => { const q = Math.hypot(x, y - 2), r = (f ? 6.5 : 5) + v; return q < r * 0.55 ? '#fff6c0' : q < r ? heart : q < r + 2.2 ? '#ff7b39' : v && q < 24 && Math.abs(Math.sin(Math.atan2(y - 2, x) * 4 + q * 0.12)) < 0.13 ? '#ff7b39' : null; } }));
+      parts.push(P(S.ell(0, -50, 18, 13, 14), 10, hive(c, 0.82), { e: (x, y) => { for (const s of [-1, 1]) for (const [ex, ey] of [[7, -54], [12, -49]]) { const q = Math.hypot(x - s * ex, y - ey); if (q < 2.3) return q < 1 && f ? '#ffffff' : '#ffe14d'; } return null; } })); // head: four eyes
+      for (const s of [-1, 1]) parts.push(P(S.poly([[s * 9, -58], [s * 22, -60], [s * 26, -72], [s * 17, -66], [s * 12, -62]], 6, 2), 20, BONE)); // tusks
+      // a shell plate: a wide shield with cross ridges, a keel down the middle, bone spikes on the keel, the rear rim and both ends. ck: cracked, and the cracks glow
+      const plate = (cx, cy, rx, ry, h, z, ck) => {
+        parts.push(P((x, y) => { const q = ((x - cx) / rx) ** 2 + ((y - cy + Math.abs(x - cx) * 0.16) / ry) ** 2; return q > 1 ? -1 : Math.sqrt(1 - q) * h + Math.max(0, 2.6 - Math.abs(x - cx) * 0.45); }, z, SH, {
+          d: (x, y) => (Math.abs(((y - cy + (x - cx) * (x - cx) / rx * 0.22 + 100) % 6.5) - 3.25) < 0.55 ? -1.5 : 0) + nz(x * 1.3, y * 1.3) * 0.5 + (ck && (crack(x, y, -14) || crack(x, y, 12)) ? -4 : 0),
+          e: (x, y) => ck && (crack(x, y, -14) || crack(x, y, 12)) && ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 0.8 ? '#ff7b39' : null }));
+        for (const s of [-1, 1]) parts.push(P(S.poly([[cx + s * (rx - 9), cy - 4], [cx + s * (rx + 12), cy + 7], [cx + s * (rx - 7), cy + 8]], 7, 2), z + 1, BONE)); // an end spike each side
+        for (let k = 1; k < 6; k++) { const ex = (k - 3) * rx * 0.3, ey = cy + ry * Math.sqrt(Math.max(0, 1 - (ex / rx) ** 2)) * 0.94 - Math.abs(ex) * 0.16; parts.push(P(S.poly([[cx + ex - 3.5, ey - 4], [cx + ex, ey + 6], [cx + ex + 3.5, ey - 4]], 5, 1), z + 2, BONE)); } // rear rim
+        parts.push(P(S.poly([[cx - 3, cy - ry * 0.3], [cx, cy - ry * 0.75], [cx + 3, cy - ry * 0.3], [cx, cy + ry * 0.1]], 7, 2), z + h, BONE)); // keel spike
+      };
+      plate(0, 36, 42, 26, 14, 16, v >= 2);              // rear plate: always there, cracked at the end
+      if (v < 2) plate(0, 8, 49, 25, 16, 21, v >= 1);    // middle plate: cracked after the first break, gone after the second
+      if (v < 1) plate(0, -20, 42, 22, 14, 26, false);   // front plate: gone at the first break
       return parts;
     },
     cat(f, v) { // Leia (was Mr. Whiskers, 6.0.2): Nic's long-haired grey-and-white cat. v = 1: asleep
@@ -12115,7 +12157,7 @@ const UNITS = (() => {
   const BOSS_FR = { cat: 2 };
   function boss(id, fr, v) {
     if (!BOSS_ART[id]) return null;
-    const f = fr & 1, vv = v ? 1 : 0;
+    const f = fr & 1, vv = v === true ? 1 : (v | 0);
     return get(`bs:${id}:${f}:${vv}`, () => raster(BOSS_ART[id](f, vv), 148, 148, 0));
   }
   function wormSeg() { return get('bs:wseg', () => raster([P(S.dome(0, 0, 26, 20), 0, ramp('#7a2ec4', 0.6), { d: (x, y) => (Math.abs(x) < 1.4 ? -1.5 : 0) }), P(S.ell(0, -8, 18, 8, 6), 14, ramp('#9a5ae0', 0.7))].concat([-1, 1].map(s => P(S.box(s * 28 - 3, -4, s * 28 + 3, 14, 4, 1), 0, ramp('#e8d8ff', 0.8)))), 66, 66, 0)); }
@@ -13662,7 +13704,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     if (e.pirate) hiS = UNITS.pirate(false);
     else if (!e.boss && !e.meat) hiS = UNITS.enemy(e.type, e._ha, e.fly ? (frame >> 2) + (e.wob * 4 | 0) : Math.floor(e._wd * 9), e.elite.length && !e.mite ? 1 : 0); // 6.16.1: an elite is the Overgrown form
     if (hiS) s = hiS;
-    else if (e.boss) s = UNITS.boss(e.boss, (frame >> 4) + (e.id & 1), e.boss === 'cat' && e.napT > 0) || scaledSpr('B:' + e.boss, bossSprite(e.boss), BOSS_SCALE);
+    else if (e.boss) s = UNITS.boss(e.boss, (frame >> 4) + (e.id & 1), e.boss === 'titan' ? 2 - (e.plates === undefined ? 2 : e.plates) : e.boss === 'cat' && e.napT > 0) || scaledSpr('B:' + e.boss, bossSprite(e.boss), BOSS_SCALE);
     else if (e.meat) s = UNITS.meat(); else s = enemySprite(e.type);
     if (e.wanted === 'colossal') k *= 1.5;
     if (e.gen) k *= e.gen === 1 ? 0.67 : 0.45;
@@ -13705,7 +13747,8 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     }
     b.globalAlpha = 1;
     if (false) { const ox = Math.round(X - hw), oy = Math.round(y - hh); const q = v => Math.round(v * BOSS_SCALE); R(b, ox + q(16), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(27), oy + q(15), q(6), q(6), '#ff9a3c'); R(b, ox + q(16), oy + q(18), q(6), 2, '#3a1606'); R(b, ox + q(27), oy + q(18), q(6), 2, '#3a1606'); }
-    if (e.boss === 'titan' && e.plates > 0) { const q = v => Math.round(v * BOSS_SCALE); const pl = (x, y, w, h) => { R(b, x, y, w, h, '#3a3f58'); R(b, x + 0.5, y + 0.5, w - 1, h - 1, '#6a7094'); b.fillStyle = '#9aa0c0'; b.fillRect(x + 0.5, y + 0.5, w - 1, 0.5); }; pl(X - q(22), y - q(22), q(44), q(5)); pl(X - q(22), y + q(17), q(44), q(5)); if (e.plates > 1) { pl(X - q(22), y - q(17), q(5), q(34)); pl(X + q(17), y - q(17), q(5), q(34)); } }
+    // (6.16.1: the grey armor bars are gone with the hive redraw: the Titan's sprite now shows its shell plates and loses them as they break)
+    if (0 && e.boss === 'titan' && e.plates > 0) { const q = v => Math.round(v * BOSS_SCALE); const pl = (x, y, w, h) => { R(b, x, y, w, h, '#3a3f58'); R(b, x + 0.5, y + 0.5, w - 1, h - 1, '#6a7094'); b.fillStyle = '#9aa0c0'; b.fillRect(x + 0.5, y + 0.5, w - 1, 0.5); }; pl(X - q(22), y - q(22), q(44), q(5)); pl(X - q(22), y + q(17), q(44), q(5)); if (e.plates > 1) { pl(X - q(22), y - q(17), q(5), q(34)); pl(X + q(17), y - q(17), q(5), q(34)); } }
     if (e.type === 'shielder' && frame % 30 < 15) { b.strokeStyle = 'rgba(138,182,255,0.5)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, 11, 0, 6.283); b.stroke(); }
     if (e.phaseT > 0 && !cloaked) { const pr = hw + 5 + Math.sin(frame / 2) * 2; b.strokeStyle = hexA(BOSS_COL[e.boss] || '#ff3355', 0.5 + 0.4 * Math.sin(frame / 3)); b.lineWidth = 3; b.beginPath(); b.arc(X, y, pr, 0, 6.283); b.stroke(); b.strokeStyle = 'rgba(255,255,255,0.6)'; b.lineWidth = 1; b.beginPath(); b.arc(X, y, pr + 4, 0, 6.283); b.stroke(); }
     if (e.assault && !cloaked) { const ar = hw + 5; b.strokeStyle = hexA(G.assault ? strainCol(G.assault.genes) : '#ff4d6a', 0.55 + 0.35 * Math.sin(frame / 4 + e.wob)); b.lineWidth = 1; b.beginPath(); b.moveTo(X, y - ar); b.lineTo(X + ar, y); b.lineTo(X, y + ar); b.lineTo(X - ar, y); b.closePath(); b.stroke(); }
