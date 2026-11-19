@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 32';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 33';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -11433,16 +11433,35 @@ const ART = (() => {
     fn(P); g.globalAlpha = 1; return cv;
   }
   // ---------- cache with a background warm-up queue ----------
-  const cache = new Map(), queue = [];
-  let spent = 0;
-  function get(key, make) { let c = cache.get(key); if (!c) { const t0 = performance.now(); c = make(); spent += performance.now() - t0; cache.set(key, c); } return c; }
+  // 6.16.1 (Nov 18): the cache has a memory budget. Before, it kept every sprite ever drawn: a bot run measured 140 MB of canvases at
+  // Wave 16 and 333 MB at Wave 50 with fine sprites (test/audcap.py --full), and iPhones cap a page's canvas memory (224 to 384 MB
+  // by reports; past it, canvases fail to draw). Each sprite remembers when it was last asked for. Over the budget, the ones
+  // asked for longest ago go, never one used in the last 5 s; a dropped canvas is set to 0 x 0 so the phone gets the memory back
+  // at once (iOS counts canvas memory until the collector runs). A dropped sprite is drawn again the next time it is needed, through
+  // getB's stand-ins like any new sprite. Every caller draws what get() returns in the same frame; none keeps the canvas.
+  const cache = new Map(), queue = [], meta = new Map(); // meta: key -> [time last asked for (ms, read once a frame), pixels]
+  let spent = 0, tick = 0, now = 0, cachePx = 0, evicted = 0;
+  let BUDGET_PX = (typeof FINE !== 'undefined' && FINE > 1 ? 64 : 40) * 262144; // megabytes -> pixels (4 bytes a pixel)
+  const dropFns = []; // render.js keeps tinted and dithered copies of sprites: it is told when a sprite goes, so the copies go with it
+  const put = (key, c) => { cache.set(key, c); const px = c && c.width ? c.width * c.height : 0; meta.set(key, [now, px]); cachePx += px; return c; };
+  const touch = key => { const m = meta.get(key); if (m) m[0] = now; };
+  function get(key, make) { let c = cache.get(key); if (!c) { const t0 = performance.now(); c = make(); spent += performance.now() - t0; put(key, c); } else touch(key); return c; }
   // budgeted: when this frame has already spent its sprite budget, hand back a stand-in and finish the real one later
-  function getB(key, make, standIn) { const c = cache.get(key); if (c) return c; if (spent > 5) { const s = standIn(); if (s) { warm(key, make); return s; } } return get(key, make); }
-  function frameStart() { spent = 0; }
-  function has(key) { return cache.get(key); }
-  function warm(key, make) { if (!cache.has(key)) queue.push([key, make]); }
-  function idle(budgetMs) { const t0 = performance.now(); while (queue.length && performance.now() - t0 < budgetMs) { const [k, m] = queue.shift(); if (!cache.has(k)) cache.set(k, m()); } spent += performance.now() - t0; }
-  return { RES: RESA, raster, paintOver, S, max, cut, ramp, mix, rgb, STEEL, DARKSTEEL, BRASS, RUST, get, getB, has, frameStart, warm, idle, queued: () => queue.length, cacheSize: () => cache.size };
+  function getB(key, make, standIn) { const c = cache.get(key); if (c) { touch(key); return c; } if (spent > 5) { const s = standIn(); if (s) { warm(key, make, 1); return s; } } return get(key, make); }
+  function frameStart() { spent = 0; tick++; now = performance.now(); if (cachePx > BUDGET_PX && tick % 30 === 0) trim(); }
+  function trim() {
+    const old = []; for (const [k, m] of meta) if (now - m[0] > 5000) old.push([m[0], k, m[1]]);
+    old.sort((a, b) => a[0] - b[0]);
+    for (const [, k, px] of old) { if (cachePx <= BUDGET_PX * 0.8) break; const c = cache.get(k); cache.delete(k); meta.delete(k); cachePx -= px; evicted++; if (c && c.width) { for (const f of dropFns) f(c); c.width = 0; c.height = 0; } }
+  }
+  function has(key) { const c = cache.get(key); if (c) touch(key); return c; }
+  // need: a sprite the field asked for this frame (getB's stand-in case). Without it the entry is a pre-render "in case" (every enemy at
+  // every heading, queued at start-up): near the budget those are skipped, or the queue would refill what trim() has just dropped.
+  function warm(key, make, need) { if (!cache.has(key)) queue.push([key, make, need]); }
+  function idle(budgetMs) { const t0 = performance.now(); while (queue.length && performance.now() - t0 < budgetMs) { const [k, m, need] = queue.shift(); if (cache.has(k) || (!need && cachePx > BUDGET_PX * 0.8)) continue; put(k, m()); } spent += performance.now() - t0; }
+  return { RES: RESA, raster, paintOver, S, max, cut, ramp, mix, rgb, STEEL, DARKSTEEL, BRASS, RUST, get, getB, has, frameStart, warm, idle, queued: () => queue.length, cacheSize: () => cache.size, setBudget: mb => { BUDGET_PX = mb * 262144; }, onDrop: f => { dropFns.push(f); }, // (setBudget: test hook)
+    // test hook (6.16.1): what the cache holds, by key family ('tt' tower tops, 'en' enemies ...): [sprites, megabytes]
+    cacheStats: () => { const by = {}; let n = 0, px = 0; for (const [k, c] of cache) { const f = String(k).split(':')[0], a = c && c.width ? c.width * c.height : 0; (by[f] || (by[f] = [0, 0]))[0]++; by[f][1] += a; n++; px += a; } delete by._; for (const f in by) by[f][1] = Math.round(by[f][1] * 4 / 104857.6) / 10; return { n, mb: Math.round(px * 4 / 104857.6) / 10, ev: evicted, cap: Math.round(BUDGET_PX / 262144), by }; } };
 })();
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
@@ -12302,15 +12321,16 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   // 6.6 (perf66): tinted copies (hit flash, frost, chill, regrowth, elite and strain rims) are kept for the TINT_CAP most recently
   // used. Every enemy frame (heading × gait × type × genes) times every tint colour used to stay forever (700+ canvases by Wave 14,
   // never freed); the least recently used copy is now dropped and its canvas reused, and is redrawn identically if it comes back
-  const tintW = new WeakMap(), tintLRU = new Map(), TINT_CAP = 1024; let tintMade = 0, tintSpare = null;
+  // 6.16.1: also a memory budget (24 MB with fine sprites, 12 MB without). 1,024 copies were 36 to 43 MB at the fine grid (a boss copy is 0.8 MB).
+  const tintW = new WeakMap(), tintLRU = new Map(), TINT_CAP = 1024, TINT_PX = (FINE > 1 ? 24 : 12) * 262144; let tintMade = 0, tintSpare = null, tintPx = 0;
   function tintOf(src, col) {
     let m = tintW.get(src); if (!m) { m = new Map(); tintW.set(src, m); }
     let c = m.get(col);
     if (c) { const k = tintLRU.get(c); tintLRU.delete(c); tintLRU.set(c, k); return c; } // most recently used goes last
     c = tintSpare || document.createElement('canvas'); tintSpare = null; tintMade++;
     c.width = src.width; c.height = src.height; c.u = src.u; const g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'source-over';
-    m.set(col, c); tintLRU.set(c, [m, col]);
-    if (tintLRU.size > TINT_CAP) { const [old, [om, oc]] = tintLRU.entries().next().value; tintLRU.delete(old); om.delete(oc); tintSpare = old; }
+    m.set(col, c); tintLRU.set(c, [m, col]); tintPx += c.width * c.height;
+    while (tintLRU.size > TINT_CAP || (tintPx > TINT_PX && tintLRU.size > 48)) { const [old, [om, oc]] = tintLRU.entries().next().value; tintLRU.delete(old); om.delete(oc); tintPx -= old.width * old.height; if (tintSpare) tintSpare.width = tintSpare.height = 0; tintSpare = old; }
     return c;
   }
   // v5.8 Cloak gene: the sprite's silhouette in a 2×2 checker of one colour (cached per sprite like tintOf)
@@ -12324,6 +12344,9 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     }
     return c;
   }
+  // 6.16.1: when the sprite cache drops a sprite (art.js, memory budget), its tinted and dithered copies go too, and give their memory back at once
+  ART.onDrop(src => { const d = dithW.get(src); if (d) { d.width = d.height = 0; dithW.delete(src); }
+    const m = tintW.get(src); if (m) { for (const c of m.values()) { if (tintLRU.delete(c)) tintPx -= c.width * c.height; if (c !== tintSpare) c.width = c.height = 0; } tintW.delete(src); } });
   // v5.8 the visible swarm: one readable mark per gene, drawn in screen space (crisp at any zoom) around a unit whose half
   // extents on screen are hw × hh. u is the art pixel (2-4 screen px). Used on the field and for menu icons (e.icon: still).
   const MARK_INK = '#090b16';
@@ -13798,7 +13821,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     const R0 = Math.max(1, Math.round(r)), key = R0 + col + dither + ':' + (phase % dither);
     let c = discCache.get(key);
     if (!c) {
-      if (discCache.size > 120) discCache.clear();
+      if (discCache.size > 120) { for (const o of discCache.values()) o.width = o.height = 0; discCache.clear(); } // (6.16.1: 0 x 0 gives the canvas memory back at once on iOS; every disc is drawn in the frame it is asked for)
       c = document.createElement('canvas'); c.width = c.height = R0 * 2 + 1;
       const g = c.getContext('2d'); g.fillStyle = col;
       for (let y = 0; y <= R0 * 2; y++) for (let x = 0; x <= R0 * 2; x++) {
@@ -14955,7 +14978,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   }
   return {
     set glow(v) { R_.glow = v; }, set bloom(v) { R_.bloom = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
-    tintStats: () => ({ kept: tintLRU.size, made: tintMade, cap: TINT_CAP }), // 6.6 test hook (perf66)
+    tintStats: () => { let px = 0; for (const c of tintLRU.keys()) px += c.width * c.height; return { kept: tintLRU.size, made: tintMade, cap: TINT_CAP, mb: Math.round(px * 4 / 104857.6) / 10 }; }, // 6.6 test hook (perf66)
     zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
@@ -20455,6 +20478,14 @@ function talentsToast(kind) {
   // UI side only (rlog is not in the run hash). Logged: the device once, every audio state change and error as it happens, page
   // hide/show, a clock that stops ('audStall'), output that goes silent while music is meant to play ('audSilent', then 'audBack'),
   // wake attempts until sound returns, and a short health line every 5 waves ('aud').
+// 6.16.1 (Nov 18): two more facts for the run log. (1) Sprite memory: megabytes in the sprite cache, megabytes of tinted copies, sprites
+// dropped by the cache's budget so far (art.js). (2) Script errors: the first 6 of a page's life as 'err' lines, and a count on every
+// 'perf' line. An iPhone that runs out of canvas memory shows up here as "null is not an object" errors.
+const ARTMEM = () => { try { const a = ART.cacheStats(), t = Render.tintStats(); return [a.mb, t.mb, a.ev]; } catch (e) { return null; } };
+window.__errN = 0;
+{ const logErr = m => { window.__errN++; if (window.__errN <= 6) { try { rlog('err', { m: String(m).slice(0, 180), n: window.__errN }); } catch (e) {} } };
+  window.addEventListener('error', e => logErr((e && e.message) + (e && e.lineno ? ' @' + e.lineno + ':' + e.colno : '')));
+  window.addEventListener('unhandledrejection', e => logErr('promise: ' + (e && e.reason && (e.reason.message || e.reason)))); }
   const AudWatch = (() => {
     let lastCt = -1, lastW = 0, stall = 0, silN = 0, silAt = 0, wakeN = 0, wakeAt = 0, runG = null, lastWave = -1, lastPlayed = 0;
     const on = () => G && G.rlog && !G.over && !G.watch;
@@ -20492,7 +20523,7 @@ function talentsToast(kind) {
       if (FT.length < 4000) FT.push(dtMs);
       const w = performance.now() / 1000; if (fW >= 0 && w - fW < 0.5) return;
       const c = SFX.clock(); if (!c || document.hidden) { fW = -1; return; }
-      if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, cut: SFX.reapStats.reaped, grp: SFX.reapStats.open, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1 }); } P0 = pNew(); pw = G.wave; FT.length = 0; }
+      if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, cut: SFX.reapStats.reaped, grp: SFX.reapStats.open, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1, art: ARTMEM(), err: window.__errN || 0 }); } P0 = pNew(); pw = G.wave; FT.length = 0; }
       if (fW >= 0 && c.st === 'running' && w - fW < 1.5) {
         const dw = w - fW, dc = c.ct - fCt, slip = dc < dw * 0.75; P0.lost += Math.max(0, dw - dc - 0.02); P0.sfx += Math.max(0, c.played - fPl); P0.inF = Math.max(P0.inF, c.inF); P0.spd = Math.max(P0.spd, G.speed || 1);
         if (!gov) { if (slip) P0.slipN++; } else
