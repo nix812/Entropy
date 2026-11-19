@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 38';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 39';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -12077,6 +12077,7 @@ const UNITS = (() => {
   // ---------- 6.16.1 fine detail for enemies (same rule as FD for towers: runs only when FINE > 1, adds to the part list) ----------
   // The Remnant first: old war machines get what the old grid could not hold: brass bolts, rust, grilles, wheels, feet, cables.
   const RBR = ramp('#8a6a30', 0.8), RST = '#6a3418', RDK = ramp('#1a1410', 0.4), RGR = ramp('#6a6050', 0.7);
+  const HB = ramp('#8a7f70', 0.7), HJ = ramp('#3a2440', 0.5); // hive: old bone, leg joints
   const FE = {
     husk(parts, c, f) { // a second seam and two rust patches on the frame; brass bolts on the patch plate; a brow and a brass socket for the eye; feet; a loose cable
       const st = [0, 1, 0, -1][f] * 1.4;
@@ -12147,6 +12148,89 @@ const UNITS = (() => {
       parts.push(P(S.ring(4, 0, 3.6, 4.9, 0.5), 13, RBR, { d: (x, y) => (angf(x - 4, y, 6) < 0.14 ? -0.8 : 0) }));
       for (const s of [-1, 1]) { parts.push(P(S.dome(8, s * 4.8, 1.1, 0.9), 12.8, RDK, { e: (x, y) => Math.hypot(x - 8.3, y - s * 4.8) < 0.6 ? '#a01810' : null }));
         parts.push(P(S.puck(-12.2, s * 7, 1.5, 2.4, 0.5), 12.4, RDK, { e: (x, y) => Math.hypot(x + 12.2, y - s * 7) < 0.65 ? (f % 2 ? '#ff8a2a' : '#7a2a10') : null })); }
+    },
+    // The hive (polish 39): what grows on them. Bone spurs and claws, ridges in the chitin, veins in the sacs, spars in the wings.
+    // Same rule as the base sprites: no eyes, the type's colour is the light inside, bone for anything hard.
+    drone(parts, c, f) { // a ridge and three dim pores on each wing-case; a banded gut; knee joints, bone claws, shoulder spurs and antennae
+      const st = [0, 1, 0, -1][f] * 1.8;
+      overE(parts[6], (x) => (((x + 30) % 3.2) < 0.7 ? mix(c, '#160e28', 0.65) : null));
+      for (const q of [7, 8]) { addD(parts[q], (x, y) => (Math.abs(Math.abs(y) - 5.6) < 0.4 && x < 5 && x > -10 ? 0.8 : 0));
+        addE(parts[q], (x, y) => { for (const px of [-7.5, -2.5, 2.5]) if (Math.hypot(x - px, Math.abs(y) - 7.6) < 0.65) return mix(c, '#160e28', 0.35); return null; }); }
+      for (const s of [-1, 1]) { for (const k of [-1, 0, 1]) { const sw = (k === 0 ? -st : st) * s, x0 = k * 5.5, x1 = x0 + sw + k * 2.5;
+          parts.push(P(S.dome(x0 + (x1 - x0) * 0.5, s * 9.6, 1.1, 1), 2.2, HJ)); parts.push(P(S.dome(x1, s * 14.3, 0.85, 0.8), 0.8, BONE)); }
+        parts.push(P(S.gem(4.5, s * 9.6, 1.7, 1.2, 2.6), 5, BONE));
+        parts.push(P(seg(12.2, s * 3.6, 15.4, s * 7, 0.45, 0.8), 4.6, LEG)); }
+    },
+    swarmer(parts, c, f) { // a groove where the shell meets the sac; two bone spikes at the rear; claws
+      const st = f % 2 ? 1.5 : -1.5;
+      addD(parts[4], (x, y) => (Math.abs(Math.hypot(x + 2, y) - 3.2) < 0.4 ? -0.9 : 0));
+      for (const s of [-1, 1]) { parts.push(P(S.gem(-6.4, s * 2.3, 1.4, 0.85, 2), 2, BONE));
+        for (const k of [-1, 1]) parts.push(P(S.dome(k * 3 + st * s * k, s * 7.7, 0.75, 0.7), 0.8, BONE)); }
+    },
+    flyer(parts, c, f) { // two bone spars in each wing and a barb at each wingtip; a row of bone nubs down the spine
+      const w = [12, 10, 7, 10][f];
+      for (const s of [-1, 1]) { parts.push(P(seg(2, s * 3.2, -2.6, s * (w + 1.6), 0.5, 0.9), 3.2, HB)); parts.push(P(seg(-1, s * 3, -8, s * (w - 1.2), 0.45, 0.8), 3.2, HB));
+        parts.push(P(S.gem(-2, s * (w + 3.3), 1.1, 1.4, 2.4), 0.6, BONE)); }
+      for (const [x, z] of [[5.5, 9.3], [2, 9.8], [-1.5, 9.5], [-5, 8.6]]) parts.push(P(S.dome(x, 0, 0.85, 0.9), z, BONE));
+    },
+    splitter(parts, c, f) { // veins in each sac; bone staples across the four seams; a dark drip at each outer corner
+      const p = f % 2 ? 0.6 : 0, k = 1 + p * 0.06;
+      [[-4.5, -4.5], [4.5, -4.5], [-4.5, 4.5], [4.5, 4.5]].forEach(([x, y], i) => { const X = x * k, Y = y * k;
+        addD(parts[i], (xx, yy) => (Math.hypot(xx - X, yy - Y) > 3.2 && angf(xx - X, yy - Y, 5) < 0.1 ? -0.9 : 0));
+        parts.push(P(S.dome(x * 2.2, y * 2.2, 1.2, 1), 0, hive(c, 0.6))); });
+      for (const s of [-1, 1]) { parts.push(P(seg(-1.7, s * 7.6, 1.7, s * 7.6, 0.55, 0.9), 3.5, BONE)); parts.push(P(seg(s * 7.6, -1.7, s * 7.6, 1.7, 0.55, 0.9), 3.5, BONE)); }
+    },
+    phantom(parts, c, f) { // a bright heart; flow lines across the back of the wisp; two motes of light trailing behind
+      addE(parts[0], (x, y) => Math.hypot(x - 1.5, y) < 1.5 ? mix(c, '#ffffff', 0.6) : null);
+      addD(parts[0], (x, y) => (x < 2.5 && Math.abs(((y + 20) % 3.4) - 1.7) < 0.3 ? -0.7 : 0));
+      const L = ramp(mix(c, '#ffffff', 0.5), 1);
+      parts.push(P(S.dome(-16.5, Math.sin(f * 1.57) * 2.6, 0.75, 0.7), 0.5, L)); parts.push(P(S.dome(-14.6, -Math.cos(f * 1.57) * 4.4, 0.6, 0.6), 0.5, L));
+    },
+    medic(parts, c, f) { // ribs down the bell; a frill of ten nodules round its rim
+      addD(parts[0], (x, y) => (Math.hypot(x - 2, y) > 6 && angf(x - 2, y, 10) < 0.12 ? -1 : 0));
+      for (let k = 0; k < 10; k++) { const an = k / 10 * 6.283 + 0.314; parts.push(P(S.dome(2 + Math.cos(an) * 8.7, Math.sin(an) * 8.7, 0.9, 0.9), 3.2, hive(c, 0.35))); }
+    },
+    shielder(parts, c, f) { // segment lines on the crab; sinew arms that hold the plate; a crack in the plate and bone spikes on its rim; claws
+      addD(parts[6], (x, y) => (Math.abs(y) > 1.6 && (((x + 20) % 3) < 0.5) ? -0.8 : 0));
+      addD(parts[7], (x, y) => (Math.abs(x - 7.6 - y * 0.25) < 0.35 && y > -9.5 && y < -2.5 ? -1.3 : 0) + (Math.abs(x - 5.4 + y * 0.3) < 0.3 && y > 4 && y < 8 ? -1 : 0));
+      for (const s of [-1, 1]) { parts.push(P(seg(-1, s * 4, 3.6, s * 7.2, 0.8, 1.2), 7, hive(c, 0.5)));
+        parts.push(P(S.gem(6.3, s * 12.9, 1.2, 1.7, 3), 5, BONE)); parts.push(P(S.gem(12, s * 6.3, 1.6, 1.1, 3), 5, BONE));
+        for (const k of [-1, 0, 1]) parts.push(P(S.dome(k * 5 - 3 + (f % 2 ? s : -s) * k, s * 11.3, 0.8, 0.8), 0.8, BONE)); }
+    },
+    reflector(parts, c, f) { // crest lines split the shell into four facets; bone studs on three of its points; a rippled mantle; one fixed glint
+      const shell = parts[parts.length - 1];
+      addD(shell, (x, y) => (Math.abs(y) < 0.4 || Math.abs(x + 2) < 0.4 ? 0.9 : 0));
+      addE(shell, (x, y) => Math.hypot(x + 6.5, y + 3) < 0.7 ? '#ffffff' : null);
+      addD(parts[0], (x, y) => (angf(x - 1, y, 16) < 0.3 ? -0.6 : 0));
+      for (const [x, y] of [[-2, -9.9], [-2, 9.9], [-14.4, 0]]) parts.push(P(S.dome(x, y, 1, 1), 2, BONE));
+    },
+    carrier(parts, c, f) { // bone nubs down the spine between the eggs; a bone spar and a claw on each fin; crest lines on the head; feelers; two egg sacs trailing at the rear
+      const eg = f % 2 ? '#ffe14d' : mix('#ffe14d', c, 0.5);
+      addD(parts[6], (x, y) => (x < 17 && (((y + 20) % 2.4) < 0.5) ? -0.7 : 0));
+      for (const x of [-21, -15.5, -10, -4.5, 1, 6.5]) parts.push(P(S.dome(x, 0, 1.05, 1), 3.5 + 9 * Math.sqrt(Math.max(0, 1 - ((x + 6) / 19) ** 2)), BONE));
+      for (const s of [-1, 1]) { parts.push(P(seg(1, s * 7.6, -8, s * 17.4, 0.55, 1), 2.4, HB)); parts.push(P(S.gem(-8.5, s * 18.7, 1.4, 1.2, 2.5), 1, BONE));
+        parts.push(P(seg(21, s * 4.8, 25.4, s * 7.8, 0.45, 0.8), 7, LEG));
+        parts.push(P(S.dome(-23.6, s * 3.4, 1.7, 1.8), 3, hive(c, 0.5), { e: (x, y) => Math.hypot(x + 23.6, y - s * 3.4) < 0.9 ? eg : null })); }
+    },
+    sapper(parts, c, f) { // segment lines on the body; dark veins and a sinew collar on the bile sac; claws; a drip of bile behind
+      addD(parts[4], (x) => (((x + 20) % 2.6) < 0.5 ? -0.7 : 0));
+      addE(parts[5], (x, y) => { const r = Math.hypot(x + 3, y); return r > 2.9 && r < 4.6 && angf(x + 3, y, 7) < 0.14 ? '#2a1004' : null; });
+      parts.splice(5, 0, P(S.ring(-3, 0, 4.4, 5.7, 0.6), 5, hive(c, 0.45)));
+      const st = [0, 1, 0, -1][f] * 1.5;
+      for (const s of [-1, 1]) for (const k of [-1, 1]) parts.push(P(S.dome(k * 4 + st * s * k + k * 2, s * 9.2, 0.75, 0.7), 0.8, BONE));
+      parts.push(P(S.dome(-8.8, f % 2 ? 0.9 : -0.7, 0.9, 0.8), 1, ramp('#ff7a30', 1), { e: () => (f % 2 ? '#fff0b0' : '#ff7a30') }));
+    },
+    leech(parts, c, f) { // a ring groove on each segment; bristles down both flanks; four teeth round the mouth
+      for (let i = 0; i < 4; i++) { const x = 6 - i * 4.5, y = Math.sin(f * 1.57 + i) * 1.4, r = 5.2 - i * 0.6;
+        addD(parts[3 - i], (xx, yy) => (Math.abs(Math.hypot(xx - x, yy - y) - r * 0.72) < 0.35 ? -0.6 : 0));
+        if (i) for (const s of [-1, 1]) parts.push(P(S.gem(x + 1.2, y + s * (r + 0.5), 0.7, 1.1, 1.6), 0.4, HB)); }
+      const hy = Math.sin(f * 1.57) * 1.4;
+      for (let k = 0; k < 4; k++) { const an = k * 1.5708 + 0.785; parts.push(P(S.dome(9 + Math.cos(an) * 1.9, hy + Math.sin(an) * 1.9, 0.6, 0.6), 3.5, BONE)); }
+    },
+    voidling(parts, c, f) { // a finger bone in each wing; two ear nubs; a mote of light behind
+      const w = [9, 6, 3, 6][f], L = ramp(mix(c, '#ffffff', 0.3), 0.8);
+      for (const s of [-1, 1]) { parts.push(P(seg(0.5, s * 1.6, -1, s * (w + 1.2), 0.4, 0.7), 2, L)); parts.push(P(S.gem(4.7, s * 1.9, 0.9, 0.7, 1.6), 4, L)); }
+      parts.push(P(S.dome(-8.4, 0, 0.7, 0.7), 0.5, ramp(mix(c, '#ffffff', 0.6), 1)));
     },
   };
   const eParts = (type, c, f) => { const parts = ENEMY[type](c, f); if (FINE > 1 && FE[type]) FE[type](parts, c, f); return parts; };
