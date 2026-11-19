@@ -1615,7 +1615,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 41';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 42';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -7023,7 +7023,8 @@ function leak(e) {
   if (e.boss && !e.gen) {
     Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
     Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
-    G.stats.bossBreach = e.bossName; G.stats.bossBreachId = e.boss; c.shield = 0; c.hp = 0; gameOver(); return;
+    G.stats.bossBreach = e.bossName; G.stats.bossBreachId = e.boss; if (e.boss === 'worm') G.stats.digested = (e.gut || []).map(t => TOWERS[t.type] ? TOWERS[t.type].name : t.type); // Nic, Nov 19: the Worm's ending names what it was carrying
+    c.shield = 0; c.hp = 0; gameOver(); return;
   }
   if (fus('CE') && !(G.fusCD > 0)) { G.fusCD = FUSV.ceCD; let n = 0; // 6.10 Cold Shell
     for (const o of G.enemies) if (!o.dead && o !== e && !o.boss && !o.elite.includes('jugg') && dist2(o.x, o.y, c.x, c.y) <= FUSV.ceR * FUSV.ceR) { o.st.frozen = Math.max(o.st.frozen, FUSV.ceT); n++; }
@@ -19397,6 +19398,9 @@ const UI = (() => {
   }
   // v5.3: the death screen says why, and what would have stopped it
   function lossWhyHTML() {
+    if (G.stats.digested) { const D = G.stats.digested, cnt = {}; for (const n of D) cnt[n] = (cnt[n] || 0) + 1; // Nic, Nov 19: keep a funny summary for the Worm (draft text, Nic's to edit)
+      const list = Object.keys(cnt).map(n => cnt[n] > 1 ? `${cnt[n]} ${n}s` : `${/^[AEIOU]/.test(n) ? 'an' : 'a'} ${n}`), said = list.length > 1 ? list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1] : list[0];
+      return `<div class="why"><b>Digested</b><span>${D.length ? `${esc(G.stats.bossBreach)} reached the core with ${esc(said)} still inside. Then it ate the core too. It will be napping for a while.` : `${esc(G.stats.bossBreach)} reached the core and ate it. Nothing else was on the menu.`}</span><span class="good">Next time: slow it (Cryo, Gravity Well, Stasis), Scan it for +15% damage taken, and kill it before it swallows your towers. They come back when it dies.</span></div>`; }
     if (G.stats.bossBreach) return `<div class="why"><b>Why</b><span>${esc(G.stats.bossBreach)} reached the core. A boss at the core ends the run, whatever your shield.</span><span class="good">Next time: slow it (Cryo, Gravity Well, Stasis), Scan it for +15% damage taken, and put single-target fire on it (Rail Lance, Void Lens). Upgrade the core's Command Uplink for faster Stasis.</span></div>`;
     const L = G.leakWave || {}, top = Object.entries(L).sort((a, b) => b[1] - a[1])[0];
     if (!top) return '';
