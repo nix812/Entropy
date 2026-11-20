@@ -1671,7 +1671,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 47';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2281,19 +2281,15 @@ const STORY = [
 ];
 const STORY_MC = 'Mission Control to pilot. The core is yours. Good luck.';
 const storyEnd = w => `The gradient held for ${w} wave${w === 1 ? '' : 's'}. Then the dark came in.`; // the end screen, when the core falls
-const WHATS_NEW = { ver: '6.11.0', title: 'Last Gradient 6.11 · The Story', items: [
-  ['The story', 'The intro has its own stars, an ending and its own music. Watch it in the Field Manual: tap The Last Gradient.'],
-  ['The story', 'A short intro now tells you what the Last Gradient is. It plays once. You can read it again in the Field Manual.'],
-  ['Talents screen', 'The Talents screen is new. Each talent is a picture, and the lit bars in its tile are its points. A whole tree fits on one screen. The track under it shows what opens at 3, 6, 9, 12 and 16 points.'],
-  ['Signatures', 'Every talent tree has a Signature: one effect only that tree has. Every point in the tree makes it stronger, and deeper points count more. Tap the Signature at the top of a tree.'],
-  ['Fusions', 'Spend 8 points in each of two talent trees to open their Fusion. Each of the 21 pairs has its own. One Fusion is active in a run. The map in Talents shows all of them: tap Map.'],
-  ['Game text', 'About 120 lines now use full sentences and plain words.'],
-  ['New players', 'The Daily Hunt shows after your first run or after Training. The New Run screen leaves out the Evolution and Sector lines until then.'],
-  ['Strain Assault card', 'The background text now sits in a fold, How Strain Assaults Work. It is open the first time you see the card.'],
-  ['Labels', 'The Entropy gauge has its name. The chip in the top bar reads "+3 more" where there is room. Tutorial is now called Training everywhere.'],
-  ['Send Feedback', 'Report a bug or share an idea from the pause menu, the end-of-run screen or Settings.'],
-  ['Fonts', 'The game carries its own fonts. It no longer loads them from the web.'],
-  ['Legal', 'Settings has a Legal card. In a phone browser, the main menu shows how to add the game to your Home Screen.'],
+const WHATS_NEW = { ver: '6.16.1', title: 'Last Gradient 6.16.1 · Ranks', items: [ // draft text (Nic edits it on the Game Text page)
+  ['Ranks', 'You now hold a career rank. It counts every XP you have ever earned, and a Supernova never takes it away. Each rank also needs days served. Tap your rank in the Hangar.'],
+  ['Supernova', 'Each Supernova gives an emblem, widens your core\'s light by 1 tile (up to 5) and unlocks a new color for it. The Daily Hunt stays open after a Supernova.'],
+  ['Black Hole', 'The Black Hole is new. It lands on your biggest build and pulls towers in. Feed it Mass before it closes: kill enemies within 12 tiles of it. Fed, it gives your towers back and leaves a Newborn Star. Starved, it keeps them for a few waves.'],
+  ['The swarm', 'Every enemy is redrawn as a hive creature, at a sharper size.'],
+  ['The Worm', 'If the Worm reaches your core, the end screen lists what it digested.'],
+  ['Talents', 'The last rank of the weakest talents now does something new. Read them in Talents.'],
+  ['Sound', 'Long runs keep their sound. Music levels are even across styles.'],
+  ['Saves', 'The game warns you if the device has no room to save. Codes pasted from other players are checked before they run.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -2488,7 +2484,8 @@ const TUT = {
 // need(): hide a lesson until its system exists (the Ascend perks branch adds PERKS).
 // 6.13: the Daily Hunt opens at Level 20 (Nic, Nov 13: "they don't know what the hunt is"). A Daily run in progress always resumes.
 const DAILY_LVL = 20;
-const dailyOpen = () => typeof PROF === 'undefined' || !PROF || profLevel().level >= DAILY_LVL || !!(PROF.runSnap && PROF.runSnap.rec);
+// polish 48 (Nic, Nov 20): a Supernova resets the level, but the Daily Hunt stays open once any Supernova is done
+const dailyOpen = () => typeof PROF === 'undefined' || !PROF || profLevel().level >= DAILY_LVL || (PROF.nova || 0) >= 1 || !!(PROF.runSnap && PROF.runSnap.rec);
 const LESSONS = [
   { id: 'towers', track: 'basics', bench: { m: 'Build two towers of different elements', s: ['reach', 0.7] }, title: 'Towers and Elements', blurb: 'What each tower is for, and why element matters.',
     what: 'Every tower has an element: Kinetic, Thermal, Cryo, Arc or Void. Enemies resist some and are weak to others.', when: 'Every build. The Threat Board says what the next wave is weak to.', todo: 'Read the role line on each card. Build the counter the Threat Board names. Mix elements.',
