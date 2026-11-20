@@ -139,13 +139,27 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .menu .btn.nova small { font-size: 15px; color: #c9a6ff; }
 .menu .btn.nova.ready { color: #1a0a24; background: linear-gradient(90deg, #ffe9b0, #ff9adf, #b86cff); box-shadow: none; animation: pulse 1.6s infinite; }
 .menu .btn.nova.ready small { color: #3a1450; }
-#hNovaBox b { color: #ff9adf; }
 /* 6.16.1 polish 43: ranks (career insignia and Supernova emblem in the Hangar; the Ranks page) */
-.hcr { display: flex; align-items: center; gap: 6px; }
-.hcr img { width: 34px; height: 34px; flex: none; }
+/* polish 44: one pilot plate: the insignia with the Supernova emblem on its corner, the rank name, a bar to the next rank */
+.hcar { padding: 5px 12px 6px 8px; margin-top: -5px; background: rgba(21, 25, 51, 0.5); box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 0 #ffd36a; }
+.hcr { display: flex; align-items: center; gap: 10px; }
+.hins { position: relative; width: 48px; height: 48px; flex: none; }
+.hins #hCarImg { width: 48px; height: 48px; display: block; }
+.hins .hnv { position: absolute; right: -9px; bottom: -7px; width: 26px; height: 26px; }
+.hcol { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rkbar { display: block; height: 3px; min-width: 120px; background: #11152a; box-shadow: inset 0 0 0 1px var(--line); position: relative; }
+.rkbar i { position: absolute; inset: 0 auto 0 0; background: #ffd36a; }
+#hNovaBox { font-size: 12px; line-height: 1; color: #ff9adf; letter-spacing: 0.08em; white-space: nowrap; }
+#hNovaBox em { font-style: normal; }
+.rk .sil { filter: brightness(0) opacity(0.55); }
+.rk.myst b { color: #59607e; letter-spacing: 0.2em; }
+.rk.next { box-shadow: inset 0 0 0 1px #ffd36a; }
+.rk.fire { cursor: pointer; font: inherit; color: inherit; border: 0; }
+.rk .sw { display: block; width: 44px; height: 44px; margin: 4px auto 6px; border-radius: 50%; box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.12), inset 0 0 0 2px rgba(0, 0, 0, 0.35); }
+.rk .sw.q { background: #11152a; color: #59607e; font-style: normal; line-height: 44px; font-size: 20px; box-shadow: inset 0 0 0 1px var(--line); }
 .hcar.new .lbl::after { content: 'NEW'; margin-left: 6px; padding: 0 4px; color: #0a0612; background: #ffd36a; letter-spacing: 1px; }
 .hcar { cursor: pointer; }
-.hmeta #hCarName { font-size: 17px; line-height: 34px; white-space: nowrap; color: #e6e8f5; }
+.hmeta #hCarName { font-size: 17px; line-height: 1; white-space: nowrap; color: #e6e8f5; }
 .card.ranks { max-width: 980px; }
 .rkhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 10px; }
 .rkhead img { width: 88px; height: 88px; }
@@ -1641,7 +1655,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 43';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 44';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1703,8 +1717,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
         <div class="hmeta">
           <div class="lv"><span class="lbl">Level <i class="hrank" id="hRank"></i></span><b id="hLevel">0</b><div class="xpbar"><i id="hXpFill"></i></div></div>
           <div><span class="lbl">Best Wave</span><b id="hBest">—</b></div>
-          <div id="hCareer" class="hcar" role="button" tabindex="0" aria-label="Ranks"><span class="lbl">Rank</span><span class="hcr"><img id="hCarImg" alt=""><b id="hCarName"></b></span></div>
-          <div id="hNovaBox" hidden><span class="lbl">Supernova</span><span class="hcr"><img id="hNovaImg" alt=""><b id="hNova">0</b></span></div>
+          <div id="hCareer" class="hcar" role="button" tabindex="0" aria-label="Ranks"><span class="lbl">Rank</span><span class="hcr"><span class="hins"><img id="hCarImg" alt=""><img id="hNovaImg" class="hnv" alt="" hidden></span><span class="hcol"><b id="hCarName"></b><span class="rkbar"><i id="hCarFill"></i></span><small id="hNovaBox" hidden>Supernova <em id="hNova">0</em> · <span id="hNovaName"></span></small></span></span></div>
         </div>
         <div id="hHunt" class="hhunt"></div>
       </div>
@@ -2219,7 +2232,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 22; // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 23; // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2843,6 +2856,8 @@ const HOLE22 = { from: 20, p0: 0.05, pStep: 0.02, cool: 12, warn: 8, hold: 45, r
 // 6.15 rules 14: the last fire. Cloaked enemies within the core's light are revealed. Its radius runs from `min` tiles at no hull
 // to `max` at full hull (render.js draws the same light); in flight it keeps its light.
 const LIGHT14 = { min: 3, max: 6 };
+// rules 23 (Nic, Nov 19): each Supernova adds `per` tile to the core's light (it reveals cloaked enemies), up to `max`. Never in a Daily Hunt or Training (G.novaN is 0 there)
+const NOVA_LIGHT = { per: 1, max: 5 };
 // 6.14 rules 13 storms: every `every` s a storm acts on the enemies under it. Ion strikes up to zapN of them for zap of max HP (bosses
 // zapBoss); Solar sets them burning (burn × the wave's HP scale per s for burnT s); Cryo chills (+1 stack); Void Marks (+1);
 // Static reveals cloaked ones. The probe harvests a storm it is sent to: harvest s inside (within inR of its radius) gives one charge
@@ -5129,7 +5144,8 @@ function holeHunt(h, dt) {
 }
 // rules 13: a kill inside a landed hole's reach feeds it
 // rules 14: the radius of the core's light, LIGHT14.min at no hull to LIGHT14.max at full
-function coreLightR() { const c = G.core; return (LIGHT14.min + (LIGHT14.max - LIGHT14.min) * clamp(c.hp / Math.max(1, c.max), 0, 1)) * (G.hole && G.hole.v === 22 && G.hole.ph === 1 ? HOLE22.coreLight : 1); } // rules 22: an open Black Hole drinks the core's light
+const novaLight = () => G.frV >= 23 ? Math.min(NOVA_LIGHT.max, (G.novaN || 0) * NOVA_LIGHT.per) : 0; // rules 23
+function coreLightR() { const c = G.core; return (LIGHT14.min + (LIGHT14.max - LIGHT14.min) * clamp(c.hp / Math.max(1, c.max), 0, 1) + novaLight()) * (G.hole && G.hole.v === 22 && G.hole.ph === 1 ? HOLE22.coreLight : 1); } // rules 22: an open Black Hole drinks the core's light
 function holeFeed(e) {
   const h = G.hole; if (!h || h.v !== 13 || h.ph !== 1 || dist2(e.x, e.y, h.x, h.y) > HOLE.r * HOLE.r) return;
   const before = h.m; h.m += e.boss ? HOLE13.bossM : e.elite && e.elite.length ? HOLE13.eliteM : 1;
@@ -14373,16 +14389,17 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   // Twelve lights on the deck show the Battery level; a ring rolls out from the heart every 3 s, so the core reads at any zoom.
   // 6.15 the last fire: the light's radius in tiles (the sim's LIGHT14, shown in every run) and a flicker that grows as the hull falls
   const DARK_AT = 0.35, DARK_MAX = 0.66; // the screen darkens below 35% core hull, up to 66% at none (more hides the enemies you need to see)
-  function coreLightV() { const c = G.core; return (LIGHT14.min + (LIGHT14.max - LIGHT14.min) * clamp(c.hp / Math.max(1, c.max), 0, 1)) * (G.hole && G.hole.v === 22 && G.hole.ph === 1 ? HOLE22.coreLight : 1); } // rules 22: an open Black Hole drinks the light
+  function coreLightV() { return coreLightR(); } // polish 44: the sim's radius (rules 23 adds the Supernova light)
+  const fireCol = () => typeof coreFire === 'function' ? coreFire(rt) : '#ffc061'; // polish 44: the light's colour, a Supernova cosmetic (ranks.js CORE_FIRES) // rules 22: an open Black Hole drinks the light
   function coreFlicker() { const c = G.core, low = 1 - clamp(c.hp / Math.max(1, c.max), 0, 1); return 1 - low * low * (0.35 + 0.35 * Math.sin(rt * 23) * Math.sin(rt * 7.3)); }
   function drawCoreBase(air) {
     const c = G.core; if (!c) return; const X = c.x * TILE, Y = c.y * TILE, hurt = c.hp / c.max < 0.35 && frame % 30 < 15;
     if (!air) { // (the dark that closes in below 35% hull is a screen overlay: see 'the dark closes in' below)
       const LR = coreLightV() * TILE;
       { const g2 = b.createRadialGradient(X, Y, 0, X, Y, LR); const fa = coreFlicker(); // the pool of warm light on the ground
-        g2.addColorStop(0, `rgba(255,192,97,${(0.16 * fa).toFixed(3)})`); g2.addColorStop(0.6, `rgba(255,170,80,${(0.07 * fa).toFixed(3)})`); g2.addColorStop(1, 'rgba(255,160,70,0)');
+        const fc = fireCol(); g2.addColorStop(0, hexA(fc, 0.16 * fa)); g2.addColorStop(0.6, hexA(fc, 0.07 * fa)); g2.addColorStop(1, hexA(fc, 0));
         b.save(); b.globalCompositeOperation = 'lighter'; b.fillStyle = g2; b.fillRect(X - LR, Y - LR, LR * 2, LR * 2); b.restore(); }
-      if (G.frV >= 14) { b.strokeStyle = hexA('#ffc061', 0.22 * coreFlicker()); b.lineWidth = 1; b.setLineDash([2, 5]); b.lineDashOffset = -rt * 4; b.beginPath(); b.arc(X, Y, LR, 0, 6.283); b.stroke(); b.setLineDash([]); } // where cloaked enemies show
+      if (G.frV >= 14) { b.strokeStyle = hexA(fireCol(), 0.22 * coreFlicker()); b.lineWidth = 1; b.setLineDash([2, 5]); b.lineDashOffset = -rt * 4; b.beginPath(); b.arc(X, Y, LR, 0, 6.283); b.stroke(); b.setLineDash([]); } // where cloaked enemies show
     }
     if (!air) { b.fillStyle = 'rgba(2,3,10,0.4)'; b.beginPath(); b.ellipse(X + 2, Y + 4, 32, 30, 0, 0, 6.283); b.fill(); }
     blit(UNITS.coreBase(hurt), X, Y);
@@ -15024,7 +15041,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     lights.length = 0;
     const pz = (Math.sin(frame / 10) + 1) / 2;
     { const LR = coreLightV(), fl = coreFlicker(); // 6.15 the last fire: a warm light as wide as the core's reveal (LIGHT14), the green glow of the machine inside it
-      light(G.core.x * TILE, G.core.y * TILE, TILE * LR * 1.15, '#ffc061', 0.42 * fl); light(G.core.x * TILE, G.core.y * TILE, TILE * (2.2 + pz * 0.3), PAL.core, 0.3); }
+      light(G.core.x * TILE, G.core.y * TILE, TILE * LR * 1.15, fireCol(), 0.42 * fl); light(G.core.x * TILE, G.core.y * TILE, TILE * (2.2 + pz * 0.3), PAL.core, 0.3); }
     for (const t of G.towers) { const c0 = EL[t.s.el].col; light(t.cx * TILE, t.cy * TILE, TILE * 1.15, c0, 0.13 + (t.flash > 0 ? 0.28 : 0) + (t.asc ? 0.08 : 0)); }
     for (const t of G.towers) if (t.beamTargets && t.disabled <= 0) for (const e of t.beamTargets) light(e.x * TILE, e.y * TILE, TILE * (0.8 + Math.min(1, t.ramp / 4) * 0.6), EL[t.s.el].col, 0.35);
     let np = 0;
@@ -16444,6 +16461,20 @@ function rankImgURL(kind, a) {
   return RK_IMG[key] = cv.toDataURL();
 }
 
+// ---- polish 44: the core's light, a Supernova cosmetic (Nic, Nov 19: "a cosmetic choice and +1 light range on the core"). ----
+// The colour of the warm light around the core (render.js fireCol). One unlocks with each Supernova (`nova`); the last one cycles
+// the title's cold gradient in 24 steps (stepped, so render's colour cache stays small). The +1 tile per Supernova is the sim's (NOVA_LIGHT, rules 23)
+const CORE_FIRES = [
+  { name: 'Last Fire', c: '#ffc061', nova: 0 }, { name: 'Ice', c: '#8ff4ff', nova: 1 }, { name: 'Nebula Rose', c: '#ff8ac8', nova: 2 },
+  { name: 'Void Violet', c: '#b98cff', nova: 3 }, { name: 'Solar', c: '#ffe48a', nova: 4 }, { name: 'Blue Giant', c: '#7fa8ff', nova: 5 },
+  { name: 'White Dwarf', c: '#f4f6ff', nova: 6 }, { name: 'The Gradient', c: null, nova: 10 },
+];
+const fireOpen = i => !!CORE_FIRES[i] && (PROF.nova || 0) >= CORE_FIRES[i].nova;
+const FIRE_STEPS = (() => { const ramp = ['#d8fbff', '#7ff0f0', '#5aa8ff', '#6a44e6', '#b98cff', '#7ff0f0'], out = [], hx = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  for (let k = 0; k < 24; k++) { const t = k / 24 * (ramp.length - 1), i = Math.floor(t), f = t - i, A = hx(ramp[i]), B = hx(ramp[Math.min(ramp.length - 1, i + 1)]);
+    out.push('#' + A.map((v, j) => Math.round(v + (B[j] - v) * f).toString(16).padStart(2, '0')).join('')); } return out; })();
+function coreFire(t) { const i = PROF.coreFire || 0, F = fireOpen(i) ? CORE_FIRES[i] : CORE_FIRES[0]; return F.c || FIRE_STEPS[Math.floor((t || 0) * 3) % FIRE_STEPS.length]; }
+
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — UI, TREE VIEW, SAVES, LOOP =====================
 const $ = s => document.querySelector(s);
@@ -16608,8 +16639,8 @@ const UI = (() => {
     $('#bWebH').classList.toggle('glow', free > 0);
     $('#bArchive').classList.toggle('hasnew', ((PROF.codex || {}).collNew || []).length > 0); // v5.8: new Swarm Collection entries
     const nv = PROF.nova || 0, done = capsHeld().length, req = novaLevelReq(nv), ready = novaReady();
-    $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv; if (nv) $('#hNovaImg').src = rankImgURL('n', nv);
-    { const C = myRank(); $('#hCarImg').src = rankImgURL('r', C.step); $('#hCarName').textContent = C.name; // polish 43: the career rank
+    $('#hNovaBox').hidden = $('#hNovaImg').hidden = !nv; $('#hNova').textContent = nv; if (nv) { $('#hNovaImg').src = rankImgURL('n', nv); $('#hNovaName').textContent = novaEmblemName(nv); }
+    { const C = myRank(), xr = rankXp(); $('#hCarImg').src = rankImgURL('r', C.step); $('#hCarName').textContent = C.name; $('#hCarFill').style.width = pct(C.next ? Math.min(1, (xr - C.from) / (C.next - C.from)) : 1); // polish 43: the career rank
       if (PROF.rankSeen === undefined) { PROF.rankSeen = C.step; PROF.rankNew = 1; Save.save(); } $('#hCareer').classList.toggle('new', !!PROF.rankNew); } // a NEW tag until the Ranks page is opened (a pinned toast followed you into the run)
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
     $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 2 && L.level >= req ? 'Finish your run' : `${Math.min(done, 2)}/2 Capstones · Lv ${req}`;
@@ -20595,7 +20626,7 @@ const UI = (() => {
       body = `<p class="note">Collapse your galaxy and start a new one. It's harder, it's stranger, and it's worth more.</p>
         <div class="nkeep"><div class="lose"><b>Reset</b>Level and XP<br>Talents and Capstones</div>
         <div class="keep"><b>Keep and gain</b>One Remnant: a Capstone you hold, active forever without a slot or points<br>One Cosmic Law: +${Math.round(LAW_SCORE * 100)}% score, changes the rules<br>+${Math.round(NOVA_SCORE * 100)}% score and +${Math.round(NOVA_XP * 100)}% XP per Supernova</div></div>
-        <div class="nemb"><img src="${rankImgURL('n', nv + 1)}" alt=""><span class="note">Your Supernova emblem: <b>${esc(novaEmblemName(nv + 1))}</b></span></div>
+        <div class="nemb"><img src="${rankImgURL('n', nv + 1)}" alt=""><span class="note">Your Supernova emblem: <b>${esc(novaEmblemName(nv + 1))}</b>${nv + 1 <= NOVA_LIGHT.max / NOVA_LIGHT.per ? `. Your core's light: +${NOVA_LIGHT.per} tile` : ''}${CORE_FIRES.some(F => F.nova === nv + 1) ? ', and a new color for it' : ''}.</span></div>
         ${PROF.remnants.length ? `<div class="lbl">Your Remnants</div><p class="note">${PROF.remnants.map(r => esc(TAL[r] ? TAL[r].name : 'Old web: ' + (TALENTS[+r.slice(1)] || {}).name)).join(' · ')}</p>` : ''}
         ${lawsHave.length ? `<div class="lbl">Your Laws</div><p class="note">${lawsHave.map(L => esc(L.name)).join(' · ')}</p>` : ''}
         <div class="lbl">Requirements</div><p class="note">${done.length >= 2 ? '✓' : '✗'} 2 Capstones (${done.length}) · ${profLevel().level >= novaLevelReq(nv) ? '✓' : '✗'} Level ${novaLevelReq(nv)} · ${PROF.runSnap ? '✗ Finish or abandon your saved run' : '✓ No run in progress'}</p>
@@ -20618,23 +20649,30 @@ const UI = (() => {
     PROF.novaOffer = null; Save.save(); closeModal();
     const fx = document.createElement('div'); fx.id = 'novafx'; document.body.appendChild(fx); setTimeout(() => fx.remove(), 1700);
     SFX.play('maelstrom');
-    setTimeout(() => { renderHangar(); toast('GALAXY REBORN', `Supernova ${PROF.nova}. Score ×${(1 + PROF.nova * NOVA_SCORE + PROF.laws.length * LAW_SCORE).toFixed(2)}, XP +${Math.round(PROF.nova * NOVA_XP * 100)}%.`, '#ff9adf', 1); }, 900);
+    setTimeout(() => { renderHangar(); toast('GALAXY REBORN', `Supernova ${PROF.nova}. Score ×${(1 + PROF.nova * NOVA_SCORE + PROF.laws.length * LAW_SCORE).toFixed(2)}, XP +${Math.round(PROF.nova * NOVA_XP * 100)}%. Core light +${Math.min(NOVA_LIGHT.max, PROF.nova * NOVA_LIGHT.per)}.`, '#ff9adf', 1); }, 900);
   }
   // 6.16.1 polish 43: the Ranks page: the career ladder (lifetime XP) and the Supernova emblems, every one, locked ones dimmed
   function openRanks() {
     const xp = rankXp(), C = myRank(), nv = PROF.nova || 0, days = PROF.days || 0;
     if (PROF.rankNew) { delete PROF.rankNew; Save.save(); const h = $('#hCareer'); if (h) h.classList.remove('new'); }
+    // polish 44 (Nic, Nov 19: "obscure the ranks to be earned so people have some mystery"): only the next rank and the next emblem show; the rest are silhouettes
     const step = k => { const R = rankOfStep(k), nm = RANK_NAMES[R.rank] + (R.rank < RANK_SERVICE ? ' ' + GRADES[R.grade] : ''), star = R.rank >= RANK_SERVICE && R.rank < RANK_SERVICE + 7 ? STAR_CLASS[R.rank - RANK_SERVICE].join(' · ') + '<br>' : '';
-      return `<div class="rk${k <= C.step ? '' : ' lock'}${k === C.step ? ' now' : ''}"><img src="${rankImgURL('r', k)}" alt=""><b>${esc(nm)}</b><small>${star}${fmt(RANK_XP[k])} XP${RANK_DAYS[k] ? ` · ${RANK_DAYS[k]} days` : ''}</small></div>`; };
-    const nov = n => `<div class="rk${n <= nv ? '' : ' lock'}${n === nv ? ' now' : ''}"><img src="${rankImgURL('n', n)}" alt=""><b>${esc(novaEmblemName(n))}</b><small>Supernova ${n}</small></div>`;
+      if (k > C.step + 1) return `<div class="rk lock myst"><img class="sil" src="${rankImgURL('r', k)}" alt=""><b>???</b><small>&nbsp;</small></div>`;
+      return `<div class="rk${k <= C.step ? '' : ' lock next'}${k === C.step ? ' now' : ''}"><img src="${rankImgURL('r', k)}" alt=""><b>${esc(nm)}</b><small>${k === C.step + 1 ? 'Next · ' : ''}${star}${fmt(RANK_XP[k])} XP${RANK_DAYS[k] ? ` · ${RANK_DAYS[k]} day${RANK_DAYS[k] === 1 ? '' : 's'}` : ''}</small></div>`; };
+    const nov = n => n > nv + 1 ? `<div class="rk lock myst"><img class="sil" src="${rankImgURL('n', n)}" alt=""><b>???</b><small>Supernova ${n}</small></div>`
+      : `<div class="rk${n <= nv ? '' : ' lock next'}${n === nv ? ' now' : ''}"><img src="${rankImgURL('n', n)}" alt=""><b>${esc(novaEmblemName(n))}</b><small>${n === nv + 1 ? 'Next · ' : ''}Supernova ${n}</small></div>`;
+    const fire = (F, i) => { const sw = F.c ? `background:${F.c}` : `background:linear-gradient(135deg,${FIRE_STEPS[0]},${FIRE_STEPS[8]},${FIRE_STEPS[14]},${FIRE_STEPS[20]})`;
+      return fireOpen(i) ? `<button class="rk fire${(PROF.coreFire || 0) === i ? ' now' : ''}" data-act="fire" data-v="${i}"><i class="sw" style="${sw}"></i><b>${esc(F.name)}</b><small>${F.nova ? 'Supernova ' + F.nova : 'Your first light'}</small></button>`
+        : `<div class="rk lock myst"><i class="sw q">?</i><b>???</b><small>Supernova ${F.nova}</small></div>`; };
     const pc = C.next ? (xp - C.from) / (C.next - C.from) : 1;
     modal(`<div class="card ranks"><div class="ch"><h2>Ranks</h2><button class="x" data-act="close">✕</button></div>
       <div class="rkhead"><img src="${rankImgURL('r', C.step)}" alt=""><div><span class="lbl">Career rank</span><b>${esc(C.name)}</b><div class="xpbar"><i style="width:${pct(pc)}"></i></div><small class="note">${fmt(xp)} XP · ${days} days served${C.next ? ` · next rank: ${fmt(C.next)} XP and ${C.days} days` : ' · the top'}</small>${C.held ? `<small class="note gold">Your XP is ready for the next rank. Serve ${C.days - days} more day${C.days - days === 1 ? '' : 's'}.</small>` : ''}</div>
         ${nv ? `<img src="${rankImgURL('n', Math.min(nv, 99))}" alt=""><div><span class="lbl">Supernova</span><b>${esc(novaEmblemName(nv))}</b><small class="note">Supernova ${nv}</small></div>` : ''}</div>
       <p class="note">Your career rank counts every XP you have ever earned. A Supernova never takes it away. Each rank also needs days served: a day with a run to Wave ${RANK_DAY.wave} or more. Your first XP each day counts double toward rank.</p>
       <div class="lbl">Service ranks</div><div class="rkgrid">${[...Array(45).keys()].map(step).join('')}</div>
-      <div class="lbl">Star ranks: stars by how hot they burn, then the Gradient</div><div class="rkgrid">${[...Array(8).keys()].map(i => step(45 + i)).join('')}</div>
-      <div class="lbl">Supernova emblems</div><p class="note">A new emblem for each Supernova. After Supernova 20, Last Gradient gains a mark for each one.</p><div class="rkgrid">${[...Array(20).keys()].map(i => nov(i + 1)).join('')}</div></div>`, 'ranks');
+      <div class="lbl">Star ranks</div><div class="rkgrid">${[...Array(8).keys()].map(i => step(45 + i)).join('')}</div>
+      <div class="lbl">Supernova emblems</div><p class="note">A new emblem for each Supernova.</p><div class="rkgrid">${[...Array(20).keys()].map(i => nov(i + 1)).join('')}</div>
+      <div class="lbl">Core light</div><p class="note">Each Supernova widens your core's light by ${NOVA_LIGHT.per} tile, up to ${NOVA_LIGHT.max}. The light reveals cloaked enemies. Yours: +${Math.min(NOVA_LIGHT.max, nv * NOVA_LIGHT.per)}. Each Supernova also unlocks a new color for it. Tap one to use it.</p><div class="rkgrid">${CORE_FIRES.map(fire).join('')}</div></div>`, 'ranks');
   }
   function openArchive() {
     const rows = TOWER_ORDER.map(k => { const D = TOWERS[k], ok = D.capT ? capTowersOwned().includes(k) || masteryXp(k) > 0 : towerUnlocked(k), xp = masteryXp(k), r = masteryRankOf(xp); // 6.4: tier towers count once learned
@@ -20769,6 +20807,7 @@ const UI = (() => {
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
       case 'ranks': openRanks(); break; // polish 43
+      case 'fire': { const i = +b.dataset.v; if (!fireOpen(i)) { SFX.play('deny'); break; } PROF.coreFire = i; Save.save(); SFX.play('pick'); for (const f of document.querySelectorAll('#modal .rk.fire')) f.classList.toggle('now', +f.dataset.v === i); break; } // polish 44: the core's light colour
       case 'benchRun': closeModal(); Bench.start(); break;
       case 'benchSoak': closeModal(); Bench.start('soak'); break;
       case 'benchAuto': closeModal(); Bench.start('auto'); break;
