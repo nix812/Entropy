@@ -155,6 +155,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .hplates { display: flex; gap: 12px; margin-top: 12px; align-items: stretch; }
 .hplates > div { display: flex; flex-direction: column; gap: 2px; }
 .hplates b { font-weight: 400; }
+#hCarHeld { font-size: 11px; line-height: 1; color: #ffd36a; letter-spacing: 0.06em; white-space: nowrap; }
 /* polish 46: the reveal: the badge comes out of the dark with a flash (a rank up on game over, a new Supernova emblem) */
 @keyframes rkreveal { 0% { filter: brightness(0); transform: scale(0.55); } 55% { filter: brightness(0); transform: scale(1.06); } 70% { filter: brightness(3) drop-shadow(0 0 14px #fff); transform: scale(1.14); } 100% { filter: none; transform: none; } }
 @keyframes rkname { 0%, 65% { opacity: 0; letter-spacing: 0.5em; } 100% { opacity: 1; } }
@@ -1670,7 +1671,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 46';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 47';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1734,7 +1735,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
           <div><span class="lbl">Best Wave</span><b id="hBest">—</b></div>
         </div>
         <div class="hplates">
-          <div id="hCareer" class="hcar" role="button" tabindex="0" aria-label="Ranks"><span class="lbl">Rank</span><span class="hcr"><span class="hins"><img id="hCarImg" alt=""></span><span class="hcol"><b id="hCarName"></b><span class="rkbar"><i id="hCarFill"></i></span></span></span></div>
+          <div id="hCareer" class="hcar" role="button" tabindex="0" aria-label="Ranks"><span class="lbl">Rank</span><span class="hcr"><span class="hins"><img id="hCarImg" alt=""></span><span class="hcol"><b id="hCarName"></b><span class="rkbar"><i id="hCarFill"></i></span><small id="hCarHeld" hidden></small></span></span></div>
           <div id="hNovaBox" class="hcar hnova" role="button" tabindex="0" aria-label="Supernova emblems" hidden><span class="lbl">Supernova <em id="hNova">0</em></span><span class="hcr"><span class="hins"><img id="hNovaImg" alt=""></span><span class="hcol"><b id="hNovaName"></b></span></span></div>
         </div>
         <div id="hHunt" class="hhunt"></div>
@@ -1817,7 +1818,7 @@ const FINE_DEFAULT = 1.5;
 const FINE = (() => { try { if (typeof localStorage !== 'undefined') { const v = localStorage.getItem('entropy.fine'); if (v === '1') return 1; if (v === '1.5') return 1.5; } } catch (e) {} return FINE_DEFAULT; })();
 let ROWS = 26; const TILE = 24;
 let BW = COLS * TILE, BH = ROWS * TILE;
-function setRows(n) { ROWS = n; BH = ROWS * TILE; }
+function setRows(n) { ROWS = Math.max(8, Math.min(48, Math.round(+n) || 26)); BH = ROWS * TILE; } // polish 47: clamped like setCols (a pasted hunt code sets it)
 function setCols(n) { COLS = Math.max(38, Math.min(76, Math.round(n))); BW = COLS * TILE; }
 // Expanding sector: a run starts on this fraction of the full map (around the core) and grows
 // one step each time a wormhole is detected, reaching the full map with the last scheduled wormhole.
@@ -3621,8 +3622,8 @@ function supernova(remnant, law) {
   if (!novaReady()) return false;
   if (remnant && capsHeld().includes(remnant) && !(PROF.remnants || []).includes(remnant)) PROF.remnants.push(remnant);
   if (law && LAWS.some(L => L.id === law) && !PROF.laws.includes(law)) PROF.laws.push(law);
+  xpLife(); PROF.xpBank += PROF.xp || 0; // polish 43: the career rank keeps it (before the count goes up: xpLife seeds an old profile from it)
   PROF.nova = (PROF.nova || 0) + 1;
-  xpLife(); PROF.xpBank += PROF.xp || 0; // polish 43: the career rank keeps it
   PROF.xp = 0; PROF.tal = {}; PROF.caps = [];
   Hooks.onChange('tree');
   return true;
@@ -5356,7 +5357,7 @@ function holeKill24(e) {
   const h = G.hole; if (!h || h.v !== 22 || h.ph !== 1 || e.mite || e.type === 'voidling' || e.boss) return;
   if (dist2(e.x, e.y, h.x, h.y) > HOLE22.killR * HOLE22.killR) return;
   h.m += e.assault || (e.elite && e.elite.length) ? HOLE22.mElite : HOLE22.mKill;
-  G.stats.holeKills = (G.stats.holeKills || 0) + 1;
+  G.stats.holeKills = (G.stats.holeKills || 0) + 1; h.kl = (h.kl || 0) + 1;
   Hooks.fx('holeFeed', { x: e.x, y: e.y, hx: h.x, hy: h.y });
 }
 function holeDevour22(h, e) {
@@ -5405,7 +5406,7 @@ function holeWhite22(h) {
   if (G.fogEx) fogMark([h.x, h.y, HOLE22.blastR + 8]);
   recomputeAuras();
   G.stats.holesFed = (G.stats.holesFed || 0) + 1;
-  rlog('holeEnd', { m: h.m, goal: h.goal, fed: 1, ate: h.sw, back, t: open, star: sp ? 1 : 0 });
+  rlog('holeEnd', { m: h.m, goal: h.goal, fed: 1, ate: h.sw, back, t: open, star: sp ? 1 : 0, kl: h.kl || 0 });
   Hooks.toast('WHITE HOLE', `It collapsed into light. A Newborn Star burns where it stood${back ? `. ${back} tower${back > 1 ? 's' : ''} came back stronger` : ''}`, '#fff1b8', true); // draft text, Nic's to edit
 }
 // time is up unfed: it closes and keeps what it ate for 2 to 4 waves, leaves a Void Scar, and spits Voidlings
@@ -5420,7 +5421,7 @@ function holeStarve22(h) {
   for (let i = 0; i < n; i++) spawnEnemy('voidling', { fromPt: { x: h.x + (G.r() - 0.5) * 1.5, y: h.y + (G.r() - 0.5) * 1.5 } });
   Hooks.fx('implode', { x: h.x, y: h.y, r: 2 }); Hooks.fx('voidScar', { x: h.x, y: h.y, r: HOLE22.scarR }); Hooks.sfx('maelstrom');
   (G.stats.holeM = G.stats.holeM || []).push([w, h.m, h.goal]); // sweeps read this (stats are not in the run hash)
-  rlog('holeEnd', { m: h.m, goal: h.goal, fed: 0, ate: held, hold: hw, spit: n });
+  rlog('holeEnd', { m: h.m, goal: h.goal, fed: 0, ate: held, hold: hw, spit: n, kl: h.kl || 0 });
   Hooks.toast('BLACK HOLE CLOSED', `Starved. ${held ? `It keeps ${held} tower${held > 1 ? 's' : ''} for ${hw} waves. ` : ''}Nothing can be built where it stood for ${hw} waves. It spat ${n} voidling${n === 1 ? '' : 's'}`, '#ff4d6a', true, 'alert'); // draft text
 }
 
@@ -5430,7 +5431,7 @@ function holeStarve22(h) {
 // replay rebuilds it exactly. Render.js keeps the live vision at half-tile resolution and draws the fog
 const fogOn = () => !!(G && G.fr && G.frV >= 5 && (!G.tut || G.tutS.fog)); // 6.6: Basic Training v2 has fog (lessons don't)
 function fogSources() { // flat [x, y, r, ...] in tiles: the core (gun range), towers (range + pad), the probe
-  const out = [], cr = G.core ? Math.max(FOG.core, coreStats().range) : FOG.core;
+  const out = [], cr = G.core ? Math.max(FOG.core, coreStats().range, G.frV >= 23 ? LIGHT14.max + novaLight() : 0) : FOG.core; // rules 23: the Supernova light is never wider than what the core sees
   out.push(G.core.x, G.core.y, cr);
   for (const t of G.towers) out.push(t.cx, t.cy, Math.max(FOG.tower, ((t.s && t.s.range) || 0) + FOG.pad));
   for (const S of G.stars || []) out.push(S.x + 0.5, S.y + 0.5, HOLE22.starR + FOG.pad); // rules 22: a Newborn Star lights its ground
@@ -9000,7 +9001,7 @@ function gameOver() {
     (d.runs || (d.runs = [])).push(res); d.runs.sort((a, b) => (b.ext ? 1 : 0) - (a.ext ? 1 : 0) || b.wave - a.wave || b.score - a.score); d.runs = d.runs.slice(0, 10);
     PROF.daily = d;
   }
-  if (typeof careerRun === 'function') G.career = careerRun(G.xpEarned, G.wave); // polish 43: days served and rested XP (ranks.js; not in the node harness)
+  if (typeof careerRun === 'function') G.career = careerRun(G.xpEarned, G.wave - (G.startWave || 1) >= RANK_DAY.played ? G.wave : 0); // a day served needs waves played in this run too (a Wave 40 start is not a free day) // polish 43: days served and rested XP (ranks.js; not in the node harness)
   PROF.playTime += G.time;
   PROF.runSnap = null;
   Hooks.sfx('gameover');
@@ -9175,9 +9176,11 @@ const ACTS = {
   push: door => huntPush(door == null ? undefined : door), // 5.8: the jump door's index; none (5.7 recordings) pushes on as before
   abandon: () => { abandonRun(); return true; },
 };
+// polish 47: only ACTS' own entries (a recording can come from a pasted code: 'constructor' or '__proto__' must not resolve)
+const actOf = n => typeof n === 'string' && Object.prototype.hasOwnProperty.call(ACTS, n) ? ACTS[n] : null;
 function act(name, ...a) {
   if (!G || (G.over && name !== 'abandon') || G.replaying || G.watch) return false; // a replay is driven by its recording, not taps
-  const f = ACTS[name]; if (!f) return false;
+  const f = actOf(name); if (!f) return false;
   if (G.inputs && !G.replaying) G.inputs.push([G.tick || 0, name].concat(a.map(v => v === undefined ? null : v)));
   return f(...a);
 }
@@ -9196,7 +9199,7 @@ function replayRun(rec, opts) {
     G.replaying = true;
     const inp = rec.inputs || [], until = opts.until == null ? Infinity : opts.until;
     for (let guard = 0; guard < 5e6; guard++) {
-      while (i < inp.length && inp[i][0] <= G.tick) { const [, n, ...a] = inp[i++]; ACTS[n] && ACTS[n](...a); if (G.over) break; }
+      while (i < inp.length && inp[i][0] <= G.tick) { const [, n, ...a] = inp[i++]; const f = actOf(n); if (f) f(...a); if (G.over) break; }
       if (G.over || G.tick >= until) break;
       if (HALTED()) { if (i >= inp.length) break; if (cpHalt() && inp[i][0] > G.tick) { G.tick = inp[i][0]; continue; } if (inp[i][0] > G.tick) break; continue; }
       G.paused = false;
@@ -16339,7 +16342,7 @@ function careerStep(xp) { let k = 0; while (k + 1 < RANK_XP.length && xp >= RANK
 // Fair climb (Nic, Nov 19: "prevent abuse and screeching the way to the top on day one"). A rank needs its XP AND its days served.
 // A day served: a calendar day with a real run to Wave 20 or more. Days: about 30 for Commodore, 90 for Fleet Admiral, 365 for Keeper.
 // Rested XP: the first XP each day counts double toward rank (up to a quarter of the current rank's gap), so steady players catch up.
-const RANK_DAY = { wave: 20, restShare: 0.25, restMin: 15000 };
+const RANK_DAY = { wave: 20, played: 10, restShare: 0.25, restMin: 15000 }; // played: waves in this run, so a run started at a later wave still has to be played
 const RANK_DAYS = []; for (let k = 0; k < RANK_STEPS; k++) RANK_DAYS.push(k < 45 ? Math.round(30 * Math.pow(k / 30, 3.27)) : [120, 150, 180, 210, 250, 290, 330, 365][k - 45]);
 const rankName = k => { const R = rankOfStep(k); return RANK_NAMES[R.rank] + (R.rank < RANK_SERVICE ? ' ' + GRADES[R.grade] : ''); };
 function careerRank(xp, days) { const kx = careerStep(xp); let k = kx; if (days !== undefined) while (k > 0 && days < RANK_DAYS[k]) k--;
@@ -16583,6 +16586,9 @@ const Save = (() => {
     out.settings = Object.assign(defaultProfile().settings, p.settings || {});
     out.settings.studio = studioMig(out.settings.studio);
     out.webV = p.webV || 1;
+    // polish 47: a damaged number must not poison the profile (NaN XP would break levels and ranks for good)
+    for (const k of ['xp', 'kills', 'bestWave', 'bestScore', 'runs', 'playTime', 'nova']) out[k] = typeof out[k] === 'number' && isFinite(out[k]) && out[k] >= 0 ? out[k] : 0;
+    for (const k of ['xpBank', 'days', 'rest', 'restLeft']) if (out[k] !== undefined && !(typeof out[k] === 'number' && isFinite(out[k]) && out[k] >= 0)) delete out[k];
     out.alloc = ['start'];
     out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
     out.caps = Array.isArray(p.caps) ? p.caps.filter(c => TAL[c] && TAL[c].cap) : [];
@@ -16597,10 +16603,20 @@ const Save = (() => {
     if (!p.tut || typeof p.tut !== 'object') out.tut = (p.runs || 0) > 0 || (p.bestWave || 0) > 0 ? { seen: 1, done: 1, old: 1 } : {}; // 5.8: players with runs never get the Training prompt
     return out;
   }
-  function loadLocal() { try { const s = localStorage.getItem(KEY); return s ? merge(JSON.parse(s)) : null; } catch (e) { return null; } }
+  // polish 47: a full store must never cost progress in silence. The old run logs go first (they are the big part), then one warning
+  let warned = false;
+  function storeLocal() {
+    const js = JSON.stringify(PROF);
+    try { localStorage.setItem(KEY, js); return true; } catch (e) {}
+    try { UI.dropLogs(0); localStorage.setItem(KEY, js); return true; } catch (e) {}
+    try { UI.dropLogs(1); localStorage.setItem(KEY, js); return true; } catch (e) {}
+    if (!warned && typeof UI !== 'undefined' && UI.toast) { warned = true; UI.toast('SAVE FAILED', 'This device has no room to save. Free some browser storage, or your progress may be lost.', '#ff4d6a', true); } // draft text
+    return false;
+  }
+  function loadLocal() { let s = null; try { s = localStorage.getItem(KEY); return s ? merge(JSON.parse(s)) : null; } catch (e) { try { if (s) localStorage.setItem(KEY + '.bad', s); } catch (e2) {} return null; } } // polish 47: a save that cannot be read is kept aside, not overwritten
   function save() {
     PROF.updatedAt = Date.now();
-    try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
+    storeLocal();
     queue();
   }
   function queue() { if (!db) return; clearTimeout(timer); timer = setTimeout(flush, 1500); }
@@ -16628,7 +16644,7 @@ const Save = (() => {
           PROF = remote;
           tidyCaps();
           { const mw = migrateWeb(); if (mw) { PROF.updatedAt = Date.now(); UI.toast(...talentsToast(mw)); queue(); } }
-          try { localStorage.setItem(KEY, JSON.stringify(PROF)); } catch (e) {}
+          storeLocal();
           UI.refreshAll();
         } else queue();
       } else queue();
@@ -16670,7 +16686,7 @@ const UI = (() => {
     $('#bArchive').classList.toggle('hasnew', ((PROF.codex || {}).collNew || []).length > 0); // v5.8: new Swarm Collection entries
     const nv = PROF.nova || 0, done = capsHeld().length, req = novaLevelReq(nv), ready = novaReady();
     $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv; if (nv) { $('#hNovaImg').src = rankImgURL('n', nv); $('#hNovaName').textContent = novaEmblemName(nv); }
-    { const C = myRank(), xr = rankXp(); $('#hCarImg').src = rankImgURL('r', C.step); $('#hCarName').textContent = C.name; $('#hCarFill').style.width = pct(C.next ? Math.min(1, (xr - C.from) / (C.next - C.from)) : 1); // polish 43: the career rank
+    { const C = myRank(), xr = rankXp(); $('#hCarImg').src = rankImgURL('r', C.step); $('#hCarName').textContent = C.name; $('#hCarFill').style.width = pct(C.next ? Math.min(1, (xr - C.from) / (C.next - C.from)) : 1); { const hh = $('#hCarHeld'), nd = C.held ? C.days - (PROF.days || 0) : 0; hh.hidden = nd <= 0; if (nd > 0) hh.textContent = `XP ready · serve ${nd} more day${nd === 1 ? '' : 's'}`; } // polish 47: a full bar with no rank up needs its reason // polish 43: the career rank
       if (PROF.rankSeen === undefined) { PROF.rankSeen = C.step; PROF.rankNew = 1; Save.save(); } $('#hCareer').classList.toggle('new', !!PROF.rankNew); } // a NEW tag until the Ranks page is opened (a pinned toast followed you into the run)
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
     $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 2 && L.level >= req ? 'Finish your run' : `${Math.min(done, 2)}/2 Capstones · Lv ${req}`;
@@ -19745,7 +19761,13 @@ const UI = (() => {
   let huntCodeCache = null;
   const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
   const unb64 = t => { const s = atob(t), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
-  async function pipe(u8, Stream) { const out = new Response(new Blob([u8]).stream().pipeThrough(new Stream('deflate-raw'))); return new Uint8Array(await out.arrayBuffer()); }
+  // polish 47: a pasted code is untrusted. CODE_MAX caps the text; unpacking stops at UNPACK_MAX bytes (a tiny code can unpack to gigabytes)
+  const CODE_MAX = 3e6, UNPACK_MAX = 12e6;
+  async function pipe(u8, Stream) {
+    const rd = new Blob([u8]).stream().pipeThrough(new Stream('deflate-raw')).getReader(), parts = []; let n = 0;
+    for (;;) { const { done, value } = await rd.read(); if (done) break; n += value.length; if (n > UNPACK_MAX) { try { rd.cancel(); } catch (e) {} throw new Error('too big'); } parts.push(value); }
+    const out = new Uint8Array(n); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } return out;
+  }
   async function huntCode(rec) {
     const raw = new TextEncoder().encode(JSON.stringify({ opts: rec.opts, inputs: rec.inputs, end: rec.end }));
     try { if (typeof CompressionStream !== 'undefined') return 'HUNT1:' + b64(await pipe(raw, CompressionStream)); } catch (e) {}
@@ -19753,11 +19775,13 @@ const UI = (() => {
   }
   async function readHuntCode(code) {
     try {
-      code = (code || '').trim(); const m = /^HUNT([01]):(.+)$/s.exec(code); if (!m) return null;
+      code = (code || '').trim(); if (code.length > CODE_MAX) return null; const m = /^HUNT([01]):(.+)$/s.exec(code); if (!m) return null;
       let u = unb64(m[2].replace(/\s+/g, ''));
       if (m[1] === '1') u = await pipe(u, DecompressionStream);
       const rec = JSON.parse(new TextDecoder().decode(u));
-      return rec && rec.opts && Array.isArray(rec.inputs) ? rec : null;
+      if (!rec || !rec.opts || typeof rec.opts !== 'object' || !Array.isArray(rec.inputs) || rec.inputs.length > 4e5) return null;
+      rec.inputs = rec.inputs.filter(x => Array.isArray(x) && typeof x[0] === 'number' && isFinite(x[0]) && typeof x[1] === 'string'); // ticks and names only
+      return rec;
     } catch (e) { return null; }
   }
   function prepHuntCode() { huntCodeCache = null; const d = PROF.daily; if (d && d.rec) huntCode(d.rec).then(c => { huntCodeCache = c; }); }
@@ -19784,7 +19808,7 @@ const UI = (() => {
   // feed the recording into the live loop: called before each frame's steps
   function watchFeed() {
     const W = G.watch, inp = W.inputs;
-    while (W.i < inp.length && inp[W.i][0] <= G.tick && !G.over) { const [, n, ...a] = inp[W.i++]; if (ACTS[n]) ACTS[n](...a); }
+    while (W.i < inp.length && inp[W.i][0] <= G.tick && !G.over) { const [, n, ...a] = inp[W.i++]; const f = actOf(n); if (f) try { f(...a); } catch (e) {} }
     const halted = G.draft || G.huntChoice || cpHalt();
     if (halted && W.i < inp.length && inp[W.i][0] > G.tick && cpHalt()) G.tick = inp[W.i][0];
     if (!G.over && halted && W.i >= inp.length && !W.done) { W.done = 1; watchDone('The recording ends here.'); }
@@ -19994,7 +20018,7 @@ const UI = (() => {
   }
   async function readTrackCode(code) {
     try {
-      const m = /^TRACK([01]):(.+)$/s.exec((code || '').trim()); if (!m) return null;
+      if ((code || '').length > CODE_MAX) return null; const m = /^TRACK([01]):(.+)$/s.exec((code || '').trim()); if (!m) return null;
       let u = unb64(m[2].replace(/\s+/g, '')); if (m[1] === '1') u = await pipe(u, DecompressionStream);
       const o = JSON.parse(new TextDecoder().decode(u)), M = SFX.music;
       if (!o || !M.GENRES[o.g] || !M.GENRES[o.g].flavours[o.f]) return null;
@@ -20694,7 +20718,7 @@ const UI = (() => {
     modal(`<div class="card ranks"><div class="ch"><h2>Ranks</h2><button class="x" data-act="close">✕</button></div>
       <div class="rkhead"><img src="${rankImgURL('r', C.step)}" alt=""><div><span class="lbl">Career rank</span><b>${esc(C.name)}</b><div class="xpbar"><i style="width:${pct(pc)}"></i></div><small class="note">${fmt(xp)} XP · ${days} days served${C.next ? ` · next rank: ${fmt(C.next)} XP and ${C.days} days` : ' · the top'}</small>${C.held ? `<small class="note gold">Your XP is ready for the next rank. Serve ${C.days - days} more day${C.days - days === 1 ? '' : 's'}.</small>` : ''}</div>
 </div>
-      <p class="note">Your career rank counts every XP you have ever earned. A Supernova never takes it away. Each rank also needs days served: a day with a run to Wave ${RANK_DAY.wave} or more. Your first XP each day counts double toward rank.</p>
+      <p class="note">Your career rank counts every XP you have ever earned. A Supernova never takes it away. Each rank also needs days served: a day with a run of ${RANK_DAY.played} waves or more that reaches Wave ${RANK_DAY.wave}. Your first XP each day counts double toward rank.</p>
       <div class="lbl">Service ranks</div><div class="rkgrid">${[...Array(45).keys()].map(step).join('')}</div>
       <div class="lbl">Star ranks</div><div class="rkgrid">${[...Array(8).keys()].map(i => step(45 + i)).join('')}</div></div>`, 'ranks');
   }
@@ -21181,7 +21205,7 @@ const UI = (() => {
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
     cert: { rankNow: () => rankNow(), lessonXP: id => lessonXP(id), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
-    wire, tick, show, renderHangar, emblemReveal: openEmblemReveal, toast, flushToasts, closePanel, syncInsets, benchTick: dt => Bench.tick(dt), setAudWatch(a) { AW = a; }, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
+    wire, tick, show, renderHangar, emblemReveal: openEmblemReveal, dropLogs(all) { try { localStorage.removeItem(LOGS_KEY); if (all) { localStorage.removeItem(LOG_KEY); localStorage.removeItem('entropy.bench'); } } catch (e) {} }, readHuntCode, readTrackCode, toast, flushToasts, closePanel, syncInsets, benchTick: dt => Bench.tick(dt), setAudWatch(a) { AW = a; }, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
     fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
