@@ -140,17 +140,21 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .menu .btn.nova.ready { color: #1a0a24; background: linear-gradient(90deg, #ffe9b0, #ff9adf, #b86cff); box-shadow: none; animation: pulse 1.6s infinite; }
 .menu .btn.nova.ready small { color: #3a1450; }
 /* 6.16.1 polish 43: ranks (career insignia and Supernova emblem in the Hangar; the Ranks page) */
-/* polish 44: one pilot plate: the insignia with the Supernova emblem on its corner, the rank name, a bar to the next rank */
-.hcar { padding: 5px 12px 6px 8px; margin-top: -5px; background: rgba(21, 25, 51, 0.5); box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 0 #ffd36a; }
+/* polish 45: two plates (Nic: "they need to be separate"): Rank (insignia, name, bar to the next rank) and Supernova (emblem, name) */
+.hcar { padding: 5px 12px 6px 8px; background: rgba(21, 25, 51, 0.5); box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 0 #ffd36a; }
 .hcr { display: flex; align-items: center; gap: 10px; }
 .hins { position: relative; width: 48px; height: 48px; flex: none; }
 .hins #hCarImg { width: 48px; height: 48px; display: block; }
-.hins .hnv { position: absolute; right: -9px; bottom: -7px; width: 26px; height: 26px; }
 .hcol { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .rkbar { display: block; height: 3px; min-width: 120px; background: #11152a; box-shadow: inset 0 0 0 1px var(--line); position: relative; }
 .rkbar i { position: absolute; inset: 0 auto 0 0; background: #ffd36a; }
-#hNovaBox { font-size: 12px; line-height: 1; color: #ff9adf; letter-spacing: 0.08em; white-space: nowrap; }
-#hNovaBox em { font-style: normal; }
+.hcar.hnova { box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 0 #ff9adf; }
+.hins #hNovaImg { width: 48px; height: 48px; display: block; }
+.hplates #hNovaName { font-size: 17px; line-height: 1; white-space: nowrap; color: #ff9adf; }
+#hNovaBox em { font-style: normal; color: #ff9adf; }
+.hplates { display: flex; gap: 12px; margin-top: 12px; align-items: stretch; }
+.hplates > div { display: flex; flex-direction: column; gap: 2px; }
+.hplates b { font-weight: 400; }
 .rk .sil { filter: brightness(0) opacity(0.55); }
 .rk.myst b { color: #59607e; letter-spacing: 0.2em; }
 .rk.next { box-shadow: inset 0 0 0 1px #ffd36a; }
@@ -159,7 +163,7 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .rk .sw.q { background: #11152a; color: #59607e; font-style: normal; line-height: 44px; font-size: 20px; box-shadow: inset 0 0 0 1px var(--line); }
 .hcar.new .lbl::after { content: 'NEW'; margin-left: 6px; padding: 0 4px; color: #0a0612; background: #ffd36a; letter-spacing: 1px; }
 .hcar { cursor: pointer; }
-.hmeta #hCarName { font-size: 17px; line-height: 1; white-space: nowrap; color: #e6e8f5; }
+.hplates #hCarName { font-size: 17px; line-height: 1; white-space: nowrap; color: #e6e8f5; }
 .card.ranks { max-width: 980px; }
 .rkhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 10px; }
 .rkhead img { width: 88px; height: 88px; }
@@ -1655,7 +1659,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 44';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 45';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1717,7 +1721,10 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
         <div class="hmeta">
           <div class="lv"><span class="lbl">Level <i class="hrank" id="hRank"></i></span><b id="hLevel">0</b><div class="xpbar"><i id="hXpFill"></i></div></div>
           <div><span class="lbl">Best Wave</span><b id="hBest">—</b></div>
-          <div id="hCareer" class="hcar" role="button" tabindex="0" aria-label="Ranks"><span class="lbl">Rank</span><span class="hcr"><span class="hins"><img id="hCarImg" alt=""><img id="hNovaImg" class="hnv" alt="" hidden></span><span class="hcol"><b id="hCarName"></b><span class="rkbar"><i id="hCarFill"></i></span><small id="hNovaBox" hidden>Supernova <em id="hNova">0</em> · <span id="hNovaName"></span></small></span></span></div>
+        </div>
+        <div class="hplates">
+          <div id="hCareer" class="hcar" role="button" tabindex="0" aria-label="Ranks"><span class="lbl">Rank</span><span class="hcr"><span class="hins"><img id="hCarImg" alt=""></span><span class="hcol"><b id="hCarName"></b><span class="rkbar"><i id="hCarFill"></i></span></span></span></div>
+          <div id="hNovaBox" class="hcar hnova" role="button" tabindex="0" aria-label="Supernova emblems" hidden><span class="lbl">Supernova <em id="hNova">0</em></span><span class="hcr"><span class="hins"><img id="hNovaImg" alt=""></span><span class="hcol"><b id="hNovaName"></b></span></span></div>
         </div>
         <div id="hHunt" class="hhunt"></div>
       </div>
@@ -2232,7 +2239,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 23; // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 24; // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2529,7 +2536,7 @@ const LESSONS = [
     real: 'In a run: build into storms of your element; draw Anomalies that match your towers.',
     run: { start: 8, credits: 300, grid: 5, towers: ['pulse', 'rail', 'cryo', 'missile'], probe: 1, abil: ['strike', 'overclock'], pre: [['towers', [['missile', 2], ['pulse', 2]]], ['storm', 'solar'], ['entropy', 100], ['abil', ['overclock'], 1]], waves: [[['drone', 10, 0.9, 0.7]], [['drone', 10, 0.9, 0.7]]] } },
   { id: 'blackhole', track: 'advanced', bench: { m: 'Feed the Black Hole and hit 3 enemies with one Gravity Bomb', s: null }, title: 'Black Hole', blurb: 'It eats the board.',
-    what: 'A marker shows where a Black Hole will land, 8 seconds ahead. It lands on your biggest build and pulls every tower within 12 tiles toward it, faster near the center. A tower that reaches the center is swallowed: 2 at first, more in later waves. A tower on a Power Node, or docked under the core, holds. Every enemy within 5 tiles falls in and adds Mass. Fill its Mass in 45 seconds and it becomes a White Hole: a Newborn Star stays on the field and lifts the Damage of towers near it, and every tower it ate comes back one level higher. Starved, it keeps them for 2 to 4 waves, scars the ground and spits voidlings. A Strike aimed inside it becomes a Gravity Bomb that drags enemies in.', when: 'From Wave 20, 3 to 5 times in 100 waves. No set waves.', todo: 'Move your best towers out of the pull. Clear towers off the road near it, so enemies reach it alive. Save a Strike for it.',
+    what: 'A marker shows where a Black Hole will land, 8 seconds ahead. It lands on your biggest build and pulls every tower within 12 tiles toward it, faster near the center. A tower that reaches the center is swallowed: 2 at first, more in later waves. A tower on a Power Node, or docked under the core, holds. Every enemy killed within 12 tiles of it adds Mass, and so does every enemy that falls in (within 5 tiles). Fill its Mass in 45 seconds and it becomes a White Hole: a Newborn Star stays on the field and lifts the Damage of towers near it, and every tower it ate comes back one level higher. Starved, it keeps them for 2 to 4 waves, scars the ground and spits voidlings. A Strike aimed inside it becomes a Gravity Bomb that drags enemies in.', when: 'From Wave 20, 3 to 5 times in 100 waves. No set waves.', todo: 'Bring the fight to it: kill enemies inside its field. Move your best towers off its center so it cannot swallow them. Save a Strike for it.',
     real: 'In a run: when the marker appears, decide what it may take. Move your best towers out, open the road near it, and Strike when a pack is close.',
     run: { start: 12, credits: 700, grid: 8, towers: ['pulse', 'rail', 'cryo', 'missile'], probe: 1, hole: { w: 1 }, abil: ['strike'], pre: [['towers', [['pulse', 3], ['rail', 3], ['missile', 2], ['cryo', 2]]], ['abil', ['strike'], 2]],
       waves: [[['drone', 16, 0.55, 0.9], ['swarmer', 12, 0.3, 0.8], ['drone', 10, 0.6, 0.9]], [['drone', 10, 0.8, 0.9], ['tank', 2, 2.5, 0.8]]] } },
@@ -2809,7 +2816,7 @@ const EVENTS = [
   { id: 'gold', name: 'Gold Rush', good: 1, w: 7, from: 5, desc: '×2 Credits' },
   { id: 'overcharge', name: 'Overcharge', good: 1, w: 6, from: 5, desc: '+30% Attack Speed' },
   { id: 'meteor', name: 'Meteor Shower', good: 1, w: 6, from: 7, desc: 'Meteors strike the path' },
-  { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'It pulls in your towers within 12 tiles and swallows the closest. Feed it Mass: enemies that fall in, Gravity Bombs. Full, it becomes a White Hole: a Newborn Star, and the towers it ate come back stronger. Starved, it keeps them for 2 to 4 waves',
+  { id: 'hole', name: 'Black Hole', good: 0, w: 5, from: 10, fr: 5, desc: 'It pulls in your towers within 12 tiles and swallows the closest. Feed it Mass: kills within 12 tiles, enemies that fall in, Gravity Bombs. Full, it becomes a White Hole: a Newborn Star, and the towers it ate come back stronger. Starved, it keeps them for 2 to 4 waves',
     long: 'A marker shows where it lands, 8s ahead. Every kill inside its reach feeds it. Fed when its 30s run out, it collapses in a blast that tears into nearby enemies and leaves a rich wreck for your probe. Starved, it spits voidlings back out. A Strike aimed inside its reach becomes a Gravity Bomb that drags enemies to its center and crushes them. While it holds: Enemies within 6 tiles slow down, up to 50% at the center. It drags them along the road toward it. Towers 2.5 to 6 tiles away: +40% Attack Speed. Towers within 2.5 tiles: −50%. Bosses are affected half as much' },
 ];
 // 6.5 (FR_VER 5, G.frV >= 5): the Black Hole event (fr: 5 keeps it out of older rules, so their event rolls are unchanged).
@@ -2852,7 +2859,8 @@ const HOLE14 = { every: 0.25, look: 12, pack: 2.5, spd: 0.75, turn: 2.5, coreGap
 const HOLE22 = { from: 20, p0: 0.05, pStep: 0.02, cool: 12, warn: 8, hold: 45, r: 12, horizon: 2.5, coreGap: 6, crawl: 0.05, clear: 3.5,
   slideEdge: 8, slideNear: 2, capDiv: 12, capMin: 2, capMax: 10, catchR: 5, fall0: 1, fall1: 4, pull: 0.8, taxR: 6, tax: 0.25,
   goal: 8, goalW: 0.2, mElite: 3, road: 2.5, mTower: 1, blast: 0.4, blastBoss: 0.08, blastR: 12, lightR: 12, lightAs: 0.5, lightT: 20,
-  starR: 5, star0: 0.2, star1: 0.4, holdW: [2, 3, 4], scarR: 2.5, coreLight: 0.5, dark: 0.3 };
+  starR: 5, star0: 0.2, star1: 0.4, holdW: [2, 3, 4], scarR: 2.5, coreLight: 0.5, dark: 0.3,
+  mKill: 1, killR: 12, goal24: 16, goalW24: 0.4 }; // rules 24: an enemy killed within killR feeds mKill (inside catchR it is already falling and cannot be shot) (an elite or Assault unit mElite; Brood mites and Voidlings nothing); its goal is goal24 + wave x goalW24
 // 6.15 rules 14: the last fire. Cloaked enemies within the core's light are revealed. Its radius runs from `min` tiles at no hull
 // to `max` at full hull (render.js draws the same light); in flight it keeps its light.
 const LIGHT14 = { min: 3, max: 6 };
@@ -5252,7 +5260,7 @@ function holeSpawn22(near) {
   const R = G.region || { x0: 0, y0: 0, x1: COLS, y1: ROWS }, a = G.r() * 6.2832, dx = Math.cos(a), dy = Math.sin(a), tx = p.x, ty = p.y;
   const ex = Math.abs(dx) < 1e-6 ? 1e9 : (dx > 0 ? tx - R.x0 : R.x1 - tx) / Math.abs(dx), ey = Math.abs(dy) < 1e-6 ? 1e9 : (dy > 0 ? ty - R.y0 : R.y1 - ty) / Math.abs(dy);
   const back = Math.min(ex, ey) + HOLE.off, x = tx - dx * back, y = ty - dy * back, w = Math.max(1, G.wave);
-  G.hole = { v: 22, x, y, tx, ty, dx, dy, ph: 0, t: 0, k: 0, spd: back / HOLE22.warn, m: 0, goal: Math.round(HOLE22.goal + w * HOLE22.goalW), cap: holeCap22(w), sw: 0, gut: [] };
+  G.hole = { v: 22, x, y, tx, ty, dx, dy, ph: 0, t: 0, k: 0, spd: back / HOLE22.warn, m: 0, goal: G.frV >= 24 ? Math.round(HOLE22.goal24 + w * HOLE22.goalW24) : Math.round(HOLE22.goal + w * HOLE22.goalW), cap: holeCap22(w), sw: 0, gut: [] };
   Hooks.toast('BLACK HOLE', `Lands in ${HOLE22.warn}s on your towers. Feed it ${G.hole.goal} Mass in ${HOLE22.hold}s or it keeps what it eats`, '#b86cff', true); // draft text, Nic's to edit
   Hooks.sfx('hole', { x, y }); Hooks.fx('hole', { x, y });
   G.stats.holes = (G.stats.holes || 0) + 1; rlog('hole', { x: Math.round(tx), y: Math.round(ty), v: 22, goal: G.hole.goal, cap: G.hole.cap });
@@ -5331,6 +5339,15 @@ function holeFall22(e, dt) {
   if (d <= Math.max(0.3, sp * dt)) return holeDevour22(h, e);
   e.x += dx / d * sp * dt; e.y += dy / d * sp * dt;
 }
+// rules 24 (Nic, Nov 19: "something I couldn't help with due to rng on the field"): Mass only counted enemies pulled in alive, so a strong
+// build starved the hole. Now a kill within its catch reach feeds it too: bring the fight to it
+function holeKill24(e) {
+  const h = G.hole; if (!h || h.v !== 22 || h.ph !== 1 || e.mite || e.type === 'voidling' || e.boss) return;
+  if (dist2(e.x, e.y, h.x, h.y) > HOLE22.killR * HOLE22.killR) return;
+  h.m += e.assault || (e.elite && e.elite.length) ? HOLE22.mElite : HOLE22.mKill;
+  G.stats.holeKills = (G.stats.holeKills || 0) + 1;
+  Hooks.fx('holeFeed', { x: e.x, y: e.y, hx: h.x, hy: h.y });
+}
 function holeDevour22(h, e) {
   h.m += e.assault || (e.elite && e.elite.length) ? HOLE22.mElite : 1;
   G.stats.devoured = (G.stats.devoured || 0) + 1;
@@ -5391,6 +5408,7 @@ function holeStarve22(h) {
   const n = Math.max(1, Math.ceil((HOLE13.spit + w / HOLE13.spitW) * (1 - Math.min(1, h.m / Math.max(1, h.goal)))));
   for (let i = 0; i < n; i++) spawnEnemy('voidling', { fromPt: { x: h.x + (G.r() - 0.5) * 1.5, y: h.y + (G.r() - 0.5) * 1.5 } });
   Hooks.fx('implode', { x: h.x, y: h.y, r: 2 }); Hooks.fx('voidScar', { x: h.x, y: h.y, r: HOLE22.scarR }); Hooks.sfx('maelstrom');
+  (G.stats.holeM = G.stats.holeM || []).push([w, h.m, h.goal]); // sweeps read this (stats are not in the run hash)
   rlog('holeEnd', { m: h.m, goal: h.goal, fed: 0, ate: held, hold: hw, spit: n });
   Hooks.toast('BLACK HOLE CLOSED', `Starved. ${held ? `It keeps ${held} tower${held > 1 ? 's' : ''} for ${hw} waves. ` : ''}Nothing can be built where it stood for ${hw} waves. It spat ${n} voidling${n === 1 ? '' : 's'}`, '#ff4d6a', true, 'alert'); // draft text
 }
@@ -7310,6 +7328,7 @@ function kill(e, src, o) {
   if (o && o.abil) G.stats.abilKills = (G.stats.abilKills || 0) + 1; // 6.15: the Abilities lesson's Skill check (stats are not in the run hash)
   if (G.tutHoleK) { const K = G.tutHoleK; K.push(e.x, e.y); if (K.length >= 8) { G.tutHoleK = null; let x = 0, y = 0; for (let i = 0; i < 8; i += 2) { x += K[i]; y += K[i + 1]; } holeSpawn({ x: x / 4, y: y / 4 }); } } // 6.15 the Black Hole lesson
   if (G.hole && G.hole.v === 13) holeFeed(e); // rules 13
+  if (G.frV >= 24 && !(o && o.hole)) holeKill24(e); // rules 24
   if (e.st.shock > 0) { const lw = sig('A'); if (lw) { let b = null, bd = SIGV.Ar * SIGV.Ar; // 6.10 Arc Leap: the Shock jumps on from a dead enemy
     for (const o2 of G.enemies) { if (o2.dead) continue; const d2 = dist2(o2.x, o2.y, e.x, e.y); if (d2 <= bd) { bd = d2; b = o2; } }
     if (b) { Hooks.fx('arcs', { x: e.x, y: e.y, r: Math.sqrt(bd) }); b.st.shock = Math.max(b.st.shock, 3); b.st.shockEff = Math.max(b.st.shockEff, G.mods.shockEff); fusPct(b, lw * SIGV.A, 'A', src); } } }
@@ -16639,7 +16658,7 @@ const UI = (() => {
     $('#bWebH').classList.toggle('glow', free > 0);
     $('#bArchive').classList.toggle('hasnew', ((PROF.codex || {}).collNew || []).length > 0); // v5.8: new Swarm Collection entries
     const nv = PROF.nova || 0, done = capsHeld().length, req = novaLevelReq(nv), ready = novaReady();
-    $('#hNovaBox').hidden = $('#hNovaImg').hidden = !nv; $('#hNova').textContent = nv; if (nv) { $('#hNovaImg').src = rankImgURL('n', nv); $('#hNovaName').textContent = novaEmblemName(nv); }
+    $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv; if (nv) { $('#hNovaImg').src = rankImgURL('n', nv); $('#hNovaName').textContent = novaEmblemName(nv); }
     { const C = myRank(), xr = rankXp(); $('#hCarImg').src = rankImgURL('r', C.step); $('#hCarName').textContent = C.name; $('#hCarFill').style.width = pct(C.next ? Math.min(1, (xr - C.from) / (C.next - C.from)) : 1); // polish 43: the career rank
       if (PROF.rankSeen === undefined) { PROF.rankSeen = C.step; PROF.rankNew = 1; Save.save(); } $('#hCareer').classList.toggle('new', !!PROF.rankNew); } // a NEW tag until the Ranks page is opened (a pinned toast followed you into the run)
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
@@ -16885,7 +16904,7 @@ const UI = (() => {
     // 6.2: the camera, once, in a first real run (Training teaches it too). The core's edge arrow takes you home (qolA)
     if (!PROF.zoomHint && G.time > 4) { if (!teachOK()) return; PROF.zoomHint = 1; Save.save(); teachMark(); toast('LOOK AROUND', 'Drag to pan, pinch to zoom. Arrows at the screen edge point at what is off screen: tap one to look there. Tap the core arrow to come home.', '#6ae2ff', true, 'alert'); return; }
     if (G.wanted && !G.wantedTold && G.time > 2.6 && ((PROF.bestWave || 0) >= 15 || G.wave >= G.wanted.w - 12)) { if (!teachOK()) return; G.wantedTold = 1; teachMark(); wantedPoster(briefMode() === 'pause'); return; }
-    if (G.hole && G.hole.v === 22 && introCard('hole22', 'Black Hole', `It lands in ${HOLE22.warn}s on your biggest build and pulls every tower within ${HOLE22.r} tiles toward it. A tower on a Power Node, or docked under the core, holds. A tower that reaches the center is swallowed: up to ${G.hole.cap} now, more in later waves. Feed it ${G.hole.goal} Mass in ${HOLE22.hold}s. Every enemy that falls in counts, an elite counts ${HOLE22.mElite}. Move towers out of the pull to let enemies through, and aim a Strike inside it for a Gravity Bomb. Full, it becomes a White Hole: a Newborn Star stays on the field (+Damage to towers near it), and the towers it ate come back one level higher. Starved, it keeps them for 2 to 4 waves and scars the ground.`, 'blackhole')) return; // rules 22, draft text for Nic
+    if (G.hole && G.hole.v === 22 && introCard('hole22', 'Black Hole', `It lands in ${HOLE22.warn}s on your biggest build and pulls every tower within ${HOLE22.r} tiles toward it. A tower on a Power Node, or docked under the core, holds. A tower that reaches the center is swallowed: up to ${G.hole.cap} now, more in later waves. Feed it ${G.hole.goal} Mass in ${HOLE22.hold}s. ${G.frV >= 24 ? `Every enemy killed within ${HOLE22.killR} tiles of it counts, and every enemy that falls in. An elite counts ${HOLE22.mElite}. Bring the fight to it` : `Every enemy that falls in counts, an elite counts ${HOLE22.mElite}. Move towers out of the pull to let enemies through`}, and aim a Strike inside it for a Gravity Bomb. Full, it becomes a White Hole: a Newborn Star stays on the field (+Damage to towers near it), and the towers it ate come back one level higher. Starved, it keeps them for 2 to 4 waves and scars the ground.`, 'blackhole')) return; // rules 22, draft text for Nic
     if (G.hole && G.hole.v === 13 && introCard(G.hole.hunt ? 'hole14' : 'hole13', 'Black Hole', `It lands where the marker is, ${HOLE13.warn}s ahead, and stays ${HOLE.hold}s. Feed it: every kill inside its reach counts. Fed, it collapses in a blast that tears into nearby enemies and leaves a rich wreck for your probe. Starved, it spits voidlings back out. Aim a Strike inside it for a Gravity Bomb. ${G.hole.hunt ? `Once it lands it hunts: it drifts toward the biggest pack of enemies your towers can reach. Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster.` : `Towers ${HOLE.horizon}–${HOLE.r} tiles from it fire ${Math.round(HOLE.ring * 100)}% faster; closer, ${Math.round(-HOLE.inner * 100)}% slower.`}`)) return; // 6.14 rules 13, 6.15 rules 14 (it hunts), draft text
     if (G.hole && !G.hole.v && introCard('hole', 'Black Hole', `A black hole drifts onto the map for ${HOLE.hold}s. Enemies within ${HOLE.r} tiles slow down, up to ${Math.round(HOLE.dil * 100)}% at the center. It drags them along the road toward it. Towers ${HOLE.horizon}–${HOLE.r} tiles away: +${Math.round(HOLE.ring * 100)}% Attack Speed (amber frame). Towers closer than ${HOLE.horizon} tiles: ${Math.round(HOLE.inner * 100)}% (red frame).`.replace(': -', ': −'))) return;
     if (typeof fogOn === 'function' && fogOn() && G.wave >= 2 && G.time > 20 && introCard('fog', 'Fog of war', 'You see only near your core, your towers and your probe. Dark ground is unexplored. Dim ground is explored, but enemies, crates and storms there are hidden. Bosses always show. Wormholes and the Threat Board still warn you.')) return;
@@ -17540,7 +17559,7 @@ const UI = (() => {
         intro('in', 'Black Hole', 'One lands during this wave. It pulls your towers in. Let enemies fall into it, then crush the crowd with a Strike.'),
         call('c1', 1, 'Send the wave.'),
         info('mark', () => G.hole ? worldR(G.hole.tx, G.hole.ty, 2.2) : null, 'Incoming', 'The marker shows where it lands, 8 seconds ahead. Its pull stays off until then.', { when: () => !!(G.hole && G.hole.ph === 0) }),
-        info('feed', () => G.hole ? worldR(G.hole.x, G.hole.y, 2.2) : null, 'Feed it', () => G.hole && G.hole.v === 22 ? `It pulls towers within ${HOLE22.r} tiles toward it and swallows the closest. Enemies within ${HOLE22.catchR} tiles fall in. ${G.hole.goal} Mass makes it a White Hole.` : `Every kill inside its reach feeds it. ${G.hole ? G.hole.goal : 9} kills fill the meter. Towers 2.5 to 6 tiles from it fire 40% faster.`, { when: () => !!(G.hole && G.hole.ph === 1) }),
+        info('feed', () => G.hole ? worldR(G.hole.x, G.hole.y, 2.2) : null, 'Feed it', () => G.hole && G.hole.v === 22 ? `It pulls towers within ${HOLE22.r} tiles toward it and swallows the closest. Kills within ${HOLE22.killR} tiles feed it, and enemies within ${HOLE22.catchR} tiles fall in. ${G.hole.goal} Mass makes it a White Hole.` : `Every kill inside its reach feeds it. ${G.hole ? G.hole.goal : 9} kills fill the meter. Towers 2.5 to 6 tiles from it fire 40% faster.`, { when: () => !!(G.hole && G.hole.ph === 1) }),
         { id: 'bomb', when: () => !!(G.hole && G.hole.ph === 1) && (n => n >= 5 || (n >= 3 && G.hole.t >= 6) || (n >= 1 && G.hole.t >= 20))(G.enemies.filter(e => !e.dead && Math.hypot(e.x - G.hole.x, e.y - G.hole.y) <= HOLE.r).length), /* 6.15 wait for a crowd, but never stall */ skip: () => !(G.hole && G.hole.ph === 1) || !(G.charges.strike > 0) || (G.stats.gbombMax || 0) > 0, hold: 1, enter: () => { mem.c0 = G.charges.strike; }, at: sel('#abils [data-abil=strike]'), t: 'Gravity Bomb', b: 'Enemies crowd its reach. Tap Strike.', done: () => G.aimAbility === 'strike' || G.charges.strike < mem.c0 },
         { id: 'aimH', hold: 1, at: () => G.hole ? worldR(G.hole.x, G.hole.y, HOLE.r * 0.6) : null, t: 'Aim inside it', b: 'Tap inside its reach. The Strike becomes a Gravity Bomb at its center.', done: () => G.charges.strike < mem.c0 || (G.stats.gbombMax || 0) > 0, back: () => G.aimAbility !== 'strike' && G.charges.strike >= mem.c0 && 'bomb', skip: () => !(G.hole && G.hole.ph === 1) },
         info('crush', () => G.hole ? worldR(G.hole.x, G.hole.y, 2) : null, 'Crushed', () => `It dragged ${G.stats.gbombMax || 0} enemies to its center, stunned them and hit them hard.`, { hold: 0, when: () => (G.stats.gbombMax || 0) > 0, skip: () => !(G.stats.gbombMax > 0) && !(G.hole && G.hole.ph === 1) }),
@@ -20659,19 +20678,25 @@ const UI = (() => {
     const step = k => { const R = rankOfStep(k), nm = RANK_NAMES[R.rank] + (R.rank < RANK_SERVICE ? ' ' + GRADES[R.grade] : ''), star = R.rank >= RANK_SERVICE && R.rank < RANK_SERVICE + 7 ? STAR_CLASS[R.rank - RANK_SERVICE].join(' · ') + '<br>' : '';
       if (k > C.step + 1) return `<div class="rk lock myst"><img class="sil" src="${rankImgURL('r', k)}" alt=""><b>???</b><small>&nbsp;</small></div>`;
       return `<div class="rk${k <= C.step ? '' : ' lock next'}${k === C.step ? ' now' : ''}"><img src="${rankImgURL('r', k)}" alt=""><b>${esc(nm)}</b><small>${k === C.step + 1 ? 'Next · ' : ''}${star}${fmt(RANK_XP[k])} XP${RANK_DAYS[k] ? ` · ${RANK_DAYS[k]} day${RANK_DAYS[k] === 1 ? '' : 's'}` : ''}</small></div>`; };
+    const pc = C.next ? (xp - C.from) / (C.next - C.from) : 1;
+    modal(`<div class="card ranks"><div class="ch"><h2>Ranks</h2><button class="x" data-act="close">✕</button></div>
+      <div class="rkhead"><img src="${rankImgURL('r', C.step)}" alt=""><div><span class="lbl">Career rank</span><b>${esc(C.name)}</b><div class="xpbar"><i style="width:${pct(pc)}"></i></div><small class="note">${fmt(xp)} XP · ${days} days served${C.next ? ` · next rank: ${fmt(C.next)} XP and ${C.days} days` : ' · the top'}</small>${C.held ? `<small class="note gold">Your XP is ready for the next rank. Serve ${C.days - days} more day${C.days - days === 1 ? '' : 's'}.</small>` : ''}</div>
+</div>
+      <p class="note">Your career rank counts every XP you have ever earned. A Supernova never takes it away. Each rank also needs days served: a day with a run to Wave ${RANK_DAY.wave} or more. Your first XP each day counts double toward rank.</p>
+      <div class="lbl">Service ranks</div><div class="rkgrid">${[...Array(45).keys()].map(step).join('')}</div>
+      <div class="lbl">Star ranks</div><div class="rkgrid">${[...Array(8).keys()].map(i => step(45 + i)).join('')}</div></div>`, 'ranks');
+  }
+  // polish 45: the Supernova page, apart from the Ranks page (Nic: "not on the same panel"): the emblems and the core's light
+  function openNovaPage() {
+    const nv = PROF.nova || 0;
     const nov = n => n > nv + 1 ? `<div class="rk lock myst"><img class="sil" src="${rankImgURL('n', n)}" alt=""><b>???</b><small>Supernova ${n}</small></div>`
       : `<div class="rk${n <= nv ? '' : ' lock next'}${n === nv ? ' now' : ''}"><img src="${rankImgURL('n', n)}" alt=""><b>${esc(novaEmblemName(n))}</b><small>${n === nv + 1 ? 'Next · ' : ''}Supernova ${n}</small></div>`;
     const fire = (F, i) => { const sw = F.c ? `background:${F.c}` : `background:linear-gradient(135deg,${FIRE_STEPS[0]},${FIRE_STEPS[8]},${FIRE_STEPS[14]},${FIRE_STEPS[20]})`;
       return fireOpen(i) ? `<button class="rk fire${(PROF.coreFire || 0) === i ? ' now' : ''}" data-act="fire" data-v="${i}"><i class="sw" style="${sw}"></i><b>${esc(F.name)}</b><small>${F.nova ? 'Supernova ' + F.nova : 'Your first light'}</small></button>`
         : `<div class="rk lock myst"><i class="sw q">?</i><b>???</b><small>Supernova ${F.nova}</small></div>`; };
-    const pc = C.next ? (xp - C.from) / (C.next - C.from) : 1;
-    modal(`<div class="card ranks"><div class="ch"><h2>Ranks</h2><button class="x" data-act="close">✕</button></div>
-      <div class="rkhead"><img src="${rankImgURL('r', C.step)}" alt=""><div><span class="lbl">Career rank</span><b>${esc(C.name)}</b><div class="xpbar"><i style="width:${pct(pc)}"></i></div><small class="note">${fmt(xp)} XP · ${days} days served${C.next ? ` · next rank: ${fmt(C.next)} XP and ${C.days} days` : ' · the top'}</small>${C.held ? `<small class="note gold">Your XP is ready for the next rank. Serve ${C.days - days} more day${C.days - days === 1 ? '' : 's'}.</small>` : ''}</div>
-        ${nv ? `<img src="${rankImgURL('n', Math.min(nv, 99))}" alt=""><div><span class="lbl">Supernova</span><b>${esc(novaEmblemName(nv))}</b><small class="note">Supernova ${nv}</small></div>` : ''}</div>
-      <p class="note">Your career rank counts every XP you have ever earned. A Supernova never takes it away. Each rank also needs days served: a day with a run to Wave ${RANK_DAY.wave} or more. Your first XP each day counts double toward rank.</p>
-      <div class="lbl">Service ranks</div><div class="rkgrid">${[...Array(45).keys()].map(step).join('')}</div>
-      <div class="lbl">Star ranks</div><div class="rkgrid">${[...Array(8).keys()].map(i => step(45 + i)).join('')}</div>
-      <div class="lbl">Supernova emblems</div><p class="note">A new emblem for each Supernova.</p><div class="rkgrid">${[...Array(20).keys()].map(i => nov(i + 1)).join('')}</div>
+    modal(`<div class="card ranks"><div class="ch"><h2>Supernova</h2><button class="x" data-act="close">✕</button></div>
+      <div class="rkhead">${nv ? `<img src="${rankImgURL('n', Math.min(nv, 99))}" alt=""><div><span class="lbl">Supernova ${nv}</span><b>${esc(novaEmblemName(nv))}</b><small class="note">Score ×${(1 + nv * NOVA_SCORE + (PROF.laws || []).length * LAW_SCORE).toFixed(2)} · XP +${Math.round(nv * NOVA_XP * 100)}% · Core light +${Math.min(NOVA_LIGHT.max, nv * NOVA_LIGHT.per)}</small></div>` : `<div><span class="lbl">Supernova</span><b>Not yet</b><small class="note">Hold two Capstones and reach the level the Supernova button shows.</small></div>`}</div>
+      <div class="lbl">Emblems</div><p class="note">A new emblem for each Supernova.</p><div class="rkgrid">${[...Array(20).keys()].map(i => nov(i + 1)).join('')}</div>
       <div class="lbl">Core light</div><p class="note">Each Supernova widens your core's light by ${NOVA_LIGHT.per} tile, up to ${NOVA_LIGHT.max}. The light reveals cloaked enemies. Yours: +${Math.min(NOVA_LIGHT.max, nv * NOVA_LIGHT.per)}. Each Supernova also unlocks a new color for it. Tap one to use it.</p><div class="rkgrid">${CORE_FIRES.map(fire).join('')}</div></div>`, 'ranks');
   }
   function openArchive() {
@@ -20683,7 +20708,7 @@ const UI = (() => {
       <div class="setup-grid"><div class="col"><div class="lbl">Arsenal · ${tipify('Mastery')}</div>${rows}<p class="note">${MASTERY.rewards.map((x, i) => `${i + 1}: ${esc(x)}`).join(' · ')}. Towers that are not your top damage dealer earn nearly as much.</p></div>
       <div class="col">${hallHTML()}<div class="lbl">Record</div>
         <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best Wave<b>${PROF.bestWave || '—'}</b></span><span>Best Score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Time Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
-        <div class="row"><button class="btn small" data-act="ranks">Ranks · ${esc(myRank().name)}</button></div>
+        <div class="row"><button class="btn small" data-act="ranks">Ranks · ${esc(myRank().name)}</button><button class="btn small" data-act="novaPage">Supernova${PROF.nova ? ' · ' + esc(novaEmblemName(PROF.nova)) : ''}</button></div>
         <div class="lbl">Capstones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None yet'}</p>
         ${codexHTML()}</div></div>${collHTML()}</div>`, 'archive');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
@@ -20807,6 +20832,7 @@ const UI = (() => {
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
       case 'ranks': openRanks(); break; // polish 43
+      case 'novaPage': openNovaPage(); break; // polish 45
       case 'fire': { const i = +b.dataset.v; if (!fireOpen(i)) { SFX.play('deny'); break; } PROF.coreFire = i; Save.save(); SFX.play('pick'); for (const f of document.querySelectorAll('#modal .rk.fire')) f.classList.toggle('now', +f.dataset.v === i); break; } // polish 44: the core's light colour
       case 'benchRun': closeModal(); Bench.start(); break;
       case 'benchSoak': closeModal(); Bench.start('soak'); break;
@@ -20943,6 +20969,7 @@ const UI = (() => {
     $('#bNova').onclick = () => { SFX.init(); SFX.play('ui'); novaFlow = { step: 0 }; openNova(); };
     $('#bArchive').onclick = () => { SFX.init(); SFX.play('ui'); openArchive(); };
     $('#hCareer').onclick = () => { SFX.init(); SFX.play('ui'); openRanks(); }; // polish 43
+    $('#hNovaBox').onclick = () => { SFX.init(); SFX.play('ui'); openNovaPage(); }; // polish 45
     $('#bSettings').onclick = () => { SFX.init(); SFX.play('ui'); openSettings(); };
     $('#bHelp').onclick = () => { SFX.init(); SFX.play('ui'); openHelp(); };
     $('#bStudio').onclick = () => { SFX.init(); SFX.play('ui'); openStudio('hangar'); };
