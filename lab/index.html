@@ -155,12 +155,23 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .hplates { display: flex; gap: 12px; margin-top: 12px; align-items: stretch; }
 .hplates > div { display: flex; flex-direction: column; gap: 2px; }
 .hplates b { font-weight: 400; }
-.rk .sil { filter: brightness(0) opacity(0.55); }
+/* polish 46: the reveal: the badge comes out of the dark with a flash (a rank up on game over, a new Supernova emblem) */
+@keyframes rkreveal { 0% { filter: brightness(0); transform: scale(0.55); } 55% { filter: brightness(0); transform: scale(1.06); } 70% { filter: brightness(3) drop-shadow(0 0 14px #fff); transform: scale(1.14); } 100% { filter: none; transform: none; } }
+@keyframes rkname { 0%, 65% { opacity: 0; letter-spacing: 0.5em; } 100% { opacity: 1; } }
+.reveal img { animation: rkreveal 1.5s cubic-bezier(.2,.8,.2,1) both; }
+.reveal b, .reveal span { animation: rkname 1.9s both; }
+.reveal.big { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 0 10px; }
+.reveal.big img { width: 144px; height: 144px; }
+.reveal.big b { font-weight: 400; font-size: 24px; color: #ff9adf; }
+.card.embrev { max-width: 420px; text-align: center; }
+.nemb .rsw { flex: none; display: block; width: 44px; height: 44px; border-radius: 50%; text-align: center; }
+.rk.myst.next b { color: #ffd36a; }
+.rk .rsw, .nemb .rsw { flex: 0 0 44px; width: 44px; height: 44px; align-self: center; padding: 0; }
 .rk.myst b { color: #59607e; letter-spacing: 0.2em; }
 .rk.next { box-shadow: inset 0 0 0 1px #ffd36a; }
 .rk.fire { cursor: pointer; font: inherit; color: inherit; border: 0; }
-.rk .sw { display: block; width: 44px; height: 44px; margin: 4px auto 6px; border-radius: 50%; box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.12), inset 0 0 0 2px rgba(0, 0, 0, 0.35); }
-.rk .sw.q { background: #11152a; color: #59607e; font-style: normal; line-height: 44px; font-size: 20px; box-shadow: inset 0 0 0 1px var(--line); }
+.rk .rsw { display: block; width: 44px; height: 44px; margin: 4px auto 6px; border-radius: 50%; box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.12), inset 0 0 0 2px rgba(0, 0, 0, 0.35); }
+.rk .rsw.q { background: #11152a; color: #59607e; font-style: normal; line-height: 44px; font-size: 20px; box-shadow: inset 0 0 0 1px var(--line); }
 .hcar.new .lbl::after { content: 'NEW'; margin-left: 6px; padding: 0 4px; color: #0a0612; background: #ffd36a; letter-spacing: 1px; }
 .hcar { cursor: pointer; }
 .hplates #hCarName { font-size: 17px; line-height: 1; white-space: nowrap; color: #e6e8f5; }
@@ -1659,7 +1670,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 45';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.1 + 6.16.1 POLISH 46';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -19804,7 +19815,7 @@ const UI = (() => {
     modal(`<div class="card over"><div class="ch">${G.extracted ? '<h2 class="good">Extracted</h2>' : '<h2 class="bad">Core Destroyed</h2>'}<span class="note">${G.daily ? 'Daily Hunt · ' + esc(G.daily) : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
       ${G.extracted ? '' : `<p class="storyend">${esc(storyEnd(G.wave))}</p>`}
       <div class="bigstats"><span>Wave<b>${G.wave}</b></span><span>Score<b>${fmt(G.score)}</b></span><span>XP<b>+${fmt(G.xpEarned)}</b></span><span>${G.daily ? 'Bounties' : 'Levels'}<b>${G.daily ? G.bounties.length : '+' + gained}</b></span></div>
-      ${G.rankUp ? `<div class="rankup"><img src="${rankImgURL('r', G.rankUp.step)}" alt=""><div><b>RANK UP</b><span>${esc(G.rankUp.name)}</span></div></div>` : ''}
+      ${G.rankUp ? `<div class="rankup reveal"><img src="${rankImgURL('r', G.rankUp.step)}" alt=""><div><b>RANK UP</b><span>${esc(G.rankUp.name)}</span></div></div>` : ''}
       ${G.career && (G.career.served || G.career.bonus) ? `<p class="note">${G.career.served ? `Day served: ${PROF.days}.` : ''}${G.career.bonus ? ` Rested XP: +${fmt(G.career.bonus)} toward rank.` : ''}</p>` : ''}
       ${G.extracted ? `<div class="why good"><b>Bounty banked</b><span>${esc(G.bounties.map(b => b.name).join(', '))}. ${G.purseOut ? `Bounty Purse: +${fmt(G.purseOut.paid)} XP, all of it.` : G.stats.extractXp ? `+${fmt(G.stats.extractXp)} XP for getting out alive.` : ''}${G.pushes ? ` You pushed past ${G.pushes} bount${G.pushes === 1 ? 'y' : 'ies'} first.` : ''}</span></div>` : lossWhyHTML()}
       ${!G.extracted && G.purseOut && G.purseOut.purse > 0 ? `<p class="note hl" style="color:#ffd84a">Bounty Purse: you kept ${Math.round(G.purseOut.share * 100)}%, +${fmt(G.purseOut.paid)} of ${fmt(G.purseOut.purse)} XP.${G.bounties.length ? ` Extracting after ${esc(G.bounties[G.bounties.length - 1].name)} would have banked all of it.` : ' Claim a bounty, then Extract, to deposit all of it.'}</p>`
@@ -20645,7 +20656,7 @@ const UI = (() => {
       body = `<p class="note">Collapse your galaxy and start a new one. It's harder, it's stranger, and it's worth more.</p>
         <div class="nkeep"><div class="lose"><b>Reset</b>Level and XP<br>Talents and Capstones</div>
         <div class="keep"><b>Keep and gain</b>One Remnant: a Capstone you hold, active forever without a slot or points<br>One Cosmic Law: +${Math.round(LAW_SCORE * 100)}% score, changes the rules<br>+${Math.round(NOVA_SCORE * 100)}% score and +${Math.round(NOVA_XP * 100)}% XP per Supernova</div></div>
-        <div class="nemb"><img src="${rankImgURL('n', nv + 1)}" alt=""><span class="note">Your Supernova emblem: <b>${esc(novaEmblemName(nv + 1))}</b>${nv + 1 <= NOVA_LIGHT.max / NOVA_LIGHT.per ? `. Your core's light: +${NOVA_LIGHT.per} tile` : ''}${CORE_FIRES.some(F => F.nova === nv + 1) ? ', and a new color for it' : ''}.</span></div>
+        <div class="nemb"><i class="rsw q">?</i><span class="note">A new Supernova emblem waits${nv + 1 <= NOVA_LIGHT.max / NOVA_LIGHT.per ? `. Your core's light: +${NOVA_LIGHT.per} tile` : ''}${CORE_FIRES.some(F => F.nova === nv + 1) ? ', and a new color for it' : ''}.</span></div>
         ${PROF.remnants.length ? `<div class="lbl">Your Remnants</div><p class="note">${PROF.remnants.map(r => esc(TAL[r] ? TAL[r].name : 'Old web: ' + (TALENTS[+r.slice(1)] || {}).name)).join(' · ')}</p>` : ''}
         ${lawsHave.length ? `<div class="lbl">Your Laws</div><p class="note">${lawsHave.map(L => esc(L.name)).join(' · ')}</p>` : ''}
         <div class="lbl">Requirements</div><p class="note">${done.length >= 2 ? '✓' : '✗'} 2 Capstones (${done.length}) · ${profLevel().level >= novaLevelReq(nv) ? '✓' : '✗'} Level ${novaLevelReq(nv)} · ${PROF.runSnap ? '✗ Finish or abandon your saved run' : '✓ No run in progress'}</p>
@@ -20668,7 +20679,7 @@ const UI = (() => {
     PROF.novaOffer = null; Save.save(); closeModal();
     const fx = document.createElement('div'); fx.id = 'novafx'; document.body.appendChild(fx); setTimeout(() => fx.remove(), 1700);
     SFX.play('maelstrom');
-    setTimeout(() => { renderHangar(); toast('GALAXY REBORN', `Supernova ${PROF.nova}. Score ×${(1 + PROF.nova * NOVA_SCORE + PROF.laws.length * LAW_SCORE).toFixed(2)}, XP +${Math.round(PROF.nova * NOVA_XP * 100)}%. Core light +${Math.min(NOVA_LIGHT.max, PROF.nova * NOVA_LIGHT.per)}.`, '#ff9adf', 1); }, 900);
+    setTimeout(() => { renderHangar(); toast('GALAXY REBORN', `Supernova ${PROF.nova}. Score ×${(1 + PROF.nova * NOVA_SCORE + PROF.laws.length * LAW_SCORE).toFixed(2)}, XP +${Math.round(PROF.nova * NOVA_XP * 100)}%. Core light +${Math.min(NOVA_LIGHT.max, PROF.nova * NOVA_LIGHT.per)}.`, '#ff9adf', 1); openEmblemReveal(); }, 900);
   }
   // 6.16.1 polish 43: the Ranks page: the career ladder (lifetime XP) and the Supernova emblems, every one, locked ones dimmed
   function openRanks() {
@@ -20676,7 +20687,8 @@ const UI = (() => {
     if (PROF.rankNew) { delete PROF.rankNew; Save.save(); const h = $('#hCareer'); if (h) h.classList.remove('new'); }
     // polish 44 (Nic, Nov 19: "obscure the ranks to be earned so people have some mystery"): only the next rank and the next emblem show; the rest are silhouettes
     const step = k => { const R = rankOfStep(k), nm = RANK_NAMES[R.rank] + (R.rank < RANK_SERVICE ? ' ' + GRADES[R.grade] : ''), star = R.rank >= RANK_SERVICE && R.rank < RANK_SERVICE + 7 ? STAR_CLASS[R.rank - RANK_SERVICE].join(' · ') + '<br>' : '';
-      if (k > C.step + 1) return `<div class="rk lock myst"><img class="sil" src="${rankImgURL('r', k)}" alt=""><b>???</b><small>&nbsp;</small></div>`;
+      // polish 46 (Nic: "obscure the badges too. It needs to be exciting to unlock the rank and the badge"): an unearned rank shows no art and no name; the next one shows only what it costs
+      if (k > C.step) return `<div class="rk lock myst${k === C.step + 1 ? ' next' : ''}"><i class="rsw q">?</i><b>???</b><small>${k === C.step + 1 ? `Next · ${fmt(RANK_XP[k])} XP${RANK_DAYS[k] ? ` · ${RANK_DAYS[k]} day${RANK_DAYS[k] === 1 ? '' : 's'}` : ''}` : '&nbsp;'}</small></div>`;
       return `<div class="rk${k <= C.step ? '' : ' lock next'}${k === C.step ? ' now' : ''}"><img src="${rankImgURL('r', k)}" alt=""><b>${esc(nm)}</b><small>${k === C.step + 1 ? 'Next · ' : ''}${star}${fmt(RANK_XP[k])} XP${RANK_DAYS[k] ? ` · ${RANK_DAYS[k]} day${RANK_DAYS[k] === 1 ? '' : 's'}` : ''}</small></div>`; };
     const pc = C.next ? (xp - C.from) / (C.next - C.from) : 1;
     modal(`<div class="card ranks"><div class="ch"><h2>Ranks</h2><button class="x" data-act="close">✕</button></div>
@@ -20686,14 +20698,21 @@ const UI = (() => {
       <div class="lbl">Service ranks</div><div class="rkgrid">${[...Array(45).keys()].map(step).join('')}</div>
       <div class="lbl">Star ranks</div><div class="rkgrid">${[...Array(8).keys()].map(i => step(45 + i)).join('')}</div></div>`, 'ranks');
   }
+  // polish 46: the emblem is a secret until the Supernova: this card shows it, with the reveal (template.html .reveal)
+  function openEmblemReveal() {
+    const nv = PROF.nova || 0, F = CORE_FIRES.find(f => f.nova === nv); if (!nv) return;
+    modal(`<div class="card embrev"><div class="ch"><h2>New emblem</h2><button class="x" data-act="close">✕</button></div>
+      <div class="reveal big"><img src="${rankImgURL('n', Math.min(nv, 99))}" alt=""><b>${esc(novaEmblemName(nv))}</b><span class="note">Supernova ${nv}${F ? ` · New core light color: ${esc(F.name)}` : ''}</span></div>
+      <div class="foot"><button class="btn primary" data-act="close">Continue</button></div></div>`, 'ranks');
+  }
   // polish 45: the Supernova page, apart from the Ranks page (Nic: "not on the same panel"): the emblems and the core's light
   function openNovaPage() {
     const nv = PROF.nova || 0;
-    const nov = n => n > nv + 1 ? `<div class="rk lock myst"><img class="sil" src="${rankImgURL('n', n)}" alt=""><b>???</b><small>Supernova ${n}</small></div>`
+    const nov = n => n > nv ? `<div class="rk lock myst${n === nv + 1 ? ' next' : ''}"><i class="rsw q">?</i><b>???</b><small>${n === nv + 1 ? 'Next · ' : ''}Supernova ${n}</small></div>`
       : `<div class="rk${n <= nv ? '' : ' lock next'}${n === nv ? ' now' : ''}"><img src="${rankImgURL('n', n)}" alt=""><b>${esc(novaEmblemName(n))}</b><small>${n === nv + 1 ? 'Next · ' : ''}Supernova ${n}</small></div>`;
     const fire = (F, i) => { const sw = F.c ? `background:${F.c}` : `background:linear-gradient(135deg,${FIRE_STEPS[0]},${FIRE_STEPS[8]},${FIRE_STEPS[14]},${FIRE_STEPS[20]})`;
-      return fireOpen(i) ? `<button class="rk fire${(PROF.coreFire || 0) === i ? ' now' : ''}" data-act="fire" data-v="${i}"><i class="sw" style="${sw}"></i><b>${esc(F.name)}</b><small>${F.nova ? 'Supernova ' + F.nova : 'Your first light'}</small></button>`
-        : `<div class="rk lock myst"><i class="sw q">?</i><b>???</b><small>Supernova ${F.nova}</small></div>`; };
+      return fireOpen(i) ? `<button class="rk fire${(PROF.coreFire || 0) === i ? ' now' : ''}" data-act="fire" data-v="${i}"><i class="rsw" style="${sw}"></i><b>${esc(F.name)}</b><small>${F.nova ? 'Supernova ' + F.nova : 'Your first light'}</small></button>`
+        : `<div class="rk lock myst"><i class="rsw q">?</i><b>???</b><small>Supernova ${F.nova}</small></div>`; };
     modal(`<div class="card ranks"><div class="ch"><h2>Supernova</h2><button class="x" data-act="close">✕</button></div>
       <div class="rkhead">${nv ? `<img src="${rankImgURL('n', Math.min(nv, 99))}" alt=""><div><span class="lbl">Supernova ${nv}</span><b>${esc(novaEmblemName(nv))}</b><small class="note">Score ×${(1 + nv * NOVA_SCORE + (PROF.laws || []).length * LAW_SCORE).toFixed(2)} · XP +${Math.round(nv * NOVA_XP * 100)}% · Core light +${Math.min(NOVA_LIGHT.max, nv * NOVA_LIGHT.per)}</small></div>` : `<div><span class="lbl">Supernova</span><b>Not yet</b><small class="note">Hold two Capstones and reach the level the Supernova button shows.</small></div>`}</div>
       <div class="lbl">Emblems</div><p class="note">A new emblem for each Supernova.</p><div class="rkgrid">${[...Array(20).keys()].map(i => nov(i + 1)).join('')}</div>
@@ -21162,7 +21181,7 @@ const UI = (() => {
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
     cert: { rankNow: () => rankNow(), lessonXP: id => lessonXP(id), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
-    wire, tick, show, renderHangar, toast, flushToasts, closePanel, syncInsets, benchTick: dt => Bench.tick(dt), setAudWatch(a) { AW = a; }, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
+    wire, tick, show, renderHangar, emblemReveal: openEmblemReveal, toast, flushToasts, closePanel, syncInsets, benchTick: dt => Bench.tick(dt), setAudWatch(a) { AW = a; }, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
     fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
