@@ -1671,7 +1671,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.2 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.3 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1803,7 +1803,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.2';
+const VERSION = '6.16.3';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2595,8 +2595,9 @@ const LESSON_BY = Object.fromEntries(LESSONS.map(L => [L.id, L]));
 // from the run (reach: the furthest any enemy got along its road, at most v; core: core health at the end, at least v; share: the docked
 // tower's share of tower damage, at least v). Passing both pays LESSON_XP of the current level's XP once (about a quarter of a talent
 // point; all of training is about 6). A track passed in full raises the rank
-const TRACKS = [{ id: 'basics', name: 'Basics', rank: 'Pilot' }, { id: 'advanced', name: 'Advanced', rank: 'Ace' }, { id: 'endgame', name: 'Endgame', rank: 'Commander' }];
-const RANK0 = 'Cadet', LESSON_XP = 0.26;
+// 6.16.3 (Nic, Nov 21): the tracks carry no rank now (Pilot, Ace, Commander are gone; the career rank in ranks.js is the only rank). Lessons, checks and XP are unchanged
+const TRACKS = [{ id: 'basics', name: 'Basics' }, { id: 'advanced', name: 'Advanced' }, { id: 'endgame', name: 'Endgame' }];
+const LESSON_XP = 0.26;
 // 6.16.1 (Nic, Nov 15: "Scale up the advanced training xp as one progresses ... funny pop culture numbers ... add up to some other funny number"):
 // the 11 Advanced lessons pay a fixed, rising amount in Field Manual order. Pi, lucky 7, unlucky 13, 42 (the Answer), 6-7, 69, 88 (miles per hour),
 // 101 (the class), 1-2-3, 404 (not found), 420. Total 1337.14159: leet, with pi's decimals left over. Basics and Endgame keep the LESSON_XP rule.
@@ -16675,7 +16676,7 @@ const UI = (() => {
     a2hsUI(); // 6.9
     const L = profLevel(), free = pointsFree();
     $('#hLevel').textContent = L.level;
-    { const hr = $('#hRank'); if (hr) hr.textContent = rankNow() === RANK0 ? '' : '· ' + rankNow(); } // 6.15 the Pilot Certification rank (from Pilot up)
+    { const hr = $('#hRank'); if (hr) hr.textContent = ''; } // 6.16.3 (Nic, Nov 21: "strip the rank stuff in the tutorials"): Training has no rank of its own; the career rank is the only one
     $('#hXpFill').style.width = pct(L.into / L.need);
     $('#hBest').textContent = PROF.bestWave || '—';
     const hp = $('#hPts'); hp.hidden = free <= 0; hp.textContent = free + ' pt' + (free === 1 ? '' : 's');
@@ -17077,15 +17078,14 @@ const UI = (() => {
   const certL = (L) => { const R = benchRes()[L.id]; return !!(R && R.pass); };
   const trackLessons = tr => lessonsOpen().filter(L => L.track === tr);
   const trackDone = tr => (tr !== 'basics' || !!tutState().done) && trackLessons(tr).every(certL);
-  function rankNow() { let r = RANK0; for (const T of TRACKS) { if (trackDone(T.id)) r = T.rank; else break; } return r; }
   function lessonDone(id) {
     id = id || (G && G.lesson); const S = tutState(); (S.lessons || (S.lessons = {}))[id] = 1;
     const r = benchEval(id); let gain = 0, rankUp = null;
-    if (r) { const R = benchRes()[id] || (benchRes()[id] = {}), before = rankNow();
+    if (r) { const R = benchRes()[id] || (benchRes()[id] = {});
       R.m = !!(R.m || r.m); if (r.s != null) { R.sp = !!(R.sp || r.s); R.best = R.best == null ? r.sv : r.k === 'reach' ? Math.min(R.best, r.sv) : Math.max(R.best, r.sv); }
       R.pass = !!(R.pass || r.pass);
       if (R.pass && !R.paid) { R.paid = 1; gain = lessonXP(id); PROF.xp += gain; }
-      const after = rankNow(); if (after !== before) rankUp = after; R.last = { m: r.m, s: r.s, sv: r.sv }; }
+      R.last = { m: r.m, s: r.s, sv: r.sv }; }
     Save.save();
     Coach.stop(); closePanel(); if (G) G = null;
     show('hangar'); renderHangar(); openManual(id, true, { gain, rankUp });
@@ -17109,10 +17109,10 @@ const UI = (() => {
     const row = (L, done) => { const R = RS[L.id], ok = !!(R && R.pass); return `<button class="lrow${ok ? ' done cert' : done ? ' done' : ''}" data-act="lpage" data-v="${L.id}"><i>${ok ? '★' : done ? '✓' : ''}</i><b>${esc(L.title)}</b><span>${esc(L.blurb)}${ok ? '' : ` · +${xpTxt(lessonXP(L.id))} XP`}</span></button>`; };
     if (manTab === 'dict') return openHelp('dict');
     // 6.15 Pilot Certification: the rank, a bar per track, then each track's lessons (★ certified, ✓ done but not certified)
-    const rank = rankNow(), nxt = TRACKS.find(T => !trackDone(T.id));
+    const nxt = TRACKS.find(T => !trackDone(T.id)), cN = TRACKS.filter(T => trackDone(T.id)).length;
     const bar = T => { const Ls = trackLessons(T.id), n = Ls.filter(certL).length + (T.id === 'basics' && S.done ? 1 : 0), of = Ls.length + (T.id === 'basics' ? 1 : 0);
-      return `<div class="ctr${n >= of ? ' full' : ''}"><b>${esc(T.name)}</b><div class="cbar"><i style="width:${Math.round(n / Math.max(1, of) * 100)}%"></i></div><span>${n}/${of} · ${esc(T.rank)}</span></div>`; };
-    const cert = `<div class="cert"><div class="crank"><span>Rank</span><b>${esc(rank)}</b><small>${nxt ? `Certify every ${esc(nxt.name)} lesson for ${esc(nxt.rank)}` : 'Fully certified'}</small></div><div class="ctracks">${TRACKS.map(bar).join('')}</div></div>`;
+      return `<div class="ctr${n >= of ? ' full' : ''}"><b>${esc(T.name)}</b><div class="cbar"><i style="width:${Math.round(n / Math.max(1, of) * 100)}%"></i></div><span>${n}/${of}</span></div>`; };
+    const cert = `<div class="cert"><div class="crank"><span>Certified</span><b>${cN}/${TRACKS.length}</b><small>${nxt ? `Training is optional. Each certified lesson pays XP. Next track: ${esc(nxt.name)}` : 'Fully certified'}</small></div><div class="ctracks">${TRACKS.map(bar).join('')}</div></div>`;
     const sec = T => `<div class="lsec">${esc(T.name)}${TRACK_XP_SUM[T.id] ? ` <small class="lsum">${TRACK_XP_SUM[T.id]} XP in all</small>` : ''}</div>` + (T.id === 'basics' ? `<button class="lrow basic${S.done ? ' done cert' : ''}" data-act="tutStart"><i>${S.done ? '★' : ''}</i><b>Basic Training</b><span>The whole loop in one guided run, about 10 minutes${S.paid ? '' : ` · +${fmt(tutReward())} XP`}.</span></button>` : '') + trackLessons(T.id).map(L => row(L, D[L.id])).join('');
     const body = `${cert}<div class="lgrid">
         ${TRACKS.map(sec).join('')}
@@ -21202,7 +21202,7 @@ const UI = (() => {
   }
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
-    cert: { rankNow: () => rankNow(), lessonXP: id => lessonXP(id), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
+    cert: { lessonXP: id => lessonXP(id), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
     wire, tick, show, renderHangar, emblemReveal: openEmblemReveal, dropLogs(all) { try { localStorage.removeItem(LOGS_KEY); if (all) { localStorage.removeItem(LOG_KEY); localStorage.removeItem('entropy.bench'); } } catch (e) {} }, readHuntCode, readTrackCode, toast, flushToasts, closePanel, syncInsets, benchTick: dt => Bench.tick(dt), setAudWatch(a) { AW = a; }, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
     fbFlush, openFeedback, // 6.9 Send Feedback
