@@ -791,7 +791,7 @@ body.panel-r .probebtn, body.panel-l .probebtn { display: none; }
 .liftbtn.tlock, .probebtn.tlock, #abils .tlock { opacity: 0.38; filter: grayscale(1); animation: none; box-shadow: inset 0 0 0 1px var(--line); }
 /* 6.5.2 probe command mode: the Probe button reads as pressed, and a bar under it (in Ready's slot; Ready waits, as it does for a
    side panel) says what the next map tap does, shows the probe's state, and holds Recall, Upgrades (the full panel) and ✕ */
-.probebtn.sel { background: #9fd8ff; color: #08162a; box-shadow: inset 0 0 0 2px #e6f4ff; animation: none; }
+.probebtn.sel { background: #9fd8ff; color: #08162a; box-shadow: inset 0 0 0 2px #e6f4ff; animation: pulse 1.1s infinite; } /* 6.16.7: it pulses while it waits for an order */
 #prbar { position: absolute; right: 6px; top: 102px; z-index: 4; width: 92px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: space-between; pointer-events: none; } /* 6.5.3 (Nic): two small buttons under Probe, no long bar */
 #prbar[hidden] { display: none; }
 #prbar button { pointer-events: auto; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 0; cursor: pointer; background: rgba(8, 22, 38, 0.92); box-shadow: inset 0 0 0 2px #9fd8ff; color: #9fd8ff; font-size: 18px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
@@ -1679,7 +1679,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.6 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.7 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1811,7 +1811,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.6';
+const VERSION = '6.16.7';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -13848,7 +13848,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   const PR_GAS = { drift: ['#b98cff', '#f4e8ff'], hive: ['#ff9ad5', '#ffe0f2'], iron: ['#9aa6b8', '#e6ecf4'], skies: ['#9fd0ff', '#ffffff'], ghost: ['#d0a8ff', '#f4ecff'],
     salvage: ['#e0a458', '#fff0d0'], tempest: ['#6ef0c8', '#ffffff'], demo: ['#ff7b39', '#ffd0a0'], choir: ['#8ee35a', '#e4ffd0'] };
   const prGas = () => { if (G.sector === 'oddball') { const h = (frame * 0.6) % 360; return [`hsl(${h},90%,70%)`, `hsl(${(h + 180) % 360},90%,88%)`]; } return PR_GAS[G.sector] || PR_GAS.drift; };
-  let prSelOn = false;
+  let prSelOn = false, prPendAt = null;
   const prIn = (x, y, m, v) => x * TILE > v.vx - m && x * TILE < v.vx + v.vw + m && y * TILE > v.vy - m && y * TILE < v.vy + v.vh + m;
   // 6.16.1 (Nic: the warning "shows with its new proposed path"): until its checkpoint ends, a wormhole's new road pulses purple with a moving dashed
   // outline, and its mouth shows the wave it opens in. Lane flag cpW (set in prepareWave, cleared in resumeCheckpoint); drawing only.
@@ -15188,6 +15188,9 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         if (tx != null && Math.hypot(tx - Pb.x, ty - Pb.y) > 0.4) { const ex = bx2s(tx * TILE), ey = by2s(ty * TILE);
           c.setLineDash([5, 5]); c.lineDashOffset = -frame / 2; c.lineWidth = prSelOn ? 2 : 1.5; c.strokeStyle = hexA(Pb.ret ? PAL.core : PR_COL.probe, prSelOn ? 0.9 : 0.5); c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]);
           c.strokeStyle = hexA(Pb.ret ? PAL.core : PR_COL.probe, 0.85); c.lineWidth = 1.5; c.beginPath(); c.moveTo(ex - 5, ey - 5); c.lineTo(ex + 5, ey + 5); c.moveTo(ex + 5, ey - 5); c.lineTo(ex - 5, ey + 5); c.stroke(); } }
+      if (Pb.alive && prSelOn && prPendAt) { const ex = bx2s(prPendAt.x * TILE), ey = by2s(prPendAt.y * TILE), a = 0.55 + 0.4 * Math.sin(frame / 4); // 6.16.7: an open-space order waits for its second tap
+        c.setLineDash([3, 6]); c.lineWidth = 1.5; c.strokeStyle = hexA(PAL.amber, 0.5); c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke(); c.setLineDash([]);
+        c.lineWidth = 2; c.strokeStyle = hexA(PAL.amber, a); c.beginPath(); c.arc(ex, ey, Math.max(11, 0.55 * TILE * ws), 0, 6.283); c.stroke(); c.fillStyle = hexA(PAL.amber, a); c.fillRect(ex - 2, ey - 2, 4, 4); }
       if (Pb.alive && prSelOn) { const ps = prStats(); c.lineWidth = 2; c.strokeStyle = hexA(PR_COL.probe, 0.6 + 0.35 * Math.sin(frame / 5)); c.beginPath(); c.arc(sx, sy, Math.max(10, 0.7 * TILE * ws), 0, 6.283); c.stroke();
         if (ps.range > 0) ringS(Pb.x * TILE, Pb.y * TILE - 8, ps.range * TILE, PR_COL.glow, 0.5, 1, 0.04); }
       if (Pb.alive && !Pb.home && sx > -40 && sy > -40 && sx < DW + ox + 40 && sy < DH + oy + 40) { const bw = 22, f = Math.max(0, Pb.hp / Pb.max), n = Math.round(Pb.cargo.cr);
@@ -15889,7 +15892,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
       geneMark(gx, g, x, y, sw * 0.4, sh * 0.4, u, { icon: 1, shield: 1, wardEl: el, st: {}, _ha: 0 }); },
     set hints(v) { hintTiles = v; }, set spots(v) { spotTiles = v; }, set selE(v) { selEnemy = v; }, set hoverE(v) { hoverEnemy = v; },
     flashWorm() { wormFlashAt = performance.now(); },
-    set prSel(v) { prSelOn = !!v; }, get prSel() { return prSelOn; }, // 6.5 the probe is selected (UI)
+    set prSel(v) { prSelOn = !!v; }, get prSel() { return prSelOn; }, set prPend(v) { prPendAt = v || null; }, get prPend() { return prPendAt; }, // 6.5 the probe is selected (UI)
     set frSel(v) { frSel = v; }, get frArrows() { return frArrows; }, fogAt(x, y) { if (!fogLive) return -1; const i = (x * 2) | 0, j = (y * 2) | 0, k = j * fogW2 + i; return fogVis[k] ? 0 : fogImg.data[k * 4 + 3] > 200 ? 2 : 1; }, get fogLive() { return fogLive; }, // 6.5 tests
      set keepOut(v) { keepOut = v || []; }, get keepOut() { return keepOut; }, // Frontier picker and edge arrows
     arrowAt(sx, sy) { let best = null, bd = 26 * 26; for (const A of frArrows) { const d = (A.sx - sx) ** 2 + (A.sy - sy) ** 2; if (d < bd) { bd = d; best = A; } } return best; },
@@ -17419,7 +17422,7 @@ const UI = (() => {
         { id: 'prBtn', ls: 'probe', when: () => !!site(1) && prOK() && !panel, skip: () => looted(1) || !prOK() || !!site(1) && G.probe.task === site(1).id || W() >= 8, hold: 1, at: sel('#bProbe'), t: 'Your probe',
           b: 'It flies anywhere on the map and loots sites. A wreck just appeared. Tap Probe.', done: () => !!prCmd },
         { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1),
-          b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'Once selected, every map tap sends the probe. Tap Probe again to let it go. Tap the wreck now.',
+          b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'Once selected, a tap on a site sends the probe. Tap Probe again to let it go. Tap the wreck now.',
           done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && G.probe.task !== site(1).id && 'prBtn' },
         { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'The probe is able to fly over the field. Once in range of a wreck or salvageable node, the probe will automatically salvage it.',
           done: () => looted(1), skip: () => !prOK(), back: () => !looted(1) && site(1) && G.probe.task !== site(1).id && 'prSend' },
@@ -18904,7 +18907,7 @@ const UI = (() => {
     const stats = `<div class="sg mini"><span>Hull<b data-live="prhp">${P.alive ? `${Math.ceil(P.hp)}/${Math.round(P.max)}` : '—'}</b></span><span>Lance<b>${S.dps > 0 ? fmt(S.dps) + '/s' : 'None'}</b></span><span>Speed<b>${S.spd}/s</b></span></div>
       <div class="sts">Cargo: <b data-live="prcargo">${esc(prCargoTxt(P.cargo))}</b></div>`;
     const how = !P.alive ? `<div class="sts bad">${P.rb > 0 ? `In the yard: ready in <b data-live="prrb">${Math.ceil(P.rb)}</b> s` : `Lost. Rebuild: ${fmt(prRebuildCost())} credits and ${PROBE.rbT} s. Upgrades stay`}</div>`
-      : st ? '' : `<p class="note">Tap the map to send it. Tap a site to work it.</p>`;
+      : st ? '' : `<p class="note">Tap a site to work it. Open space takes two taps.</p>`;
     const ups = PROBE.upOrder.map(k => { const lv = P.lv[k], c = prUpCost(k), max = lv >= 3;
       return `<button class="mkt" data-act="prup" data-v="${k}" ${max ? 'disabled' : costBtn(c)} style="--c:${PR_UPCOL[k]}"><b>${PROBE.up[k].name} ${max ? 'MAX' : lv + 1}</b><span>${prUpTxt(k)}</span><em>${max ? 'Max' : fmt(c)}</em></button>`; }).join('');
     const foot = `<div class="pfoot">${!P.alive ? `<button class="btn primary wide" data-act="prbuild" ${P.rb > 0 ? 'disabled' : costBtn(prRebuildCost())}>${P.rb > 0 ? 'Rebuilding' : `Rebuild · ${fmt(prRebuildCost())}`}</button>`
@@ -18925,9 +18928,19 @@ const UI = (() => {
     if (Coach.locked('probe')) { Coach.lockTip('PROBE'); return; }
     if (!G.probe.alive) { prCmd = null; return openProbe(); }
     if (panel) closePanel();
-    prCmd = { site: siteId || 0, g: G }; Render.prSel = true; prBarUI();
+    prCmd = { site: siteId || 0, g: G, t0: performance.now(), pend: null }; Render.prSel = true; Render.prPend = null; prBarUI();
   }
-  function probeEnd() { if (!prCmd) return; prCmd = null; if (!(panel && panel.kind === 'probe')) Render.prSel = false; prBarUI(); }
+  function probeEnd() { if (!prCmd) return; prCmd = null; Render.prPend = null; if (!(panel && panel.kind === 'probe')) Render.prSel = false; prBarUI(); }
+  // 6.16.7 (Nic, Nov 21: "I still inadvertently have it selected and have it move to empty space"; he mostly sends it to sites and
+  // recalls it when guards are too strong). (1) A tap on a site, a storm or the core still sends at once. A tap on open space only
+  // drops a marker; a second tap on the marker sends it there. (2) A selected probe with no order lets go after PR_IDLE.
+  const PR_IDLE = 6000, PR_PEND_R = 1.5;
+  function prAim(p) { // what probeGo (sim.js) would do with this point: 'core', 'site', 'storm' or '' (open space)
+    if (Math.hypot(p.x - G.core.x, p.y - G.core.y) <= 1.1) return 'core';
+    for (const s of G.sites || []) if (!s.done && Math.hypot(s.x - p.x, s.y - p.y) <= Math.max(1.3, s.k === 'cloud' ? PROBE.cloudR : 0)) return 'site';
+    if (G.frV >= 13 && (G.storms || []).some(o => !o.dead && !o.mael && dist2(o.x, o.y, p.x, p.y) <= o.r * o.r)) return 'storm';
+    return '';
+  }
   // a tap with the probe selected sends it; otherwise a tap on the probe or a site selects it. True: the tap is used
   function probeTap(p) {
     const P = G.probe, onP = P.alive && Math.hypot(p.x - P.x, p.y - (P.y - 0.33)) < (P.home ? 0.45 : 0.8), inPanel = !!(panel && panel.kind === 'probe');
@@ -18936,6 +18949,9 @@ const UI = (() => {
       // a tap on the selected probe lets it go; near the core a tap means recall (a returning probe flies right beside it)
       if (onP && (P.home || Math.hypot(p.x - G.core.x, p.y - G.core.y) > 1.1)) { if (!inPanel) { SFX.play('ui'); probeEnd(); } return true; }
       if (!P.alive) { closePanel(); probeEnd(); return false; }
+      if (prCmd) { prCmd.t0 = performance.now(); const q = prCmd.pend;
+        if (!prAim(p) && !(q && Math.hypot(q.x - p.x, q.y - p.y) <= PR_PEND_R)) { prCmd.pend = { x: p.x, y: p.y }; Render.prPend = prCmd.pend; SFX.play('ui'); prBarUI(); return true; } // open space: the first tap only marks it
+        if (q && !prAim(p)) p = q; prCmd.pend = null; Render.prPend = null; }
       const x = Math.round(p.x * 10) / 10, y = Math.round(p.y * 10) / 10;
       if (!window.act('prGo', x, y)) { SFX.play('deny'); return true; }
       SFX.play('prGo', { x, y });
@@ -18958,15 +18974,18 @@ const UI = (() => {
   let prHintKey = '', prHintT = 0;
   function prBarTxt() {
     const P = G.probe, s = prCmd.site ? siteById(prCmd.site) : null;
+    if (prCmd.pend) return ['pend' + Math.round(prCmd.pend.x * 10) + '_' + Math.round(prCmd.pend.y * 10), 'Open space. Tap the marker again to send it there.']; // draft text
     if (s && !s.done && P.task !== s.id) { const n = s.g.length, v = Math.round((s.k === 'rock' ? s.val * (3 - (s.chunks || 0)) / 3 : s.k === 'cloud' ? s.val * (1 - s.prog) : s.val) * prStats().assay);
       return [`site${s.id}`, `${s.rich ? 'Rich ' + PR_KIND[s.k].toLowerCase() : PR_KIND[s.k]} · ${n ? `${n} guard${n > 1 ? 's' : ''}` : 'no guards'} · ${fmt(v)} cr. Tap it again to send.`]; }
     const st = PROF.settings; if ((st.prHints || 0) >= 5 && !(G && G.tut)) return ['', '']; // (6.6: Training always shows it)
-    return ['map', 'Tap the map to send it.'];
+    return ['map', 'Tap a site to send it.'];
   }
   function prBarUI() {
     const bar = $('#prbar'); if (!bar) return;
     const P = G && G.probe;
     if (prCmd && (prCmd.g !== G || !P || !P.alive || G.over || G.watch || frSel || G.reloc || G.placing || (panel && panel.kind !== 'probe'))) { prCmd = null; if (!(panel && panel.kind === 'probe')) Render.prSel = false; }
+    if (prCmd && !G.tut && !(panel && panel.kind === 'probe') && performance.now() - (prCmd.t0 || 0) > PR_IDLE * (prCmd.site && siteById(prCmd.site) ? 3 : 1)) { prCmd = null; Render.prSel = false; } // (a site in focus gets 18 s: its loot and guards take reading) // no order: it lets go (Training keeps it, the coach is talking)
+    if (!prCmd) Render.prPend = null;
     const on = !!prCmd; document.body.classList.toggle('prcmd', on);
     if (bar.hidden === on) bar.hidden = !on;
     const pb = $('#bProbe'); if (pb) { pb.classList.toggle('sel', on); pb.setAttribute('aria-pressed', on); }
@@ -19329,7 +19348,7 @@ const UI = (() => {
     const r = $('#cv').getBoundingClientRect();
     const sx = (e.clientX - r.left) / UIS, sy = (e.clientY - r.top) / UIS, now = performance.now();
     // double-tap: zoom in on that spot, or back out to the full map
-    if (lastTap && now - lastTap.t < 330 && Math.hypot(sx - lastTap.x, sy - lastTap.y) < 30) {
+    if (!prCmd && lastTap && now - lastTap.t < 330 && Math.hypot(sx - lastTap.x, sy - lastTap.y) < 30) { // 6.16.7: with the probe selected, a quick second tap confirms its marker, so it never zooms
       lastTap = null; closePanel();
       if (Render.zoom < Render.homeZoom * 1.4) Render.zoomAt(sx, sy, Math.max(1.6, 2.2 / Render.zoom)); else Render.resetCam();
       updateZoomBtn(); SFX.play('ui'); return;
