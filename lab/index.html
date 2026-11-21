@@ -167,6 +167,14 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .card.embrev { max-width: 420px; text-align: center; }
 .nemb .rsw { flex: none; display: block; width: 44px; height: 44px; border-radius: 50%; text-align: center; }
 .rk.myst.next b { color: #ffd36a; }
+/* 6.16.4 the Career card: label, Normal runs, Daily Hunt */
+.cgrid { display: grid; grid-template-columns: minmax(120px, 1.2fr) 1fr 1fr; gap: 1px; margin: 4px 0 12px; background: var(--line); box-shadow: 0 0 0 1px var(--line); }
+.cgrid > * { background: #10142a; padding: 7px 10px; font-size: 15px; line-height: 1.15; }
+.cgrid i { font-style: normal; font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.08em; color: var(--dim); text-transform: uppercase; }
+.cgrid i:nth-child(3) { color: #ff9adf; }
+.cgrid b { font-weight: 400; color: #e6e8f5; }
+.cgrid .cl { color: var(--dim); }
+.rkhead .row { margin-top: 6px; gap: 8px; display: flex; }
 .rk .rsw, .nemb .rsw { flex: 0 0 44px; width: 44px; height: 44px; align-self: center; padding: 0; }
 .rk.myst b { color: #59607e; letter-spacing: 0.2em; }
 .rk.next { box-shadow: inset 0 0 0 1px #ffd36a; }
@@ -1671,7 +1679,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.3 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.4 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1803,7 +1811,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.3';
+const VERSION = '6.16.4';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -8999,6 +9007,7 @@ function gameOver() {
     (d.runs || (d.runs = [])).push(res); d.runs.sort((a, b) => (b.ext ? 1 : 0) - (a.ext ? 1 : 0) || b.wave - a.wave || b.score - a.score); d.runs = d.runs.slice(0, 10);
     PROF.daily = d;
   }
+  if (typeof careerStats === 'function') careerStats(); // 6.16.4: the Career card's totals (ranks.js; not in the node harness)
   if (typeof careerRun === 'function') G.career = careerRun(G.xpEarned, G.wave - (G.startWave || 1) >= RANK_DAY.played ? G.wave : 0); // a day served needs waves played in this run too (a Wave 40 start is not a free day) // polish 43: days served and rested XP (ranks.js; not in the node harness)
   PROF.playTime += G.time;
   PROF.runSnap = null;
@@ -16506,6 +16515,31 @@ const FIRE_STEPS = (() => { const ramp = ['#d8fbff', '#7ff0f0', '#5aa8ff', '#6a4
     out.push('#' + A.map((v, j) => Math.round(v + (B[j] - v) * f).toString(16).padStart(2, '0')).join('')); } return out; })();
 function coreFire(t) { const i = PROF.coreFire || 0, F = fireOpen(i) ? CORE_FIRES[i] : CORE_FIRES[0]; return F.c || FIRE_STEPS[Math.floor((t || 0) * 3) % FIRE_STEPS.length]; }
 
+// ---- 6.16.4: the Career card (Nic, Nov 21: "a career card that tracks total kill stats", "separate hunt and normal game stats"). ----
+// PROF.career = { n: normal runs, h: Daily Hunt runs, since }. Counted at the end of every real run (sim.js gameOver; never replays,
+// watching, Training or the benchmark). Not part of the simulation. Totals from before this build were never split, so the seed
+// puts them all under normal runs (the page says so).
+const csBlank = () => ({ runs: 0, kills: 0, time: 0, waves: 0, bestWave: 0, bestScore: 0, ext: 0, lost: 0, bosses: 0, elites: 0, dmg: 0, dmgBy: {}, holes: 0, holesFed: 0, aWon: 0, aLost: 0, killer: {} });
+function careerStatSeed(sub) {
+  if (PROF.career && PROF.career.n && PROF.career.h) return;
+  const s = sub || {}, n = csBlank(), B = (PROF.codex && PROF.codex.bosses) || {}; let bk = 0; for (const k in B) bk += B[k] || 0;
+  n.runs = Math.max(0, (PROF.runs || 0) - (s.runs || 0)); n.kills = Math.max(0, (PROF.kills || 0) - (s.kills || 0)); n.time = PROF.playTime || 0;
+  n.bestWave = PROF.bestWave || 0; n.bestScore = PROF.bestScore || 0; n.bosses = Math.max(0, bk - (s.bosses || 0));
+  PROF.career = { n, h: csBlank(), since: Date.now(), old: n.runs > 0 ? 1 : 0 };
+}
+function careerStats() {
+  const S = G.stats || {}; careerStatSeed({ runs: 1, kills: G.kills || 0, bosses: S.bossKills || 0 });
+  const c = PROF.career[G.daily ? 'h' : 'n'], add = (k, v) => { c[k] = (c[k] || 0) + (isFinite(v) ? v : 0); };
+  add('runs', 1); add('kills', G.kills || 0); add('time', G.time || 0); add('waves', Math.max(0, G.wave - (G.startWave || 1)));
+  c.bestWave = Math.max(c.bestWave || 0, G.wave || 0); c.bestScore = Math.max(c.bestScore || 0, Math.round(G.score || 0));
+  if (G.extracted) add('ext', 1); else { add('lost', 1); const kn = S.lastLeak; if (kn && (c.killer[kn] || Object.keys(c.killer).length < 60)) c.killer[kn] = (c.killer[kn] || 0) + 1; }
+  add('bosses', S.bossKills || 0); add('elites', S.elites || 0); add('holes', S.holes || 0); add('holesFed', S.holesFed || 0);
+  if (S.assaults) { add('aWon', S.assaults.won || 0); add('aLost', S.assaults.lost || 0); }
+  const by = Object.assign({}, S.dmgSold || {}); for (const t of G.towers) by[t.type] = (by[t.type] || 0) + (t.dmgDone || 0);
+  for (const k in by) if (TOWERS[k] && isFinite(by[k])) { const v = Math.round(by[k]); c.dmgBy[k] = (c.dmgBy[k] || 0) + v; c.dmg += v; }
+}
+const csTop = o => { let b = null; for (const k in o || {}) if (b === null || o[k] > o[b]) b = k; return b; };
+
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — UI, TREE VIEW, SAVES, LOOP =====================
 const $ = s => document.querySelector(s);
@@ -16684,6 +16718,7 @@ const UI = (() => {
     $('#bArchive').classList.toggle('hasnew', ((PROF.codex || {}).collNew || []).length > 0); // v5.8: new Swarm Collection entries
     const nv = PROF.nova || 0, done = capsHeld().length, req = novaLevelReq(nv), ready = novaReady();
     $('#hNovaBox').hidden = !nv; $('#hNova').textContent = nv; if (nv) { $('#hNovaImg').src = rankImgURL('n', nv); $('#hNovaName').textContent = novaEmblemName(nv); }
+    careerStatSeed(); // 6.16.4: the Career card's totals start from what the profile already holds
     { const C = myRank(), xr = rankXp(); $('#hCarImg').src = rankImgURL('r', C.step); $('#hCarName').textContent = C.name; $('#hCarFill').style.width = pct(C.next ? Math.min(1, (xr - C.from) / (C.next - C.from)) : 1); { const hh = $('#hCarHeld'), nd = C.held ? C.days - (PROF.days || 0) : 0; hh.hidden = nd <= 0; if (nd > 0) hh.textContent = `XP ready · serve ${nd} more day${nd === 1 ? '' : 's'}`; } // polish 47: a full bar with no rank up needs its reason // polish 43: the career rank
       if (PROF.rankSeen === undefined) { PROF.rankSeen = C.step; PROF.rankNew = 1; Save.save(); } $('#hCareer').classList.toggle('new', !!PROF.rankNew); } // a NEW tag until the Ranks page is opened (a pinned toast followed you into the run)
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
@@ -20717,8 +20752,22 @@ const UI = (() => {
       <div class="rkhead"><img src="${rankImgURL('r', C.step)}" alt=""><div><span class="lbl">Career rank</span><b>${esc(C.name)}</b><div class="xpbar"><i style="width:${pct(pc)}"></i></div><small class="note">${fmt(xp)} XP · ${days} days served${C.next ? ` · next rank: ${fmt(C.next)} XP and ${C.days} days` : ' · the top'}</small>${C.held ? `<small class="note gold">Your XP is ready for the next rank. Serve ${C.days - days} more day${C.days - days === 1 ? '' : 's'}.</small>` : ''}</div>
 </div>
       <p class="note">Your career rank counts every XP you have ever earned. A Supernova never takes it away. Each rank also needs days served: a day with a run of ${RANK_DAY.played} waves or more that reaches Wave ${RANK_DAY.wave}. Your first XP each day counts double toward rank.</p>
+      <div class="row"><button class="btn small" data-act="career">Career card</button></div>
       <div class="lbl">Service ranks</div><div class="rkgrid">${[...Array(45).keys()].map(step).join('')}</div>
       <div class="lbl">Star ranks</div><div class="rkgrid">${[...Array(8).keys()].map(i => step(45 + i)).join('')}</div></div>`, 'ranks');
+  }
+  // 6.16.4: the Career card. Normal runs and the Daily Hunt in their own columns (Nic: "separate hunt and normal game stats"). Draft text
+  function openCareer() {
+    careerStatSeed(); const C = myRank(), K = PROF.career, n = K.n, h = K.h, nv = PROF.nova || 0;
+    const tm = s => { const hr = Math.floor((s || 0) / 3600), m = Math.floor((s || 0) / 60) % 60; return hr ? `${hr} h ${m} m` : `${m} m`; };
+    const of = (a, b) => b ? `${a || 0} of ${b}` : '0', tw = c => { const k = csTop(c.dmgBy); return k ? esc(TOWERS[k].name) : 'None yet'; }, kl = c => { const k = csTop(c.killer); return k ? `${esc(k)} (${c.killer[k]})` : 'None yet'; };
+    const row = (l, f) => `<span class="cl">${l}</span><b>${f(n)}</b><b>${f(h)}</b>`, grp = (t, rows) => `<div class="lbl">${t}</div><div class="cgrid"><span></span><i>Normal runs</i><i>Daily Hunt</i>${rows.join('')}</div>`;
+    modal(`<div class="card ranks career"><div class="ch"><h2>Career</h2><button class="x" data-act="close">✕</button></div>
+      <div class="rkhead"><img src="${rankImgURL('r', C.step)}" alt=""><div><span class="lbl">Career rank</span><b>${esc(C.name)}</b><small class="note">${fmt(rankXp())} XP · ${PROF.days || 0} days served${nv ? ` · Supernova ${nv}` : ''}</small><div class="row"><button class="btn small" data-act="ranks">Ranks</button>${nv ? '<button class="btn small" data-act="novaPage">Supernova</button>' : ''}</div></div></div>
+      ${grp('Service', [row('Runs', c => fmt(c.runs)), row('Time played', c => tm(c.time)), row('Waves cleared', c => fmt(c.waves)), row('Extracts', c => fmt(c.ext)), row('Runs lost', c => fmt(c.lost))])}
+      ${grp('Combat', [row('Kills', c => fmt(c.kills)), row('Elites killed', c => fmt(c.elites)), row('Bosses killed', c => fmt(c.bosses)), row('Damage', c => fmt(c.dmg)), row('Top tower', tw)])}
+      ${grp('Records', [row('Best wave', c => c.bestWave || 0), row('Best score', c => fmt(c.bestScore)), row('Black Holes fed', c => of(c.holesFed, c.holes)), row('Assaults won', c => of(c.aWon, (c.aWon || 0) + (c.aLost || 0))), row('Deadliest enemy', kl)])}
+      ${K.old ? '<p class="note">Runs, kills, time, bosses and bests from before version 6.16.4 are all under Normal runs. The game did not split them then. Every other number counts from 6.16.4.</p>' : ''}</div>`, 'ranks');
   }
   // polish 46: the emblem is a secret until the Supernova: this card shows it, with the reveal (template.html .reveal)
   function openEmblemReveal() {
@@ -20749,7 +20798,7 @@ const UI = (() => {
       <div class="setup-grid"><div class="col"><div class="lbl">Arsenal · ${tipify('Mastery')}</div>${rows}<p class="note">${MASTERY.rewards.map((x, i) => `${i + 1}: ${esc(x)}`).join(' · ')}. Towers that are not your top damage dealer earn nearly as much.</p></div>
       <div class="col">${hallHTML()}<div class="lbl">Record</div>
         <div class="bigstats two"><span>Runs<b>${PROF.runs}</b></span><span>Best Wave<b>${PROF.bestWave || '—'}</b></span><span>Best Score<b>${PROF.bestScore ? fmt(PROF.bestScore) : '—'}</b></span><span>Kills<b>${fmt(PROF.kills)}</b></span><span>Time Played<b>${hrs}h ${mins}m</b></span><span>Level<b>${profLevel().level}</b></span></div>
-        <div class="row"><button class="btn small" data-act="ranks">Ranks · ${esc(myRank().name)}</button><button class="btn small" data-act="novaPage">Supernova${PROF.nova ? ' · ' + esc(novaEmblemName(PROF.nova)) : ''}</button></div>
+        <div class="row"><button class="btn small" data-act="career">Career</button><button class="btn small" data-act="ranks">Ranks · ${esc(myRank().name)}</button><button class="btn small" data-act="novaPage">Supernova${PROF.nova ? ' · ' + esc(novaEmblemName(PROF.nova)) : ''}</button></div>
         <div class="lbl">Capstones</div><p class="note">${ks.length ? ks.map(esc).join(' · ') : 'None yet'}</p>
         ${codexHTML()}</div></div>${collHTML()}</div>`, 'archive');
     for (const cv of document.querySelectorAll('#modal canvas[data-ico]')) Render.towerIcon(cv.dataset.ico, cv);
@@ -20873,6 +20922,7 @@ const UI = (() => {
       case 'newsDone': PROF.seenVer = VERSION; Save.save(); closeModal(); break;
       case 'logCopy': { const t = lastLogText(); if (t) copyText(t); break; }
       case 'ranks': openRanks(); break; // polish 43
+      case 'career': openCareer(); break; // 6.16.4
       case 'novaPage': openNovaPage(); break; // polish 45
       case 'fire': { const i = +b.dataset.v; if (!fireOpen(i)) { SFX.play('deny'); break; } PROF.coreFire = i; Save.save(); SFX.play('pick'); for (const f of document.querySelectorAll('#modal .rk.fire')) f.classList.toggle('now', +f.dataset.v === i); break; } // polish 44: the core's light colour
       case 'benchRun': closeModal(); Bench.start(); break;
@@ -21203,7 +21253,7 @@ const UI = (() => {
   function refreshAll() { if (screen === 'hangar') renderHangar(); Tree.refresh(); }
   return {
     cert: { lessonXP: id => lessonXP(id), lessonDone: id => lessonDone(id), benchEval: id => benchEval(id), trackDone: t => trackDone(t) }, // 6.15 tests
-    wire, tick, show, renderHangar, emblemReveal: openEmblemReveal, dropLogs(all) { try { localStorage.removeItem(LOGS_KEY); if (all) { localStorage.removeItem(LOG_KEY); localStorage.removeItem('entropy.bench'); } } catch (e) {} }, readHuntCode, readTrackCode, toast, flushToasts, closePanel, syncInsets, benchTick: dt => Bench.tick(dt), setAudWatch(a) { AW = a; }, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
+    wire, tick, show, renderHangar, openCareer, emblemReveal: openEmblemReveal, dropLogs(all) { try { localStorage.removeItem(LOGS_KEY); if (all) { localStorage.removeItem(LOG_KEY); localStorage.removeItem('entropy.bench'); } } catch (e) {} }, readHuntCode, readTrackCode, toast, flushToasts, closePanel, syncInsets, benchTick: dt => Bench.tick(dt), setAudWatch(a) { AW = a; }, refreshAll, cloud, renderPanel, zoomChanged: () => updateZoomBtn(), openNews, openEvo, slowmo: 0, beat: 0, watchFeed, openSetupDaily: () => { openSetup(); setup.mode = 'daily'; renderSetup(); },
     zoneBanner, // 6.3 test hook
     fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
