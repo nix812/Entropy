@@ -57,7 +57,7 @@
   color-scheme: dark;
 }
 [hidden] { display: none !important; }
-html { box-sizing: border-box; height: 100%; background: var(--bg); }
+html { box-sizing: border-box; height: 100%; background: var(--bg); touch-action: pan-x pan-y; } /* 6.16.6: no pinch or double-tap page zoom anywhere (lists still scroll; the board has its own zoom) */
 *, *::before, *::after { box-sizing: inherit; }
 body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-term); font-size: 18px; line-height: 1.15; text-transform: var(--tt); letter-spacing: 0.02em;
 /* 6.14 letter case (Nic, Nov 13): Oxanium text is all caps on cards, buttons and the HUD (--tt above); long reading text keeps
@@ -1765,7 +1765,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.5';
+const VERSION = '6.16.6';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -21027,8 +21027,10 @@ const UI = (() => {
     // short visible height for a moment (back from another app, a system sheet) and then send no second event. So: (1) a home-screen
     // app has no browser bars, so it never sizes below the window; (2) a 1-second check refits when the real size and ours differ.
     const standalone = () => !!(navigator.standalone || (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)));
-    const vvSize = () => { const vv = window.visualViewport; let vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
-      if (vv && standalone() && Math.abs((vv.scale || 1) - 1) < 0.01) { vh = Math.max(vh, window.innerHeight); vw = Math.max(vw, window.innerWidth); } return [vw, vh]; };
+    // 6.16.6: a page zoom (two fingers on a panel or the HUD) also shrinks visualViewport: at zoom 1.23 a 395 px screen reports 322, the
+    // 19% in Nic's screenshot. The size times the zoom is the real screen, so a zoom never resizes the layout
+    const vvSize = () => { const vv = window.visualViewport, z = vv && vv.scale > 1.01 ? vv.scale : 1; let vw = vv ? vv.width * z : window.innerWidth, vh = vv ? vv.height * z : window.innerHeight;
+      if (vv && standalone()) { vh = Math.max(vh, window.innerHeight); vw = Math.max(vw, window.innerWidth); } return [vw, vh]; };
     let fitW = 0, fitH = 0, fitN = 0;
     const fitVV = () => {
       if (entryOpen) return; // the typing panel handles the keyboard; the game keeps its size underneath
