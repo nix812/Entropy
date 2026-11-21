@@ -1765,7 +1765,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.4';
+const VERSION = '6.16.5';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -21023,9 +21023,16 @@ const UI = (() => {
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
     // size to the visible viewport so browser toolbars never crop the bottom rail
+    // 6.16.5 (Nic, Nov 21: "it got locked to a smaller screen"; the layout was 19% short until he reopened the game). iOS can report a
+    // short visible height for a moment (back from another app, a system sheet) and then send no second event. So: (1) a home-screen
+    // app has no browser bars, so it never sizes below the window; (2) a 1-second check refits when the real size and ours differ.
+    const standalone = () => !!(navigator.standalone || (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)));
+    const vvSize = () => { const vv = window.visualViewport; let vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
+      if (vv && standalone() && Math.abs((vv.scale || 1) - 1) < 0.01) { vh = Math.max(vh, window.innerHeight); vw = Math.max(vw, window.innerWidth); } return [vw, vh]; };
+    let fitW = 0, fitH = 0, fitN = 0;
     const fitVV = () => {
       if (entryOpen) return; // the typing panel handles the keyboard; the game keeps its size underneath
-      const vv = window.visualViewport, vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
+      const [vw, vh] = vvSize(); fitW = vw; fitH = vh;
       const auto = clamp(Math.min(vw / 820, vh / 480), 1, 1.6), pref = PROF.settings && PROF.settings.uiScale;
       UIS = pref && pref !== 'auto' ? clamp(auto * pref, 0.8, 2) : auto;
       document.documentElement.style.setProperty('--ui', UIS.toFixed(3));
@@ -21037,6 +21044,12 @@ const UI = (() => {
     if (window.visualViewport) window.visualViewport.addEventListener('resize', fitVV);
     window.addEventListener('orientationchange', () => setTimeout(fitVV, 250));
     fitVV();
+    const heal = () => { if (entryOpen) return; const [vw, vh] = vvSize(); if (Math.abs(vw - fitW) < 1.5 && Math.abs(vh - fitH) < 1.5) return;
+      const was = [Math.round(fitW), Math.round(fitH)]; fitVV(); if (G && !G.over && fitN++ < 20) rlog('vv', { was, now: [Math.round(vw), Math.round(vh)], ih: window.innerHeight }); }; // the run log keeps the first 20, to find the cause
+    setInterval(heal, 1000);
+    for (const ev of ['pageshow', 'focus']) window.addEventListener(ev, () => { setTimeout(heal, 80); setTimeout(heal, 600); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { setTimeout(heal, 80); setTimeout(heal, 600); } });
+    UI.healVV = heal;
     document.addEventListener('fullscreenchange', fitVV); document.addEventListener('webkitfullscreenchange', fitVV);
     // 6.16.1 (Nic, Nov 16: "make the app prevent phone sleep while in focus"): the lock used to be asked for once, at a run's start; the phone
     // drops it whenever the app leaves the screen, so after one switch away the screen could sleep again. Now it is held on every screen
@@ -21655,7 +21668,7 @@ window.__errN = 0;
     function check() {
       if (!SFX.health || document.hidden) return;
       const h = SFX.health(); if (h.st === 'none') return;
-      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
+      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { vp: [innerWidth, innerHeight, window.visualViewport ? Math.round(window.visualViewport.height) : 0, navigator.standalone ? 1 : 0], ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
       if (!on()) return;
       const w = performance.now() / 1000;
       if (lastCt >= 0) {
