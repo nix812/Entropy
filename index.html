@@ -1765,7 +1765,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.9';
+const VERSION = '6.16.10';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -18888,7 +18888,7 @@ const UI = (() => {
   // 6.16.7 (Nic, Nov 21: "I still inadvertently have it selected and have it move to empty space"; he mostly sends it to sites and
   // recalls it when guards are too strong). (1) A tap on a site, a storm or the core still sends at once. A tap on open space only
   // drops a marker; a second tap on the marker sends it there. (2) A selected probe with no order lets go after PR_IDLE.
-  const PR_IDLE = 6000, PR_PEND_R = 1.5;
+  const PR_IDLE = 3000, PR_PEND_R = 1.5; // 6.16.10: 3 s, was 6 (Nic: "Probe timeout too long half it")
   function prAim(p) { // what probeGo (sim.js) would do with this point: 'core', 'site', 'storm' or '' (open space)
     if (Math.hypot(p.x - G.core.x, p.y - G.core.y) <= 1.1) return 'core';
     for (const s of G.sites || []) if (!s.done && Math.hypot(s.x - p.x, s.y - p.y) <= Math.max(1.3, s.k === 'cloud' ? PROBE.cloudR : 0)) return 'site';
@@ -18938,7 +18938,7 @@ const UI = (() => {
     const bar = $('#prbar'); if (!bar) return;
     const P = G && G.probe;
     if (prCmd && (prCmd.g !== G || !P || !P.alive || G.over || G.watch || frSel || G.reloc || G.placing || (panel && panel.kind !== 'probe'))) { prCmd = null; if (!(panel && panel.kind === 'probe')) Render.prSel = false; }
-    if (prCmd && !G.tut && !(panel && panel.kind === 'probe') && performance.now() - (prCmd.t0 || 0) > PR_IDLE * (prCmd.site && siteById(prCmd.site) ? 3 : 1)) { prCmd = null; Render.prSel = false; } // (a site in focus gets 18 s: its loot and guards take reading) // no order: it lets go (Training keeps it, the coach is talking)
+    if (prCmd && !G.tut && !(panel && panel.kind === 'probe') && performance.now() - (prCmd.t0 || 0) > PR_IDLE * (prCmd.site && siteById(prCmd.site) ? 3 : 1)) { prCmd = null; Render.prSel = false; } // (a site in focus gets 9 s: its loot and guards take reading) // no order: it lets go (Training keeps it, the coach is talking)
     if (!prCmd) Render.prPend = null;
     const on = !!prCmd; document.body.classList.toggle('prcmd', on);
     if (bar.hidden === on) bar.hidden = !on;
