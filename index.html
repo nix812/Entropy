@@ -1765,7 +1765,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.7';
+const VERSION = '6.16.8';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -21049,7 +21049,7 @@ const UI = (() => {
     // 6.16.6: a page zoom (two fingers on a panel or the HUD) also shrinks visualViewport: at zoom 1.23 a 395 px screen reports 322, the
     // 19% in Nic's screenshot. The size times the zoom is the real screen, so a zoom never resizes the layout
     const vvSize = () => { const vv = window.visualViewport, z = vv && vv.scale > 1.01 ? vv.scale : 1; let vw = vv ? vv.width * z : window.innerWidth, vh = vv ? vv.height * z : window.innerHeight;
-      if (vv && standalone()) { vh = Math.max(vh, window.innerHeight); vw = Math.max(vw, window.innerWidth); } return [vw, vh]; };
+      return [vw, vh]; }; // 6.16.8: NEVER size from window.innerHeight. On Nic's iPhone the home-screen app's window is taller than what is visible (6.16.5 did that and the Hangar ran off the bottom)
     let fitW = 0, fitH = 0, fitN = 0;
     const fitVV = () => {
       if (entryOpen) return; // the typing panel handles the keyboard; the game keeps its size underneath
