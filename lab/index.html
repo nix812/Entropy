@@ -71,7 +71,7 @@ input::placeholder, textarea::placeholder { text-transform: none; }
 button { font: inherit; color: inherit; touch-action: manipulation; cursor: pointer; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 button:disabled { cursor: default; opacity: 0.38; }
-#app { position: fixed; left: 0; top: 0; width: calc(100vw / var(--ui, 1)); height: calc(var(--vvh, 100dvh) / var(--ui, 1)); overflow: hidden; transform: scale(var(--ui, 1)); transform-origin: 0 0; }
+#app { position: fixed; left: 0; top: 0; width: calc(100vw / var(--ui, 1)); height: calc(100vh / var(--ui, 1)); height: calc(min(100dvh, var(--maxh, 100dvh)) / var(--ui, 1)); overflow: hidden; transform: scale(var(--ui, 1)); transform-origin: 0 0; }
 .screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding-left: max(16px, var(--sal)); padding-right: max(16px, var(--sar)); padding-block: 0; }
 .svgi { display: block; width: 20px; height: 20px; shape-rendering: crispEdges; fill: currentColor; flex: 0 0 auto; }
 .lbl { font-family: var(--f-pix); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); line-height: 1.5; }
@@ -1679,7 +1679,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.8 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.16.9 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1811,7 +1811,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.8';
+const VERSION = '6.16.9';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -18314,7 +18314,7 @@ const UI = (() => {
   // 6.16 polish: the banner steps below a news line, tip or toast it would cover (seen at 667x375: ENTERING over CREDITS PILING UP)
   function zoneDodge() {
     const box = $('#zoneBan'); if (!box || box.hidden) return;
-    const b = box.getBoundingClientRect(), H = innerHeight; let low = 0;
+    const b = box.getBoundingClientRect(), H = VPH; let low = 0;
     for (const el of [$('#ticker'), $('#tip'), ...document.querySelectorAll('#toasts > *')]) {
       if (!el || el.hidden || !el.offsetParent) continue;
       const r = el.getBoundingClientRect(); if (!r.height || r.right < b.left || r.left > b.right || r.top > H * 0.5) continue;
@@ -18655,11 +18655,11 @@ const UI = (() => {
     box.innerHTML = `<b>${esc(g[0])}</b><span>${g[1]}</span>`;
     box.hidden = false;
     clearTimeout(box._t); box._t = setTimeout(() => { box.hidden = true; box.dataset.for = ''; }, 7000);
-    const r = el.getBoundingClientRect(), bw = Math.min(260 * UIS, window.innerWidth - 24);
+    const r = el.getBoundingClientRect(), bw = Math.min(260 * UIS, VPW - 24);
     box.style.width = bw + 'px';
-    box.style.left = Math.max(12, Math.min(window.innerWidth - bw - 12, r.left + r.width / 2 - bw / 2)) + 'px';
+    box.style.left = Math.max(12, Math.min(VPW - bw - 12, r.left + r.width / 2 - bw / 2)) + 'px';
     const below = r.bottom + 8, h = box.offsetHeight;
-    box.style.top = (below + h < window.innerHeight - 8 ? below : Math.max(8, r.top - h - 8)) + 'px';
+    box.style.top = (below + h < VPH - 8 ? below : Math.max(8, r.top - h - 8)) + 'px';
   }
   // 6.6.1: a glossary word inside a button (a Veteran pick, a boon, a card) used to open its tooltip and eat the tap.
   // Inside a button a quick tap now does the button's job; a press held 450 ms shows the tooltip instead.
@@ -19714,6 +19714,7 @@ const UI = (() => {
   // v5.5.10 typing on a phone: a panel pinned to the part of the screen the keyboard leaves visible. The game is a fixed,
   // scaled layer, so iOS cannot scroll a text box inside it into view; this panel lives outside it and follows visualViewport.
   let entryOpen = false;
+  let VPW = window.innerWidth || 800, VPH = window.innerHeight || 400; // 6.16.9: the layout's real size, as measured from #app (fitVV). Use these, never innerWidth/innerHeight
   function askText(o) {
     const old = $('#entry'); if (old) old.remove();
     const el = document.createElement('div'); el.id = 'entry';
@@ -19879,6 +19880,7 @@ const UI = (() => {
     G = null; show('hangar'); renderHangar();
   }
   function openGameOver() {
+    if (!G.vpLog && UI.vpDiag) { G.vpLog = 1; try { rlog('vp', UI.vpDiag()); } catch (e) {} } // 6.16.9: the screen sizes at the end of every run, for the next sizing report
     if (G.tut) return openTutDone(); // 5.8 Training: no records, Hall of Fame or recap
     const L = profLevel(), gained = L.level - G.lvlStart;
     const best = G.wave > (G.bestAtStart || 0);
@@ -21087,37 +21089,46 @@ const UI = (() => {
     document.addEventListener('pointerdown', () => SFX.init(), { once: true });
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
-    // size to the visible viewport so browser toolbars never crop the bottom rail
-    // 6.16.5 (Nic, Nov 21: "it got locked to a smaller screen"; the layout was 19% short until he reopened the game). iOS can report a
-    // short visible height for a moment (back from another app, a system sheet) and then send no second event. So: (1) a home-screen
-    // app has no browser bars, so it never sizes below the window; (2) a 1-second check refits when the real size and ours differ.
-    const standalone = () => !!(navigator.standalone || (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)));
-    // 6.16.6: a page zoom (two fingers on a panel or the HUD) also shrinks visualViewport: at zoom 1.23 a 395 px screen reports 322, the
-    // 19% in Nic's screenshot. The size times the zoom is the real screen, so a zoom never resizes the layout
-    const vvSize = () => { const vv = window.visualViewport, z = vv && vv.scale > 1.01 ? vv.scale : 1; let vw = vv ? vv.width * z : window.innerWidth, vh = vv ? vv.height * z : window.innerHeight;
-      return [vw, vh]; }; // 6.16.8: NEVER size from window.innerHeight. On Nic's iPhone the home-screen app's window is taller than what is visible (6.16.5 did that and the Hangar ran off the bottom)
+    // ---- 6.16.9: THE LAYOUT IS SIZED BY CSS ALONE. (Nic, Nov 22: "it keeps happening... if it needs a new approach to make it stable, do it".)
+    // History: the height came from JavaScript (visualViewport.height into --vvh) while the width came from CSS (100vw). Every crop
+    // was a wrong HEIGHT with a right width: 19% short (6.16.4), off the bottom (6.16.5 to 6.16.7, window.innerHeight), 20% tall
+    // (6.16.8, visualViewport.scale). His log shows iOS reporting a portrait size (440 x 956, then 440 x 894) for a landscape screen
+    // when the app leaves and returns. No number the page can ask for is safe at every moment.
+    // Now: #app is `100vw x 100dvh` in CSS (template.html), so the browser itself keeps both sides right, with no event and no number
+    // from us. JavaScript only (1) MEASURES the box the browser made, to pick the UI scale and size the canvas, and (2) caps it at the
+    // device's own screen (--maxh), since a visible area can never be taller than the screen is.
+    // RULES: never write a measured height into the layout. Never read innerHeight, innerWidth or visualViewport for layout: use vpSize().
+    const coarse = () => /iP(hone|ad|od)/.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || '')); // iPhone and iPad only (an iPad can say it is a Mac): the cap is for their wrong reports, and other devices' `screen` numbers are not worth trusting
+    const appBox = () => { const r = $('#app').getBoundingClientRect(); return [r.width, r.height]; };
+    const capScreen = () => { // iPhone and iPad only: the layout can never be taller or wider than the screen
+      const st = document.documentElement.style, sw = window.screen && window.screen.width, sh = window.screen && window.screen.height; // (`screen` alone is this file's own variable)
+      if (!coarse() || !(sw > 200 && sh > 200)) { st.removeProperty('--maxh'); return; }
+      const land = window.matchMedia ? matchMedia('(orientation: landscape)').matches : true;
+      st.setProperty('--maxh', (land ? Math.min(sw, sh) : Math.max(sw, sh)) + 'px');
+    };
     let fitW = 0, fitH = 0, fitN = 0;
+    const vpDiag = () => { const vv = window.visualViewport, r = n => Math.round(n * 10) / 10; return { app: [r(fitW), r(fitH)], vv: vv ? [r(vv.width), r(vv.height), r(vv.scale)] : 0, inner: [innerWidth, innerHeight], scr: [window.screen.width, window.screen.height], maxh: getComputedStyle(document.documentElement).getPropertyValue('--maxh').trim() }; };
     const fitVV = () => {
-      if (entryOpen) return; // the typing panel handles the keyboard; the game keeps its size underneath
-      const [vw, vh] = vvSize(); fitW = vw; fitH = vh;
+      capScreen();
+      const [vw, vh] = appBox(); if (!(vw > 50 && vh > 50)) return; fitW = vw; fitH = vh; VPW = vw; VPH = vh;
       const auto = clamp(Math.min(vw / 820, vh / 480), 1, 1.6), pref = PROF.settings && PROF.settings.uiScale;
       UIS = pref && pref !== 'auto' ? clamp(auto * pref, 0.8, 2) : auto;
       document.documentElement.style.setProperty('--ui', UIS.toFixed(3));
-      document.documentElement.style.setProperty('--vvh', Math.round(vh) + 'px');
       Render.resize(); Tree.resize();
     };
-    UI.fitVV = fitVV;
-    window.addEventListener('resize', fitVV);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', fitVV);
-    window.addEventListener('orientationchange', () => setTimeout(fitVV, 250));
+    UI.fitVV = fitVV; UI.vpDiag = vpDiag; UI.vp = () => [VPW, VPH];
+    const heal = () => { capScreen(); const [vw, vh] = appBox(); if (Math.abs(vw - fitW) < 1.5 && Math.abs(vh - fitH) < 1.5) return;
+      const was = [Math.round(fitW), Math.round(fitH)]; fitVV(); if (G && fitN++ < 30) rlog('vv', Object.assign({ was }, vpDiag())); }; // the run log keeps the first 30
+    window.addEventListener('resize', heal);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', heal);
+    window.addEventListener('orientationchange', () => { setTimeout(heal, 80); setTimeout(heal, 400); });
+    if (window.ResizeObserver) new ResizeObserver(() => heal()).observe($('#app')); // the browser tells us when the box it made changes
     fitVV();
-    const heal = () => { if (entryOpen) return; const [vw, vh] = vvSize(); if (Math.abs(vw - fitW) < 1.5 && Math.abs(vh - fitH) < 1.5) return;
-      const was = [Math.round(fitW), Math.round(fitH)]; fitVV(); if (G && !G.over && fitN++ < 20) rlog('vv', { was, now: [Math.round(vw), Math.round(vh)], ih: window.innerHeight }); }; // the run log keeps the first 20, to find the cause
-    setInterval(heal, 1000);
+    setInterval(heal, 1000); // and a check each second, in case nothing tells us
     for (const ev of ['pageshow', 'focus']) window.addEventListener(ev, () => { setTimeout(heal, 80); setTimeout(heal, 600); });
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { setTimeout(heal, 80); setTimeout(heal, 600); } });
     UI.healVV = heal;
-    document.addEventListener('fullscreenchange', fitVV); document.addEventListener('webkitfullscreenchange', fitVV);
+    document.addEventListener('fullscreenchange', heal); document.addEventListener('webkitfullscreenchange', heal);
     // 6.16.1 (Nic, Nov 16: "make the app prevent phone sleep while in focus"): the lock used to be asked for once, at a run's start; the phone
     // drops it whenever the app leaves the screen, so after one switch away the screen could sleep again. Now it is held on every screen
     // while the app is in front: asked again on coming back, on a tap (some phones want one), and when the phone lets it go.
@@ -21607,7 +21618,7 @@ UI.story = function (force, done) {
   stars.push({ x: 0.5, y: 0.2, b: 1, s: 2, c: '#ffe9c4', ph: 0, sp: 0.9, d: 900, out: 1 }); // the last one to go
   const OUT0 = 700, OUTSPAN = 8200, FLARE = 650; // screen 2: a star goes out at OUT0 + out * OUTSPAN ms, with a short flare
   function drawSky() { raf = 0; if (over && sky !== 'off') return;
-    const w = Math.ceil(innerWidth / PX), h = Math.ceil(innerHeight / PX); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const vp = UI.vp ? UI.vp() : [innerWidth, innerHeight], w = Math.ceil(vp[0] / PX), h = Math.ceil(vp[1] / PX); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
     cx.clearRect(0, 0, w, h); if (sky === 'off') return;
     const now = performance.now(), t = now - skyT, te = rush ? (rush - skyT) + (now - rush) * 14 : t; let left = 0;
     for (const s of stars) { let a = s.b * (calm ? 1 : 0.72 + 0.28 * Math.sin(s.ph + now * 0.001 * s.sp));
@@ -21735,7 +21746,7 @@ window.__errN = 0;
     function check() {
       if (!SFX.health || document.hidden) return;
       const h = SFX.health(); if (h.st === 'none') return;
-      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { vp: [innerWidth, innerHeight, window.visualViewport ? Math.round(window.visualViewport.height) : 0, navigator.standalone ? 1 : 0], ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
+      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { vp: UI.vpDiag ? UI.vpDiag() : 0, sa: navigator.standalone ? 1 : 0, ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
       if (!on()) return;
       const w = performance.now() / 1000;
       if (lastCt >= 0) {
