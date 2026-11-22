@@ -844,6 +844,8 @@ details.more { margin: 6px 0 0; } details.more > summary { font-family: var(--f-
   overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 10px 0; z-index: 6; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; animation: pin 0.15s; }
 .pfoot { position: sticky; bottom: 0; margin: auto -10px 0; padding: 8px 10px 10px; background: linear-gradient(rgba(12, 14, 28, 0.85), rgb(12, 14, 28) 10px); display: flex; flex-direction: column; gap: 6px; z-index: 2; }
 .bgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+/* rules 26: 13 base towers. Five a row keeps the grid at 3 rows, so the picked tower's text still shows without scrolling; the name sits over the price */
+.bgrid.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } .bgrid.c5 .bt .bn { flex-direction: column; align-items: flex-start; gap: 1px; padding: 0 3px; }
 .bt { background: var(--panel); border: 0; padding: 0 0 3px; display: flex; flex-direction: column; align-items: stretch; gap: 2px; box-shadow: inset 0 0 0 1px var(--line); position: relative; overflow: hidden; }
 .bt canvas.tcard { width: 100%; aspect-ratio: 34 / 22; height: auto; image-rendering: pixelated; display: block; }
 .bt .bn { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px; gap: 2px; }
@@ -1765,7 +1767,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.16.10';
+const VERSION = '6.17.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -1839,6 +1841,13 @@ const TOWERS = {
     blurb: 'Sends out a pulse that Chills nearby enemies.',
     specs: [{ name: 'Glacier Core', desc: '×1.5 Chill strength. Freeze lasts 0.6s longer', m: { chillPot: 1.5, freezeBonus: 0.6 } },
             { name: 'Shatter Field', desc: 'Chilled enemies in range take +60% Kinetic Damage', m: { shatterField: 0.6 } }] },
+  // rules 26 (Nic, Nov 22: "we only have 1 ice tower base... a long range tower that cast kind of an aoe blizzard on an area that's large").
+  // Every element now has two base towers. It casts a squall on the densest pack in range: a zone that lasts zoneT s and hits every
+  // enemy inside (air too) each SQUALL.tick s with dmg and 1 Chill. Two squalls on one pack both hit; the second Array prefers a pack without one (SQUALL.spread). Notes: docs/notes/squall26.md
+  squall: { name: 'Squall Array', el: 'C', cost: 130, dmg: 12, rate: 0.2, range: 6, kind: 'squall', zoneR: 2.3, zoneT: 4, st: { chill: 1 }, unlock: 18, rules: 26,
+    blurb: 'Casts a blizzard on the biggest pack in range. Enemies inside take cold damage and Chill.',
+    specs: [{ name: 'Whiteout', desc: '+0.8 blizzard radius. Cloaked enemies inside are revealed', m: { zoneAdd: 0.8, reveal: 1 } },
+            { name: 'Hailstorm', desc: '×2 Damage. The blizzard lasts 1s less', m: { dmgX: 2, zoneTAdd: -1 } }] },
   missile: { name: 'Swarm Missile', el: 'T', cost: 120, dmg: 35, rate: 0.75, range: 3.6, kind: 'missile', pspd: 6, splash: 0.9, st: { burn: 0.5 }, unlock: 5,
     blurb: 'Fires homing missiles that deal splash damage and apply Burn.',
     specs: [{ name: 'Cluster Pods', desc: 'Missiles split into 3 bomblets', m: { cluster: 3 } },
@@ -1914,7 +1923,8 @@ const TOWERS = {
 };
 // 6.4: the capstone tier towers, in tree order (TALENTS[i].top unlocks CAP_TOWERS[i])
 const CAP_TOWERS = ['saw', 'flashover', 'surge', 'rime', 'tangle', 'aegis', 'joker'];
-const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil', 'forge', 'flame', 'lens', 'emp', 'grav'].concat(CAP_TOWERS);
+const SQUALL = { tick: 0.5, spread: 0.6 }; // rules 26: seconds between a squall's hits; a pack already under a squall counts this much less when the next one picks its spot
+const TOWER_ORDER = ['pulse', 'rail', 'cryo', 'snare', 'missile', 'pylon', 'coil', 'forge', 'flame', 'squall', 'lens', 'emp', 'grav'].concat(CAP_TOWERS);
 const LV_DMG = [0, 1, 1.65, 2.6, 4.1, 6.4];
 const LV_COST = [0, 1, 0.8, 1.2, 2.0, 3.0];
 const MAX_LV = 5;
@@ -2007,6 +2017,16 @@ const PERKS = {
     { id: 'linger', name: 'Afterglow', v: [2, 3], d: v => `Its Marks last +${v} s` },
     { id: 'well', name: 'Deep Well', spec: 1, v: [0.3], d: () => '+0.3 max ramp' },
     { id: 'facet', name: 'Fourth Facet', spec: 2, v: [1], d: () => '+1 beam' },
+  ],
+  squall: [ // rules 26
+    { id: 'sqWide', name: 'Wide Front', v: [0.3, 0.5], d: v => `+${v} blizzard radius` },
+    { id: 'sqLong', name: 'Slow Front', v: [0.5, 1], d: v => `Blizzards last +${v} s` },
+    { id: 'sqCast', name: 'Fast Cycle', v: [12, 20, 27], d: v => `+${v}% cast rate` },
+    { id: 'sqReach', name: 'High Mast', v: [0.6, 1], d: v => `+${v} Range` },
+    { id: 'sqBite', name: 'Frostbite', v: [12, 20], d: v => `+${v}% Damage` },
+    { id: 'deep', name: 'Deep Freeze', v: [0.4, 0.7], d: v => `Freeze lasts +${v} s` },
+    { id: 'sqEye', name: 'Clear Eye', spec: 1, v: [1], d: () => 'Revealed enemies stay revealed 2 s after they leave' },
+    { id: 'sqHail', name: 'Heavy Hail', spec: 2, v: [25], d: () => '+25% Damage to Frozen enemies' },
   ],
   emp: [
     { id: 'longPulse', name: 'Long Pulse', v: [0.3, 0.5], d: v => `Stun lasts +${v} s` },
@@ -2188,6 +2208,7 @@ const LEGENDARIES = [
   { id: 'mCoil', pool: 'atk', tower: 'coil', name: 'Storm Crown', pkv: { chain: 2, loop: 1 }, t: () => '+2 Chain. The last arc jumps back to the first target' },
   { id: 'mFlame', pool: 'atk', tower: 'flame', name: "Dragon's Breath", pkv: { updraft: 1, spread: 1, accel: 30 }, t: () => 'Flames reach fliers. Burn spreads on death. +30% Damage' },
   { id: 'mLens', pool: 'atk', tower: 'lens', name: 'Twin Singularity', pkv: { fork: 50, hold: 1 }, t: () => 'Beam forks to a 2nd target for 50% Damage. Keeps half its ramp when switching target' },
+  { id: 'mSquall', pool: 'atk', tower: 'squall', name: 'Long Winter', pkv: { sqLong: 2, sqWide: 0.4 }, t: () => 'Blizzards last 2 s longer and reach 0.4 tiles wider' },
   { id: 'mEmp', pool: 'atk', tower: 'emp', name: 'Cascade', pkv: { scatter: 1, longPulse: 0.3 }, t: () => 'Shells split into 3 bomblets. Stun lasts 0.3 s longer' },
   { id: 'mGrav', pool: 'atk', tower: 'grav', name: 'Abyss', pkv: { anchor: 1, undertow: 30 }, t: () => 'Wells drag fliers. Pulled enemies are slowed 30%' },
   { id: 'mPylon', pool: 'pylon', tower: 'pylon', name: 'Overmind', pkv: { ampP: 10, mast: 1 }, t: () => '+10% Damage boost. +1 Range' },
@@ -2213,7 +2234,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 25; // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 26; // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2243,15 +2264,12 @@ const STORY = [
 ];
 const STORY_MC = 'Mission Control to pilot. The core is yours. Good luck.';
 const storyEnd = w => `The gradient held for ${w} wave${w === 1 ? '' : 's'}. Then the dark came in.`; // the end screen, when the core falls
-const WHATS_NEW = { ver: '6.16.1', title: 'Last Gradient 6.16.1 · Ranks', items: [ // draft text (Nic edits it on the Game Text page)
-  ['Ranks', 'You now hold a career rank. It counts every XP you have ever earned, and a Supernova never takes it away. Each rank also needs days served. Tap your rank in the Hangar.'],
-  ['Supernova', 'Each Supernova gives an emblem, widens your core\'s light by 1 tile (up to 5) and unlocks a new color for it. The Daily Hunt stays open after a Supernova.'],
-  ['Black Hole', 'The Black Hole is new. It lands on your biggest build and pulls towers in. Feed it Mass before it closes: kill enemies within 12 tiles of it. Fed, it gives your towers back and leaves a Newborn Star. Starved, it keeps them for a few waves.'],
-  ['The swarm', 'Every enemy is redrawn as a hive creature, at a sharper size.'],
-  ['The Worm', 'If the Worm reaches your core, the end screen lists what it digested.'],
-  ['Talents', 'The last rank of the weakest talents now does something new. Read them in Talents.'],
-  ['Sound', 'Long runs keep their sound. Music levels are even across styles.'],
-  ['Saves', 'The game warns you if the device has no room to save. Codes pasted from other players are checked before they run.'],
+const WHATS_NEW = { ver: '6.17.0', title: 'Last Gradient 6.17 · Squall Array', items: [ // draft text (Nic edits it on the Game Text page)
+  ['New tower', 'The Squall Array is a second Cryo tower. It casts a blizzard on the biggest pack in its range. Every enemy inside takes cold damage and Chill, fliers too. It unlocks at Wave 18. Every element now has two base towers.'],
+  ['Build menu', 'The build menu shows five towers a row.'],
+  ['Probe', 'A selected probe with no order lets go after 3 seconds. A tap on empty ground drops a marker. Tap the marker to send the probe.'],
+  ['Screen', 'The screen keeps its size when you leave the game and come back.'],
+  ['Career card', 'Your career card counts kills, bosses and time, with normal runs and Daily Hunts apart. Open it from your rank.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -3152,6 +3170,7 @@ const AFFIX_BAN = {
   beam: ['pierce', 'chain', 'splash', 'ricochet', 'echo'],
   mortar: ['pierce', 'chain', 'ricochet'],
   grav: ['pierce', 'chain', 'splash', 'multi', 'ricochet', 'echo'],
+  squall: ['pierce', 'chain', 'splash', 'multi', 'ricochet', 'echo'], // rules 26
   saw: ['pierce', 'chain', 'splash', 'ricochet'], det: ['pierce', 'chain', 'splash', 'multi', 'ricochet'], surge: ['pierce', 'splash'], // 6.4
   wall: ['pierce', 'chain', 'splash', 'multi', 'ricochet', 'echo'], tether: ['pierce', 'chain', 'splash', 'ricochet', 'echo'], aegis: ['pierce', 'chain', 'ricochet'], joker: ['pierce', 'chain', 'multi'],
 };
@@ -3596,7 +3615,7 @@ function huntBuildProf() { const b = PROF.huntBuild || (PROF.huntBuild = { tal: 
 // a profile still learning the game (best wave under 10): locked controls stay out of sight until they come online
 const freshProfile = () => (PROF.bestWave || 0) < 10;
 // 6.4: a capstone tier tower is unlocked only by the run's own list (G.capT, from newRun opts), never by the profile mid-run
-const towerUnlocked = id => TOWERS[id].capT ? !!(G && G.capT && G.capT.includes(id)) : huntRun() || TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
+const towerUnlocked = id => TOWERS[id].rules && !(G && G.frV >= TOWERS[id].rules) ? false : TOWERS[id].capT ? !!(G && G.capT && G.capT.includes(id)) : huntRun() || TOWERS[id].unlock <= Math.max(1, PROF.bestWave) || !!(G && G.runUnlocks && G.runUnlocks.includes(id)); // a Stolen Blueprint unlocks one for the run
 // 6.4: the capstone tier towers this profile has learned (passed to newRun as opts.capT; the sim reads only G.capT)
 const capTowersOwned = () => TALENTS.filter(tr => tr.top && (PROF.tal || {})[tr.top.id]).map(tr => tr.top.unlockT);
 // the Capstones currently in force (held + remnants), as ks flags or fx bundles
@@ -3986,7 +4005,7 @@ function growRegion(stage, quiet) {
 const NODE_TOWER = { dmg: 1.25, range: 1.15, aura: 1.25 }, NODE_CORE = { dmg: 1.5, rate: 1.2 };
 const isNode = (x, y) => !!(G.nodeSet && G.nodeSet.has(tIdx(x, y)));
 // v3.1: what the defence could pour into one boss, from tower stats (measured DPS reads low early: small waves never let towers fire flat out)
-const PD_KIND = { saw: 3, det: 3, tether: 3, wall: 16, joker: 1.5 };
+const PD_KIND = { saw: 3, det: 3, tether: 3, wall: 16, joker: 1.5, squall: 8 }; // (a squall: 8 hits a cast on each enemy inside; against one boss it is what its numbers say)
 function potentialDps() {
   let tot = 0;
   for (const t of G.towers) {
@@ -4584,11 +4603,11 @@ function towerStats(t) {
   const O = M.orb || {}, oe = k => (O[k] && O[k][s.el]) || 0;
   const fluxAny = O.flux && Object.keys(O.flux).length;
   s.dmg = (1 + (oe('dmg') + oe('flux')) / 100) * (fluxAny && !oe('flux') ? 0.92 : 1) * D.dmg * LV_DMG[lv] * Math.pow(G.ascV >= 2 ? ASC_DMG_T[t.type] || ASC_DMG : ASC_DMG_OLD, t.asc || 0) * Math.pow(1.05, t.rank || 0) * (sp.dmgX || 1) * (1 + (A.dmg || 0) / 100) * (cur.cdmg ? 0.85 : 1) * M.dmg * M.el[s.el] * (1 + (pv('hv') + pv('accel') + pv('overpress') + pv('amps') + pv('crush')) / 100) * mst;
-  let rate = D.rate * (sp.rateX || 1) * (1 + (A.rate || 0) / 100) * (cur.crate ? 0.85 : 1) * M.rate * (1 + (pv('rapid') + pv('comp') + pv('autoload') + pv('breech')) / 100);
+  let rate = D.rate * (sp.rateX || 1) * (1 + (A.rate || 0) / 100) * (cur.crate ? 0.85 : 1) * M.rate * (1 + (pv('rapid') + pv('comp') + pv('autoload') + pv('breech') + pv('sqCast')) / 100);
   if (s.el === 'K') rate *= 1 + M.rateK;
   if (s.el === 'A') rate *= 1 + M.rateA;
   s.rate = rate * (1 + oe('rate') / 100);
-  let range = (D.range + (sp.rangeAdd || 0) + pv('barrelR') + pv('ring') + pv('tank') + pv('focal') + pv('radius') + pv('mast')) * (1 + 0.05 * (lv - 1) + 0.03 * (t.asc || 0));
+  let range = (D.range + (sp.rangeAdd || 0) + pv('barrelR') + pv('ring') + pv('tank') + pv('focal') + pv('radius') + pv('mast') + pv('sqReach')) * (1 + 0.05 * (lv - 1) + 0.03 * (t.asc || 0));
   if (D.kind === 'support' || D.kind === 'snare') range *= (1 + (A.prange || 0) / 100) * M.range;
   else {
     range *= (1 + (A.range || 0) / 100) * (cur.crange ? 0.85 : 1) * M.range;
@@ -4618,6 +4637,7 @@ function towerStats(t) {
   s.rampMax = 1 + ((sp.rampMax || D.rampMax || 1) - 1) * (G.ascV >= 2 && D.rampX || 1) + pv('well'); /* 5.8: the Lens ramp trim */ s.beams = (sp.beams || 1) + (D.kind === 'beam' ? s.multi : 0) + pv('facet');
   s.pull = (D.pull || 0) * (sp.pullX || 1) * (1 + pv('heavy') / 100); s.shells = (sp.shells || 1) + (D.kind === 'mortar' ? s.multi : 0) + pv('shell4'); s.cluster = sp.cluster ? sp.cluster + pv('pods') : 0; s.napalm = !!sp.napalm;
   s.shred = !!sp.shred || !!(pv('apRounds') || pv('slag') || pv('pen') || pv('weld') || pv('shaped')); s.shatterField = sp.shatterField ? sp.shatterField + pv('fault') : 0;
+  if (D.kind === 'squall') { s.zoneR = D.zoneR + (sp.zoneAdd || 0) + pv('sqWide'); s.zoneT = Math.max(1.5, D.zoneT + (sp.zoneTAdd || 0) + pv('sqLong')); s.reveal = !!sp.reveal; s.dmg *= 1 + pv('sqBite') / 100; } // rules 26
   s.exec = (A.exec || 0) + pv('coup'); s.bounty = (A.bounty || 0) / 100; s.boss = (A.boss || 0) / 100 + M.eliteDmg + pv('bigGame') / 100; s.slowd = (A.slowd || 0) / 100;
   s.pspd = D.pspd || 10;
   if (D.kind === 'support') {
@@ -6062,7 +6082,7 @@ function cashIn(amount) {
 // ---------- v4.4 The Black Market: three items a stock, restocked after every boss wave, prices climbing with the wave ----------
 const marketStockN = w => Math.floor(Math.max(1, w) / MARKET.refresh);
 const marketPrice = I => MARKET.price(I.base, G.wave);
-const nextLockedTower = () => TOWER_ORDER.filter(k => !TOWERS[k].capT && !towerUnlocked(k)).sort((a, b) => TOWERS[a].unlock - TOWERS[b].unlock)[0] || null;
+const nextLockedTower = () => TOWER_ORDER.filter(k => !TOWERS[k].capT && !(TOWERS[k].rules && !(G && G.frV >= TOWERS[k].rules)) && !towerUnlocked(k)).sort((a, b) => TOWERS[a].unlock - TOWERS[b].unlock)[0] || null;
 function marketOk(I) {
   if (I.id === 'blueprint') return !!nextLockedTower();
   if (I.id === 'beacon') return (G.market ? G.market.beacons || 0 : 0) < I.max;
@@ -7725,6 +7745,7 @@ function towerAttack(t, range, sw) {
       Hooks.sfx('grav', t);
       return true;
     }
+    case 'squall': return squallCast(t, range, sw); // rules 26
     case 'saw': return sawThrow(t, range, sw); // 6.4 capstone tier towers
     case 'det': return flashPulse(t, range, sw);
     case 'wall': return wallRaise(t, range);
@@ -8082,6 +8103,36 @@ function beamUpdate(t, dt, range, sw) {
   }
 }
 
+// ---------- rules 26: the Squall Array's blizzards. G.squalls = [{ x, y, r, life, tk, dmg, src, reveal, eye, hail }] ----------
+// Not saved: a run is saved between waves and a squall lasts a few seconds (like the Rimewall's walls).
+function squallCast(t, range, sw) {
+  const s = t.s, r2 = range * range, zr = s.zoneR, z2 = zr * zr, live = G.squalls || (G.squalls = []);
+  const cand = G.enemies.filter(e => enemyTargetable(e) && dist2(e.x, e.y, t.cx, t.cy) <= r2);
+  if (!cand.length) return false;
+  let best = null, bs = -1;
+  for (const c of cand) { let sc = 0; // the densest pack; a pack that already has a squall counts less, so two Arrays cover two packs
+    for (const e of G.enemies) if (!e.dead && !e.fall && dist2(e.x, e.y, c.x, c.y) <= z2) sc += (e.boss ? 3 : 1) * (live.some(q => dist2(e.x, e.y, q.x, q.y) <= q.r * q.r) ? 1 - SQUALL.spread : 1);
+    if (sc > bs + 1e-9) { bs = sc; best = c; } }
+  t.angle = Math.atan2(best.y - t.cy, best.x - t.cx);
+  const crit = rollCrit(t); // one roll a cast: a critical blizzard crits on every hit
+  live.push({ x: best.x, y: best.y, r: zr, life: s.zoneT, life0: s.zoneT, tk: 0, dmg: atkDmg(t, sw, crit), crit, src: t, reveal: s.reveal ? 1 : 0, eye: s.pkv.sqEye ? 2 : 0, hail: s.pkv.sqHail || 0 });
+  Hooks.fx('squall', { x: best.x, y: best.y, r: zr, t }); Hooks.sfx('squall', t);
+  return true;
+}
+function squallTick(dt) {
+  const L = G.squalls; if (!L || !L.length) return;
+  for (const q of L) {
+    q.life -= dt; q.tk -= dt; if (q.tk > 0 || q.life <= 1e-6) continue; q.tk += SQUALL.tick; // zoneT / tick hits: the first at once, none on the last step
+    const r2 = q.r * q.r;
+    for (const e of G.enemies) {
+      if (e.dead || e.fall || e.burrowT > 0 || dist2(e.x, e.y, q.x, q.y) > r2) continue;
+      if (q.reveal && e.cloaked) e.revealed = Math.max(e.revealed || 0, SQUALL.tick + 0.2 + q.eye);
+      if (!enemyTargetable(e)) continue;
+      hit(e, q.dmg * (q.hail && e.st.frozen > 0 ? 1 + q.hail / 100 : 1), 'C', q.src, { area: 1, crit: q.crit });
+    }
+  }
+  for (let i = L.length - 1; i >= 0; i--) if (L[i].life <= 0) L.splice(i, 1);
+}
 function updateProjs(dt) {
   for (const p of G.projs) {
     if (p.dead) continue;
@@ -8932,7 +8983,7 @@ function simStep(dt) {
   updateCore(dt);
   if (G.fr) frUpdate(dt);
   if (G.probe) probeUpdate(dt); // 6.5 (frV 5)
-  updateProjs(dt);
+  updateProjs(dt); if (G.squalls && G.squalls.length) squallTick(dt); // rules 26
   updateZones(dt);
   updateTimers(dt);
   updateAbils(dt);
@@ -9621,7 +9672,7 @@ const SFX = (() => {
     shot2: 4.4, rail1: -1.8, rail2: -2, pulse1: -2.1, pulse2: 1.1, missile1: 0.3, missile2: -0.2, coil: 1.7, coil1: 1.1, coil2: -3.7, ignite: 5,
     mortar1: -2, mortar2: -1.1, grav1: -9.1, grav2: -8.5, hitK: 9.5, hitR: 2.3, hitC: 7.7, hitF: 3.4, hitV: 10.1, hitA: 10.9,
     boomT: -2, boomT2: -1.8, pop: 0.5, empboom: -2.7, empboom1: -2.6, lure: 2.8, lure2: 0.7, net1: -3.3, lock: 14.7, lock2: 14.7, forge: 1.2, forge1: 2.4, pylon: 11.7,
-    saw: 5.5, flashover: -6.5, rime: 1, aegis: 8.5, aegisblock: -3.5, joker: 10, // 6.4 (sfxrender: saw -26, Flashover -24, Aegis -30, Wildcard -28, a stop -22 dB)
+    saw: 5.5, flashover: -6.5, rime: 1, squall: 6, aegis: 8.5, aegisblock: -3.5, joker: 10, // 6.4 (sfxrender: saw -26, Flashover -24, Aegis -30, Wildcard -28, a stop -22 dB)
     comboSHATTER: -2.5, comboOVERLOAD: -5, 'comboTHERMAL SHOCK': -3, comboSUPERCONDUCT: 3, comboCOLLAPSE: -7 };
   const dB = v => Math.pow(10, v / 20);
   // start a sound: bus, base volume, pitch jitter (semitones), placement and sends
@@ -9788,6 +9839,15 @@ const SFX = (() => {
       fmv(c, { f0: 1175, f1: 2349, r: 3.01, i: 1.4, d: 0.3, v: 0.14 });
       nz(c, { ft: 'highpass', f0: 5000, f1: 8000, d: 0.25, v: 0.18, a: 0.04 });
       click(c, 0.3, 0.02, 3000);
+      done(c);
+    },
+    // rules 26, Squall Array: a cold gust that opens and falls, with a glassy note on top. Hailstorm adds a rattle of hail; Whiteout is wider and softer
+    squall(t) {
+      if (!allow('squall', 0.35, 2)) return;
+      const sp = t ? t.spec || 0 : 0, c = ev('squall', busW, 0.45, { room: 0.4, jit: 0.6, trim: ascT(t) }, t);
+      nz(c, { ft: 'bandpass', f0: sp === 1 ? 2600 : 3400, f1: 700, d: sp === 1 ? 0.6 : 0.45, v: 0.3, a: 0.06, q: 1.2 });
+      fmv(c, { f0: 1568, f1: 784, r: 2.01, i: 1.2, d: 0.35, v: 0.1 });
+      if (sp === 2) for (let i = 0; i < 4; i++) click(c, 0.16, 0.08 + i * 0.07, 4200 - i * 500);
       done(c);
     },
     // Entangler: a low void thrum with a slow wobble as the threads snap on
@@ -11844,6 +11904,20 @@ const UNITS = (() => {
       for (let k = 0; k < n; k++) { const an = k / n * 6.283 + 0.5; parts.push(P(S.gem(Math.cos(an) * rr, Math.sin(an) * rr, v === 2 ? 3 : 4.5, v === 2 ? 3 : 4.5, v === 2 ? 9 : 11), 3, C)); }
       return parts;
     },
+    squall(c, v, a) { // rules 26, Squall Array: a weather dish on a turntable, two coolant crystals behind it. Whiteout: a wider dish and a sensor eye. Hailstorm: three hail horns
+      const C = ramp(c, 0.85), rk = a.rk * 2.5, parts = [P(S.puck(0, 0, 14, 3, 2), 0, STEEL, { d: (x, y) => (Math.hypot(x, y) > 12 ? 1 : 0) }),
+        P(S.rbox(-12, -6.5, 3, 6.5, 3, 7, 2), 2, HULL, { d: (x, y) => (Math.abs(x + 4.5) < 0.6 ? -1 : 0) })];
+      for (const s of [-1, 1]) parts.push(P(S.gem(-8, s * 9.5, 3.4, 3.4, 9), 3, C));
+      if (v === 2) { for (const y of [-6.5, 0, 6.5]) { const L = y ? 15 : 18;
+          parts.push(P(S.tube(0, L - rk, y, 2.6, 0), 8, GUNM, { d: stripes(5, 1) }));
+          parts.push(P(S.gem(L + 1.5 - rk, y, 3.2, 2.4, 5), 9, ramp(mix(c, '#ffffff', 0.35), 0.95), { e: glow('#ffffff', (xx, yy) => a.rk > 0 && Math.abs(yy - y) < 1) })); }
+      } else { const w = v === 1 ? 12.5 : 10.5;
+        parts.push(P(S.tube(0, 9 - rk, 0, 1.8, 0), 8, GUN));
+        parts.push(P(S.ell(9.5 - rk, 0, 4.6, w, 4), 8, ramp(mix(c, '#c8d0f0', 0.6), 0.85), { d: (x, y) => (Math.abs(Math.abs(y) - w * 0.55) < 0.5 ? -1.2 : 0), e: glow(c, (x, y) => x > 11.2 - rk && Math.abs(y) < w * 0.5 && (Math.floor(y + 40) % 2 === 0)) }));
+        parts.push(P(S.dome(13 - rk, 0, 2.6, 3), 11, ramp(c, 1), { e: (x, y) => Math.hypot(x - 12.3 + rk, y + 0.7) < 1 || a.rk > 0 ? '#ffffff' : null }));
+        if (v === 1) parts.push(P(S.ring(-4.5, 0, 2.4, 4.6, 0), 9, GUNM), P(S.dome(-4.5, 0, 2.4, 2.4), 9, ramp('#12305a', 0.6), { e: (x, y) => Math.hypot(x + 4.5, y) < 1.2 ? mix(c, '#ffffff', 0.5) : null })); }
+      return parts;
+    },
     lens(c, v, a) {
       const parts = [P(S.ring(0, 0, 13, 18, 0), 3, ramp('#2e2448', 0.5), { d: (x, y) => { const an = Math.atan2(y, x); return Math.abs(((an + 6.283) % 1.571) - 0.785) < 0.12 ? -2 : 0; } })];
       for (let k = 0; k < 4; k++) { const an = k * 1.5708 + 0.785; parts.push(P(S.box(-3, -3, 3, 3, 4, 1.5), 0, GUNM, {}));
@@ -12014,6 +12088,13 @@ const UNITS = (() => {
       const n = v === 2 ? 6 : 3; for (let k = 0; k < n; k++) { const an = k / n * 6.283 + 0.5 + 3.1416 / n; rivets(parts, [[Math.cos(an) * 12.3, Math.sin(an) * 12.3]], 3.4, 1.1); }
       if (v === 1) parts.push(P(S.ring(0, 0, big + 0.6, big + 2.2, 2), 3, GUNM, { d: (x, y) => (((Math.atan2(y, x) + 6.3) * 6) % 1 < 0.2 ? -1.5 : 0) })); // Glacier Core: a clamp ring holds the big crystal
       if (v === 2) parts.push(P(S.ring(0, 0, 15.2, 16.4, 1.2), 2, ramp(c, 0.7), { d: (x, y) => (((Math.atan2(y, x) + 6.3) * 12) % 1 < 0.5 ? -1 : 0) })); // Shatter Field: a thin emitter ring links the six shards
+    },
+    squall(parts, c, v, a) { // the deck gets a frost ring and bolts; the housing a vent grille and corner rivets; the crystals a facet line
+      addD(parts[0], (x, y) => { const r = Math.hypot(x, y); return (Math.abs(r - 12.6) < 0.4 ? -1.2 : 0) + (r > 10 && angf(x, y, 12) < 0.14 ? -1 : 0); });
+      addE(parts[0], (x, y) => Math.abs(Math.hypot(x, y) - 11.2) < 0.5 && angf(x, y, 6) < 0.5 ? mix(c, '#12142a', 0.3) : null);
+      addE(parts[1], (x, y) => x < -6.5 && x > -10.5 && Math.abs(y) < 4.5 && (((y + 20) % 2) < 0.8) ? mix(c, '#12142a', 0.4) : null);
+      rivets(parts, [[-10.5, -5], [-10.5, 5], [1.5, -5], [1.5, 5]], 9.2, 0.7);
+      for (const s of [-1, 1]) parts.push(P(S.box(-8.3, s * 9.5 - 2.6, -7.7, s * 9.5 + 2.6, 0.6, 0.3), 9.5, ramp('#ffffff', 1)));
     },
     lens(parts, c, v, a) { // the ring gets segment seams and a lit inner track; the four clamps get bolts; the lens gets depth
       addD(parts[0], (x, y) => { const r = Math.hypot(x, y); return (Math.abs(r - 15.5) < 0.4 ? -1.2 : 0) + ((((Math.atan2(y, x) + 6.3) * 10) % 1) < 0.1 && r > 15.5 ? -1 : 0); });
@@ -12192,7 +12273,7 @@ const UNITS = (() => {
       g.drawImage(base(el), Math.round(4 * FINE), Math.round(4 * FINE)); g.drawImage(top(type, el, 0, ROT[type] ? -0.6 : 0, { ld: 1 }), 0, 0); cv.u = 0.5 / FINE; return cv;
     });
   }
-  const ROT = { pulse: 1, rail: 1, missile: 1, flame: 1, emp: 1, saw: 1, aegis: 1 };
+  const ROT = { pulse: 1, rail: 1, missile: 1, flame: 1, emp: 1, saw: 1, aegis: 1, squall: 1 };
 
   // ---------- enemies ----------
   // ground units face their heading; frames animate legs, wings and tendrils
@@ -14792,6 +14873,17 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     for (const z of G.zones) { ditherDisc(z.x * TILE, z.y * TILE, z.r * TILE, hexA('#ff7b39', 0.4), 2, frame % 2);
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
+    // rules 26: the Squall Array's blizzards. A frosted disc on the ground with a turning dashed rim, and snow blown across it
+    // (Hailstorm: fast white hail straight down; Whiteout: a paler, denser disc). It fades in over 0.3 s and out over its last 0.5 s.
+    for (const q of G.squalls || []) { if (FOGON && !fogSeeR(q.x, q.y, q.r)) continue;
+      const X = q.x * TILE, Y = q.y * TILE, R0 = q.r * TILE, k = Math.max(0, Math.min(1, q.life / 0.5, (q.life0 - q.life) / 0.3 + 0.15)), sp = q.src ? q.src.spec || 0 : 0;
+      ditherDisc(X, Y, R0, hexA(sp === 1 ? '#d8f6ff' : '#6ae2ff', (sp === 1 ? 0.3 : 0.22) * k), 2, frame % 2);
+      ditherDisc(X, Y, R0 * 0.55, hexA('#eafcff', 0.14 * k), 3, (frame + 1) % 2);
+      strokeRing(X, Y, R0, sp === 2 ? '#ffffff' : '#9fefff', 0.55 * k, 1, [5, 4]);
+      if (parts.length < 500 && frame % (LITE ? 4 : 2) === 0) for (let i = 0, n = sp === 1 ? 3 : 2; i < n; i++) { const an = Math.random() * 6.283, rr = Math.sqrt(Math.random()) * R0;
+        parts.push(sp === 2 ? { x: X + Math.cos(an) * rr, y: Y + Math.sin(an) * rr - 10, vx: 0, vy: 95, life: 0.16, max: 0.16, col: '#ffffff', s: 2 }
+          : { x: X + Math.cos(an) * rr + 6, y: Y + Math.sin(an) * rr - 6, vx: -42 - Math.random() * 20, vy: 34 + Math.random() * 14, life: 0.34, max: 0.34, col: i ? '#ffffff' : '#bff4ff', s: i ? 1 : 2 }); }
+    }
     for (const L of G.map.lanes) drawWormhole(L);
     if (G.stars || G.scars) drawStars22(); // rules 22: Newborn Stars and Void Scars
     if (G.hole && (holeVisible() || (G.hole.v >= 13 && G.hole.ph === 0))) drawHole(vxI, vyI, vwI, vhI, dt); // 6.5 Black Hole (under the enemies it drags); 6.14: its landing marker even through fog
@@ -15638,6 +15730,10 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         if (sp === 1) stars.push({ x, y, life: 0.25, max: 0.25, col: '#0a0614', s: 6, disc: 1 });
         if (!LITE) for (let arm = 0; arm < 3; arm++) { const a0 = arm / 3 * 6.283 + Math.random(), pts = []; for (let j = 0; j <= 8; j++) { const u = j / 8, rr = R0 * (1 - u * 0.85), an = a0 + u * 2.4; pts.push({ x: x + Math.cos(an) * rr, y: y + Math.sin(an) * rr }); } lines.push({ pts, life: 0.4, max: 0.4, col, core: 0, w: 1.5, nl: 1 }); }
         if (d.es) for (let i = 0; i < d.es.length && i < 24; i++) { const e = d.es[i]; drags.push({ e, x0: e.x * TILE, y0: e.y * TILE, life: 0.15, col }); }
+        break; }
+      case 'squall': { const x = T2P(d.x), y = T2P(d.y), R0 = d.r * TILE; if (fogLive && !fogSeeR(d.x, d.y, d.r)) break; // rules 26: the cast: a thin beam from the dish, a ring that opens to the blizzard's edge
+        if (d.t) lines.push({ pts: [{ x: T2P(d.t.cx), y: T2P(d.t.cy) }, { x, y }], life: 0.22, max: 0.22, col: '#bff4ff', w: 1 });
+        rings.push({ x, y, r0: 3, r1: R0, life: 0.35, max: 0.35, col: '#eafcff', w: 2 }); if (!LITE) burst(x, y, 10, '#ffffff', 46 * K, 0.4);
         break; }
       case 'heat': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 4, r1: d.r * TILE, life: 0.35, max: 0.35, col: '#ff9a3c', w: d.n ? 2 : 1 }); if (d.n && !LITE) burst(T2P(d.x), T2P(d.y), 6, '#ffd28a', 30 * K, 0.3); break; // 6.4 Flashover
       case 'wallup': burst(T2P(d.x), T2P(d.y), 10, '#d8f8ff', 22 * K, 0.35, -20 * K); rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 14, r1: 4, life: 0.3, max: 0.3, col: '#9fe8ff', w: 2 }); break; // 6.4 Rimewall
@@ -18499,7 +18595,7 @@ const UI = (() => {
   // what each tower is for, in one line: a playstyle, not a stat sheet
   const TOWER_ROLE = {
     pulse: 'Anti-air all-rounder · fast shots, weak to Plating', rail: 'Pierces Plating and lines · slow, long range, hits air',
-    cryo: 'Control · slows everything in its ring, air included', snare: 'Anti-air control · pulls fliers into a net',
+    cryo: 'Control · slows everything in its ring, air included', squall: 'Area control · a far blizzard Chills and cuts a whole pack, air included', snare: 'Anti-air control · pulls fliers into a net',
     missile: 'Crowds, Brood and air · splash and Burn, weak to Plating', pylon: 'Support · boosts towers around it, reveals Cloak',
     coil: 'Shields and crowds · ×3 vs shields, stops Shell recharging, chains', forge: 'Economy · credits every wave',
     flame: 'Ground crowds · Burn stops Regrowth · can\'t hit air', lens: 'Plating, Bulk and bosses · beam ignores Plating, weak vs swarms',
@@ -18536,6 +18632,7 @@ const UI = (() => {
       const D = TOWERS[pick], cost = towerCost(pick);
       const stat = D.kind === 'snare' ? `Catches ${D.catches} fliers per wave · Lure range ${D.range}` : D.kind === 'support' ? `+${D.buffDmg}% Damage, +${D.buffRate}% Attack Speed · Range ${D.range}`
         : D.kind === 'eco' ? `+${D.income} credits per wave`
+        : D.kind === 'squall' ? `Blizzard: ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} Damage every ${SQUALL.tick}s for ${D.zoneT}s · radius ${num1(D.zoneR)} · a cast every ${Math.round(1 / D.rate)}s · Range ${num1(D.range * G.mods.range)}`
         : D.kind === 'wall' ? `Wall strength ${D.hold} · regrows every ${Math.round(1 / D.rate)}s · Range ${num1(D.range * G.mods.range)}`
         : D.kind === 'aegis' ? `Stops ${D.guards} leaks per wave · Damage ${num1(D.dmg * G.mods.dmg)} · Range ${num1(D.range * G.mods.range)}`
         : `Damage ${num1(D.dmg * G.mods.dmg * G.mods.el[D.el])} · ${num1(D.rate)}/s · Range ${num1(D.range * G.mods.range)}`;
@@ -18548,7 +18645,7 @@ const UI = (() => {
       foot = gridFree() < 1 && !isNode(panel.x, panel.y) ? `<button class="btn primary wide" data-act="reactor" ${costBtn(reactorCost())}>Expand reactor · ${fmt(reactorCost())}<small>Grid full (${gridUsed()}/${gridCap()}): +1 power</small></button>` : '';
     }
     const nodeNote = isNode(panel.x, panel.y) ? `<div class="sts node">${tipify('Power Node: towers here draw no power and get +25% Damage, +15% Range (support and economy +25%)')}</div>` : '';
-    return `<div class="ph"><b>Build</b><small class="grid ${gridFree() < 1 ? 'full' : ''}">Power ${gridUsed()}/${gridCap()}</small>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid">${tiles}</div>${strip}${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
+    return `<div class="ph"><b>Build</b><small class="grid ${gridFree() < 1 ? 'full' : ''}">Power ${gridUsed()}/${gridCap()}</small>${isNode(panel.x, panel.y) ? '<small class="node">Power Node</small>' : ''}<button class="x" data-act="close" aria-label="Close">✕</button></div><div class="bgrid${order.length > 12 ? ' c5' : ''}">${tiles}</div>${strip}${nodeNote}${info}${foot ? `<div class="pfoot">${foot}</div>` : ''}`;
   }
 
   // ---------- tappable glossary terms ----------
@@ -18654,6 +18751,7 @@ const UI = (() => {
     else if (s.kind === 'wall') txt = t.wall ? `Wall ${Math.max(0, Math.ceil(t.wall.hp))}/${Math.round(s.hold)} · elites wear it 2× as fast` : `Wall down · regrows in ${Math.max(0, Math.ceil(t.cd / Math.max(0.01, s.rate)))}s`;
     else if (s.kind === 'tether') txt = `Links ${s.links} enemies for ${num1(s.linkT)}s · shares ${pct(s.share)} of each hit among them${s.tslow ? ` · linked ${pct(s.tslow)} slower` : ''}`;
     else if (s.kind === 'aegis') { const c = G.core, r = s.range + 0.5, ok = dist2(t.cx, t.cy, c.x, c.y) <= r * r; txt = `Stops left this wave ${Math.max(0, s.guards - (t.guardN || 0))}/${s.guards} · ${ok ? 'core in range' : 'core out of range: no stops'}`; }
+    else if (s.kind === 'squall') txt = `Blizzard radius ${num1(s.zoneR)} · lasts ${num1(s.zoneT)}s · a hit every ${SQUALL.tick}s on every enemy inside · casts on the biggest pack${s.reveal ? ' · reveals Cloak' : ''}`; // rules 26
     else if (s.kind === 'joker') txt = `Jackpot every ${s.jack}th shot · next in ${s.jack - ((t.jn || 0) % s.jack)}${s.sure ? ' · statuses always land' : ''}`;
     return txt ? `<div class="sts capinfo">${tipify(txt)}</div>` : '';
   }
@@ -18672,8 +18770,8 @@ const UI = (() => {
       if (s.multi) sts.push(`+${s.multi} target`);
       stats = `<div class="sg"><span>Damage<b>${fmt(s.dmg * (1 + t.buff.dmg))}</b></span><span>Rate<b>${num1(s.rate * (1 + t.buff.rate))}/s</b></span><span>Range<b>${num1(t.effRange || s.range)}</b></span><span>Crit<b>${Math.round(s.critC + t.buff.crit)}%</b></span><span>DPS<b data-live="dps">${fmt(t.dps)}</b></span><span>Kills<b data-live="kills">${t.kills}</b></span></div>${sts.length ? `<div class="sts">${tipify(sts.join(' · '))}</div>` : ''}${t.isolated && G.mods.loneWolf ? `<div class="sts amber">${tipify('Lone Wolf: active')}</div>` : ''}${t.reson ? `<div class="sts reson">${tipify(`Resonance: +${Math.round(t.reson * RESON_DMG * 100)}% Damage (${t.resonWith.map(o => EL[o.s.el].name).join(', ')})`)}</div>` : ''}`;
     }
-    if (TOWERS[t.type].capT) stats += capInfoHTML(t); // 6.4 capstone tier towers: what this one is doing right now
-    const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' || s.kind === 'det' || s.kind === 'wall' ? '' :
+    if (TOWERS[t.type].capT || s.kind === 'squall') stats += capInfoHTML(t); // 6.4 capstone tier towers: what this one is doing right now
+    const modes = s.kind === 'support' || s.kind === 'snare' || s.kind === 'eco' || s.kind === 'pulse' || s.kind === 'grav' || s.kind === 'det' || s.kind === 'wall' || s.kind === 'squall' ? '' :
       `<div class="firerow"><span class="lbl">Aim</span>${['first', 'last', 'strong', 'close'].map(m => `<button class="chip ${t.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${{ first: 'First', last: 'Last', strong: 'Strong', close: 'Near' }[m]}</button>`).join('')}</div>`; // v5.8: label inline (one row) to make room for Fire
     const fire = fireHTML(t);
     let up = '';
@@ -19197,7 +19295,7 @@ const UI = (() => {
     Render.sel = { x: t.x, y: t.y }; Render.selT = t; Render.prev = null; G.selCore = false;
     openPanel({ kind: 'tower', t, x: t.x, y: t.y });
   }
-  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', lens: 'Lens', emp: 'EMP', saw: 'Buzzsaw', flashover: 'Flashover', surge: 'Surge', rime: 'Rimewall', tangle: 'Tangler', aegis: 'Gatekeeper', joker: 'Wildcard', grav: 'Gravity' };
+  const TSHORT = { pulse: 'Pulse', rail: 'Rail', cryo: 'Cryo', snare: 'Snare', missile: 'Missile', pylon: 'Pylon', coil: 'Coil', forge: 'Forge', flame: 'Flame', squall: 'Squall', lens: 'Lens', emp: 'EMP', saw: 'Buzzsaw', flashover: 'Flashover', surge: 'Surge', rime: 'Rimewall', tangle: 'Tangler', aegis: 'Gatekeeper', joker: 'Wildcard', grav: 'Gravity' };
   function openBuild(x, y) {
     Render.sel = { x, y }; Render.selT = null; G.selCore = false;
     pick = null; capPeek = null; Render.prev = null;
