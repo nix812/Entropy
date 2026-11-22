@@ -1767,7 +1767,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.17.0';
+const VERSION = '6.17.1';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2234,7 +2234,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 26; // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 27; // 27 (Nov 22): an ability recharges up to the biggest stack held this run (sim.js abilCap, G.abilTop; Nic: banked charges froze the cooldown). // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2266,6 +2266,7 @@ const STORY_MC = 'Mission Control to pilot. The core is yours. Good luck.';
 const storyEnd = w => `The gradient held for ${w} wave${w === 1 ? '' : 's'}. Then the dark came in.`; // the end screen, when the core falls
 const WHATS_NEW = { ver: '6.17.0', title: 'Last Gradient 6.17 · Squall Array', items: [ // draft text (Nic edits it on the Game Text page)
   ['New tower', 'The Squall Array is a second Cryo tower. It casts a blizzard on the biggest pack in its range. Every enemy inside takes cold damage and Chill, fliers too. It unlocks at Wave 18. Every element now has two base towers.'],
+  ['Abilities', 'A banked stack of charges now refills. Hold 5 Strikes, fire one, and the cooldown brings it back to 5. The cap is the biggest stack you have held this run.'],
   ['Build menu', 'The build menu shows five towers a row.'],
   ['Probe', 'A selected probe with no order lets go after 3 seconds. A tap on empty ground drops a marker. Tap the marker to send the probe.'],
   ['Screen', 'The screen keeps its size when you leave the game and come back.'],
@@ -2869,7 +2870,7 @@ const FOG = { core: 10, tower: 4, pad: 1.5, every: 15 };
 
 // ---------- Abilities ----------
 // v5.1: abilities recharge on a cooldown into charge slots (1 each, more from Command talents). Charges from crates, chests
-// and bosses stack on top with no limit. `from`: the wave an ability comes online, so a new player meets them one at a time
+// and bosses stack on top with no limit. Rules 27: the cooldown refills up to the biggest stack held this run (sim.js abilCap). `from`: the wave an ability comes online, so a new player meets them one at a time
 const ABILITIES = {
   strike: { name: 'Orbital Strike', key: 'ORB', short: 'Strike', desc: 'Tap a target to deal heavy area damage.', target: 1, cd: 45, from: 1 },
   nova: { name: 'Entropy Nova', key: 'NOV', short: 'Nova', desc: 'All enemies lose 35% HP (Bosses 10%).', cd: 210, from: 12 },
@@ -3637,6 +3638,9 @@ const masteryRank = k => (G && G.mastery && G.mastery[k]) || 0;
 const abilOnline = k => !!(G.abilOn && G.abilOn[k]);
 function abilPool() { const L = ABIL_ORDER.filter(abilOnline); return L.length ? L : ['strike']; }
 function abilSlots() { return 1 + (G.mods.abilSlots || 0); }
+// rules 27 (Nic, Nov 22: "if I have 5 strike missiles the 5th should recharge back to 5"): an ability recharges up to the biggest stack
+// held this run (G.abilTop), not only into its slots. Before, a banked stack froze the cooldown until it was spent down to the slots.
+function abilCap(k) { return G.frV >= 27 ? Math.max(abilSlots(), (G.abilTop && G.abilTop[k]) || 0) : abilSlots(); }
 function uplinkHas(id) { const m = UPLINK.mods.find(x => x.id === id); return !!(m && G.core && (G.core.uLvl || 0) >= m.lv); }
 function abilCdMax(k) { return ABILITIES[k].cd * G.mods.abilCharge * (1 - UPLINK.cd / 100 * ((G.core && G.core.uLvl) || 0)); }
 // a charge from a crate, chest, boss or milestone (Quartermaster doubles it). Returns the ability it went to
@@ -3654,7 +3658,8 @@ function updateAbils(dt) {
   for (const k of ABIL_ORDER) {
     if (!abilOnline(k)) continue;
     const mx = abilCdMax(k);
-    if ((G.charges[k] || 0) >= slots) { G.abilCd[k] = mx; continue; }
+    if (G.frV >= 27) { const T = G.abilTop || (G.abilTop = {}); if ((G.charges[k] || 0) > (T[k] || 0)) T[k] = G.charges[k]; }
+    if ((G.charges[k] || 0) >= (G.frV >= 27 ? abilCap(k) : slots)) { G.abilCd[k] = mx; continue; }
     if (G.abilCd[k] === undefined || G.abilCd[k] > mx) G.abilCd[k] = mx;
     G.abilCd[k] -= dt * (G.bossAlive && TLR('xCharge') ? TLAST.xCharge.boss : 1); // rules 18 Telemetry last rank
     if (G.abilCd[k] <= 0) { G.charges[k] = (G.charges[k] || 0) + 1; G.abilCd[k] = mx; Hooks.abilReady && Hooks.abilReady(k); }
@@ -9248,7 +9253,7 @@ function snapshotRun(waveNum) {
     xpEarned: Math.round(G.xpEarned), kills: G.kills, time: Math.round(G.time), tiles: G.map.tiles.slice(), lanes: G.map.lanes.map(l => l.tiles), laneMeta: G.map.lanes.map(l => [l.openWave || 0, l.branch || 0]),
     core: { hp: G.core.hp, wLvl: G.core.wLvl, sLvl: G.core.sLvl, uLvl: G.core.uLvl || 0, hLvl: G.core.hLvl || 0, el: G.core.el, hpBonus: G.core.hpBonus || 0, affixes: G.core.affixes, rerolls: G.core.rerolls || 0 }, towers: tw, odUsed: G.odUsed || 0, odToldAt: G.odToldAt || 0,
     anchor: G.anchor, relocUsed: G.relocUsed || 0, nodes: G.nodes, power: G.power || 0, goldAt: G.goldAt || 0, wanted: G.wanted || null, market: G.market || null, runUnlocks: G.runUnlocks || [], bossBribe: G.bossBribe || 0, placing: G.placing || null, placingRefund: G.placingRefund || 0, gridBonus: G.gridBonus || 0, bossHist: G.bossHist || {}, bossRecent: G.bossRecent || [], rlog: (G.rlog || []).slice(-1500), reactorN: G.reactorN || 0, strainN: G.strainN || {}, preAdapted: G.preAdapted || null, geneFit: G.geneFit || {}, geneExp: G.geneExp || {}, geneTold: G.geneTold || {}, assault: G.assault || null, assaultNext: G.assaultNext == null ? null : G.assaultNext, refit: !!G.refit, intel: G.intel || null,
-    charges: Object.assign({}, G.charges), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
+    charges: Object.assign({}, G.charges), abilTop: Object.assign({}, G.abilTop || {}), abilCd: Object.assign({}, G.abilCd || {}), abilOn: Object.assign({}, G.abilOn || {}), runMods: Object.assign({}, G.runMods), tokens: G.tokens, legendQueue: G.legendQueue,
     rerollDisc: G.rerollDisc, dd: G.dd || 0, ddN: Object.assign({}, G.ddN || {}), nextMs: G.nextMs, lanesOpened: G.lanesOpened, unbreakUsed: G.unbreakUsed, cpDue: G.cpDue || 0, boonsTaken: G.boonsTaken,
     pushes: G.pushes || 0, bounties: G.bounties || [], huntChoice: G.huntChoice || null, nemesis: G.nemesis || null, extracted: G.extracted || 0,
     hk: G.hk || 0, sector: G.sector || null, tier: G.tier || 0, purse: G.purse || 0, xpRaw: G.xpRaw || 0, twists: Object.assign({}, G.twists || {}), twistW: G.twistW || 0, draft: G.draft || null,
@@ -9303,7 +9308,7 @@ function resumeRun(S) {
   // a wave saved mid-fight replays from its start, so a live assault goes back to its announced state and the replay converts the wave again
   if (G.assault && G.assault.state === 'live' && G.assault.w === S.wave) Object.assign(G.assault, { state: 'warn', n: 0, killed: 0, leaked: 0 });
   G.core.wLvl = S.core.wLvl; G.core.sLvl = S.core.sLvl; G.core.uLvl = S.core.uLvl || 0; G.core.hLvl = S.core.hLvl || 0;
-  G.abilCd = Object.assign({}, S.abilCd || {}); G.abilOn = Object.assign({ strike: 1 }, S.abilOn || {}); for (const k of ABIL_ORDER) G.charges[k] = G.charges[k] || 0; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
+  G.abilCd = Object.assign({}, S.abilCd || {}); G.abilTop = Object.assign({}, S.abilTop || {}); G.abilOn = Object.assign({ strike: 1 }, S.abilOn || {}); for (const k of ABIL_ORDER) G.charges[k] = G.charges[k] || 0; G.core.el = S.core.el; G.core.hpBonus = S.core.hpBonus;
   G.core.affixes = (S.core.affixes || []).slice(); G.core.rerolls = S.core.rerolls || 0; G.odUsed = S.odUsed || 0; G.odToldAt = S.odToldAt || 0; coreAffSum(G.core);
   recomputeAll();
   G.core.hp = Math.min(G.core.max, S.core.hp); G.core.shield = G.core.smax;
@@ -18030,7 +18035,7 @@ const UI = (() => {
       let db = btn.querySelector('.dur'); if (!db) { db = document.createElement('i'); db.className = 'dur'; btn.appendChild(db); }
       db.style.width = left > 0 ? pct(clamp(left / mxl, 0, 1)) : '0%';
       btn.classList.toggle('locked', !on); btn.classList.toggle('empty', on && n <= 0); btn.classList.toggle('ghost', !!G.fresh && !on);
-      const mx = on ? abilCdMax(k) : 1, cd = G.abilCd ? G.abilCd[k] : 0, filling = on && n < slots && cd > 0;
+      const mx = on ? abilCdMax(k) : 1, cd = G.abilCd ? G.abilCd[k] : 0, filling = on && n < abilCap(k) && cd > 0; // rules 27: it also refills a banked stack
       btn.querySelector('.cdf').style.width = filling ? pct(clamp(1 - cd / mx, 0, 1)) : '0%';
       // 6.14 Cooldown Sweep: --fd is how far the sweep has cleared; .cdt shows the seconds left while it recharges
       { const fd = filling ? (clamp(1 - cd / mx, 0, 1) * 100).toFixed(1) + '%' : '0%'; if (btn.style.getPropertyValue('--fd') !== fd) btn.style.setProperty('--fd', fd);
