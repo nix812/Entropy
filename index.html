@@ -231,6 +231,8 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .nreq i { font-style: normal; display: grid; place-items: center; width: 18px; height: 18px; background: var(--c); color: #0b0d1a; font-weight: 700; } .nreq small { color: #a9a7c4; font-size: 12px; }
 .nreq.ok { --c: #59f0b4; } .nreq.no { --c: #ff8a9c; }
 .nfoot .btn { flex: none; min-width: 120px; }
+.nhint { flex: 1; min-width: 0; text-align: right; font-family: var(--f-term); font-size: 15px; color: #a9a7c4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nova-card .ncards { margin-bottom: 0; }
 @media (max-width: 700px) { .ncols { grid-template-columns: 1fr; } .nsteps span:not(.on) { display: none; } }
 .nkeep { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; font-family: var(--f-term); font-size: 16px; margin: 8px 0; }
 .nkeep b { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 3px; }
@@ -1796,7 +1798,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.18.1';
+const VERSION = '6.18.2';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -20879,12 +20881,12 @@ const UI = (() => {
     } else if (F.step === 1) {
       body = `<div class="lbl">Choose a Remnant</div><p class="note">It stays active in every galaxy from now on, without a Capstone slot or points.</p>
         <div class="ncards">${rems.length ? rems.map(r => { const T = TAL[r], tr = TREE_BY_ID[T.tree]; return `<button class="ncard ${F.remnant === r ? 'on' : ''}" style="--c:${tr.col}" data-act="novaR" data-v="${r}"><b>${esc(T.name)}</b><small>${esc(tr.name)}</small>${talentLines(T).map(l => `<span>${esc(l)}</span>`).join('')}</button>`; }).join('') : '<p class="note">Every Capstone you hold is already a Remnant.</p>'}</div>
-        <div class="ta"><button class="btn" data-act="novaBack">Back</button><button class="btn primary" data-act="novaNext" ${F.remnant || !rems.length ? '' : 'disabled'}>Next</button></div>`;
+        <div class="nfoot"><button class="btn" data-act="novaBack">Back</button><span class="nhint">${F.remnant ? 'Remnant: ' + esc(TAL[F.remnant].name) : rems.length ? 'Tap a Capstone to keep it' : ''}</span><button class="btn primary" data-act="novaNext" ${F.remnant || !rems.length ? '' : 'disabled'}>Next</button></div>`; // 6.18.2: one footer row, Back on the left, the main button on the right (the two were stacked on the left)
     } else if (F.step === 2) {
       const offers = novaOffers();
       body = `<div class="lbl">Choose a Cosmic Law</div><p class="note">It applies to every run in your new galaxy, and all future ones.</p>
         <div class="ncards">${offers.length ? offers.map(id => { const L = LAWS.find(x => x.id === id); return `<button class="ncard ${F.law === id ? 'on' : ''}" style="--c:#ff9adf" data-act="novaL" data-v="${id}"><b>${esc(L.name)}</b><span class="good">${tipify(L.up)}</span><span class="bad">${tipify(L.down)}</span><small>+${Math.round(LAW_SCORE * 100)}% score</small></button>`; }).join('') : '<p class="note">You already live under every law.</p>'}</div>
-        <div class="ta"><button class="btn" data-act="novaBack">Back</button><button class="btn primary" data-act="novaGo" ${F.law || !offers.length ? '' : 'disabled'}>Collapse the galaxy</button></div>`;
+        <div class="nfoot"><button class="btn" data-act="novaBack">Back</button><span class="nhint">${F.law ? 'Law: ' + esc((LAWS.find(x => x.id === F.law) || {}).name || '') : offers.length ? 'Tap a law to choose it' : ''}</span><button class="btn primary" data-act="novaGo" ${F.law || !offers.length ? '' : 'disabled'}>Collapse the galaxy</button></div>`;
     }
     modal(`<div class="card nova-card">${head}${body}</div>`, 'nova');
   }
