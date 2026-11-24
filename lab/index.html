@@ -1710,7 +1710,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.18.1 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.18.1 + 6.18.1 JOURNEY 1';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -10619,7 +10619,7 @@ const SFX = (() => {
     const NOUN = ['Orbit', 'Harbor', 'Signal', 'Comet', 'Lantern', 'Tide', 'Nebula', 'Circuit', 'Garden', 'Satellite', 'Echo', 'Horizon', 'Engine', 'Reef', 'Window', 'Arcade', 'Moth', 'Wavelength', 'Meadow', 'Relay', 'Aurora', 'Kettle', 'Highway', 'Lighthouse', 'Sunday', 'Pixel', 'Station', 'Current', 'Afterglow', 'Cassette', 'Skyline', 'Ferry', 'Tower', 'Corridor', 'Bloom', 'Transit'];
     // the Studio settings (Default mode ignores everything except the calm genres' tempo scale)
     const DEF_BPM = {}; for (const g of GENRE_IDS) DEF_BPM[g] = GENRES[g].bpm[1];
-    const DEF = { custom: false, length: 'standard', genres: ['ambient', 'lofi', 'downtempo'], energy: 0.4, follow: 1, bpm: DEF_BPM, mix: { pads: 1, keys: 1, arp: 1, bass: 1, drums: 1, lead: 1 },
+    const DEF = { custom: false, journey: true, length: 'standard', genres: ['ambient', 'lofi', 'downtempo'], energy: 0.4, follow: 1, bpm: DEF_BPM, mix: { pads: 1, keys: 1, arp: 1, bass: 1, drums: 1, lead: 1 },
       mute: {}, fx: { reverb: 0.5, echo: 0.5, tone: 0.5, tape: 0, pump: 0.5 }, favs: [], favOnly: false, calmBpm: 72, bossThemes: true, tape0: 1 }; // 6.5.2: Tape & Vinyl off by default (Nic)
     const CHN = ['pads', 'keys', 'arp', 'bass', 'drums', 'lead'];
     let cfg = JSON.parse(JSON.stringify(DEF));
@@ -10636,9 +10636,21 @@ const SFX = (() => {
     const fxK = (x, def, span) => Math.max(0, x <= 0.5 ? def * x * 2 : def + (x - 0.5) * 2 * span);
 
     // ---------------- choosing a piece ----------------
+    // 6.19 Journey (Nic, Nov 24: "after a while the music sounds similar a lot of the time... I just don't want it to become monotonous
+    // drone"). The default mix was three slow genres, 12 of the 40 styles. Journey draws from all ten: each genre has a home energy
+    // (JOURNEY), and the field's energy at the moment a song starts picks among the genres near it. The last three genres played sit
+    // out, so a quiet stretch still walks through Ambient, Lo-fi, Dub and Trip Hop, and a hard fight reaches House, Trance, Techno
+    // and Drum & Bass. A genre far from the field keeps a small chance (0.04), for a surprise now and then.
+    const JOURNEY = { ambient: 0.12, lofi: 0.3, dub: 0.36, downtempo: 0.45, synthwave: 0.56, chiptune: 0.62, house: 0.68, trance: 0.77, techno: 0.82, dnb: 0.92 };
+    let jHist = [];
+    function journeyGenre(E0) { const E = E0 === undefined ? effE() : E0, ids = Object.keys(JOURNEY).filter(g => GENRES[g] && !jHist.includes(g));
+      const w = ids.map(g => 0.04 + Math.pow(Math.max(0, 1 - Math.abs(E - JOURNEY[g]) / 0.4), 2));
+      let t = 0; for (const x of w) t += x; let r = Math.random() * t, out = ids[0]; for (let i = 0; i < ids.length; i++) { r -= w[i]; if (r <= 0) { out = ids[i]; break; } }
+      return out; }
     function chooseGenre() {
-      const g = live().genres.filter(x => GENRES[x]); if (!g.length) return 'lofi';
       if (!cfg.custom && mood === 'boss') return 'downtempo';
+      if (live().journey) return journeyGenre();
+      const g = live().genres.filter(x => GENRES[x]); if (!g.length) return 'lofi';
       const pool = g.length > 1 ? g.filter(x => x !== lastG) : g; return pool[Math.floor(Math.random() * pool.length)];
     }
     function chooseFlavour(g) {
@@ -10672,7 +10684,7 @@ const SFX = (() => {
       let root = S.keyR[0] + Math.floor(R() * (S.keyR[1] - S.keyR[0] + 1)); let name = pick(ADJ) + ' ' + pick(NOUN);
       if (vv) root = Math.round((S.keyR[0] + S.keyR[1]) / 2) - 5 + vv.keyOff; // v2: any of the 12 keys, centred on the genre's register
       if (force && force.name) name = String(force.name).slice(0, 32); // renamed or composed tracks keep their own name
-      lastG = g; lastF = f;
+      lastG = g; lastF = f; if (JOURNEY[g] !== undefined && !(force && force.seed !== undefined)) { jHist = jHist.filter(x => x !== g); jHist.push(g); if (jHist.length > 3) jHist.shift(); }
       P = { g, f, S, G0, seed, name, mode, scale: MODES[mode], loop, root, bar: 0,
         swing: S.swing, motifs: null, bassPat: null, keysPat: null, gatePat: pick(['xx.xx.x.xx.xx.x.', 'x.xxx.xxx.xxx.x.', 'xxx.xx.xxx.xx.x.', 'x.x.xx.xx.x.xx.x']),
         acc: [], lastChordV: null, form: makeForm(S.form), stabShape: pick([[0, 3, 7, 10], [0, 3, 7, 10, 14], [0, 3, 10, 14], [0, 7, 10, 15]]), drop: {} };
@@ -11471,7 +11483,7 @@ const SFX = (() => {
     // a saved track remembers the sound it was saved with; playing it brings that sound back
     function snapshot() { const c = live(); return { energy: c.energy, follow: c.follow, mix: Object.assign({}, c.mix), mute: Object.assign({}, c.mute || {}), fx: Object.assign({}, c.fx), bpm: cfg.custom && P ? c.bpm[P.g] : undefined }; }
     function loadSnd(sn, g) {
-      if (!cfg.custom) { const D = JSON.parse(JSON.stringify(DEF)); Object.assign(cfg, { genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx }); cfg.custom = true; }
+      if (!cfg.custom) { const D = JSON.parse(JSON.stringify(DEF)); Object.assign(cfg, { journey: true, genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx }); cfg.custom = true; }
       for (const k of ['energy', 'follow']) if (typeof sn[k] === 'number') cfg[k] = Math.max(0, Math.min(1, sn[k]));
       if (sn.mix) Object.assign(cfg.mix, sn.mix); if (sn.fx) Object.assign(cfg.fx, sn.fx); cfg.mute = Object.assign({}, sn.mute || {});
       if (sn.bpm && g) cfg.bpm[g] = sn.bpm;
@@ -11495,6 +11507,7 @@ const SFX = (() => {
     const flavName = (g, f) => GENRES[g] && GENRES[g].flavours[f] ? GENRES[g].flavours[f].name : '';
     const API = {
       start, schedule, GENRES, GENRE_IDS, CHN, DEF, flavName,
+      _journey(E) { const g = journeyGenre(E); jHist = jHist.filter(x => x !== g); jHist.push(g); if (jHist.length > 3) jHist.shift(); return g; }, // tests: one Journey pick at field energy E
       setIntensity(v) { targetB = clamp(v, 0, 1); },
       setScene(s) { scene = s; },
       setMood(m) { mood = m; },
@@ -20232,13 +20245,14 @@ const UI = (() => {
   let studioRaf = 0, studioBack = null, stTab = 'listen', stEdit = -1, stDelArm = -1, stPaste = false, stGrid = 'drums', stTaps = [], stSig = '', stStep = -1, stSnd = -1, stInCompose = false, stRadio = null, stOverArm = false;
   const ST_FX = [['reverb', 'Reverb'], ['echo', 'Echo'], ['tone', 'Tone'], ['tape', 'Tape & Vinyl'], ['pump', 'Pump']];
   const ST_CH = [['pads', 'Pads'], ['keys', 'Keys'], ['arp', 'Arps'], ['bass', 'Bass'], ['drums', 'Drums'], ['lead', 'Lead']];
-  const ST_VIBES = [['calm', 'Calm', ['ambient', 'lofi', 'downtempo']], ['club', 'Club', ['house', 'techno', 'trance', 'dnb']], ['retro', 'Retro', ['synthwave', 'chiptune']], ['all', 'Everything', null]];
+  const ST_VIBES = [['journey', 'Journey', null], ['calm', 'Calm', ['ambient', 'lofi', 'downtempo']], ['club', 'Club', ['house', 'techno', 'trance', 'dnb']], ['retro', 'Retro', ['synthwave', 'chiptune']], ['all', 'Everything', null]];
   const energyWord = v => v < 0.15 ? 'Still' : v < 0.4 ? 'Chill' : v < 0.7 ? 'Groove' : 'Peak';
   const fxWord = v => v < 0.02 ? 'Off' : Math.abs(v - 0.5) < 0.03 ? 'Genre' : (v < 0.5 ? '−' : '+') + Math.round(Math.abs(v - 0.5) * 200) + '%';
   const studioCfg = () => SFX.music.config;
-  function studioTouch() { const c = studioCfg(); if (!c.custom) { const D = JSON.parse(JSON.stringify(SFX.music.DEF)); Object.assign(c, { genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx, favOnly: false }); c.custom = true; SFX.music.apply(); } }
+  function studioTouch() { const c = studioCfg(); if (!c.custom) { const D = JSON.parse(JSON.stringify(SFX.music.DEF)); Object.assign(c, { journey: true, genres: D.genres, energy: D.energy, follow: D.follow, mix: D.mix, mute: {}, fx: D.fx, favOnly: false }); c.custom = true; SFX.music.apply(); } } // 6.19: a first touch keeps Journey on, so moving a slider does not shrink the mix to three genres
   function studioSave() { PROF.settings.studio = studioCfg(); Save.save(); }
-  const stGenres = () => { const c = studioCfg(); return c.custom ? c.genres : SFX.music.DEF.genres; };
+  const stJourney = () => { const c = studioCfg(); return c.custom ? !!c.journey : true; }; // 6.19: Journey plays all ten genres, picked by the battle
+  const stGenres = () => { const c = studioCfg(); return stJourney() ? SFX.music.GENRE_IDS : c.custom ? c.genres : SFX.music.DEF.genres; };
   const sameSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
   // ---- track share codes: TRACK1 (deflate-raw) or TRACK0 (plain), base64 JSON of the track ----
   async function trackCode(f) {
@@ -20276,7 +20290,7 @@ const UI = (() => {
   // ---- Listen ----
   function stListenHTML() {
     const M = SFX.music, c = studioCfg(), G5 = M.GENRES, sel = stGenres(), p = M.piece || {}, tg = p.genre && G5[p.genre] ? p.genre : 'lofi';
-    const vibeOn = v => v[2] ? sameSet(sel, v[2]) && (v[0] !== 'calm' || true) : M.GENRE_IDS.every(g => sel.includes(g));
+    const vibeOn = v => v[0] === 'journey' ? stJourney() : stJourney() ? false : v[2] ? sameSet(sel, v[2]) : M.GENRE_IDS.every(g => sel.includes(g));
     const favs = c.favs.map((f, i) => {
       const G0 = G5[f.genre] || G5.lofi, sub = f.boss && M.BOSS_THEMES[f.boss] ? `Boss theme · ${M.BOSS_THEMES[f.boss].name}` : `${G0.short || G0.name} · ${M.flavName(f.genre, f.flav)}${f.comp ? ' · composed' : ''}`;
       const nm = stEdit === i ? `<input class="stren" id="stRenIn" data-i="${i}" maxlength="24" value="${esc(f.name)}" aria-label="Track name">` : `<button class="stnm" data-act="stRen" data-v="${i}" aria-label="Rename"><b>${esc(f.name)}</b></button>`;
@@ -20451,7 +20465,7 @@ const UI = (() => {
       ['Repeat', 'This song plays again when it ends instead of moving on. Lasts until you close the game.'],
       ['Keep (the heart)', 'Adds the song to My Tracks with your current sound. Tap again to take it out.'],
       ['Share', 'Copies a track code for the song playing.'],
-      ['Vibe', 'Sets the genre list in one tap. Calm: Ambient, Lo-fi, Trip Hop. Club: House, Techno, Trance, Drum & Bass. Retro: Synthwave, Chiptune. Everything: all ten.'],
+      ['Vibe', 'Sets the genre list in one tap. Journey: all ten genres, picked to match the battle. A quiet field gets the slow genres, a hard fight the fast ones, and no genre comes back until three others have played. Calm: Ambient, Lo-fi, Trip Hop. Club: House, Techno, Trance, Drum & Bass. Retro: Synthwave, Chiptune. Everything: all ten.'],
       ['Genres', 'Tap one to add it to the rotation or take it out (one always stays on). A genre you add plays at once. Its play button plays one song of that genre now without changing the list.'],
       ['My Tracks', 'Every song you keep. The play button plays it, the pencil opens a composed song in Compose, share copies its code, ✕ deletes it (tap twice). Tap a name to rename it.'],
       ['Only my tracks', 'The radio plays your kept songs in turn instead of new ones.'],
@@ -20464,7 +20478,7 @@ const UI = (() => {
       ['Likes keep the sound', 'Keeping a song also stores your sound: Energy, Follow, the mixer, mutes, effects and that genre’s tempo. Playing it brings that sound back, so your Shape sliders move to match.'],
       ['Likes on the battlefield', 'The heart on the Music deck (tap the Music tile at the top of the left rail) keeps the song playing into the same My Tracks list.'],
       ['Build a playlist', 'Keep songs as they come up, rename and delete to taste, then turn on Only my tracks. My Tracks holds 80; past that the oldest drops off.'],
-      ['Default mix', 'Until you change something, the Studio plays the default mix: the Calm genres, steered by the battle, at the tempo in Settings › Sound. Your first change switches to your own settings. Shape › Reset sound goes back.'],
+      ['Default mix', 'Until you change something, the Studio plays the default mix: the Journey vibe, all ten genres steered by the battle, at the tempo in Settings › Sound. Your first change switches to your own settings. Shape › Reset sound goes back.'],
       ['Boss fights', 'With Play in boss fights on, the theme of the first boss on the field plays. A new boss phase moves the theme to its Final section, 1 semitone higher. After the kill, your song continues from the section it was in. If it was near its end, a new song starts.'],
       ['Boss fights, switch off', 'During a boss, new songs avoid major keys. The default mix also switches to Trip Hop.'],
       ['Keep a boss theme', 'The heart works on a boss theme too. The theme then plays in My Tracks like any song. In Compose, boss themes do not stop your song.'],
@@ -20623,12 +20637,12 @@ const UI = (() => {
       case 'stHelpTab': stHelp = b.dataset.v; SFX.play('ui'); openStudio(); return true;
       case 'stHelpX': stHelp = null; SFX.play('ui'); openStudio(); return true;
       case 'stVibe': {
-        studioTouch(); const v = ST_VIBES.find(x => x[0] === b.dataset.v); c.genres = (v[2] || M.GENRE_IDS).slice(); c.favOnly = false;
-        M.apply(); studioSave(); if (M.piece && !c.genres.includes(M.piece.genre)) stPlayNow(); openStudio(); return true;
+        studioTouch(); const v = ST_VIBES.find(x => x[0] === b.dataset.v); c.journey = v[0] === 'journey'; if (!c.journey) c.genres = (v[2] || M.GENRE_IDS).slice(); c.favOnly = false;
+        M.apply(); studioSave(); if (!c.journey && M.piece && !c.genres.includes(M.piece.genre)) stPlayNow(); openStudio(); return true;
       }
       case 'stGenre': {
         studioTouch();
-        const g = b.dataset.v;
+        const g = b.dataset.v; if (c.journey) { c.journey = false; c.genres = M.GENRE_IDS.slice(); } // leaving Journey: start from all ten, then this tap removes one
         if (c.genres.includes(g)) { if (c.genres.length > 1) c.genres = c.genres.filter(x => x !== g); }
         else c.genres = c.genres.concat([g]);
         M.apply(); studioSave();
@@ -21932,7 +21946,7 @@ window.__errN = 0;
     function check() {
       if (!SFX.health || document.hidden) return;
       const h = SFX.health(); if (h.st === 'none') return;
-      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { vp: UI.vpDiag ? UI.vpDiag() : 0, sa: navigator.standalone ? 1 : 0, ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
+      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { mus: (c0 => !c0.custom ? 'default' : c0.journey ? 'journey' : (c0.genres || []).join('+'))(SFX.music.config || {}), vp: UI.vpDiag ? UI.vpDiag() : 0, sa: navigator.standalone ? 1 : 0, ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
       if (!on()) return;
       const w = performance.now() / 1000;
       if (lastCt >= 0) {
