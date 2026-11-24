@@ -209,6 +209,29 @@ h2 { font-family: var(--f-pix); font-weight: 700; font-size: 15px; letter-spacin
 .ncard b { font-family: var(--f-pix); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c, #fff); }
 .ncard .good { color: #59f0b4; } .ncard .bad { color: #ff8a9c; } .ncard small { color: #a9a7c4; font-size: 14px; }
 .ncard.on { box-shadow: inset 0 0 0 2px var(--c, #fff); background: rgba(40, 34, 70, 0.96); }
+/* 6.18.1: the Supernova card. Steps in the header, three panels, requirement chips beside the button. */
+.nova-card .ch { align-items: center; gap: 12px; } .nova-card .ch h2 { flex: none; }
+.nsteps { flex: 1; display: flex; gap: 6px; justify-content: center; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: #6f7096; min-width: 0; }
+.nsteps span { display: flex; align-items: center; gap: 5px; padding: 3px 8px 3px 3px; box-shadow: inset 0 0 0 1px #2b3060; white-space: nowrap; }
+.nsteps i { font-style: normal; display: grid; place-items: center; width: 16px; height: 16px; background: #2b3060; color: #a9a7c4; }
+.nsteps .on { color: #ffd9f3; box-shadow: inset 0 0 0 1px #ff9adf; } .nsteps .on i { background: #ff9adf; color: #1a0f24; }
+.nsteps .done { color: #59f0b4; } .nsteps .done i { background: #1f6a52; color: #d9fff0; }
+.nlead { margin: 2px 0 10px; font-family: var(--f-term); font-size: 17px; line-height: 1.25; color: #c9c8e4; }
+.ncols { display: grid; grid-template-columns: 0.8fr 1fr 1.5fr; gap: 8px; }
+.ncol { background: rgba(21, 25, 51, 0.92); padding: 9px 11px 10px; box-shadow: inset 3px 0 0 var(--c), inset 0 0 0 1px rgba(255, 255, 255, 0.05); font-family: var(--f-term); font-size: 15px; line-height: 1.25; min-width: 0; }
+.ncol.lose { --c: #ff8a9c; } .ncol.hold { --c: #8f95d6; } .ncol.gain { --c: #59f0b4; }
+.ncol > b { display: block; font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--c); margin-bottom: 6px; }
+.ncol ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; } .ncol li { color: #c9c8e4; }
+.ncol.lose li { color: #ffd3da; } .ncol em { font-style: normal; color: #eafff6; font-weight: 600; margin-right: 5px; }
+.ncol li.nemb { display: flex; align-items: center; gap: 8px; margin: 2px 0 0; } .ncol li.nemb .rsw { flex: 0 0 30px; width: 30px; height: 30px; line-height: 30px; font-size: 14px; }
+.nhave { margin: 8px 0 0; } .nhave b { font-family: var(--f-pix); font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em; color: #8f95d6; margin-right: 6px; }
+.nfoot { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #2b3060; }
+.nreqs { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.nreq { display: flex; align-items: center; gap: 6px; padding: 5px 9px 5px 5px; font-family: var(--f-term); font-size: 14px; background: rgba(21, 25, 51, 0.92); box-shadow: inset 0 0 0 1px var(--c); color: #dfe0f5; }
+.nreq i { font-style: normal; display: grid; place-items: center; width: 18px; height: 18px; background: var(--c); color: #0b0d1a; font-weight: 700; } .nreq small { color: #a9a7c4; font-size: 12px; }
+.nreq.ok { --c: #59f0b4; } .nreq.no { --c: #ff8a9c; }
+.nfoot .btn { flex: none; min-width: 120px; }
+@media (max-width: 700px) { .ncols { grid-template-columns: 1fr; } .nsteps span:not(.on) { display: none; } }
 .nkeep { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; font-family: var(--f-term); font-size: 16px; margin: 8px 0; }
 .nkeep b { font-family: var(--f-pix); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 3px; }
 .nkeep .lose b { color: #ff8a9c; } .nkeep .keep b { color: #59f0b4; }
@@ -1773,7 +1796,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.18.0';
+const VERSION = '6.18.1';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -20835,18 +20858,24 @@ const UI = (() => {
   function openNova() {
     const F = novaFlow, nv = PROF.nova || 0, ready = novaReady(), done = capsHeld();
     const rems = done.filter(r => !PROF.remnants.includes(r));
-    const head = `<div class="ch"><h2>Supernova${nv ? ' ' + roman(nv + 1) : ''}</h2><button class="x" data-act="close">✕</button></div>`;
+    // 6.18.1 (Nic, Nov 24: "The super nova card... is weak and unorganized. Polish it up"): the three steps show in the header; the first
+    // step is three panels (give up, keep, gain) and a footer with the requirements as chips beside the button
+    const stepsHTML = `<div class="nsteps">${['Overview', 'Remnant', 'Cosmic Law'].map((n, i) => `<span class="${i === F.step ? 'on' : i < F.step ? 'done' : ''}"><i>${i + 1}</i>${n}</span>`).join('')}</div>`;
+    const head = `<div class="ch"><h2>Supernova${nv ? ' ' + roman(nv + 1) : ''}</h2>${stepsHTML}<button class="x" data-act="close">✕</button></div>`;
     let body = '';
     if (F.step === 0) {
-      const lawsHave = PROF.laws.map(id => LAWS.find(L => L.id === id)).filter(Boolean);
-      body = `<p class="note">Collapse your galaxy and start a new one. It's harder, it's stranger, and it's worth more.</p>
-        <div class="nkeep"><div class="lose"><b>Reset</b>Level and XP<br>Talents and Capstones</div>
-        <div class="keep"><b>Keep and gain</b>One Remnant: a Capstone you hold, active forever without a slot or points<br>One Cosmic Law: +${Math.round(LAW_SCORE * 100)}% score, changes the rules<br>+${Math.round(NOVA_SCORE * 100)}% score and +${Math.round(NOVA_XP * 100)}% XP per Supernova</div></div>
-        <div class="nemb"><i class="rsw q">?</i><span class="note">A new Supernova emblem waits${nv + 1 <= NOVA_LIGHT.max / NOVA_LIGHT.per ? `. Your core's light: +${NOVA_LIGHT.per} tile` : ''}${CORE_FIRES.some(F => F.nova === nv + 1) ? ', and a new color for it' : ''}.</span></div>
-        ${PROF.remnants.length ? `<div class="lbl">Your Remnants</div><p class="note">${PROF.remnants.map(r => esc(TAL[r] ? TAL[r].name : 'Old web: ' + (TALENTS[+r.slice(1)] || {}).name)).join(' · ')}</p>` : ''}
-        ${lawsHave.length ? `<div class="lbl">Your Laws</div><p class="note">${lawsHave.map(L => esc(L.name)).join(' · ')}</p>` : ''}
-        <div class="lbl">Requirements</div><p class="note">${done.length >= 2 ? '✓' : '✗'} 2 Capstones (${done.length}) · ${profLevel().level >= novaLevelReq(nv) ? '✓' : '✗'} Level ${novaLevelReq(nv)} · ${PROF.runSnap ? '✗ Finish or abandon your saved run' : '✓ No run in progress'}</p>
-        <div class="ta"><button class="btn primary" data-act="novaNext" ${ready ? '' : 'disabled'}>${ready ? 'Begin' : 'Not ready yet'}</button></div>`;
+      const lawsHave = PROF.laws.map(id => LAWS.find(L => L.id === id)).filter(Boolean), lvOk = profLevel().level >= novaLevelReq(nv);
+      const light = nv + 1 <= NOVA_LIGHT.max / NOVA_LIGHT.per, fire = CORE_FIRES.some(F => F.nova === nv + 1);
+      const req = (ok, t) => `<span class="nreq ${ok ? 'ok' : 'no'}"><i>${ok ? '✓' : '✗'}</i>${t}</span>`;
+      body = `<p class="nlead">Collapse your galaxy and start a new one. It's harder, it's stranger, and it's worth more.</p>
+        <div class="ncols">
+          <div class="ncol lose"><b>You give up</b><ul><li>Level and XP</li><li>Talents and Capstones</li></ul></div>
+          <div class="ncol hold"><b>You keep</b><ul><li>Career rank and days served</li><li>Best wave, towers and Mastery</li><li>Remnants${PROF.remnants.length ? ` (${PROF.remnants.length})` : ''} and Cosmic Laws${lawsHave.length ? ` (${lawsHave.length})` : ''}</li><li>The Daily Hunt</li></ul></div>
+          <div class="ncol gain"><b>You gain</b><ul><li><em>1 Remnant</em> a Capstone you hold, active forever with no slot or points</li><li><em>1 Cosmic Law</em> +${Math.round(LAW_SCORE * 100)}% Score, and one rule changes</li><li><em>+${Math.round(NOVA_SCORE * 100)}% Score, +${Math.round(NOVA_XP * 100)}% XP</em> on every run</li>${light || fire ? `<li><em>Core light</em> ${[light ? `+${NOVA_LIGHT.per} tile` : '', fire ? 'a new color' : ''].filter(Boolean).join(', ')}</li>` : ''}<li class="nemb"><i class="rsw q">?</i><span><em>A new emblem</em> hidden until you earn it</span></li></ul></div>
+        </div>
+        ${PROF.remnants.length || lawsHave.length ? `<p class="note nhave">${PROF.remnants.length ? `<b>Your Remnants</b> ${PROF.remnants.map(r => esc(TAL[r] ? TAL[r].name : 'Old web: ' + (TALENTS[+r.slice(1)] || {}).name)).join(' · ')}` : ''}${PROF.remnants.length && lawsHave.length ? '<br>' : ''}${lawsHave.length ? `<b>Your Laws</b> ${lawsHave.map(L => esc(L.name)).join(' · ')}` : ''}</p>` : ''}
+        <div class="nfoot"><div class="nreqs">${req(done.length >= 2, `2 Capstones <small>${done.length} held</small>`)}${req(lvOk, `Level ${novaLevelReq(nv)}${lvOk ? '' : ` <small>you are ${profLevel().level}</small>`}`)}${req(!PROF.runSnap, PROF.runSnap ? 'Finish or abandon your saved run' : 'No run in progress')}</div>
+          <button class="btn primary" data-act="novaNext" ${ready ? '' : 'disabled'}>${ready ? 'Begin' : 'Not ready yet'}</button></div>`;
     } else if (F.step === 1) {
       body = `<div class="lbl">Choose a Remnant</div><p class="note">It stays active in every galaxy from now on, without a Capstone slot or points.</p>
         <div class="ncards">${rems.length ? rems.map(r => { const T = TAL[r], tr = TREE_BY_ID[T.tree]; return `<button class="ncard ${F.remnant === r ? 'on' : ''}" style="--c:${tr.col}" data-act="novaR" data-v="${r}"><b>${esc(T.name)}</b><small>${esc(tr.name)}</small>${talentLines(T).map(l => `<span>${esc(l)}</span>`).join('')}</button>`; }).join('') : '<p class="note">Every Capstone you hold is already a Remnant.</p>'}</div>
