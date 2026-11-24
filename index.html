@@ -1771,7 +1771,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.17.3';
+const VERSION = '6.17.4';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -4325,7 +4325,7 @@ function newRun(opts) {
     if (picks.length > 1) G.geneFit[geneKey(picks, el)] = { s: 2.4, n: 6 };
     G.preAdapted = picks.map(g => g === 'ward' ? (WARD_ADJ[el] || 'Ward') : GENES[g].name);
   }
-  G.rlog = [{ k: 'start', v: VERSION, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
+  G.rlog = [{ k: 'start', v: VERSION, rules: G.frV, w: G.wave, t: 0, chaos: G.chaos, sw: G.startWave, seed: G.seed, daily: G.daily || null, lvl: profLevel().level, pts: pointsSpent(),
     ks: activeCaps(), tal: Object.assign({}, TS().tal || {}), nova: PROF.nova || 0, map: [G.cols, ROWS], pre: G.preAdapted || null, ...(G.fr ? { fr: 1 } : {}), ...(G.capT.length ? { capT: G.capT.slice() } : {}) }]; // Frontier runs say so in the log; 6.4: the tier towers too
   return G;
 }
@@ -9286,7 +9286,7 @@ function resumeRun(S) {
   const ci = S.tiles.indexOf(4);
   if (ci >= 0) { G.map.core = { x: ci % COLS, y: (ci / COLS) | 0 }; G.core.x = G.map.core.x + 0.5; G.core.y = G.map.core.y + 0.5; }
   G.fullMap = !S.grow;
-  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.rlog = (S.rlog || []).slice(); G.rlog.push({ k: 'resume', w: S.wave, t: S.time }); G.reactorN = S.reactorN || 0; G.strainN = Object.assign({}, S.strainN || {}); G.preAdapted = S.preAdapted || null; G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {}); G.assault = S.assault ? JSON.parse(JSON.stringify(S.assault)) : null; G.assaultNext = S.assaultNext == null ? null : S.assaultNext; G.refit = !!S.refit; G.intel = S.intel ? JSON.parse(JSON.stringify(S.intel)) : null;
+  G.anchor = S.anchor || { x: G.map.core.x, y: G.map.core.y }; G.relocUsed = S.relocUsed || 0; G.power = S.power || 0; G.gridBonus = S.gridBonus || 0; G.bossHist = Object.assign({}, S.bossHist || {}); G.bossRecent = (S.bossRecent || []).slice(); G.rlog = (S.rlog || []).slice(); G.rlog.push({ k: 'resume', v: VERSION, rules: G.frV, w: S.wave, t: S.time }); G.reactorN = S.reactorN || 0; G.strainN = Object.assign({}, S.strainN || {}); G.preAdapted = S.preAdapted || null; G.geneFit = JSON.parse(JSON.stringify(S.geneFit || {})); G.geneExp = Object.assign({}, S.geneExp || {}); G.geneTold = Object.assign({}, S.geneTold || {}); G.assault = S.assault ? JSON.parse(JSON.stringify(S.assault)) : null; G.assaultNext = S.assaultNext == null ? null : S.assaultNext; G.refit = !!S.refit; G.intel = S.intel ? JSON.parse(JSON.stringify(S.intel)) : null;
   setNodes((S.nodes || []).slice()); G.caches = []; G.pirates = [];
   G.map.lanes = S.lanes.map((tp, i) => { const L = makeLane(tp, G.map.core); const m = (S.laneMeta || [])[i]; if (m) { L.openWave = m[0]; L.branch = m[1]; } return L; });
   G.towers = []; G.towerAt = {};
@@ -21187,7 +21187,7 @@ const UI = (() => {
     window.addEventListener('resize', heal);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', heal);
     window.addEventListener('orientationchange', () => { setTimeout(heal, 80); setTimeout(heal, 400); });
-    if (window.ResizeObserver) new ResizeObserver(() => heal()).observe($('#app')); // the browser tells us when the box it made changes
+    if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(heal)).observe($('#app')); // 6.17.4: on the next frame, so the browser does not report a "ResizeObserver loop" (Nic's log, Nov 23) // the browser tells us when the box it made changes
     fitVV();
     setInterval(heal, 1000); // and a check each second, in case nothing tells us
     for (const ev of ['pageshow', 'focus']) window.addEventListener(ev, () => { setTimeout(heal, 80); setTimeout(heal, 600); });
@@ -21799,7 +21799,7 @@ function talentsToast(kind) {
 // 'perf' line. An iPhone that runs out of canvas memory shows up here as "null is not an object" errors.
 const ARTMEM = () => { try { const a = ART.cacheStats(), t = Render.tintStats(); return [a.mb, t.mb, a.ev]; } catch (e) { return null; } };
 window.__errN = 0;
-{ const logErr = m => { window.__errN++; if (window.__errN <= 6) { try { rlog('err', { m: String(m).slice(0, 180), n: window.__errN }); } catch (e) {} } };
+{ const logErr = m => { if (/ResizeObserver loop/.test(String(m))) return; window.__errN++; if (window.__errN <= 6) { try { rlog('err', { m: String(m).slice(0, 180), n: window.__errN }); } catch (e) {} } };
   window.addEventListener('error', e => logErr((e && e.message) + (e && e.lineno ? ' @' + e.lineno + ':' + e.colno : '')));
   window.addEventListener('unhandledrejection', e => logErr('promise: ' + (e && e.reason && (e.reason.message || e.reason)))); }
   const AudWatch = (() => {
