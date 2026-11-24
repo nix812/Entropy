@@ -1687,7 +1687,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.17.6 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.17.6 + 6.17.6 MOTION 1';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -9733,7 +9733,7 @@ const SFX = (() => {
     shot2: 4.4, rail1: -1.8, rail2: -2, pulse1: -2.1, pulse2: 1.1, missile1: 0.3, missile2: -0.2, coil: 1.7, coil1: 1.1, coil2: -3.7, ignite: 5,
     mortar1: -2, mortar2: -1.1, grav1: -9.1, grav2: -8.5, hitK: 9.5, hitR: 2.3, hitC: 7.7, hitF: 3.4, hitV: 10.1, hitA: 10.9,
     boomT: -2, boomT2: -1.8, pop: 0.5, empboom: -2.7, empboom1: -2.6, lure: 2.8, lure2: 0.7, net1: -3.3, lock: 14.7, lock2: 14.7, forge: 1.2, forge1: 2.4, pylon: 11.7,
-    saw: 5.5, flashover: -6.5, rime: 1, squall: 6, aegis: 8.5, aegisblock: -3.5, joker: 10, // 6.4 (sfxrender: saw -26, Flashover -24, Aegis -30, Wildcard -28, a stop -22 dB)
+    saw: 5.5, flashover: -6.5, rime: 1, squall: 6, bossfall: -5, aegis: 8.5, aegisblock: -3.5, joker: 10, // 6.4 (sfxrender: saw -26, Flashover -24, Aegis -30, Wildcard -28, a stop -22 dB)
     comboSHATTER: -2.5, comboOVERLOAD: -5, 'comboTHERMAL SHOCK': -3, comboSUPERCONDUCT: 3, comboCOLLAPSE: -7 };
   const dB = v => Math.pow(10, v / 20);
   // start a sound: bus, base volume, pitch jitter (semitones), placement and sends
@@ -10107,6 +10107,9 @@ const SFX = (() => {
     pirate(p) { if (!allow('pirate', 2)) return; const c = ev('pirate', busE, 0.6, { room: 0.4 }, p); arp(c, [62, 67, 71, 74], 0.09, { w: 0.25, v: 0.08, d: 0.14, lp: 3000 }); tone(c, { w: 'sawtooth', f0: 98, f1: 104, d: 0.5, v: 0.07, lp: 800, a: 0.04 }); done(c); },
     overclock() { const c = ev('overclock', busE, 0.7, { room: 0.4, pan: 0 }); tone(c, { w: 'sawtooth', f0: 110, f1: 440, d: 0.5, v: 0.12, lp: 600, lp1: 4000, crush: 1 }); arp(c, [69, 76, 81, 88], 0.06, { v: 0.08, d: 0.1 }); done(c); },
     boss() { if (!allow('boss', 1)) return; duck(-9, 0.05, 1.4, 1.5, true); const c = ev('boss', busE, 0.9, { hall: 0.6, pan: 0 }); sub(c, 55, 30, 1.2, 0.7); tone(c, { w: 'sawtooth', f0: 55, f1: 58, d: 1.6, v: 0.12, lp: 300, lp1: 1600, a: 0.3 }); tone(c, { w: 'sawtooth', f0: 82.4, f1: 87, d: 1.6, v: 0.1, lp: 300, lp1: 1600, a: 0.3 }); fmv(c, { f0: 110, f1: 55, r: 4, i: 5, i1: 0.5, d: 1.4, v: 0.14 }); nz(c, { ft: 'lowpass', f0: 700, f1: 150, d: 1.2, v: 0.3 }); done(c); },
+    // 6.18: a boss breaking up before its blast (1.2 s): a rumble that climbs, a hiss that opens, cracks that come faster
+    bossfall(e) { duck(-5, 0.05, 1.1, 0.4, true); const c = ev('bossfall', busE, 0.7, { hall: 0.4 }, e); sub(c, 38, 105, 1.2, 0.5); nz(c, { ft: 'bandpass', f0: 300, f1: 3200, d: 1.2, v: 0.22, a: 0.9, q: 1.5 });
+      for (const [at, f] of [[0.05, 1400], [0.3, 1700], [0.52, 2000], [0.7, 2300], [0.84, 2600], [0.95, 2900], [1.04, 3200], [1.11, 3500]]) click(c, 0.3, at, f); done(c); },
     bossdie(e) { duck(-9, 0.02, 0.8, 1.4, true); const c = ev('bossdie', busE, 0.9, { hall: 0.6 }, e); click(c, 0.6, 0, 2000); sub(c, 90, 22, 1, 0.7); nz(c, { ft: 'lowpass', f0: 4000, f1: 120, d: 1, v: 0.55, lofi: 1 }); arp(c, [69, 72, 76, 81, 84, 88], 0.06, { v: 0.1, d: 0.35, bell: 1, at: 0.25 }); done(c); },
     gameover() { duck(-12, 0.1, 2, 2, true); const c = ev('gameover', busE, 0.9, { hall: 0.7, pan: 0 }); fmv(c, { f0: 400, f1: 18, r: 5, i: 6, i1: 0.8, d: 1.8, v: 0.25, mw: 'sawtooth' }); sub(c, 55, 18, 1.8, 0.6); arp(c, [69, 65, 62, 57], 0.3, { w: 'triangle', v: 0.14, d: 0.6 }); done(c); },
     // the oddballs keep their jokes, rebuilt with the new voices
@@ -13167,6 +13170,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   let rt = 0, kickT = -9, stars = [], drags = [], LITE = false;
   // 6.8 polish (render-only): white death pops, scorch marks, towers that drop in, and the frame's dt for eased bars
   let pops = [], decals = [], fdt = 0, scorch = null, dangerVg = null; const born = new Map();
+  let falls = []; const BOSS_FALL = 1.2; // 6.18: a boss that is dying (its body stays, shakes and cracks for BOSS_FALL seconds, then the blast)
   function scorchSprite() { if (scorch) return scorch; const q = document.createElement('canvas'); q.width = 28; q.height = 18; const g = q.getContext('2d');
     for (let y = 0; y < 18; y++) for (let x = 0; x < 28; x++) { const dx = (x - 13.5) / 14, dy = (y - 8.5) / 9, d = dx * dx + dy * dy; if (d > 1) continue;
       const dith = ((x + y) & 1) ? 0.12 : 0, a = d < 0.3 + dith ? 0.55 : d < 0.62 + dith ? 0.32 : ((x ^ y) & 1) ? 0.16 : 0; if (a) { g.fillStyle = `rgba(4,3,10,${a})`; g.fillRect(x, y, 1, 1); } }
@@ -14601,7 +14605,9 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   function drawEnemy(e) {
     const X = e.x * TILE, Y = e.y * TILE, st = e.st;
     const cloaked = e.cloaked && !(e.revealed > 0);
-    const bob = e.fly ? Math.round(Math.sin(frame / 6 + e.wob) * 1.5) : (e.boss ? 0 : (((frame >> 3) + ((e.wob * 10) | 0)) & 1) && !(e.st.frozen > 0) && !(e.st.stun > 0) ? -1 : 0);
+    // 6.18 motion pass: a ground unit's bob follows its steps (distance walked, e._wd), not a clock: a Chilled one trudges, a fast one
+    // scuttles, one that is held stands still. A boss stomps (a slower, heavier step). Fliers keep their hover.
+    const bob = e.fly ? Math.round(Math.sin(frame / 6 + e.wob) * 1.5) : ((Math.floor((e._wd || 0) * (e.boss ? 2.2 : 4.5) + e.wob) & 1) ? -1 : 0);
     const y = Y - (e.fly ? 7 : 0) + bob;
     let s;
     if (e.boss === 'worm') {
@@ -14616,7 +14622,10 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     // heading and gait: units face where they are going; legs cycle with distance walked, wings with time
     if (e._hx === undefined) { e._hx = e.x; e._hy = e.y; e._ha = e.L && e.L.pts && e.L.pts[1] ? Math.atan2(e.L.pts[1].y - e.L.pts[0].y, e.L.pts[1].x - e.L.pts[0].x) : 0; e._wd = 0; }
     { const mx = e.x - e._hx, my = e.y - e._hy, md = Math.hypot(mx, my);
-      if (md > 0.02) { const ta = Math.atan2(my, mx); let da = ta - e._ha; da = Math.atan2(Math.sin(da), Math.cos(da)); e._ha += da * Math.min(1, md * 6); e._wd += md; e._hx = e.x; e._hy = e.y; } }
+      // 6.18: one that is dragged or thrown back along its road (Gravity Well, a knockback) keeps facing forward instead of turning round
+      if (md > 0.02) { const back = e.d !== undefined && e._hd !== undefined && e.d < e._hd - 1e-4 && !e.fly; e._hd = e.d;
+        if (!back) { const ta = Math.atan2(my, mx); let da = ta - e._ha; da = Math.atan2(Math.sin(da), Math.cos(da)); e._ha += da * Math.min(1, md * 6); }
+        e._wd += back ? -md : md; e._hx = e.x; e._hy = e.y; } }
     let k = 1, hiS = null;
     if (e.pirate) hiS = UNITS.pirate(false);
     else if (!e.boss && !e.meat) hiS = UNITS.enemy(e.type, e._ha, e.fly ? (frame >> 2) + (e.wob * 4 | 0) : Math.floor(e._wd * 9), e.elite.length && !e.mite ? 1 : 0); // 6.16.1: an elite is the Overgrown form
@@ -14873,7 +14882,17 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   function panBy(dx, dy) { const ws = scale * cam.z; cam.x -= dx / ws; cam.y -= dy / ws; clampCam(); atHome = false; }
 
   // ---------- frame ----------
-  function draw(dt, fs) { // fs: animation steps this frame (6.6: 2 when the veiled field is drawn every other frame)
+  // 6.18 motion pass (Nic, Nov 24: "What can we do about all enemy movement animations?"). The sim steps 30 times a second and the
+  // screen draws 60: everything that moves held each position for two frames. Now a frame draws movers between their last two sim
+  // positions (UI.snapMotion stores the old one before every step, `lerpA` = how far into the next step this frame is). Render only:
+  // positions are swapped in for the draw and put back after, so the sim never sees them. A jump over 1.5 tiles (a wormhole, a blink)
+  // is not smoothed.
+  let lerpA = 1; const LQ = [];
+  function lerpOne(o) { if (!o || o._px === undefined) return; const dx = o.x - o._px, dy = o.y - o._py; if ((!dx && !dy) || dx * dx + dy * dy > 2.25) return; LQ.push(o, o.x, o.y); o.x = o._px + dx * lerpA; o.y = o._py + dy * lerpA; }
+  function lerpIn() { LQ.length = 0; if (!G || !(lerpA < 1)) return; for (const e of G.enemies) lerpOne(e); for (const p of G.projs) lerpOne(p); lerpOne(G.probe); lerpOne(G.core); }
+  function lerpOut() { for (let i = 0; i < LQ.length; i += 3) { LQ[i].x = LQ[i + 1]; LQ[i].y = LQ[i + 2]; } LQ.length = 0; }
+  function draw(dt, fs) { lerpIn(); try { drawWorld(dt, fs); } finally { lerpOut(); } }
+  function drawWorld(dt, fs) { // fs: animation steps this frame (6.6: 2 when the veiled field is drawn every other frame)
     if (insGlide) { if (!atHome) clampCam(); if (!insFrom) insGlide = false; } // the camera itself follows the easing pan limit, so the next drag starts from what is on screen
     frame += fs || 1; rt += dt; fdt = dt;
     ART.frameStart(); ART.idle(dt > 0 ? 3 : 1.5);
@@ -14930,6 +14949,11 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         R(b, s.x * TILE + Math.cos(an) * rr, s.y * TILE + Math.sin(an) * rr, 2, 2, hexA(s.mael ? (k % 2 ? '#b86cff' : '#ff4d6a') : col, 0.5 * (1 - k / 30)));
       }
       strokeRing(s.x * TILE, s.y * TILE, s.r * TILE, col, 0.35, 1, [2, 6]);
+      // 6.18 (Nic, Nov 24: "a small indicator around the perimeter of the storm to show how long is left... It will help decide probe
+      // routing"): a solid arc on the rim, full at the start, that runs down clockwise from the top. It blinks in the last 6 s.
+      if (s.life < 999) { const left = Math.max(0, 1 - s.age / s.life), secs = s.life - s.age;
+        if (left > 0 && (secs > 6 || (frame >> 3) & 1)) { b.strokeStyle = hexA(secs > 6 ? col : '#ffffff', 0.9); b.lineWidth = 2; b.beginPath(); b.arc(s.x * TILE, s.y * TILE, s.r * TILE + 2, -Math.PI / 2, -Math.PI / 2 + 6.2832 * left); b.stroke();
+          const ex = s.x * TILE + Math.cos(-Math.PI / 2 + 6.2832 * left) * (s.r * TILE + 2), ey = s.y * TILE + Math.sin(-Math.PI / 2 + 6.2832 * left) * (s.r * TILE + 2); R(b, ex - 1.5, ey - 1.5, 3, 3, '#ffffff'); } }
     }
     for (const z of G.zones) { ditherDisc(z.x * TILE, z.y * TILE, z.r * TILE, hexA('#ff7b39', 0.4), 2, frame % 2);
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
@@ -15087,6 +15111,17 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     if (G.frV >= 16) drawRemnantTells(); // 6.16 the Remnant's tells (front plate, siege laser, magnet field, adapted element, Warden links)
     for (const q of pops) { q.life -= dt; const k = 1 - Math.max(0, q.life / q.max), z = 1 + 0.45 * k, w = q.w * z, h = q.h * z; b.globalAlpha = (1 - k) * 0.9; b.drawImage(tintOf(q.s, '#ffffff'), Math.round((q.x - w / 2) * RES) / RES, Math.round((q.y - h / 2) * RES) / RES, w, h); }
     if (pops.length) { b.globalAlpha = 1; pops = pops.filter(q => q.life > 0); }
+    // 6.18: a dying boss. Its body stays for BOSS_FALL seconds: it shakes harder and harder, flickers white, and small blasts crack
+    // across it faster and faster. Then the big blast (bossBlast) and the body is gone.
+    for (const q of falls) { q.t -= dt; const k = 1 - Math.max(0, q.t / q.max), j = 1 + 3.5 * k, jx = (Math.random() - 0.5) * j, jy = (Math.random() - 0.5) * j * 0.6, z = 1 + 0.06 * k, w = q.w * z, h = q.h * z;
+      const px = Math.round((q.x + jx - w / 2) * RES) / RES, py = Math.round((q.y + jy - h / 2) * RES) / RES;
+      b.globalAlpha = 1; b.drawImage(q.s, px, py, w, h);
+      b.globalAlpha = Math.min(0.95, k * k * 0.9 + ((frame >> 1) & 1 ? 0.18 * k : 0)); b.drawImage(tintOf(q.s, '#ffffff'), px, py, w, h); b.globalAlpha = 1;
+      if (dt > 0 && k > q.nb * (0.2 - 0.012 * q.nb) && q.nb < 12) { q.nb++; const a = Math.random() * 6.283, rr = Math.random() * q.w * 0.38, bx = q.x + Math.cos(a) * rr, by = q.y + Math.sin(a) * rr * 0.7;
+        rings.push({ x: bx, y: by, r0: 2, r1: TILE * (0.45 + 0.5 * k), life: 0.28, max: 0.28, col: q.nb % 2 ? '#fff0c8' : q.col, fill: 1, w: 2 }); stars.push({ x: bx, y: by, life: 0.06, max: 0.06, col: '#ffffff', s: TILE * 0.35, disc: 1 });
+        if (!LITE) burst(bx, by, 6, q.nb % 2 ? '#ffffff' : q.col, 40 * (TILE / 10), 0.35); }
+      if (q.t <= 0) { const Kq = TILE / 10; bossBlast(q.x, q.y, q.col); burst(q.x, q.y, 100, q.col, 70 * Kq, 1.2); flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } }
+    if (falls.length) falls = falls.filter(q => q.t > 0);
     // pirate drop ships
     for (const P2 of G.pirates || []) {
       if (FOGON && !fogSee(P2.x, P2.y)) continue;
@@ -15696,6 +15731,16 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   }
   function text(x, y, txt, col, size, life, vy, font) { texts.push({ x, y, txt: String(txt).toUpperCase(), col, size, life, max: life, vy: vy === undefined ? -0.8 : vy, font }); } // 6.14: Oxanium text on the field is all caps, like the HUD
   const K = TILE / 10;
+  // the boss blast: a white core, three staggered blasts, long sparks, and a mark that stays (6.8; its own function since 6.18 so a
+  // staged death can fire it late)
+  function bossBlast(x, y, col) {
+          stars.push({ x, y, life: 0.16, max: 0.16, col: '#ffffff', s: TILE * 1.1, disc: 1 });
+          for (let i = 0; i < 3; i++) { const a = Math.random() * 6.283, rr = TILE * (0.5 + Math.random() * 0.9), qx = x + Math.cos(a) * rr, qy = y + Math.sin(a) * rr;
+            rings.push({ x: qx, y: qy, r0: 3, r1: TILE * (1.2 + i * 0.5), life: 0.4, max: 0.4, col: i % 2 ? '#fff0c8' : col, fill: 1, w: 3, dl: 0.12 + i * 0.16 });
+            stars.push({ x: qx, y: qy, life: 0.07, max: 0.07, col: '#ffffff', s: TILE * 0.5, disc: 1, dl: 0.12 + i * 0.16 }); }
+          rings.push({ x, y, r0: 6, r1: TILE * 7, life: 0.9, max: 0.9, col: '#ffffff', w: 2 }); rings.push({ x, y, r0: 4, r1: TILE * 4.5, life: 0.6, max: 0.6, col, w: 4, fill: 1 });
+          for (let i = 0, n = LITE ? 10 : 26; i < n; i++) { const a = Math.random() * 6.283, sp = (60 + Math.random() * 120) * K; parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 - 50 * K, g: 200 * K, life: 0.9 + Math.random() * 0.4, max: 1.3, col: i % 3 ? col : '#ffffff', s: 3 }); }
+          decals.push({ x, y: y + 6, k: 3.2, life: 14, max: 14 }); }
   function fx(type, d) {
     switch (type) {
       // 6.14 rules 13: the Black Hole lands, feeds, bombs; storms strike and get harvested
@@ -15810,14 +15855,10 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         if (e0 && !d.boss && pops.length < 40) pops.push({ s: e0._sp, x, y: e0._sy, w: e0._sw, h: e0._hh * 2, life: 0.13, max: 0.13 });
         if (!LITE && !d.boss) { for (let i = 0, n = d.elite ? 6 : 3; i < n; i++) { const a = Math.random() * 6.283, sp = (30 + Math.random() * 45) * K; parts.push({ x, y: y - 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6 - 45 * K, g: 260 * K, life: 0.45, max: 0.45, col: i % 2 ? sh(col, 0.55) : col, s: 2.5 }); }
           if (e0 && !e0.fly && decals.length < 60) decals.push({ x, y: y + 3, k: Math.max(0.7, Math.min(1.6, (e0._sw || 12) / 14)), life: 7, max: 7 }); }
-        if (d.boss && !d.gen) { // the big ones go up in stages: a white core, three staggered blasts, long sparks, and a mark that stays
-          stars.push({ x, y, life: 0.16, max: 0.16, col: '#ffffff', s: TILE * 1.1, disc: 1 });
-          for (let i = 0; i < 3; i++) { const a = Math.random() * 6.283, rr = TILE * (0.5 + Math.random() * 0.9), qx = x + Math.cos(a) * rr, qy = y + Math.sin(a) * rr;
-            rings.push({ x: qx, y: qy, r0: 3, r1: TILE * (1.2 + i * 0.5), life: 0.4, max: 0.4, col: i % 2 ? '#fff0c8' : col, fill: 1, w: 3, dl: 0.12 + i * 0.16 });
-            stars.push({ x: qx, y: qy, life: 0.07, max: 0.07, col: '#ffffff', s: TILE * 0.5, disc: 1, dl: 0.12 + i * 0.16 }); }
-          rings.push({ x, y, r0: 6, r1: TILE * 7, life: 0.9, max: 0.9, col: '#ffffff', w: 2 }); rings.push({ x, y, r0: 4, r1: TILE * 4.5, life: 0.6, max: 0.6, col, w: 4, fill: 1 });
-          for (let i = 0, n = LITE ? 10 : 26; i < n; i++) { const a = Math.random() * 6.283, sp = (60 + Math.random() * 120) * K; parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 - 50 * K, g: 200 * K, life: 0.9 + Math.random() * 0.4, max: 1.3, col: i % 3 ? col : '#ffffff', s: 3 }); }
-          decals.push({ x, y: y + 6, k: 3.2, life: 14, max: 14 }); }
+        if (d.boss && !d.gen && d.stage && e0 && e0._sp) { // 6.18 (Nic: "make boss deaths take a little longer... a little more drama"): the body stays and breaks up first
+          falls.push({ s: e0._sp, x, y: e0._sy, w: e0._sw, h: e0._hh * 2, t: BOSS_FALL, max: BOSS_FALL, col, nb: 0, d: { x: d.x, y: d.y, boss: d.boss, type: d.type } });
+          shakeAt(3, BOSS_FALL); stars.push({ x, y, life: 0.1, max: 0.1, col: '#ffffff', s: TILE * 0.7, disc: 1 }); if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break; }
+        if (d.boss && !d.gen) bossBlast(x, y, col);
         burst(T2P(d.x), T2P(d.y), d.boss ? (d.gen ? 40 : 100) : d.elite ? 22 : 9, d.boss ? (BOSS_COL[d.boss] || '#ff3355') : (ENEMY_COL[d.type] || '#ff5470'), (d.boss ? 70 : 30) * K, d.boss ? 1.2 : 0.4); if (d.boss) { flashes.push({ col: '#ffffff', life: 0.3, max: 0.3, a: 0.4 }); shakeAt(8, 0.5); } if (fullHud && d.cr) text(d.x, d.y - 0.6, '+' + d.cr, PAL.amber, 13, 0.6, -0.6); break; }
       case 'arcs': for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, rr = d.r * TILE; lines.push({ pts: [{ x: T2P(d.x), y: T2P(d.y) }, { x: T2P(d.x) + Math.cos(a) * rr * 0.5 + (Math.random() - 0.5) * 10, y: T2P(d.y) + Math.sin(a) * rr * 0.5 }, { x: T2P(d.x) + Math.cos(a) * rr, y: T2P(d.y) + Math.sin(a) * rr }], life: 0.18, max: 0.18, col: '#9ff2ff', core: 1, w: 2 }); } break;
       case 'heal': rings.push({ x: T2P(d.x), y: T2P(d.y), r0: 2, r1: 36, life: 0.4, max: 0.4, col: '#7dffb0' });
@@ -15927,7 +15968,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     fit();
   }
-  function reset() { insS = { l: 0, r: 0, t: 0, b: 0 }; shake = 0; shakeT = 0; coreKick = 0; /* 6.16.1: a shake left over from the last run (the core's death, Training's end) kept shaking the next run's frozen field */ pops = []; decals = []; born.clear(); mapZone = null; wipe = null; zoneAmbReset(); nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
+  function reset() { insS = { l: 0, r: 0, t: 0, b: 0 }; shake = 0; shakeT = 0; coreKick = 0; /* 6.16.1: a shake left over from the last run (the core's death, Training's end) kept shaking the next run's frozen field */ pops = []; falls = []; decals = []; born.clear(); mapZone = null; wipe = null; zoneAmbReset(); nuke = null; parts = []; rings = []; lines = []; texts = []; flashes = []; stars = []; drags = []; conduits = []; vigKey = ''; mapDirty = true; mapKey = ''; selTile = null; selTower = null; preview = null; bufW = 0; }
 
   // build-menu card art: the tower on a lit plinth against its element's colour
   function towerCard(type, canvas, locked) {
@@ -15979,6 +16020,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     set glow(v) { R_.glow = v; }, set bloom(v) { R_.bloom = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
     tintStats: () => { let px = 0; for (const c of tintLRU.keys()) px += c.width * c.height; return { kept: tintLRU.size, made: tintMade, cap: TINT_CAP, mb: Math.round(px * 4 / 104857.6) / 10 }; }, // 6.6 test hook (perf66)
     zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
+    set lerp(v) { lerpA = v; }, get lerp() { return lerpA; }, BOSS_FALL, get falls() { return falls.length; },
     init, resize, draw, fx, reset, towerIcon, towerCard, preview_map, screenToTile, zoomAt, panBy, resetCam,
     set sel(v) { selTile = v; }, set hover(v) { hoverTile = v; }, set selT(v) { selTower = v; }, set prev(v) { preview = v; }, set aim(v) { aimPos = v; },
     get shaking() { return shakeT > 0; }, set full(v) { fullHud = v; }, set nums(v) { showNums = v; }, set shakeOn(v) { doShake = v; },
@@ -21274,11 +21316,14 @@ const UI = (() => {
     $('#cv').addEventListener('contextmenu', e => e.preventDefault());
     $('#cv').addEventListener('pointerleave', () => { Render.hover = null; Render.hoverE = null; $('#etip').hidden = true; });
     // hooks
-    Hooks.sfx = (n, a, b) => { SFX.play(n, a, b); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
+    Hooks.sfx = (n, a, b) => { if (n === 'bossdie' && !G.watch) { SFX.play('bossfall', a); UI.bossDie = { at: Render.BOSS_FALL, e: a ? { x: a.x, y: a.y } : null }; return; }
+      SFX.play(n, a, b); if (n === 'leak') Haptics.leak(); else if (n === 'bigleak') Haptics.big(); };
     // where on screen a sound happens: -1 left … 1 right, and whether it is in view
     SFX.setLocator((x, y) => { if (screen !== 'game' || !G) return null; const p = Render.tileToScreen(x, y), L = Render.layout; return { px: p.x / L.W * 2 - 1, py: p.y / L.H * 2 - 1, on: p.x > -20 && p.y > -20 && p.x < L.W + 20 && p.y < L.H + 20 }; }); // 6.2: py for the camera-distance mix
     // 6.8: a boss kill gets a beat. The blast plays for 1 s before the boon pick covers it, and the sim runs slow where it keeps running
-    Hooks.fx = (t, d) => { if (t === 'death' && d.boss && !d.gen && !G.watch) { UI.beat = 1; UI.slowmo = Math.max(UI.slowmo, 0.6); } Render.fx(t, d); };
+    // 6.18: a boss death is staged. The body breaks up for Render.BOSS_FALL seconds, then the blast, then 1.2 seconds before the
+    // boon card (it was 1 s in all). The blast sound waits for the blast (bossDieAt, played in frame()).
+    Hooks.fx = (t, d) => { if (t === 'death' && d.boss && !d.gen && !G.watch) { d.stage = 1; UI.beat = Render.BOSS_FALL + 1.2; /* 1.2 s after the blast */ UI.slowmo = Math.max(UI.slowmo, 0.6); } Render.fx(t, d); };
     Hooks.bossIntro = (e, B) => bossIntro(e, B);
     Hooks.evoIntro = () => { if (G && G.tut) return; if (!PROF.seenEvo && screen === 'game') evoWait = true; }; // 6.2: shown by tick when the teaching gate allows
     Hooks.assaultWarn = () => { if (!PROF.seenAssault && screen === 'game') setTimeout(() => { if (!modalOpen && G && !G.over && G.assault) { teachMark(); openAssault(true); } }, 700); }; // (an assault can't wait: it is this wave)
@@ -21904,6 +21949,10 @@ window.__errN = 0;
   UI.setAudWatch(AudWatch);
   let last = performance.now(), acc = 0, wakeT = 2, veilOdd = false; const modalEl = $('#modal');
   const STEP = 1 / 30;
+  // 6.18 motion pass: the position of every mover before a sim step, so a frame can be drawn between two steps (render.js lerpIn).
+  // Render-only fields (_px, _py); the sim never reads them.
+  function snapMotion() { for (const e of G.enemies) { e._px = e.x; e._py = e.y; } for (const p of G.projs) { p._px = p.x; p._py = p.y; }
+    if (G.probe) { G.probe._px = G.probe.x; G.probe._py = G.probe.y; } if (G.core) { G.core._px = G.core.x; G.core._py = G.core.y; } }
   function frame(ts) {
     requestAnimationFrame(frame);
     const rawMs = ts - last, dt = Math.min(0.1, Math.max(0, rawMs / 1000)); last = ts;
@@ -21914,15 +21963,17 @@ window.__errN = 0;
       if (G.checkpoint && !cpLive() && !G.paused && !G.reloc && UI.modalOpen !== 'pause' && !document.hidden) G.cpT += dt; // rules 10: the sim counts
       if (UI.slowmo > 0) UI.slowmo -= dt;
       if (UI.beat > 0) UI.beat -= dt;
+      if (UI.bossDie && !G.paused && (UI.bossDie.at -= dt) <= 0) { const e = UI.bossDie.e; UI.bossDie = null; SFX.play('bossdie', e); } // 6.18: with the blast
       if (G.watch && !G.paused && !UI.modalOpen) UI.watchFeed();
       const halted = G.over || G.paused || G.draft || G.huntChoice || cpHalt() || Tree.isOpen || UI.modalOpen || UI.coachHold;
       if (!halted) {
         const ff = UI.coachFF; if (!!ff !== !!UI.walkFF) { UI.walkFF = !!ff; UI.hudNow(); } // 6.7: Training's walk-in fast-forward (» on SPEED)
         acc += dt * Math.max(G.speed, ff) * (UI.slowmo > 0 ? 0.3 : 1);
         let n = 0;
-        while (acc >= STEP && n < 10) { simStep(STEP); acc -= STEP; n++; }
+        while (acc >= STEP && n < 10) { snapMotion(); simStep(STEP); acc -= STEP; n++; }
         if (ff) UI.ffSec = (UI.ffSec || 0) + n * STEP; // game seconds spent in Training's fast-forward (tut66.py: time saved)
         if (n >= 10) acc = 0;
+        Render.lerp = n >= 10 ? 1 : Math.min(1, acc / STEP); // 6.18: how far this frame is into the next sim step (render.js lerpIn)
       }
       // 6.6 (perf66): the opaque Talents screen hides the field, so it isn't drawn; under a full modal (Pause, Settings, a boon or
       // card pick, a briefing) the halted field sits behind an 80% veil and is drawn every other frame, two animation steps at a time
