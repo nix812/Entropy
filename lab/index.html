@@ -1713,7 +1713,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + ODDBALLS WAIT, HUNT AT WAVE 40, DEMO PREVIEW';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + NOV 25 BATCH';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2313,7 +2313,7 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
 const ODD_GATE = { from: 40, vet: 20, novas: 2 }; // rules 31: the first wave an oddball boss can come; `vet` from the second Supernova
-const FR_VER = 31; // 31 (Nov 25): oddball bosses wait for Wave 40, or Wave 20 from the second Supernova (sim.js bossFrom). // 30 (6.19.0, Nov 24): the Arc Coil gains +1 Chain at LV 3 and at LV 5 (sim.js towerStats). // 29 (Nov 23): Squall Array dmg 12 -> 10 (runs on rules 26-28 keep 12 through SQUALL.old). // 28 (Nov 23): only the last charge spent recharges (useAbility pulls G.abilTop down to charges + 1). // 27 (Nov 22): an ability recharges up to the biggest stack held this run (sim.js abilCap, G.abilTop; Nic: banked charges froze the cooldown). // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const FR_VER = 32; // 32 (Nov 25): support towers no longer grow with their towers; every tower is levelled by hand (sim.js recomputeAuras). // 31 (Nov 25): oddball bosses wait for Wave 40, or Wave 20 from the second Supernova (sim.js bossFrom). // 30 (6.19.0, Nov 24): the Arc Coil gains +1 Chain at LV 3 and at LV 5 (sim.js towerStats). // 29 (Nov 23): Squall Array dmg 12 -> 10 (runs on rules 26-28 keep 12 through SQUALL.old). // 28 (Nov 23): only the last charge spent recharges (useAbility pulls G.abilTop down to charges + 1). // 27 (Nov 22): an ability recharges up to the biggest stack held this run (sim.js abilCap, G.abilTop; Nic: banked charges froze the cooldown). // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -4873,7 +4873,10 @@ function supGrow() {
   }
 }
 function recomputeAuras() {
-  if (G.frV >= 3) supGrow();
+  // Rules 32 (Nic, Nov 25: "I think I want to change it back to just manually leveling... its too complex for the end user to know how
+  // to manage the different upgrade behavior between tower types"): no free growth. A Relay Pylon and a Snare Beacon are upgraded like
+  // every other tower. Runs on rules 3 to 31 keep the growth (and any free Specialization already waiting).
+  if (G.frV >= 3 && G.frV < 32) supGrow();
   for (const t of G.towers) { t.buff = { dmg: 0, rate: 0, crit: 0 }; t.isolated = true; t.reson = 0; t.resonWith = []; }
   for (const t of G.towers) {
     const els = new Set();
@@ -10554,7 +10557,7 @@ const SFX = (() => {
     const gallop = () => { let o = ''; for (let s = 0; s < 16; s += 4) o += `${s}:0:0.9 ${s + 2}:0:0.5 ${s + 3}:0:0.5 `; return o; };
     const roll16 = ivs => { let o = ''; for (let s = 0; s < 16; s++) if (ivs[s % ivs.length] !== null) o += `${s}:${ivs[s % ivs.length]}:0.9 `; return o; };
     const BOSS_THEMES = {
-      behemoth: { name: 'Behemoth', title: 'Siege Engine', base: ['synthwave', 'darksynth'], bpm: 108, mode: 'phrygian', root: 40, kit: 'hard', trim: 1.59,
+      behemoth: { name: 'Behemoth', title: 'The Ripening', base: ['synthwave', 'darksynth'], bpm: 108, mode: 'phrygian', root: 40, kit: 'hard', trim: 1.59,
         loop: C([0, 0, 1, 6], ['m', 'm', 'M', 'M']), drums: { K: '9000900090009060', S: '0000900000009000', C: '0000600000006000', H: '5353535353535353', O: '0000000000000070' }, fill: 'toms',
         bass: { kind: 'sawoct', pat: gallop() }, keys: { kind: 'power', pat: [0, 3, 6, 10, 12], lv: 0 }, pad: { kind: 'dark', lv: 0.3 }, lead: { kind: 'brass', oct: 64 },
         hook: '0:0:2 3:0:1 4:1:4 12:3:3 16:1:3 20:0:8 30:-2:2', ans: '0:0:2 3:0:1 4:1:4 12:7:4 16:8:6 24:7:2 28:5:4', m2: 5,
@@ -10575,7 +10578,7 @@ const SFX = (() => {
         bass: { kind: 'acid', pat: '0:0:1:a 2:12:1 3:0:1 5:10:1:s 6:0:1 8:7:1:a 10:0:1 11:12:1 13:3:1:s 14:0:1' }, keys: { kind: 'organ', pat: [0, 6], lv: 0.35 }, pad: { kind: 'dark', lv: 0.3 }, lead: { kind: 'bleep', oct: 72 },
         hook: '0:0:3 3:3:3 6:7:3 9:10:3 12:7:3 15:3:3 18:0:3 21:3:3 24:7:3 27:10:3 30:14:2', ans: '0:12:3 3:10:3 6:7:3 9:5:3 12:7:3 15:3:3 18:2:3 21:0:3 24:-2:3 27:0:5', m2: 5,
         mix: { rev: 0.45, revS: 3, echo: 0.45, div: 0.75, fb: 0.5, side: 0.4, tone: 16000, tape: 0.05, crackle: 0, pump: 0.35 } },
-      titan: { name: 'Titan', title: 'Colossus March', base: ['synthwave', 'outrun'], bpm: 120, mode: 'harmonic', root: 38, kit: '909', trim: 0.59,
+      titan: { name: 'Titan', title: 'Shellbreak', base: ['synthwave', 'outrun'], bpm: 120, mode: 'harmonic', root: 38, kit: '909', trim: 0.59,
         loop: C([0, 5, 3, 4], [null, null, null, '7']), drums: { K: '9000000090000000', S: '0030903303009330', X: '4000000000000060', H: '5050505050505050' }, fill: 'toms',
         bass: { kind: 'sawoct', pat: '0:0:1.6 2:0:1.6 4:12:1.6 6:0:1.6 8:0:1.6 10:0:1.6 12:12:1.6 14:7:1.6' }, keys: { kind: 'stab', pat: [0, 6, 8], lv: 0 }, pad: { kind: 'strings', lv: 0 }, lead: { kind: 'supersaw', oct: 62 },
         hook: '0:0:3 3:7:1 4:8:4 8:7:3 11:5:1 12:7:4 16:0:3 19:7:1 20:8:3 23:11:1 24:12:8', ans: '0:12:3 3:11:1 4:8:4 8:7:3 11:5:1 12:3:4 16:2:3 19:-1:1 20:0:12', m2: 5,
@@ -13229,6 +13232,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   // the framed sector (buffer px). It eases outward when the run's sector grows.
   const reg = { x: 0, y: 0, w: 0, h: 0 };
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
+  let upNag = null; // the upgrade arrow's memory: which tower it points at and since which wave (drawWorld)
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let wormFlashAt = 0; // Frontier: when the no-build ring around the wormholes was last flashed
@@ -15701,7 +15705,12 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     //    tower is maxed, the cheapest affordable Ascension. It points at the best next upgrade, not at everything you could buy
     { const tpx = TILE * ws, cr = G.credits, big = tpx >= 17;
       let best = null, bl = Infinity, bc = Infinity;
-      if (!G.over) for (const t of G.towers) { const c0 = upgradeCost(t); if (cr < c0 || t.ascPend > 0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } }
+      // Nov 25 (Nic: "I just dont want it [a support tower] to be considered for the indicator that says 'this is your lowest tower'"):
+      // attack towers only. Support and economy towers (Relay Pylon, Snare Beacon, Credit Forge) are pointed at only when no attack
+      // tower can be upgraded.
+      const sup = t => !!(t.s && (supKind(t.s.kind) || t.s.kind === 'eco'));
+      if (!G.over) for (const pass of [0, 1]) { if (best) break;
+        for (const t of G.towers) { if (sup(t) !== !!pass) continue; const c0 = upgradeCost(t); if (cr < c0 || t.ascPend > 0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } } }
       for (const t of G.towers) {
         const n = towerLevel(t), col = lvTier(n).col, x0 = bx2s(t.x * TILE), x1 = bx2s(t.x * TILE + TILE), y = Math.round(by2s(t.y * TILE + TILE)), w = x1 - x0, lw = Math.max(2, Math.round(tpx / 12));
         c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x0 + w * 0.18) - 1, y - lw - 1, Math.round(w * 0.64) + 2, lw + 2);
@@ -15719,10 +15728,29 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         for (const t of G.towers) if (t.pending > 0 || t.ascPend > 0 || t.grow > 0) { const x = Math.round(bx2s(t.x * TILE)) + u, y = Math.round(by2s(t.y * TILE)) - 3 * u - (frame % 40 < 20 ? 0 : u);
           c.fillStyle = '#090b16'; c.fillRect(x - 1, y + u - 1, 5 * u + 2, 3 * u + 2); c.fillRect(x + 2 * u - 1, y - 1, u + 2, 5 * u + 2);
           c.fillStyle = '#ffd84a'; c.fillRect(x, y + 2 * u, 5 * u, u); c.fillRect(x + 2 * u, y, u, 5 * u); c.fillRect(x + u, y + u, 3 * u, 3 * u); } }
-      if (best && big) {
-        const t = best, aw = Math.round(clamp(tpx * 0.36, 9, 15)), ax = Math.round(bx2s(t.cx * TILE)) - aw / 2, ay = Math.round(by2s(t.y * TILE)) - aw - 4 - (frame % 30 < 15 ? 0 : 2) - (t.pending > 0 ? 16 : 0), nc = lvTier(towerLevel(t) + 1).col;
+      // Nov 25 (Nic: "that indicator needs to be more prominent, I regularly find myself searching for my weakest towers to upgrade",
+      // then "maybe have it so the arrow gets a little larger after multiple waves of being neglected? just dont make it so prominent
+      // that it becomes annoying"). The arrow starts a little bigger than before (11 to 17 px, was 9 to 15) and shows at every zoom
+      // level. While the SAME tower stays the pick, each wave it is left adds 12% to the arrow, up to +60% after five waves. From two
+      // waves of neglect a thin frame of corner marks pulses round the tile; from four, a soft glow sits under the arrow. Upgrading
+      // that tower, or another tower becoming the pick, starts over. upNag is drawing state only: nothing in the run reads it.
+      if (best) {
+        const lv = towerLevel(best);
+        if (!upNag || upNag.id !== best.id || upNag.lv !== lv || G.wave < upNag.w) upNag = { id: best.id, lv, w: G.wave };
+        const t = best, wait = Math.min(5, G.wave - upNag.w), nc = lvTier(lv + 1).col, ph = (frame % 60) / 60, pu = 0.5 - 0.5 * Math.cos(ph * Math.PI * 2);
+        const x0 = Math.round(bx2s(t.x * TILE)), y0 = Math.round(by2s(t.y * TILE)), x1 = Math.round(bx2s(t.x * TILE + TILE)), y1 = Math.round(by2s(t.y * TILE + TILE));
+        let top = y0;
+        if (wait >= 2) {
+          const g = Math.round(2 + pu * 2), L = Math.max(3, Math.round((x1 - x0) * 0.26)), lw = Math.max(1, Math.round(tpx / 14));
+          const corner = (cx, cy, dx, dy) => { c.fillRect(Math.min(cx, cx + dx * L), cy - (dy < 0 ? 0 : lw), L, lw); c.fillRect(cx - (dx < 0 ? 0 : lw), Math.min(cy, cy + dy * L), lw, L); };
+          c.globalAlpha = (0.3 + 0.1 * (wait - 2)) * (0.6 + 0.4 * (1 - pu)); c.fillStyle = nc;
+          corner(x0 - g, y0 - g, 1, 1); corner(x1 + g, y0 - g, -1, 1); corner(x0 - g, y1 + g, 1, -1); corner(x1 + g, y1 + g, -1, -1);
+          c.globalAlpha = 1; top = y0 - g;
+        }
+        const aw = Math.round(clamp(tpx * 0.42, 11, 17) * (1 + 0.12 * wait)), ax = Math.round(bx2s(t.cx * TILE)) - aw / 2, ay = top - aw - 4 - (frame % 30 < 15 ? 0 : 2) - (t.pending > 0 ? 16 : 0);
         const arrow = (o, k) => { c.beginPath(); c.moveTo(ax + aw / 2, ay - o); c.lineTo(ax + aw + o, ay + aw * 0.55 + o * k); c.lineTo(ax + aw * 0.68 + o * k, ay + aw * 0.55 + o * k); c.lineTo(ax + aw * 0.68 + o * k, ay + aw + o); c.lineTo(ax + aw * 0.32 - o * k, ay + aw + o); c.lineTo(ax + aw * 0.32 - o * k, ay + aw * 0.55 + o * k); c.lineTo(ax - o, ay + aw * 0.55 + o * k); c.closePath(); c.fill(); };
-        c.fillStyle = '#090b16'; arrow(1.5, 0.5); c.fillStyle = frame % 30 < 20 ? nc : '#ffffff'; arrow(0, 0);
+        if (wait >= 4) { c.globalAlpha = 0.2; c.fillStyle = nc; c.beginPath(); c.arc(ax + aw / 2, ay + aw * 0.55, aw * 0.9, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; }
+        c.fillStyle = '#090b16'; arrow(1.5 + 0.2 * wait, 0.5); c.fillStyle = frame % 30 < 20 ? nc : '#ffffff'; arrow(0, 0);
       }
     }
     // veterans waiting for a mutation: a bobbing badge above the tower
@@ -16089,6 +16117,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     g.setLineDash([]);
   }
   return {
+    get upNag() { return upNag; }, // tests
     dropTexts(re) { texts = texts.filter(t => !re.test(t.txt)); }, // screenshot tools only: remove floating labels that match (tools/site_shots_launch.py)
     set glow(v) { R_.glow = v; }, set bloom(v) { R_.bloom = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
     tintStats: () => { let px = 0; for (const c of tintLRU.keys()) px += c.width * c.height; return { kept: tintLRU.size, made: tintMade, cap: TINT_CAP, mb: Math.round(px * 4 / 104857.6) / 10 }; }, // 6.6 test hook (perf66)
@@ -17538,7 +17567,8 @@ const UI = (() => {
     const closeM = () => { closeModal(); if (G && !G.over) G.paused = false; };
     // the tower the upgrade arrow floats over (render.js: the lowest-level tower you can afford to upgrade, cheapest first)
     // free (6.6): not the docked tower (the core sits on it)
-    function bestUp(free) { let best = null, bl = Infinity, bc = Infinity; for (const t of G.towers) { const c0 = upgradeCost(t); if (G.credits < c0 || (free && G.fr && t === frDockT())) continue; const n = towerLevel(t), k = t.lvl < MAX_LV ? n : 100 + n; if (k < bl || (k === bl && c0 < bc)) { best = t; bl = k; bc = c0; } } return best; }
+    // the tower the field's upgrade arrow points at (render.js): attack towers first, support and economy towers only when no attack tower can be upgraded (Nov 25)
+    function bestUp(free) { const sup = t => !!(t.s && (supKind(t.s.kind) || t.s.kind === 'eco')); let best = null, bl = Infinity, bc = Infinity; for (const pass of [0, 1]) { if (best) break; for (const t of G.towers) { if (sup(t) !== !!pass) continue; const c0 = upgradeCost(t); if (G.credits < c0 || (free && G.fr && t === frDockT())) continue; const n = towerLevel(t), k = t.lvl < MAX_LV ? n : 100 + n; if (k < bl || (k === bl && c0 < bc)) { best = t; bl = k; bc = c0; } } } return best; }
     const stat = t => ({ lvl: towerLevel(t), dmg: t.s.dmg, rate: t.s.rate, range: t.s.range, aff: t.affixes.length });
     function upLine(t, b4) {
       if (!t || !b4) return '';
@@ -18930,7 +18960,7 @@ const UI = (() => {
   function affixHTML(a) { return `<div class="aff" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</div>`; }
   // 6.2 (frV 3): a Relay Pylon or Snare Beacon grows with the attack towers in its range (supGrow in sim.js)
   function growHTML(t) {
-    if (!(G.frV >= 3) || !t.s || !supKind(t.s.kind)) return '';
+    if (!(G.frV >= 3) || G.frV >= 32 || !t.s || !supKind(t.s.kind)) return ''; // rules 32: no growth, no line
     const r2 = t.s.range * t.s.range, n = G.towers.filter(o => o !== t && canOvercharge(o) && dist2(t.cx, t.cy, o.cx, o.cy) <= r2).length, want = supTarget(t);
     const tail = t.grow > 0 ? ' · Specialize free' : !n ? ' · none in range' : t.lvl >= MAX_LV ? '' : want > t.lvl ? '' : ` · now LV ${want}`;
     return `<div class="sts grow">Grows with nearby attack towers${t.freeLv ? ` <b>+${t.freeLv} LV free</b>` : ''}<small>${n} in range${tail}</small></div>`;
