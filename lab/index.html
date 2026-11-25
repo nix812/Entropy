@@ -1712,7 +1712,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + ODDBALLS WAIT';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2311,7 +2311,8 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 30; // 30 (6.19.0, Nov 24): the Arc Coil gains +1 Chain at LV 3 and at LV 5 (sim.js towerStats). // 29 (Nov 23): Squall Array dmg 12 -> 10 (runs on rules 26-28 keep 12 through SQUALL.old). // 28 (Nov 23): only the last charge spent recharges (useAbility pulls G.abilTop down to charges + 1). // 27 (Nov 22): an ability recharges up to the biggest stack held this run (sim.js abilCap, G.abilTop; Nic: banked charges froze the cooldown). // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const ODD_GATE = { from: 40, vet: 20, novas: 2 }; // rules 31: the first wave an oddball boss can come; `vet` from the second Supernova
+const FR_VER = 31; // 31 (Nov 25): oddball bosses wait for Wave 40, or Wave 20 from the second Supernova (sim.js bossFrom). // 30 (6.19.0, Nov 24): the Arc Coil gains +1 Chain at LV 3 and at LV 5 (sim.js towerStats). // 29 (Nov 23): Squall Array dmg 12 -> 10 (runs on rules 26-28 keep 12 through SQUALL.old). // 28 (Nov 23): only the last charge spent recharges (useAbility pulls G.abilTop down to charges + 1). // 27 (Nov 22): an ability recharges up to the biggest stack held this run (sim.js abilCap, G.abilTop; Nic: banked charges froze the cooldown). // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2833,7 +2834,7 @@ const BOSSES = [
     titles: ['The Unbothered', 'Lord of the Leftovers', 'It Came From The Fridge', 'Mostly Water'] },
   { id: 'whale', odd: 1, tip: 'Flies, heals allies', name: 'Space Whale', hp: 58, spd: 0.32, fly: 1, size: 2, desc: 'Flies. Its song heals every enemy nearby',
     titles: ['Singer of the Deep Void', 'Big Blue', 'Krill Enthusiast', 'Just Passing Through'] },
-  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'Quackzilla', hp: 17, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
+  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'The Quacken', hp: 17, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
     titles: ['Bath Time Is Over', 'The Rubber Reckoning', 'Squeaks When Hit', 'Unsinkable'] },
   { id: 'fsm', odd: 1, tip: 'Flies, seizes towers', name: 'Flying Spaghetti Monster', hp: 40, spd: 0.5, fly: 1, size: 2, desc: 'Flies. Noodly appendages seize towers. Drops meatballs',
     titles: ['His Noodly Appendage', 'Al Dente', 'Touched By Marinara', 'Pastafarian Prophecy'] },
@@ -5824,7 +5825,7 @@ function tutSetup(T) {
   if (T.probe) G.siteT = 1e9; // 6.6 v2: loot sites come only from the script (tutScript)
   if (T.boss && T.boss.mod) { // the script's Most Wanted (Basic Training's last wave, the Bounties lesson)
     const B = BOSSES.find(b => b.id === T.boss.id), M = WANTED_MODS.find(m => m.id === T.boss.mod), w = G.startWave - 1 + (T.boss.w || T.waves.length);
-    G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w) };
+    G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name.replace(/^The /, "")}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w) };
   } else G.wanted = null;
   for (const P of T.pre || []) tutPreset(P);
   recomputeAuras();
@@ -6691,7 +6692,17 @@ const BOSS_PHASES = [0.66, 0.33];
 // v2.3: every boss wave is a weighted draw from the bosses unlocked by that wave. Never-seen bosses weigh most,
 // and a boss gets likelier the longer it's been away; the last two can't repeat.
 const BOSS_FROM = { behemoth: 10, queen: 10, wraith: 15, overmind: 20, titan: 30, cat: 10, gloop: 10, duck: 10, whale: 20, fsm: 20 };
-function bossFrom(B) { return B.from || BOSS_FROM[B.id] || 10; }
+// Rules 31 (Nic, Nov 25: "lets make oddball bosses show even later (i like as the game progresses stuff gets weirder)... gated beyond
+// say wave 40 or so. After a player reaches their second supernova, we can soften this"). An oddball boss cannot come before Wave 40;
+// from the second Supernova on, before Wave 20. Hive bosses keep their own waves, so Waves 10 to 30 are always the hive. The Daily Hunt
+// and Training count as no Supernova (G.novaN is 0 there), so every pilot gets the same gate. An "every boss is an oddball" pick (the
+// Odd Belt, Cat Nebula) is the player's own choice and overrides the gate. `nova` and `frV` are passed by the setup screen, before a run exists.
+function oddGate(nova) { return (nova || 0) >= ODD_GATE.novas ? ODD_GATE.vet : ODD_GATE.from; }
+function bossFrom(B, nova, frV) {
+  const f = B.from || BOSS_FROM[B.id] || 10, v = frV !== undefined ? frV : (G ? G.frV : 0);
+  if (!B.odd || !(v >= 31) || (frV === undefined && G && G.af && G.af.oddAll)) return f;
+  return Math.max(f, oddGate(nova !== undefined ? nova : G ? G.novaN : 0));
+}
 // ---------- v4.4 Most Wanted ----------
 // One boss per run gets a poster: a mutation (Colossal, Twin, Hasted, Armored, Spectral, Loaded) and a bounty. It is announced at the start,
 // shows as a chip between waves, and lands on the first boss wave at least ten waves out (never before Wave 20).
@@ -6699,7 +6710,7 @@ function planWanted(at) {
   const r = G.r, w = at || Math.max(20, Math.ceil((G.startWave + 10) / 10) * 10);
   const pool = BOSSES.filter(B => bossFrom(B) <= w && !(G.af && G.af.oddAll && !B.odd));
   const B = pick(r, pool), M = pick(r, WANTED_MODS);
-  G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w * (G.CH.cr || 1)) };
+  G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name.replace(/^The /, "")}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w * (G.CH.cr || 1)) };
   sectorPoster();
   rlog('wanted', { boss: G.wanted.boss, mod: G.wanted.mod, w });
 }
@@ -10577,7 +10588,7 @@ const SFX = (() => {
         hook: '0:0:4 4:7:4 8:12:6 14:10:2 16:7:8 24:3:4 28:5:4', ans: '0:0:4 4:7:4 8:12:6 14:15:2 16:14:8 24:12:8', m2: '0:12:6 6:15:2 8:14:4 12:12:4 16:10:8 24:7:8',
         form: { 4: { half: 1 } },
         mix: { rev: 0.35, revS: 5.2, echo: 0.25, div: 1, fb: 0.35, side: 0.25, tone: 12000, tape: 0.05, crackle: 0, pump: 0.25 } },
-      duck: { name: 'Quackzilla', title: 'Rubber Reckoning', base: ['trance', 'uplifting'], bpm: 178, mode: 'mixolydian', root: 43, kit: 'hard', trim: 1.65,
+      duck: { name: 'The Quacken', title: 'Rubber Reckoning', base: ['trance', 'uplifting'], bpm: 178, mode: 'mixolydian', root: 43, kit: 'hard', trim: 1.65,
         loop: C([0, 6, 3, 0]), drums: { K: '9000900090009000', O: '0080008000800080', H: '3333333333333333', C: '0000800000008000' }, fill: 'roll',
         bass: { kind: 'saw', pat: '2:0:1.4 6:0:1.4 10:0:1.4 14:0:1.4' }, keys: { kind: 'stab', pat: [2, 6, 10, 14], lv: 0.25 }, pad: { kind: 'juno', lv: 0.4 }, lead: { kind: 'quack', oct: 67 },
         hook: '0:0:2 2:0:2 4:4:2 6:7:4 10:9:2 12:7:4 16:12:2 18:10:2 20:7:2 22:4:2 24:5:2 26:4:2 28:0:4', ans: '0:0:2 2:0:2 4:4:2 6:7:4 10:9:2 12:10:4 16:12:12', m2: 5,
@@ -11724,8 +11735,12 @@ const SFX = (() => {
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
 // Android and other browsers with the Vibration API get real patterns. iOS Safari has no vibration API; on iOS 17.4 to 26.4 a
 // hidden <input switch> toggled by its label plays the system haptic tick (Apple closed this in 26.5), so that is best effort.
+// The App Store app (window.LG_APP, Nov 24: Nic's first device run, "Haptics aren't through"): the switch trick does nothing in an
+// app's web view, so the app uses the phone's real haptic engine through the Capacitor Haptics plugin: light for a tap, medium
+// for a leak, three heavy for a big leak.
 const Haptics = (() => {
   let lbl = null, last = 0;
+  const nat = () => (typeof window !== 'undefined' && window.LG_APP && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) || null;
   const on = () => !(typeof PROF !== 'undefined' && PROF.settings && PROF.settings.haptics === false);
   function sw() {
     if (lbl) return lbl;
@@ -11735,10 +11750,12 @@ const Haptics = (() => {
   }
   function buzz(pat, ticks, force) {
     if (!force && !on()) return; const now = performance.now(); if (now - last < 140) return; last = now;
+    const h = nat(); if (h) { try { const style = ticks >= 3 ? 'HEAVY' : pat === 30 ? 'MEDIUM' : 'LIGHT', go = () => { const r = h.impact({ style }); if (r && r.catch) r.catch(() => {}); };
+      go(); for (let k = 1; k < ticks; k++) setTimeout(go, k * 110); } catch (e) {} return; }
     try { if (navigator.vibrate) { navigator.vibrate(pat); return; } } catch (e) {}
     try { const l = sw(); l.click(); for (let k = 1; k < ticks; k++) setTimeout(() => l.click(), k * 110); } catch (e) {}
   }
-  return { leak: () => buzz(30, 1), big: () => buzz([70, 50, 110], 3), tap: f => buzz(15, 1, f), get native() { return !!navigator.vibrate; } };
+  return { leak: () => buzz(30, 1), big: () => buzz([70, 50, 110], 3), tap: f => buzz(15, 1, f), get native() { return !!(nat() || navigator.vibrate); } };
 })();
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
@@ -16742,6 +16759,12 @@ const csTop = o => { let b = null; for (const k in o || {}) if (b === null || o[
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — UI, TREE VIEW, SAVES, LOOP =====================
+// ---- the App Store app only: sound and the phone's silent switch (Nic, Nov 24: "i want it to play even on silent with an optional
+// override in the audio settings"). The web view's audio session: 'playback' ignores the switch and pauses other apps' audio;
+// 'ambient' obeys the switch and mixes with other apps. Default: play on silent. PROF.settings.silent === false = obey the switch.
+// The web game never touches this (window.LG_APP is set by app/shim.js). iOS 16.4 or newer; older: no row, the switch mutes.
+const silentOK = () => !!(window.LG_APP && navigator.audioSession);
+function silentApply() { try { if (silentOK()) navigator.audioSession.type = PROF.settings.silent === false ? 'ambient' : 'playback'; } catch (e) {} }
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pct = v => Math.round(v * 100) + '%';
@@ -16842,7 +16865,7 @@ const Save = (() => {
     try { localStorage.setItem(KEY, js); return true; } catch (e) {}
     try { UI.dropLogs(0); localStorage.setItem(KEY, js); return true; } catch (e) {}
     try { UI.dropLogs(1); localStorage.setItem(KEY, js); return true; } catch (e) {}
-    if (!warned && typeof UI !== 'undefined' && UI.toast) { warned = true; UI.toast('SAVE FAILED', 'This device has no room to save. Free some browser storage, or your progress may be lost.', '#ff4d6a', true); } // draft text
+    if (!warned && typeof UI !== 'undefined' && UI.toast) { warned = true; UI.toast('SAVE FAILED', (window.LG_APP ? 'This device has no room to save. Free some space, or your progress may be lost.' : 'This device has no room to save. Free some browser storage, or your progress may be lost.'), '#ff4d6a', true); } // draft text
     return false;
   }
   function loadLocal() { let s = null; try { s = localStorage.getItem(KEY); return s ? merge(JSON.parse(s)) : null; } catch (e) { try { if (s) localStorage.setItem(KEY + '.bad', s); } catch (e2) {} return null; } } // polish 47: a save that cannot be read is kept aside, not overwritten
@@ -17023,7 +17046,7 @@ const UI = (() => {
       <p class="note secnote"><b style="color:${S.col}">${esc(S.pitch)}</b> ${sectorLine(S)}${P ? ` · Most Wanted: ${esc(P)}` : ''}</p>`;
   }
   // the sector's poster boss, when it can show up by the first bounty (Wave 20)
-  function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B) <= 20 ? `${M.name} ${B.name}` : ''; }
+  function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B, setup && setup.daily ? 0 : PROF.nova || 0, FR_VER) <= 20 ? `${M.name} ${B.name.replace(/^The /, '')}` : ''; }
   function modeChips() {
     if (newPlayer() && setup.mode !== 'daily') return '';
     return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Endless</button>${dailyOpen() ? `<button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button>` : `<button class="chip lock" data-act="dailyLocked" style="--c:#b86cff">Daily Hunt · Lv ${DAILY_LVL}</button>`}</div>`;
@@ -17084,7 +17107,7 @@ const UI = (() => {
       navigator.wakeLock.request('screen').then(l => { wakeAsk = 0; wakeLk = l; wakeErr = ''; l.addEventListener('release', () => { wakeLk = null; }); }, e => { wakeAsk = 0; wakeErr = (e && e.name) || 'refused'; }); } catch (e) { wakeAsk = 0; wakeErr = (e && e.name) || 'error'; }
   }
   // what the phone answered, for Settings > Support (Nic, Nov 16: the phone still slept; this says why). Draft text
-  const wakeState = () => !navigator.wakeLock ? 'Not supported by this browser or iOS version' : wakeLk ? 'On: the phone agreed to stay awake' : wakeErr ? `Refused by the phone (${wakeErr}, ${wakeN} tries). Tap once more; Low Power Mode also does this` : 'Waiting: tap the screen once';
+  const wakeState = () => !navigator.wakeLock ? (window.LG_APP ? 'Not supported by this iOS version' : 'Not supported by this browser or iOS version') : wakeLk ? 'On: the phone agreed to stay awake' : wakeErr ? `Refused by the phone (${wakeErr}, ${wakeN} tries). Tap once more; Low Power Mode also does this` : 'Waiting: tap the screen once';
   function launch(snap, tut) {
     closeModal();
     show('game');
@@ -19828,6 +19851,8 @@ const UI = (() => {
       <p class="note">The game, its code, design, text, art and sound may not be copied, changed, re-hosted or sold without written permission.</p>
       <div class="lbl">Fonts</div><p class="note">Silkscreen and Oxanium, used under the SIL Open Font License 1.1.</p>
       <div class="lbl">Your Data</div><p class="note">Your progress is stored on this device. The game has no ads and no tracking. It sends nothing${fbOn() ? ' unless you use Send Feedback, which sends what you type, your device type, the screen size and the log of your last run' : ''}.</p>
+      ${window.LG_APP ? `<div class="lbl">App Shell</div><p class="note">This app uses Capacitor and its Filesystem and Haptics plugins. Copyright © 2017-present Drifty Co. and Ionic. Used under the MIT License:</p>
+      <p class="note">Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>` : ''}
       <p class="note">The game is provided as is, with no warranty.</p>
       <div class="foot"><button class="btn primary" data-act="settings">Back</button></div></div>`, 'settings');
   }
@@ -19905,7 +19930,7 @@ const UI = (() => {
   // the earlier finished runs (not the one Copy gives), newest first, in one text
   function earlierLogs() { const a = oldLogs(); return liveLog() ? a : a.slice(1); }
   function copyText(txt, onDone) {
-    const done = onDone || (() => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · paste it into a chat with Claude`, '#59f0b4', true));
+    const done = onDone || (() => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · ready to paste`, '#59f0b4', true));
     const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
       if (ok) done(); else if (onDone) askText({ title: 'Copy This Code', value: txt, multiline: true, readOnly: true, ok: 'Done', onDone: () => {} }); else toast('COPY FAILED', 'Use Save log instead', '#ff4d6a', true); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
@@ -20177,7 +20202,7 @@ const UI = (() => {
         + row('Briefings', 'Boss and bounty cards. Pause holds the game until you tap Fight', seg('briefs', [['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']], S.briefings || 'pause'))
         + row('Haptics', 'A buzz when the core is hit', flip(S.haptics !== false, 'haptic'))
         + sec('Save')
-        + row('Save location', cloudOk ? 'Synced to your Claude account' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
+        + row('Save location', cloudOk ? 'Synced to your Claude account' : window.LG_APP ? 'Kept on this device' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
         + (inRun ? '' : row('Transfer save', 'Move your progress to another device with a code', '<button class="btn small" data-act="xcopy">Export</button><button class="btn small" data-act="xpaste">Import</button>'))
         + sec('About')
         + row("What's New", `Version ${VERSION}`, `<button class="btn small" data-act="news">Open</button>`)
@@ -20201,6 +20226,7 @@ const UI = (() => {
         + row('Music tempo', 'Average tempo of the default mix. Each genre in the Studio has its own', rng('setBpm', S.bpm || 72, 56, 100, 2, (S.bpm || 72) + ' BPM', 'bpmV'))
         + row('Boss music', 'Each boss plays its own theme. Off: your song keeps playing', sw(SFX.music.config.bossThemes !== false, 'bossMus'))
         + row('Mono audio', 'One earbud or one speaker', sw(!!S.mono, 'mono'))
+        + (silentOK() ? row('Play on silent', S.silent !== false ? 'Sound plays with the silent switch on. Audio from other apps pauses' : 'The silent switch mutes the game. Audio from other apps keeps playing', sw(S.silent !== false, 'silent')) : '') // app only (DRAFT text)
         + sec('Troubleshooting')
         + row('Sound', `<em id="sndStat">${esc(soundStatus())}</em>`, '<button class="btn small" data-act="sndFix">Restart sound</button>'),
       graphics: sec('Effects')
@@ -20211,7 +20237,7 @@ const UI = (() => {
         + sec('Display')
         + row('Pixel scaling', 'Sharp is crisper. Simple is lighter work for older devices', seg('gfx', [['1', 'Sharp'], ['0', 'Simple']], S.sharp !== false ? '1' : '0', 'data-k="sharp"'))
         + row('Fine sprites', FINE > 1 ? 'On: sharper sprites (test). Turn off to get the old drawing back. Change it between runs' : 'Off: the old drawing', `<button class="btn small" data-act="fineSet">${FINE > 1 ? 'Turn off' : 'Turn on'}</button>`) // 6.16.1 test switch (DRAFT text). The page reloads
-        + (fsOK() ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
+        + (fsOK() && !window.LG_APP ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
       interface: sec('Layout')
         + row('HUD', 'Detailed shows more numbers during a run', seg('hud', [['lean', 'Minimal'], ['full', 'Detailed']], S.hud === 'full' ? 'full' : 'lean'))
         + row('Interface size', 'Scale of buttons and text', seg('uis', [['auto', 'Auto'], ['0.85', 'Small'], ['1.2', 'Large']], String(S.uiScale || 'auto')))
@@ -21176,7 +21202,7 @@ const UI = (() => {
           if (!raw.startsWith('ENT1:')) throw 0;
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
           P.runSnap = null; PROF = P; tidyCaps(); { const mw = migrateWeb(); if (mw) UI.toast(...talentsToast(mw)); } Save.save(); closeModal(); renderHangar(); Tree.refresh(); // 6.0: an old save code gets the talents migration now, not on next launch
-          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
+          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); silentApply();
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
           toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');
         } catch (e) { toast('INVALID CODE', 'Make sure the full code was pasted', '#ff4d6a', 1); }
@@ -21194,6 +21220,7 @@ const UI = (() => {
         SFX.init(); SFX.wake(); const M = SFX.music; M.setPaused(false); if (modalOpen !== 'studio') M.setHold(false); M.jump(null);
         setTimeout(() => { const el = $('#sndStat'); if (el) el.textContent = soundStatus(); }, 700);
         toast('SOUND RESTARTED', soundStatus(), '#59f0b4'); break; }
+      case 'silent': PROF.settings.silent = PROF.settings.silent === false; silentApply(); Save.save(); openSettings(); break;
       case 'mono': PROF.settings.mono = !PROF.settings.mono; SFX.setMono(PROF.settings.mono); Save.save(); openSettings(); break;
       case 'bossMus': { const c = SFX.music.config; c.bossThemes = c.bossThemes === false; if (!c.bossThemes) SFX.music.setBoss(null, 0, false); PROF.settings.studio = c; Save.save(); openSettings(); break; } // 6.5.2: also in Settings › Sound (Nic)
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;
@@ -21906,7 +21933,7 @@ function talentsToast(kind) {
   // returning players see what changed once per version; brand-new players skip it
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(function news() { if (UI.storyOn) return setTimeout(news, 700); if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
-  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
+  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); silentApply();
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   setTimeout(() => { try { UI.fbFlush(); } catch (e) {} }, 3000); // 6.9: feedback written with no connection goes out now
