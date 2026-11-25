@@ -1713,7 +1713,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + ODDBALLS WAIT, DEMO PREVIEW';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + ODDBALLS WAIT, HUNT AT WAVE 40, DEMO PREVIEW';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2542,7 +2542,10 @@ const TUT = {
 // tour: 1 = a walk through the hangar's own screens instead of a run. The coach steps live in ui.js (Coach PLANS, same id).
 // need(): hide a lesson until its system exists (the Ascend perks branch adds PERKS).
 // 6.13: the Daily Hunt opens at Level 20 (Nic, Nov 13: "they don't know what the hunt is"). A Daily run in progress always resumes.
-const DAILY_LVL = 20;
+const DAILY_LVL = 20; // the old gate (6.13 to 6.19.0), kept for reference
+// Nov 25 (Nic: "lets also gate the hunt to a further wave count say 40, now"): the Daily Hunt opens when the pilot's best wave is 40.
+// It stays open after a Supernova, for a saved Daily run, and for a pilot who has already played a Daily (so no tester loses it).
+const DAILY_WAVE = 40;
 // polish 48 (Nic, Nov 20): a Supernova resets the level, but the Daily Hunt stays open once any Supernova is done
 // ---------- the free web demo (Nov 25 2026; Nic's launch decision of Nov 12: on launch day the free web version becomes Training only) ----------
 // LG_DEMO is true when the page was built as the demo (build.py with LG_DEMO=1 writes window.LG_DEMO) or opened with ?demo=1 (a preview,
@@ -2551,7 +2554,7 @@ const DAILY_LVL = 20;
 // STORE_URL: the App Store page. Empty until the app has one; the card then links to the website.
 const STORE_URL = '';
 const LG_DEMO = typeof window !== 'undefined' && !window.LG_APP && (!!window.LG_DEMO || /[?&]demo=1\b/.test((window.location && window.location.search) || ''));
-const dailyOpen = () => !LG_DEMO && (typeof PROF === 'undefined' || !PROF || profLevel().level >= DAILY_LVL || (PROF.nova || 0) >= 1 || !!(PROF.runSnap && PROF.runSnap.rec));
+const dailyOpen = () => !LG_DEMO && (typeof PROF === 'undefined' || !PROF || (PROF.bestWave || 0) >= DAILY_WAVE || (PROF.nova || 0) >= 1 || !!(PROF.daily && PROF.daily.date) || !!(PROF.runSnap && PROF.runSnap.rec));
 const LESSONS = [
   { id: 'towers', track: 'basics', bench: { m: 'Build two towers of different elements', s: ['reach', 0.7] }, title: 'Towers and Elements', blurb: 'What each tower is for, and why element matters.',
     what: 'Every tower has an element: Kinetic, Thermal, Cryo, Arc or Void. Enemies resist some and are weak to others.', when: 'Every build. The Threat Board says what the next wave is weak to.', todo: 'Read the role line on each card. Build the counter the Threat Board names. Mix elements.',
@@ -2647,7 +2650,7 @@ const LESSONS = [
     need: () => typeof PERKS !== 'undefined',
     run: { start: 12, credits: 2600, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 5, 1], ['pulse', 3]]]], waves: [[['drone', 10, 0.8, 0.8], ['tank', 2, 2, 0.8]]] } },
   { id: 'daily', track: 'endgame', bench: { m: "Look at today's build", s: null }, title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1, need: () => dailyOpen(),
-    what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis, talent build and dice for everyone. The build has two Capstones and their towers. Your first run of the day is ranked: best wave first, then score.', when: 'Once a day, from the hangar. Opens at Level ' + DAILY_LVL + ' and stays open after a Supernova.', todo: 'Look at today’s build, then start the ranked run. Extract to lock it in, or Push for more score. Share its code to race friends.',
+    what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis, talent build and dice for everyone. The build has two Capstones and their towers. Your first run of the day is ranked: best wave first, then score.', when: 'Once a day, from the hangar. Opens once you reach Wave ' + DAILY_WAVE + ' and stays open after a Supernova.', todo: 'Look at today’s build, then start the ranked run. Extract to lock it in, or Push for more score. Share its code to race friends.',
     real: 'Every day: check today’s build, then play your ranked run.' },
   { id: 'meta', track: 'endgame', bench: { m: 'Open Talents and the Archive', s: null }, title: 'Talents and Progression', blurb: 'XP, levels, Talents, Capstones, Supernova, ranks, the Archive.',
     what: 'Runs pay XP (from score and the Bounty Purse). Each level is a talent point. Seven trees: rows open every 3 points, a Capstone at 12 changes how you play. Supernova resets your level and talents for a permanent bonus, an emblem and a wider core light. Your career rank counts every XP you have ever earned, and a Supernova never lowers it. Each rank also needs days served. The Archive keeps what you have met.', when: 'Between runs.', todo: 'Spend points after each run. Go deep in one tree for its Capstone. Tap your rank in the Hangar to see the next one. Check the Archive’s Swarm Collection.',
@@ -16086,6 +16089,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     g.setLineDash([]);
   }
   return {
+    dropTexts(re) { texts = texts.filter(t => !re.test(t.txt)); }, // screenshot tools only: remove floating labels that match (tools/site_shots_launch.py)
     set glow(v) { R_.glow = v; }, set bloom(v) { R_.bloom = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
     tintStats: () => { let px = 0; for (const c of tintLRU.keys()) px += c.width * c.height; return { kept: tintLRU.size, made: tintMade, cap: TINT_CAP, mb: Math.round(px * 4 / 104857.6) / 10 }; }, // 6.6 test hook (perf66)
     zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
@@ -16963,7 +16967,7 @@ const UI = (() => {
     const H = PROF.hunt || {}, N = PROF.nemesis, hh = $('#hHunt'), rows = [];
     if (N) rows.push(`<div class="hhr nem"><span class="lbl">Nemesis</span><b>${esc(N.name)}</b><small>${N.kind === 'boss' ? 'takes your next bounty' : 'leads your next Strain Assault'} · ended you on Wave ${N.lastW}</small></div>`);
     if (H.bounties || H.extracts || H.nemDown) rows.push(`<div class="hhr"><span class="lbl">Trophies</span><b>${H.bounties || 0} bount${H.bounties === 1 ? 'y' : 'ies'} · ${H.extracts || 0} extracted${H.nemDown ? ` · ${H.nemDown} Nemes${H.nemDown === 1 ? 'is' : 'es'} down` : ''}</b></div>`);
-    if (!newPlayer() && !dailyOpen()) rows.push(`<div class="hhr day lock"><span class="lbl">Daily Hunt</span><b>${LG_DEMO ? 'In the full game' : `Opens at Level ${DAILY_LVL}`}</b><small>One run a day, the same for every pilot</small></div>`); // 6.13
+    if (!newPlayer() && !dailyOpen()) rows.push(`<div class="hhr day lock"><span class="lbl">Daily Hunt</span><b>${LG_DEMO ? 'In the full game' : `Opens at Wave ${DAILY_WAVE}`}</b><small>One run a day, the same for every pilot</small></div>`); // 6.13
     else if (!newPlayer()) rows.push(`<div class="hhr day"><span class="lbl">Today's Hunt</span><b>${dd && dd.ranked ? `Wave ${dd.ranked.wave}${dd.ranked.ext ? ' · extracted' : ''}` : 'Not played yet'}</b><button class="btn small" data-hact="daily">${dd && dd.ranked ? 'Ladder' : 'Hunt'}</button></div>`);
     hh.innerHTML = rows.join('');
     if (dailyOpen() && !newPlayer() && !PROF.dailyBrief && (!navigator.webdriver || window.dailyBriefTest)) setTimeout(dailyBrief, 400); // 6.13
@@ -17058,7 +17062,7 @@ const UI = (() => {
   function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B, setup && setup.daily ? 0 : PROF.nova || 0, FR_VER) <= 20 ? `${M.name} ${B.name.replace(/^The /, '')}` : ''; }
   function modeChips() {
     if (newPlayer() && setup.mode !== 'daily') return '';
-    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Endless</button>${dailyOpen() ? `<button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button>` : `<button class="chip lock" data-act="dailyLocked" style="--c:#b86cff">Daily Hunt · Lv ${DAILY_LVL}</button>`}</div>`;
+    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Endless</button>${dailyOpen() ? `<button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button>` : `<button class="chip lock" data-act="dailyLocked" style="--c:#b86cff">Daily Hunt · Wave ${DAILY_WAVE}</button>`}</div>`;
   }
   function renderDaily() {
     const spec = dailySpec(dailyKey());
@@ -21150,7 +21154,7 @@ const UI = (() => {
         }
         launch(); break; }
       case 'briefDaily': closeModal(); if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); break; } openSetup(); setup.mode = 'daily'; renderSetup(); break;
-      case 'dailyLocked': toast('DAILY HUNT', `Opens at Level ${DAILY_LVL}. You are Level ${profLevel().level}.`, '#b86cff', true, 'tip'); break;
+      case 'dailyLocked': toast('DAILY HUNT', `Opens when you reach Wave ${DAILY_WAVE} in a run. Your best is Wave ${PROF.bestWave || 0}.`, '#b86cff', true, 'tip'); break;
       case 'mode': if (b.dataset.v === 'daily' && !dailyOpen()) break; setup.mode = b.dataset.v; if (setup.mode !== 'daily') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
       case 'help': if (modalOpen === 'pause') modalFrom = 'pause'; openHelp(); break;
