@@ -876,6 +876,7 @@ details.more { margin: 6px 0 0; } details.more > summary { font-family: var(--f-
 .pfoot { position: sticky; bottom: 0; margin: auto -10px 0; padding: 8px 10px 10px; background: linear-gradient(rgba(12, 14, 28, 0.85), rgb(12, 14, 28) 10px); display: flex; flex-direction: column; gap: 6px; z-index: 2; }
 .bgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
 /* rules 26: 13 base towers. Five a row keeps the grid at 3 rows, so the picked tower's text still shows without scrolling; the name sits over the price */
+a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; } /* the demo card's link button */
 .bgrid.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } .bgrid.c5 .bt .bn { flex-direction: column; align-items: flex-start; gap: 1px; padding: 0 3px; }
 .bt { background: var(--panel); border: 0; padding: 0 0 3px; display: flex; flex-direction: column; align-items: stretch; gap: 2px; box-shadow: inset 0 0 0 1px var(--line); position: relative; overflow: hidden; }
 .bt canvas.tcard { width: 100%; aspect-ratio: 34 / 22; height: auto; image-rendering: pixelated; display: block; }
@@ -1712,7 +1713,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + ODDBALLS WAIT';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + ODDBALLS WAIT, DEMO PREVIEW';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -2543,7 +2544,14 @@ const TUT = {
 // 6.13: the Daily Hunt opens at Level 20 (Nic, Nov 13: "they don't know what the hunt is"). A Daily run in progress always resumes.
 const DAILY_LVL = 20;
 // polish 48 (Nic, Nov 20): a Supernova resets the level, but the Daily Hunt stays open once any Supernova is done
-const dailyOpen = () => typeof PROF === 'undefined' || !PROF || profLevel().level >= DAILY_LVL || (PROF.nova || 0) >= 1 || !!(PROF.runSnap && PROF.runSnap.rec);
+// ---------- the free web demo (Nov 25 2026; Nic's launch decision of Nov 12: on launch day the free web version becomes Training only) ----------
+// LG_DEMO is true when the page was built as the demo (build.py with LG_DEMO=1 writes window.LG_DEMO) or opened with ?demo=1 (a preview,
+// for the test copy). Never in the App Store app. The demo keeps Training (Basic Training and the Field Manual), the Music Studio, the
+// Archive and Settings (so a tester can still move a save with Transfer Save). Play opens a card that points to the App Store.
+// STORE_URL: the App Store page. Empty until the app has one; the card then links to the website.
+const STORE_URL = '';
+const LG_DEMO = typeof window !== 'undefined' && !window.LG_APP && (!!window.LG_DEMO || /[?&]demo=1\b/.test((window.location && window.location.search) || ''));
+const dailyOpen = () => !LG_DEMO && (typeof PROF === 'undefined' || !PROF || profLevel().level >= DAILY_LVL || (PROF.nova || 0) >= 1 || !!(PROF.runSnap && PROF.runSnap.rec));
 const LESSONS = [
   { id: 'towers', track: 'basics', bench: { m: 'Build two towers of different elements', s: ['reach', 0.7] }, title: 'Towers and Elements', blurb: 'What each tower is for, and why element matters.',
     what: 'Every tower has an element: Kinetic, Thermal, Cryo, Arc or Void. Enemies resist some and are weak to others.', when: 'Every build. The Threat Board says what the next wave is weak to.', todo: 'Read the role line on each card. Build the counter the Threat Board names. Mix elements.',
@@ -16947,15 +16955,15 @@ const UI = (() => {
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
     $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 2 && L.level >= req ? 'Finish your run' : `${Math.min(done, 2)}/2 Capstones · Lv ${req}`;
     const snap = PROF.runSnap;
-    $('#bLaunch2').hidden = !snap;
-    $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
+    $('#bLaunch2').hidden = !snap || LG_DEMO;
+    $('#bLaunch').firstChild.textContent = LG_DEMO ? 'Full Game' : snap ? 'Resume' : 'Play';
     const dk = dailyKey(), dd = PROF.daily && PROF.daily.date === dk ? PROF.daily : null;
-    $('#hPlaySub').textContent = snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `${snap.fr ? '' : 'Classic · '}Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : ''; // 6.1: every new run flies; a saved pre-6.1 run resumes on the Classic rules and says so
+    $('#hPlaySub').textContent = LG_DEMO ? 'On the App Store' : snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `${snap.fr ? '' : 'Classic · '}Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : ''; // 6.1: every new run flies; a saved pre-6.1 run resumes on the Classic rules and says so
     // v5.3 The Hunt: what is waiting for you, what you've won, and today's Daily Hunt, before you press Play
     const H = PROF.hunt || {}, N = PROF.nemesis, hh = $('#hHunt'), rows = [];
     if (N) rows.push(`<div class="hhr nem"><span class="lbl">Nemesis</span><b>${esc(N.name)}</b><small>${N.kind === 'boss' ? 'takes your next bounty' : 'leads your next Strain Assault'} · ended you on Wave ${N.lastW}</small></div>`);
     if (H.bounties || H.extracts || H.nemDown) rows.push(`<div class="hhr"><span class="lbl">Trophies</span><b>${H.bounties || 0} bount${H.bounties === 1 ? 'y' : 'ies'} · ${H.extracts || 0} extracted${H.nemDown ? ` · ${H.nemDown} Nemes${H.nemDown === 1 ? 'is' : 'es'} down` : ''}</b></div>`);
-    if (!newPlayer() && !dailyOpen()) rows.push(`<div class="hhr day lock"><span class="lbl">Daily Hunt</span><b>Opens at Level ${DAILY_LVL}</b><small>One run a day, the same for every pilot</small></div>`); // 6.13
+    if (!newPlayer() && !dailyOpen()) rows.push(`<div class="hhr day lock"><span class="lbl">Daily Hunt</span><b>${LG_DEMO ? 'In the full game' : `Opens at Level ${DAILY_LVL}`}</b><small>One run a day, the same for every pilot</small></div>`); // 6.13
     else if (!newPlayer()) rows.push(`<div class="hhr day"><span class="lbl">Today's Hunt</span><b>${dd && dd.ranked ? `Wave ${dd.ranked.wave}${dd.ranked.ext ? ' · extracted' : ''}` : 'Not played yet'}</b><button class="btn small" data-hact="daily">${dd && dd.ranked ? 'Ladder' : 'Hunt'}</button></div>`);
     hh.innerHTML = rows.join('');
     if (dailyOpen() && !newPlayer() && !PROF.dailyBrief && (!navigator.webdriver || window.dailyBriefTest)) setTimeout(dailyBrief, 400); // 6.13
@@ -16973,6 +16981,7 @@ const UI = (() => {
 
   // ---------- Setup ----------
   function openSetup() {
+    if (LG_DEMO) return openDemo();
     const ls = PROF.lastSetup || { startWave: 1, chaos: 1 };
     if (setup.mode !== 'daily' || !dailyOpen()) setup.mode = 'std'; // 6.13: not before Level 20. 6.1: one kind of run (Frontier rules); the Daily Hunt is the other tab
     setup.chaos = ls.chaos ?? 1; if (!chaosUnlocked(setup.chaos)) setup.chaos = 1;
@@ -17108,7 +17117,17 @@ const UI = (() => {
   }
   // what the phone answered, for Settings > Support (Nic, Nov 16: the phone still slept; this says why). Draft text
   const wakeState = () => !navigator.wakeLock ? (window.LG_APP ? 'Not supported by this iOS version' : 'Not supported by this browser or iOS version') : wakeLk ? 'On: the phone agreed to stay awake' : wakeErr ? `Refused by the phone (${wakeErr}, ${wakeN} tries). Tap once more; Low Power Mode also does this` : 'Waiting: tap the screen once';
+  // The demo's one card (DRAFT text, for Nic's Game Text page). Any way into a real run lands here.
+  function openDemo() {
+    const url = STORE_URL || 'https://lastgradient.com';
+    modal(`<div class="card narrow demo"><div class="ch"><h2>The Full Game</h2><button class="x" data-act="close" aria-label="Close">✕</button></div>
+      <p>This free version is Training. The full game is on the App Store for iPhone and iPad.</p>
+      <p class="note">Endless runs. Seven talent trees. Thirteen bosses. The Daily Hunt. One price, no ads, no in-app purchases. Plays offline.</p>
+      <p class="note">Played here before? Your progress is still on this device. Move it with Settings, General, Transfer Save.</p>
+      <div class="foot"><button class="btn" data-act="demoTrain">Training</button><a class="btn primary" href="${url}" target="_blank" rel="noopener">${STORE_URL ? 'App Store' : 'Website'}</a></div></div>`, 'demo');
+  }
   function launch(snap, tut) {
+    if (LG_DEMO && !tut) return openDemo();
     closeModal();
     show('game');
     Render.reset();
@@ -21118,6 +21137,7 @@ const UI = (() => {
       case 'reroll': rerollMap(); renderSetup(); break;
       case 'sector': setup.sector = b.dataset.v; renderSetup(); break;
       case 'launch': launch(); break;
+      case 'demoTrain': closeModal(); openTutPick(); break;
       case 'launchDaily': { // v5.4.1: unspent Hunt points are asked about before the run starts (the build locks once it does)
         const hb = huntBuildProf(); let sp = 0; for (const k in hb.tal) if (TAL[k]) sp += hb.tal[k]; sp += (hb.caps || []).filter(c => TAL[c]).length;
         const left = HUNT.pts - sp;
@@ -21300,7 +21320,7 @@ const UI = (() => {
       else window.act('abil', k);
       updateHud();
     });
-    $('#bLaunch').onclick = () => { SFX.init(); SFX.play('ui'); if (PROF.runSnap && PROF.runSnap.rec) { modal(`<div class="card narrow"><div class="ch"><h2>Daily Hunt</h2></div><p class="note">Restoring your run exactly where you left it…</p></div>`, 'wait'); setTimeout(() => launch(PROF.runSnap), 80); } else if (PROF.runSnap) launch(PROF.runSnap); else if (tutOffer()) openTutOffer(); else openSetup(); };
+    $('#bLaunch').onclick = () => { SFX.init(); SFX.play('ui'); if (LG_DEMO) { if (tutOffer()) openTutOffer(); else openDemo(); } else if (PROF.runSnap && PROF.runSnap.rec) { modal(`<div class="card narrow"><div class="ch"><h2>Daily Hunt</h2></div><p class="note">Restoring your run exactly where you left it…</p></div>`, 'wait'); setTimeout(() => launch(PROF.runSnap), 80); } else if (PROF.runSnap) launch(PROF.runSnap); else if (tutOffer()) openTutOffer(); else openSetup(); };
     $('#watchbar').addEventListener('click', e => { if (e.target.closest('[data-act=watchEnd]')) { SFX.play('ui'); endWatch(); } });
     $('#hHunt').addEventListener('click', e => { const b = e.target.closest('[data-hact]'); if (!b) return; SFX.init(); SFX.play('ui'); if (b.dataset.hact === 'daily') { if (!dailyOpen()) return; if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); return; } openSetup(); setup.mode = 'daily'; renderSetup(); } });
     $('#bLaunch2').onclick = () => { SFX.init(); SFX.play('ui'); openSetup(); };
