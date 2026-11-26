@@ -1714,7 +1714,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + V6.19.0 + NOV 26 TRAINING CARDS';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + V6.19.0 + NOV 26 TRAINING 2';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -8438,6 +8438,7 @@ function coreUpgrade(kind) {
   Hooks.fx('upgrade', { x: c.x, y: c.y, col: rolled ? RARITY[rolled.tier].col : '#59f0b4' });
   return rolled || true;
 }
+const tutCoreOff = () => !!(G.tut && !G.lesson && G.wave < 3);
 function updateCore(dt) {
   const c = G.core;
   c.sinceHit += dt;
@@ -8445,6 +8446,9 @@ function updateCore(dt) {
   const s = coreStats();
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
   if (G.fr && (G.frFly || (G.frV < 6 && frDockT()))) { c.cd = 0; return; } // Frontier: no gun in the air; frV < 6: docked, the tower was the gun (frV 6: both fire)
+  // Basic Training (Nov 26, Nic: "The cores battery kills everything before it makes it to the proposed towers"): the core gun is
+  // offline in Waves 1 and 2, so the player sees the towers do the work. It comes online at Wave 3, with the core lesson.
+  if (tutCoreOff()) { c.cd = 0; return; }
   c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1) * (G.redAlert ? RED_ALERT.coreRate : 1);
   if (c.cd > 0) return;
   // last line of defence: shells go to whatever is closest to reaching the core along its route, anywhere in range
@@ -17717,7 +17721,7 @@ const UI = (() => {
         info('affixes', () => appRv(q('#panel .affs')) || appRv(q('#panel .pbody')), 'Affixes', 'Rare affixes are gold or purple. An arrow over a tower means you can afford its next upgrade.', { hold: 0, skip: () => W() >= 3 || !panT(), okFn: () => { mem.affix = 1; if (panel) { panel.tab = 'act'; renderPanel(); } }, enter: scrollTo('#panel .affs'), leave: shut }),
         // the core and its Battery (6.6: before Lift Off, which docks a second gun beside it)
         { id: 'tapCore', ls: 'core', enter: () => { shut(); probeEnd(); }, when: () => W() >= 3 && !G.frFly, skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core',
-          b: () => G.credits >= coreWeaponCost() ? 'The core has its own upgrades. Tap it.' : `The core's Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => panel && panel.kind === 'core' },
+          b: () => G.credits >= coreWeaponCost() ? 'The core has a gun of its own. It is online from this wave. Tap the core.' : `The core's Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => panel && panel.kind === 'core' },
         { id: 'battery', when: () => W() >= 3, skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
           b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). The core's own gun hits harder.${G.fr ? ' Its range grows, so it sees farther too.' : ''}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
         info('coreMore', sel('#panel [data-act=ch]'), 'Shield, Hull, Uplink', () => G.fr ? `Shield soaks leaks. Hull adds health. Uplink speeds up abilities. Every ${FRONTIER.linkUplink} Uplink levels add a link.` : 'Shield soaks leaks. Hull adds health. Uplink speeds up abilities.',
