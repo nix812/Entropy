@@ -1713,7 +1713,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + V6.19.0 + NOV 25 NOTES 3';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + V6.19.0 + NOV 25 NOTES 4';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -3800,7 +3800,7 @@ function fusionNow() {
 function fusAbility() {
   const M = G.mods, w = Math.max(1, G.wave);
   if (fus('KX')) G.fusT = FUSV.kxT;
-  if (fus('EX')) { const c = G.core; if (c.smax > 0) c.shield = Math.min(c.smax, c.shield + c.smax * FUSV.exShield); c.hp = Math.min(c.max, c.hp + c.max * FUSV.exHull); return; }
+  if (fus('EX')) { const c = G.core; if (c.smax > 0) c.shield = Math.min(c.smax, c.shield + c.smax * FUSV.exShield); { const h0 = c.hp; c.hp = Math.min(c.max, c.hp + c.max * FUSV.exHull); coreHealed('fusEX', h0); } return; }
   if (!(fus('TX') || fus('AX') || fus('CX') || fus('VX'))) return;
   if (fus('VX')) Hooks.fx('implode', { x: G.core.x, y: G.core.y, r: 2 });
   for (const e of G.enemies) { if (e.dead) continue; const st = e.st;
@@ -4123,6 +4123,13 @@ function expandReactor() {
 }
 // ---- v3.1 run log: compact events for after-run analysis (exported from the game-over screen) ----
 function rlog(k, d) { if (!G || !G.rlog) return; G.rlog.push(Object.assign({ k, w: G.wave, t: Math.round(G.time) }, d || {})); if (G.rlog.length > 5000) G.rlog.splice(1, 1); }
+// Nov 25 (Nic's Wave 60 log: 91 leaks, yet the core was full at the end of every wave; and "Build it all" for the logging): a ledger of the
+// core for the wave line. Module state only: nothing in the run reads it, it is not saved, and a resumed run starts a fresh ledger.
+// lo: lowest hull in the wave · sl: lowest shield · sm: shield size · hit: hull damage from leaks · abs: leak damage the shield took ·
+// sreg: shield recharged · heal: hull healed, by source (fusEX, cregen, fieldRepair, siphon, boon, patch, hull, repair, probe).
+let CORELOG = null;
+function coreLedger() { return CORELOG || (CORELOG = { lo: G.core.hp, sl: G.core.shield || 0, hit: 0, abs: 0, heal: {} }); }
+function coreHealed(src, h0) { const d = G.core.hp - h0; if (d > 0.001) { const L = coreLedger(); L.heal[src] = (L.heal[src] || 0) + d; } }
 function rlogWave() {
   const w = G.wave, H = G.geneHist && G.geneHist.find(h => h.w === w);
   const d = { core: Math.round(G.core.hp), cmax: Math.round(G.core.max), cr: Math.round(G.credits), sc: Math.round(G.score), grid: gridUsed() + '/' + gridCap(),
@@ -4130,6 +4137,8 @@ function rlogWave() {
   if (G.leakBy && Object.keys(G.leakBy).length) { d.leakBy = G.leakBy; G.leakBy = {}; }
   if (H) d.genes = Object.fromEntries(Object.entries(H.g).filter(([g, v]) => v >= 0.05).map(([g, v]) => [g, Math.round(v * 100)]));
   if (G.evList && G.evList.length) d.ev = G.evList.map(E => E.name);
+  if (CORELOG) { const L = CORELOG, r1 = v => Math.round(v * 10) / 10; d.cd = { lo: Math.round(L.lo), sl: Math.round(L.sl), sm: Math.round(G.core.smax || 0), hit: r1(L.hit), abs: r1(L.abs), sreg: r1(L.sreg || 0) }; if (Object.keys(L.heal).length) d.cd.heal = Object.fromEntries(Object.entries(L.heal).map(([k, v]) => [k, r1(v)])); }
+  CORELOG = null;
   if (w <= 3 || w % 5 === 0) d.tw = G.towers.map(t => [t.type, t.lvl, t.asc || 0, t.spec || 0, t.oc || 0, Math.round(t.dps), Math.round(t.dmgDone)]);
   rlog('wave', d);
 }
@@ -6114,7 +6123,7 @@ function startWave() {
   lureAll();
   if (FX('shieldWave') || (G.core.leg && G.core.leg.bulwark)) G.core.shield = G.core.smax;
   odAnnounce();
-  if (G.core.A && G.core.A.cregen && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * G.core.A.cregen / 100);
+  if (G.core.A && G.core.A.cregen && !G.af.lastStand) { const h0 = G.core.hp; G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * G.core.A.cregen / 100); coreHealed('cregen', h0); }
   // anomaly upkeep
   if (G.af.coreDrain) G.core.hp = Math.max(1, G.core.hp - G.core.max * G.af.coreDrain);
   if (G.af.mutagen && G.towers.length) {
@@ -6297,7 +6306,7 @@ function updateWaves(dt) {
     const bonus = Math.round((25 + G.wave * 6) * G.mods.credits * (G.ev.gold ? 2 : 1)); // v5.0: was 20 + 4 × wave
     G.credits += bonus;
     if (FX('interest')) { const it = Math.min(300, Math.floor(G.credits * FX('interest') / 100)); if (it > 0) { G.credits += it; Hooks.log(`Interest +${it} credits`, '#ffb03a'); } }
-    if (FX('fieldRepair') && G.stats.leaks === (G.leaksAtStart || 0) && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * FX('fieldRepair') / 100);
+    if (FX('fieldRepair') && G.stats.leaks === (G.leaksAtStart || 0) && !G.af.lastStand) { const h0 = G.core.hp; G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * FX('fieldRepair') / 100); coreHealed('fieldRepair', h0); }
     addScore(G.wave * 50);
     addEntropy(12);
     prepareWave(G.wave + 1);
@@ -7212,7 +7221,7 @@ function leak(e) {
   c.sinceHit = 0;
   if (G.mods.ks.bulwark && G.time >= (G.bulwarkT || 0)) bulwarkWave(c);
   G.leakDmgW = (G.leakDmgW || 0) + dmg; // v5.4: the breach forecast weighs a wave's leak damage against shield + hull
-  const sh0 = c.shield, abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs;
+  const sh0 = c.shield, abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs; { const L = coreLedger(); L.abs += abs; L.hit += dmg; L.sl = Math.min(L.sl, c.shield); L.lo = Math.min(L.lo, c.hp - dmg); }
   if (sh0 > 0 && c.shield <= 0.01 && TLR('eShield') && G.reboundW !== G.wave) { const R = TLAST.eShield; G.reboundW = G.wave; Hooks.fx('boom', { x: c.x, y: c.y, r: R.r, col: '#7fd8ff', big: 1 }); for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, c.x, c.y) <= R.r * R.r) { gPull(o, R.push * (o.boss ? 0.3 : 1)); if (!o.boss && !o.elite.includes('jugg')) o.st.stun = Math.max(o.st.stun || 0, R.stun); } } // rules 18 Barrier last rank
   c.hp -= dmg;
   Hooks.fx('leak', { x: c.x, y: c.y, boss: !!e.boss });
@@ -7491,7 +7500,7 @@ function kill(e, src, o) {
       if (!o2.st.burn || o2.st.burn.dps < e.st.burn.dps) o2.st.burn = { dps: e.st.burn.dps, t: 3 * M.burnDur, src: e.st.burn.src };
     }
   }
-  if (src && src.s && src.s.leg.siphon) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * 0.005);
+  if (src && src.s && src.s.leg.siphon) { const h0 = G.core.hp; G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * 0.005); coreHealed('siphon', h0); }
   if (e.boss === 'gloop' && (e.gen || 0) < 2) {
     for (let i = 0; i < 2; i++) spawnBoss({ boss: 'gloop', L: e.L, d: Math.max(0, e.d - i * 0.5), gen: (e.gen || 0) + 1, hpAbs: e.maxHp * 0.35, hpm: 1 });
     Hooks.fx('say', { x: e.x, y: e.y, t: e.gen ? 'bloop!' : 'ow. but also: two of me' });
@@ -7557,7 +7566,7 @@ function takeBoon(b) {
   }
   G.draft = null;
   recomputeAll();
-  if (b.special === 'core') G.core.hp = G.core.max;
+  if (b.special === 'core') { const h0 = G.core.hp; G.core.hp = G.core.max; coreHealed('boon', h0); }
 }
 
 // ---------- tower combat ----------
@@ -8122,7 +8131,7 @@ function aegisCatch(e) {
   const c0 = G.credits;
   kill(e, A, {});
   if (A.s.salv) G.credits += Math.max(0, G.credits - c0);
-  if (A.s.patch) c.hp = Math.min(c.max, c.hp + c.max * A.s.patch / 100);
+  if (A.s.patch) { const h0 = c.hp; c.hp = Math.min(c.max, c.hp + c.max * A.s.patch / 100); coreHealed('patch', h0); }
   return true;
 }
 // Wildcard: every shot rolls an element and a delivery (a bolt, a lance, a burst, an arc), with a 50% chance (Loaded Dice: 100%) of
@@ -8417,12 +8426,12 @@ function coreUpgrade(kind) {
   let rolled = null;
   if (kind === 'weapon') { const k = coreWeaponCost(); if (c.wLvl >= 12 || G.credits < k) return false; G.credits -= k; c.wLvl++; rolled = rollCoreAffix(c); }
   else if (kind === 'shield') { const k = coreShieldCost(); if (c.sLvl >= 10 || G.credits < k) return false; G.credits -= k; c.sLvl++; rolled = rollCoreAffix(c); }
-  else if (kind === 'hull') { const k = coreHullCost(); if ((c.hLvl || 0) >= HULL.max || G.credits < k) return false; G.credits -= k; const was = c.max; c.hLvl = (c.hLvl || 0) + 1; recomputeAll(); c.hp = Math.min(c.max, c.hp + (c.max - was)); rlog('hull', { lv: c.hLvl, cost: k }); }
+  else if (kind === 'hull') { const k = coreHullCost(); if ((c.hLvl || 0) >= HULL.max || G.credits < k) return false; G.credits -= k; const was = c.max; c.hLvl = (c.hLvl || 0) + 1; recomputeAll(); { const h0 = c.hp; c.hp = Math.min(c.max, c.hp + (c.max - was)); coreHealed('hull', h0); } rlog('hull', { lv: c.hLvl, cost: k }); }
   else if (kind === 'uplink') { const k = coreUplinkCost(); if ((c.uLvl || 0) >= UPLINK.max || G.credits < k) return false; G.credits -= k; c.uLvl = (c.uLvl || 0) + 1; rlog('uplink', { lv: c.uLvl, cost: k });
     for (const a of ABIL_ORDER) if (G.abilCd[a] > abilCdMax(a)) G.abilCd[a] = abilCdMax(a);
     if (G.fr) recomputeAuras(); // Frontier: Uplink adds links
     const m = UPLINK.mods.find(x => x.lv === c.uLvl); if (m) Hooks.toast('UPLINK · ' + m.name.toUpperCase(), m.desc, '#ffe14d', true); }
-  else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; c.hp = Math.min(c.max, c.hp + c.max * 0.35); }
+  else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; { const h0 = c.hp; c.hp = Math.min(c.max, c.hp + c.max * 0.35); coreHealed('repair', h0); } }
   if (rolled) { c.affixes.push(rolled); coreAffSum(c); recomputeAll(); if (kind === 'shield') c.shield = c.smax; }
   Hooks.sfx('upgrade', {});
   Hooks.fx('upgrade', { x: c.x, y: c.y, col: rolled ? RARITY[rolled.tier].col : '#59f0b4' });
@@ -8431,7 +8440,7 @@ function coreUpgrade(kind) {
 function updateCore(dt) {
   const c = G.core;
   c.sinceHit += dt;
-  if (c.sinceHit > 4 && c.shield < c.smax && !(G.fr && G.frFly)) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
+  if (c.sinceHit > 4 && c.shield < c.smax && !(G.fr && G.frFly)) { const s0 = c.shield; c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt); const L = coreLedger(); L.sreg = (L.sreg || 0) + c.shield - s0; }
   const s = coreStats();
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
   if (G.fr && (G.frFly || (G.frV < 6 && frDockT()))) { c.cd = 0; return; } // Frontier: no gun in the air; frV < 6: docked, the tower was the gun (frV 6: both fire)
@@ -8938,7 +8947,7 @@ function probeUpdate(dt) {
   if (P.home) {
     const h = prHomePt(); P.x = h.x; P.y = h.y;
     P.hp = Math.min(P.max, P.hp + P.max * PROBE.regen * dt);
-    if (G.core.hp < G.core.max) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * PROBE.repair * dt);
+    if (G.core.hp < G.core.max) { const h0 = G.core.hp; G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * PROBE.repair * dt); coreHealed('probe', h0); }
   } else {
     if (P.storm && !P.ret) prStorm(dt); // rules 13
     const s = P.task ? siteById(P.task) : null; let tx = P.tx, ty = P.ty, stop = 0;
@@ -22035,6 +22044,18 @@ function talentsToast(kind) {
 // frame into the script time of the simulation and of the drawing ([median, 95th] ms, one decimal), and the most sim steps in one frame,
 // so the next phone log shows which side is slow. It does not see the time the phone spends putting the picture on the glass.
 const PFT = { s: [], d: [], n: 0, q: a => { if (!a.length) return null; const f = a.slice().sort((x, y) => x - y); return [Math.round(f[f.length >> 1] * 10) / 10, Math.round(f[Math.floor(f.length * 0.95)] * 10) / 10]; } };
+// Nov 25 (Nic: "Is there anything else we're not capturing in the logging that we should be?" ... "Build it all please"). The run log
+// gains: real time, the picture's true size and the screen rate, the zoom in use, a Settings snapshot, and (in the app only) the phone's
+// own state: model, iOS, battery, charging, Low Power Mode and heat. The phone state comes from a small native plugin, LGDevice
+// (app/ios/App/App/GameViewController.swift); the web game cannot read any of it. Nothing leaves the phone: the log is only ever copied by hand.
+const PHONE = { v: null, told: 0, busy: 0,
+  poll() { try { const C = window.Capacitor; if (!window.LG_APP || !C || this.busy) return; const P = C.Plugins && C.Plugins.LGDevice; const pr = P && P.info ? P.info() : C.nativePromise ? C.nativePromise('LGDevice', 'info', {}) : null; if (!pr || !pr.then) return;
+      this.busy = 1; pr.then(r => { this.busy = 0; if (!r) return; this.v = r; if (this.told !== G) { this.told = G; try { rlog('phone', { model: r.model, os: r.os, hz: r.hz, bat: PHONE.bat(), chg: r.charging ? 1 : 0, lp: r.lowPower ? 1 : 0, th: r.thermal }); } catch (e) {} } }, () => { this.busy = 0; }); } catch (e) { this.busy = 0; } },
+  bat() { const b = this.v && this.v.battery; return b >= 0 ? Math.round(b * 100) : -1; },
+  now() { const r = this.v; return r ? [this.bat(), r.charging ? 1 : 0, r.lowPower ? 1 : 0, r.thermal] : null; } }; // [battery %, charging, Low Power Mode, heat 0 nominal .. 3 critical]
+window.LGPhone = PHONE; // tests
+const SETSNAP = () => { const o = {}; try { for (const [k, v] of Object.entries(PROF.settings || {})) if (v === null || typeof v !== 'object') o[k] = v; } catch (e) {} return o; };
+const CVSIZE = () => { try { const c = document.getElementById('cv'); return [c.width, c.height]; } catch (e) { return 0; } };
 const ARTMEM = () => { try { const a = ART.cacheStats(), t = Render.tintStats(); return [a.mb, t.mb, a.ev]; } catch (e) { return null; } };
 window.__errN = 0;
 { const logErr = m => { if (/ResizeObserver loop/.test(String(m))) return; window.__errN++; if (window.__errN <= 6) { try { rlog('err', { m: String(m).slice(0, 180), n: window.__errN }); } catch (e) {} } };
@@ -22049,7 +22070,7 @@ window.__errN = 0;
     function check() {
       if (!SFX.health || document.hidden) return;
       const h = SFX.health(); if (h.st === 'none') return;
-      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { mus: (c0 => !c0.custom ? 'default' : c0.journey ? 'journey' : (c0.genres || []).join('+'))(SFX.music.config || {}), vp: UI.vpDiag ? UI.vpDiag() : 0, sa: navigator.standalone ? 1 : 0, ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
+      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { mus: (c0 => !c0.custom ? 'default' : c0.journey ? 'journey' : (c0.genres || []).join('+'))(SFX.music.config || {}), vp: UI.vpDiag ? UI.vpDiag() : 0, sa: navigator.standalone ? 1 : 0, ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0, app: window.LG_APP ? 1 : 0, bld: window.LG_BUILD || '', dpr: Math.round((window.devicePixelRatio || 1) * 100) / 100, cv: CVSIZE(), set: SETSNAP() }); PHONE.poll(); }
       if (!on()) return;
       const w = performance.now() / 1000;
       if (lastCt >= 0) {
@@ -22071,15 +22092,16 @@ window.__errN = 0;
     // in the run log: seconds of sound lost, frame time (median and 95th), game speed, the highest lean level, the most sounds in
     // flight and sounds started. The next phone log shows whether the cuts follow the sounds, the drawing, or neither.
     let fW = -1, fCt = 0, fPl = 0, good = 0, bad = 0, kickAt = -99, pw = -1, P0 = null, gov = true; const FT = [];
-    const pNew = () => ({ lost: 0, lean: 0, inF: 0, sfx: 0, slipN: 0, spd: 0 });
+    const pNew = () => ({ lost: 0, lean: 0, inF: 0, sfx: 0, slipN: 0, spd: 0, t0: performance.now(), z: [] }); let runP = null, runT0 = 0;
+    const zq = a => { if (!a.length) return null; const f = a.slice().sort((x, y) => x - y), r = v => Math.round(v * 100) / 100; return [r(f[0]), r(f[f.length >> 1]), r(f[f.length - 1])]; };
     function fast(dtMs) {
       if (!on() || !SFX.clock) { fW = -1; return; }
       if (FT.length < 4000) FT.push(dtMs);
       const w = performance.now() / 1000; if (fW >= 0 && w - fW < 0.5) return;
       const c = SFX.clock(); if (!c || document.hidden) { fW = -1; return; }
-      if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, cut: SFX.reapStats.reaped, grp: SFX.reapStats.open, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1, art: ARTMEM(), sim: PFT.q(PFT.s), drw: PFT.q(PFT.d), stp: PFT.n, err: window.__errN || 0 }); } P0 = pNew(); pw = G.wave; FT.length = 0; PFT.s.length = 0; PFT.d.length = 0; PFT.n = 0; }
+      if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, cut: SFX.reapStats.reaped, grp: SFX.reapStats.open, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1, art: ARTMEM(), sim: PFT.q(PFT.s), drw: PFT.q(PFT.d), stp: PFT.n, rs: Math.round((performance.now() - P0.t0) / 1000), rt: Math.round((performance.now() - runT0) / 1000), hz: Math.round(1000 / Math.max(1, f[Math.floor(f.length * 0.05)])), zm: zq(P0.z), ph: PHONE.now(), err: window.__errN || 0 }); PHONE.poll(); } if (runP !== G) { runP = G; runT0 = performance.now(); } P0 = pNew(); pw = G.wave; FT.length = 0; PFT.s.length = 0; PFT.d.length = 0; PFT.n = 0; }
       if (fW >= 0 && c.st === 'running' && w - fW < 1.5) {
-        const dw = w - fW, dc = c.ct - fCt, slip = dc < dw * 0.75; P0.lost += Math.max(0, dw - dc - 0.02); P0.sfx += Math.max(0, c.played - fPl); P0.inF = Math.max(P0.inF, c.inF); P0.spd = Math.max(P0.spd, G.speed || 1);
+        const dw = w - fW, dc = c.ct - fCt, slip = dc < dw * 0.75; P0.lost += Math.max(0, dw - dc - 0.02); P0.sfx += Math.max(0, c.played - fPl); P0.inF = Math.max(P0.inF, c.inF); P0.spd = Math.max(P0.spd, G.speed || 1); { const z = Render.zoom; if (z > 0 && z < 50 && P0.z.length < 2000) P0.z.push(z); }
         if (!gov) { if (slip) P0.slipN++; } else
         if (slip) { P0.slipN++; bad += dw; good = 0; SFX.setLean(SFX.lean + 1); if (SFX.lean >= 3 && bad >= 4 && w - kickAt > 30) { kickAt = w; SFX.kick(); } }
         else { bad = 0; good += dw; if (good >= 20 && SFX.lean > 0) { good = 0; SFX.setLean(SFX.lean - 1); } }
