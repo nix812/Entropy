@@ -494,6 +494,7 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
 #coach .chd em { font-style: normal; font-family: var(--f-pix); font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--amber); margin-right: auto; white-space: nowrap; }
 #coach .chide[hidden] { display: none; }
 #coach .chide { font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: none; border: 0; min-height: 34px; min-width: 36px; padding: 0 4px; margin: 0 -4px; cursor: pointer; white-space: nowrap; }
+#coach .ccard.cslide { transition: left 0.18s ease-out, top 0.18s ease-out; } /* Nov 26: a card that changes slot inside one step slides */
 #coach.min .ccard { visibility: hidden; } /* 6.11.4: hidden by the player; the checklist strip brings it back */
 #coach .cskip { font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); background: none; border: 0; min-height: 30px; padding: 0 0 0 8px; cursor: pointer; white-space: nowrap; }
 #coach .ct { font-family: var(--f-pix); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink); font-weight: 400; margin-top: -3px; }
@@ -1713,7 +1714,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + V6.19.0 + NOV 25 NOTES 4';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + V6.19.0 + NOV 26 TRAINING CARDS';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -17472,8 +17473,15 @@ const UI = (() => {
       for (const n of ns) { const r = appR(n); if (!r) continue; x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h); } return x1 > x0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null; };
     const sel = s => () => { const n = q(s); reveal(n); if (window.__coachDbg) window.__coachDbg[s] = Math.max(window.__coachDbg[s] || 0, [...document.querySelectorAll(s)].filter(e => e.offsetParent !== null).length); /* test/lessoncards.py: a selector that matches several visible elements rings the first one only */ return appR(n); };
     let wAt = null; // the world point the current target sits on (worldR), so the camera can bring it on screen
-    function worldR(x, y, rad) { wAt = { x, y }; const c = $('#cv').getBoundingClientRect(), a = Render.tileToScreen(x - rad, y - rad), b = Render.tileToScreen(x + rad, y + rad); return { x: c.left / UIS + a.x, y: c.top / UIS + a.y, w: b.x - a.x, h: b.y - a.y }; }
-    const enemyR = e => e && !e.dead ? worldR(e.x, e.y, e.boss ? 1.1 : 0.6) : null;
+    // Nov 26 (Nic: "strange behavior with the cards as they try to avoid the probe"): a target that moves by itself (the probe, an
+    // enemy) sets wMove, and the probe also sets wDest (where it is flying to). The card and the camera treat these differently from a
+    // target that stands still: see place() and see().
+    let wMove = false, wDest = null;
+    const scrR = (x, y, rad) => { const c = $('#cv').getBoundingClientRect(), a = Render.tileToScreen(x - rad, y - rad), b = Render.tileToScreen(x + rad, y + rad); return { x: c.left / UIS + a.x, y: c.top / UIS + a.y, w: b.x - a.x, h: b.y - a.y }; };
+    function worldR(x, y, rad) { wAt = { x, y }; return scrR(x, y, rad); }
+    const moving = r => { if (r) wMove = true; return r; };
+    const enemyR = e => e && !e.dead ? moving(worldR(e.x, e.y, e.boss ? 1.1 : 0.6)) : null;
+    const probeR = rad => { const P = G && G.probe; if (!P || !P.alive) return null; const r = moving(worldR(P.x, P.y, rad)); wDest = P.ret || P.home ? { x: G.core.x, y: G.core.y } : P.tx != null ? { x: P.tx, y: P.ty } : null; return r; };
     const towerR = t => t && G.towers.includes(t) ? worldR(t.cx, t.cy, 0.62) : null;
     const onField = e => !e.dead && e.d > 1.2 && e.d < e.L.len - 2;
     // the free tile beside a road that covers the most of it, not touching a tower (sim state only; no G.r)
@@ -17499,22 +17507,47 @@ const UI = (() => {
     }
     // 6.1 the camera: a world target that is off screen (or under a side panel) is brought into view, once per step and spot;
     // and one the card can't help covering (a small phone stage) is moved to the side of the stage away from the card
+    // Nov 26: every coach pan is a short glide (0.32 s), not a jump. A drag or pinch by the player ends it.
+    let gl = null;
+    function glide(dx, dy) { gl = { dx, dy, f: 0, t0: performance.now(), cu: camUser }; }
+    function glideTick() {
+      if (!gl) return; if (camUser !== gl.cu || !G || screen !== 'game') { gl = null; return; }
+      const u = Math.min(1, (performance.now() - gl.t0) / 320), f = 1 - (1 - u) ** 3;
+      Render.panBy(gl.dx * (f - gl.f), gl.dy * (f - gl.f)); gl.cu = camUser; gl.f = f; if (u >= 1) { gl = null; updateZoomBtn(); }
+    }
     function see(S, r, c) {
       if (!r || !wAt || !G || screen !== 'game' || S.modal || S.tree) return false;
-      const key = S.id + ':' + Math.round(wAt.x * 2) + ',' + Math.round(wAt.y * 2); if (c ? mem.cam !== key || mem.camC === key : mem.cam === key) return false;
+      if (gl) return true;
       const cv = $('#cv').getBoundingClientRect(), L = Render.layout; if (!cv.width || Math.abs(cv.width / UIS - L.W) > 2 || Math.abs(cv.height / UIS - L.H) > 2 || (Render.home && Math.abs(Render.zoom - Render.homeZoom) > 1e-3)) return false; // the camera is not settled yet: try next frame
       const pn = panel ? appR($('#panel')) : null, ox = cv.left / UIS, p = Render.tileToScreen(wAt.x, wAt.y);
       let x0 = 0, x1 = L.W; if (pn) { const a = pn.x - ox, b = a + pn.w; if (a > L.W / 2) x1 = Math.min(x1, a); else x0 = Math.max(x0, b); }
       const m = 48;
+      if (wMove) {
+        // A target that moves by itself (the probe in flight, an enemy). The camera does not chase it: it glides only when the target
+        // is about to leave the screen, at most once a second. Then it frames the target together with the place it is flying to
+        // (when both fit), or puts the stretch ahead of it on screen. A card it flies under steps aside itself (place).
+        const now = performance.now();
+        if (c) { // (a small phone: no slot is clear of the target, so the camera moves the target to the far side from the card)
+          if (!ov(c, grow(r, 8)) || c.clear || now - (mem.camCT || 0) < 1200) return false; mem.camCT = mem.camT = now; // (c.clear: a free slot exists, the card is about to slide to it)
+          const left = c.x + c.w / 2 - ox < (x0 + x1) / 2, top = c.y + c.h / 2 - cv.top / UIS < L.H / 2;
+          glide((left ? x0 + (x1 - x0) * 0.76 : x0 + (x1 - x0) * 0.24) - p.x, (top ? L.H * 0.7 : L.H * 0.3) - p.y); return true; }
+        if ((p.x >= x0 + m && p.x <= x1 - m && p.y >= m && p.y <= L.H - m) || now - (mem.camT || 0) < 1000) return false;
+        mem.camT = now; let tx = p.x, ty = p.y;
+        if (wDest) { const d = Render.tileToScreen(wDest.x, wDest.y), fw = x1 - x0 - 2 * m - 60, fh = L.H - 2 * m - 60;
+          if (Math.abs(d.x - p.x) <= fw && Math.abs(d.y - p.y) <= fh) { tx = (p.x + d.x) / 2; ty = (p.y + d.y) / 2; }
+          else { const k = Math.min(fw / 2 / Math.max(1, Math.abs(d.x - p.x)), fh / 2 / Math.max(1, Math.abs(d.y - p.y))); tx = p.x + (d.x - p.x) * k * 0.8; ty = p.y + (d.y - p.y) * k * 0.8; } }
+        glide((x0 + x1) / 2 - tx, L.H / 2 - ty); return true;
+      }
+      const key = S.id + ':' + Math.round(wAt.x * 2) + ',' + Math.round(wAt.y * 2); if (c ? mem.cam !== key || mem.camC === key : mem.cam === key) return false;
       if (c) { // the card covers the target: send the target to the far side from the card
         mem.camC = key; if (!ov(c, grow(r, 8))) return false; // (the ring sits 5 px outside the target)
         const left = c.x + c.w / 2 - ox < (x0 + x1) / 2, top = c.y + c.h / 2 - cv.top / UIS < L.H / 2;
-        Render.panBy((left ? x0 + (x1 - x0) * 0.76 : x0 + (x1 - x0) * 0.24) - p.x, (top ? L.H * 0.7 : L.H * 0.3) - p.y); updateZoomBtn(); return true;
+        glide((left ? x0 + (x1 - x0) * 0.76 : x0 + (x1 - x0) * 0.24) - p.x, (top ? L.H * 0.7 : L.H * 0.3) - p.y); return true;
       }
       mem.cam = key;
       if (p.x >= x0 + m && p.x <= x1 - m && p.y >= m && p.y <= L.H - m) return false;
       if (Math.abs((x0 + x1) / 2 - p.x) < 2 && Math.abs(L.H / 2 - p.y) < 2) return false;
-      Render.panBy((x0 + x1) / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); return true;
+      glide((x0 + x1) / 2 - p.x, L.H / 2 - p.y); return true;
     }
     const flowText = (type, first) => { const D = TOWERS[type], st = flowStage(type);
       return st === 0 ? first : st === 1 ? `Tap ${D.name}: ${TOWER_ROLE[type] || D.blurb}.` : `Tap Build: ${fmt(towerCost(type))} credits and 1 power.`; };
@@ -17711,11 +17744,11 @@ const UI = (() => {
         { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1),
           b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'Once selected, a tap on a site sends the probe. Tap Probe again to let it go. Tap the wreck now.',
           done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && G.probe.task !== site(1).id && 'prBtn' },
-        { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'The probe is able to fly over the field. Once in range of a wreck or salvageable node, the probe will automatically salvage it.',
+        { id: 'prFly', hold: 0, at: () => probeR(0.7), t: 'Salvage', b: 'The probe is able to fly over the field. Once in range of a wreck or salvageable node, the probe will automatically salvage it.',
           done: () => looted(1), skip: () => !prOK(), back: () => !looted(1) && site(1) && G.probe.task !== site(1).id && 'prSend' },
         // 6.14 (rules 11): the probe flies home by itself once its site is done, so these two teach that instead of the Home tap.
         // Draft text (Claude, Nov 14), flagged for Nic's Game Text page
-        info('prHome', () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, 'Coming home', () => `Site done, so the probe flies home on its own. Cargo counts only when it docks at the core. To call it back early, ${appRv(q('#prbar [data-pr=home]')) ? 'tap Home under Probe' : 'tap Probe, then Home'}.`,
+        info('prHome', () => probeR(0.8), 'Coming home', () => `Site done, so the probe flies home on its own. Cargo counts only when it docks at the core. To call it back early, ${appRv(q('#prbar [data-pr=home]')) ? 'tap Home under Probe' : 'tap Probe, then Home'}.`,
           { hold: 0, when: () => looted(1), skip: () => !prOK(), leave: probeEnd }),
         info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits. The probe repairs itself and the core when docked. A lost probe drops its cargo and costs credits to rebuild.`,
           { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() && !((G.stats.pr || {}).trips) || W() >= 8, enter: probeEnd }),
@@ -17724,16 +17757,16 @@ const UI = (() => {
           b: () => prCmd && prCmd.site === site(2).id ? 'Tap the wreck again to send the probe.' : `A red drone guards this wreck. It shoots the probe when it comes near. ${prCmd ? 'Tap the wreck to send the probe.' : 'Tap the wreck twice: select, then send.'}`,
           done: () => !site(2) || G.probe.task === site(2).id },
         { id: 'fog', when: () => prOK() && !!site(2) && Math.hypot(G.probe.x - site(2).x, G.probe.y - site(2).y) < 9, skip: () => looted(2) || !prOK() || gone(2) || !!site(2) && G.probe.task !== site(2).id, hold: 1, ok: 'Next',
-          at: () => worldR(G.probe.x, G.probe.y, 2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dark ground, enemies are hidden.' },
+          at: () => probeR(2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dark ground, enemies are hidden.' },
         info('fogFair', () => appRv(q('#chips [data-threat]')), 'Enemy Tips', 'Bosses always show. Roads stay on the map. Edge arrows mark enemies near your core. The Threat Board lists each wave.', { hold: 0, skip: () => looted(2) || !prOK() }),
-        info('prOut', () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, 'Heading out', 'The loot is in the hold and the probe is already leaving. The drone shoots while it is near. Later, Upgrades buys a Lance: allowing it to attack and defend itself.',
+        info('prOut', () => probeR(0.8), 'Heading out', 'The loot is in the hold and the probe is already leaving. The drone shoots while it is near. Later, Upgrades buys a Lance: allowing it to attack and defend itself.',
           { hold: 0, when: () => looted(2), skip: () => !prOK(), leave: probeEnd }),
         info('prLost', sel('#bProbe'), 'Probe lost', () => `Its cargo lies in its wreck for ${PROBE.life.lost} s. Rebuild it from the Probe button: ${fmt(prRebuildCost())} credits, ${PROBE.rbT} s.`, { hold: 0, when: () => !!G.probe && !G.probe.alive, skip: () => !G.probe || G.probe.alive }),
         // 6.6 one Entropy draw (scripted: a Common, a Rare and an Exotic)
         { id: 'gauge', ls: 'ent', when: () => !!G.anomOffers && !panel, skip: () => !G.anomOffers && (used('anom') || used('stab')), hold: 1, at: sel('#bEnt'), t: 'Entropy',
           b: 'Kills fill this gauge. When it is full, you draw an Anomaly. It is full now: tap it.', done: () => modalOpen === 'anomaly' || !G.anomOffers },
         { id: 'cards', hold: 0, when: () => !G.anomOffers, skip: () => !G.anomOffers && !(used('anom') || used('stab')), at: sel('#bEnt'), t: () => used('stab') ? 'Stabilized' : 'Anomaly taken', ok: 'Got it',
-          b: () => `${used('stab') ? 'Stabilize skips the cards for score and a token.' : 'It lasts the rest of the run.'} Each draw makes the next gauge 30% longer. Pause lists your Anomalies.` }, // (the draw's header line teaches the card itself)
+          b: () => `${used('stab') ? 'Stabilize skips the cards for score and a token.' : 'It lasts the rest of the run.'} Each draw adds 30% to the gauge. Pause lists your Anomalies.` }, // (the draw's header line teaches the card itself)
         // the spec: a permanent branch at LV 3
         tapTw('tapLv3', () => mem.st, 'Specialize', () => G.credits >= upgradeCost(mem.st) ? 'Get your strongest tower to LV 3. Tap it.' : `Next upgrade: ${fmt(upgradeCost(mem.st))} credits.`,
           { ls: 'spec', when: () => W() >= 7 && !G.anomOffers, skip: () => W() >= 8 || noTw() || G.towers.some(t => t.spec), hold: () => G.credits >= upgradeCost(mem.st), enter: () => { mem.st = G.towers.filter(t => !(G.fr && t === frDockT())).sort((a, b) => b.lvl - a.lvl || b.dmgDone - a.dmgDone)[0]; } }), // (6.6: not the docked tower, under the core)
@@ -17851,12 +17884,12 @@ const UI = (() => {
         call('c1', 1, 'Send the wave. A wreck appears with it.'),
         { id: 'prBtn', when: () => !!site(1) && prOK() && !panel, skip: () => looted(1) || !prOK() || (!!site(1) && G.probe.task === site(1).id), hold: 1, at: sel('#bProbe'), t: 'Select it', b: 'Tap Probe.', done: () => !!prCmd },
         { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1), b: 'Tap the wreck.', done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && !!site(1) && G.probe.task !== site(1).id && 'prBtn' },
-        { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'It salvages the wreck, then flies home on its own and banks the cargo at the core.', done: () => looted(1) && (G.probe.home || G.probe.ret), skip: () => !prOK() },
+        { id: 'prFly', hold: 0, at: () => probeR(0.7), t: 'Salvage', b: 'It salvages the wreck, then flies home on its own and banks the cargo at the core.', done: () => looted(1) && (G.probe.home || G.probe.ret), skip: () => !prOK() },
         info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits so far. Docked, it repairs itself and the core.`, { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() }),
         call('c2', 2, 'Next wave. A guarded wreck appears with it.'),
         { id: 'guard', when: () => !!site(2) && prOK() && G.probe.home && !panel, skip: () => looted(2) || gone(2) || !prOK(), hold: 1, at: () => worldR(site(2).x, site(2).y, 1.7), t: 'A guarded site', b: () => prCmd ? 'Tap the wreck to send the probe.' : 'A red drone guards this one and shoots the probe near it. Tap Probe, then the wreck.', done: () => !site(2) || G.probe.task === site(2).id },
         info('lance', () => appRv(q('#prbar [data-pr=up]')) || appRv(q('#bProbe')), 'Upgrades', () => appRv(q('#prbar [data-pr=up]')) ? 'Upgrades make it tougher: Armor, Engine, and a Lance that shoots back. Buy them between waves.' : 'Tap Probe to select it, then Upgrades: Armor, Engine, and a Lance that shoots back. Buy them between waves.', { hold: 0 }), // 6.16.1: the probe lets go once sent, so the bar may be closed here
-        { id: 'prOut', hold: 0, when: () => looted(2), at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Heading out', b: 'The loot is in the hold. It leaves on its own; the drone shoots while it is near.', done: () => !prOK() || G.probe.home, skip: () => !prOK() },
+        { id: 'prOut', hold: 0, when: () => looted(2), at: () => probeR(0.7), t: 'Heading out', b: 'The loot is in the hold. It leaves on its own; the drone shoots while it is near.', done: () => !prOK() || G.probe.home, skip: () => !prOK() },
         end(),
       ],
       veterans: [
@@ -17871,9 +17904,9 @@ const UI = (() => {
         end(),
       ],
       support: [
-        intro('in', 'Support towers', 'Two towers never shoot. One makes others stronger, one makes credits.'),
+        intro('in', 'Support towers', 'Some towers never shoot. Two of them here: one makes other towers stronger, one makes credits.'),
         build('pylon', 'pylon', 'p', 'Relay Pylon', 'Tap the marked tile, next to your towers.', { at: () => flowAt('pylon', 'p', null, true) }),
-        info('pyl', () => towerR(G.towers.find(t => t.type === 'pylon')), 'Boost', 'Towers in its ring deal more damage and fire faster. It also reveals cloaked Phantoms.'),
+        info('pyl', () => towerR(G.towers.find(t => t.type === 'pylon')), 'Boost', 'Towers in its ring deal more damage and fire faster. It also reveals cloaked Phantoms. Upgrade it yourself: it does not level up with its towers.'),
         build('forge', 'forge', 'f', 'Credit Forge', 'It pays credits at the start of every wave. Tap the marked tile.'),
         call('c1', 1),
         info('paid', sel('#hud .hs.cr'), 'Paid', 'The Forge paid at the start of the wave. Early Forges pay for themselves.', { when: () => W() >= 1 }),
@@ -17888,7 +17921,7 @@ const UI = (() => {
         info('fx', () => { const st = G.storms[0]; return st ? worldR(st.x, st.y, st.r) : null; }, 'It hits them too', 'Enemies under a Solar Flare burn. An Ion Storm strikes with lightning, a Cryo Front chills, a Void Tide Marks, Static Haze reveals cloaked enemies.', { when: () => W() >= 1 && G.storms.length > 0 && G.enemies.some(e => !e.dead && e.st.burn), skip: () => after(1) || W() >= 2 || !G.storms.length }),
         { id: 'prBtn', when: () => prOK() && G.storms.length > 0 && !panel, skip: () => (G.stats.harvests || 0) > 0 || !prOK() || !G.storms.length || !!G.probe.storm, hold: 1, at: sel('#bProbe'), t: 'Harvest it', b: 'Your probe can harvest a storm for an ability charge. Tap Probe.', done: () => !!prCmd || !!G.probe.storm },
         { id: 'prStorm', hold: 1, at: () => { const st = G.storms[0]; return st ? worldR(st.x, st.y, st.r * 0.6) : null; }, t: 'Into the storm', b: 'Tap inside the storm.', done: () => !!G.probe.storm || (G.stats.harvests || 0) > 0, back: () => !prCmd && !G.probe.storm && !(G.stats.harvests > 0) && 'prBtn', skip: () => !G.storms.length || (G.stats.harvests || 0) > 0 },
-        { id: 'harvest', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, t: 'Harvesting', b: 'Six seconds inside gives one charge. A Solar Flare gives Frenzy. The arc around the storm shows how long is left.', done: () => (G.stats.harvests || 0) > 0, skip: () => !prOK() },
+        { id: 'harvest', hold: 0, at: () => probeR(0.8), t: 'Harvesting', b: 'Six seconds inside gives one charge. A Solar Flare gives Frenzy. The arc around the storm shows how long is left.', done: () => (G.stats.harvests || 0) > 0, skip: () => !prOK() },
         info('got', sel('#abils [data-abil=overclock]'), 'Frenzy +1', 'Harvested out, the storm breaks up and the probe flies home. Merged storms give one charge per type.', { hold: 0, when: () => (G.stats.harvests || 0) > 0 }),
         call('c2', 2),
         end(),
@@ -17897,10 +17930,10 @@ const UI = (() => {
       remnant: [
         intro('in', 'The Remnant', 'Old war machines of the pilots before you. Each one has one trick. Watch for it, then break it.'),
         call('c1', 1, 'Send the wave.'),
-        info('husk', () => { const e = G.enemies.find(o => !o.dead && o.type === 'husk'); return e ? worldR(e.x, e.y, 1) : null; }, 'Husk', 'It stands back up once. Missiles, Burn or a Strike finish it for good.', { when: () => G.enemies.some(o => !o.dead && o.type === 'husk' && o.d > 3), skip: () => W() >= 2 || (G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'husk')) }),
+        info('husk', () => { const e = G.enemies.find(o => !o.dead && o.type === 'husk'); return e ? moving(worldR(e.x, e.y, 1)) : null; }, 'Husk', 'It stands back up once. Missiles, Burn or a Strike finish it for good.', { when: () => G.enemies.some(o => !o.dead && o.type === 'husk' && o.d > 3), skip: () => W() >= 2 || (G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'husk')) }),
         call('c2', 2, 'Send the Warden and its squad.'),
-        info('ward', () => { const e = G.enemies.find(o => !o.dead && o.type === 'warden'); return e ? worldR(e.x, e.y, 1.6) : null; }, 'Warden', 'Its squad takes less damage near it. Kill the Warden first and the squad is stunned. A Strike on it works.', { when: () => G.enemies.some(o => !o.dead && o.type === 'warden' && o.d > 2), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'warden') }),
-        info('crawl', () => { const e = G.enemies.find(o => !o.dead && o.type === 'crawler'); return e ? worldR(e.x, e.y, 1.2) : null; }, 'Siege Crawler', 'Planted, it shells one tower offline for a few seconds. Kill it there, or move the tower it aims at.', { hold: 0, when: () => G.enemies.some(o => !o.dead && o.type === 'crawler' && o.planted), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'crawler') }),
+        info('ward', () => { const e = G.enemies.find(o => !o.dead && o.type === 'warden'); return e ? moving(worldR(e.x, e.y, 1.6)) : null; }, 'Warden', 'Its squad takes less damage near it. Kill the Warden first and the squad is stunned. A Strike on it works.', { when: () => G.enemies.some(o => !o.dead && o.type === 'warden' && o.d > 2), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'warden') }),
+        info('crawl', () => { const e = G.enemies.find(o => !o.dead && o.type === 'crawler'); return e ? moving(worldR(e.x, e.y, 1.2)) : null; }, 'Siege Crawler', 'Planted, it shells one tower offline for a few seconds. Kill it there, or move the tower it aims at.', { hold: 0, when: () => G.enemies.some(o => !o.dead && o.type === 'crawler' && o.planted), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'crawler') }),
         end(),
       ],
       // 6.15 the Black Hole: the marker, feeding it, the Gravity Bomb, the verdict (draft text)
@@ -18026,7 +18059,7 @@ const UI = (() => {
       plan = p || 'basic'; on = true; i = 0; cur = null; mem = {}; sig = ''; min = false; ensureEl(); el.querySelector('.cskip').textContent = skipLbl();
       document.body.classList.toggle('tut', !tour()); document.body.classList.toggle('tutent', plan === 'storms'); entOn = plan === 'storms';
     }
-    function stop() { on = false; cur = null; held = false; min = false; Render.spots = null; if (el) el.hidden = true; document.body.classList.remove('tut', 'tutent'); if (G && G.tut) Render.hints = null; }
+    function stop() { on = false; gl = null; cur = null; held = false; min = false; Render.spots = null; if (el) el.hidden = true; document.body.classList.remove('tut', 'tutent'); if (G && G.tut) Render.hints = null; }
     function skip() {
       const p = plan, tl = taught(); stop(); closeModal(); closePanel();
       if (p === 'basic') { tutState().seen = 1; markTaught(tl); Save.save(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); return; } // 6.0: never offer a new run over a saved one
@@ -18057,14 +18090,28 @@ const UI = (() => {
     }
     const lessonOf = k => { const P = STEPS(); for (let j = Math.min(k, P.length - 1); j >= 0; j--) if (P[j].ls) return P[j].ls; return null; };
     function go(id) { const k = STEPS().findIndex(s => s.id === id); if (k >= 0) { cur = null; i = k; min = false; sig = ''; Render.hints = null; } }
-    function hide() { if (el && !el.hidden) el.hidden = true; }
+    function hide() { if (el && !el.hidden) el.hidden = true; pl.shown = false; }
     const ov = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
     const grow = (r, d) => ({ x: r.x - d, y: r.y - d, w: r.w + 2 * d, h: r.h + 2 * d });
-    let plSig = '', plIx = -1;
-    function place(S, r, idle) {
+    // ---- where the card sits (Nov 26, rewritten. Nic: "Make sure the cards are in good positions. Rethink this") ----
+    // Before: every frame the card took the slot nearest its target, so it hopped as a target moved (the probe in flight), as a side
+    // panel slid in, and as the camera panned. Now:
+    //  1. A card takes a slot once and holds it. It leaves only when its target comes under it (within 8 px), or the layout changes
+    //     (a side panel opens or closes, the screen turns). A move inside one step is a 0.18 s slide, never a jump.
+    //  2. A target that stands still (a button, a tile): the nearest slot that is clear of the target and of the controls at the top
+    //     right of the field (Lift Off, Probe, Ready, Entropy). The middle of the field is the last choice.
+    //  3. A target that moves (the probe, an enemy): the card does not follow it. It docks at the bottom centre of the field (then top
+    //     centre, then the corners), clear of the target and of the place the probe is flying to.
+    //  4. The next step keeps the last slot when that slot is as good as the best one, so a chain of steps reads in one place.
+    //  5. No target: the centre of the screen for a card that holds the game, the top centre for a line while the game runs.
+    const layR = n => { if (!n || n.offsetParent === null) return null; let x = 0, y = 0, e = n; while (e && e.id !== 'app') { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; } return e ? { x, y, w: n.offsetWidth, h: n.offsetHeight } : appR(n); }; // (layout box: a panel that is sliding in counts where it will stop)
+    const CARD_SOFT = '#bLift, #bProbe, #prbar, #bReady, #bEnt, #cpBanner, #asbar';
+    const MV_PREF = [[12, 4, 12], [34, 60, 34], [8, 0, 8]]; // moving target: the cost of each slot [row][left, centre, right]
+    let pl = { key: '', step: '', ix: -1, t: 0 }, plOff = { dx: 0, dy: 0 }; // plOff: a camera glide that has just started (the screen will shift by this much)
+    function place(S, r) {
       const card = el.querySelector('.ccard'), app = $('#app');
       const AW = app.clientWidth, AH = app.clientHeight, full = S.modal || S.tree || tour() || screen !== 'game', st = full ? { x: 0, y: 0, w: AW, h: AH } : appR($('#stage')) || { x: 0, y: 0, w: AW, h: AH };
-      const pn = !full && panel ? appR($('#panel')) : null, m = 6;
+      const pn = !full && panel ? layR($('#panel')) : null, m = 6;
       // with a side panel open, the card lives in the free part of the stage and narrows to fit it (667 wide: the spec buttons stay clear)
       const fr = pn ? (pn.x > st.x + st.w / 2 ? { x: st.x, w: pn.x - st.x } : { x: pn.x + pn.w, w: st.x + st.w - pn.x - pn.w }) : null;
       const mf = 11; // beside a panel: clear of the ring (5 px) the coach draws around it when the panel is the target
@@ -18072,22 +18119,31 @@ const UI = (() => {
       const cw = card.offsetWidth, ch = card.offsetHeight;
       const xs = [st.x + m, st.x + (st.w - cw) / 2, st.x + st.w - cw - m]; if (fr) xs.push(fr.x + mf, fr.x + fr.w - cw - mf);
       const ys = [st.y + m, st.y + (st.h - ch) / 2, st.y + st.h - ch - m];
-      const avoid = []; if (r) avoid.push(grow(r, 26));
-      if (pn) avoid.push(pn);
-      // 6.16.1: the card keeps its slot while its step is up. It moves only when another slot is clearly better (60 px nearer, or the
-      // target has come under the card). Before, a card on a moving target (the probe in flight) could jump as you reached for Hide.
-      let best = null, keep = null, k = 0; const pk = sig + (pn ? '|p' : '');
-      for (const y of ys) for (const x of xs) {
-        const c = { x, y, w: cw, h: ch }; let s = 0; for (const a of avoid) s += ov(c, a) * 100;
-        if (r) s += Math.hypot(x + cw / 2 - (r.x + r.w / 2), y + ch / 2 - (r.y + r.h / 2)) * 0.05;
-        const o = { x, y, s, k }; if (!best || s < best.s) best = o; if (k === plIx && pk === plSig) keep = o; k++;
+      const mv = wMove && !full && !!r, hard = []; let pathN = 0; if (r) hard.push(grow(r, 26)); if (pn) hard.push(pn);
+      if (mv && wDest) { // where the probe is flying to, and the line of its flight (three points on it)
+        const d = scrR(wDest.x, wDest.y, 0.9); d.x += plOff.dx; d.y += plOff.dy; hard.push(grow(d, 12));
+        for (const f of [0.25, 0.5, 0.75]) hard.push(grow({ x: r.x + (d.x - r.x) * f, y: r.y + (d.y - r.y) * f, w: r.w + (d.w - r.w) * f, h: r.h + (d.h - r.h) * f }, 10)); pathN = 3; }
+      const soft = []; if (!full) for (const n of document.querySelectorAll(CARD_SOFT)) { const o = appR(n); if (o && !(r && ov(o, r) > o.w * o.h * 0.5)) soft.push(o); } // (not the target itself)
+      const stepKey = plan + ':' + i, key = stepKey + (pn ? '|p' : '') + (wAt ? '|w' : r ? '|d' : '|n') + (mv ? 'm' : '') + '|' + AW + 'x' + AH, same = key === pl.key, now = performance.now();
+      const slots = []; let best = null;
+      for (let yi = 0; yi < 3; yi++) for (let xi = 0; xi < xs.length; xi++) {
+        const x = xs[xi], y = ys[yi], c = { x, y, w: cw, h: ch }, k = slots.length; let s = 0;
+        hard.forEach((a, j) => { s += ov(c, a) * (j >= hard.length - pathN ? 30 : 100); }); for (const a of soft) s += ov(c, a) * 4; // (the flight line counts less than its two ends)
+        if (mv) s += xi < 3 ? MV_PREF[yi][xi] : MV_PREF[yi][1] + 2;
+        else if (r) s += Math.hypot(x + cw / 2 - (r.x + r.w / 2), y + ch / 2 - (r.y + r.h / 2)) * 0.05 + (yi === 1 && xi === 1 ? 25 : 0);
+        else s += held ? (yi === 1 && xi === 1 ? 0 : 10) : (yi === 0 && xi === 1 ? 0 : 10);
+        if (k === pl.ix && pl.n === xs.length) s -= 3; // the slot the card is in wins a near tie
+        const o = { x, y, s, k }; slots.push(o); if (!best || s < best.s) best = o;
       }
-      if (keep && keep.s - best.s < 3) best = keep;
-      plSig = pk; plIx = best.k;
-      card.style.left = Math.round(best.x) + 'px'; card.style.top = Math.round(best.y) + 'px';
-      return { x: best.x, y: best.y, w: cw, h: ch };
+      let pick = null;
+      if (same && slots[pl.ix] && pl.n === xs.length) { const h = slots[pl.ix], c = { x: h.x, y: h.y, w: cw, h: ch };
+        if (!((r && ov(c, grow(r, 8)) > 0) || (pn && ov(c, pn) > 0)) || now - pl.t < 500) pick = h; } // (0.5 s in a slot at least: no flicker)
+      if (!pick) { pick = best; if (pick.k !== pl.ix || !same) pl.t = now; card.classList.toggle('cslide', stepKey === pl.step && !el.hidden && pl.shown); }
+      pl.key = key; pl.step = stepKey; pl.ix = pick.k; pl.n = xs.length; pl.shown = true; card.dataset.slot = pick.k;
+      card.style.left = Math.round(pick.x) + 'px'; card.style.top = Math.round(pick.y) + 'px';
+      return { x: pick.x, y: pick.y, w: cw, h: ch, clear: !r || !ov({ x: best.x, y: best.y, w: cw, h: ch }, grow(r, 8)) };
     }
-    function show2(S, t, b, r, ok, idle) {
+    function show2(S, t, b, r, ok, idle, rp) {
       const key = plan + i + '|' + t + '|' + b + '|' + (ok || '') + (idle ? 'i' : ''); // (the button too: a chip that folds into +N brings up "Open it")
       el.hidden = false; el.classList.toggle('idle', !!idle); if (!idle && S.id) { mem.shownId = S.id; if (!S.free) mem.lastLs = lessonOf(i); }
       if (key !== sig) {
@@ -18102,7 +18158,7 @@ const UI = (() => {
       el.classList.toggle('dim', !min && held && !!r && !S.nodim); el.classList.toggle('dimall', !min && held && !r && !S.nodim);
       const sp = el.querySelector('.cspot'), rg = el.querySelector('.cring'), ar = el.querySelector('.carrow');
       sp.hidden = rg.hidden = ar.hidden = !r;
-      const c = place(S, r, idle);
+      const c = place(S, rp || r);
       if (!r) return c;
       const s = grow(r, 5), set = (nd, R) => { nd.style.left = Math.round(R.x) + 'px'; nd.style.top = Math.round(R.y) + 'px'; nd.style.width = Math.round(R.w) + 'px'; nd.style.height = Math.round(R.h) + 'px'; };
       set(sp, s); set(rg, s);
@@ -18121,6 +18177,7 @@ const UI = (() => {
     function tick() { step(); if (on) list(); else if (listEl) listEl.hidden = true; }
     function step() {
       if (!on) return;
+      glideTick();
       { const e = plan === 'storms' || !!(plan === 'basic' && G && G.tutS && G.tutS.ent && (G.anomOffers || G.tutEnt)); if (e !== entOn) { entOn = e; document.body.classList.toggle('tutent', e); } } // 6.6: the Entropy gauge shows from the Training draw on
       const runOK = G && G.tut && screen === 'game' && (G.lesson || 'basic') === plan, tourOK = tour() && !G && (screen === 'hangar' || Tree.isOpen);
       if (!runOK && !tourOK) { stop(); return; }
@@ -18136,8 +18193,10 @@ const UI = (() => {
       const bk = S.back && S.back(); if (bk) { go(bk); idle(); return; }
       if ((modalOpen && S.modal !== modalOpen) || (!modalOpen && S.modal) || (Tree.isOpen && !S.tree)) { held = false; hide(); return; }
       held = !!(typeof S.hold === 'function' ? S.hold() : S.hold);
-      wAt = null; const r = S.at ? S.at() : null, panned = see(S, r); miss = !!S.at && !r && !(typeof S.ok === 'function' ? S.ok() : S.ok); // a read step with a button still works without its target
-      const c = show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok);
+      wAt = null; wMove = false; wDest = null; const r = S.at ? S.at() : null, panned = see(S, r); miss = !!S.at && !r && !(typeof S.ok === 'function' ? S.ok() : S.ok); // a read step with a button still works without its target
+      // (a camera glide that has just started: the card is placed for where the target will be when the glide ends)
+      const rp = panned && gl && r ? { x: r.x + gl.dx * (1 - gl.f), y: r.y + gl.dy * (1 - gl.f), w: r.w, h: r.h } : null; plOff = rp ? { dx: gl.dx * (1 - gl.f), dy: gl.dy * (1 - gl.f) } : { dx: 0, dy: 0 };
+      const c = show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok, false, rp);
       if (!panned && r && c) see(S, r, c);
     }
     // 6.7 (Nic, Nov 9: "A large part of the first 4 steps is waiting around for the first couple of waves to make it into range"):
