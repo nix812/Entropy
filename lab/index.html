@@ -1714,7 +1714,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.19.0 + V6.19.0 + NOV 26 TRAINING 2';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.0 · SAME AS LIVE';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -1846,7 +1846,7 @@ if(a==='fill'&&pick.length){done(function(){fill(pick.slice());});}});
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.19.0';
+const VERSION = '6.20.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2344,12 +2344,12 @@ const STORY = [
 ];
 const STORY_MC = 'Mission Control to pilot. The core is yours. Good luck.';
 const storyEnd = w => `The gradient held for ${w} wave${w === 1 ? '' : 's'}. Then the dark came in.`; // the end screen, when the core falls
-const WHATS_NEW = { ver: '6.19.0', title: 'Last Gradient 6.19 · Journey', items: [ // draft text (Nic edits it on the Game Text page)
-  ['Music', 'The default mix is now Journey. It plays all ten genres and picks one to fit the battle: slow genres on a quiet field, faster ones in a hard fight. Studio, Listen has the Journey chip.'],
-  ['Arc Coil', 'The Arc Coil gains +1 Chain at level 3 and +1 at level 5, so it keeps up with late packs.'],
-  ['Supernova', 'The Supernova card shows its three steps, and what you give up, keep and gain.'],
-  ['Smooth motion', 'Enemies, shots, the probe and the core glide. A boss breaks up before the blast. A storm\'s rim shows the time the storm has left.'],
-  ['New tower', 'The Squall Array is a second Cryo tower. It casts a blizzard on the biggest pack in its range. It unlocks at Wave 18.'],
+const WHATS_NEW = { ver: '6.20.0', title: 'Last Gradient 6.20 · Training', items: [ // draft text (Nic edits it on the Game Text page)
+  ['Training', 'Training cards hold still. A card takes one place and slides only when its target comes under it. In Basic Training the core\'s gun stays off for Waves 1 and 2, so your towers do the work.'],
+  ['Support towers', 'The Relay Pylon and the Snare Beacon no longer level up with the towers around them. You upgrade every tower yourself.'],
+  ['Upgrade arrow', 'The arrow keeps one size on the tower at every zoom, and grows the longer an upgrade waits.'],
+  ['Bosses', 'Oddball bosses wait until Wave 40. From your second Supernova they come from Wave 20.'],
+  ['Daily Hunt', 'The Daily Hunt opens once your best run reaches Wave 40.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -16821,10 +16821,13 @@ const csTop = o => { let b = null; for (const k in o || {}) if (b === null || o[
 // ===================== ENTROPY — UI, TREE VIEW, SAVES, LOOP =====================
 // ---- the App Store app only: sound and the phone's silent switch (Nic, Nov 24: "i want it to play even on silent with an optional
 // override in the audio settings"). The web view's audio session: 'playback' ignores the switch and pauses other apps' audio;
-// 'ambient' obeys the switch and mixes with other apps. Default: play on silent. PROF.settings.silent === false = obey the switch.
+// 'ambient' obeys the switch and mixes with other apps. Nov 26 (Nic: "let's follow guidance"): the default is now 'ambient', as Apple
+// asks of games and as most games do. 'playback' made iOS treat the game as a media player: the Dynamic Island showed a Now Playing
+// pill and other apps' audio paused. PROF.settings.silent === true = play on silent (the player's choice in Settings > Sound).
 // The web game never touches this (window.LG_APP is set by app/shim.js). iOS 16.4 or newer; older: no row, the switch mutes.
 const silentOK = () => !!(window.LG_APP && navigator.audioSession);
-function silentApply() { try { if (silentOK()) navigator.audioSession.type = PROF.settings.silent === false ? 'ambient' : 'playback'; } catch (e) {} }
+function silentApply() { try { if (PROF.settings.silentV !== 2) { PROF.settings.silent = false; PROF.settings.silentV = 2; } // (once: a choice saved under the old default starts again at the new default)
+  if (silentOK()) navigator.audioSession.type = PROF.settings.silent === true ? 'playback' : 'ambient'; } catch (e) {} }
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pct = v => Math.round(v * 100) + '%';
@@ -20356,7 +20359,7 @@ const UI = (() => {
         + row('Music tempo', 'Average tempo of the default mix. Each genre in the Studio has its own', rng('setBpm', S.bpm || 72, 56, 100, 2, (S.bpm || 72) + ' BPM', 'bpmV'))
         + row('Boss music', 'Each boss plays its own theme. Off: your song keeps playing', sw(SFX.music.config.bossThemes !== false, 'bossMus'))
         + row('Mono audio', 'One earbud or one speaker', sw(!!S.mono, 'mono'))
-        + (silentOK() ? row('Play on silent', S.silent !== false ? 'Sound plays with the silent switch on. Audio from other apps pauses' : 'The silent switch mutes the game. Audio from other apps keeps playing', sw(S.silent !== false, 'silent')) : '') // app only (DRAFT text)
+        + (silentOK() ? row('Play on silent', S.silent === true ? 'Sound plays with the silent switch on. Audio from other apps pauses' : 'The silent switch mutes the game. Audio from other apps keeps playing', sw(S.silent === true, 'silent')) : '') // app only (DRAFT text)
         + sec('Troubleshooting')
         + row('Sound', `<em id="sndStat">${esc(soundStatus())}</em>`, '<button class="btn small" data-act="sndFix">Restart sound</button>'),
       graphics: sec('Effects')
@@ -21351,7 +21354,7 @@ const UI = (() => {
         SFX.init(); SFX.wake(); const M = SFX.music; M.setPaused(false); if (modalOpen !== 'studio') M.setHold(false); M.jump(null);
         setTimeout(() => { const el = $('#sndStat'); if (el) el.textContent = soundStatus(); }, 700);
         toast('SOUND RESTARTED', soundStatus(), '#59f0b4'); break; }
-      case 'silent': PROF.settings.silent = PROF.settings.silent === false; silentApply(); Save.save(); openSettings(); break;
+      case 'silent': PROF.settings.silent = PROF.settings.silent !== true; silentApply(); setTimeout(() => { try { SFX.kick(); } catch (e) {} }, 80); Save.save(); openSettings(); break; // Nov 26 (Nic: the switch "requires an app reset"): iOS reads the session type when sound starts, so the sound engine is stopped and started again (about 0.1 s)
       case 'mono': PROF.settings.mono = !PROF.settings.mono; SFX.setMono(PROF.settings.mono); Save.save(); openSettings(); break;
       case 'bossMus': { const c = SFX.music.config; c.bossThemes = c.bossThemes === false; if (!c.bossThemes) SFX.music.setBoss(null, 0, false); PROF.settings.studio = c; Save.save(); openSettings(); break; } // 6.5.2: also in Settings › Sound (Nic)
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;

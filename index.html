@@ -494,6 +494,7 @@ canvas.eico { width: 32px; height: 32px; image-rendering: pixelated; background:
 #coach .chd em { font-style: normal; font-family: var(--f-pix); font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--amber); margin-right: auto; white-space: nowrap; }
 #coach .chide[hidden] { display: none; }
 #coach .chide { font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: none; border: 0; min-height: 34px; min-width: 36px; padding: 0 4px; margin: 0 -4px; cursor: pointer; white-space: nowrap; }
+#coach .ccard.cslide { transition: left 0.18s ease-out, top 0.18s ease-out; } /* Nov 26: a card that changes slot inside one step slides */
 #coach.min .ccard { visibility: hidden; } /* 6.11.4: hidden by the player; the checklist strip brings it back */
 #coach .cskip { font-family: var(--f-pix); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); background: none; border: 0; min-height: 30px; padding: 0 0 0 8px; cursor: pointer; white-space: nowrap; }
 #coach .ct { font-family: var(--f-pix); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink); font-weight: 400; margin-top: -3px; }
@@ -876,6 +877,7 @@ details.more { margin: 6px 0 0; } details.more > summary { font-family: var(--f-
 .pfoot { position: sticky; bottom: 0; margin: auto -10px 0; padding: 8px 10px 10px; background: linear-gradient(rgba(12, 14, 28, 0.85), rgb(12, 14, 28) 10px); display: flex; flex-direction: column; gap: 6px; z-index: 2; }
 .bgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
 /* rules 26: 13 base towers. Five a row keeps the grid at 3 rows, so the picked tower's text still shows without scrolling; the name sits over the price */
+a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; } /* the demo card's link button */
 .bgrid.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } .bgrid.c5 .bt .bn { flex-direction: column; align-items: flex-start; gap: 1px; padding: 0 3px; }
 .bt { background: var(--panel); border: 0; padding: 0 0 3px; display: flex; flex-direction: column; align-items: stretch; gap: 2px; box-shadow: inset 0 0 0 1px var(--line); position: relative; overflow: hidden; }
 .bt canvas.tcard { width: 100%; aspect-ratio: 34 / 22; height: auto; image-rendering: pixelated; display: block; }
@@ -1798,7 +1800,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.19.0';
+const VERSION = '6.20.0';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -2265,7 +2267,8 @@ const RELOCATE_COST = 800, RELOCATE_RADIUS = 10;
 // (docs/notes/frontier.md, frontier-baseline.md). Runs without the flag (older recordings and snapshots) keep the Classic rules.
 // FR_VER: Frontier rule changes after the lab prototype (1). 2: re-routed enemies keep their place in line for targeting (L.pre)
 // 3 (6.2): Power Nodes stay out of wormhole no-build zones (frNodeFix); support towers grow with the attack towers they serve (supGrow)
-const FR_VER = 30; // 30 (6.19.0, Nov 24): the Arc Coil gains +1 Chain at LV 3 and at LV 5 (sim.js towerStats). // 29 (Nov 23): Squall Array dmg 12 -> 10 (runs on rules 26-28 keep 12 through SQUALL.old). // 28 (Nov 23): only the last charge spent recharges (useAbility pulls G.abilTop down to charges + 1). // 27 (Nov 22): an ability recharges up to the biggest stack held this run (sim.js abilCap, G.abilTop; Nic: banked charges froze the cooldown). // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
+const ODD_GATE = { from: 40, vet: 20, novas: 2 }; // rules 31: the first wave an oddball boss can come; `vet` from the second Supernova
+const FR_VER = 32; // 32 (Nov 25): support towers no longer grow with their towers; every tower is levelled by hand (sim.js recomputeAuras). // 31 (Nov 25): oddball bosses wait for Wave 40, or Wave 20 from the second Supernova (sim.js bossFrom). // 30 (6.19.0, Nov 24): the Arc Coil gains +1 Chain at LV 3 and at LV 5 (sim.js towerStats). // 29 (Nov 23): Squall Array dmg 12 -> 10 (runs on rules 26-28 keep 12 through SQUALL.old). // 28 (Nov 23): only the last charge spent recharges (useAbility pulls G.abilTop down to charges + 1). // 27 (Nov 22): an ability recharges up to the biggest stack held this run (sim.js abilCap, G.abilTop; Nic: banked charges froze the cooldown). // 26 (6.17.0, Nov 22): the Squall Array, a second Cryo tower (TOWERS.squall, SQUALL). It cannot be built on older rules. // 25 (6.16.2, Nov 20): the Black Hole lesson's goal is 60% of a run's (HOLE22.tutGoal; the test driver fed it 23 of 21). // 24 (6.16.1, Nov 19): a kill within the Black Hole's reach feeds it too (HOLE22.mKill; Nic: a strong build starved it). // 23 (6.16.1, Nov 19): each Supernova widens the core's light (NOVA_LIGHT). // 22 (6.16.1, Nov 19): Black Hole v2, "it eats the board" (HOLE22, docs/notes/hole22.md); the Worm never loses a tower (towerHold). // 21 (6.16.1, Nov 16): a checkpoint starts only on a clear board (CP_CLEAR_CAP; Husks about to rise count). // 20 (6.16.1, Nov 16): a wormhole is found one wave before it opens, not two (prepareWave). // 19 (6.16.1, Nov 16): the next wave waits for a clear field (WAVE19), and calling it early pays per enemy still on the field. // 18 (6.16.1, Nov 15): talent last ranks: the last rank of Heavy Rounds, Fuel, Static, Stillness, Mark, Barrier and Telemetry adds a behaviour (TLAST, TLR). // 17 (6.16.1, Nov 15): Carrier drones capped: a Carrier keeps at most CARRIER.own of its drones alive, and none drop while CARRIER.all mites fly (checklist: "Carrier drones flood long runs"). // 16 (6.16, Nov 14 night): the Remnant, a new enemy family of 7 (ENEMIES with rules: 16, REMNANT, KIT blocks rise, front, repair, siege, magnet, adapt, command; Warden squads in genWave). // 15 (6.15.2, Nov 14 22:50): moving a tower is free during a checkpoint (Nic: "Allow free tower moves at check points"; selling already refunds 100% then). // 14 (6.15, Nov 14 night): the Black Hole hunts the nearest crowd (HOLE14); the core's light reveals cloaked enemies and shrinks with its health (LIGHT14); support, Forge and snare towers recover from EMP (their knock-out timer never counted down). // 13 (6.14): the Black Hole is fed or starved (HOLE13), storms act on enemies and the probe harvests them (STORM13). // 12 (6.14): gravity can slow an enemy but never stop it (GRAV allowance, gPull in sim.js). // 11 (6.14): a probe that finishes the site it was sent to flies home on its own (siteDone). // 10 (6.14): the enemy kit; the Reflector's hull finally deflects (its number never reached the enemy before); a checkpoint holds the next wave 90 s and the field keeps running (CP_HOLD). 9: 9 (6.13, Nov 12 night, shipped Nov 13): balance by mechanics (see SIGV8 and TAL_V7 below; called "rules 8" on bal618). 8 (6.12): shared Daily dice and the bounty token (ddR in sim.js). Was 7; // 7 (6.10): Fusions (FUSIONS below). Was 6; // 6: docked, the core's own gun keeps firing and the docked tower is a second gun (Nic, Nov 6)
 const FRONTIER = {
   rowsX: 1.38, rowsMax: 40, aspect: 16 / 9,      // board: Classic rows × 1.38 (Normal 26 → 36), width 16:9 of that (Normal 64 × 36)
   spd: 0.6, count: 0.6, hp: 1.75, bossHp: 1.3,   // enemies 60% speed; 60% as many per wave, each 1.75× HP (wave HP ×1.05); bosses 1.3× HP
@@ -2295,12 +2298,12 @@ const STORY = [
 ];
 const STORY_MC = 'Mission Control to pilot. The core is yours. Good luck.';
 const storyEnd = w => `The gradient held for ${w} wave${w === 1 ? '' : 's'}. Then the dark came in.`; // the end screen, when the core falls
-const WHATS_NEW = { ver: '6.19.0', title: 'Last Gradient 6.19 · Journey', items: [ // draft text (Nic edits it on the Game Text page)
-  ['Music', 'The default mix is now Journey. It plays all ten genres and picks one to fit the battle: slow genres on a quiet field, faster ones in a hard fight. Studio, Listen has the Journey chip.'],
-  ['Arc Coil', 'The Arc Coil gains +1 Chain at level 3 and +1 at level 5, so it keeps up with late packs.'],
-  ['Supernova', 'The Supernova card shows its three steps, and what you give up, keep and gain.'],
-  ['Smooth motion', 'Enemies, shots, the probe and the core glide. A boss breaks up before the blast. A storm\'s rim shows the time the storm has left.'],
-  ['New tower', 'The Squall Array is a second Cryo tower. It casts a blizzard on the biggest pack in its range. It unlocks at Wave 18.'],
+const WHATS_NEW = { ver: '6.20.0', title: 'Last Gradient 6.20 · Training', items: [ // draft text (Nic edits it on the Game Text page)
+  ['Training', 'Training cards hold still. A card takes one place and slides only when its target comes under it. In Basic Training the core\'s gun stays off for Waves 1 and 2, so your towers do the work.'],
+  ['Support towers', 'The Relay Pylon and the Snare Beacon no longer level up with the towers around them. You upgrade every tower yourself.'],
+  ['Upgrade arrow', 'The arrow keeps one size on the tower at every zoom, and grows the longer an upgrade waits.'],
+  ['Bosses', 'Oddball bosses wait until Wave 40. From your second Supernova they come from Wave 20.'],
+  ['Daily Hunt', 'The Daily Hunt opens once your best run reaches Wave 40.'],
 ]};
 // 6.5 the probe (FR_VER 5, G.frV >= 5; docs/notes/probe65.md). A small ship the player sends anywhere on the map (tap it, tap a
 // spot). Loot sites spawn in the outer map: wreckage (a quick grab), gas clouds (harvest while inside, static hurts), asteroids
@@ -2494,9 +2497,19 @@ const TUT = {
 // tour: 1 = a walk through the hangar's own screens instead of a run. The coach steps live in ui.js (Coach PLANS, same id).
 // need(): hide a lesson until its system exists (the Ascend perks branch adds PERKS).
 // 6.13: the Daily Hunt opens at Level 20 (Nic, Nov 13: "they don't know what the hunt is"). A Daily run in progress always resumes.
-const DAILY_LVL = 20;
+const DAILY_LVL = 20; // the old gate (6.13 to 6.19.0), kept for reference
+// Nov 25 (Nic: "lets also gate the hunt to a further wave count say 40, now"): the Daily Hunt opens when the pilot's best wave is 40.
+// It stays open after a Supernova, for a saved Daily run, and for a pilot who has already played a Daily (so no tester loses it).
+const DAILY_WAVE = 40;
 // polish 48 (Nic, Nov 20): a Supernova resets the level, but the Daily Hunt stays open once any Supernova is done
-const dailyOpen = () => typeof PROF === 'undefined' || !PROF || profLevel().level >= DAILY_LVL || (PROF.nova || 0) >= 1 || !!(PROF.runSnap && PROF.runSnap.rec);
+// ---------- the free web demo (Nov 25 2026; Nic's launch decision of Nov 12: on launch day the free web version becomes Training only) ----------
+// LG_DEMO is true when the page was built as the demo (build.py with LG_DEMO=1 writes window.LG_DEMO) or opened with ?demo=1 (a preview,
+// for the test copy). Never in the App Store app. The demo keeps Training (Basic Training and the Field Manual), the Music Studio, the
+// Archive and Settings (so a tester can still move a save with Transfer Save). Play opens a card that points to the App Store.
+// STORE_URL: the App Store page. Empty until the app has one; the card then links to the website.
+const STORE_URL = '';
+const LG_DEMO = typeof window !== 'undefined' && !window.LG_APP && (!!window.LG_DEMO || /[?&]demo=1\b/.test((window.location && window.location.search) || ''));
+const dailyOpen = () => !LG_DEMO && (typeof PROF === 'undefined' || !PROF || (PROF.bestWave || 0) >= DAILY_WAVE || (PROF.nova || 0) >= 1 || !!(PROF.daily && PROF.daily.date) || !!(PROF.runSnap && PROF.runSnap.rec));
 const LESSONS = [
   { id: 'towers', track: 'basics', bench: { m: 'Build two towers of different elements', s: ['reach', 0.7] }, title: 'Towers and Elements', blurb: 'What each tower is for, and why element matters.',
     what: 'Every tower has an element: Kinetic, Thermal, Cryo, Arc or Void. Enemies resist some and are weak to others.', when: 'Every build. The Threat Board says what the next wave is weak to.', todo: 'Read the role line on each card. Build the counter the Threat Board names. Mix elements.',
@@ -2592,7 +2605,7 @@ const LESSONS = [
     need: () => typeof PERKS !== 'undefined',
     run: { start: 12, credits: 2600, grid: 5, towers: ['pulse', 'rail', 'cryo'], pre: [['towers', [['rail', 5, 1], ['pulse', 3]]]], waves: [[['drone', 10, 0.8, 0.8], ['tank', 2, 2, 0.8]]] } },
   { id: 'daily', track: 'endgame', bench: { m: "Look at today's build", s: null }, title: 'Daily Hunt', blurb: 'One map, one build, everyone.', tour: 1, need: () => dailyOpen(),
-    what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis, talent build and dice for everyone. The build has two Capstones and their towers. Your first run of the day is ranked: best wave first, then score.', when: 'Once a day, from the hangar. Opens at Level ' + DAILY_LVL + ' and stays open after a Supernova.', todo: 'Look at today’s build, then start the ranked run. Extract to lock it in, or Push for more score. Share its code to race friends.',
+    what: 'Every day has one Daily Hunt: the same map, zone, bounty, Nemesis, talent build and dice for everyone. The build has two Capstones and their towers. Your first run of the day is ranked: best wave first, then score.', when: 'Once a day, from the hangar. Opens once you reach Wave ' + DAILY_WAVE + ' and stays open after a Supernova.', todo: 'Look at today’s build, then start the ranked run. Extract to lock it in, or Push for more score. Share its code to race friends.',
     real: 'Every day: check today’s build, then play your ranked run.' },
   { id: 'meta', track: 'endgame', bench: { m: 'Open Talents and the Archive', s: null }, title: 'Talents and Progression', blurb: 'XP, levels, Talents, Capstones, Supernova, ranks, the Archive.',
     what: 'Runs pay XP (from score and the Bounty Purse). Each level is a talent point. Seven trees: rows open every 3 points, a Capstone at 12 changes how you play. Supernova resets your level and talents for a permanent bonus, an emblem and a wider core light. Your career rank counts every XP you have ever earned, and a Supernova never lowers it. Each rank also needs days served. The Archive keeps what you have met.', when: 'Between runs.', todo: 'Spend points after each run. Go deep in one tree for its Capstone. Tap your rank in the Hangar to see the next one. Check the Archive’s Swarm Collection.',
@@ -2787,7 +2800,7 @@ const BOSSES = [
     titles: ['The Unbothered', 'Lord of the Leftovers', 'It Came From The Fridge', 'Mostly Water'] },
   { id: 'whale', odd: 1, tip: 'Flies, heals allies', name: 'Space Whale', hp: 58, spd: 0.32, fly: 1, size: 2, desc: 'Flies. Its song heals every enemy nearby',
     titles: ['Singer of the Deep Void', 'Big Blue', 'Krill Enthusiast', 'Just Passing Through'] },
-  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'Quackzilla', hp: 17, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
+  { id: 'duck', odd: 1, tip: 'Hops, startles towers', name: 'The Quacken', hp: 17, spd: 0.85, size: 2, desc: 'Fast. Every quack hops it forward and startles towers nearby',
     titles: ['Bath Time Is Over', 'The Rubber Reckoning', 'Squeaks When Hit', 'Unsinkable'] },
   { id: 'fsm', odd: 1, tip: 'Flies, seizes towers', name: 'Flying Spaghetti Monster', hp: 40, spd: 0.5, fly: 1, size: 2, desc: 'Flies. Noodly appendages seize towers. Drops meatballs',
     titles: ['His Noodly Appendage', 'Al Dente', 'Touched By Marinara', 'Pastafarian Prophecy'] },
@@ -3742,7 +3755,7 @@ function fusionNow() {
 function fusAbility() {
   const M = G.mods, w = Math.max(1, G.wave);
   if (fus('KX')) G.fusT = FUSV.kxT;
-  if (fus('EX')) { const c = G.core; if (c.smax > 0) c.shield = Math.min(c.smax, c.shield + c.smax * FUSV.exShield); c.hp = Math.min(c.max, c.hp + c.max * FUSV.exHull); return; }
+  if (fus('EX')) { const c = G.core; if (c.smax > 0) c.shield = Math.min(c.smax, c.shield + c.smax * FUSV.exShield); { const h0 = c.hp; c.hp = Math.min(c.max, c.hp + c.max * FUSV.exHull); coreHealed('fusEX', h0); } return; }
   if (!(fus('TX') || fus('AX') || fus('CX') || fus('VX'))) return;
   if (fus('VX')) Hooks.fx('implode', { x: G.core.x, y: G.core.y, r: 2 });
   for (const e of G.enemies) { if (e.dead) continue; const st = e.st;
@@ -4065,6 +4078,13 @@ function expandReactor() {
 }
 // ---- v3.1 run log: compact events for after-run analysis (exported from the game-over screen) ----
 function rlog(k, d) { if (!G || !G.rlog) return; G.rlog.push(Object.assign({ k, w: G.wave, t: Math.round(G.time) }, d || {})); if (G.rlog.length > 5000) G.rlog.splice(1, 1); }
+// Nov 25 (Nic's Wave 60 log: 91 leaks, yet the core was full at the end of every wave; and "Build it all" for the logging): a ledger of the
+// core for the wave line. Module state only: nothing in the run reads it, it is not saved, and a resumed run starts a fresh ledger.
+// lo: lowest hull in the wave · sl: lowest shield · sm: shield size · hit: hull damage from leaks · abs: leak damage the shield took ·
+// sreg: shield recharged · heal: hull healed, by source (fusEX, cregen, fieldRepair, siphon, boon, patch, hull, repair, probe).
+let CORELOG = null;
+function coreLedger() { return CORELOG || (CORELOG = { lo: G.core.hp, sl: G.core.shield || 0, hit: 0, abs: 0, heal: {} }); }
+function coreHealed(src, h0) { const d = G.core.hp - h0; if (d > 0.001) { const L = coreLedger(); L.heal[src] = (L.heal[src] || 0) + d; } }
 function rlogWave() {
   const w = G.wave, H = G.geneHist && G.geneHist.find(h => h.w === w);
   const d = { core: Math.round(G.core.hp), cmax: Math.round(G.core.max), cr: Math.round(G.credits), sc: Math.round(G.score), grid: gridUsed() + '/' + gridCap(),
@@ -4072,6 +4092,8 @@ function rlogWave() {
   if (G.leakBy && Object.keys(G.leakBy).length) { d.leakBy = G.leakBy; G.leakBy = {}; }
   if (H) d.genes = Object.fromEntries(Object.entries(H.g).filter(([g, v]) => v >= 0.05).map(([g, v]) => [g, Math.round(v * 100)]));
   if (G.evList && G.evList.length) d.ev = G.evList.map(E => E.name);
+  if (CORELOG) { const L = CORELOG, r1 = v => Math.round(v * 10) / 10; d.cd = { lo: Math.round(L.lo), sl: Math.round(L.sl), sm: Math.round(G.core.smax || 0), hit: r1(L.hit), abs: r1(L.abs), sreg: r1(L.sreg || 0) }; if (Object.keys(L.heal).length) d.cd.heal = Object.fromEntries(Object.entries(L.heal).map(([k, v]) => [k, r1(v)])); }
+  CORELOG = null;
   if (w <= 3 || w % 5 === 0) d.tw = G.towers.map(t => [t.type, t.lvl, t.asc || 0, t.spec || 0, t.oc || 0, Math.round(t.dps), Math.round(t.dmgDone)]);
   rlog('wave', d);
 }
@@ -4815,7 +4837,10 @@ function supGrow() {
   }
 }
 function recomputeAuras() {
-  if (G.frV >= 3) supGrow();
+  // Rules 32 (Nic, Nov 25: "I think I want to change it back to just manually leveling... its too complex for the end user to know how
+  // to manage the different upgrade behavior between tower types"): no free growth. A Relay Pylon and a Snare Beacon are upgraded like
+  // every other tower. Runs on rules 3 to 31 keep the growth (and any free Specialization already waiting).
+  if (G.frV >= 3 && G.frV < 32) supGrow();
   for (const t of G.towers) { t.buff = { dmg: 0, rate: 0, crit: 0 }; t.isolated = true; t.reson = 0; t.resonWith = []; }
   for (const t of G.towers) {
     const els = new Set();
@@ -5778,7 +5803,7 @@ function tutSetup(T) {
   if (T.probe) G.siteT = 1e9; // 6.6 v2: loot sites come only from the script (tutScript)
   if (T.boss && T.boss.mod) { // the script's Most Wanted (Basic Training's last wave, the Bounties lesson)
     const B = BOSSES.find(b => b.id === T.boss.id), M = WANTED_MODS.find(m => m.id === T.boss.mod), w = G.startWave - 1 + (T.boss.w || T.waves.length);
-    G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w) };
+    G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name.replace(/^The /, "")}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w) };
   } else G.wanted = null;
   for (const P of T.pre || []) tutPreset(P);
   recomputeAuras();
@@ -6053,7 +6078,7 @@ function startWave() {
   lureAll();
   if (FX('shieldWave') || (G.core.leg && G.core.leg.bulwark)) G.core.shield = G.core.smax;
   odAnnounce();
-  if (G.core.A && G.core.A.cregen && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * G.core.A.cregen / 100);
+  if (G.core.A && G.core.A.cregen && !G.af.lastStand) { const h0 = G.core.hp; G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * G.core.A.cregen / 100); coreHealed('cregen', h0); }
   // anomaly upkeep
   if (G.af.coreDrain) G.core.hp = Math.max(1, G.core.hp - G.core.max * G.af.coreDrain);
   if (G.af.mutagen && G.towers.length) {
@@ -6236,7 +6261,7 @@ function updateWaves(dt) {
     const bonus = Math.round((25 + G.wave * 6) * G.mods.credits * (G.ev.gold ? 2 : 1)); // v5.0: was 20 + 4 × wave
     G.credits += bonus;
     if (FX('interest')) { const it = Math.min(300, Math.floor(G.credits * FX('interest') / 100)); if (it > 0) { G.credits += it; Hooks.log(`Interest +${it} credits`, '#ffb03a'); } }
-    if (FX('fieldRepair') && G.stats.leaks === (G.leaksAtStart || 0) && !G.af.lastStand) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * FX('fieldRepair') / 100);
+    if (FX('fieldRepair') && G.stats.leaks === (G.leaksAtStart || 0) && !G.af.lastStand) { const h0 = G.core.hp; G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * FX('fieldRepair') / 100); coreHealed('fieldRepair', h0); }
     addScore(G.wave * 50);
     addEntropy(12);
     prepareWave(G.wave + 1);
@@ -6645,7 +6670,17 @@ const BOSS_PHASES = [0.66, 0.33];
 // v2.3: every boss wave is a weighted draw from the bosses unlocked by that wave. Never-seen bosses weigh most,
 // and a boss gets likelier the longer it's been away; the last two can't repeat.
 const BOSS_FROM = { behemoth: 10, queen: 10, wraith: 15, overmind: 20, titan: 30, cat: 10, gloop: 10, duck: 10, whale: 20, fsm: 20 };
-function bossFrom(B) { return B.from || BOSS_FROM[B.id] || 10; }
+// Rules 31 (Nic, Nov 25: "lets make oddball bosses show even later (i like as the game progresses stuff gets weirder)... gated beyond
+// say wave 40 or so. After a player reaches their second supernova, we can soften this"). An oddball boss cannot come before Wave 40;
+// from the second Supernova on, before Wave 20. Hive bosses keep their own waves, so Waves 10 to 30 are always the hive. The Daily Hunt
+// and Training count as no Supernova (G.novaN is 0 there), so every pilot gets the same gate. An "every boss is an oddball" pick (the
+// Odd Belt, Cat Nebula) is the player's own choice and overrides the gate. `nova` and `frV` are passed by the setup screen, before a run exists.
+function oddGate(nova) { return (nova || 0) >= ODD_GATE.novas ? ODD_GATE.vet : ODD_GATE.from; }
+function bossFrom(B, nova, frV) {
+  const f = B.from || BOSS_FROM[B.id] || 10, v = frV !== undefined ? frV : (G ? G.frV : 0);
+  if (!B.odd || !(v >= 31) || (frV === undefined && G && G.af && G.af.oddAll)) return f;
+  return Math.max(f, oddGate(nova !== undefined ? nova : G ? G.novaN : 0));
+}
 // ---------- v4.4 Most Wanted ----------
 // One boss per run gets a poster: a mutation (Colossal, Twin, Hasted, Armored, Spectral, Loaded) and a bounty. It is announced at the start,
 // shows as a chip between waves, and lands on the first boss wave at least ten waves out (never before Wave 20).
@@ -6653,7 +6688,7 @@ function planWanted(at) {
   const r = G.r, w = at || Math.max(20, Math.ceil((G.startWave + 10) / 10) * 10);
   const pool = BOSSES.filter(B => bossFrom(B) <= w && !(G.af && G.af.oddAll && !B.odd));
   const B = pick(r, pool), M = pick(r, WANTED_MODS);
-  G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w * (G.CH.cr || 1)) };
+  G.wanted = { boss: B.id, mod: M.id, w, done: 0, name: `${M.name} ${B.name.replace(/^The /, "")}`, crime: WANTED_FOR[B.id] || 'crimes against geometry', bounty: Math.round(WANTED.creditsPerWave * w * (G.CH.cr || 1)) };
   sectorPoster();
   rlog('wanted', { boss: G.wanted.boss, mod: G.wanted.mod, w });
 }
@@ -7141,7 +7176,7 @@ function leak(e) {
   c.sinceHit = 0;
   if (G.mods.ks.bulwark && G.time >= (G.bulwarkT || 0)) bulwarkWave(c);
   G.leakDmgW = (G.leakDmgW || 0) + dmg; // v5.4: the breach forecast weighs a wave's leak damage against shield + hull
-  const sh0 = c.shield, abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs;
+  const sh0 = c.shield, abs = Math.min(c.shield, dmg); c.shield -= abs; dmg -= abs; { const L = coreLedger(); L.abs += abs; L.hit += dmg; L.sl = Math.min(L.sl, c.shield); L.lo = Math.min(L.lo, c.hp - dmg); }
   if (sh0 > 0 && c.shield <= 0.01 && TLR('eShield') && G.reboundW !== G.wave) { const R = TLAST.eShield; G.reboundW = G.wave; Hooks.fx('boom', { x: c.x, y: c.y, r: R.r, col: '#7fd8ff', big: 1 }); for (const o of G.enemies) if (!o.dead && o !== e && dist2(o.x, o.y, c.x, c.y) <= R.r * R.r) { gPull(o, R.push * (o.boss ? 0.3 : 1)); if (!o.boss && !o.elite.includes('jugg')) o.st.stun = Math.max(o.st.stun || 0, R.stun); } } // rules 18 Barrier last rank
   c.hp -= dmg;
   Hooks.fx('leak', { x: c.x, y: c.y, boss: !!e.boss });
@@ -7420,7 +7455,7 @@ function kill(e, src, o) {
       if (!o2.st.burn || o2.st.burn.dps < e.st.burn.dps) o2.st.burn = { dps: e.st.burn.dps, t: 3 * M.burnDur, src: e.st.burn.src };
     }
   }
-  if (src && src.s && src.s.leg.siphon) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * 0.005);
+  if (src && src.s && src.s.leg.siphon) { const h0 = G.core.hp; G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * 0.005); coreHealed('siphon', h0); }
   if (e.boss === 'gloop' && (e.gen || 0) < 2) {
     for (let i = 0; i < 2; i++) spawnBoss({ boss: 'gloop', L: e.L, d: Math.max(0, e.d - i * 0.5), gen: (e.gen || 0) + 1, hpAbs: e.maxHp * 0.35, hpm: 1 });
     Hooks.fx('say', { x: e.x, y: e.y, t: e.gen ? 'bloop!' : 'ow. but also: two of me' });
@@ -7486,7 +7521,7 @@ function takeBoon(b) {
   }
   G.draft = null;
   recomputeAll();
-  if (b.special === 'core') G.core.hp = G.core.max;
+  if (b.special === 'core') { const h0 = G.core.hp; G.core.hp = G.core.max; coreHealed('boon', h0); }
 }
 
 // ---------- tower combat ----------
@@ -8051,7 +8086,7 @@ function aegisCatch(e) {
   const c0 = G.credits;
   kill(e, A, {});
   if (A.s.salv) G.credits += Math.max(0, G.credits - c0);
-  if (A.s.patch) c.hp = Math.min(c.max, c.hp + c.max * A.s.patch / 100);
+  if (A.s.patch) { const h0 = c.hp; c.hp = Math.min(c.max, c.hp + c.max * A.s.patch / 100); coreHealed('patch', h0); }
   return true;
 }
 // Wildcard: every shot rolls an element and a delivery (a bolt, a lance, a burst, an arc), with a 50% chance (Loaded Dice: 100%) of
@@ -8346,24 +8381,28 @@ function coreUpgrade(kind) {
   let rolled = null;
   if (kind === 'weapon') { const k = coreWeaponCost(); if (c.wLvl >= 12 || G.credits < k) return false; G.credits -= k; c.wLvl++; rolled = rollCoreAffix(c); }
   else if (kind === 'shield') { const k = coreShieldCost(); if (c.sLvl >= 10 || G.credits < k) return false; G.credits -= k; c.sLvl++; rolled = rollCoreAffix(c); }
-  else if (kind === 'hull') { const k = coreHullCost(); if ((c.hLvl || 0) >= HULL.max || G.credits < k) return false; G.credits -= k; const was = c.max; c.hLvl = (c.hLvl || 0) + 1; recomputeAll(); c.hp = Math.min(c.max, c.hp + (c.max - was)); rlog('hull', { lv: c.hLvl, cost: k }); }
+  else if (kind === 'hull') { const k = coreHullCost(); if ((c.hLvl || 0) >= HULL.max || G.credits < k) return false; G.credits -= k; const was = c.max; c.hLvl = (c.hLvl || 0) + 1; recomputeAll(); { const h0 = c.hp; c.hp = Math.min(c.max, c.hp + (c.max - was)); coreHealed('hull', h0); } rlog('hull', { lv: c.hLvl, cost: k }); }
   else if (kind === 'uplink') { const k = coreUplinkCost(); if ((c.uLvl || 0) >= UPLINK.max || G.credits < k) return false; G.credits -= k; c.uLvl = (c.uLvl || 0) + 1; rlog('uplink', { lv: c.uLvl, cost: k });
     for (const a of ABIL_ORDER) if (G.abilCd[a] > abilCdMax(a)) G.abilCd[a] = abilCdMax(a);
     if (G.fr) recomputeAuras(); // Frontier: Uplink adds links
     const m = UPLINK.mods.find(x => x.lv === c.uLvl); if (m) Hooks.toast('UPLINK · ' + m.name.toUpperCase(), m.desc, '#ffe14d', true); }
-  else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; c.hp = Math.min(c.max, c.hp + c.max * 0.35); }
+  else if (kind === 'repair') { const k = coreRepairCost(); if (G.af.lastStand || c.hp >= c.max || G.credits < k) return false; G.credits -= k; { const h0 = c.hp; c.hp = Math.min(c.max, c.hp + c.max * 0.35); coreHealed('repair', h0); } }
   if (rolled) { c.affixes.push(rolled); coreAffSum(c); recomputeAll(); if (kind === 'shield') c.shield = c.smax; }
   Hooks.sfx('upgrade', {});
   Hooks.fx('upgrade', { x: c.x, y: c.y, col: rolled ? RARITY[rolled.tier].col : '#59f0b4' });
   return rolled || true;
 }
+const tutCoreOff = () => !!(G.tut && !G.lesson && G.wave < 3);
 function updateCore(dt) {
   const c = G.core;
   c.sinceHit += dt;
-  if (c.sinceHit > 4 && c.shield < c.smax && !(G.fr && G.frFly)) c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt);
+  if (c.sinceHit > 4 && c.shield < c.smax && !(G.fr && G.frFly)) { const s0 = c.shield; c.shield = Math.min(c.smax, c.shield + c.smax * 0.12 * G.mods.shieldRegen * (1 + ((c.A && c.A.crecharge) || 0) / 100) * dt); const L = coreLedger(); L.sreg = (L.sreg || 0) + c.shield - s0; }
   const s = coreStats();
   c.s = s; c.isolated = false; c.buff = { dmg: 0, rate: 0, crit: 0 }; c.dmgDone = c.dmgDone || 0; c.dpsAcc = c.dpsAcc || 0;
   if (G.fr && (G.frFly || (G.frV < 6 && frDockT()))) { c.cd = 0; return; } // Frontier: no gun in the air; frV < 6: docked, the tower was the gun (frV 6: both fire)
+  // Basic Training (Nov 26, Nic: "The cores battery kills everything before it makes it to the proposed towers"): the core gun is
+  // offline in Waves 1 and 2, so the player sees the towers do the work. It comes online at Wave 3, with the core lesson.
+  if (tutCoreOff()) { c.cd = 0; return; }
   c.cd -= dt * s.rate * (G.overclockT > 0 ? 2 : 1) * (G.redAlert ? RED_ALERT.coreRate : 1);
   if (c.cd > 0) return;
   // last line of defence: shells go to whatever is closest to reaching the core along its route, anywhere in range
@@ -8867,7 +8906,7 @@ function probeUpdate(dt) {
   if (P.home) {
     const h = prHomePt(); P.x = h.x; P.y = h.y;
     P.hp = Math.min(P.max, P.hp + P.max * PROBE.regen * dt);
-    if (G.core.hp < G.core.max) G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * PROBE.repair * dt);
+    if (G.core.hp < G.core.max) { const h0 = G.core.hp; G.core.hp = Math.min(G.core.max, G.core.hp + G.core.max * PROBE.repair * dt); coreHealed('probe', h0); }
   } else {
     if (P.storm && !P.ret) prStorm(dt); // rules 13
     const s = P.task ? siteById(P.task) : null; let tx = P.tx, ty = P.ty, stop = 0;
@@ -10486,7 +10525,7 @@ const SFX = (() => {
     const gallop = () => { let o = ''; for (let s = 0; s < 16; s += 4) o += `${s}:0:0.9 ${s + 2}:0:0.5 ${s + 3}:0:0.5 `; return o; };
     const roll16 = ivs => { let o = ''; for (let s = 0; s < 16; s++) if (ivs[s % ivs.length] !== null) o += `${s}:${ivs[s % ivs.length]}:0.9 `; return o; };
     const BOSS_THEMES = {
-      behemoth: { name: 'Behemoth', title: 'Siege Engine', base: ['synthwave', 'darksynth'], bpm: 108, mode: 'phrygian', root: 40, kit: 'hard', trim: 1.59,
+      behemoth: { name: 'Behemoth', title: 'The Ripening', base: ['synthwave', 'darksynth'], bpm: 108, mode: 'phrygian', root: 40, kit: 'hard', trim: 1.59,
         loop: C([0, 0, 1, 6], ['m', 'm', 'M', 'M']), drums: { K: '9000900090009060', S: '0000900000009000', C: '0000600000006000', H: '5353535353535353', O: '0000000000000070' }, fill: 'toms',
         bass: { kind: 'sawoct', pat: gallop() }, keys: { kind: 'power', pat: [0, 3, 6, 10, 12], lv: 0 }, pad: { kind: 'dark', lv: 0.3 }, lead: { kind: 'brass', oct: 64 },
         hook: '0:0:2 3:0:1 4:1:4 12:3:3 16:1:3 20:0:8 30:-2:2', ans: '0:0:2 3:0:1 4:1:4 12:7:4 16:8:6 24:7:2 28:5:4', m2: 5,
@@ -10507,7 +10546,7 @@ const SFX = (() => {
         bass: { kind: 'acid', pat: '0:0:1:a 2:12:1 3:0:1 5:10:1:s 6:0:1 8:7:1:a 10:0:1 11:12:1 13:3:1:s 14:0:1' }, keys: { kind: 'organ', pat: [0, 6], lv: 0.35 }, pad: { kind: 'dark', lv: 0.3 }, lead: { kind: 'bleep', oct: 72 },
         hook: '0:0:3 3:3:3 6:7:3 9:10:3 12:7:3 15:3:3 18:0:3 21:3:3 24:7:3 27:10:3 30:14:2', ans: '0:12:3 3:10:3 6:7:3 9:5:3 12:7:3 15:3:3 18:2:3 21:0:3 24:-2:3 27:0:5', m2: 5,
         mix: { rev: 0.45, revS: 3, echo: 0.45, div: 0.75, fb: 0.5, side: 0.4, tone: 16000, tape: 0.05, crackle: 0, pump: 0.35 } },
-      titan: { name: 'Titan', title: 'Colossus March', base: ['synthwave', 'outrun'], bpm: 120, mode: 'harmonic', root: 38, kit: '909', trim: 0.59,
+      titan: { name: 'Titan', title: 'Shellbreak', base: ['synthwave', 'outrun'], bpm: 120, mode: 'harmonic', root: 38, kit: '909', trim: 0.59,
         loop: C([0, 5, 3, 4], [null, null, null, '7']), drums: { K: '9000000090000000', S: '0030903303009330', X: '4000000000000060', H: '5050505050505050' }, fill: 'toms',
         bass: { kind: 'sawoct', pat: '0:0:1.6 2:0:1.6 4:12:1.6 6:0:1.6 8:0:1.6 10:0:1.6 12:12:1.6 14:7:1.6' }, keys: { kind: 'stab', pat: [0, 6, 8], lv: 0 }, pad: { kind: 'strings', lv: 0 }, lead: { kind: 'supersaw', oct: 62 },
         hook: '0:0:3 3:7:1 4:8:4 8:7:3 11:5:1 12:7:4 16:0:3 19:7:1 20:8:3 23:11:1 24:12:8', ans: '0:12:3 3:11:1 4:8:4 8:7:3 11:5:1 12:3:4 16:2:3 19:-1:1 20:0:12', m2: 5,
@@ -10531,7 +10570,7 @@ const SFX = (() => {
         hook: '0:0:4 4:7:4 8:12:6 14:10:2 16:7:8 24:3:4 28:5:4', ans: '0:0:4 4:7:4 8:12:6 14:15:2 16:14:8 24:12:8', m2: '0:12:6 6:15:2 8:14:4 12:12:4 16:10:8 24:7:8',
         form: { 4: { half: 1 } },
         mix: { rev: 0.35, revS: 5.2, echo: 0.25, div: 1, fb: 0.35, side: 0.25, tone: 12000, tape: 0.05, crackle: 0, pump: 0.25 } },
-      duck: { name: 'Quackzilla', title: 'Rubber Reckoning', base: ['trance', 'uplifting'], bpm: 178, mode: 'mixolydian', root: 43, kit: 'hard', trim: 1.65,
+      duck: { name: 'The Quacken', title: 'Rubber Reckoning', base: ['trance', 'uplifting'], bpm: 178, mode: 'mixolydian', root: 43, kit: 'hard', trim: 1.65,
         loop: C([0, 6, 3, 0]), drums: { K: '9000900090009000', O: '0080008000800080', H: '3333333333333333', C: '0000800000008000' }, fill: 'roll',
         bass: { kind: 'saw', pat: '2:0:1.4 6:0:1.4 10:0:1.4 14:0:1.4' }, keys: { kind: 'stab', pat: [2, 6, 10, 14], lv: 0.25 }, pad: { kind: 'juno', lv: 0.4 }, lead: { kind: 'quack', oct: 67 },
         hook: '0:0:2 2:0:2 4:4:2 6:7:4 10:9:2 12:7:4 16:12:2 18:10:2 20:7:2 22:4:2 24:5:2 26:4:2 28:0:4', ans: '0:0:2 2:0:2 4:4:2 6:7:4 10:9:2 12:10:4 16:12:12', m2: 5,
@@ -11678,8 +11717,12 @@ const SFX = (() => {
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
 // Android and other browsers with the Vibration API get real patterns. iOS Safari has no vibration API; on iOS 17.4 to 26.4 a
 // hidden <input switch> toggled by its label plays the system haptic tick (Apple closed this in 26.5), so that is best effort.
+// The App Store app (window.LG_APP, Nov 24: Nic's first device run, "Haptics aren't through"): the switch trick does nothing in an
+// app's web view, so the app uses the phone's real haptic engine through the Capacitor Haptics plugin: light for a tap, medium
+// for a leak, three heavy for a big leak.
 const Haptics = (() => {
   let lbl = null, last = 0;
+  const nat = () => (typeof window !== 'undefined' && window.LG_APP && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) || null;
   const on = () => !(typeof PROF !== 'undefined' && PROF.settings && PROF.settings.haptics === false);
   function sw() {
     if (lbl) return lbl;
@@ -11689,10 +11732,12 @@ const Haptics = (() => {
   }
   function buzz(pat, ticks, force) {
     if (!force && !on()) return; const now = performance.now(); if (now - last < 140) return; last = now;
+    const h = nat(); if (h) { try { const style = ticks >= 3 ? 'HEAVY' : pat === 30 ? 'MEDIUM' : 'LIGHT', go = () => { const r = h.impact({ style }); if (r && r.catch) r.catch(() => {}); };
+      go(); for (let k = 1; k < ticks; k++) setTimeout(go, k * 110); } catch (e) {} return; }
     try { if (navigator.vibrate) { navigator.vibrate(pat); return; } } catch (e) {}
     try { const l = sw(); l.click(); for (let k = 1; k < ticks; k++) setTimeout(() => l.click(), k * 110); } catch (e) {}
   }
-  return { leak: () => buzz(30, 1), big: () => buzz([70, 50, 110], 3), tap: f => buzz(15, 1, f), get native() { return !!navigator.vibrate; } };
+  return { leak: () => buzz(30, 1), big: () => buzz([70, 50, 110], 3), tap: f => buzz(15, 1, f), get native() { return !!(nat() || navigator.vibrate); } };
 })();
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
@@ -13155,6 +13200,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   // the framed sector (buffer px). It eases outward when the run's sector grows.
   const reg = { x: 0, y: 0, w: 0, h: 0 };
   let regG = null, regKey = '', regAnim = null, frontier = null, onCam = null;
+  let upNag = null; // the upgrade arrow's memory: which tower it points at and since which wave (drawWorld)
   let parts = [], rings = [], lines = [], texts = [], flashes = [], frame = 0, shake = 0, shakeT = 0, selEnemy = null, hoverEnemy = null, hintTiles = null, spotTiles = null;
   let selTile = null, selTower = null, preview = null, aimPos = null, hoverTile = null;
   let wormFlashAt = 0; // Frontier: when the no-build ring around the wormholes was last flashed
@@ -15627,7 +15673,12 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     //    tower is maxed, the cheapest affordable Ascension. It points at the best next upgrade, not at everything you could buy
     { const tpx = TILE * ws, cr = G.credits, big = tpx >= 17;
       let best = null, bl = Infinity, bc = Infinity;
-      if (!G.over) for (const t of G.towers) { const c0 = upgradeCost(t); if (cr < c0 || t.ascPend > 0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } }
+      // Nov 25 (Nic: "I just dont want it [a support tower] to be considered for the indicator that says 'this is your lowest tower'"):
+      // attack towers only. Support and economy towers (Relay Pylon, Snare Beacon, Credit Forge) are pointed at only when no attack
+      // tower can be upgraded.
+      const sup = t => !!(t.s && (supKind(t.s.kind) || t.s.kind === 'eco'));
+      if (!G.over) for (const pass of [0, 1]) { if (best) break;
+        for (const t of G.towers) { if (sup(t) !== !!pass) continue; const c0 = upgradeCost(t); if (cr < c0 || t.ascPend > 0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } } }
       for (const t of G.towers) {
         const n = towerLevel(t), col = lvTier(n).col, x0 = bx2s(t.x * TILE), x1 = bx2s(t.x * TILE + TILE), y = Math.round(by2s(t.y * TILE + TILE)), w = x1 - x0, lw = Math.max(2, Math.round(tpx / 12));
         c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x0 + w * 0.18) - 1, y - lw - 1, Math.round(w * 0.64) + 2, lw + 2);
@@ -15641,14 +15692,38 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         c.fillStyle = '#0b0b12'; c.fillText('LV' + n, x + pw / 2 + 0.5, y + bs / 2 + 0.5);
       }
       // 5.8: a gold star over every tower with a pick waiting (veteran mutation or Ascend perk), so they stand out in a busy wave
-      { const u = clamp(Math.round(tpx / 12), 2, 3); c.fillStyle = '#ffd84a';
+      // Nov 25 (Nic: "The veteran labels are definitely scaling with zoom. They should not"): the star keeps its size against the tower.
+      // Before, it never went under 10 px, so on a zoomed-out map it was bigger than the 8 px tower under it.
+      { const u = Math.max(1, Math.min(3, Math.round(tpx / 12))); c.fillStyle = '#ffd84a';
         for (const t of G.towers) if (t.pending > 0 || t.ascPend > 0 || t.grow > 0) { const x = Math.round(bx2s(t.x * TILE)) + u, y = Math.round(by2s(t.y * TILE)) - 3 * u - (frame % 40 < 20 ? 0 : u);
           c.fillStyle = '#090b16'; c.fillRect(x - 1, y + u - 1, 5 * u + 2, 3 * u + 2); c.fillRect(x + 2 * u - 1, y - 1, u + 2, 5 * u + 2);
           c.fillStyle = '#ffd84a'; c.fillRect(x, y + 2 * u, 5 * u, u); c.fillRect(x + 2 * u, y, u, 5 * u); c.fillRect(x + u, y + u, 3 * u, 3 * u); } }
-      if (best && big) {
-        const t = best, aw = Math.round(clamp(tpx * 0.36, 9, 15)), ax = Math.round(bx2s(t.cx * TILE)) - aw / 2, ay = Math.round(by2s(t.y * TILE)) - aw - 4 - (frame % 30 < 15 ? 0 : 2) - (t.pending > 0 ? 16 : 0), nc = lvTier(towerLevel(t) + 1).col;
+      // Nov 25 (Nic: "that indicator needs to be more prominent, I regularly find myself searching for my weakest towers to upgrade",
+      // then "maybe have it so the arrow gets a little larger after multiple waves of being neglected? just dont make it so prominent
+      // that it becomes annoying"). The arrow starts a little bigger than before (up to 17 px, was 15), keeps its size against the tower (6 px on a far map) and shows at every zoom
+      // level. While the SAME tower stays the pick, each wave it is left adds 12% to the arrow, up to +60% after five waves. From two
+      // waves of neglect a thin frame of corner marks pulses round the tile; from four, a soft glow sits under the arrow. Upgrading
+      // that tower, or another tower becoming the pick, starts over. upNag is drawing state only: nothing in the run reads it.
+      if (best) {
+        const lv = towerLevel(best);
+        if (!upNag || upNag.id !== best.id || upNag.lv !== lv || G.wave < upNag.w) upNag = { id: best.id, lv, w: G.wave };
+        const t = best, wait = Math.min(5, G.wave - upNag.w), nc = lvTier(lv + 1).col, ph = (frame % 60) / 60, pu = 0.5 - 0.5 * Math.cos(ph * Math.PI * 2);
+        const x0 = Math.round(bx2s(t.x * TILE)), y0 = Math.round(by2s(t.y * TILE)), x1 = Math.round(bx2s(t.x * TILE + TILE)), y1 = Math.round(by2s(t.y * TILE + TILE));
+        let top = y0;
+        if (wait >= 2) {
+          const g = Math.round(2 + pu * 2), L = Math.max(3, Math.round((x1 - x0) * 0.26)), lw = Math.max(1, Math.round(tpx / 14));
+          const corner = (cx, cy, dx, dy) => { c.fillRect(Math.min(cx, cx + dx * L), cy - (dy < 0 ? 0 : lw), L, lw); c.fillRect(cx - (dx < 0 ? 0 : lw), Math.min(cy, cy + dy * L), lw, L); };
+          c.globalAlpha = (0.3 + 0.1 * (wait - 2)) * (0.6 + 0.4 * (1 - pu)); c.fillStyle = nc;
+          corner(x0 - g, y0 - g, 1, 1); corner(x1 + g, y0 - g, -1, 1); corner(x0 - g, y1 + g, 1, -1); corner(x1 + g, y1 + g, -1, -1);
+          c.globalAlpha = 1; top = y0 - g;
+        }
+        // Nov 25 16:37 (Nic, two phone shots: "Something still seems odd about the upgrade arrow scaling"): the arrow was capped at 17 px, so it looked small on a
+        // zoomed-in tower (a quarter of the tile), and its growth and glow made it wider than the whole tile on a far map. Now it is a fixed share of
+        // the tile at every zoom: 40%, up to 62% after five waves of neglect, never under 6 px.
+        const aw = Math.round(Math.max(6, Math.min(tpx * 0.62, clamp(tpx * 0.40, 6, 30) * (1 + 0.12 * wait)))), ax = Math.round(bx2s(t.cx * TILE)) - aw / 2, ay = top - aw - 4 - (frame % 30 < 15 ? 0 : 2) - (t.pending > 0 ? 16 : 0);
         const arrow = (o, k) => { c.beginPath(); c.moveTo(ax + aw / 2, ay - o); c.lineTo(ax + aw + o, ay + aw * 0.55 + o * k); c.lineTo(ax + aw * 0.68 + o * k, ay + aw * 0.55 + o * k); c.lineTo(ax + aw * 0.68 + o * k, ay + aw + o); c.lineTo(ax + aw * 0.32 - o * k, ay + aw + o); c.lineTo(ax + aw * 0.32 - o * k, ay + aw * 0.55 + o * k); c.lineTo(ax - o, ay + aw * 0.55 + o * k); c.closePath(); c.fill(); };
-        c.fillStyle = '#090b16'; arrow(1.5, 0.5); c.fillStyle = frame % 30 < 20 ? nc : '#ffffff'; arrow(0, 0);
+        if (wait >= 4) { c.globalAlpha = 0.2; c.fillStyle = nc; c.beginPath(); c.arc(ax + aw / 2, ay + aw * 0.55, Math.min(aw * 0.9, Math.max(5, tpx * 0.5)), 0, Math.PI * 2); c.fill(); c.globalAlpha = 1; }
+        c.fillStyle = '#090b16'; arrow(1.5 + 0.2 * wait, 0.5); c.fillStyle = frame % 30 < 20 ? nc : '#ffffff'; arrow(0, 0);
       }
     }
     // veterans waiting for a mutation: a bobbing badge above the tower
@@ -16015,6 +16090,8 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     g.setLineDash([]);
   }
   return {
+    get upNag() { return upNag; }, // tests
+    dropTexts(re) { texts = texts.filter(t => !re.test(t.txt)); }, // screenshot tools only: remove floating labels that match (tools/site_shots_launch.py)
     set glow(v) { R_.glow = v; }, set bloom(v) { R_.bloom = v; }, set sharp(v) { R_.sharp = v; }, set zfx(v) { R_.zfx = v; }, get zfx() { return R_.zfx; },
     tintStats: () => { let px = 0; for (const c of tintLRU.keys()) px += c.width * c.height; return { kept: tintLRU.size, made: tintMade, cap: TINT_CAP, mb: Math.round(px * 4 / 104857.6) / 10 }; }, // 6.6 test hook (perf66)
     zoneSwatch, get zoneWipe() { return !!wipe; }, get zoneMs() { return zMs; }, set zoneMs(v) { zMs = v; }, zoneLook: id => ZLOOK[id] || ZL0, // 6.3 zone looks
@@ -16696,6 +16773,15 @@ const csTop = o => { let b = null; for (const k in o || {}) if (b === null || o[
 
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — UI, TREE VIEW, SAVES, LOOP =====================
+// ---- the App Store app only: sound and the phone's silent switch (Nic, Nov 24: "i want it to play even on silent with an optional
+// override in the audio settings"). The web view's audio session: 'playback' ignores the switch and pauses other apps' audio;
+// 'ambient' obeys the switch and mixes with other apps. Nov 26 (Nic: "let's follow guidance"): the default is now 'ambient', as Apple
+// asks of games and as most games do. 'playback' made iOS treat the game as a media player: the Dynamic Island showed a Now Playing
+// pill and other apps' audio paused. PROF.settings.silent === true = play on silent (the player's choice in Settings > Sound).
+// The web game never touches this (window.LG_APP is set by app/shim.js). iOS 16.4 or newer; older: no row, the switch mutes.
+const silentOK = () => !!(window.LG_APP && navigator.audioSession);
+function silentApply() { try { if (PROF.settings.silentV !== 2) { PROF.settings.silent = false; PROF.settings.silentV = 2; } // (once: a choice saved under the old default starts again at the new default)
+  if (silentOK()) navigator.audioSession.type = PROF.settings.silent === true ? 'playback' : 'ambient'; } catch (e) {} }
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pct = v => Math.round(v * 100) + '%';
@@ -16796,7 +16882,7 @@ const Save = (() => {
     try { localStorage.setItem(KEY, js); return true; } catch (e) {}
     try { UI.dropLogs(0); localStorage.setItem(KEY, js); return true; } catch (e) {}
     try { UI.dropLogs(1); localStorage.setItem(KEY, js); return true; } catch (e) {}
-    if (!warned && typeof UI !== 'undefined' && UI.toast) { warned = true; UI.toast('SAVE FAILED', 'This device has no room to save. Free some browser storage, or your progress may be lost.', '#ff4d6a', true); } // draft text
+    if (!warned && typeof UI !== 'undefined' && UI.toast) { warned = true; UI.toast('SAVE FAILED', (window.LG_APP ? 'This device has no room to save. Free some space, or your progress may be lost.' : 'This device has no room to save. Free some browser storage, or your progress may be lost.'), '#ff4d6a', true); } // draft text
     return false;
   }
   function loadLocal() { let s = null; try { s = localStorage.getItem(KEY); return s ? merge(JSON.parse(s)) : null; } catch (e) { try { if (s) localStorage.setItem(KEY + '.bad', s); } catch (e2) {} return null; } } // polish 47: a save that cannot be read is kept aside, not overwritten
@@ -16878,15 +16964,15 @@ const UI = (() => {
     const bn = $('#bNova'); bn.hidden = !nv && done < 1; bn.classList.toggle('ready', ready);
     $('#hNovaSub').textContent = ready ? 'Ready' : PROF.runSnap && done >= 2 && L.level >= req ? 'Finish your run' : `${Math.min(done, 2)}/2 Capstones · Lv ${req}`;
     const snap = PROF.runSnap;
-    $('#bLaunch2').hidden = !snap;
-    $('#bLaunch').firstChild.textContent = snap ? 'Resume' : 'Play';
+    $('#bLaunch2').hidden = !snap || LG_DEMO;
+    $('#bLaunch').firstChild.textContent = LG_DEMO ? 'Full Game' : snap ? 'Resume' : 'Play';
     const dk = dailyKey(), dd = PROF.daily && PROF.daily.date === dk ? PROF.daily : null;
-    $('#hPlaySub').textContent = snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `${snap.fr ? '' : 'Classic · '}Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : ''; // 6.1: every new run flies; a saved pre-6.1 run resumes on the Classic rules and says so
+    $('#hPlaySub').textContent = LG_DEMO ? 'On the App Store' : snap ? (snap.rec ? `Daily Hunt · Wave ${snap.wave}` : `${snap.fr ? '' : 'Classic · '}Wave ${snap.wave} · ${CHAOS_LEVELS[snap.chaos].name}`) : ''; // 6.1: every new run flies; a saved pre-6.1 run resumes on the Classic rules and says so
     // v5.3 The Hunt: what is waiting for you, what you've won, and today's Daily Hunt, before you press Play
     const H = PROF.hunt || {}, N = PROF.nemesis, hh = $('#hHunt'), rows = [];
     if (N) rows.push(`<div class="hhr nem"><span class="lbl">Nemesis</span><b>${esc(N.name)}</b><small>${N.kind === 'boss' ? 'takes your next bounty' : 'leads your next Strain Assault'} · ended you on Wave ${N.lastW}</small></div>`);
     if (H.bounties || H.extracts || H.nemDown) rows.push(`<div class="hhr"><span class="lbl">Trophies</span><b>${H.bounties || 0} bount${H.bounties === 1 ? 'y' : 'ies'} · ${H.extracts || 0} extracted${H.nemDown ? ` · ${H.nemDown} Nemes${H.nemDown === 1 ? 'is' : 'es'} down` : ''}</b></div>`);
-    if (!newPlayer() && !dailyOpen()) rows.push(`<div class="hhr day lock"><span class="lbl">Daily Hunt</span><b>Opens at Level ${DAILY_LVL}</b><small>One run a day, the same for every pilot</small></div>`); // 6.13
+    if (!newPlayer() && !dailyOpen()) rows.push(`<div class="hhr day lock"><span class="lbl">Daily Hunt</span><b>${LG_DEMO ? 'In the full game' : `Opens at Wave ${DAILY_WAVE}`}</b><small>One run a day, the same for every pilot</small></div>`); // 6.13
     else if (!newPlayer()) rows.push(`<div class="hhr day"><span class="lbl">Today's Hunt</span><b>${dd && dd.ranked ? `Wave ${dd.ranked.wave}${dd.ranked.ext ? ' · extracted' : ''}` : 'Not played yet'}</b><button class="btn small" data-hact="daily">${dd && dd.ranked ? 'Ladder' : 'Hunt'}</button></div>`);
     hh.innerHTML = rows.join('');
     if (dailyOpen() && !newPlayer() && !PROF.dailyBrief && (!navigator.webdriver || window.dailyBriefTest)) setTimeout(dailyBrief, 400); // 6.13
@@ -16904,6 +16990,7 @@ const UI = (() => {
 
   // ---------- Setup ----------
   function openSetup() {
+    if (LG_DEMO) return openDemo();
     const ls = PROF.lastSetup || { startWave: 1, chaos: 1 };
     if (setup.mode !== 'daily' || !dailyOpen()) setup.mode = 'std'; // 6.13: not before Level 20. 6.1: one kind of run (Frontier rules); the Daily Hunt is the other tab
     setup.chaos = ls.chaos ?? 1; if (!chaosUnlocked(setup.chaos)) setup.chaos = 1;
@@ -16977,10 +17064,10 @@ const UI = (() => {
       <p class="note secnote"><b style="color:${S.col}">${esc(S.pitch)}</b> ${sectorLine(S)}${P ? ` · Most Wanted: ${esc(P)}` : ''}</p>`;
   }
   // the sector's poster boss, when it can show up by the first bounty (Wave 20)
-  function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B) <= 20 ? `${M.name} ${B.name}` : ''; }
+  function sectorWantedName(id) { const S = SECTOR_BY[id], B = S && BOSSES.find(b => b.id === S.boss), M = S && WANTED_MODS.find(m => m.id === S.mod); return B && M && bossFrom(B, setup && setup.daily ? 0 : PROF.nova || 0, FR_VER) <= 20 ? `${M.name} ${B.name.replace(/^The /, '')}` : ''; }
   function modeChips() {
     if (newPlayer() && setup.mode !== 'daily') return '';
-    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Endless</button>${dailyOpen() ? `<button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button>` : `<button class="chip lock" data-act="dailyLocked" style="--c:#b86cff">Daily Hunt · Lv ${DAILY_LVL}</button>`}</div>`;
+    return `<div class="chips"><button class="chip ${setup.mode === 'std' ? 'on' : ''}" data-act="mode" data-v="std">Endless</button>${dailyOpen() ? `<button class="chip ${setup.mode === 'daily' ? 'on' : ''}" data-act="mode" data-v="daily" style="--c:#b86cff">Daily Hunt</button>` : `<button class="chip lock" data-act="dailyLocked" style="--c:#b86cff">Daily Hunt · Wave ${DAILY_WAVE}</button>`}</div>`;
   }
   function renderDaily() {
     const spec = dailySpec(dailyKey());
@@ -17038,8 +17125,18 @@ const UI = (() => {
       navigator.wakeLock.request('screen').then(l => { wakeAsk = 0; wakeLk = l; wakeErr = ''; l.addEventListener('release', () => { wakeLk = null; }); }, e => { wakeAsk = 0; wakeErr = (e && e.name) || 'refused'; }); } catch (e) { wakeAsk = 0; wakeErr = (e && e.name) || 'error'; }
   }
   // what the phone answered, for Settings > Support (Nic, Nov 16: the phone still slept; this says why). Draft text
-  const wakeState = () => !navigator.wakeLock ? 'Not supported by this browser or iOS version' : wakeLk ? 'On: the phone agreed to stay awake' : wakeErr ? `Refused by the phone (${wakeErr}, ${wakeN} tries). Tap once more; Low Power Mode also does this` : 'Waiting: tap the screen once';
+  const wakeState = () => !navigator.wakeLock ? (window.LG_APP ? 'Not supported by this iOS version' : 'Not supported by this browser or iOS version') : wakeLk ? 'On: the phone agreed to stay awake' : wakeErr ? `Refused by the phone (${wakeErr}, ${wakeN} tries). Tap once more; Low Power Mode also does this` : 'Waiting: tap the screen once';
+  // The demo's one card (DRAFT text, for Nic's Game Text page). Any way into a real run lands here.
+  function openDemo() {
+    const url = STORE_URL || 'https://lastgradient.com';
+    modal(`<div class="card narrow demo"><div class="ch"><h2>The Full Game</h2><button class="x" data-act="close" aria-label="Close">✕</button></div>
+      <p>This free version is Training. The full game is on the App Store for iPhone and iPad.</p>
+      <p class="note">Endless runs. Seven talent trees. Thirteen bosses. The Daily Hunt. One price, no ads, no in-app purchases. Plays offline.</p>
+      <p class="note">Played here before? Your progress is still on this device. Move it with Settings, General, Transfer Save.</p>
+      <div class="foot"><button class="btn" data-act="demoTrain">Training</button><a class="btn primary" href="${url}" target="_blank" rel="noopener">${STORE_URL ? 'App Store' : 'Website'}</a></div></div>`, 'demo');
+  }
   function launch(snap, tut) {
+    if (LG_DEMO && !tut) return openDemo();
     closeModal();
     show('game');
     Render.reset();
@@ -17337,8 +17434,15 @@ const UI = (() => {
       for (const n of ns) { const r = appR(n); if (!r) continue; x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h); } return x1 > x0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null; };
     const sel = s => () => { const n = q(s); reveal(n); if (window.__coachDbg) window.__coachDbg[s] = Math.max(window.__coachDbg[s] || 0, [...document.querySelectorAll(s)].filter(e => e.offsetParent !== null).length); /* test/lessoncards.py: a selector that matches several visible elements rings the first one only */ return appR(n); };
     let wAt = null; // the world point the current target sits on (worldR), so the camera can bring it on screen
-    function worldR(x, y, rad) { wAt = { x, y }; const c = $('#cv').getBoundingClientRect(), a = Render.tileToScreen(x - rad, y - rad), b = Render.tileToScreen(x + rad, y + rad); return { x: c.left / UIS + a.x, y: c.top / UIS + a.y, w: b.x - a.x, h: b.y - a.y }; }
-    const enemyR = e => e && !e.dead ? worldR(e.x, e.y, e.boss ? 1.1 : 0.6) : null;
+    // Nov 26 (Nic: "strange behavior with the cards as they try to avoid the probe"): a target that moves by itself (the probe, an
+    // enemy) sets wMove, and the probe also sets wDest (where it is flying to). The card and the camera treat these differently from a
+    // target that stands still: see place() and see().
+    let wMove = false, wDest = null;
+    const scrR = (x, y, rad) => { const c = $('#cv').getBoundingClientRect(), a = Render.tileToScreen(x - rad, y - rad), b = Render.tileToScreen(x + rad, y + rad); return { x: c.left / UIS + a.x, y: c.top / UIS + a.y, w: b.x - a.x, h: b.y - a.y }; };
+    function worldR(x, y, rad) { wAt = { x, y }; return scrR(x, y, rad); }
+    const moving = r => { if (r) wMove = true; return r; };
+    const enemyR = e => e && !e.dead ? moving(worldR(e.x, e.y, e.boss ? 1.1 : 0.6)) : null;
+    const probeR = rad => { const P = G && G.probe; if (!P || !P.alive) return null; const r = moving(worldR(P.x, P.y, rad)); wDest = P.ret || P.home ? { x: G.core.x, y: G.core.y } : P.tx != null ? { x: P.tx, y: P.ty } : null; return r; };
     const towerR = t => t && G.towers.includes(t) ? worldR(t.cx, t.cy, 0.62) : null;
     const onField = e => !e.dead && e.d > 1.2 && e.d < e.L.len - 2;
     // the free tile beside a road that covers the most of it, not touching a tower (sim state only; no G.r)
@@ -17364,22 +17468,47 @@ const UI = (() => {
     }
     // 6.1 the camera: a world target that is off screen (or under a side panel) is brought into view, once per step and spot;
     // and one the card can't help covering (a small phone stage) is moved to the side of the stage away from the card
+    // Nov 26: every coach pan is a short glide (0.32 s), not a jump. A drag or pinch by the player ends it.
+    let gl = null;
+    function glide(dx, dy) { gl = { dx, dy, f: 0, t0: performance.now(), cu: camUser }; }
+    function glideTick() {
+      if (!gl) return; if (camUser !== gl.cu || !G || screen !== 'game') { gl = null; return; }
+      const u = Math.min(1, (performance.now() - gl.t0) / 320), f = 1 - (1 - u) ** 3;
+      Render.panBy(gl.dx * (f - gl.f), gl.dy * (f - gl.f)); gl.cu = camUser; gl.f = f; if (u >= 1) { gl = null; updateZoomBtn(); }
+    }
     function see(S, r, c) {
       if (!r || !wAt || !G || screen !== 'game' || S.modal || S.tree) return false;
-      const key = S.id + ':' + Math.round(wAt.x * 2) + ',' + Math.round(wAt.y * 2); if (c ? mem.cam !== key || mem.camC === key : mem.cam === key) return false;
+      if (gl) return true;
       const cv = $('#cv').getBoundingClientRect(), L = Render.layout; if (!cv.width || Math.abs(cv.width / UIS - L.W) > 2 || Math.abs(cv.height / UIS - L.H) > 2 || (Render.home && Math.abs(Render.zoom - Render.homeZoom) > 1e-3)) return false; // the camera is not settled yet: try next frame
       const pn = panel ? appR($('#panel')) : null, ox = cv.left / UIS, p = Render.tileToScreen(wAt.x, wAt.y);
       let x0 = 0, x1 = L.W; if (pn) { const a = pn.x - ox, b = a + pn.w; if (a > L.W / 2) x1 = Math.min(x1, a); else x0 = Math.max(x0, b); }
       const m = 48;
+      if (wMove) {
+        // A target that moves by itself (the probe in flight, an enemy). The camera does not chase it: it glides only when the target
+        // is about to leave the screen, at most once a second. Then it frames the target together with the place it is flying to
+        // (when both fit), or puts the stretch ahead of it on screen. A card it flies under steps aside itself (place).
+        const now = performance.now();
+        if (c) { // (a small phone: no slot is clear of the target, so the camera moves the target to the far side from the card)
+          if (!ov(c, grow(r, 8)) || c.clear || now - (mem.camCT || 0) < 1200) return false; mem.camCT = mem.camT = now; // (c.clear: a free slot exists, the card is about to slide to it)
+          const left = c.x + c.w / 2 - ox < (x0 + x1) / 2, top = c.y + c.h / 2 - cv.top / UIS < L.H / 2;
+          glide((left ? x0 + (x1 - x0) * 0.76 : x0 + (x1 - x0) * 0.24) - p.x, (top ? L.H * 0.7 : L.H * 0.3) - p.y); return true; }
+        if ((p.x >= x0 + m && p.x <= x1 - m && p.y >= m && p.y <= L.H - m) || now - (mem.camT || 0) < 1000) return false;
+        mem.camT = now; let tx = p.x, ty = p.y;
+        if (wDest) { const d = Render.tileToScreen(wDest.x, wDest.y), fw = x1 - x0 - 2 * m - 60, fh = L.H - 2 * m - 60;
+          if (Math.abs(d.x - p.x) <= fw && Math.abs(d.y - p.y) <= fh) { tx = (p.x + d.x) / 2; ty = (p.y + d.y) / 2; }
+          else { const k = Math.min(fw / 2 / Math.max(1, Math.abs(d.x - p.x)), fh / 2 / Math.max(1, Math.abs(d.y - p.y))); tx = p.x + (d.x - p.x) * k * 0.8; ty = p.y + (d.y - p.y) * k * 0.8; } }
+        glide((x0 + x1) / 2 - tx, L.H / 2 - ty); return true;
+      }
+      const key = S.id + ':' + Math.round(wAt.x * 2) + ',' + Math.round(wAt.y * 2); if (c ? mem.cam !== key || mem.camC === key : mem.cam === key) return false;
       if (c) { // the card covers the target: send the target to the far side from the card
         mem.camC = key; if (!ov(c, grow(r, 8))) return false; // (the ring sits 5 px outside the target)
         const left = c.x + c.w / 2 - ox < (x0 + x1) / 2, top = c.y + c.h / 2 - cv.top / UIS < L.H / 2;
-        Render.panBy((left ? x0 + (x1 - x0) * 0.76 : x0 + (x1 - x0) * 0.24) - p.x, (top ? L.H * 0.7 : L.H * 0.3) - p.y); updateZoomBtn(); return true;
+        glide((left ? x0 + (x1 - x0) * 0.76 : x0 + (x1 - x0) * 0.24) - p.x, (top ? L.H * 0.7 : L.H * 0.3) - p.y); return true;
       }
       mem.cam = key;
       if (p.x >= x0 + m && p.x <= x1 - m && p.y >= m && p.y <= L.H - m) return false;
       if (Math.abs((x0 + x1) / 2 - p.x) < 2 && Math.abs(L.H / 2 - p.y) < 2) return false;
-      Render.panBy((x0 + x1) / 2 - p.x, L.H / 2 - p.y); updateZoomBtn(); return true;
+      glide((x0 + x1) / 2 - p.x, L.H / 2 - p.y); return true;
     }
     const flowText = (type, first) => { const D = TOWERS[type], st = flowStage(type);
       return st === 0 ? first : st === 1 ? `Tap ${D.name}: ${TOWER_ROLE[type] || D.blurb}.` : `Tap Build: ${fmt(towerCost(type))} credits and 1 power.`; };
@@ -17446,7 +17575,8 @@ const UI = (() => {
     const closeM = () => { closeModal(); if (G && !G.over) G.paused = false; };
     // the tower the upgrade arrow floats over (render.js: the lowest-level tower you can afford to upgrade, cheapest first)
     // free (6.6): not the docked tower (the core sits on it)
-    function bestUp(free) { let best = null, bl = Infinity, bc = Infinity; for (const t of G.towers) { const c0 = upgradeCost(t); if (G.credits < c0 || (free && G.fr && t === frDockT())) continue; const n = towerLevel(t), k = t.lvl < MAX_LV ? n : 100 + n; if (k < bl || (k === bl && c0 < bc)) { best = t; bl = k; bc = c0; } } return best; }
+    // the tower the field's upgrade arrow points at (render.js): attack towers first, support and economy towers only when no attack tower can be upgraded (Nov 25)
+    function bestUp(free) { const sup = t => !!(t.s && (supKind(t.s.kind) || t.s.kind === 'eco')); let best = null, bl = Infinity, bc = Infinity; for (const pass of [0, 1]) { if (best) break; for (const t of G.towers) { if (sup(t) !== !!pass) continue; const c0 = upgradeCost(t); if (G.credits < c0 || (free && G.fr && t === frDockT())) continue; const n = towerLevel(t), k = t.lvl < MAX_LV ? n : 100 + n; if (k < bl || (k === bl && c0 < bc)) { best = t; bl = k; bc = c0; } } } return best; }
     const stat = t => ({ lvl: towerLevel(t), dmg: t.s.dmg, rate: t.s.rate, range: t.s.range, aff: t.affixes.length });
     function upLine(t, b4) {
       if (!t || !b4) return '';
@@ -17548,7 +17678,7 @@ const UI = (() => {
         info('affixes', () => appRv(q('#panel .affs')) || appRv(q('#panel .pbody')), 'Affixes', 'Rare affixes are gold or purple. An arrow over a tower means you can afford its next upgrade.', { hold: 0, skip: () => W() >= 3 || !panT(), okFn: () => { mem.affix = 1; if (panel) { panel.tab = 'act'; renderPanel(); } }, enter: scrollTo('#panel .affs'), leave: shut }),
         // the core and its Battery (6.6: before Lift Off, which docks a second gun beside it)
         { id: 'tapCore', ls: 'core', enter: () => { shut(); probeEnd(); }, when: () => W() >= 3 && !G.frFly, skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), at: () => worldR(G.core.x, G.core.y, 1.1), t: 'Upgrade the core',
-          b: () => G.credits >= coreWeaponCost() ? 'The core has its own upgrades. Tap it.' : `The core's Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => panel && panel.kind === 'core' },
+          b: () => G.credits >= coreWeaponCost() ? 'The core has a gun of its own. It is online from this wave. Tap the core.' : `The core's Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => panel && panel.kind === 'core' },
         { id: 'battery', when: () => W() >= 3, skip: () => W() >= 5 || G.core.wLvl >= 2, hold: () => G.credits >= coreWeaponCost(), enter: scrollTo('#panel [data-act=cw]'), at: sel('#panel [data-act=cw]'), t: 'Battery',
           b: () => G.credits >= coreWeaponCost() ? `Tap Upgrade Battery (${fmt(coreWeaponCost())}). The core's own gun hits harder.${G.fr ? ' Its range grows, so it sees farther too.' : ''}` : `The Battery costs ${fmt(coreWeaponCost())} credits.`, done: () => G.core.wLvl >= 2, back: () => !(panel && panel.kind === 'core') && 'tapCore' },
         info('coreMore', sel('#panel [data-act=ch]'), 'Shield, Hull, Uplink', () => G.fr ? `Shield soaks leaks. Hull adds health. Uplink speeds up abilities. Every ${FRONTIER.linkUplink} Uplink levels add a link.` : 'Shield soaks leaks. Hull adds health. Uplink speeds up abilities.',
@@ -17575,11 +17705,11 @@ const UI = (() => {
         { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1),
           b: () => prCmd && prCmd.site === site(1).id ? 'Tap the wreck again to send it.' : 'Once selected, a tap on a site sends the probe. Tap Probe again to let it go. Tap the wreck now.',
           done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && G.probe.task !== site(1).id && 'prBtn' },
-        { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'The probe is able to fly over the field. Once in range of a wreck or salvageable node, the probe will automatically salvage it.',
+        { id: 'prFly', hold: 0, at: () => probeR(0.7), t: 'Salvage', b: 'The probe is able to fly over the field. Once in range of a wreck or salvageable node, the probe will automatically salvage it.',
           done: () => looted(1), skip: () => !prOK(), back: () => !looted(1) && site(1) && G.probe.task !== site(1).id && 'prSend' },
         // 6.14 (rules 11): the probe flies home by itself once its site is done, so these two teach that instead of the Home tap.
         // Draft text (Claude, Nov 14), flagged for Nic's Game Text page
-        info('prHome', () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, 'Coming home', () => `Site done, so the probe flies home on its own. Cargo counts only when it docks at the core. To call it back early, ${appRv(q('#prbar [data-pr=home]')) ? 'tap Home under Probe' : 'tap Probe, then Home'}.`,
+        info('prHome', () => probeR(0.8), 'Coming home', () => `Site done, so the probe flies home on its own. Cargo counts only when it docks at the core. To call it back early, ${appRv(q('#prbar [data-pr=home]')) ? 'tap Home under Probe' : 'tap Probe, then Home'}.`,
           { hold: 0, when: () => looted(1), skip: () => !prOK(), leave: probeEnd }),
         info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits. The probe repairs itself and the core when docked. A lost probe drops its cargo and costs credits to rebuild.`,
           { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() && !((G.stats.pr || {}).trips) || W() >= 8, enter: probeEnd }),
@@ -17588,16 +17718,16 @@ const UI = (() => {
           b: () => prCmd && prCmd.site === site(2).id ? 'Tap the wreck again to send the probe.' : `A red drone guards this wreck. It shoots the probe when it comes near. ${prCmd ? 'Tap the wreck to send the probe.' : 'Tap the wreck twice: select, then send.'}`,
           done: () => !site(2) || G.probe.task === site(2).id },
         { id: 'fog', when: () => prOK() && !!site(2) && Math.hypot(G.probe.x - site(2).x, G.probe.y - site(2).y) < 9, skip: () => looted(2) || !prOK() || gone(2) || !!site(2) && G.probe.task !== site(2).id, hold: 1, ok: 'Next',
-          at: () => worldR(G.probe.x, G.probe.y, 2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dark ground, enemies are hidden.' },
+          at: () => probeR(2.4), t: 'Fog of war', b: 'You see only what your core, towers and probe see. Black ground is unexplored. On dark ground, enemies are hidden.' },
         info('fogFair', () => appRv(q('#chips [data-threat]')), 'Enemy Tips', 'Bosses always show. Roads stay on the map. Edge arrows mark enemies near your core. The Threat Board lists each wave.', { hold: 0, skip: () => looted(2) || !prOK() }),
-        info('prOut', () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, 'Heading out', 'The loot is in the hold and the probe is already leaving. The drone shoots while it is near. Later, Upgrades buys a Lance: allowing it to attack and defend itself.',
+        info('prOut', () => probeR(0.8), 'Heading out', 'The loot is in the hold and the probe is already leaving. The drone shoots while it is near. Later, Upgrades buys a Lance: allowing it to attack and defend itself.',
           { hold: 0, when: () => looted(2), skip: () => !prOK(), leave: probeEnd }),
         info('prLost', sel('#bProbe'), 'Probe lost', () => `Its cargo lies in its wreck for ${PROBE.life.lost} s. Rebuild it from the Probe button: ${fmt(prRebuildCost())} credits, ${PROBE.rbT} s.`, { hold: 0, when: () => !!G.probe && !G.probe.alive, skip: () => !G.probe || G.probe.alive }),
         // 6.6 one Entropy draw (scripted: a Common, a Rare and an Exotic)
         { id: 'gauge', ls: 'ent', when: () => !!G.anomOffers && !panel, skip: () => !G.anomOffers && (used('anom') || used('stab')), hold: 1, at: sel('#bEnt'), t: 'Entropy',
           b: 'Kills fill this gauge. When it is full, you draw an Anomaly. It is full now: tap it.', done: () => modalOpen === 'anomaly' || !G.anomOffers },
         { id: 'cards', hold: 0, when: () => !G.anomOffers, skip: () => !G.anomOffers && !(used('anom') || used('stab')), at: sel('#bEnt'), t: () => used('stab') ? 'Stabilized' : 'Anomaly taken', ok: 'Got it',
-          b: () => `${used('stab') ? 'Stabilize skips the cards for score and a token.' : 'It lasts the rest of the run.'} Each draw makes the next gauge 30% longer. Pause lists your Anomalies.` }, // (the draw's header line teaches the card itself)
+          b: () => `${used('stab') ? 'Stabilize skips the cards for score and a token.' : 'It lasts the rest of the run.'} Each draw adds 30% to the gauge. Pause lists your Anomalies.` }, // (the draw's header line teaches the card itself)
         // the spec: a permanent branch at LV 3
         tapTw('tapLv3', () => mem.st, 'Specialize', () => G.credits >= upgradeCost(mem.st) ? 'Get your strongest tower to LV 3. Tap it.' : `Next upgrade: ${fmt(upgradeCost(mem.st))} credits.`,
           { ls: 'spec', when: () => W() >= 7 && !G.anomOffers, skip: () => W() >= 8 || noTw() || G.towers.some(t => t.spec), hold: () => G.credits >= upgradeCost(mem.st), enter: () => { mem.st = G.towers.filter(t => !(G.fr && t === frDockT())).sort((a, b) => b.lvl - a.lvl || b.dmgDone - a.dmgDone)[0]; } }), // (6.6: not the docked tower, under the core)
@@ -17715,12 +17845,12 @@ const UI = (() => {
         call('c1', 1, 'Send the wave. A wreck appears with it.'),
         { id: 'prBtn', when: () => !!site(1) && prOK() && !panel, skip: () => looted(1) || !prOK() || (!!site(1) && G.probe.task === site(1).id), hold: 1, at: sel('#bProbe'), t: 'Select it', b: 'Tap Probe.', done: () => !!prCmd },
         { id: 'prSend', hold: 1, at: () => site(1) ? worldR(site(1).x, site(1).y, 0.9) : null, t: 'Send it', skip: () => looted(1) || !prOK() || gone(1), b: 'Tap the wreck.', done: () => !site(1) || G.probe.task === site(1).id, back: () => !prCmd && !!site(1) && G.probe.task !== site(1).id && 'prBtn' },
-        { id: 'prFly', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Salvage', b: 'It salvages the wreck, then flies home on its own and banks the cargo at the core.', done: () => looted(1) && (G.probe.home || G.probe.ret), skip: () => !prOK() },
+        { id: 'prFly', hold: 0, at: () => probeR(0.7), t: 'Salvage', b: 'It salvages the wreck, then flies home on its own and banks the cargo at the core.', done: () => looted(1) && (G.probe.home || G.probe.ret), skip: () => !prOK() },
         info('prBank', () => worldR(G.core.x, G.core.y, 1.1), 'Banked', () => `+${fmt(Math.round((G.stats.pr || {}).cr || 0))} credits so far. Docked, it repairs itself and the core.`, { hold: 0, when: () => ((G.stats.pr || {}).trips || 0) >= 1, skip: () => !prOK() }),
         call('c2', 2, 'Next wave. A guarded wreck appears with it.'),
         { id: 'guard', when: () => !!site(2) && prOK() && G.probe.home && !panel, skip: () => looted(2) || gone(2) || !prOK(), hold: 1, at: () => worldR(site(2).x, site(2).y, 1.7), t: 'A guarded site', b: () => prCmd ? 'Tap the wreck to send the probe.' : 'A red drone guards this one and shoots the probe near it. Tap Probe, then the wreck.', done: () => !site(2) || G.probe.task === site(2).id },
         info('lance', () => appRv(q('#prbar [data-pr=up]')) || appRv(q('#bProbe')), 'Upgrades', () => appRv(q('#prbar [data-pr=up]')) ? 'Upgrades make it tougher: Armor, Engine, and a Lance that shoots back. Buy them between waves.' : 'Tap Probe to select it, then Upgrades: Armor, Engine, and a Lance that shoots back. Buy them between waves.', { hold: 0 }), // 6.16.1: the probe lets go once sent, so the bar may be closed here
-        { id: 'prOut', hold: 0, when: () => looted(2), at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.7) : null, t: 'Heading out', b: 'The loot is in the hold. It leaves on its own; the drone shoots while it is near.', done: () => !prOK() || G.probe.home, skip: () => !prOK() },
+        { id: 'prOut', hold: 0, when: () => looted(2), at: () => probeR(0.7), t: 'Heading out', b: 'The loot is in the hold. It leaves on its own; the drone shoots while it is near.', done: () => !prOK() || G.probe.home, skip: () => !prOK() },
         end(),
       ],
       veterans: [
@@ -17735,9 +17865,9 @@ const UI = (() => {
         end(),
       ],
       support: [
-        intro('in', 'Support towers', 'Two towers never shoot. One makes others stronger, one makes credits.'),
+        intro('in', 'Support towers', 'Some towers never shoot. Two of them here: one makes other towers stronger, one makes credits.'),
         build('pylon', 'pylon', 'p', 'Relay Pylon', 'Tap the marked tile, next to your towers.', { at: () => flowAt('pylon', 'p', null, true) }),
-        info('pyl', () => towerR(G.towers.find(t => t.type === 'pylon')), 'Boost', 'Towers in its ring deal more damage and fire faster. It also reveals cloaked Phantoms.'),
+        info('pyl', () => towerR(G.towers.find(t => t.type === 'pylon')), 'Boost', 'Towers in its ring deal more damage and fire faster. It also reveals cloaked Phantoms. Upgrade it yourself: it does not level up with its towers.'),
         build('forge', 'forge', 'f', 'Credit Forge', 'It pays credits at the start of every wave. Tap the marked tile.'),
         call('c1', 1),
         info('paid', sel('#hud .hs.cr'), 'Paid', 'The Forge paid at the start of the wave. Early Forges pay for themselves.', { when: () => W() >= 1 }),
@@ -17752,7 +17882,7 @@ const UI = (() => {
         info('fx', () => { const st = G.storms[0]; return st ? worldR(st.x, st.y, st.r) : null; }, 'It hits them too', 'Enemies under a Solar Flare burn. An Ion Storm strikes with lightning, a Cryo Front chills, a Void Tide Marks, Static Haze reveals cloaked enemies.', { when: () => W() >= 1 && G.storms.length > 0 && G.enemies.some(e => !e.dead && e.st.burn), skip: () => after(1) || W() >= 2 || !G.storms.length }),
         { id: 'prBtn', when: () => prOK() && G.storms.length > 0 && !panel, skip: () => (G.stats.harvests || 0) > 0 || !prOK() || !G.storms.length || !!G.probe.storm, hold: 1, at: sel('#bProbe'), t: 'Harvest it', b: 'Your probe can harvest a storm for an ability charge. Tap Probe.', done: () => !!prCmd || !!G.probe.storm },
         { id: 'prStorm', hold: 1, at: () => { const st = G.storms[0]; return st ? worldR(st.x, st.y, st.r * 0.6) : null; }, t: 'Into the storm', b: 'Tap inside the storm.', done: () => !!G.probe.storm || (G.stats.harvests || 0) > 0, back: () => !prCmd && !G.probe.storm && !(G.stats.harvests > 0) && 'prBtn', skip: () => !G.storms.length || (G.stats.harvests || 0) > 0 },
-        { id: 'harvest', hold: 0, at: () => prOK() ? worldR(G.probe.x, G.probe.y, 0.8) : null, t: 'Harvesting', b: 'Six seconds inside gives one charge. A Solar Flare gives Frenzy. The arc around the storm shows how long is left.', done: () => (G.stats.harvests || 0) > 0, skip: () => !prOK() },
+        { id: 'harvest', hold: 0, at: () => probeR(0.8), t: 'Harvesting', b: 'Six seconds inside gives one charge. A Solar Flare gives Frenzy. The arc around the storm shows how long is left.', done: () => (G.stats.harvests || 0) > 0, skip: () => !prOK() },
         info('got', sel('#abils [data-abil=overclock]'), 'Frenzy +1', 'Harvested out, the storm breaks up and the probe flies home. Merged storms give one charge per type.', { hold: 0, when: () => (G.stats.harvests || 0) > 0 }),
         call('c2', 2),
         end(),
@@ -17761,10 +17891,10 @@ const UI = (() => {
       remnant: [
         intro('in', 'The Remnant', 'Old war machines of the pilots before you. Each one has one trick. Watch for it, then break it.'),
         call('c1', 1, 'Send the wave.'),
-        info('husk', () => { const e = G.enemies.find(o => !o.dead && o.type === 'husk'); return e ? worldR(e.x, e.y, 1) : null; }, 'Husk', 'It stands back up once. Missiles, Burn or a Strike finish it for good.', { when: () => G.enemies.some(o => !o.dead && o.type === 'husk' && o.d > 3), skip: () => W() >= 2 || (G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'husk')) }),
+        info('husk', () => { const e = G.enemies.find(o => !o.dead && o.type === 'husk'); return e ? moving(worldR(e.x, e.y, 1)) : null; }, 'Husk', 'It stands back up once. Missiles, Burn or a Strike finish it for good.', { when: () => G.enemies.some(o => !o.dead && o.type === 'husk' && o.d > 3), skip: () => W() >= 2 || (G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'husk')) }),
         call('c2', 2, 'Send the Warden and its squad.'),
-        info('ward', () => { const e = G.enemies.find(o => !o.dead && o.type === 'warden'); return e ? worldR(e.x, e.y, 1.6) : null; }, 'Warden', 'Its squad takes less damage near it. Kill the Warden first and the squad is stunned. A Strike on it works.', { when: () => G.enemies.some(o => !o.dead && o.type === 'warden' && o.d > 2), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'warden') }),
-        info('crawl', () => { const e = G.enemies.find(o => !o.dead && o.type === 'crawler'); return e ? worldR(e.x, e.y, 1.2) : null; }, 'Siege Crawler', 'Planted, it shells one tower offline for a few seconds. Kill it there, or move the tower it aims at.', { hold: 0, when: () => G.enemies.some(o => !o.dead && o.type === 'crawler' && o.planted), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'crawler') }),
+        info('ward', () => { const e = G.enemies.find(o => !o.dead && o.type === 'warden'); return e ? moving(worldR(e.x, e.y, 1.6)) : null; }, 'Warden', 'Its squad takes less damage near it. Kill the Warden first and the squad is stunned. A Strike on it works.', { when: () => G.enemies.some(o => !o.dead && o.type === 'warden' && o.d > 2), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'warden') }),
+        info('crawl', () => { const e = G.enemies.find(o => !o.dead && o.type === 'crawler'); return e ? moving(worldR(e.x, e.y, 1.2)) : null; }, 'Siege Crawler', 'Planted, it shells one tower offline for a few seconds. Kill it there, or move the tower it aims at.', { hold: 0, when: () => G.enemies.some(o => !o.dead && o.type === 'crawler' && o.planted), skip: () => W() >= 2 && G.spawningDone && !G.enemies.some(o => !o.dead && o.type === 'crawler') }),
         end(),
       ],
       // 6.15 the Black Hole: the marker, feeding it, the Gravity Bomb, the verdict (draft text)
@@ -17890,7 +18020,7 @@ const UI = (() => {
       plan = p || 'basic'; on = true; i = 0; cur = null; mem = {}; sig = ''; min = false; ensureEl(); el.querySelector('.cskip').textContent = skipLbl();
       document.body.classList.toggle('tut', !tour()); document.body.classList.toggle('tutent', plan === 'storms'); entOn = plan === 'storms';
     }
-    function stop() { on = false; cur = null; held = false; min = false; Render.spots = null; if (el) el.hidden = true; document.body.classList.remove('tut', 'tutent'); if (G && G.tut) Render.hints = null; }
+    function stop() { on = false; gl = null; cur = null; held = false; min = false; Render.spots = null; if (el) el.hidden = true; document.body.classList.remove('tut', 'tutent'); if (G && G.tut) Render.hints = null; }
     function skip() {
       const p = plan, tl = taught(); stop(); closeModal(); closePanel();
       if (p === 'basic') { tutState().seen = 1; markTaught(tl); Save.save(); G = null; show('hangar'); renderHangar(); if (PROF.runSnap) toast('YOUR RUN IS SAVED', 'Tap Resume to carry on where you left off', '#59f0b4', true, 'tip'); else openSetup(); return; } // 6.0: never offer a new run over a saved one
@@ -17921,14 +18051,28 @@ const UI = (() => {
     }
     const lessonOf = k => { const P = STEPS(); for (let j = Math.min(k, P.length - 1); j >= 0; j--) if (P[j].ls) return P[j].ls; return null; };
     function go(id) { const k = STEPS().findIndex(s => s.id === id); if (k >= 0) { cur = null; i = k; min = false; sig = ''; Render.hints = null; } }
-    function hide() { if (el && !el.hidden) el.hidden = true; }
+    function hide() { if (el && !el.hidden) el.hidden = true; pl.shown = false; }
     const ov = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
     const grow = (r, d) => ({ x: r.x - d, y: r.y - d, w: r.w + 2 * d, h: r.h + 2 * d });
-    let plSig = '', plIx = -1;
-    function place(S, r, idle) {
+    // ---- where the card sits (Nov 26, rewritten. Nic: "Make sure the cards are in good positions. Rethink this") ----
+    // Before: every frame the card took the slot nearest its target, so it hopped as a target moved (the probe in flight), as a side
+    // panel slid in, and as the camera panned. Now:
+    //  1. A card takes a slot once and holds it. It leaves only when its target comes under it (within 8 px), or the layout changes
+    //     (a side panel opens or closes, the screen turns). A move inside one step is a 0.18 s slide, never a jump.
+    //  2. A target that stands still (a button, a tile): the nearest slot that is clear of the target and of the controls at the top
+    //     right of the field (Lift Off, Probe, Ready, Entropy). The middle of the field is the last choice.
+    //  3. A target that moves (the probe, an enemy): the card does not follow it. It docks at the bottom centre of the field (then top
+    //     centre, then the corners), clear of the target and of the place the probe is flying to.
+    //  4. The next step keeps the last slot when that slot is as good as the best one, so a chain of steps reads in one place.
+    //  5. No target: the centre of the screen for a card that holds the game, the top centre for a line while the game runs.
+    const layR = n => { if (!n || n.offsetParent === null) return null; let x = 0, y = 0, e = n; while (e && e.id !== 'app') { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; } return e ? { x, y, w: n.offsetWidth, h: n.offsetHeight } : appR(n); }; // (layout box: a panel that is sliding in counts where it will stop)
+    const CARD_SOFT = '#bLift, #bProbe, #prbar, #bReady, #bEnt, #cpBanner, #asbar';
+    const MV_PREF = [[12, 4, 12], [34, 60, 34], [8, 0, 8]]; // moving target: the cost of each slot [row][left, centre, right]
+    let pl = { key: '', step: '', ix: -1, t: 0 }, plOff = { dx: 0, dy: 0 }; // plOff: a camera glide that has just started (the screen will shift by this much)
+    function place(S, r) {
       const card = el.querySelector('.ccard'), app = $('#app');
       const AW = app.clientWidth, AH = app.clientHeight, full = S.modal || S.tree || tour() || screen !== 'game', st = full ? { x: 0, y: 0, w: AW, h: AH } : appR($('#stage')) || { x: 0, y: 0, w: AW, h: AH };
-      const pn = !full && panel ? appR($('#panel')) : null, m = 6;
+      const pn = !full && panel ? layR($('#panel')) : null, m = 6;
       // with a side panel open, the card lives in the free part of the stage and narrows to fit it (667 wide: the spec buttons stay clear)
       const fr = pn ? (pn.x > st.x + st.w / 2 ? { x: st.x, w: pn.x - st.x } : { x: pn.x + pn.w, w: st.x + st.w - pn.x - pn.w }) : null;
       const mf = 11; // beside a panel: clear of the ring (5 px) the coach draws around it when the panel is the target
@@ -17936,22 +18080,31 @@ const UI = (() => {
       const cw = card.offsetWidth, ch = card.offsetHeight;
       const xs = [st.x + m, st.x + (st.w - cw) / 2, st.x + st.w - cw - m]; if (fr) xs.push(fr.x + mf, fr.x + fr.w - cw - mf);
       const ys = [st.y + m, st.y + (st.h - ch) / 2, st.y + st.h - ch - m];
-      const avoid = []; if (r) avoid.push(grow(r, 26));
-      if (pn) avoid.push(pn);
-      // 6.16.1: the card keeps its slot while its step is up. It moves only when another slot is clearly better (60 px nearer, or the
-      // target has come under the card). Before, a card on a moving target (the probe in flight) could jump as you reached for Hide.
-      let best = null, keep = null, k = 0; const pk = sig + (pn ? '|p' : '');
-      for (const y of ys) for (const x of xs) {
-        const c = { x, y, w: cw, h: ch }; let s = 0; for (const a of avoid) s += ov(c, a) * 100;
-        if (r) s += Math.hypot(x + cw / 2 - (r.x + r.w / 2), y + ch / 2 - (r.y + r.h / 2)) * 0.05;
-        const o = { x, y, s, k }; if (!best || s < best.s) best = o; if (k === plIx && pk === plSig) keep = o; k++;
+      const mv = wMove && !full && !!r, hard = []; let pathN = 0; if (r) hard.push(grow(r, 26)); if (pn) hard.push(pn);
+      if (mv && wDest) { // where the probe is flying to, and the line of its flight (three points on it)
+        const d = scrR(wDest.x, wDest.y, 0.9); d.x += plOff.dx; d.y += plOff.dy; hard.push(grow(d, 12));
+        for (const f of [0.25, 0.5, 0.75]) hard.push(grow({ x: r.x + (d.x - r.x) * f, y: r.y + (d.y - r.y) * f, w: r.w + (d.w - r.w) * f, h: r.h + (d.h - r.h) * f }, 10)); pathN = 3; }
+      const soft = []; if (!full) for (const n of document.querySelectorAll(CARD_SOFT)) { const o = appR(n); if (o && !(r && ov(o, r) > o.w * o.h * 0.5)) soft.push(o); } // (not the target itself)
+      const stepKey = plan + ':' + i, key = stepKey + (pn ? '|p' : '') + (wAt ? '|w' : r ? '|d' : '|n') + (mv ? 'm' : '') + '|' + AW + 'x' + AH, same = key === pl.key, now = performance.now();
+      const slots = []; let best = null;
+      for (let yi = 0; yi < 3; yi++) for (let xi = 0; xi < xs.length; xi++) {
+        const x = xs[xi], y = ys[yi], c = { x, y, w: cw, h: ch }, k = slots.length; let s = 0;
+        hard.forEach((a, j) => { s += ov(c, a) * (j >= hard.length - pathN ? 30 : 100); }); for (const a of soft) s += ov(c, a) * 4; // (the flight line counts less than its two ends)
+        if (mv) s += xi < 3 ? MV_PREF[yi][xi] : MV_PREF[yi][1] + 2;
+        else if (r) s += Math.hypot(x + cw / 2 - (r.x + r.w / 2), y + ch / 2 - (r.y + r.h / 2)) * 0.05 + (yi === 1 && xi === 1 ? 25 : 0);
+        else s += held ? (yi === 1 && xi === 1 ? 0 : 10) : (yi === 0 && xi === 1 ? 0 : 10);
+        if (k === pl.ix && pl.n === xs.length) s -= 3; // the slot the card is in wins a near tie
+        const o = { x, y, s, k }; slots.push(o); if (!best || s < best.s) best = o;
       }
-      if (keep && keep.s - best.s < 3) best = keep;
-      plSig = pk; plIx = best.k;
-      card.style.left = Math.round(best.x) + 'px'; card.style.top = Math.round(best.y) + 'px';
-      return { x: best.x, y: best.y, w: cw, h: ch };
+      let pick = null;
+      if (same && slots[pl.ix] && pl.n === xs.length) { const h = slots[pl.ix], c = { x: h.x, y: h.y, w: cw, h: ch };
+        if (!((r && ov(c, grow(r, 8)) > 0) || (pn && ov(c, pn) > 0)) || now - pl.t < 500) pick = h; } // (0.5 s in a slot at least: no flicker)
+      if (!pick) { pick = best; if (pick.k !== pl.ix || !same) pl.t = now; card.classList.toggle('cslide', stepKey === pl.step && !el.hidden && pl.shown); }
+      pl.key = key; pl.step = stepKey; pl.ix = pick.k; pl.n = xs.length; pl.shown = true; card.dataset.slot = pick.k;
+      card.style.left = Math.round(pick.x) + 'px'; card.style.top = Math.round(pick.y) + 'px';
+      return { x: pick.x, y: pick.y, w: cw, h: ch, clear: !r || !ov({ x: best.x, y: best.y, w: cw, h: ch }, grow(r, 8)) };
     }
-    function show2(S, t, b, r, ok, idle) {
+    function show2(S, t, b, r, ok, idle, rp) {
       const key = plan + i + '|' + t + '|' + b + '|' + (ok || '') + (idle ? 'i' : ''); // (the button too: a chip that folds into +N brings up "Open it")
       el.hidden = false; el.classList.toggle('idle', !!idle); if (!idle && S.id) { mem.shownId = S.id; if (!S.free) mem.lastLs = lessonOf(i); }
       if (key !== sig) {
@@ -17966,7 +18119,7 @@ const UI = (() => {
       el.classList.toggle('dim', !min && held && !!r && !S.nodim); el.classList.toggle('dimall', !min && held && !r && !S.nodim);
       const sp = el.querySelector('.cspot'), rg = el.querySelector('.cring'), ar = el.querySelector('.carrow');
       sp.hidden = rg.hidden = ar.hidden = !r;
-      const c = place(S, r, idle);
+      const c = place(S, rp || r);
       if (!r) return c;
       const s = grow(r, 5), set = (nd, R) => { nd.style.left = Math.round(R.x) + 'px'; nd.style.top = Math.round(R.y) + 'px'; nd.style.width = Math.round(R.w) + 'px'; nd.style.height = Math.round(R.h) + 'px'; };
       set(sp, s); set(rg, s);
@@ -17985,6 +18138,7 @@ const UI = (() => {
     function tick() { step(); if (on) list(); else if (listEl) listEl.hidden = true; }
     function step() {
       if (!on) return;
+      glideTick();
       { const e = plan === 'storms' || !!(plan === 'basic' && G && G.tutS && G.tutS.ent && (G.anomOffers || G.tutEnt)); if (e !== entOn) { entOn = e; document.body.classList.toggle('tutent', e); } } // 6.6: the Entropy gauge shows from the Training draw on
       const runOK = G && G.tut && screen === 'game' && (G.lesson || 'basic') === plan, tourOK = tour() && !G && (screen === 'hangar' || Tree.isOpen);
       if (!runOK && !tourOK) { stop(); return; }
@@ -18000,8 +18154,10 @@ const UI = (() => {
       const bk = S.back && S.back(); if (bk) { go(bk); idle(); return; }
       if ((modalOpen && S.modal !== modalOpen) || (!modalOpen && S.modal) || (Tree.isOpen && !S.tree)) { held = false; hide(); return; }
       held = !!(typeof S.hold === 'function' ? S.hold() : S.hold);
-      wAt = null; const r = S.at ? S.at() : null, panned = see(S, r); miss = !!S.at && !r && !(typeof S.ok === 'function' ? S.ok() : S.ok); // a read step with a button still works without its target
-      const c = show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok);
+      wAt = null; wMove = false; wDest = null; const r = S.at ? S.at() : null, panned = see(S, r); miss = !!S.at && !r && !(typeof S.ok === 'function' ? S.ok() : S.ok); // a read step with a button still works without its target
+      // (a camera glide that has just started: the card is placed for where the target will be when the glide ends)
+      const rp = panned && gl && r ? { x: r.x + gl.dx * (1 - gl.f), y: r.y + gl.dy * (1 - gl.f), w: r.w, h: r.h } : null; plOff = rp ? { dx: gl.dx * (1 - gl.f), dy: gl.dy * (1 - gl.f) } : { dx: 0, dy: 0 };
+      const c = show2(S, typeof S.t === 'function' ? S.t() : S.t, typeof S.b === 'function' ? S.b() : S.b, r, typeof S.ok === 'function' ? S.ok() : S.ok, false, rp);
       if (!panned && r && c) see(S, r, c);
     }
     // 6.7 (Nic, Nov 9: "A large part of the first 4 steps is waiting around for the first couple of waves to make it into range"):
@@ -18838,7 +18994,7 @@ const UI = (() => {
   function affixHTML(a) { return `<div class="aff" style="--c:${RARITY[a.tier].col}"><i>${tipify(RARITY[a.tier].name)}</i>${tipify(affixText(a))}</div>`; }
   // 6.2 (frV 3): a Relay Pylon or Snare Beacon grows with the attack towers in its range (supGrow in sim.js)
   function growHTML(t) {
-    if (!(G.frV >= 3) || !t.s || !supKind(t.s.kind)) return '';
+    if (!(G.frV >= 3) || G.frV >= 32 || !t.s || !supKind(t.s.kind)) return ''; // rules 32: no growth, no line
     const r2 = t.s.range * t.s.range, n = G.towers.filter(o => o !== t && canOvercharge(o) && dist2(t.cx, t.cy, o.cx, o.cy) <= r2).length, want = supTarget(t);
     const tail = t.grow > 0 ? ' · Specialize free' : !n ? ' · none in range' : t.lvl >= MAX_LV ? '' : want > t.lvl ? '' : ` · now LV ${want}`;
     return `<div class="sts grow">Grows with nearby attack towers${t.freeLv ? ` <b>+${t.freeLv} LV free</b>` : ''}<small>${n} in range${tail}</small></div>`;
@@ -19782,6 +19938,8 @@ const UI = (() => {
       <p class="note">The game, its code, design, text, art and sound may not be copied, changed, re-hosted or sold without written permission.</p>
       <div class="lbl">Fonts</div><p class="note">Silkscreen and Oxanium, used under the SIL Open Font License 1.1.</p>
       <div class="lbl">Your Data</div><p class="note">Your progress is stored on this device. The game has no ads and no tracking. It sends nothing${fbOn() ? ' unless you use Send Feedback, which sends what you type, your device type, the screen size and the log of your last run' : ''}.</p>
+      ${window.LG_APP ? `<div class="lbl">App Shell</div><p class="note">This app uses Capacitor and its Filesystem and Haptics plugins. Copyright © 2017-present Drifty Co. and Ionic. Used under the MIT License:</p>
+      <p class="note">Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>` : ''}
       <p class="note">The game is provided as is, with no warranty.</p>
       <div class="foot"><button class="btn primary" data-act="settings">Back</button></div></div>`, 'settings');
   }
@@ -19859,7 +20017,7 @@ const UI = (() => {
   // the earlier finished runs (not the one Copy gives), newest first, in one text
   function earlierLogs() { const a = oldLogs(); return liveLog() ? a : a.slice(1); }
   function copyText(txt, onDone) {
-    const done = onDone || (() => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · paste it into a chat with Claude`, '#59f0b4', true));
+    const done = onDone || (() => toast('LOG COPIED', `${Math.round(txt.length / 1024)} KB · ready to paste`, '#59f0b4', true));
     const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
       if (ok) done(); else if (onDone) askText({ title: 'Copy This Code', value: txt, multiline: true, readOnly: true, ok: 'Done', onDone: () => {} }); else toast('COPY FAILED', 'Use Save log instead', '#ff4d6a', true); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
@@ -20131,7 +20289,7 @@ const UI = (() => {
         + row('Briefings', 'Boss and bounty cards. Pause holds the game until you tap Fight', seg('briefs', [['pause', 'Pause'], ['brief', 'Brief'], ['off', 'Off']], S.briefings || 'pause'))
         + row('Haptics', 'A buzz when the core is hit', flip(S.haptics !== false, 'haptic'))
         + sec('Save')
-        + row('Save location', cloudOk ? 'Synced to your Claude account' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
+        + row('Save location', cloudOk ? 'Synced to your Claude account' : window.LG_APP ? 'Kept on this device' : 'Kept in this browser', `<span id="cloud" class="cloud ${cloudOk ? 'on' : ''}">${cloudOk ? 'Synced' : 'This device'}</span>`)
         + (inRun ? '' : row('Transfer save', 'Move your progress to another device with a code', '<button class="btn small" data-act="xcopy">Export</button><button class="btn small" data-act="xpaste">Import</button>'))
         + sec('About')
         + row("What's New", `Version ${VERSION}`, `<button class="btn small" data-act="news">Open</button>`)
@@ -20155,6 +20313,7 @@ const UI = (() => {
         + row('Music tempo', 'Average tempo of the default mix. Each genre in the Studio has its own', rng('setBpm', S.bpm || 72, 56, 100, 2, (S.bpm || 72) + ' BPM', 'bpmV'))
         + row('Boss music', 'Each boss plays its own theme. Off: your song keeps playing', sw(SFX.music.config.bossThemes !== false, 'bossMus'))
         + row('Mono audio', 'One earbud or one speaker', sw(!!S.mono, 'mono'))
+        + (silentOK() ? row('Play on silent', S.silent === true ? 'Sound plays with the silent switch on. Audio from other apps pauses' : 'The silent switch mutes the game. Audio from other apps keeps playing', sw(S.silent === true, 'silent')) : '') // app only (DRAFT text)
         + sec('Troubleshooting')
         + row('Sound', `<em id="sndStat">${esc(soundStatus())}</em>`, '<button class="btn small" data-act="sndFix">Restart sound</button>'),
       graphics: sec('Effects')
@@ -20165,7 +20324,7 @@ const UI = (() => {
         + sec('Display')
         + row('Pixel scaling', 'Sharp is crisper. Simple is lighter work for older devices', seg('gfx', [['1', 'Sharp'], ['0', 'Simple']], S.sharp !== false ? '1' : '0', 'data-k="sharp"'))
         + row('Fine sprites', FINE > 1 ? 'On: sharper sprites (test). Turn off to get the old drawing back. Change it between runs' : 'Off: the old drawing', `<button class="btn small" data-act="fineSet">${FINE > 1 ? 'Turn off' : 'Turn on'}</button>`) // 6.16.1 test switch (DRAFT text). The page reloads
-        + (fsOK() ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
+        + (fsOK() && !window.LG_APP ? row('Full screen', 'Hide the browser bars', sw(fsOn(), 'fs')) : ''),
       interface: sec('Layout')
         + row('HUD', 'Detailed shows more numbers during a run', seg('hud', [['lean', 'Minimal'], ['full', 'Detailed']], S.hud === 'full' ? 'full' : 'lean'))
         + row('Interface size', 'Scale of buttons and text', seg('uis', [['auto', 'Auto'], ['0.85', 'Small'], ['1.2', 'Large']], String(S.uiScale || 'auto')))
@@ -21046,6 +21205,7 @@ const UI = (() => {
       case 'reroll': rerollMap(); renderSetup(); break;
       case 'sector': setup.sector = b.dataset.v; renderSetup(); break;
       case 'launch': launch(); break;
+      case 'demoTrain': closeModal(); openTutPick(); break;
       case 'launchDaily': { // v5.4.1: unspent Hunt points are asked about before the run starts (the build locks once it does)
         const hb = huntBuildProf(); let sp = 0; for (const k in hb.tal) if (TAL[k]) sp += hb.tal[k]; sp += (hb.caps || []).filter(c => TAL[c]).length;
         const left = HUNT.pts - sp;
@@ -21058,7 +21218,7 @@ const UI = (() => {
         }
         launch(); break; }
       case 'briefDaily': closeModal(); if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); break; } openSetup(); setup.mode = 'daily'; renderSetup(); break;
-      case 'dailyLocked': toast('DAILY HUNT', `Opens at Level ${DAILY_LVL}. You are Level ${profLevel().level}.`, '#b86cff', true, 'tip'); break;
+      case 'dailyLocked': toast('DAILY HUNT', `Opens when you reach Wave ${DAILY_WAVE} in a run. Your best is Wave ${PROF.bestWave || 0}.`, '#b86cff', true, 'tip'); break;
       case 'mode': if (b.dataset.v === 'daily' && !dailyOpen()) break; setup.mode = b.dataset.v; if (setup.mode !== 'daily') rerollMap(); renderSetup(); break;
       case 'resume': closeModal(); G.paused = false; break;
       case 'help': if (modalOpen === 'pause') modalFrom = 'pause'; openHelp(); break;
@@ -21130,7 +21290,7 @@ const UI = (() => {
           if (!raw.startsWith('ENT1:')) throw 0;
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
           P.runSnap = null; PROF = P; tidyCaps(); { const mw = migrateWeb(); if (mw) UI.toast(...talentsToast(mw)); } Save.save(); closeModal(); renderHangar(); Tree.refresh(); // 6.0: an old save code gets the talents migration now, not on next launch
-          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
+          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); silentApply();
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
           toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');
         } catch (e) { toast('INVALID CODE', 'Make sure the full code was pasted', '#ff4d6a', 1); }
@@ -21148,6 +21308,7 @@ const UI = (() => {
         SFX.init(); SFX.wake(); const M = SFX.music; M.setPaused(false); if (modalOpen !== 'studio') M.setHold(false); M.jump(null);
         setTimeout(() => { const el = $('#sndStat'); if (el) el.textContent = soundStatus(); }, 700);
         toast('SOUND RESTARTED', soundStatus(), '#59f0b4'); break; }
+      case 'silent': PROF.settings.silent = PROF.settings.silent !== true; silentApply(); setTimeout(() => { try { SFX.kick(); } catch (e) {} }, 80); Save.save(); openSettings(); break; // Nov 26 (Nic: the switch "requires an app reset"): iOS reads the session type when sound starts, so the sound engine is stopped and started again (about 0.1 s)
       case 'mono': PROF.settings.mono = !PROF.settings.mono; SFX.setMono(PROF.settings.mono); Save.save(); openSettings(); break;
       case 'bossMus': { const c = SFX.music.config; c.bossThemes = c.bossThemes === false; if (!c.bossThemes) SFX.music.setBoss(null, 0, false); PROF.settings.studio = c; Save.save(); openSettings(); break; } // 6.5.2: also in Settings › Sound (Nic)
       case 'shake': PROF.settings.shake = !PROF.settings.shake; Render.shakeOn = PROF.settings.shake; Save.save(); openSettings(); break;
@@ -21227,7 +21388,7 @@ const UI = (() => {
       else window.act('abil', k);
       updateHud();
     });
-    $('#bLaunch').onclick = () => { SFX.init(); SFX.play('ui'); if (PROF.runSnap && PROF.runSnap.rec) { modal(`<div class="card narrow"><div class="ch"><h2>Daily Hunt</h2></div><p class="note">Restoring your run exactly where you left it…</p></div>`, 'wait'); setTimeout(() => launch(PROF.runSnap), 80); } else if (PROF.runSnap) launch(PROF.runSnap); else if (tutOffer()) openTutOffer(); else openSetup(); };
+    $('#bLaunch').onclick = () => { SFX.init(); SFX.play('ui'); if (LG_DEMO) { if (tutOffer()) openTutOffer(); else openDemo(); } else if (PROF.runSnap && PROF.runSnap.rec) { modal(`<div class="card narrow"><div class="ch"><h2>Daily Hunt</h2></div><p class="note">Restoring your run exactly where you left it…</p></div>`, 'wait'); setTimeout(() => launch(PROF.runSnap), 80); } else if (PROF.runSnap) launch(PROF.runSnap); else if (tutOffer()) openTutOffer(); else openSetup(); };
     $('#watchbar').addEventListener('click', e => { if (e.target.closest('[data-act=watchEnd]')) { SFX.play('ui'); endWatch(); } });
     $('#hHunt').addEventListener('click', e => { const b = e.target.closest('[data-hact]'); if (!b) return; SFX.init(); SFX.play('ui'); if (b.dataset.hact === 'daily') { if (!dailyOpen()) return; if (PROF.runSnap) { toast('RUN IN PROGRESS', 'Finish or end your current run first', '#ffb03a', true, 'tip'); return; } openSetup(); setup.mode = 'daily'; renderSetup(); } });
     $('#bLaunch2').onclick = () => { SFX.init(); SFX.play('ui'); openSetup(); };
@@ -21247,6 +21408,10 @@ const UI = (() => {
     $('#bStudio').onclick = () => { SFX.init(); SFX.play('ui'); openStudio('hangar'); };
     $('#bRotate').onclick = () => document.body.classList.add('portrait-ok');
     document.addEventListener('pointerdown', () => SFX.init(), { once: true });
+    // The App Store app (Nic, Nov 25: "Sound takes input in the app now to start shouldn't that be handled automatically"): an app's web
+    // view may start sound with no tap (Capacitor sets mediaTypesRequiringUserActionForPlayback to none), so start it at launch. Not
+    // while the first-run story is waiting for its tap: that tap starts the story's own music. A browser still needs the tap.
+    if (window.LG_APP) setTimeout(() => { try { if (!UI.storyGate) SFX.init(); } catch (e) {} }, 400);
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('dblclick', e => e.preventDefault());
     // ---- 6.16.9: THE LAYOUT IS SIZED BY CSS ALONE. (Nic, Nov 22: "it keeps happening... if it needs a new approach to make it stable, do it".)
@@ -21860,7 +22025,7 @@ function talentsToast(kind) {
   // returning players see what changed once per version; brand-new players skip it
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(function news() { if (UI.storyOn) return setTimeout(news, 700); if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
-  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono);
+  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); silentApply();
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   setTimeout(() => { try { UI.fbFlush(); } catch (e) {} }, 3000); // 6.9: feedback written with no connection goes out now
@@ -21895,6 +22060,22 @@ function talentsToast(kind) {
 // 6.16.1 (Nov 18): two more facts for the run log. (1) Sprite memory: megabytes in the sprite cache, megabytes of tinted copies, sprites
 // dropped by the cache's budget so far (art.js). (2) Script errors: the first 6 of a page's life as 'err' lines, and a count on every
 // 'perf' line. An iPhone that runs out of canvas memory shows up here as "null is not an object" errors.
+// Nov 25 (Nic's Wave 60 app log: 60 frames a second to Wave 52, about 35 at 3x after it, and the phone warm): the 'perf' line now splits each
+// frame into the script time of the simulation and of the drawing ([median, 95th] ms, one decimal), and the most sim steps in one frame,
+// so the next phone log shows which side is slow. It does not see the time the phone spends putting the picture on the glass.
+const PFT = { s: [], d: [], n: 0, q: a => { if (!a.length) return null; const f = a.slice().sort((x, y) => x - y); return [Math.round(f[f.length >> 1] * 10) / 10, Math.round(f[Math.floor(f.length * 0.95)] * 10) / 10]; } };
+// Nov 25 (Nic: "Is there anything else we're not capturing in the logging that we should be?" ... "Build it all please"). The run log
+// gains: real time, the picture's true size and the screen rate, the zoom in use, a Settings snapshot, and (in the app only) the phone's
+// own state: model, iOS, battery, charging, Low Power Mode and heat. The phone state comes from a small native plugin, LGDevice
+// (app/ios/App/App/GameViewController.swift); the web game cannot read any of it. Nothing leaves the phone: the log is only ever copied by hand.
+const PHONE = { v: null, told: 0, busy: 0,
+  poll() { try { const C = window.Capacitor; if (!window.LG_APP || !C || this.busy) return; const P = C.Plugins && C.Plugins.LGDevice; const pr = P && P.info ? P.info() : C.nativePromise ? C.nativePromise('LGDevice', 'info', {}) : null; if (!pr || !pr.then) return;
+      this.busy = 1; pr.then(r => { this.busy = 0; if (!r) return; this.v = r; if (this.told !== G) { this.told = G; try { rlog('phone', { model: r.model, os: r.os, hz: r.hz, bat: PHONE.bat(), chg: r.charging ? 1 : 0, lp: r.lowPower ? 1 : 0, th: r.thermal }); } catch (e) {} } }, () => { this.busy = 0; }); } catch (e) { this.busy = 0; } },
+  bat() { const b = this.v && this.v.battery; return b >= 0 ? Math.round(b * 100) : -1; },
+  now() { const r = this.v; return r ? [this.bat(), r.charging ? 1 : 0, r.lowPower ? 1 : 0, r.thermal] : null; } }; // [battery %, charging, Low Power Mode, heat 0 nominal .. 3 critical]
+window.LGPhone = PHONE; // tests
+const SETSNAP = () => { const o = {}; try { for (const [k, v] of Object.entries(PROF.settings || {})) if (v === null || typeof v !== 'object') o[k] = v; } catch (e) {} return o; };
+const CVSIZE = () => { try { const c = document.getElementById('cv'); return [c.width, c.height]; } catch (e) { return 0; } };
 const ARTMEM = () => { try { const a = ART.cacheStats(), t = Render.tintStats(); return [a.mb, t.mb, a.ev]; } catch (e) { return null; } };
 window.__errN = 0;
 { const logErr = m => { if (/ResizeObserver loop/.test(String(m))) return; window.__errN++; if (window.__errN <= 6) { try { rlog('err', { m: String(m).slice(0, 180), n: window.__errN }); } catch (e) {} } };
@@ -21909,7 +22090,7 @@ window.__errN = 0;
     function check() {
       if (!SFX.health || document.hidden) return;
       const h = SFX.health(); if (h.st === 'none') return;
-      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { mus: (c0 => !c0.custom ? 'default' : c0.journey ? 'journey' : (c0.genres || []).join('+'))(SFX.music.config || {}), vp: UI.vpDiag ? UI.vpDiag() : 0, sa: navigator.standalone ? 1 : 0, ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0 }); }
+      if (runG !== G) { runG = G; lastWave = -1; lastPlayed = h.played; stall = silN = wakeN = 0; if (on()) rlog('dev', { mus: (c0 => !c0.custom ? 'default' : c0.journey ? 'journey' : (c0.genres || []).join('+'))(SFX.music.config || {}), vp: UI.vpDiag ? UI.vpDiag() : 0, sa: navigator.standalone ? 1 : 0, ua: navigator.userAgent.slice(0, 140), sr: h.sr, st: h.st, b: ((document.getElementById('labRib') || {}).textContent || '').replace('TEST ENVIRONMENT · ', ''), fine: FINE, reap: SFX.reaper ? 1 : 0, app: window.LG_APP ? 1 : 0, bld: window.LG_BUILD || '', dpr: Math.round((window.devicePixelRatio || 1) * 100) / 100, cv: CVSIZE(), set: SETSNAP() }); PHONE.poll(); }
       if (!on()) return;
       const w = performance.now() / 1000;
       if (lastCt >= 0) {
@@ -21931,15 +22112,16 @@ window.__errN = 0;
     // in the run log: seconds of sound lost, frame time (median and 95th), game speed, the highest lean level, the most sounds in
     // flight and sounds started. The next phone log shows whether the cuts follow the sounds, the drawing, or neither.
     let fW = -1, fCt = 0, fPl = 0, good = 0, bad = 0, kickAt = -99, pw = -1, P0 = null, gov = true; const FT = [];
-    const pNew = () => ({ lost: 0, lean: 0, inF: 0, sfx: 0, slipN: 0, spd: 0 });
+    const pNew = () => ({ lost: 0, lean: 0, inF: 0, sfx: 0, slipN: 0, spd: 0, t0: performance.now(), z: [] }); let runP = null, runT0 = 0;
+    const zq = a => { if (!a.length) return null; const f = a.slice().sort((x, y) => x - y), r = v => Math.round(v * 100) / 100; return [r(f[0]), r(f[f.length >> 1]), r(f[f.length - 1])]; };
     function fast(dtMs) {
       if (!on() || !SFX.clock) { fW = -1; return; }
       if (FT.length < 4000) FT.push(dtMs);
       const w = performance.now() / 1000; if (fW >= 0 && w - fW < 0.5) return;
       const c = SFX.clock(); if (!c || document.hidden) { fW = -1; return; }
-      if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, cut: SFX.reapStats.reaped, grp: SFX.reapStats.open, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1, art: ARTMEM(), err: window.__errN || 0 }); } P0 = pNew(); pw = G.wave; FT.length = 0; }
+      if (!P0 || pw !== G.wave) { if (P0 && pw >= 0 && FT.length) { const f = FT.slice().sort((a, b) => a - b); rlog('perf', { of: pw, aLost: Math.round(P0.lost * 10) / 10, slips: P0.slipN, lean: P0.lean, inF: P0.inF, sfx: P0.sfx, fms: Math.round(f[f.length >> 1]), f95: Math.round(f[Math.floor(f.length * 0.95)]), spd: P0.spd, fine: FINE, cut: SFX.reapStats.reaped, grp: SFX.reapStats.open, en: G.enemies.length, fx: Render.fxCounts ? Render.fxCounts.parts : -1, art: ARTMEM(), sim: PFT.q(PFT.s), drw: PFT.q(PFT.d), stp: PFT.n, rs: Math.round((performance.now() - P0.t0) / 1000), rt: Math.round((performance.now() - runT0) / 1000), hz: Math.round(1000 / Math.max(1, f[Math.floor(f.length * 0.05)])), zm: zq(P0.z), ph: PHONE.now(), err: window.__errN || 0 }); PHONE.poll(); } if (runP !== G) { runP = G; runT0 = performance.now(); } P0 = pNew(); pw = G.wave; FT.length = 0; PFT.s.length = 0; PFT.d.length = 0; PFT.n = 0; }
       if (fW >= 0 && c.st === 'running' && w - fW < 1.5) {
-        const dw = w - fW, dc = c.ct - fCt, slip = dc < dw * 0.75; P0.lost += Math.max(0, dw - dc - 0.02); P0.sfx += Math.max(0, c.played - fPl); P0.inF = Math.max(P0.inF, c.inF); P0.spd = Math.max(P0.spd, G.speed || 1);
+        const dw = w - fW, dc = c.ct - fCt, slip = dc < dw * 0.75; P0.lost += Math.max(0, dw - dc - 0.02); P0.sfx += Math.max(0, c.played - fPl); P0.inF = Math.max(P0.inF, c.inF); P0.spd = Math.max(P0.spd, G.speed || 1); { const z = Render.zoom; if (z > 0 && z < 50 && P0.z.length < 2000) P0.z.push(z); }
         if (!gov) { if (slip) P0.slipN++; } else
         if (slip) { P0.slipN++; bad += dw; good = 0; SFX.setLean(SFX.lean + 1); if (SFX.lean >= 3 && bad >= 4 && w - kickAt > 30) { kickAt = w; SFX.kick(); } }
         else { bad = 0; good += dw; if (good >= 20 && SFX.lean > 0) { good = 0; SFX.setLean(SFX.lean - 1); } }
@@ -21975,7 +22157,9 @@ window.__errN = 0;
         const ff = UI.coachFF; if (!!ff !== !!UI.walkFF) { UI.walkFF = !!ff; UI.hudNow(); } // 6.7: Training's walk-in fast-forward (» on SPEED)
         acc += dt * Math.max(G.speed, ff) * (UI.slowmo > 0 ? 0.3 : 1);
         let n = 0;
+        const tS0 = performance.now();
         while (acc >= STEP && n < 10) { snapMotion(); simStep(STEP); acc -= STEP; n++; }
+        if (PFT.s.length < 4000) { PFT.s.push(performance.now() - tS0); if (n > PFT.n) PFT.n = n; } // rules of the frame: how long the simulation took (run log 'perf' line)
         if (ff) UI.ffSec = (UI.ffSec || 0) + n * STEP; // game seconds spent in Training's fast-forward (tut66.py: time saved)
         if (n >= 10) acc = 0;
         Render.lerp = n >= 10 ? 1 : Math.min(1, acc / STEP); // 6.18: how far this frame is into the next sim step (render.js lerpIn)
@@ -21984,7 +22168,7 @@ window.__errN = 0;
       // card pick, a briefing) the halted field sits behind an 80% veil and is drawn every other frame, two animation steps at a time
       if (Tree.isOpen) { ART.frameStart(); ART.idle(1.5); }
       else if (halted && UI.modalOpen && !modalEl.classList.contains('side')) { veilOdd = !veilOdd; if (veilOdd) Render.draw(0, 2); else { ART.frameStart(); ART.idle(1.5); } }
-      else Render.draw(halted && !(UI.beat > 0 && !G.paused && !UI.modalOpen) ? 0 : dt); // 6.8: during a beat the effects keep moving over the frozen field
+      else { const tD0 = performance.now(); Render.draw(halted && !(UI.beat > 0 && !G.paused && !UI.modalOpen) ? 0 : dt); if (!halted && PFT.d.length < 4000) PFT.d.push(performance.now() - tD0); } // 6.8: during a beat the effects keep moving over the frozen field
     } else { if (UI.screen === 'hangar') { drawBg(dt); TitleFX.draw(dt); } ART.idle(4); } // menus: pre-render unit art in the background
     if (Tree.isOpen) Tree.draw();
     wakeT -= dt; if (wakeT <= 0) { wakeT = 2; if (!document.hidden) SFX.wake(); try { AudWatch.check(); } catch (e) {} } // iOS can leave the sound 'interrupted'; 6.5.5 the sound watchdog
