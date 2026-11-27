@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>window.LG_DEMO=1</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1800,7 +1801,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 // Last Gradient. Copyright (c) 2026 Nic Carter (Nigel Industries). All rights reserved. Not open source: see LICENSE.
 // ===================== ENTROPY — DATA =====================
 'use strict';
-const VERSION = '6.20.0';
+const VERSION = '6.20.1';
 // 6.9 feedback: the web address reports are sent to (Nic's Google Sheet script, tools/feedback/Code.gs). Empty = the Send Feedback
 // buttons are hidden. It only accepts reports; it never returns data.
 const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycby80NZ6Bha7fXQfycaMoAs-SDpmcekOb6pGQkDgvMTEd14D_4Et3CJvKfeLSV9YU-ub/exec'; // Nov 11 2026: the web app of the sheet "Last Gradient Feedback" in Nic's lastgradient.com Workspace
@@ -16859,7 +16860,7 @@ const Save = (() => {
     out.settings.studio = studioMig(out.settings.studio);
     out.webV = p.webV || 1;
     // polish 47: a damaged number must not poison the profile (NaN XP would break levels and ranks for good)
-    for (const k of ['xp', 'kills', 'bestWave', 'bestScore', 'runs', 'playTime', 'nova']) out[k] = typeof out[k] === 'number' && isFinite(out[k]) && out[k] >= 0 ? out[k] : 0;
+    for (const k of ['xp', 'kills', 'bestWave', 'bestScore', 'runs', 'playTime', 'realTime', 'nova']) out[k] = typeof out[k] === 'number' && isFinite(out[k]) && out[k] >= 0 ? out[k] : 0;
     for (const k of ['xpBank', 'days', 'rest', 'restLeft']) if (out[k] !== undefined && !(typeof out[k] === 'number' && isFinite(out[k]) && out[k] >= 0)) delete out[k];
     out.alloc = ['start'];
     out.tal = p.tal && typeof p.tal === 'object' ? Object.fromEntries(Object.entries(p.tal).filter(([k, v]) => TAL[k] && !TAL[k].cap && v > 0).map(([k, v]) => [k, Math.min(TAL[k].max, v | 0)])) : {};
@@ -20190,6 +20191,20 @@ const UI = (() => {
     closeModal(); document.body.classList.remove('watching'); $('#watchbar').hidden = true;
     G = null; show('hangar'); renderHangar();
   }
+  // ---- App Store rating prompt (Nov 27; Nic: "I'd like it to be after several hours of game play") ----
+  // App only. Apple's own prompt (StoreKit, native LGDevice.review): the player rates with one tap and never leaves the game. Asked at
+  // most twice: on the run-end screen of a run that reached Wave 20 or more, first once real play time (PROF.realTime: seconds in a
+  // run, not paused, not Training, app in front; counted in the main loop) passes 3 hours, then once more after 20 hours. iOS itself decides whether the prompt shows (at most 3 times a year; never in TestFlight). Nothing is sent by the game.
+  const REVIEW_AT = [3 * 3600, 20 * 3600];
+  function askReview() {
+    try {
+      if (!window.LG_APP || G.revAsked || G.tut || G.lesson || (G.wave | 0) < 20) return;
+      const n = PROF.revAsk | 0; if (n >= REVIEW_AT.length || (PROF.realTime || 0) < REVIEW_AT[n]) return;
+      const C = window.Capacitor, P = C && C.Plugins && C.Plugins.LGDevice; if (!P || !P.review) return;
+      G.revAsked = 1; PROF.revAsk = n + 1; Save.save();
+      setTimeout(() => { try { P.review().then(r => { try { rlog('review', { n: n + 1, ok: r && r.ok ? 1 : 0 }); } catch (e) {} }, () => {}); } catch (e) {} }, 1500); // (after the card has landed)
+    } catch (e) {}
+  }
   function openGameOver() {
     if (!G.vpLog && UI.vpDiag) { G.vpLog = 1; try { rlog('vp', UI.vpDiag()); } catch (e) {} } // 6.16.9: the screen sizes at the end of every run, for the next sizing report
     if (G.tut) return openTutDone(); // 5.8 Training: no records, Hall of Fame or recap
@@ -20199,6 +20214,7 @@ const UI = (() => {
     if (G.rankUp === undefined) { const C = myRank(); G.rankUp = PROF.rankSeen !== undefined && C.step > PROF.rankSeen ? C : null; PROF.rankSeen = C.step; } // polish 43
     Save.save();
     if (G.watch) { watchDone(G.extracted ? 'They extracted.' : 'Their core fell here.'); return; }
+    askReview();
     const N = G.newNemesis, ranked = !!G.rankedRun;
     if (G.daily) prepHuntCode();
     modal(`<div class="card over"><div class="ch">${G.extracted ? '<h2 class="good">Extracted</h2>' : '<h2 class="bad">Core Destroyed</h2>'}<span class="note">${G.daily ? 'Daily Hunt · ' + esc(G.daily) : CHAOS_LEVELS[G.chaos] ? CHAOS_LEVELS[G.chaos].name : ''}</span></div>
@@ -21631,7 +21647,7 @@ const UI = (() => {
     fbFlush, openFeedback, // 6.9 Send Feedback
     get screen() { return screen; }, get modalOpen() { return modalOpen; }, get coachHold() { return Coach.hold; }, get coachFF() { return Coach.ff; }, hudNow: () => updateHud(true), coach: Coach,
     // test hooks (test/uiaudit.py opens every screen through these)
-    _dbg: { keepOutRects, zoneBanner, startLesson: id => startTut(id), openManual, openLegal, benchOpen: () => Bench.open(), startMove, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
+    _dbg: { keepOutRects, zoneBanner, startLesson: id => startTut(id), askReview: () => askReview(), openManual, openLegal, benchOpen: () => Bench.open(), startMove, openSetup, openHelp, openSettings, openArchive, openHall, openPause, openReport, openAssault, openEvo, openThreat, updateHud, openHunt, watchRun, endWatch, huntCode, readHuntCode, renderSetup, setup: () => setup, openNews, openGameOver, openStudio, openNova, openTransfer, openTower, openCore, openBuild, openEnemy, enemyCard, introCard, wantedPoster, closeModal, modal, selectProbe, probeEnd, probeCmd: () => prCmd },
   };
 })();
 
@@ -22152,6 +22168,7 @@ window.__errN = 0;
       if (UI.beat > 0) UI.beat -= dt;
       if (UI.bossDie && !G.paused && (UI.bossDie.at -= dt) <= 0) { const e = UI.bossDie.e; UI.bossDie = null; SFX.play('bossdie', e); } // 6.18: with the blast
       if (G.watch && !G.paused && !UI.modalOpen) UI.watchFeed();
+      if (!G.over && !G.paused && !G.tut && !G.bench && !G.watch && !document.hidden) PROF.realTime = (PROF.realTime || 0) + dt; // Nov 27: real seconds in a run (Nic: "count real time, not game time"), for the rating prompt
       const halted = G.over || G.paused || G.draft || G.huntChoice || cpHalt() || Tree.isOpen || UI.modalOpen || UI.coachHold;
       if (!halted) {
         const ff = UI.coachFF; if (!!ff !== !!UI.walkFF) { UI.walkFF = !!ff; UI.hudNow(); } // 6.7: Training's walk-in fast-forward (» on SPEED)
