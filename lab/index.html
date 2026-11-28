@@ -1714,7 +1714,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.1 + V6.20.1 + NOV 27 LATE TEST 2';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.1 + V6.20.1 + NOV 28 DRAWING';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -14003,7 +14003,9 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     }
     return C;
   }
+  let mapGen = 0, miniCv = null, miniKey = '';
   function drawMap() {
+    mapGen++;
     if (mapLayer.width !== BW * RES || mapLayer.height !== BH * RES) { mapLayer.width = BW * RES; mapLayer.height = BH * RES; }
     const m = mapLayer.getContext('2d'), zid = zoneId(), B = { tiles: G.map.tiles, deco: G.map.deco, lanes: G.map.lanes, cols: COLS, rows: ROWS, seed: G.seed };
     // 6.3: a new zone washes over the board from the core (the old board is kept for the wipe). On a run's first frame the plain
@@ -14479,7 +14481,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     const sp = UNITS.SPIN[t.type], ang = UNITS.ROT[t.type] ? (t.angle === undefined ? -1.57 : t.angle) : sp ? frame / 60 * sp * (t.disabled > 0 ? 0 : 1) + t.id : 0;
     if (t._wk !== el + (t.spec || 0)) { t._wk = el + (t.spec || 0); UNITS.warmTower(t.type, el, t.spec || 0); }
     const top = UNITS.top(t.type, el, t.spec || 0, ang, anim);
-    if (!onCore) { b.fillStyle = 'rgba(2,3,10,0.3)'; b.beginPath(); b.ellipse(cx + 1.5, cy + 2, 12, 11, 0, 0, 6.283); b.fill(); }
+    if (!onCore) shadowAt(shadowSpr(false, 12, 11, 'rgba(2,3,10,0.3)'), cx + 1.5, cy + 2); // Nov 27: one blit, not a path fill
     // v5.8 tower character: a shot is seen when the sim stamps t.aimT; the turret kicks back along its heading and eases home
     if (t.aimT !== t._pa) { if (t._pa !== undefined && t.aimT !== undefined) towerFired(t, cx, cy, c); t._pa = t.aimT; }
     const age = t._ft === undefined ? 9 : rt - t._ft, rot = UNITS.ROT[t.type], ca = Math.cos(t.angle || 0), sa = Math.sin(t.angle || 0);
@@ -14515,7 +14517,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
       case 'flashover': if (t.flash > 0 || (t.aimT !== undefined && G.time - t.aimT < 0.2)) D(b, cx, cy, 3, 'rgba(255,240,190,0.85)'); break;
     }
     if (t.asc) { b.strokeStyle = hexA(lvTier(towerLevel(t)).col, 0.55 + 0.3 * Math.sin(frame / 8)); b.lineWidth = 1; b.strokeRect(X + 0.5, Y + 0.5, 23, 23); }
-    if (G.mastery && G.mastery[t.type] >= 3) { const g = '#ffd84a'; R(b, X + 1, Y + 21, 4, 1, g); R(b, X + 1, Y + 18, 1, 3, g); R(b, X + 19, Y + 21, 4, 1, g); R(b, X + 22, Y + 18, 1, 3, g); } // v5.8 Mastery 3: gold trim on the base corners
+    if (G.mastery && G.mastery[t.type] >= 3) b.drawImage(trimSpr(), X, Y + 18, 24, 4); // v5.8 Mastery 3: gold trim on the base corners (Nov 27: one blit)
     // v4.7: the level now reads as a numbered badge in the overlay (drawn crisp at any zoom), see the v4.8 badge pass
     let best = -1; for (const a of t.affixes) if (a.tier < 4 && a.tier > best) best = a.tier;
     if (best >= 1) { R(b, X + 18, Y + 2, 4, 4, '#090b16'); R(b, X + 19, Y + 3, 2, 2, RARITY[best].col); }
@@ -14576,6 +14578,36 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     }
   }
   // wormhole: swirling portal at a lane's origin. Forming portals are small and unstable; open ones are full size.
+  // Nov 27 (drawing cost): the turning portal was about 180 canvas calls a frame per wormhole. It is now drawn once per angle
+  // (WORM_STEPS a turn, close to the old one-step-a-frame motion) into a small canvas and blitted: one call. The picture is the same.
+  const WORM_STEPS = 112, wormC = new Map();
+  function wormSprite(rO, rC, pending, rq) {
+    const key = rO + ':' + rC + (pending ? 'p' : 'o') + rq; let c = wormC.get(key); if (c) return c;
+    if (wormC.size > 240) { for (const o of wormC.values()) o.width = o.height = 0; wormC.clear(); }
+    const H = rO + 3; c = document.createElement('canvas'); c.width = c.height = (H * 2 + 1) * RES;
+    const g = c.getContext('2d'); g.setTransform(RES, 0, 0, RES, 0, 0); g.imageSmoothingEnabled = false;
+    const rot = rq * 6.2832 / WORM_STEPS, X = H, Y = H;
+    D(g, X, Y, rO + 2, 'rgba(5,3,12,0.55)');
+    for (let a = 0; a < 3; a++) for (let k = 0; k < 18; k++) {
+      const rr = rO * (1 - k / 20), an = rot * (a % 2 ? -1 : 1) + a * 2.094 + k * 0.32;
+      const col = k < 6 ? '#ff4d6a' : k < 12 ? '#b86cff' : '#e9d8ff';
+      R(g, X + Math.cos(an) * rr - 1, Y + Math.sin(an) * rr - 1, 2, 2, hexA(col, 0.25 + 0.6 * k / 18));
+    }
+    for (let k = 0; k < 16; k++) { const an = -rot * 1.6 + k * 0.3927; if (k % 2) P(g, X + Math.cos(an) * rO, Y + Math.sin(an) * rO, pending ? '#b86cff' : '#ff4d6a'); }
+    D(g, X, Y, rC, '#05030a');
+    wormC.set(key, c); return c;
+  }
+  let trimC = null;
+  function trimSpr() { if (trimC) return trimC; const c = document.createElement('canvas'); c.width = 24 * RES; c.height = 4 * RES; const g = c.getContext('2d'); g.setTransform(RES, 0, 0, RES, 0, 0); const q = '#ffd84a';
+    R(g, 1, 3, 4, 1, q); R(g, 1, 0, 1, 3, q); R(g, 19, 3, 4, 1, q); R(g, 22, 0, 1, 3, q); return trimC = c; }
+  const nodeC = [];
+  function nodeSpr(q) { // a free Power Node's diamond, its centre at brightness q/50 (hexA's own steps, so the picture is the same)
+    if (nodeC[q]) return nodeC[q];
+    const c = document.createElement('canvas'); c.width = c.height = 15 * RES; const g = c.getContext('2d'); g.setTransform(RES, 0, 0, RES, 0, 0);
+    for (let k = -7; k <= 7; k++) { const h = 7 - Math.abs(k); R(g, 7 + k, 7 - h, 1, 1, hexA('#6ae2ff', 0.75)); R(g, 7 + k, 7 + h, 1, 1, hexA('#6ae2ff', 0.75)); }
+    for (let k = -3; k <= 3; k++) { const h = 3 - Math.abs(k); R(g, 7 + k, 7 - h, 1, h * 2 + 1, hexA('#bff4ff', q / 50)); }
+    return nodeC[q] = c;
+  }
   function drawWormhole(L) {
     const p0 = L.tiles[0], X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE;
     const pending = !!L.openWave, waves = pending ? L.openWave - G.wave : 0;
@@ -14587,15 +14619,9 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
       const n = L.branch || L.tiles.length;
       for (let j = (frame >> 2) % 4; j < n; j += 4) { const q = L.tiles[j]; R(b, q.x * TILE + 10, q.y * TILE + 10, 4, 4, hexA('#b86cff', 0.55)); }
     }
-    const rO = Math.round(12 * sc);
-    D(b, X, Y, rO + 2, 'rgba(5,3,12,0.55)');
-    for (let a = 0; a < 3; a++) for (let k = 0; k < 18; k++) {
-      const rr = rO * (1 - k / 20), an = rot * (a % 2 ? -1 : 1) + a * 2.094 + k * 0.32;
-      const col = k < 6 ? '#ff4d6a' : k < 12 ? '#b86cff' : '#e9d8ff';
-      R(b, X + Math.cos(an) * rr - 1, Y + Math.sin(an) * rr - 1, 2, 2, hexA(col, 0.25 + 0.6 * k / 18));
-    }
-    for (let k = 0; k < 16; k++) { const an = -rot * 1.6 + k * 0.3927; if (k % 2) P(b, X + Math.cos(an) * rO, Y + Math.sin(an) * rO, pending ? '#b86cff' : '#ff4d6a'); }
-    D(b, X, Y, Math.max(2, Math.round(4 * sc)), '#05030a');
+    const rO = Math.round(12 * sc), rC = Math.max(2, Math.round(4 * sc)), rq = Math.round(rot / 6.2832 * WORM_STEPS) % WORM_STEPS;
+    const ws0 = wormSprite(rO, rC, pending, rq), H = (ws0.width / RES - 1) / 2;
+    b.drawImage(ws0, Math.round(X) - H, Math.round(Y) - H, H * 2 + 1, H * 2 + 1);
     if (frame % 9 < 2) P(b, X, Y, '#ffffff');
     if (frame % (pending ? 6 : 3) === 0) {
       const an = Math.random() * 6.283, rr = rO * 1.6;
@@ -14687,11 +14713,29 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     }
   }
   // 6.14 rules 13: enemies near a landed Black Hole stretch toward it as they fall in (drawing only)
+  // Nov 27 (drawing cost): an enemy's soft shadow as a cached sprite at its exact pixel size (one call instead of a path fill)
+  const shC = new Map();
+  function shadowSpr(fly, rx, ry, col) {
+    const w = Math.max(2, Math.round(rx * 2 * RES)), h = Math.max(2, Math.round(ry * 2 * RES)), key = (col || (fly ? 'f' : 'g')) + w + 'x' + h; let c = shC.get(key); if (c) return c;
+    if (shC.size > 200) { for (const o of shC.values()) o.width = o.height = 0; shC.clear(); }
+    c = document.createElement('canvas'); c.width = w + 2; c.height = h + 2; const g = c.getContext('2d');
+    g.fillStyle = col || (fly ? 'rgba(0,0,0,0.3)' : 'rgba(2,3,10,0.4)'); g.beginPath(); g.ellipse(c.width / 2, c.height / 2, w / 2, h / 2, 0, 0, 6.283); g.fill();
+    shC.set(key, c); return c;
+  }
+  function shadowAt(sd, x, y) { b.drawImage(sd, Math.round((x - sd.width / RES / 2) * RES) / RES, Math.round((y - sd.height / RES / 2) * RES) / RES, sd.width / RES, sd.height / RES); }
+  // Nov 27 (drawing cost): health bars are gathered per colour while a pass of enemies is drawn, then filled in one path per colour
+  // (in the bars' own layer order), so they sit over the crowd instead of under the next enemy. Under a Black Hole's squash they
+  // are drawn at once, inside the squash.
+  const HB_ORDER = ['#ffd84a', '#2a0010', '#fff2f5', '#ff7c9c', '#ff3355', '#8ab6ff'], hbQ = {}; let hbDefer = false;
+  function HB(x, y, w, h, col) { if (!hbDefer) return R(b, x, y, w, h, col); (hbQ[col] || (hbQ[col] = [])).push(Math.round(x), Math.round(y), w, h); }
+  function hbFlush() { for (const col of HB_ORDER) { const a = hbQ[col]; if (!a || !a.length) continue; b.fillStyle = col; b.beginPath(); for (let i = 0; i < a.length; i += 4) b.rect(a[i], a[i + 1], a[i + 2], a[i + 3]); b.fill(); a.length = 0; } hbDefer = false; }
   function drawEnemyH(e) {
     const h = G.hole; if (!h || !(h.v >= 13) || h.ph !== 1 || e.boss) return drawEnemy(e);
     const v2 = h.v === 22, dx = h.x - e.x, dy = h.y - e.y, d = Math.hypot(dx, dy), near = v2 ? HOLE22.catchR : HOLE.horizon * 1.6; if (d >= near || d < 0.05) return drawEnemy(e);
     const f = 1 - d / near, ex = e.x * TILE, ey = e.y * TILE, a = Math.atan2(dy, dx), sc = v2 && e.fall ? Math.max(0.15, d / near) : 1; // rules 22: one that is falling in shrinks and spins
+    const dfr = hbDefer; hbDefer = false;
     b.save(); b.translate(ex, ey); b.rotate(a); b.scale((1 + 0.6 * f) * sc, (1 - 0.35 * f) * sc); b.rotate(-a + (1 - sc) * 4); b.translate(-ex, -ey); drawEnemy(e); b.restore();
+    hbDefer = dfr;
   }
   function drawEnemy(e) {
     const X = e.x * TILE, Y = e.y * TILE, st = e.st;
@@ -14733,8 +14777,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     const elite = e.elite.length && !e.boss && !e.pirate, eCols = e.elite.length ? e.elite.map(id => ELITE_AFFIXES.find(a => a.id === id).col) : null;
     if (elite) k *= 1.22; // v4.7: elites stand a size up from their kin
     const su = (s.u || 1) * k, sw = s.width * su, hw = sw / 2, hh = s.height * su / 2;
-    b.fillStyle = e.fly ? 'rgba(0,0,0,0.3)' : 'rgba(2,3,10,0.4)';
-    b.beginPath(); b.ellipse(X + 1, e.fly ? Y + 4 : y + hh * 0.55, hw * 0.75, Math.max(1.5, hh * (e.fly ? 0.25 : 0.4)), 0, 0, 6.283); b.fill();
+    shadowAt(shadowSpr(!!e.fly, hw * 0.75, Math.max(1.5, hh * (e.fly ? 0.25 : 0.4))), X + 1, e.fly ? Y + 4 : y + hh * 0.55); // Nov 27: one blit, not a path fill
     if (elite && !cloaked) {
       // 6.16.1: the ground sigil is gone (elites are Overgrown now); a faint rim in the first affix colour keeps them findable in a crowd
       const rim = tintOf(s, eCols[0]), gw = sw * 1.08, gh = hh * 2 * 1.08;
@@ -14793,12 +14836,12 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     for (let i = 0; i < Math.min(st.mark, 6); i++) R(b, X - 7 + i * 3, y + hh + 2, 2, 2, EL.V.col);
     if (!cloaked && (e.hp < e.maxHp || e.shield > 0) && !e.boss) {
       const w = Math.max(12, Math.round(sw)), hr = Math.max(0, e.hp / e.maxHp);
-      if (elite) R(b, X - w / 2 - 1, y - hh - 5, w + 2, 4, '#ffd84a');
+      if (elite) HB(X - w / 2 - 1, y - hh - 5, w + 2, 4, '#ffd84a');
       // 6.8: the chunk just lost stays white for a moment, then drains to the new value
       if (e._hl === undefined || e._hl < hr) e._hl = hr; else if (e._hl > hr) e._hl = Math.max(hr, e._hl - Math.max(0.6, (e._hl - hr) * 6) * fdt);
-      R(b, X - w / 2, y - hh - 4, w, 2, '#2a0010'); if (e._hl > hr + 0.02) R(b, X - w / 2, y - hh - 4, Math.max(1, Math.round(w * e._hl)), 2, '#fff2f5');
-      R(b, X - w / 2, y - hh - 4, Math.max(1, Math.round(w * hr)), 2, hr > 0.5 ? '#ff7c9c' : '#ff3355');
-      if (e.shield > 0) R(b, X - w / 2, y - hh - 6, Math.max(1, Math.round(w * Math.min(1, e.shield / e.maxHp))), 1, '#8ab6ff');
+      HB(X - w / 2, y - hh - 4, w, 2, '#2a0010'); if (e._hl > hr + 0.02) HB(X - w / 2, y - hh - 4, Math.max(1, Math.round(w * e._hl)), 2, '#fff2f5');
+      HB(X - w / 2, y - hh - 4, Math.max(1, Math.round(w * hr)), 2, hr > 0.5 ? '#ff7c9c' : '#ff3355');
+      if (e.shield > 0) HB(X - w / 2, y - hh - 6, Math.max(1, Math.round(w * Math.min(1, e.shield / e.maxHp))), 1, '#8ab6ff');
     }
   }
   function strokeRing(x, y, r, col, a, w, dash) {
@@ -14810,7 +14853,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
   }
   function fillRing(x, y, r, col, a) { if (r <= 0) return; b.fillStyle = hexA(col, a); b.beginPath(); b.arc(x, y, r, 0, 6.283); b.fill(); }
   // dithered discs (storms, ranges) cached per radius/colour/phase
-  const discCache = new Map();
+  const discCache = new Map(), pGrp = new Map();
   // 6.2 the Nuke: chunky pixel puffs, pre-rendered once per colour stage (white-hot, yellow, orange, dark red, hot smoke, ash).
   // Lit from the top-left like the rest of the art, with a dithered rim; scaled with smoothing off so they stay blocky.
   const NUKE_RAMP = [['#ffffff', '#fffbe8', '#fff0b8'], ['#fff6b0', '#ffd84a', '#f0a428'], ['#ffc04a', '#ff8a2a', '#c8501a'], ['#e0602a', '#a8361a', '#6a2014'],
@@ -14876,21 +14919,28 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
       if (Math.random() < 0.6) parts.push({ x: ax, y: top + (Math.random() - 0.3) * TL * 0.6, vx: 6 + Math.random() * 10, vy: 6 + Math.random() * 10, life: 1.6, max: 1.6, col: Math.random() < 0.5 ? '#8a8486' : '#5e585c', s: 2 });
       else parts.push({ x: X + (Math.random() - 0.5) * TL * 0.6, y: Y - Math.random() * (Y - top), vx: (Math.random() - 0.5) * 14, vy: -18 - Math.random() * 16, life: 0.9, max: 0.9, col: Math.random() < 0.5 ? '#ffb03a' : '#ff7b29', s: 1.5 }); } }
   }
-  function ditherDisc(cx, cy, r, col, dither, phase) {
+  // Nov 27 (drawing cost): the colour's alpha is applied when the disc is drawn, not baked in. Callers that fade (squalls, fields,
+  // the Frontier zone) used to make a new disc every frame (each built from up to thousands of 1 px rects) and flush the cache.
+  function ditherDisc(cx, cy, r, col, a, dither, phase) {
     const R0 = Math.max(1, Math.round(r)), key = R0 + col + dither + ':' + (phase % dither);
     let c = discCache.get(key);
-    if (!c) {
-      if (discCache.size > 120) { for (const o of discCache.values()) o.width = o.height = 0; discCache.clear(); } // (6.16.1: 0 x 0 gives the canvas memory back at once on iOS; every disc is drawn in the frame it is asked for)
+    if (c) { discCache.delete(key); discCache.set(key, c); } // (most recently used last)
+    else {
+      // Nov 27: the oldest disc goes, not all of them (6.16.1: 0 x 0 gives the canvas memory back at once on iOS), and a disc is
+      // built in one pixel write instead of one 1 px rect per dot (a storm's disc was about 5,000 calls)
+      if (discCache.size > 120) { const k0 = discCache.keys().next().value, o = discCache.get(k0); o.width = o.height = 0; discCache.delete(k0); }
       c = document.createElement('canvas'); c.width = c.height = R0 * 2 + 1;
-      const g = c.getContext('2d'); g.fillStyle = col;
-      for (let y = 0; y <= R0 * 2; y++) for (let x = 0; x <= R0 * 2; x++) {
+      const g = c.getContext('2d'), n = parseInt(col.slice(1), 16), cr = n >> 16 & 255, cg = n >> 8 & 255, cb = n & 255, W2 = R0 * 2 + 1, im = g.createImageData(W2, W2), d = im.data;
+      for (let y = 0; y < W2; y++) for (let x = 0; x < W2; x++) {
         if ((x - R0) * (x - R0) + (y - R0) * (y - R0) > R0 * R0) continue;
         if (((x >> 1) + (y >> 1) + phase) % dither !== 0) continue;
-        g.fillRect(x, y, 1, 1);
+        const i = (y * W2 + x) * 4; d[i] = cr; d[i + 1] = cg; d[i + 2] = cb; d[i + 3] = 255;
       }
+      g.putImageData(im, 0, 0);
       discCache.set(key, c);
     }
-    b.drawImage(c, Math.round(cx) - R0, Math.round(cy) - R0);
+    if (!(a > 0)) return;
+    const a0 = b.globalAlpha; b.globalAlpha = a0 * Math.round(Math.min(1, a) * 50) / 50; b.drawImage(c, Math.round(cx) - R0, Math.round(cy) - R0); b.globalAlpha = a0;
   }
 
   // ---------- camera ----------
@@ -15033,7 +15083,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     for (const s of G.storms) {
       if (FOGON && !fogSeeR(s.x, s.y, s.r)) continue; // 6.5: a storm out in the fog is hidden
       const col = s.mael ? '#ff4d6a' : STORMS[s.types[(frame >> 5) % s.types.length]].col;
-      ditherDisc(s.x * TILE, s.y * TILE, s.r * TILE, hexA(col, s.mael ? 0.2 : 0.14), s.mael ? 2 : 3, (frame >> 3) % 3);
+      ditherDisc(s.x * TILE, s.y * TILE, s.r * TILE, col, s.mael ? 0.2 : 0.14, s.mael ? 2 : 3, (frame >> 3) % 3);
       const arms = s.mael ? 5 : 3;
       for (let a = 0; a < arms; a++) for (let k = 0; k < 26; k++) {
         const rr = s.r * TILE * k / 26, an = s.rot + a * 6.283 / arms + k * 0.22;
@@ -15046,15 +15096,15 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         if (left > 0 && (secs > 6 || (frame >> 3) & 1)) { b.strokeStyle = hexA(secs > 6 ? col : '#ffffff', 0.9); b.lineWidth = 2; b.beginPath(); b.arc(s.x * TILE, s.y * TILE, s.r * TILE + 2, -Math.PI / 2, -Math.PI / 2 + 6.2832 * left); b.stroke();
           const ex = s.x * TILE + Math.cos(-Math.PI / 2 + 6.2832 * left) * (s.r * TILE + 2), ey = s.y * TILE + Math.sin(-Math.PI / 2 + 6.2832 * left) * (s.r * TILE + 2); R(b, ex - 1.5, ey - 1.5, 3, 3, '#ffffff'); } }
     }
-    for (const z of G.zones) { ditherDisc(z.x * TILE, z.y * TILE, z.r * TILE, hexA('#ff7b39', 0.4), 2, frame % 2);
+    for (const z of G.zones) { ditherDisc(z.x * TILE, z.y * TILE, z.r * TILE, '#ff7b39', 0.4, 2, frame % 2);
       // v5.8 Napalm Payload: flame tongues lick up out of the burning ground
       if (z.k === 'napalm' && !LITE && frame % 5 === 0) parts.push({ x: z.x * TILE + (Math.random() - 0.5) * z.r * TILE * 1.4, y: z.y * TILE + (Math.random() - 0.5) * z.r * TILE, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 10, life: 0.4, max: 0.4, fl: 2, s: 1.5 }); }
     // rules 26: the Squall Array's blizzards. A frosted disc on the ground with a turning dashed rim, and snow blown across it
     // (Hailstorm: fast white hail straight down; Whiteout: a paler, denser disc). It fades in over 0.3 s and out over its last 0.5 s.
     for (const q of G.squalls || []) { if (FOGON && !fogSeeR(q.x, q.y, q.r)) continue;
       const X = q.x * TILE, Y = q.y * TILE, R0 = q.r * TILE, k = Math.max(0, Math.min(1, q.life / 0.5, (q.life0 - q.life) / 0.3 + 0.15)), sp = q.src ? q.src.spec || 0 : 0;
-      ditherDisc(X, Y, R0, hexA(sp === 1 ? '#d8f6ff' : '#6ae2ff', (sp === 1 ? 0.3 : 0.22) * k), 2, frame % 2);
-      ditherDisc(X, Y, R0 * 0.55, hexA('#eafcff', 0.14 * k), 3, (frame + 1) % 2);
+      ditherDisc(X, Y, R0, sp === 1 ? '#d8f6ff' : '#6ae2ff', (sp === 1 ? 0.3 : 0.22) * k, 2, frame % 2);
+      ditherDisc(X, Y, R0 * 0.55, '#eafcff', 0.14 * k, 3, (frame + 1) % 2);
       strokeRing(X, Y, R0, sp === 2 ? '#ffffff' : '#9fefff', 0.55 * k, 1, [5, 4]);
       if (parts.length < 500 && frame % (LITE ? 4 : 2) === 0) for (let i = 0, n = sp === 1 ? 3 : 2; i < n; i++) { const an = Math.random() * 6.283, rr = Math.sqrt(Math.random()) * R0;
         parts.push(sp === 2 ? { x: X + Math.cos(an) * rr, y: Y + Math.sin(an) * rr - 10, vx: 0, vy: 95, life: 0.16, max: 0.16, col: '#ffffff', s: 2 }
@@ -15064,7 +15114,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     if (G.stars || G.scars) drawStars22(); // rules 22: Newborn Stars and Void Scars
     if (G.hole && (holeVisible() || (G.hole.v >= 13 && G.hole.ph === 0))) drawHole(vxI, vyI, vwI, vhI, dt); // 6.5 Black Hole (under the enemies it drags); 6.14: its landing marker even through fog
     const wfA = G.fr && wormFlashAt ? Math.max(0, Math.min(1, (2.5 - (performance.now() - wormFlashAt) / 1000) / 0.8)) : 0; // shown for 2.5 s after a refused build, fading over the last 0.8 s
-    if (wfA > 0) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (frWormR() - 0.5) * TILE; ditherDisc(X, Y, r, hexA('#ff4d6a', (L.openWave ? 0.1 : 0.16) * wfA), 3, 0); strokeRing(X, Y, r, '#ff4d6a', (L.openWave ? 0.4 : 0.7) * wfA, 2, [4, 4]); } // Frontier: the no-build zone
+    if (wfA > 0) for (const L of G.map.lanes) { const p0 = L.tiles[0]; const X = (p0.x + 0.5) * TILE, Y = (p0.y + 0.5) * TILE, r = (frWormR() - 0.5) * TILE; ditherDisc(X, Y, r, '#ff4d6a', (L.openWave ? 0.1 : 0.16) * wfA, 3, 0); strokeRing(X, Y, r, '#ff4d6a', (L.openWave ? 0.4 : 0.7) * wfA, 2, [4, 4]); } // Frontier: the no-build zone
     // snare nets and tethers
     for (const t of G.snares || []) {
       if (!t.s) continue;
@@ -15092,8 +15142,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         for (const [sx2, sy2] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { R(b, cx + sx2 * 12 - (sx2 > 0 ? 4 : 0), cy + sy2 * 12 - (sy2 > 0 ? 1 : 0), 4, 1, col); R(b, cx + sx2 * 12 - (sx2 > 0 ? 1 : 0), cy + sy2 * 12 - (sy2 > 0 ? 4 : 0), 1, 4, col); }
         continue;
       }
-      for (let k = -7; k <= 7; k++) { const h = 7 - Math.abs(k); R(b, cx + k, cy - h, 1, 1, hexA('#6ae2ff', 0.75)); R(b, cx + k, cy + h, 1, 1, hexA('#6ae2ff', 0.75)); }
-      for (let k = -3; k <= 3; k++) { const h = 3 - Math.abs(k); R(b, cx + k, cy - h, 1, h * 2 + 1, hexA('#bff4ff', 0.35 + 0.5 * ph)); }
+      b.drawImage(nodeSpr(Math.round((0.35 + 0.5 * ph) * 50)), cx - 7, cy - 7, 15, 15); // Nov 27: one blit (was 37 rects)
     }
     // salvage caches: a crate with a beacon that blinks faster as it decays
     for (const cc of G.caches || []) {
@@ -15122,7 +15171,7 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
       }
     }
     // v5.8 Techniques and play styles on the field: Arc Fences, Gravity Garden lines, Pulse Mines, Blackout static and Hoarfrost ice
-    for (const f of G.fields || []) ditherDisc(f.x * TILE, f.y * TILE, f.r * TILE, hexA(f.k === 'ice' ? '#bff4ff' : '#ffe14d', 0.18 + 0.22 * Math.min(1, f.t / 1.5)), 2, frame % 2);
+    for (const f of G.fields || []) ditherDisc(f.x * TILE, f.y * TILE, f.r * TILE, f.k === 'ice' ? '#bff4ff' : '#ffe14d', 0.18 + 0.22 * Math.min(1, f.t / 1.5), 2, frame % 2);
     for (const m of G.mines || []) { const X = m.x * TILE, Y = m.y * TILE, on = (frame + (m.x * 7 | 0)) % 30 < 15; R(b, X - 3, Y - 1, 6, 2, '#2a2f52'); R(b, X - 1, Y - 3, 2, 6, '#2a2f52'); R(b, X - 1, Y - 1, 2, 2, on ? '#ffe14d' : '#7a6a10'); }
     if (G.mods.ks.garden) for (const [a, c] of G.gardens || []) {
       if (a.disabled > 0 || c.disabled > 0) continue;
@@ -15196,9 +15245,9 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     if (G.slime && G.slime.length) for (const p of G.slime) { const a2 = Math.min(1, p.t / 3) * 0.5; b.fillStyle = `rgba(154,216,106,${a2})`; b.beginPath(); b.ellipse(p.x * TILE, p.y * TILE + 3, 7, 4, 0, 0, 6.283); b.fill(); if ((frame + (p.d * 10 | 0)) % 40 < 3) P(b, p.x * TILE + 2, p.y * TILE + 1, '#e8ffd0'); }
     geneRanks();
     if (G.scrap && G.scrap.length) drawScrap(); // 6.16 Husk scrap piles (under the units)
-    for (const e of G.enemies) if (!e.fly && !e._fogH && !e._fogB) drawEnemyH(e);
+    hbDefer = true; for (const e of G.enemies) if (!e.fly && !e._fogH && !e._fogB) drawEnemyH(e); hbFlush();
     if (G.capT && G.capT.length) drawCapField(); // 6.4 Rimewall walls (in front of the ground enemies they hold) and Entangler links
-    for (const e of G.enemies) if (e.fly && !e._fogH && !e._fogB) drawEnemyH(e);
+    hbDefer = true; for (const e of G.enemies) if (e.fly && !e._fogH && !e._fogB) drawEnemyH(e); hbFlush();
     if (G.frV >= 16) drawRemnantTells(); // 6.16 the Remnant's tells (front plate, siege laser, magnet field, adapted element, Warden links)
     for (const q of pops) { q.life -= dt; const k = 1 - Math.max(0, q.life / q.max), z = 1 + 0.45 * k, w = q.w * z, h = q.h * z; b.globalAlpha = (1 - k) * 0.9; b.drawImage(tintOf(q.s, '#ffffff'), Math.round((q.x - w / 2) * RES) / RES, Math.round((q.y - h / 2) * RES) / RES, w, h); }
     if (pops.length) { b.globalAlpha = 1; pops = pops.filter(q => q.life > 0); }
@@ -15298,9 +15347,11 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
         const i = Math.min(5, Math.floor((1 - k) * 6)), s = (p.s || 2) * (1 + (1 - k) * 2.2), sp = Math.hypot(p.vx, p.vy) || 1;
         b.fillStyle = hexA(FLAME_RAMP[p.fl][i], i === 5 ? k * 0.9 : Math.min(1, k * 1.6));
         b.fillRect(p.x - s / 2, p.y - s / 2, s, s); const s3 = s * 0.55; b.fillRect(p.x - p.vx / sp * s * 0.8 - s3 / 2, p.y - p.vy / sp * s * 0.8 - s3 / 2, s3, s3); continue; }
-      b.fillStyle = hexA(p.col, k);
-      const s = (p.s || 2) * (k > 0.5 ? 1 : 0.75); b.fillRect(Math.round((p.x - s / 2) * RES) / RES, Math.round((p.y - s / 2) * RES) / RES, s, s);
+      const s = (p.s || 2) * (k > 0.5 ? 1 : 0.75), fs = hexA(p.col, k); // Nov 27 (drawing cost): gathered by colour, one fill per colour below
+      let pq = pGrp.get(fs); if (!pq) pGrp.set(fs, pq = []); pq.push(Math.round((p.x - s / 2) * RES) / RES, Math.round((p.y - s / 2) * RES) / RES, s);
     }
+    for (const [fs, pq] of pGrp) { b.fillStyle = fs; if (pq.length === 3) { b.fillRect(pq[0], pq[1], pq[2], pq[2]); continue; } b.beginPath(); for (let i = 0; i < pq.length; i += 3) b.rect(pq[i], pq[i + 1], pq[i + 2], pq[i + 2]); b.fill(); }
+    pGrp.clear();
     parts = parts.filter(p => p.life > 0);
     if (parts.length > 800) parts.splice(0, parts.length - 800);
     if (FOGON) { // 6.5: the fog over everything on the board, then any boss under it (a boss at the core ends the run, so it always shows)
@@ -15350,8 +15401,8 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     let src = buf;
     if (k > 1) {
       if (mid.width !== bw * k || mid.height !== bh * k) { mid.width = bw * k; mid.height = bh * k; }
-      mctx.imageSmoothingEnabled = false; mctx.clearRect(0, 0, mid.width, mid.height);
-      mctx.drawImage(buf, 0, 0, bw, bh, 0, 0, bw * k, bh * k); src = mid;
+      mctx.imageSmoothingEnabled = false; mctx.globalCompositeOperation = 'copy'; // Nov 27: 'copy' replaces the old picture, so no separate full clear
+      mctx.drawImage(buf, 0, 0, bw, bh, 0, 0, bw * k, bh * k); mctx.globalCompositeOperation = 'source-over'; src = mid;
     }
     // 6.3: past the map edge, the zone's backdrop (only drawn when the view reaches past the map)
     if (v.vx < 0 || v.vy < 0 || v.vx + v.vw > BW || v.vy + v.vh > BH) { const t0 = performance.now(), bd = backdrop(mapZone);
@@ -15726,11 +15777,17 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
       const sup = t => !!(t.s && (supKind(t.s.kind) || t.s.kind === 'eco'));
       if (!G.over) for (const pass of [0, 1]) { if (best) break;
         for (const t of G.towers) { if (sup(t) !== !!pass) continue; const c0 = upgradeCost(t); if (cr < c0 || t.ascPend > 0) continue; const n = towerLevel(t), key = t.lvl < MAX_LV ? n : 100 + n; if (key < bl || (key === bl && c0 < bc)) { best = t; bl = key; bc = c0; } } }
-      for (const t of G.towers) {
-        const n = towerLevel(t), col = lvTier(n).col, x0 = bx2s(t.x * TILE), x1 = bx2s(t.x * TILE + TILE), y = Math.round(by2s(t.y * TILE + TILE)), w = x1 - x0, lw = Math.max(2, Math.round(tpx / 12));
-        c.fillStyle = 'rgba(9,11,22,0.85)'; c.fillRect(Math.round(x0 + w * 0.18) - 1, y - lw - 1, Math.round(w * 0.64) + 2, lw + 2);
-        c.fillStyle = col; c.fillRect(Math.round(x0 + w * 0.18), y - lw, Math.round(w * 0.64), lw);
-        if (t.spec) { c.fillStyle = PAL.amber; c.fillRect(Math.round(x0 + w * 0.18), y - lw, Math.max(2, Math.round(w * 0.1)), lw); }
+      { // Nov 27 (drawing cost): the plates, the tier lines and the specialisation ticks each in one path per colour (was 4 calls a tower)
+        const plate = new Path2D(), tiers = new Map(), spec = new Path2D(); let nSpec = 0;
+        for (const t of G.towers) {
+          const n = towerLevel(t), col = lvTier(n).col, x0 = bx2s(t.x * TILE), x1 = bx2s(t.x * TILE + TILE), y = Math.round(by2s(t.y * TILE + TILE)), w = x1 - x0, lw = Math.max(2, Math.round(tpx / 12));
+          plate.rect(Math.round(x0 + w * 0.18) - 1, y - lw - 1, Math.round(w * 0.64) + 2, lw + 2);
+          let tp = tiers.get(col); if (!tp) tiers.set(col, tp = []); tp.push(Math.round(x0 + w * 0.18), y - lw, Math.round(w * 0.64), lw);
+          if (t.spec) { spec.rect(Math.round(x0 + w * 0.18), y - lw, Math.max(2, Math.round(w * 0.1)), lw); nSpec++; }
+        }
+        if (G.towers.length) { c.fillStyle = 'rgba(9,11,22,0.85)'; c.fill(plate); }
+        for (const [col, a] of tiers) { c.fillStyle = col; c.beginPath(); for (let i = 0; i < a.length; i += 4) c.rect(a[i], a[i + 1], a[i + 2], a[i + 3]); c.fill(); }
+        if (nSpec) { c.fillStyle = PAL.amber; c.fill(spec); }
       }
       if (selTower && G.towers.includes(selTower) && big) {
         const t = selTower, n = towerLevel(t), bs = Math.round(clamp(tpx * 0.42, 12, 18)), pw = Math.round(bs * (n >= 10 ? 1.9 : 1.55)), x = Math.round(bx2s(t.cx * TILE)) - pw / 2, y = Math.round(by2s(t.y * TILE + TILE)) + 3;
@@ -15832,7 +15889,10 @@ const RES = Math.round(2 * FINE); // 6.16.1: the field's buffer follows FINE (2 
     if (cam.z > 1.01) {
       const mw = 64, mh = mw * reg.h / reg.w, mx = W - mw - 8, my = H - mh - 8;
       c.fillStyle = 'rgba(7,8,15,0.7)'; c.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
-      c.drawImage(mapLayer, reg.x * RES, reg.y * RES, reg.w * RES, reg.h * RES, mx, my, mw, mh);
+      { // Nov 27 (drawing cost): the board shrunk to 64 px once, not every frame (it was a downscale of the whole board each frame)
+        const pw = Math.round(mw * dpr), ph = Math.round(mh * dpr), key = mapGen + ':' + reg.x + ',' + reg.y + ',' + reg.w + ',' + reg.h + ':' + pw + 'x' + ph;
+        if (key !== miniKey) { miniKey = key; if (!miniCv) miniCv = document.createElement('canvas'); miniCv.width = pw; miniCv.height = ph; const g = miniCv.getContext('2d'); g.imageSmoothingEnabled = true; g.drawImage(mapLayer, reg.x * RES, reg.y * RES, reg.w * RES, reg.h * RES, 0, 0, pw, ph); }
+        c.drawImage(miniCv, mx, my, mw, mh); }
       if (fogLive) { const q = 2 / TILE; c.drawImage(fogCv, reg.x * q, reg.y * q, reg.w * q, reg.h * q, mx, my, mw, mh); } // 6.5 the fog on the minimap too
       for (const cc of G.caches || []) if (!fogLive || fogSee(cc.x + 0.5, cc.y + 0.5)) { c.fillStyle = (frame >> 3) % 2 ? CACHE_PAL[cc.kind || 'normal'][3] : '#3a3020'; c.fillRect(Math.round(mx + ((cc.x + 0.5) * TILE - reg.x) / reg.w * mw) - 1, Math.round(my + ((cc.y + 0.5) * TILE - reg.y) / reg.h * mh) - 1, 3, 3); }
       c.strokeStyle = PAL.amber; c.lineWidth = 1; c.strokeRect(mx + (v.vx - reg.x) / reg.w * mw, my + (v.vy - reg.y) / reg.h * mh, v.vw / reg.w * mw, v.vh / reg.h * mh);
