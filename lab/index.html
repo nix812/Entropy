@@ -1714,7 +1714,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.1 + V6.20.1 + NOV 27 LATE TEST';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.1 + V6.20.1 + NOV 27 LATE TEST 2';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -7197,6 +7197,7 @@ function leak(e) {
   let dmg = e.leak * (1 + 0.03 * w);
   { const st2 = kitRun(e, 'leak', w); if (st2 !== undefined) { if (!G.leechTold || G.time - G.leechTold > 8) { G.leechTold = G.time; Hooks.toast('CREDITS STOLEN', `A Leech stole ${st2} credits. Leeches steal more when you hold more credits`, '#ffb03a'); } } } // 6.14 kit: steal
   // v4.1: a boss that reaches the core ends the run outright (shields and Unbreakable don't save you). Gloop's splits still breach for a share
+  if (e.boss && !e.gen && G.bench) { Hooks.log(`${e.bossName} reached the core (benchmark: the run goes on)`, '#ff4d6a'); return; } // Nov 27: the late-game test keeps running
   if (e.boss && !e.gen) {
     Hooks.fx('leak', { x: c.x, y: c.y, boss: true }); Hooks.sfx('bigleak');
     Hooks.log(`${e.bossName} reached the core`, '#ff4d6a');
@@ -18783,6 +18784,16 @@ const UI = (() => {
       while (B.tw < S.tw && B.si < B.spots.length) { const s = B.spots[B.si]; B.si += 2; const t = TOWERS[TT[B.tw % TT.length]] ? buildTower(TT[B.tw % TT.length], s[0], s[1]) : null; if (t) { B.tw++; for (let l = 1; l < 4; l++) upgradeTower(t); } }
       B.pot = Math.max(1, G.towers.reduce((a, t) => a + (t.dps || 0), 0));
     }
+    // Nov 27: Nic's first late-game run lost 43 of its 46 towers to the Black Hole and the Worm by Wave 70, so the later minutes measured
+    // an empty field. Every 5 s the test builds back what is missing (same types, level 5), as a player would.
+    function refill() {
+      const want = {}; for (const k of RT.concat(LT)) if (TOWERS[k]) want[k] = (want[k] || 0) + 1;
+      for (const t of G.towers) if (want[t.type]) want[t.type]--;
+      const miss = Object.keys(want).filter(k => want[k] > 0); if (!miss.length) return;
+      const q = SFX.quiet; SFX.quiet = true; let n = 0;
+      try { for (const k of miss) for (let c = want[k]; c > 0; c--) { let t = null; for (let i = 0; i < B.spots.length && !t; i++) { const sp = B.spots[(B.si + i) % B.spots.length]; if (canBuildAt(sp[0], sp[1])) { t = buildTower(k, sp[0], sp[1]); if (t) B.si = (B.si + i + 2) % B.spots.length; } }
+          if (!t) return; n++; upgradeTower(t); upgradeTower(t); upgradeTower(t, 1 + n % 2); upgradeTower(t); } } finally { SFX.quiet = q; B.rb = (B.rb || 0) + n; }
+    }
     function next() {
       B.i++; const S = PLAN[B.i]; if (!S) { B.done = 1; setTimeout(finish, 0); return; } // not inside the frame: the frame still reads G
       if (S.real && B.i > 0 && !S.cont) { B.phase = 'boot'; setTimeout(() => { if (!B || B.done) return; B.spots = boot(B.keep); B.si = B.k = B.tw = B.ti = B.an = 0; B.ab = 6; stage(S); }, 0); return; } // the same run again from Wave 40 (a new run is not started inside the frame)
@@ -18797,10 +18808,12 @@ const UI = (() => {
     function tick(dt) {
       if (!B || B.done || !G || !G.bench) return;
       const S = PLAN[B.i]; if (B.phase === 'boot') return;
+      if (G.over) { B.ended = { w: G.wave, n: B.res.length, why: G.stats.bossBreach || G.stats.lastLeak || '' }; B.done = 1; setTimeout(finish, 0); return; } // Nov 27: a run that ends stops the test with its results (Nic's late-game run froze here: the test kept closing the run-end card)
       if (S.real) { // the game runs its own waves: the test only answers what would stop them, keeps the core alive and uses an ability every 6 s
         G.core.hp = G.core.max = 1e12; G.credits = 1e9;
         if (G.draft) act('boon', 0); if (G.huntChoice) act('push'); if (G.anomOffers) act('stab'); if (G.checkpoint && !G.enemies.length) act('cpResume', 5);
         if (modalOpen) closeModal(); G.paused = false; G.speed = S.spd;
+        if (MODE === 'late') { B.rf = (B.rf || 0) - dt; if (B.rf <= 0) { B.rf = 5; refill(); } } // the Black Hole and the Worm take towers; a player rebuilds them
         B.ab -= dt; if (B.ab <= 0) { B.ab = 6; const al = G.enemies.filter(e => !e.dead), e = al[al.length >> 1]; if (e) act('abil', RAB[B.an++ % RAB.length], e.x, e.y); }
       } else { if (modalOpen) closeModal(); G.paused = false; G.next = 1e9; G.core.hp = G.core.max = 1e12; G.checkpoint = 0; }
       B.t += dt; B.feed -= dt;
@@ -18819,7 +18832,7 @@ const UI = (() => {
     }
     function finish() {
       SFX.budget = true; SFX.reaper = B.keep.reap;
-      const res = { at: new Date().toISOString(), mode: MODE, reap: SFX.reaper ? 1 : 0, build: label(), fine: FINE, ua: navigator.userAgent.slice(0, 120), px: [innerWidth, innerHeight, window.devicePixelRatio || 1], stages: B.res };
+      const res = { at: new Date().toISOString(), mode: MODE, ended: B.ended || null, rebuilt: B.rb || 0, reap: SFX.reaper ? 1 : 0, build: label(), fine: FINE, ua: navigator.userAgent.slice(0, 120), px: [innerWidth, innerHeight, window.devicePixelRatio || 1], stages: B.res };
       autoEnd(); window.__BS = null; const keep = B.keep; B = null; SFX.quiet = false; SFX.music.setHold(false); AW.gov = true; SFX.setLean(0);
       Render.glow = PROF.settings.glow !== false; Render.bloom = PROF.settings.bloom !== false; Render.zfx = zfxOn();
       const h = hist(); h.unshift(res); try { localStorage.setItem(KEY, JSON.stringify(h.slice(0, 4))); } catch (e) {}
@@ -18827,7 +18840,8 @@ const UI = (() => {
     }
     const head = r => `${r.mode === 'soak' ? '10 minute soak' : r.mode === 'auto' ? 'Event-list test' : r.mode === 'real' ? 'Real-wave test' : r.mode === 'rsoak' ? '30 minute real-wave test' : r.mode === 'late' ? '30 minute late-game test (Wave 55, 3x)' : '2 minute run'}${r.mode === 'real' || r.mode === 'rsoak' || r.mode === 'late' ? '' : ` · Sound clean-up ${r.reap === 0 ? 'off' : 'on'}`} · Fine sprites ${r.fine > 1 ? 'on' : 'off'}`;
     const rsum = r => { const f = k => { const v = r.stages.filter((s, i) => i % 2 === k); return `${Math.round(v.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${v.reduce((a, s) => a + s.secs, 0)}`; }; return `TOTAL sound lost, safeguards off: ${f(0)} · safeguards on: ${f(1)}`; };
-    const lsum = r => { const a = r.stages.slice(0, 5), b = r.stages.slice(-5), av = (v, k) => v.length ? Math.round(v.reduce((x, s) => x + (s[k] || 0), 0) / v.length * 10) / 10 : 0; return `FIRST 5 MINUTES: frame ${av(a, 'fms')}/${av(a, 'f95')} ms · LAST 5 MINUTES: frame ${av(b, 'fms')}/${av(b, 'f95')} ms · sound lost in all ${Math.round(r.stages.reduce((x, s) => x + s.lost, 0) * 10) / 10} s`; };
+    const lsum = r => (r.ended ? `ENDED EARLY after ${r.ended.n} of 30 minutes: the run ended at Wave ${r.ended.w}${r.ended.why ? ' (' + r.ended.why + ')' : ''}. ` : '') + (r.rebuilt ? `Towers rebuilt: ${r.rebuilt}. ` : '') + lsumB(r);
+    const lsumB = r => { const a = r.stages.slice(0, 5), b = r.stages.slice(-5), av = (v, k) => v.length ? Math.round(v.reduce((x, s) => x + (s[k] || 0), 0) / v.length * 10) / 10 : 0; return `FIRST 5 MINUTES: frame ${av(a, 'fms')}/${av(a, 'f95')} ms · LAST 5 MINUTES: frame ${av(b, 'fms')}/${av(b, 'f95')} ms · sound lost in all ${Math.round(r.stages.reduce((x, s) => x + s.lost, 0) * 10) / 10} s`; };
     const text = r => `LAST GRADIENT BENCHMARK · ${r.build} · ${head(r)} · ${r.at}\n${r.ua}\nscreen ${r.px.join(' x ')}\n`
       + (r.mode === 'soak' ? r.stages.map(s => `${s.name}  lost ${s.lost} s (${s.slips} slips)  frame ${s.fms}/${s.f95} ms  inF ${s.inF}  started ${s.sfx}  cut ${s.cut}  groups ${s.grp}  compacted ${s.comp}`).join('\n') + `\nTOTAL sound lost ${Math.round(r.stages.reduce((a, s) => a + s.lost, 0) * 10) / 10} s of ${r.stages.reduce((a, s) => a + s.secs, 0)}` : '')
       + (r.mode === 'auto' ? r.stages.map(s => `${s.ev.toLocaleString('en-US')} events x 12 params (asked ${s.name.split(' ')[0]}, loaded in ${s.loadMs} ms): sound lost ${s.lost} s of ${s.secs} (${s.slips} slips), frame ${s.fms}/${s.f95} ms`).join('\n') : '')
@@ -20277,12 +20291,13 @@ const UI = (() => {
     try {
       if (!window.LG_APP || G.revAsked || G.tut || G.lesson || (G.wave | 0) < 20) return;
       const n = PROF.revAsk | 0; if (n >= REVIEW_AT.length || (PROF.realTime || 0) < REVIEW_AT[n]) return;
-      const C = window.Capacitor, P = C && C.Plugins && C.Plugins.LGDevice; if (!P || !P.review) return;
+      const PH = window.LGPhone; if (!PH || !PH.route()) return;
       G.revAsked = 1; PROF.revAsk = n + 1; Save.save();
-      setTimeout(() => { try { P.review().then(r => { try { rlog('review', { n: n + 1, ok: r && r.ok ? 1 : 0 }); } catch (e) {} }, () => {}); } catch (e) {} }, 1500); // (after the card has landed)
+      setTimeout(() => { try { PH.call('review').then(r => { try { rlog('review', { n: n + 1, ok: r && r.ok ? 1 : 0 }); } catch (e) {} }, () => {}); } catch (e) {} }, 1500); // (after the card has landed)
     } catch (e) {}
   }
   function openGameOver() {
+    if (!G || G.bench) return; // Nov 27: a benchmark run never opens the run-end card (it added a Hall of Fame entry and saved)
     if (!G.vpLog && UI.vpDiag) { G.vpLog = 1; try { rlog('vp', UI.vpDiag()); } catch (e) {} } // 6.16.9: the screen sizes at the end of every run, for the next sizing report
     if (G.tut) return openTutDone(); // 5.8 Training: no records, Hall of Fame or recap
     const L = profLevel(), gained = L.level - G.lvlStart;
@@ -22122,6 +22137,8 @@ function talentsToast(kind) {
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(function news() { if (UI.storyOn) return setTimeout(news, 700); if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
   SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); silentApply();
+  // Nov 27: the first late-game test ended at a boss leak and opened the run-end card, which saved a Wave 55 start into the Hall of Fame. Once: take it out.
+  try { if (!PROF.hallFix1) { PROF.hallFix1 = 1; if (PROF.hall) PROF.hall = PROF.hall.filter(R => !(R && R.startWave === 55 && R.ts >= Date.UTC(2026, 10, 27, 19))); } } catch (e) {}
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
   Save.initRemote();
   setTimeout(() => { try { UI.fbFlush(); } catch (e) {} }, 3000); // 6.9: feedback written with no connection goes out now
@@ -22165,10 +22182,19 @@ const PFT = { s: [], d: [], n: 0, q: a => { if (!a.length) return null; const f 
 // own state: model, iOS, battery, charging, Low Power Mode and heat. The phone state comes from a small native plugin, LGDevice
 // (app/ios/App/App/GameViewController.swift); the web game cannot read any of it. Nothing leaves the phone: the log is only ever copied by hand.
 const PHONE = { v: null, told: 0, busy: 0,
-  poll() { try { const C = window.Capacitor; if (!window.LG_APP || !C || this.busy) return; const P = C.Plugins && C.Plugins.LGDevice; const pr = P && P.info ? P.info() : C.nativePromise ? C.nativePromise('LGDevice', 'info', {}) : null; if (!pr || !pr.then) { this.why('no call', P); return; }
-      this.busy = 1; pr.then(r => { this.busy = 0; if (!r) return; this.v = r; if (this.told !== G) { this.told = G; try { rlog('phone', { model: r.model, os: r.os, hz: r.hz, bat: PHONE.bat(), chg: r.charging ? 1 : 0, lp: r.lowPower ? 1 : 0, th: r.thermal }); } catch (e) {} } }, e => { this.busy = 0; this.why(e && (e.message || e.code) || String(e), P); }); } catch (e) { this.busy = 0; this.why('throw ' + (e && e.message), null); } },
+  // Nov 27 (second fix): Nic's late-game log had neither a 'phone' nor a 'phoneErr' line, so the plugin's promise never settled (Capacitor
+  // drops a call to a plugin it cannot find). The app now has a plain WebKit channel too (GameViewController.swift, LGDeviceChannel),
+  // asked first; the plugin is the second way. Every ask gives up after 5 s, and the first failure of a run is logged with why.
+  route() { const W = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lgDevice; if (W && W.postMessage) return 'wk';
+    const C = window.Capacitor, P = C && C.Plugins && C.Plugins.LGDevice; if (P && P.info) return 'plug'; return C && C.nativePromise ? 'np' : ''; },
+  call(m) { const R = this.route(); let pr = null;
+    try { if (R === 'wk') pr = window.webkit.messageHandlers.lgDevice.postMessage(m); else if (R === 'plug') pr = window.Capacitor.Plugins.LGDevice[m] ? window.Capacitor.Plugins.LGDevice[m]() : null; else if (R === 'np') pr = window.Capacitor.nativePromise('LGDevice', m, {}); } catch (e) { return Promise.reject(new Error(R + ': ' + (e && e.message || e))); }
+    if (!pr || !pr.then) return Promise.reject(new Error(R ? R + ': no promise' : 'no way to reach the app'));
+    return new Promise((ok, no) => { const t = setTimeout(() => no(new Error(R + ': no answer in 5 s')), 5000); pr.then(r => { clearTimeout(t); ok(r); }, e => { clearTimeout(t); no(new Error(R + ': ' + (e && (e.message || e.code) || e))); }); }); },
+  poll() { try { if (!window.LG_APP || this.busy) return; this.busy = 1;
+      this.call('info').then(r => { this.busy = 0; if (!r) return; this.v = r; if (this.told !== G) { this.told = G; try { rlog('phone', { model: r.model, os: r.os, hz: r.hz, bat: PHONE.bat(), chg: r.charging ? 1 : 0, lp: r.lowPower ? 1 : 0, th: r.thermal, via: this.route() }); } catch (e) {} } }, e => { this.busy = 0; this.why(e && e.message || String(e)); }); } catch (e) { this.busy = 0; this.why('threw: ' + (e && e.message)); } },
   // Nov 27: Nic's Wave 41 app log had no 'phone' line, so the native plugin never answered. Once per run, say why (the run log only).
-  why(m, P) { if (this.whyG === G) return; this.whyG = G; try { const C = window.Capacitor || {}; rlog('phoneErr', { m: String(m).slice(0, 140), proxy: P ? 1 : 0, review: P && P.review ? 1 : 0, hdr: (C.PluginHeaders || []).map(h => h.name).join(',').slice(0, 200), np: C.nativePromise ? 1 : 0 }); } catch (e) {} },
+  why(m) { if (this.whyG === G) return; this.whyG = G; try { const C = window.Capacitor || {}, P = C.Plugins && C.Plugins.LGDevice; rlog('phoneErr', { m: String(m).slice(0, 140), wk: window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lgDevice ? 1 : 0, cap: window.Capacitor ? 1 : 0, proxy: P ? 1 : 0, review: P && P.review ? 1 : 0, hdr: (C.PluginHeaders || []).map(h => h.name).join(',').slice(0, 200), np: C.nativePromise ? 1 : 0 }); } catch (e) {} },
   bat() { const b = this.v && this.v.battery; return b >= 0 ? Math.round(b * 100) : -1; },
   now() { const r = this.v; return r ? [this.bat(), r.charging ? 1 : 0, r.lowPower ? 1 : 0, r.thermal] : null; } }; // [battery %, charging, Low Power Mode, heat 0 nominal .. 3 critical]
 window.LGPhone = PHONE; // tests
