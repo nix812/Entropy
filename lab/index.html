@@ -1557,6 +1557,9 @@ input[type=range]:active::-webkit-slider-thumb { background: #fff; transform: sc
 .rng.mid::after { content: ''; position: absolute; left: 50%; top: 5px; width: 2px; height: 20px; margin-left: -1px; background: rgba(255,255,255,0.35); pointer-events: none; }
 .sthint { font-size: 15px; margin: 4px 0 8px; }
 .stlen { margin: 2px 0 6px; } .stlen .chip { min-height: 32px; padding: 0 10px; }
+/* Nov 28 Music EQ: presets on the left, the five bands on the right */
+.stshape.steq { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); }
+.steqp { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; } .steqp .chip { min-height: 32px; padding: 0 10px; }
 .mixer { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; background: #05060c; padding: 8px 5px 5px; box-shadow: inset 0 0 0 1px var(--line); }
 .fch { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
 .fader { position: relative; width: 30px; height: 150px; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); touch-action: none; cursor: ns-resize; }
@@ -1635,7 +1638,7 @@ body.panel-r #mdeck { top: 48px; max-width: calc(100% - min(270px, 46%) - 20px);
 .cell.ph { background: #313a6e; }
 .cell.ph.on::after { opacity: 1; background: #fff; }
 @media (max-width: 760px) {
-  .stlisten, .stshape { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .stlisten, .stshape, .stshape.steq { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .stnow { grid-template-columns: 76px minmax(0, 1fr) auto; gap: 8px; padding: 3px 6px; margin-top: 2px; } #stViz { width: 76px; height: 44px; } /* 6.16 polish: room for 44 px player buttons */
   .stb { width: 44px; height: 44px; } .sttr { gap: 2px; } /* 6.16 polish: 44 px on phones too (was 36) */
   .stcompose { grid-template-columns: minmax(0, 1fr); } .cpright { order: -1; } /* the grid first on small phones */
@@ -1714,7 +1717,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.1 + V6.20.1 + NOV 28 DRAWING';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.1 + V6.20.1 + NOV 28 MUSIC EQ';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -9659,7 +9662,18 @@ const SFX = (() => {
   // re-route music through a duck stage
   // 6.8: the music passes one low-pass on its way out. Wide open in play; on the pause menu it closes to 900 Hz (the song goes to the next room)
   let mufF = null, mufOn = false;
-  function hookMusic() { musBus.disconnect(); musBus.connect(duckM); mufF = ctx.createBiquadFilter(); mufF.type = 'lowpass'; mufF.Q.value = 0.5; mufF.frequency.value = mufOn ? 900 : 20000; duckM.connect(mufF); mufF.connect(limiter); }
+  // Nov 28: the Music EQ (Music Studio › EQ). Five bands on the music only, between the music bus and its duck, so sound effects
+  // keep their own tone. 0 dB on every band is a clean pass. A boost turns the EQ's input down by half the largest boost, so a
+  // big boost does not push the music into the limiter. Live audio only (an offline render is never EQ'd).
+  const EQ_BANDS = [[60, 'lowshelf', 0.7], [250, 'peaking', 1], [1000, 'peaking', 1], [4000, 'peaking', 1], [12000, 'highshelf', 0.7]];
+  let eqB = [0, 0, 0, 0, 0], eqN = null;
+  function eqApply() { if (!eqN || !ctx) return; const t = ctx.currentTime; eqN.fs.forEach((f, i) => f.gain.setTargetAtTime(eqB[i], t, 0.03)); eqN.pre.gain.setTargetAtTime(Math.pow(10, -0.5 * Math.max(0, ...eqB) / 20), t, 0.03); }
+  function setEQ(a) { eqB = EQ_BANDS.map((_, i) => Math.max(-12, Math.min(12, Math.round(+((a || [])[i]) || 0)))); eqApply(); }
+  function hookMusic() { musBus.disconnect();
+    if (!offline) { if (!eqN) { const pre = ctx.createGain(), fs = EQ_BANDS.map(([f, ty, q]) => { const x = ctx.createBiquadFilter(); x.type = ty; x.frequency.value = f; x.Q.value = q; x.gain.value = 0; return x; });
+        pre.connect(fs[0]); for (let i = 1; i < fs.length; i++) fs[i - 1].connect(fs[i]); eqN = { pre, fs }; } else eqN.fs[eqN.fs.length - 1].disconnect();
+      musBus.connect(eqN.pre); eqN.fs[eqN.fs.length - 1].connect(duckM); eqApply(); }
+    else musBus.connect(duckM); mufF = ctx.createBiquadFilter(); mufF.type = 'lowpass'; mufF.Q.value = 0.5; mufF.frequency.value = mufOn ? 900 : 20000; duckM.connect(mufF); mufF.connect(limiter); }
   function muffle(on) { mufOn = !!on; if (!mufF || !ctx) return; const t = ctx.currentTime; try { mufF.frequency.cancelScheduledValues(t); mufF.frequency.setTargetAtTime(mufOn ? 900 : 20000, t, mufOn ? 0.08 : 0.05); } catch (e) {} }
 
   // ---------- per-event chain: gain -> stereo pan (+ off-screen dulling) -> bus, with sends ----------
@@ -11758,7 +11772,7 @@ const SFX = (() => {
       if (!offline) setTimeout(() => { for (const n of ns) { try { n.stop(); } catch (e) {} } try { o.disconnect(); } catch (e) {} }, fade * 1000 + 1500); }
     return { begin, stage, line, hit, stop, pump, get on() { return on; }, get at() { return st; } };
   })();
-  return { health, setLean, kick, set reaper(v) { reapOn = !!v; }, get reaper() { return reapOn; }, get reapStats() { return Object.assign({ compacted: compactN }, RST); }, rawParam: PRAW, set budget(v) { noBudget = !v; }, get budget() { return !noBudget; }, set quiet(v) { benchQuiet = !!v; }, get quiet() { return benchQuiet; }, get lean() { return leanLv; }, clock() { return ctx ? { st: ctx.state, ct: ctx.currentTime, inF: inFlight, played } : null; }, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
+  return { health, setLean, kick, set reaper(v) { reapOn = !!v; }, get reaper() { return reapOn; }, get reapStats() { return Object.assign({ compacted: compactN }, RST); }, rawParam: PRAW, set budget(v) { noBudget = !v; }, get budget() { return !noBudget; }, set quiet(v) { benchQuiet = !!v; }, get quiet() { return benchQuiet; }, get lean() { return leanLv; }, clock() { return ctx ? { st: ctx.state, ct: ctx.currentTime, inF: inFlight, played } : null; }, onEvent(f) { onEv = f; }, stats: () => ({ played, inFlight, nodes: ctx ? ctx.state : 'none' }), init, play, muffle, get muffled() { return mufOn; }, beams, flames, hole, proxK: (x, y) => { const P = prox({ x, y }); return P ? P.k : 1; }, proxPan: (x, y) => { const P = prox({ x, y }); return P ? P.pan : 0; }, danger, offlineCtx, setLocator(f) { locate = f; }, setT(t) { tBase = t; }, setVolumes, setTrack, setSoundtrack, music: Music, intro: Intro, setMono(v) { mono = !!v; applyMono(); }, setEQ, get eq() { return eqB.slice(); }, EQ_BANDS, get mono() { return mono; }, wake, get state() { return ctx ? ctx.state : 'none'; }, get lastError() { return lastErr; }, get errors() { return errN; }, report: noteErr, _test: { get ctx() { return ctx; }, fault() { Music._fault = 1; } }, get ready() { return !!ctx; } };
 })();
 
 // ---------- v4.7 haptics: a buzz when the core takes a hit ----------
@@ -20643,6 +20657,24 @@ const UI = (() => {
         ${ST_FX.map(([k, l]) => slider('stFx_' + k, l, vis.fx[k], 0, 1, 0.01, fxWord(vis.fx[k]), 1)).join('')}
       </div></div>`;
   }
+  // ---- EQ (Nov 28) ----
+  const ST_EQ = [['Bass', '60 Hz'], ['Low mids', '250 Hz'], ['Mids', '1 kHz'], ['Presence', '4 kHz'], ['Air', '12 kHz']];
+  const ST_EQP = [['flat', 'Flat', [0, 0, 0, 0, 0]], ['phone', 'Phone speaker', [-4, 2, 1, 2, 0]], ['head', 'Headphones', [2, 0, -1, 1, 2]], ['bass', 'Bass boost', [6, 3, 0, 0, 0]], ['warm', 'Warm', [2, 2, 0, -2, -3]], ['bright', 'Bright', [-1, 0, 0, 3, 4]]];
+  const dbWord = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' dB';
+  const eqPresetOf = a => { const P = ST_EQP.find(x => x[2].every((v, i) => v === ((a || [])[i] || 0))); return P ? P[0] : ''; };
+  function stEqHTML() {
+    const a = SFX.eq, pn = eqPresetOf(a);
+    return `<div class="stshape steq">
+      <div class="stcol">
+        <div class="lbl stl">Presets</div>
+        <div class="strow steqp">${ST_EQP.map(([k, l]) => `<button class="chip ${pn === k ? 'on' : ''}" data-act="stEqP" data-v="${k}">${l}</button>`).join('')}</div>
+        <p class="note sthint">The EQ shapes the music for your speaker or headphones. It changes every song, and it does not change the sound effects. Your setting stays when you reset the sound.</p>
+      </div>
+      <div class="stcol">
+        <div class="lbl stl">Bands <em class="dim">middle = no change</em></div>
+        ${ST_EQ.map(([l, f], i) => `<label class="st2"><span>${l} <em class="dim">${f}</em></span><output id="stEq_${i}V">${dbWord(a[i])}</output><span class="rng mid"><input id="stEq_${i}" type="range" min="-12" max="12" step="1" value="${a[i]}"></span></label>`).join('')}
+      </div></div>`;
+  }
   // ---- Compose ----
   const CP_EXTRA = [{ degs: [0, 4, 5, 3], q: [], bars: 1 }, { degs: [0, 5, 3, 4], q: [], bars: 1 }, { degs: [0, 3], q: [], bars: 2 }, { degs: [0], q: [], bars: 4 }, { degs: [0, 6, 5, 6], q: [], bars: 1 }]; // the jazz ii-V-I lives in Bright only (MOOD_LOOPS)
   // 5.5.8: each mood's signature progressions, then the style's own and the common ones, keeping only those that fit the mood
@@ -20796,6 +20828,14 @@ const UI = (() => {
       ['Night drive', 'Synthwave only, Energy at Groove, Echo and Reverb right of middle.'],
       ['Console', 'Chiptune only, Reverb and Tape & Vinyl off for a dry 8-bit sound.'],
     ] },
+    eq: { rows: [
+      ['Presets', 'Flat changes nothing. Phone speaker cuts the deep bass a phone cannot play and lifts the parts it can. Headphones adds a little bass and air. Bass boost, Warm and Bright do what they say.'],
+      ['Bands', 'Five sliders, from deep bass on top to air at the bottom. Right adds up to 12 dB, left takes up to 12 dB away. The middle is no change.'],
+      ['Music only', 'The EQ shapes the music, not the sound effects. It works on every song, and Reset sound keeps it.'],
+    ], adv: [
+      ['Loudness', 'A boost turns the music down a little first, so a big boost does not distort.'],
+      ['Small steps', 'A few dB is usually enough. Cut what is too much before you boost what is missing.'],
+    ] },
     compose: { rows: [
       ['Start', 'Pick a style to start a song: you get its beat, bassline and chords, and no melody yet. Or remix the last radio song.'],
       ['Name', 'Tap the name to rename your song.'],
@@ -20828,7 +20868,7 @@ const UI = (() => {
     const k = ST_HELP[stHelp] ? stHelp : 'listen', H = ST_HELP[k];
     const dl = L => `<dl class="shdl">${L.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>`;
     return `<div class="sthelp" role="dialog" aria-label="How the Music Studio works"><div class="shh"><b>How it works</b>
-      <div class="chips sttabs">${[['listen', 'Listen'], ['shape', 'Shape'], ['compose', 'Compose']].map(([v, l]) => `<button class="chip ${k === v ? 'on' : ''}" data-act="stHelpTab" data-v="${v}">${l}</button>`).join('')}</div>
+      <div class="chips sttabs">${[['listen', 'Listen'], ['shape', 'Shape'], ['eq', 'EQ'], ['compose', 'Compose']].map(([v, l]) => `<button class="chip ${k === v ? 'on' : ''}" data-act="stHelpTab" data-v="${v}">${l}</button>`).join('')}</div>
       <button class="stb shx" data-act="stHelpX" aria-label="Back to the Studio">✕</button></div>
       <div class="shbody" data-tab="${k}"><div class="shcols"><section><h3 class="ssec">Controls</h3>${dl(H.rows)}</section>
       <section class="shadv"><h3 class="ssec">Advanced</h3>${dl(H.adv)}${H.recipes ? `<h3 class="ssec">Moods to try</h3>${dl(H.recipes)}` : ''}</section></div></div></div>`;
@@ -20839,12 +20879,12 @@ const UI = (() => {
     if (G && !G.over) G.paused = true;
     const M = SFX.music, c = M.config, p = M.piece || {}, G5 = M.GENRES, tg = p.genre && G5[p.genre] ? p.genre : 'lofi';
     if (stTab === 'compose' && !c.composer) stTab = 'listen';
-    const tabs = [['listen', 'Listen'], ['shape', 'Shape']].concat(c.composer ? [['compose', 'Compose']] : []);
+    const tabs = [['listen', 'Listen'], ['shape', 'Shape'], ['eq', 'EQ']].concat(c.composer ? [['compose', 'Compose']] : []);
     const prev = $('#modal .card.studio .cbody'), keep = prev ? prev.scrollTop : 0, wasTab = prev ? prev.dataset.tab : '';
     const hPrev = $('#modal .sthelp .shbody'), hKeep = hPrev && hPrev.dataset.tab === stHelp ? hPrev.scrollTop : 0;
     modal(`<div class="card studio" style="--gc:${G5[tg].col}"><div class="ch"><h2>Music Studio</h2><div class="chips sttabs">${tabs.map(([k, l]) => `<button class="chip ${stTab === k ? 'on' : ''}" data-act="stTab" data-v="${k}">${l}</button>`).join('')}</div><button class="stb sthq" data-act="stHelp" aria-label="How the Music Studio works">?</button><button class="x" data-act="stClose" aria-label="Close">✕</button>
       ${stNowHTML()}</div>
-      ${stTab === 'shape' ? stShapeHTML() : stTab === 'compose' ? stComposeHTML() : stListenHTML()}</div>`, 'studio');
+      ${stTab === 'shape' ? stShapeHTML() : stTab === 'eq' ? stEqHTML() : stTab === 'compose' ? stComposeHTML() : stListenHTML()}</div>`, 'studio');
     if (stHelp) { const cd = $('#modal .card.studio'); if (cd) { cd.insertAdjacentHTML('beforeend', stHelpHTML()); const hb = cd.querySelector('.shbody'); if (hb) hb.scrollTop = hKeep; } }
     const body = $('#modal .card.studio .cbody'); if (body) { body.dataset.tab = stTab; if (wasTab === stTab) body.scrollTop = keep; }
     if (stTab === 'compose' && !stInCompose) { stInCompose = true; enterCompose(); } else if (stTab !== 'compose' && stInCompose) { stInCompose = false; leaveCompose(); }
@@ -20855,6 +20895,9 @@ const UI = (() => {
     bind('stFollow', v => c.follow = v, v => Math.round(v * 100) + '%');
     bind('stTempo', v => { const g = (M.piece || {}).genre; if (g) c.bpm[g] = v; }, v => v + ' BPM');
     for (const [k] of ST_FX) bind('stFx_' + k, v => c.fx[k] = v, fxWord);
+    for (let i = 0; i < ST_EQ.length; i++) { const el = $('#stEq_' + i); if (!el) continue; // Nov 28: the Music EQ is a listening setting, saved apart from the studio's sound
+      el.oninput = () => { const a = SFX.eq; a[i] = +el.value; SFX.setEQ(a); PROF.settings.eq = SFX.eq; const o = $('#stEq_' + i + 'V'); if (o) o.textContent = dbWord(+el.value); const pn = eqPresetOf(PROF.settings.eq); for (const ch of document.querySelectorAll('#modal [data-act=stEqP]')) ch.classList.toggle('on', ch.dataset.v === pn); };
+      el.onchange = () => Save.save(); }
     for (const f of document.querySelectorAll('#modal .fader')) {
       const k = f.dataset.ch, set = ev => { const r = f.getBoundingClientRect(), v = clamp(1 - (ev.clientY - r.top) / r.height, 0, 1) * 1.25; studioTouch(); c.mix[k] = Math.round(v * 100) / 100; f.querySelector('.ffill').style.height = (v / 1.25 * 100) + '%'; f.querySelector('.fknob').style.bottom = (v / 1.25 * 100) + '%'; SFX.music.apply(); };
       f.onpointerdown = ev => { ev.preventDefault(); f.setPointerCapture(ev.pointerId); set(ev); f.onpointermove = set; };
@@ -20947,6 +20990,7 @@ const UI = (() => {
       case 'stBossP': { const id = b.dataset.v, T = M.BOSS_THEMES[id]; if (!T || !PROF.codex.bosses[id]) return true; stPlayNow({ boss: id }); toast('NOW PLAYING', `${T.title} · ${T.name}`, '#ff4d6a'); return true; }
       case 'stBossT': { c.bossThemes = c.bossThemes === false; studioSave(); openStudio(); return true; }
       case 'stLen': M.setLength(b.dataset.v); studioSave(); SFX.play('ui'); openStudio(); return true;
+      case 'stEqP': { const P = ST_EQP.find(x => x[0] === b.dataset.v); if (P) { SFX.setEQ(P[2]); PROF.settings.eq = SFX.eq; Save.save(); SFX.play('ui'); openStudio(); } return true; }
       case 'stMute': studioTouch(); c.mute[b.dataset.v] = !c.mute[b.dataset.v]; b.classList.toggle('m', !!c.mute[b.dataset.v]); M.apply(); studioSave(); return true;
       case 'stSkip': stPlayNow(); SFX.play('ui'); return true;
       case 'stBack': { const n = M.back(); if (n) stPlayNow(M.queued); if (n) toast('BACK TO', n, '#ff5fa8'); return true; }
@@ -21461,7 +21505,7 @@ const UI = (() => {
           if (!raw.startsWith('ENT1:')) throw 0;
           const P = Save.merge(JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))));
           P.runSnap = null; PROF = P; tidyCaps(); { const mw = migrateWeb(); if (mw) UI.toast(...talentsToast(mw)); } Save.save(); closeModal(); renderHangar(); Tree.refresh(); // 6.0: an old save code gets the talents migration now, not on next launch
-          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); silentApply();
+          SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); SFX.setEQ(PROF.settings.eq); silentApply();
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(PROF.settings.studio); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
           toast('SAVE IMPORTED', `Level ${profLevel().level} · Best Wave ${PROF.bestWave || 0}`, '#59f0b4');
         } catch (e) { toast('INVALID CODE', 'Make sure the full code was pasted', '#ff4d6a', 1); }
@@ -22196,7 +22240,7 @@ function talentsToast(kind) {
   // returning players see what changed once per version; brand-new players skip it
   if (!PROF.runs) { PROF.seenVer = VERSION; }
   else if (PROF.seenVer !== VERSION && PROF.seenVer !== WHATS_NEW.ver) setTimeout(function news() { if (UI.storyOn) return setTimeout(news, 700); if (UI.screen === 'hangar' && !UI.modalOpen && WHATS_NEW.items.length) UI.openNews(); }, 900 + spT); // 6.0.1: a patch with no new What's New doesn't show the last one again
-  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); silentApply();
+  SFX.setVolumes(PROF.settings.sfx, PROF.settings.music); SFX.setMono(!!PROF.settings.mono); SFX.setEQ(PROF.settings.eq); silentApply();
   // Nov 27: the first late-game test ended at a boss leak and opened the run-end card, which saved a Wave 55 start into the Hall of Fame. Once: take it out.
   try { if (!PROF.hallFix1) { PROF.hallFix1 = 1; if (PROF.hall) PROF.hall = PROF.hall.filter(R => !(R && R.startWave === 55 && R.ts >= Date.UTC(2026, 10, 27, 19))); } } catch (e) {}
   SFX.setSoundtrack(PROF.settings.soundtrack || 'ec'); SFX.music.setConfig(studioMig(PROF.settings.studio)); PROF.settings.studio = SFX.music.config; SFX.music.setBaseBpm(PROF.settings.bpm || 72);
