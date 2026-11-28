@@ -1717,7 +1717,7 @@ body.storyend #hangar .brand > h1 { transition: none; }
 #labFresh{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
 #labFresh.arm{background:#ff4d6a;border-color:#ff4d6a;color:#07080f}
 </style>
-<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.1 + V6.20.1 + NOV 28 MUSIC EQ';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
+<script>document.addEventListener('DOMContentLoaded',function(){var r=document.createElement('div');r.id='labRib';r.textContent='TEST ENVIRONMENT · v6.20.1 + V6.20.1 + NOV 28 MUSIC';document.body.appendChild(r);setInterval(function(){var g=document.getElementById('game');r.classList.toggle('thin',!!(g&&!g.hidden));},500);
 var h=document.getElementById('hangar');if(!h)return;var b=document.createElement('button');b.id='labFresh';var L='Test: start as new player';b.textContent=L;var t=null;
 b.addEventListener('click',function(e){e.stopPropagation();if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Tap again to erase the test save';clearTimeout(t);t=setTimeout(function(){b.classList.remove('arm');b.textContent=L;},4000);return;}location.replace(location.pathname+'?fresh');});h.appendChild(b);});</script><style>
 #labTools{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 50px);z-index:5;font:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;background:#2a1a08;color:#ffcf7a;border:2px solid #ffb03a;cursor:pointer}
@@ -10336,11 +10336,20 @@ const SFX = (() => {
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
     // 6.14 (Nic, Nov 14): ceilings for generated v2 songs (MIDI). A lead phrase tops out at E6 (88); no lead, arp or piano note goes past G6 (91)
     const LEAD_CEIL = 88, LEAD_HARD = 91;
+    // Nov 28 (Nic: "the highs are pretty piercing", Ambient Glass): the ear is most sensitive from about 2 to 5 kHz, so a high note sounds
+    // louder than a low one at the same level. Melodic notes above G5 (MIDI 79) play 0.5 dB softer per semitone (6 dB an octave), in every
+    // genre, boss theme and composed song. Leads, plucks, piano and chip notes; chords and pads already sit lower.
+    const earTrim = n => n <= 79 ? 1 : Math.pow(10, -0.5 * (n - 79) / 20);
     // 6.16.1 (version 3): Ambient holds its notes for seconds, so high ones read as a whine (audit: Glass 37% of notes at or above C6, one pitch near 1400 Hz held 4 s). Its songs stay a fifth lower: phrases under A5, single notes under C6
     // The slow genres (Lo-fi, Downtempo, Dub) hold or repeat a top note too: the audit heard E6 for 7 s in Chillout and 5 s in Bedroom, D#6 for 4.5 s in Steppers,
     // each a melody parked on the old ceiling. Their phrases stay under C6. Fast genres keep E6 (short notes).
     const SLOW_CEIL = { ambient: [81, 84], lofi: [83, 86], downtempo: [83, 86], dub: [83, 86] };
-    const ceilNow = () => P && P.v >= 3 && SLOW_CEIL[P.g] ? SLOW_CEIL[P.g][0] : LEAD_CEIL, hardNow = () => P && P.v >= 3 && SLOW_CEIL[P.g] ? SLOW_CEIL[P.g][1] : LEAD_HARD;
+    // Nov 28 (version 4; Nic: Ambient Glass "the highs are pretty piercing"): the audit found 98% of what the ear hears in Ambient between
+    // 350 Hz and 1.4 kHz (pads around C5, melody around F#5) over a bass a phone speaker cannot play. New songs in the slow genres sit lower:
+    // melody ceilings (phrase, single note) and a lower window for pad chords. Saved songs keep their version and their notes.
+    const REG4 = { ambient: { ceil: [76, 79], pad: [43, 67] }, lofi: { ceil: [79, 83], pad: [48, 72] }, downtempo: { ceil: [79, 83], pad: [48, 72] }, dub: { ceil: [79, 83], pad: [48, 72] } };
+    const regNow = () => P && P.v >= 4 && !P.comp && !P.boss ? REG4[P.g] : null;
+    const ceilNow = () => { const r = regNow(); return r ? r.ceil[0] : P && P.v >= 3 && SLOW_CEIL[P.g] ? SLOW_CEIL[P.g][0] : LEAD_CEIL; }, hardNow = () => { const r = regNow(); return r ? r.ceil[1] : P && P.v >= 3 && SLOW_CEIL[P.g] ? SLOW_CEIL[P.g][1] : LEAD_HARD; };
     let R = Math.random;
     const pick = a => a[Math.floor(R() * a.length)], chance = p => R() < p, rr = (a, b) => a + R() * (b - a);
     const wpick = (a, w) => { let t = 0; for (const x of w) t += x; let r = R() * t; for (let i = 0; i < a.length; i++) { r -= w[i]; if (r <= 0) return a[i]; } return a[0]; };
@@ -10682,7 +10691,9 @@ const SFX = (() => {
       mute: {}, fx: { reverb: 0.5, echo: 0.5, tone: 0.5, tape: 0, pump: 0.5 }, favs: [], favOnly: false, calmBpm: 72, bossThemes: true, tape0: 1 }; // 6.5.2: Tape & Vinyl off by default (Nic)
     const CHN = ['pads', 'keys', 'arp', 'bass', 'drums', 'lead'];
     let cfg = JSON.parse(JSON.stringify(DEF));
-    const VCUR = 3; // 6.16.1: version 3 = version 2 + chord loops that fit their mode (qMiss); 6.3: the generator version new pieces get (saved tracks without a v are version 1 and keep the old path)
+    const VCUR = 4; // Nov 28: version 4 = version 3 + the slow genres sit lower (REG4 below)
+    // (VCUR history: 3 = 6.16.1, chord loops that fit their mode)
+    const VCUR_NOTE = 3; // 6.16.1: version 3 = version 2 + chord loops that fit their mode (qMiss); 6.3: the generator version new pieces get (saved tracks without a v are version 1 and keep the old path)
     let bossNow = null, bossPhase = 0, bossRet = null; // 6.3: the boss on the field (UI.tick), its phase, and what to go back to after the fight
     let P = null, lastG = '', lastF = '', bar = 0, s16 = 0, forceNext = null, favIdx = 0, tempoNow = 0, EV = null;
     const pieceLog = [];
@@ -10878,8 +10889,9 @@ const SFX = (() => {
       else {
         // jazz (rootless when bass is present: drop the root, keep 3 7 9) or pad (all chord tones); each tone placed nearest the last chord
         const tones = how === 'jazz' && iv.length >= 4 ? iv.slice(1) : iv.slice(0, Math.max(3, iv.length));
-        const ref = prev && prev.length ? prev : [60, 64, 67, 71];
-        v = tones.map(x => { const pc = (r + x) % 12; let best = 0, bd = 99; for (let n = 50; n <= 76; n++) if (n % 12 === pc) { const d = Math.min(...ref.map(q2 => Math.abs(q2 - n))) + (n < 52 ? 3 : 0) + (n > 74 ? 3 : 0); if (d < bd) { bd = d; best = n; } } return best; });
+        const rg = regNow(), lo = rg ? rg.pad[0] : 50, hi = rg ? rg.pad[1] : 76, sh = rg ? 76 - hi : 0; // Nov 28: version 4 slow genres voice their chords lower
+        const ref = prev && prev.length ? prev : [60 - sh, 64 - sh, 67 - sh, 71 - sh];
+        v = tones.map(x => { const pc = (r + x) % 12; let best = 0, bd = 99; for (let n = lo; n <= hi; n++) if (n % 12 === pc) { const d = Math.min(...ref.map(q2 => Math.abs(q2 - n))) + (n < lo + 2 ? 3 : 0) + (n > hi - 2 ? 3 : 0); if (d < bd) { bd = d; best = n; } } return best; });
         v = [...new Set(v)].sort((a, b) => a - b);
       }
       P.lastChordV = v; return v;
@@ -11101,7 +11113,7 @@ const SFX = (() => {
       const e = t + dec + 0.4; for (const o of [car, m1, m2]) { o.start(t); o.stop(e); }
       sendFx(g, 0.35, 0.12);
     }
-    function piano(n, t, v, dec) { if (P && P.v2 && !P.comp && !P.boss) while (n > hardNow()) n -= 12; /* 6.14: under G6 in generated songs */ evlog('keys', 'piano', t, n, v); const f = mtof(n), g = vca(t, 0.002, dec, v * 0.9, L.keys), fl = lp(Math.min(9000, f * 9), 0.5, g); fl.frequency.setTargetAtTime(f * 3, t, 0.25); osc('triangle', f, t, t + dec + 0.4, fl, -3); osc('triangle', f, t, t + dec + 0.4, fl, 3); osc('sine', f * 2, t, t + dec + 0.4, gainN(0.3, fl)); nhit(t, 'bandpass', f * 4, 1, 0.015, v * 0.06, g); sendFx(g, 0.35, 0.1); }
+    function piano(n, t, v, dec) { if (P && P.v2 && !P.comp && !P.boss) while (n > hardNow()) n -= 12; /* 6.14: under G6 in generated songs */ evlog('keys', 'piano', t, n, v); v *= earTrim(n); const f = mtof(n), g = vca(t, 0.002, dec, v * 0.9, L.keys), fl = lp(Math.min(9000, f * 9), 0.5, g); fl.frequency.setTargetAtTime(f * 3, t, 0.25); osc('triangle', f, t, t + dec + 0.4, fl, -3); osc('triangle', f, t, t + dec + 0.4, fl, 3); osc('sine', f * 2, t, t + dec + 0.4, gainN(0.3, fl)); nhit(t, 'bandpass', f * 4, 1, 0.015, v * 0.06, g); sendFx(g, 0.35, 0.1); }
     function stab(ns, t, v, how) {
       for (const n of ns) evlog('keys', 'stab', t, n, v);
       const E = effE(), fl = lp(1, how === 'dubtechno' ? 3 : 2.5, null, how === 'dubtechno' ? 'bandpass' : 'lowpass'), g = vca(t, 0.003, how === 'dubtechno' ? 0.25 : 0.32, v, L.keys);
@@ -11113,8 +11125,8 @@ const SFX = (() => {
     }
     function organ(ns, t, v, dur) { for (const n of ns) { evlog('keys', 'organ', t, n, v); const g = vca(t, 0.004, dur, v * 0.32, L.keys); for (const [h, a] of [[1, 1], [2, 0.5], [3, 0.3], [4, 0.22]]) osc('sine', mtof(n) * h, t, t + dur + 0.3, gainN(a, g)); nhit(t, 'bandpass', mtof(n) * 6, 2, 0.008, v * 0.08, g); sendFx(g, 0.25, 0.2); } }
     function skank(ns, t, v) { for (const n of ns) evlog('keys', 'skank', t, n, v); const fl = lp(1400, 0.8, null, 'bandpass'), g = vca(t, 0.002, 0.12, v * 0.6, L.keys); fl.connect(g); for (const n of ns) { osc(0.25, mtof(n), t, t + 0.2, fl); osc('triangle', mtof(n), t, t + 0.2, fl); } sendFx(g, 0.5, 0.75); }
-    function pluck(n, t, v, dest, role) { if (P && P.v2 && !P.comp && !P.boss) { const cap = (role || 'arp') === 'arp' ? ceilNow() : hardNow(); while (n > cap) n -= 12; } /* 6.14: arps stay under E6, plucked keys under G6 */ evlog(role || 'arp', 'pluck', t, n, v); const fl = lp(1, 2.4, vca(t, 0.002, 0.45, v, dest || L.arp)); fl.frequency.setValueAtTime(1200 + 4000 * effE(), t); fl.frequency.setTargetAtTime(420, t, 0.07); osc('sawtooth', mtof(n), t, t + 0.5, fl, 0); }
-    function chipNote(n, t, dur, v, duty, dest, role) { evlog(role, 'chip', t, n, v); const g = ctx.createGain(); g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v * 0.75, t + Math.min(dur * 0.5, 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + dur); g.connect(dest); osc(duty, mtof(n), t, t + dur + 0.02, g); }
+    function pluck(n, t, v, dest, role) { if (P && P.v2 && !P.comp && !P.boss) { const cap = (role || 'arp') === 'arp' ? ceilNow() : hardNow(); while (n > cap) n -= 12; } /* 6.14: arps stay under E6, plucked keys under G6 */ evlog(role || 'arp', 'pluck', t, n, v); v *= earTrim(n); const fl = lp(1, 2.4, vca(t, 0.002, 0.45, v, dest || L.arp)); fl.frequency.setValueAtTime(1200 + 4000 * effE(), t); fl.frequency.setTargetAtTime(420, t, 0.07); osc('sawtooth', mtof(n), t, t + 0.5, fl, 0); }
+    function chipNote(n, t, dur, v, duty, dest, role) { evlog(role, 'chip', t, n, v); v *= earTrim(n); const g = ctx.createGain(); g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v * 0.75, t + Math.min(dur * 0.5, 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + dur); g.connect(dest); osc(duty, mtof(n), t, t + dur + 0.02, g); }
     // gated supersaw chord: one sustained 3-voice stack per note, chopped by the trance gate pattern
     function gateChord(ns, t, sp16, bars, v) {
       for (const n of ns) evlog('keys', 'gate', t, n, v);
@@ -11142,10 +11154,10 @@ const SFX = (() => {
     // ---- leads ----
     function lead(n, t, dur, v, kind, duty) {
       if (P && P.v2 && !P.comp && !P.boss) while (n > hardNow()) n -= 12;
-      evlog('lead', kind, t, n, v);
+      evlog('lead', kind, t, n, v); const v0 = v; v *= earTrim(n);
       const dest = L.lead, f = mtof(n);
-      if (kind === 'bell' || kind === 'glass') { const g = vca(t, 0.003, kind === 'glass' ? 1.6 : 2.8, v, L.spark), car = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(); car.frequency.value = f; m.frequency.value = f * (kind === 'glass' ? 7 : 3.5); mg.gain.setValueAtTime(f * 1.2, t); mg.gain.setTargetAtTime(f * 0.05, t, 0.4); m.connect(mg); mg.connect(car.frequency); car.connect(g); car.start(t); m.start(t); car.stop(t + 3.4); m.stop(t + 3.4); sendFx(g, 0.6, 0.35); return; }
-      if (kind === 'piano') return piano(n, t, v, 1.4);
+      if (kind === 'bell' || kind === 'glass') { const g = vca(t, 0.003, kind === 'glass' ? (duty === 'arp' ? 0.9 : 1.6) : 2.8, v, L.spark), car = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(); car.frequency.value = f; m.frequency.value = f * (kind === 'glass' ? 7 : 3.5); mg.gain.setValueAtTime(f * 1.2 * Math.min(1, 659 / f), t); mg.gain.setTargetAtTime(f * 0.05, t, 0.4); /* Nov 28: above E5 the strike's sparkle shrinks with pitch (it sat at 4 to 8 kHz) */ m.connect(mg); mg.connect(car.frequency); car.connect(g); car.start(t); m.start(t); car.stop(t + 3.4); m.stop(t + 3.4); sendFx(g, 0.6, 0.35); return; }
+      if (kind === 'piano') return piano(n, t, v0, 1.4); // (piano trims its own notes)
       if (kind === 'bleep') { const g = vca(t, 0.002, 0.22, v * 0.8, dest); osc('sine', f, t, t + 0.3, g); osc(0.125, f * 2, t, t + 0.12, gainN(0.25, g)); sendFx(g, 0.3, 0.6); return; }
       if (BOSS_LEADS[kind]) return BOSS_LEADS[kind](n, f, t, dur, v, dest);
       const fl = lp(kind === 'saw' ? 2600 + 2500 * effE() : kind === 'melodica' ? 1500 : kind === 'flute' ? 2800 : kind === 'chip' ? 8000 : kind === 'theremin' ? 3000 : 5500, kind === 'melodica' ? 1 : 0.7, null, kind === 'melodica' ? 'bandpass' : 'lowpass');
@@ -11254,7 +11266,10 @@ const SFX = (() => {
       ehp.connect(pan(-0.6)); echoR.connect(pan(0.6)); echoRet.connect(toneLP); echoRet.connect(gainN(0.2, revSend));
       for (const c of CHN) { CH[c] = ctx.createGain(); CH[c].connect(c === 'drums' ? mIn : scG); AN[c] = ctx.createAnalyser(); AN[c].fftSize = 256; CH[c].connect(AN[c]); }
       const lay = (v, ch) => gainN(v, CH[ch]);
-      L = { pad: lay(0.055, 'pads'), bass: lay(0.32, 'bass'), keys: lay(0.085, 'keys'), arp: lay(0.06, 'arp'), spark: lay(0.045, 'lead'), lead: lay(0.06, 'lead'), drums: lay(0.24, 'drums') };
+      L = { pad: lay(0.055, 'pads'), bass: (() => { const g = lay(0.32, 'bass'); // Nov 28: phone bass. A saturated copy of the bass, kept to 200 to 1,000 Hz, adds the upper tones a small speaker can play,
+          // so the bass is heard on a phone (the ear fills in the low note). On headphones the real low bass is still there.
+          const ws = ctx.createWaveShaper(), n = 2048, cv = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i * 2 / n - 1; cv[i] = Math.tanh(6 * x) / Math.tanh(6); } ws.curve = cv;
+          const hp = lp(200, 0.7, null, 'highpass'), lo = lp(1000, 0.7, null), mix = gainN(0.22, CH.bass); g.connect(ws); ws.connect(hp); hp.connect(lo); lo.connect(mix); return g; })(), keys: lay(0.085, 'keys'), arp: lay(0.06, 'arp'), spark: (() => { const d = ctx.createBiquadFilter(); d.type = 'peaking'; d.frequency.value = 3500; d.Q.value = 0.8; d.gain.value = -4; d.connect(CH.lead); return gainN(0.045, d); })(), /* Nov 28: bells and glass, 4 dB less at 3.5 kHz */ lead: lay(0.06, 'lead'), drums: lay(0.24, 'drums') };
       // vinyl: crackle impulses + hiss
       const len = ctx.sampleRate * 3, vb = ctx.createBuffer(1, len, ctx.sampleRate), d = vb.getChannelData(0);
       for (let i = 0; i < len; i++) { d[i] = 0; if (Math.random() < 0.0004) d[i] = (Math.random() < 0.5 ? -1 : 1) * (0.3 + Math.random() * 0.6); }
@@ -11402,7 +11417,8 @@ const SFX = (() => {
         const every = 16 / (P.arpRate || A0.rate);
         if (s16 % every === 0) { const ns = []; for (let o = 0; o < (A0.oct || 1); o++) for (const n of C0.v) ns.push(n + 12 * o); const k = (s16 / every + bar * 3) % (ns.length * 2 - 2); let idx = k < ns.length ? k : ns.length * 2 - 2 - k;
           if (P.v2 && P.arpShape !== 'updown') { const j = s16 / every + bar * 4, Ln = ns.length; idx = P.arpShape === 'up' ? j % Ln : P.arpShape === 'down' ? Ln - 1 - j % Ln : P.arpShape === 'pinky' ? (j % 2 ? 1 + (j >> 1) % (Ln - 1) : 0) : (j * 2) % Ln + (Ln % 2 ? 0 : (Math.floor(j * 2 / Ln) % 2)); idx = Math.min(Ln - 1, idx); } // 6.3 v2 arp shapes
-          if (A0.kind === 'glass') lead(ns[idx] + 12, tt, 1.2, 0.5 * lvl(A0.lv), 'glass'); else pluck(ns[idx] + (A0.kind === 'juno' ? 0 : 12), tt, 0.55 * lvl(A0.lv)); }
+          /* Nov 28: in version 4 songs the glass shimmer goes up an octave only while it stays at or under G5; it rings shorter in every song (Ambient Glass was a wash of 700 Hz to 1 kHz tones) */
+          if (A0.kind === 'glass') { const gn = P.v >= 4 && !P.comp && !P.boss && ns[idx] + 12 > 79 ? ns[idx] : ns[idx] + 12; /* (version 4 songs only: saved songs keep their notes) */ lead(gn, tt, 1.2, 0.5 * lvl(A0.lv), 'glass', 'arp'); } else pluck(ns[idx] + (A0.kind === 'juno' ? 0 : 12), tt, 0.55 * lvl(A0.lv)); }
       }
       // ---- lead (motif-based phrases) ----
       const Ld = S.lead, ll = Ld ? lvl(P.v2 && Ld.lv2 != null ? Ld.lv2 : Ld.lv) * (ph.lead === 0.5 ? (barInPh >= 4 ? 1 : 0) : ph.lead) : 0;
